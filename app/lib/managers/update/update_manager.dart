@@ -59,7 +59,7 @@ class UpdateManager extends Manager {
   /// window is a display cap, not a paging cursor: a device further behind
   /// than this gets the newest releases and a pointer to the history.
   static const _releasesUrl =
-      'https://api.github.com/repos/jxlarrea/kiosk-satellite/'
+      'https://api.github.com/repos/davidcoulson/kiosk-satellite/'
       'releases?per_page=30';
 
   /// App-scoped (see ApkInstaller). Native silent installation takes priority,
@@ -359,7 +359,7 @@ class UpdateManager extends Manager {
                 notes: _combinedNotes(releases, tagOf),
                 releaseUrl:
                     latest['html_url'] as String? ??
-                    'https://github.com/jxlarrea/kiosk-satellite/releases',
+                    'https://github.com/davidcoulson/kiosk-satellite/releases',
                 apkSize: (apk['size'] as num?)?.toInt(),
               )
             : null,
