@@ -1349,6 +1349,13 @@ class _CategoryContentState extends State<_CategoryContent> {
       widget.container.location.locationSupport().then((_) {
         if (mounted) setState(() {});
       });
+      // And the panel LED switch reads LedBridge.kt's detection — this one
+      // can take a few seconds (the rooted-fallback probe's own timeout),
+      // so the row starts as if unsupported and corrects itself once
+      // ledSupport() resolves, same as the other hardware probes here.
+      widget.container.led.ledSupport().then((_) {
+        if (mounted) setState(() {});
+      });
       _pollBtAdapter();
       _btAdapterTimer = Timer.periodic(
         const Duration(seconds: 5),
@@ -2393,6 +2400,21 @@ class _CategoryContentState extends State<_CategoryContent> {
           title: Text(locationEnabled.title),
           subtitle: Text(
             container.location.locationHint ?? 'Not available on this device.',
+          ),
+          value: false,
+          onChanged: null,
+        ),
+      ),
+    // No working /dev/ledjni on this panel (no such node, or this app
+    // can't reach it — see LedBridge.kt): the switch says why instead of
+    // offering an entity that could never actually drive anything.
+    if (widget.category == 'ESPHome' && container.led.ledKnownUnsupported)
+      ledEnabled.key: SearchLandingTarget(
+        id: ledEnabled.key,
+        child: SwitchListTile(
+          title: Text(ledEnabled.title),
+          subtitle: Text(
+            container.led.ledHint ?? 'Not available on this device.',
           ),
           value: false,
           onChanged: null,

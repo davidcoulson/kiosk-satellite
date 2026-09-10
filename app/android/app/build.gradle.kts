@@ -63,6 +63,21 @@ android {
         }
     }
 
+    // led_helper (see cpp/CMakeLists.txt) is a plain executable packaged
+    // like a .so so Gradle bundles it; LedBridge execs it directly via `su`
+    // on the rooted fallback path, which needs a real file on disk. Modern
+    // AGP's default packaging instead mmaps uncompressed .so files straight
+    // out of the APK with nothing extracted to nativeLibraryDir, which
+    // would leave no such file to exec. This forces every native lib
+    // (including the real ones, sendspin_jni/led_jni) into the
+    // extracted-on-disk form, which is the only thing that also works for
+    // led_helper.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     signingConfigs {
         create("release") {
             val storeFilePath = signing("storeFile")

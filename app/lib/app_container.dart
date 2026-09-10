@@ -18,6 +18,7 @@ import 'managers/js_api/js_api_manager.dart';
 import 'managers/kiosk/kiosk_manager.dart';
 import 'managers/launcher/app_launcher_manager.dart';
 import 'managers/launcher/home_launcher_manager.dart';
+import 'managers/led/led_manager.dart';
 import 'managers/motion/motion_manager.dart';
 import 'managers/notifications/notification_manager.dart';
 import 'managers/fleet/fleet_manager.dart';
@@ -71,6 +72,7 @@ class AppContainer {
     proximity = ProximityManager(bus, commands, log, settings);
     location = LocationManager(bus, commands, log, settings);
     personSensor = PersonSensorManager(bus, commands, log, settings);
+    led = LedManager(bus, commands, log, settings);
     // Before wakeWord: its init seeds the mic selector the engine reads at
     // start, and its SettingChanged subscription must run before wakeWord's
     // restart re-opens capture.
@@ -133,6 +135,7 @@ class AppContainer {
   late final ProximityManager proximity;
   late final LocationManager location;
   late final PersonSensorManager personSensor;
+  late final LedManager led;
   late final HomeAssistantManager homeAssistant;
   late final AudioRoutingManager audio;
   late final WakeWordManager wakeWord;
@@ -175,6 +178,7 @@ class AppContainer {
     proximity,
     location,
     personSensor,
+    led,
     homeAssistant,
     audio,
     // After kiosk (it relays GestureDetected) and after audio: gestures may

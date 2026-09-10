@@ -174,6 +174,10 @@ class BtProxyManager extends Manager {
       // The Person sensor exists only while Dismiss on person is on, the
       // same way (discussion #353).
       'screensaver.dismiss_on_person',
+      // The RGB LED entity exists only while both the panel actually has
+      // one and Expose panel LED is on (LedManager.available folds both
+      // together), the same setup-time-choice reasoning as location above.
+      'led.enabled',
     };
     // The remote admin server's settings, which decide the web page port
     // reported to Home Assistant (the device page's Visit link).

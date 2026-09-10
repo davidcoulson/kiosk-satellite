@@ -104,10 +104,18 @@ internal sealed class EspEntity {
     ) : EspEntity()
 
     /**
-     * On/off plus brightness, declared through the legacy capability flag:
-     * the modern color-modes vocabulary buys nothing for a screen and the
-     * legacy path is the one every old ESP32 exercises daily.
-     * State value: map {on: Bool, brightness: Double 0..1}.
+     * On/off plus brightness (the Screen), or on/off plus RGB colour (a
+     * physical colour LED, [colorCapable]). The plain on/off+brightness
+     * form is declared through the legacy capability flag: the modern
+     * color-modes vocabulary buys nothing for a screen and the legacy path
+     * is the one every old ESP32 exercises daily. A colour light instead
+     * advertises COLOR_MODE_RGB, since HA 1.6+ clients read
+     * supported_color_modes and ignore the legacy bools (issue #242).
+     * State value: map {on: Bool, brightness: Double 0..1} for the plain
+     * form, or {on: Bool, r/g/b: Int 0..255, effect: String?} for a colour
+     * light. [effects] (colour lights only) names the software-driven
+     * animations the Dart side can run on top of the raw ioctl protocol -
+     * the hardware itself has no animation support, just three registers.
      * Command value: map with the fields the client sent.
      */
     class Light(
@@ -116,6 +124,8 @@ internal sealed class EspEntity {
         override val icon: String = "",
         override val category: Int = 0,
         override val disabledByDefault: Boolean = false,
+        val colorCapable: Boolean = false,
+        val effects: List<String> = emptyList(),
     ) : EspEntity() {
         override val deviceClass: String get() = ""
     }
@@ -207,7 +217,8 @@ internal sealed class EspEntity {
                 "button" -> Button(objectId, name, s("icon"), s("deviceClass"),
                     i("category"), b("disabled"))
                 "light" -> Light(objectId, name, s("icon"), i("category"),
-                    b("disabled"))
+                    b("disabled"), b("colorCapable"),
+                    (m["effects"] as? List<*>)?.map { "$it" } ?: emptyList())
                 "text" -> Text(objectId, name, s("icon"), i("category"),
                     b("disabled"),
                     (m["maxLength"] as? kotlin.Number)?.toInt() ?: 255)
@@ -291,15 +302,21 @@ internal object EntityCodec {
                 Msg.LIST_ENTITIES_BUTTON_RESPONSE to w.toByteArray()
             }
             is EspEntity.Light -> {
-                // Legacy brightness capability only: HA still speaks the
-                // pre-color-modes dialect for every old ESP32, and a screen
-                // needs nothing richer.
-                w.bool(5, true) // legacy_supports_brightness, pre-1.6 clients
-                // supported_color_modes: modern Home Assistant IGNORES the
-                // legacy field whenever the API version is 1.6+, so without
-                // this the light renders as bare on/off (issue #242).
-                // COLOR_MODE_BRIGHTNESS (3) carries the on/off bit too.
-                w.varint(12, 3)
+                // Legacy dialect for pre-1.6 clients only; HA 1.6+ instead
+                // reads supported_color_modes below and ignores these bools.
+                w.bool(5, true) // legacy_supports_brightness
+                if (entity.colorCapable) w.bool(6, true) // legacy_supports_rgb
+                // supported_color_modes (issue #242): without this the
+                // light renders as bare on/off on a modern client, since it
+                // ignores the legacy fields above whenever the API version
+                // is 1.6+. COLOR_MODE_BRIGHTNESS (3) for a plain on/off
+                // plus dimmer light (the Screen); COLOR_MODE_RGB (35) for
+                // one with a physical colour (e.g. the panel LED).
+                w.varint(12, if (entity.colorCapable) 35 else 3)
+                // "None" is not listed: HA adds that itself as the implicit
+                // clear-effect option, matching how a real ESPHome device's
+                // effects: list never names it either.
+                for (effect in entity.effects) w.string(11, effect)
                 w.bool(13, entity.disabledByDefault)
                 w.string(14, entity.icon)
                 w.varint(15, entity.category)
@@ -367,14 +384,41 @@ internal object EntityCodec {
             }
             is EspEntity.Light -> {
                 val map = value as? Map<*, *> ?: return null
-                w.bool(2, map["on"] == true)
-                (map["brightness"] as? kotlin.Number)?.let {
-                    w.float(3, it.toFloat())
+                val on = map["on"] == true
+                w.bool(2, on)
+                if (entity.colorCapable) {
+                    // This LED has no separate dimmer distinct from its RGB
+                    // drive level - brightness is pinned to full and the
+                    // colour itself carries the actual output intensity.
+                    // Without a non-zero brightness here a color-mode
+                    // client renders the light as black regardless of r/g/b
+                    // (brightness defaults to 0 when simply left unset).
+                    // color_brightness (field 10) is a separate scalar from
+                    // the legacy brightness above - modern clients render
+                    // red/green/blue as fractions OF this, not as absolute
+                    // 0..1 levels, so a color-mode client with no white
+                    // channel still needs it pinned to full or it displays
+                    // the color as black regardless of red/green/blue.
+                    if (on) {
+                        w.float(3, 1f)
+                        w.float(10, 1f)
+                    }
+                    (map["r"] as? kotlin.Number)?.let { w.float(4, it.toFloat() / 255f) }
+                    (map["g"] as? kotlin.Number)?.let { w.float(5, it.toFloat() / 255f) }
+                    (map["b"] as? kotlin.Number)?.let { w.float(6, it.toFloat() / 255f) }
+                    // "None" is the clear state; proto3 zero-omission on an
+                    // empty string already leaves the field unset for it.
+                    (map["effect"] as? String)?.let { if (it != "None") w.string(9, it) }
+                } else {
+                    (map["brightness"] as? kotlin.Number)?.let {
+                        w.float(3, it.toFloat())
+                    }
                 }
                 // color_mode: matches the single mode the description
                 // advertises; a color-mode client shows the brightness
-                // slider only when the state claims the mode (issue #242).
-                w.varint(11, 3)
+                // slider (and, for RGB, the colour wheel) only when the
+                // state claims the mode (issue #242).
+                w.varint(11, if (entity.colorCapable) 35 else 3)
                 Msg.LIGHT_STATE_RESPONSE to w.toByteArray()
             }
             is EspEntity.Text -> {
@@ -416,6 +460,12 @@ internal object EntityCodec {
         var lightOn = false
         var hasBrightness = false
         var brightness = 0f
+        var hasRgb = false
+        var red = 0f
+        var green = 0f
+        var blue = 0f
+        var hasEffect = false
+        var effect = ""
         var updateCommand = 0
         val r = ProtoReader(payload)
         while (r.next()) when (type) {
@@ -425,6 +475,12 @@ internal object EntityCodec {
                 3 -> lightOn = r.asBool()
                 4 -> hasBrightness = r.asBool()
                 5 -> brightness = r.asFloat()
+                6 -> hasRgb = r.asBool()
+                7 -> red = r.asFloat()
+                8 -> green = r.asFloat()
+                9 -> blue = r.asFloat()
+                18 -> hasEffect = r.asBool()
+                19 -> effect = r.asString()
             }
             Msg.UPDATE_COMMAND_REQUEST -> when (r.field) {
                 1 -> key = r.asFixed32()
@@ -449,6 +505,19 @@ internal object EntityCodec {
             Msg.LIGHT_COMMAND_REQUEST -> Command(key, buildMap<String, Any> {
                 if (hasState) put("on", lightOn)
                 if (hasBrightness) put("brightness", brightness.toDouble())
+                // This entity type has no independent dimmer on top of its
+                // RGB drive level (see the state encoder above) - a colour
+                // command is taken as the exact drive level HA asked for,
+                // ignoring any brightness sent alongside it.
+                if (hasRgb) {
+                    put("r", (red.coerceIn(0f, 1f) * 255).toInt())
+                    put("g", (green.coerceIn(0f, 1f) * 255).toInt())
+                    put("b", (blue.coerceIn(0f, 1f) * 255).toInt())
+                }
+                // "None" clears: the frontend's own implicit clear-effect
+                // option, sent back as this literal string, not an absent
+                // field (has_effect is still true for it).
+                if (hasEffect) put("effect", effect)
             })
             Msg.UPDATE_COMMAND_REQUEST ->
                 Command(key, if (updateCommand == 1) "install" else "check")

@@ -781,6 +781,25 @@ class SendspinShowPlayerRequested extends AppEvent {
   const SendspinShowPlayerRequested();
 }
 
+// ── LED ────────────────────────────────────────────────────────────────
+
+/// The native side finished probing (or re-probing) whether this panel's
+/// RGB LED is reachable — see LedBridge.kt. Fires at most once shortly
+/// after start in the normal case; the Settings LED control listens so it
+/// can appear once detection resolves, rather than only on the next app
+/// launch.
+class LedAvailabilityChanged extends AppEvent {
+  const LedAvailabilityChanged({required this.available});
+  final bool available;
+}
+
+/// The LED's own on/off/colour state changed (a successful [LedManager]
+/// write). esp_entities.dart listens to re-push the entity's state to Home
+/// Assistant — mirrors ScreenStateChanged for the Screen light.
+class LedStateChanged extends AppEvent {
+  const LedStateChanged();
+}
+
 // ── Notifications ──────────────────────────────────────────────────────
 
 /// How many notifications are on screen (see NotificationManager). The

@@ -10,6 +10,7 @@ import '../../core/event_bus.dart';
 import '../../core/events.dart';
 import '../../core/logging.dart';
 import '../device/ip_addresses.dart';
+import '../led/led_manager.dart' show LedManager;
 import 'dashboard_views.dart';
 import 'interaction_stamp.dart';
 import '../sendspin/music_assistant_api.dart';
@@ -273,6 +274,7 @@ class EspEntitySurface {
     final light = await commands.execute('getLightLevel', const {});
     final lightSensorPresent =
         light.ok && light.data is Map && (light.data as Map)['present'] == true;
+    final ledPresent = (await commands.execute('ledAvailable', const {})).data == true;
     final cam = await commands.execute('hasDeviceCamera', const {});
     final cameraPresent = !(cam.ok && cam.data == false);
     // The proximity switch is the one pessimistic entity: rare hardware,
@@ -389,6 +391,15 @@ class EspEntitySurface {
         'name': 'Screen',
         'icon': 'mdi:tablet',
       },
+      if (ledPresent)
+        {
+          'type': 'light',
+          'objectId': 'rgb_led',
+          'name': 'RGB LED',
+          'icon': 'mdi:led-strip-variant',
+          'colorCapable': true,
+          'effects': LedManager.effects,
+        },
       {
         'type': 'switch',
         'objectId': 'screensaver_active',
@@ -1121,6 +1132,7 @@ class EspEntitySurface {
       }),
     );
     _subs.add(bus.on<ScreenStateChanged>().listen((_) => _sendScreen()));
+    _subs.add(bus.on<LedStateChanged>().listen((_) => _sendLed()));
     // Addresses change exactly at these transitions, and the minute poll
     // would leave the IP sensors stale until it comes round. Deferred a
     // moment so DHCP has settled by the time we look.
@@ -1335,6 +1347,35 @@ class EspEntitySurface {
         if (brightness is num) {
           await commands.execute('setBrightness', {
             'level': brightness.clamp(0.0, 1.0),
+          });
+        }
+      case 'rgb_led':
+        final map = value is Map ? value : const {};
+        if (map['on'] == false) {
+          await commands.execute('ledOff', const {});
+        } else if (map.containsKey('effect')) {
+          await commands.execute('setLedEffect', {
+            'effect': '${map['effect']}',
+          });
+        } else if (map.containsKey('r') ||
+            map.containsKey('g') ||
+            map.containsKey('b')) {
+          await commands.execute('setLedRgb', {
+            'r': map['r'] ?? 0,
+            'g': map['g'] ?? 0,
+            'b': map['b'] ?? 0,
+          });
+        } else if (map['on'] == true) {
+          // A bare "on" with no colour (e.g. toggled from the entity's
+          // on/off affordance rather than the colour wheel): repeat the
+          // last colour this app itself set, defaulting to white the very
+          // first time so "on" is never a no-op.
+          final last = (await commands.execute('getLedState', const {})).data;
+          final lastMap = last is Map ? last : const {};
+          await commands.execute('setLedRgb', {
+            'r': lastMap['r'] ?? 255,
+            'g': lastMap['g'] ?? 255,
+            'b': lastMap['b'] ?? 255,
           });
         }
       case 'screensaver_active':
@@ -1580,6 +1621,7 @@ class EspEntitySurface {
   Future<void> _sendInitial() async {
     await _refresh();
     await _sendScreen();
+    await _sendLed();
     await _sendPanelBrightness();
     await _sendVolume();
     await _sendUpdateState();
@@ -1727,6 +1769,12 @@ class EspEntitySurface {
       'on': on.ok ? on.data == true : true,
       if (level != null) 'brightness': level.clamp(0.0, 1.0),
     });
+  }
+
+  Future<void> _sendLed() async {
+    final result = await commands.execute('getLedState', const {});
+    if (!result.ok || result.data is! Map) return;
+    await _send('rgb_led', result.data);
   }
 
   Future<void> _sendVolume() async {

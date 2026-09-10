@@ -5645,6 +5645,23 @@ const esphomeEntities = SettingDef<bool>(
   dependsOn: 'esphome.enabled',
 );
 
+/// Gated on real hardware, not just a preference: [LedManager] only lets
+/// this stay on where the panel's `/dev/ledjni` node is actually reachable
+/// (see LedBridge.kt's Mode). Where it isn't, the settings page shows a
+/// disabled switch naming the reason instead of this row (same convention
+/// as [locationEnabled]/[btproxyEnabled] on hardware this device lacks).
+const ledEnabled = SettingDef<bool>(
+  key: 'led.enabled',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Expose panel LED',
+  description:
+      'Serve the panel\'s RGB status LED to Home Assistant as a light '
+      'entity, if this panel has one the app can reach.',
+  category: 'ESPHome',
+  dependsOn: 'esphome.entities',
+);
+
 const esphomeExcludedEntities = SettingDef<String>(
   key: 'esphome.excluded_entities',
   type: SettingType.string,
@@ -6918,6 +6935,7 @@ const List<SettingDef<Object>> allSettings = [
   dlnaPort,
   esphomeEnabled,
   esphomeEntities,
+  ledEnabled,
   esphomeExcludedEntities,
   btproxyKey,
   btproxyPort,
