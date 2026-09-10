@@ -86,6 +86,11 @@ class _KioskScreenState extends State<KioskScreen>
     super.didChangeDependencies();
     final route = ModalRoute.of(context);
     if (route != null) kioskRouteObserver.subscribe(this, route);
+    // Not initState: _syncNavCapture reads ModalRoute.of(context), an
+    // inherited-widget lookup Flutter disallows before initState
+    // completes (debug-only assertion — invisible in a release build,
+    // which is why this shipped unnoticed).
+    _syncNavCapture();
   }
 
   /// A route was pushed over the kiosk (a dialog, the settings) or popped
@@ -602,7 +607,6 @@ class _KioskScreenState extends State<KioskScreen>
     // of the key pipeline; see _onKey for why it takes two.
     HardwareKeyboard.instance.addHandler(_onKey);
     FocusManager.instance.addEarlyKeyEventHandler(_onEarlyKey);
-    _syncNavCapture();
     // A service call, script, automation or event fired from a gesture
     // changes nothing on this screen, so the toast is the only sign the
     // gesture landed, or the only word on why it did not.
