@@ -155,16 +155,30 @@ class AppContainer {
   /// Built after [device.init] so it can carry the app version.
   late final JsApiManager jsApi;
 
-  List<Manager> get _ordered => [
+  /// Managers the dashboard's first paint actually depends on: which
+  /// origin the WebView loads (proxy), the WebView itself (browser), the
+  /// bridge its page calls into (jsApi), and the on-screen lock/immersive
+  /// behavior (kiosk). [init] awaits exactly these, in this order, so
+  /// `runApp` never waits on a manager the first frame does not need.
+  List<Manager> get _critical => [
     settings,
     device,
     screen,
-    service,
     proxy,
     browser,
-    camera,
     jsApi,
     kiosk,
+  ];
+
+  /// Everything else: voice, cameras, sensors, casting, plugins, the
+  /// remote admin server, fleet — real features, none of which gate the
+  /// dashboard appearing. [initDeferred] brings these up, in this same
+  /// relative order, after the UI is already on screen; the ordering
+  /// notes below (which all concern managers within this list, or this
+  /// list against [_critical]) still hold exactly as before the split.
+  List<Manager> get _deferred => [
+    service,
+    camera,
     // After kiosk: it listens for the AppLaunched its launchApp emits,
     // and its bringToFront/screenOn calls resolve at execute time.
     launcher,
@@ -180,10 +194,10 @@ class AppContainer {
     personSensor,
     homeAssistant,
     audio,
-    // After kiosk (it relays GestureDetected) and after audio: gestures may
-    // open the shared microphone for clap detection at init, and the capture
-    // selector and tuning must be seeded first. Commands resolve at execute
-    // time, so running late costs nothing.
+    // After audio: gestures may open the shared microphone for clap
+    // detection at init, and the capture selector and tuning must be
+    // seeded first. Commands resolve at execute time, so running late
+    // costs nothing.
     gestures,
     wakeWord,
     pipeline,
@@ -203,6 +217,13 @@ class AppContainer {
     fleetSync,
   ];
 
+  List<Manager> get _ordered => [..._critical, ..._deferred];
+
+  /// Brings up the managers the dashboard's first paint depends on. Returns
+  /// as soon as the WebView can safely be shown; the caller runs
+  /// [initDeferred] right after `runApp` to bring the rest of the app up
+  /// in the background, so a slow or idle feature never delays that first
+  /// frame.
   Future<void> init() async {
     await settings.init();
     // Apply any adb/MDM intent provisioning before other managers read
@@ -210,7 +231,18 @@ class AppContainer {
     await ProvisioningChannel(settings, log).init();
     await device.init();
     jsApi = JsApiManager(bus, commands, log, device.appVersion);
-    for (final manager in _ordered.skip(2)) {
+    for (final manager in _critical.skip(2)) {
+      await manager.init();
+    }
+    log.info('app', 'critical managers initialized');
+  }
+
+  /// Brings up every manager not on the dashboard's critical path. Not
+  /// part of [init]: call this after `runApp` so DLNA, Bluetooth proxy,
+  /// fleet discovery, the remote admin server, plugins, wake word and the
+  /// rest start in the background instead of gating the first frame.
+  Future<void> initDeferred() async {
+    for (final manager in _deferred) {
       await manager.init();
     }
     log.info('app', 'all managers initialized');

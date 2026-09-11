@@ -96,44 +96,11 @@ class RemoteManager extends Manager {
       ),
     );
 
-    // The admin SPA: index.html plus the ES modules and stylesheet under
-    // static/. Everything is loaded into memory up front (a few hundred KB)
-    // and the page's __KSV__ token is replaced with a content hash, so the
-    // static files can be cached forever while the page itself never is.
-    try {
-      var index = await rootBundle.loadString('assets/remote-ui/index.html');
-      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-      const prefix = 'assets/remote-ui/static/';
-      final names =
-          manifest.listAssets().where((k) => k.startsWith(prefix)).toList()
-            ..sort();
-      final hashed = BytesBuilder(copy: false)..add(utf8.encode(index));
-      for (final key in names) {
-        final bytes = (await rootBundle.load(key)).buffer.asUint8List();
-        _staticFiles[key.substring(prefix.length)] = bytes;
-        hashed.add(bytes);
-      }
-      final version = md5
-          .convert(hashed.takeBytes())
-          .toString()
-          .substring(0, 12);
-      // The page pins main.js by hash, but the imports inside the modules
-      // would fetch bare './x.js' URLs that the immutable cache header
-      // then keeps forever. Stamp the hash into every import specifier so
-      // one changed file re-fetches the whole graph.
-      final import$ = RegExp(r"(from\s+'\./[A-Za-z0-9._-]+\.js)(')");
-      for (final entry in _staticFiles.entries.toList()) {
-        if (!entry.key.endsWith('.js')) continue;
-        _staticFiles[entry.key] = utf8.encode(
-          utf8
-              .decode(entry.value)
-              .replaceAllMapped(import$, (m) => "${m[1]}?v=$version${m[2]}"),
-        );
-      }
-      _indexHtml = index.replaceAll('__KSV__', version);
-    } catch (e) {
-      log.warn(name, 'remote-ui asset missing: $e');
-    }
+    // The admin SPA (index.html, its ES modules and stylesheet) is NOT
+    // loaded here: decoding, regex-rewriting and MD5-hashing a few hundred
+    // KB on the main isolate is pure overhead on every single boot for a
+    // kiosk whose remote admin page is opened rarely, if ever. It is built
+    // lazily on the first request that needs it — see [_ensureAdminBundle].
 
     bus.on<PageChanged>().listen((e) => _currentUrl = e.url);
     bus.on<UrlChanged>().listen((e) => _currentUrl = e.url);
@@ -322,8 +289,12 @@ class RemoteManager extends Manager {
   Future<Response> _route(Request request) async {
     final path = request.url.path;
 
-    if (path.isEmpty || path == 'index.html') return _index();
+    if (path.isEmpty || path == 'index.html') {
+      await _ensureAdminBundle();
+      return _index();
+    }
     if (path.startsWith('static/')) {
+      await _ensureAdminBundle();
       return _staticFile(path.substring('static/'.length));
     }
     if (path == 'api/login') return _login(request);
@@ -920,6 +891,54 @@ class RemoteManager extends Manager {
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────
+
+  /// Builds [_indexHtml] and [_staticFiles] on first use and never again;
+  /// concurrent requests share the one in-flight load instead of each
+  /// redoing it. See the note in [init] for why this runs lazily.
+  Future<void>? _adminBundle;
+
+  Future<void> _ensureAdminBundle() => _adminBundle ??= _loadAdminBundle();
+
+  Future<void> _loadAdminBundle() async {
+    // The admin SPA: index.html plus the ES modules and stylesheet under
+    // static/. Everything is loaded into memory up front (a few hundred KB)
+    // and the page's __KSV__ token is replaced with a content hash, so the
+    // static files can be cached forever while the page itself never is.
+    try {
+      var index = await rootBundle.loadString('assets/remote-ui/index.html');
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      const prefix = 'assets/remote-ui/static/';
+      final names =
+          manifest.listAssets().where((k) => k.startsWith(prefix)).toList()
+            ..sort();
+      final hashed = BytesBuilder(copy: false)..add(utf8.encode(index));
+      for (final key in names) {
+        final bytes = (await rootBundle.load(key)).buffer.asUint8List();
+        _staticFiles[key.substring(prefix.length)] = bytes;
+        hashed.add(bytes);
+      }
+      final version = md5
+          .convert(hashed.takeBytes())
+          .toString()
+          .substring(0, 12);
+      // The page pins main.js by hash, but the imports inside the modules
+      // would fetch bare './x.js' URLs that the immutable cache header
+      // then keeps forever. Stamp the hash into every import specifier so
+      // one changed file re-fetches the whole graph.
+      final import$ = RegExp(r"(from\s+'\./[A-Za-z0-9._-]+\.js)(')");
+      for (final entry in _staticFiles.entries.toList()) {
+        if (!entry.key.endsWith('.js')) continue;
+        _staticFiles[entry.key] = utf8.encode(
+          utf8
+              .decode(entry.value)
+              .replaceAllMapped(import$, (m) => "${m[1]}?v=$version${m[2]}"),
+        );
+      }
+      _indexHtml = index.replaceAll('__KSV__', version);
+    } catch (e) {
+      log.warn(name, 'remote-ui asset missing: $e');
+    }
+  }
 
   Response _index() => Response.ok(
     _indexHtml ?? _placeholderHtml,

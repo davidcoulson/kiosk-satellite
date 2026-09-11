@@ -63,6 +63,12 @@ android {
         }
     }
 
+    // Per-ABI native libraries (onnxruntime, MediaPipe, tflite, mobile_scanner's
+    // ML Kit, SendSpin's own CMake lib — none of them Flutter's) are split by
+    // `flutter build apk --split-per-abi` instead of a `splits { abi {} }`
+    // block here: the Flutter Gradle plugin sets its own `ndk.abiFilters`
+    // from that flag, and AGP rejects a build-time `splits.abi` alongside it.
+
     signingConfigs {
         create("release") {
             val storeFilePath = signing("storeFile")
@@ -82,9 +88,20 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
-            // Only ADDS the JNI keep rules; the R8 baseline the Flutter
-            // plugin configures stays as it was.
-            proguardFiles("proguard-rules.pro")
+            // Off until now, so every release APK shipped unshrunk dex and
+            // unstripped resources on top of onnxruntime, tflite, MediaPipe,
+            // ML Kit (mobile_scanner) and flutter_inappwebview — the app
+            // measured 130MB+ on a single ABI, more than some kiosk tablets'
+            // entire free storage. proguard-rules.pro already carries the
+            // JNI/reflection keep rules this needed (SendSpin's native
+            // bridge, MediaPipe's proto/flogger reflection); the R8 baseline
+            // the Flutter plugin configures stays as it was.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
         // Same signing as release so a profile build installs OVER the
         // release app (keeping its data) when profiling on a test device.

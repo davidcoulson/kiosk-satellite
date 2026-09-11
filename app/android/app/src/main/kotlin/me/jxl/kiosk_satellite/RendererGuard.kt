@@ -1,6 +1,7 @@
 package me.jxl.kiosk_satellite
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 
 /**
@@ -53,10 +54,30 @@ object RendererGuard {
     private const val PORTAL_RULE_REVERTED = "flutter.ks.render.portal_rule_reverted"
 
     /** The engine's shell arguments, or null for the defaults. Also runs
-     *  the crash accounting, so call it exactly once per process. */
+     *  the crash accounting, so call it exactly once per process.
+     *
+     *  The decision itself only ever reads [prefs] (backed by an in-memory
+     *  cache after the first access this process, so no disk I/O on the
+     *  calling thread), so it returns immediately. Persisting the updated
+     *  bookkeeping — which matters only to the *next* boot, never this
+     *  one's — used to run as up to three separate synchronous commit()s
+     *  right here in Application.onCreate, ahead of FlutterEngine(...): a
+     *  guaranteed main-thread disk write, on every single launch, on
+     *  whatever storage the device has. It is now one edit, committed on
+     *  its own thread instead. commit() still runs (not apply()): if the
+     *  renderer takes the process down, [PENDING_SINCE] is the only
+     *  witness the next boot has, and only commit() guarantees the write
+     *  has actually landed before that can happen — apply()'s write is
+     *  best-effort background work with no such guarantee. Moving which
+     *  thread calls it costs nothing here: the crash this net exists to
+     *  catch happens well after onCreate returns, when Impeller draws its
+     *  first frame, which is easily long enough for a spawned thread to
+     *  finish a small XML write.
+     */
     fun engineArgs(context: Context): Array<String>? {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         var disabled = prefs.getBoolean(DISABLED, false)
+        val edit = prefs.edit()
         // A Portal the old rule put on Skia goes back to Impeller exactly
         // once. After that the setting is a person's, whichever way it
         // points, and the crash net below still stands behind Impeller.
@@ -64,16 +85,16 @@ object RendererGuard {
             !prefs.getBoolean(PORTAL_RULE_REVERTED, false)
         ) {
             disabled = false
-            prefs.edit().putBoolean(DISABLED, false)
+            edit.putBoolean(DISABLED, false)
                 .putBoolean(PORTAL_RULE_REVERTED, true)
-                .remove(DISABLED_BY).commit()
+                .remove(DISABLED_BY)
             Log.i(TAG, "Meta Portal: the re-creation wedge that put this " +
                 "device on Skia is fixed; Impeller is back on")
         }
         // Off means whoever put it on has been overruled since; a stale
         // provenance would misfile the next deliberate flip as the app's.
         if (!disabled && prefs.contains(DISABLED_BY)) {
-            prefs.edit().remove(DISABLED_BY).commit()
+            edit.remove(DISABLED_BY)
         }
         val pendingSince = prefs.getLong(PENDING_SINCE, 0L)
         if (!disabled && pendingSince > 0L &&
@@ -85,14 +106,11 @@ object RendererGuard {
                 Log.w(TAG, "$crashes boots died before the first frame; " +
                     "disabling Impeller for this device")
             }
-            val edit = prefs.edit().putLong(EARLY_CRASHES, crashes)
-                .putBoolean(DISABLED, disabled)
+            edit.putLong(EARLY_CRASHES, crashes).putBoolean(DISABLED, disabled)
             if (disabled) edit.putString(DISABLED_BY, "crashes")
-            edit.commit()
         }
-        // commit(), not apply(): if the renderer takes the process down,
-        // this marker is the only witness the next boot has.
-        prefs.edit().putLong(PENDING_SINCE, System.currentTimeMillis()).commit()
+        edit.putLong(PENDING_SINCE, System.currentTimeMillis())
+        commitOffMainThread(edit)
         if (disabled) Log.i(TAG, "Impeller disabled; rendering with Skia")
         return if (disabled) arrayOf("--enable-impeller=false") else null
     }
@@ -103,5 +121,12 @@ object RendererGuard {
             .remove(PENDING_SINCE)
             .remove(EARLY_CRASHES)
             .apply()
+    }
+
+    /** Blocks until the write is flushed, same as calling commit() directly
+     *  — just from a thread nobody is waiting on, instead of the one
+     *  running Application.onCreate. */
+    private fun commitOffMainThread(edit: SharedPreferences.Editor) {
+        Thread({ edit.commit() }, "RendererGuard-commit").start()
     }
 }

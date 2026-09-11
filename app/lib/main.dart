@@ -92,6 +92,15 @@ Future<void> main() async {
   // came up", so it must not depend on the UI coming up.
   FrameWatchdog(container).start();
   runApp(KioskSatelliteApp(container: container));
+
+  // Everything not on the dashboard's critical path — voice, sensors,
+  // casting, plugins, the remote admin server, fleet... — starts only now,
+  // after the first frame is already scheduled, so none of it can delay
+  // reaching runApp() above. Not awaited: main() has nothing left to
+  // sequence behind it, and each deferred manager resolves its own
+  // dependants (commands, bus listeners) whenever its own init() gets to
+  // them.
+  unawaited(container.initDeferred());
 }
 
 class KioskSatelliteApp extends StatefulWidget {
