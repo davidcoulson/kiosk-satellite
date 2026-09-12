@@ -360,20 +360,6 @@ class MotionManager extends Manager {
 
   @override
   Future<void> init() async {
-    await _diagnostics.start();
-    NativeRtsp.onDemand(
-      (wanted) {
-        if (_disposed) return;
-        _rtspDemand = wanted && _rtspEnabled;
-        _sync();
-      },
-      onAudioDemand: (wanted) => _rtspAudio.demand(
-        wanted &&
-            !_disposed &&
-            _rtspEnabled &&
-            _settings.get(defs.cameraRtspAudio),
-      ),
-    );
     commands.register(
       Command(
         name: 'getRtspStatus',
@@ -393,19 +379,6 @@ class MotionManager extends Manager {
           }
         },
       ),
-    );
-    // Asked once, at init: the bridge answers within the same tick, long
-    // before the first bind. A bind that raced it restarts with fresh
-    // flags below; the native detectors survive the runtime failing to
-    // load in that window (FaceDetector.kt), so the race is a log line,
-    // not a crash.
-    unawaited(
-      VisionSupport.probe().then((v) {
-        final changed = v.faces != _vision.faces || v.hands != _vision.hands;
-        _vision = v;
-        _warnUnsupported();
-        if (changed) _sync();
-      }),
     );
     // Every branch below is the app relighting the room with its own
     // display: the change the camera is about to see is self-inflicted
@@ -473,6 +446,10 @@ class MotionManager extends Manager {
     // turning the feature on prompts for the camera up front so the first dim
     // can start it without a pause.
     bus.on<SettingChanged>().listen((e) {
+      if (e.key == defs.cameraEnabled.key) {
+        // Turning the camera on is what pays for the setup init skipped.
+        unawaited(_ensureCameraSetup());
+      }
       if (e.key.startsWith('camera.rtsp.') || e.key == defs.cameraEnabled.key) {
         _configureRtsp();
       }
@@ -548,6 +525,54 @@ class MotionManager extends Manager {
       unawaited(_ensurePermission());
     }
 
+    await _ensureCameraSetup();
+    _sync();
+  }
+
+  /// Whether [_ensureCameraSetup] has already run.
+  bool _cameraSetupDone = false;
+
+  /// The parts of startup that only matter once the camera is switched on:
+  /// the diagnostics sink, the RTSP demand bridge, the vision-support probe,
+  /// the screen-state seed and the RTSP configuration. Every one is a
+  /// platform round trip, and on low-end hardware they dominate this
+  /// manager's init — which every kiosk paid at boot even with the camera
+  /// off, because `defs.cameraEnabled` gates what the camera DOES but not
+  /// what init sets up.
+  ///
+  /// Idempotent, and re-invoked by the settings listener when the camera is
+  /// enabled at runtime, so turning it on still brings everything up. The
+  /// commands and bus subscriptions stay in [init] unconditionally: they
+  /// must answer whether or not the feature is on.
+  Future<void> _ensureCameraSetup() async {
+    if (_cameraSetupDone || !_settings.get(defs.cameraEnabled)) return;
+    _cameraSetupDone = true;
+    await _diagnostics.start();
+    NativeRtsp.onDemand(
+      (wanted) {
+        if (_disposed) return;
+        _rtspDemand = wanted && _rtspEnabled;
+        _sync();
+      },
+      onAudioDemand: (wanted) => _rtspAudio.demand(
+        wanted &&
+            !_disposed &&
+            _rtspEnabled &&
+            _settings.get(defs.cameraRtspAudio),
+      ),
+    );
+    // The bridge answers within the same tick, long before the first bind.
+    // A bind that raced it restarts with fresh flags; the native detectors
+    // survive the runtime failing to load in that window (FaceDetector.kt),
+    // so the race is a log line, not a crash.
+    unawaited(
+      VisionSupport.probe().then((v) {
+        final changed = v.faces != _vision.faces || v.hands != _vision.hands;
+        _vision = v;
+        _warnUnsupported();
+        if (changed) _sync();
+      }),
+    );
     // Seed the panel state from reality (a device that boots with its
     // screen already off must not bind the camera) and let the postpone
     // leg start if it is due. Best-effort: a failure leaves the default

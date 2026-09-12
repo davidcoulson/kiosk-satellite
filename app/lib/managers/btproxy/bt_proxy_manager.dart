@@ -102,7 +102,13 @@ class BtProxyManager extends Manager {
   // The OUI vendor cache: prefix "AA:BB:CC" to vendor name, '' for a
   // registry miss. Persisted so each prefix is looked up once per install,
   // ever; a home's radio horizon holds a few dozen prefixes at most.
-  Map<String, String> _ouiCache = {};
+  Map<String, String>? _ouiCacheOrNull;
+
+  /// Vendor lookups for nearby-device enrichment. Read from settings on
+  /// first use rather than at init: the nearby-device commands work whether
+  /// or not the proxy is running, so this cannot simply be skipped when the
+  /// feature is off — but nothing needs it until one of them is called.
+  Map<String, String> get _ouiCache => _ouiCacheOrNull ??= _loadOuiCache();
   final List<String> _ouiQueue = [];
   Timer? _ouiTimer;
 
@@ -309,12 +315,6 @@ class BtProxyManager extends Manager {
         handler: (_) async => CommandResult.ok((await bleSupport()).toJson()),
       ),
     );
-    // Before the first start, so a build that cannot scan tells Home
-    // Assistant of no proxy from the first connection on.
-    await _guardBleSupport();
-    _ouiCache = _loadOuiCache();
-    final version = await commands.execute('getDeviceInfo', const {});
-    _appVersion = ((version.data as Map?)?['appVersion'] as String?) ?? '0';
     if (_settings.get(defs.esphomeEnabled)) {
       _transition = _transition.then((_) => _start());
     }
@@ -487,7 +487,22 @@ class BtProxyManager extends Manager {
     return _settings.get(defs.remotePort).toInt();
   }
 
+  /// Prerequisites for running the proxy, acquired on first start rather
+  /// than at init. The BLE support probe and `getDeviceInfo` are both
+  /// platform round trips, and on low-end hardware they cost more than
+  /// everything else this manager does at startup — for a feature that may
+  /// well be switched off. Idempotent; [_start] is the only caller, so the
+  /// support probe still runs before the first start exactly as before.
+  Future<void> _ensureStartPrereqs() async {
+    await _guardBleSupport();
+    if (_appVersion == '0') {
+      final version = await commands.execute('getDeviceInfo', const {});
+      _appVersion = ((version.data as Map?)?['appVersion'] as String?) ?? '0';
+    }
+  }
+
   Future<void> _start() async {
+    await _ensureStartPrereqs();
     var key = _settings.get(defs.btproxyKey).trim();
     // Read before the key is generated below: an empty key is what says
     // this install has never announced itself, which is what decides
