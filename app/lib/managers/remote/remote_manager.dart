@@ -737,10 +737,18 @@ class RemoteManager extends Manager {
   /// external monitoring to poll, instead of the three command calls the
   /// admin UI assembles the same rows from.
   Future<Response> _health() async {
-    final device = await commands.execute('getDeviceInfo', const {});
-    final details = await commands.execute('getDeviceDetails', const {});
-    final screenOn = await commands.execute('isScreenOn', const {});
-    final brightness = await commands.execute('getBrightness', const {});
+    // Independent reads, run together: this endpoint exists for external
+    // monitoring to poll, so its latency is paid over and over.
+    final results = await Future.wait([
+      commands.execute('getDeviceInfo', const {}),
+      commands.execute('getDeviceDetails', const {}),
+      commands.execute('isScreenOn', const {}),
+      commands.execute('getBrightness', const {}),
+    ]);
+    final device = results[0];
+    final details = results[1];
+    final screenOn = results[2];
+    final brightness = results[3];
     final info = (device.data as Map?)?.cast<String, Object?>() ?? const {};
     final det = (details.data as Map?)?.cast<String, Object?>() ?? const {};
     return _json(200, {
@@ -781,12 +789,22 @@ class RemoteManager extends Manager {
   /// changes reach the client through the event feed (screenon/screenoff,
   /// screensaverstart/screensaverstop, cameraview); this is the snapshot
   /// they diff against.
+  /// The five reads are independent, so they run together rather than one
+  /// after another: awaited in sequence this cost the sum of five platform
+  /// round trips on every `/api/info`, and Remote Admin's boot waits on it.
   Future<Map<String, Object?>> _deviceState() async {
-    final device = await commands.execute('getDeviceInfo', const {});
-    final brightness = await commands.execute('getBrightness', const {});
-    final screenOn = await commands.execute('isScreenOn', const {});
-    final screensaver = await commands.execute('isScreensaverActive', const {});
-    final cameraView = await commands.execute('getCameraViewState', const {});
+    final results = await Future.wait([
+      commands.execute('getDeviceInfo', const {}),
+      commands.execute('getBrightness', const {}),
+      commands.execute('isScreenOn', const {}),
+      commands.execute('isScreensaverActive', const {}),
+      commands.execute('getCameraViewState', const {}),
+    ]);
+    final device = results[0];
+    final brightness = results[1];
+    final screenOn = results[2];
+    final screensaver = results[3];
+    final cameraView = results[4];
     return {
       ...?(device.data as Map<String, Object?>?),
       'brightness': (brightness.data as num?)?.toDouble(),
