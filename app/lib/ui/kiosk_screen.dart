@@ -13,6 +13,7 @@ import '../app_container.dart';
 import 'screensaver_view.dart';
 import '../core/events.dart';
 import '../managers/browser/carousel_script.dart';
+import '../managers/browser/preload_views_script.dart';
 import '../managers/browser/disable_suspend_script.dart';
 import '../managers/browser/dashboard_camera_script.dart';
 import '../managers/browser/ha_session_script.dart';
@@ -909,6 +910,18 @@ class _KioskScreenState extends State<KioskScreen>
     ),
     UserScript(
       source: dashboardCarouselScript,
+      injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+    ),
+    // View preloading: same contract again. The flag is read once per
+    // load rather than per navigation, since the walk only ever runs once.
+    UserScript(
+      source:
+          'window.__ksPreloadViews = '
+          '${c.settings.get(defs.haPreloadViews)};',
+      injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+    ),
+    UserScript(
+      source: preloadViewsScript,
       injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
     ),
     // Haptics and the tap sound: same always-injected, flag-gated contract.
