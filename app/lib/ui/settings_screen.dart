@@ -462,6 +462,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _cachedSearchIndex!;
   }
 
+  /// Search offers only what the list offers: a result that opens a page
+  /// the owner removed would make the hiding look broken rather than
+  /// deliberate.
+  List<SettingsSearchEntry> _visible(List<SettingsSearchEntry> entries) =>
+      [for (final e in entries) if (!_isHidden(e.category)) e];
+
+  /// Categories the owner has hidden. Indices into [_categories] stay
+  /// stable -- selection and the icon palette are positional -- so hiding
+  /// happens at render, never by filtering the table itself.
+  Set<String> get _hidden =>
+      decodeHiddenPages(widget.container.settings.get(uiHiddenPages));
+
+  bool _isHidden(String category) => _hidden.contains(category);
+
+  /// The group heading this category should draw, if any.
+  ///
+  /// [_railGroups] marks the first category of each group, so hiding that
+  /// one would take its group's heading with it and leave the rest of the
+  /// group sitting under the previous heading. The heading moves to the
+  /// first category still shown in its run instead.
+  String? _headingFor(String category) {
+    String? pending;
+    for (final (candidate, _, _, _) in _categories) {
+      final heading = _railGroups[candidate];
+      if (heading != null) pending = heading;
+      if (_isHidden(candidate)) continue;
+      if (pending != null) {
+        if (candidate == category) return pending;
+        pending = null;
+      }
+      if (candidate == category) return null;
+    }
+    return null;
+  }
+
+  /// The first group with anything left to show: its heading wants the
+  /// tighter top margin, and that is no longer group 0 once the pages
+  /// above it are hidden.
+  int get _firstVisibleHubGroup {
+    for (final (index, (_, entries)) in _hubGroups.indexed) {
+      if (entries.any((e) => !_isHidden(e.$2.$1))) return index;
+    }
+    return 0;
+  }
+
+  /// Index of the first category still shown: the heading above it wants
+  /// the tighter top margin, and that is no longer index 0 once the pages
+  /// before it are hidden.
+  int get _firstVisibleIndex {
+    for (final (index, (category, _, _, _)) in _categories.indexed) {
+      if (!_isHidden(category)) return index;
+    }
+    return 0;
+  }
+
   List<SettingsSearchEntry> get _searchIndex => [
     ..._staticSearchIndex,
     ...pluginSettingsSearchEntries(
@@ -643,9 +698,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// narrow screens list it directly under the field.
   Widget _resultsPane(BuildContext context, {required bool wide}) {
     final theme = Theme.of(context);
-    final results = searchSettings(_query, _searchIndex, [
-      for (final c in _categories) c.$1,
-    ]);
+    final results = _visible(searchSettings(_query, _searchIndex, [
+      for (final c in _categories)
+        if (!_isHidden(c.$1)) c.$1,
+    ]));
     final children = <Widget>[];
     if (wide) {
       children.add(
@@ -816,9 +872,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   (category, title, icon, subtitle),
                                 )
                                 in _categories.indexed) ...[
-                              if (_railGroups[category] case final heading?)
-                                _RailHeading(heading, first: index == 0),
-                              _railTile(context, index, title, icon, subtitle),
+                              if (!_isHidden(category)) ...[
+                                if (_headingFor(category) case final heading?)
+                                  _RailHeading(
+                                    heading,
+                                    first: index == _firstVisibleIndex,
+                                  ),
+                                _railTile(
+                                  context,
+                                  index,
+                                  title,
+                                  icon,
+                                  subtitle,
+                                ),
+                              ],
                             ],
                           ],
                         ),
@@ -1079,8 +1146,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         padding: Ks.pagePadding,
                         children: [
                           for (final (index, (heading, entries))
-                              in _hubGroups.indexed) ...[
-                            _RailHeading(heading, first: index == 0),
+                              in _hubGroups.indexed)
+                            if (entries.any((e) => !_isHidden(e.$2.$1))) ...[
+                            _RailHeading(
+                              heading,
+                              first: index == _firstVisibleHubGroup,
+                            ),
                             SettingsCard(
                               children: [
                                 for (final (
@@ -1088,6 +1159,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       (category, title, icon, subtitle),
                                     )
                                     in entries)
+                                  if (!_isHidden(category))
                                   ListTile(
                                     leading: _CategoryIcon(
                                       index: index,
