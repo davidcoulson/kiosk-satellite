@@ -23,9 +23,20 @@ import 'theme.dart';
 /// panel should not advertise its internals to whoever walks past, and the
 /// version notice above it already draws that line.
 class KioskStatusTiles extends StatefulWidget {
-  const KioskStatusTiles({super.key, required this.container});
+  const KioskStatusTiles({
+    super.key,
+    required this.container,
+    required this.visible,
+  });
 
   final AppContainer container;
+
+  /// Whether the drawer is actually on screen. The drawer pane stays built
+  /// while closed -- "its entries sit just offscreen, still built", so a
+  /// focus search cannot land on them -- so without this the tiles would
+  /// poll six commands every five seconds for the life of the app, which
+  /// is load a kiosk should never spend on a menu nobody opened.
+  final bool visible;
 
   @override
   State<KioskStatusTiles> createState() => _KioskStatusTilesState();
@@ -161,10 +172,29 @@ class _KioskStatusTilesState extends State<KioskStatusTiles> {
   @override
   void initState() {
     super.initState();
+    if (widget.visible) _start();
+  }
+
+  @override
+  void didUpdateWidget(KioskStatusTiles old) {
+    super.didUpdateWidget(old);
+    if (widget.visible == old.visible) return;
+    if (widget.visible) {
+      _start();
+    } else {
+      _poll?.cancel();
+      _poll = null;
+    }
+  }
+
+  /// Reads now and keeps reading while the drawer is up: a tile that went
+  /// stale while someone looked at it would undercut the point of showing
+  /// it. Nothing polls while the drawer is closed.
+  void _start() {
     unawaited(_read());
-    // The drawer is transient, so this only runs while it is open; a
-    // stale-by-seconds tile would undercut the point of showing it at all.
-    _poll = Timer.periodic(const Duration(seconds: 5), (_) => unawaited(_read()));
+    _poll?.cancel();
+    _poll =
+        Timer.periodic(const Duration(seconds: 5), (_) => unawaited(_read()));
   }
 
   @override

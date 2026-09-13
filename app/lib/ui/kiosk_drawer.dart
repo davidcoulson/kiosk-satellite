@@ -27,6 +27,7 @@ class KioskDrawer extends StatelessWidget {
     required this.onClose,
     required this.onSettings,
     this.restricted = false,
+    this.visible = true,
   });
 
   final AppContainer container;
@@ -36,6 +37,11 @@ class KioskDrawer extends StatelessWidget {
   /// owner allowed are shown; everything that changes state or escapes the
   /// kiosk stays behind the exit gesture and PIN.
   final bool restricted;
+
+  /// Whether the drawer is on screen. The pane stays built while closed, so
+  /// anything in here that costs something while nobody is looking takes
+  /// this instead of assuming it only exists when open.
+  final bool visible;
 
   /// Slides the drawer (and the kiosk) back. Every action starts with this,
   /// mirroring how the old overlay drawer popped itself before acting.
@@ -556,7 +562,7 @@ class KioskDrawer extends StatelessWidget {
               // commands Remote Admin reads, so the two cannot disagree.
               // Restricted menu leaves them out for the same reason it
               // leaves out the update notice.
-              if (!restricted) KioskStatusTiles(container: c),
+              if (!restricted) KioskStatusTiles(container: c, visible: visible),
               // Above the theme switcher: the update notice when GitHub has
               // a newer release, the running version otherwise — the wall is
               // where an update is noticed, not the repo page. Not in the
