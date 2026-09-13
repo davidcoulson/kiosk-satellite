@@ -751,17 +751,35 @@ class DeviceManager extends Manager {
     await _mixSub?.cancel();
   }
 
+  /// Seven independent reads -- two of them full network-interface
+  /// enumerations -- so they run together rather than in sequence. This is
+  /// what `/api/info`, `/api/health` and the plugin `getDeviceInfo`
+  /// snapshot all wait on, and awaiting one at a time made it the sum of
+  /// every platform round trip rather than the slowest one.
   Future<Map<String, Object?>> info() async {
-    final details = await DeviceDetails.read();
-    final brightness = await commands.execute('getBrightness', {'panel': true});
-    final screenOn = await commands.execute('isScreenOn', const {});
+    final reads = await Future.wait([
+      DeviceDetails.read(),
+      commands.execute('getBrightness', {'panel': true}),
+      commands.execute('isScreenOn', const {}),
+      stats(),
+      DeviceDetails.uptime(),
+      ipAddress(),
+      ipv6Addresses(),
+    ]);
+    final details = reads[0] as DeviceDetails;
+    final brightness = reads[1] as CommandResult;
+    final screenOn = reads[2] as CommandResult;
+    final deviceStats = reads[3] as Map<String, Object?>;
+    final uptime = reads[4];
+    final ipv4 = reads[5] as String?;
+    final ipv6 = reads[6] as List<String>;
     final panelLevel = brightness.data;
     return {
-      ...await stats(),
-      'uptime': await DeviceDetails.uptime(),
+      ...deviceStats,
+      'uptime': uptime,
       'name': deviceName,
-      'ip': await ipAddress(),
-      'ipv6': await ipv6Addresses(),
+      'ip': ipv4,
+      'ipv6': ipv6,
       'model': model,
       'device': device,
       'board': board,
