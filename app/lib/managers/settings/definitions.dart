@@ -4787,6 +4787,44 @@ const haPreloadViews = SettingDef<bool>(
   subpage: 'User Interface',
 );
 
+/// Categories to leave out of the on-device settings list, as a JSON array
+/// of category names ("Screensaver", "DLNA", ...). The pages still exist --
+/// this hides entry points, it does not disable features -- and Remote
+/// Admin is untouched, since the reason to hide a page is that a wall panel
+/// is not where you configure it.
+///
+/// A panel using none of the screensaver, DLNA and camera features carries
+/// three pages it will never open, in a list someone scrolls while standing
+/// at a wall.
+const uiHiddenPages = SettingDef<String>(
+  key: 'ui.hidden_pages',
+  type: SettingType.string,
+  defaultValue: '[]',
+  title: 'Hidden settings pages',
+  description:
+      'Settings pages to leave out of the on-device list, as a JSON array of '
+      'category names. The features keep working and Remote Admin still '
+      'shows them.',
+  category: 'Device',
+  validator: _validateHiddenPages,
+);
+
+String? _validateHiddenPages(Object? value) {
+  try {
+    final decoded = json.decode(value as String);
+    if (decoded is List && decoded.every((e) => e is String)) return null;
+  } catch (_) {}
+  return 'Expected a JSON array of category names.';
+}
+
+Set<String> decodeHiddenPages(String value) {
+  try {
+    final decoded = json.decode(value);
+    if (decoded is List) return decoded.whereType<String>().toSet();
+  } catch (_) {}
+  return {};
+}
+
 const haDashboardCarousel = SettingDef<bool>(
   key: 'ha.dashboard_carousel',
   type: SettingType.boolean,
@@ -7922,6 +7960,7 @@ const List<SettingDef<Object>> allSettings = [
   haKioskHideSidebar,
   haKioskMenu,
   haDashboardCarousel,
+  uiHiddenPages,
   haPreloadViews,
   haCarouselOverCards,
   haHaptics,
