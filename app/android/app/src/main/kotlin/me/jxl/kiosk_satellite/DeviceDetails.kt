@@ -701,27 +701,72 @@ class DeviceDetails(
      * residency is what the silicon actually did, whatever the clocks claim.
      *
      * The window covers awake time since the previous call (the admin polls
-     * every few seconds, ESPHome once a minute). A first call, a window with
-     * less than half a second awake or a sample older than five minutes
-     * takes a short paired sample instead. Short suspends between regular
-     * polls are excluded from the calculation too.
+     * every few seconds, ESPHome once a minute). Short suspends between
+     * regular polls are excluded from the calculation too.
+     *
+     * Never blocks. This used to take a paired sample -- snapshot,
+     * `Thread.sleep(500)`, snapshot -- whenever the previous one was less
+     * than half a second of awake time old or older than five minutes,
+     * which made the *frequent* caller pay: two calls in quick succession
+     * guaranteed the sleep, and `@Synchronized` made a second caller wait
+     * out the first one's before taking its own. Remote Admin's boot does
+     * exactly that, so `/api/info` took ~1s and `/api/health` -- the
+     * endpoint documented for monitoring to poll -- paid it on nearly
+     * every poll.
+     *
+     * Now a call that cannot form a usable window serves the last computed
+     * value instead of manufacturing a window to measure. The baseline is
+     * kept rather than replaced in that case, so a burst of calls widens
+     * the window toward usability instead of resetting it, and the next
+     * caller past half a second gets a real measurement. Callers that poll
+     * on any cadence slower than that -- all of the real ones -- are
+     * unaffected and still measure the window since their own last call.
      */
     @Synchronized
     private fun cpuUsage(): Double? {
-        var first = lastIdle ?: idleSnapshot() ?: return frequencyLoad()
-        val age = SystemClock.elapsedRealtimeNanos() - first.elapsedNanos
-        val awakeAge = System.nanoTime() - first.awakeNanos
-        if (awakeAge < 500_000_000L || age > 300_000_000_000L) {
-            first = idleSnapshot() ?: return frequencyLoad()
-            try {
-                Thread.sleep(500)
-            } catch (_: InterruptedException) {
-                return frequencyLoad()
-            }
-        }
         val now = idleSnapshot() ?: return frequencyLoad()
+        val first = lastIdle
+        if (first == null) {
+            // Nothing to diff against yet: start the window, answer with
+            // the fallback rather than holding the caller for one.
+            lastIdle = now
+            return lastCpuUsage() ?: frequencyLoad()
+        }
+        val age = now.elapsedNanos - first.elapsedNanos
+        if (age > STALE_SAMPLE_NANOS) {
+            // Baseline too old to describe the present: restart from here.
+            lastIdle = now
+            return lastCpuUsage() ?: frequencyLoad()
+        }
+        if (now.awakeNanos - first.awakeNanos < MIN_WINDOW_NANOS) {
+            // Too close to the baseline for a meaningful delta. Keep the
+            // baseline, so the window keeps widening for the next caller.
+            return lastCpuUsage() ?: frequencyLoad()
+        }
+        val usage = now.usageSince(first) ?: return frequencyLoad()
         lastIdle = now
-        return now.usageSince(first) ?: frequencyLoad()
+        lastUsage = usage
+        lastUsageAt = now.elapsedNanos
+        return usage
+    }
+
+    /** The shortest awake window that yields a meaningful idle delta. */
+    private val MIN_WINDOW_NANOS = 500_000_000L
+
+    /** Past this, a baseline or a remembered value describes the past
+     *  rather than the present, and the fallback is the honest answer. */
+    private val STALE_SAMPLE_NANOS = 300_000_000_000L
+
+    /** The last real measurement, and when it was taken. */
+    private var lastUsage: Double? = null
+    private var lastUsageAt: Long = 0L
+
+    /** The remembered value while it is still recent enough to mean
+     *  anything, else null so the caller falls back. */
+    private fun lastCpuUsage(): Double? {
+        val value = lastUsage ?: return null
+        val age = SystemClock.elapsedRealtimeNanos() - lastUsageAt
+        return if (age > STALE_SAMPLE_NANOS) null else value
     }
 
     /**
