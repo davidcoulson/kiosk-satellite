@@ -5,6 +5,7 @@ import '../../core/command_registry.dart';
 import '../../core/events.dart';
 import '../../core/manager.dart';
 import '../wake_word/permission_descriptions.dart';
+import '../wake_word/system_permissions.dart';
 
 class ShizukuManager extends Manager {
   ShizukuManager(super.bus, super.commands, super.log);
@@ -136,6 +137,10 @@ class ShizukuManager extends Manager {
           if (action == 'grantAll') 'permissions': permissions,
         })
         .timeout(const Duration(seconds: 180));
+    // A Shizuku action changes grants with no dialog in the way, so the
+    // verification read below must not be answered from the cache filled
+    // moments ago, before the action ran.
+    SystemPermissions.invalidate();
     final checked = await readPermissions();
     return {
       ...?result,

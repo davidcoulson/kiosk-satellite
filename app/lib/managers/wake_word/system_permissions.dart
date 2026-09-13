@@ -193,7 +193,49 @@ class SystemPermissions {
     }
   }
 
-  static Future<SystemPermissions> read() async => SystemPermissions(
+  /// The last read, and when it landed. Eighteen platform round trips is
+  /// ~0.9s on a low-end panel, and Remote Admin's boot asks ten times: the
+  /// answer cannot change between those calls, so it is read once.
+  static SystemPermissions? _cached;
+  static DateTime? _cachedAt;
+  static Future<SystemPermissions>? _inFlight;
+
+  /// Short enough that a person cannot grant something and read a stale
+  /// answer -- an Android permission dialog takes seconds to tap through --
+  /// and long enough to collapse a burst of callers into one read.
+  static const _freshFor = Duration(milliseconds: 750);
+
+  /// Forget the cached answer. For callers that just changed a grant
+  /// without a dialog in the way (the Shizuku actions), where the next read
+  /// must see the new state however fast it follows.
+  static void invalidate() {
+    _cached = null;
+    _cachedAt = null;
+  }
+
+  /// A recent read, a read already running, or a fresh one -- in that order.
+  /// Concurrent callers share one pass over the platform channels rather
+  /// than queueing eighteen round trips each behind each other.
+  static Future<SystemPermissions> read() {
+    final cached = _cached;
+    final at = _cachedAt;
+    if (cached != null &&
+        at != null &&
+        DateTime.now().difference(at) < _freshFor) {
+      return Future.value(cached);
+    }
+    final running = _inFlight;
+    if (running != null) return running;
+    final pass = _read().then((permissions) {
+      _cached = permissions;
+      _cachedAt = DateTime.now();
+      return permissions;
+    }).whenComplete(() => _inFlight = null);
+    _inFlight = pass;
+    return pass;
+  }
+
+  static Future<SystemPermissions> _read() async => SystemPermissions(
     microphone: await Permission.microphone.isGranted,
     microphoneBlocked: await Permission.microphone.isPermanentlyDenied,
     displayOverOtherApps: await BackgroundListening.canBringToFront(),

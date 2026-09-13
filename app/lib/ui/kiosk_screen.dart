@@ -1428,6 +1428,7 @@ class _KioskScreenState extends State<KioskScreen>
           onClose: _closeDrawer,
           onSettings: _openSettings,
           restricted: _drawerRestricted,
+          visible: _drawer.status != AnimationStatus.dismissed,
         ),
       ),
     );
