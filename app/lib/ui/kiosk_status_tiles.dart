@@ -184,13 +184,22 @@ class _KioskStatusTilesState extends State<KioskStatusTiles> {
     } else {
       _poll?.cancel();
       _poll = null;
+      c.plugins.statusTiles.removeListener(_onPluginTiles);
     }
+  }
+
+  /// A plugin publishing or withdrawing a tile repaints immediately rather
+  /// than waiting out the poll: a tile that appears five seconds after the
+  /// plugin says so reads as the menu being broken.
+  void _onPluginTiles() {
+    if (mounted) setState(() {});
   }
 
   /// Reads now and keeps reading while the drawer is up: a tile that went
   /// stale while someone looked at it would undercut the point of showing
   /// it. Nothing polls while the drawer is closed.
   void _start() {
+    c.plugins.statusTiles.addListener(_onPluginTiles);
     unawaited(_read());
     _poll?.cancel();
     _poll =
@@ -200,6 +209,7 @@ class _KioskStatusTilesState extends State<KioskStatusTiles> {
   @override
   void dispose() {
     _poll?.cancel();
+    c.plugins.statusTiles.removeListener(_onPluginTiles);
     super.dispose();
   }
 
@@ -214,6 +224,21 @@ class _KioskStatusTilesState extends State<KioskStatusTiles> {
       return null;
     }
   }
+
+  /// Plugin tiles come from the running plugins rather than a command
+  /// round trip -- the manager already holds them, published as they
+  /// change -- so they cost nothing to include and cannot lag the
+  /// Overview's copy.
+  List<StatusTile> get _pluginTiles => [
+    for (final tile in c.plugins.statusTileList)
+      StatusTile(
+        // The plugin's own name, so a tile that says something surprising
+        // can be traced to what put it there.
+        '${tile['pluginName'] ?? tile['pluginId']}',
+        '${tile['title'] ?? ''}: ${tile['text'] ?? ''}'.trim(),
+        '${tile['level'] ?? ''}',
+      ),
+  ];
 
   Future<void> _read() async {
     final results = await Future.wait([
@@ -261,10 +286,13 @@ class _KioskStatusTilesState extends State<KioskStatusTiles> {
 
   @override
   Widget build(BuildContext context) {
-    final tiles = _tiles;
+    final read = _tiles;
     // Nothing until the first read answers: an empty frame is better than
     // six "Status unavailable" rows that resolve a moment later.
-    if (tiles == null) return const SizedBox.shrink();
+    if (read == null) return const SizedBox.shrink();
+    // Plugin tiles are read here rather than snapshotted with the six, so
+    // the listener's repaint shows what the plugins publish right now.
+    final tiles = [...read, ..._pluginTiles];
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
