@@ -4541,6 +4541,11 @@ const haPreloadViews = SettingDef<bool>(
 /// Admin is untouched, since the reason to hide a page is that a wall panel
 /// is not where you configure it.
 ///
+/// Decluttering, not access control: on-device search still finds a hidden
+/// page, so nobody is locked out of one they hid. Kiosk lockdown and the
+/// PIN are what actually restrict. The page hosting this setting cannot be
+/// hidden, so the control is never behind the thing it controls.
+///
 /// A panel using none of the screensaver, DLNA and camera features carries
 /// three pages it will never open, in a list someone scrolls while standing
 /// at a wall.
@@ -4550,9 +4555,8 @@ const uiHiddenPages = SettingDef<String>(
   defaultValue: '[]',
   title: 'Hidden settings pages',
   description:
-      'Settings pages to leave out of the on-device list, as a JSON array of '
-      'category names. The features keep working and Remote Admin still '
-      'shows them.',
+      'Settings pages to leave out of the on-device list. The features keep '
+      'working, search still finds them, and Remote Admin still shows them.',
   category: 'Device',
   validator: _validateHiddenPages,
 );

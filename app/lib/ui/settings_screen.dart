@@ -41,6 +41,7 @@ import 'date_picker.dart';
 import 'gesture_settings.dart';
 import 'entity_picker.dart';
 import 'esphome_entity_picker.dart';
+import 'hidden_pages_picker.dart';
 import 'glance_entity_picker.dart';
 import 'camera_settings.dart';
 import 'fleet_settings.dart';
@@ -418,11 +419,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           (category, title, subtitle),
       ]);
 
-  /// Search offers only what the list offers: a result that opens a page
-  /// the owner removed would make the hiding look broken rather than
-  /// deliberate.
-  List<SettingsSearchEntry> _visible(List<SettingsSearchEntry> entries) =>
-      [for (final e in entries) if (!_isHidden(e.category)) e];
+  /// Search deliberately still finds hidden pages. Hiding declutters a
+  /// list someone scrolls at a wall; it is not access control, and a panel
+  /// that cannot reach a page it hid is a panel someone has to fetch a
+  /// laptop for. Kiosk lockdown and the PIN are what actually restrict.
 
   /// Categories the owner has hidden. Indices into [_categories] stay
   /// stable -- selection and the icon palette are positional -- so hiding
@@ -651,10 +651,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// narrow screens list it directly under the field.
   Widget _resultsPane(BuildContext context, {required bool wide}) {
     final theme = Theme.of(context);
-    final results = _visible(searchSettings(_query, _searchIndex, [
-      for (final c in _categories)
-        if (!_isHidden(c.$1)) c.$1,
-    ]));
+    final results = searchSettings(_query, _searchIndex, [
+      for (final c in _categories) c.$1,
+    ]);
     final children = <Widget>[];
     if (wide) {
       children.add(
@@ -2607,6 +2606,21 @@ class _CategoryContentState extends State<_CategoryContent> {
         child: EspHomeExcludedEntitiesRow(
           settings: container.settings,
           commands: container.commands,
+          onChanged: () {
+            if (mounted) setState(() {});
+          },
+        ),
+      ),
+    // Which pages this panel leaves out of its own settings list. The
+    // options come from the category table itself, so a page added
+    // upstream appears here with nothing to keep in sync.
+    if (widget.category == uiHiddenPages.category)
+      uiHiddenPages.key: SearchLandingTarget(
+        id: uiHiddenPages.key,
+        child: HiddenPagesRow(
+          settings: container.settings,
+          pages: [for (final (c, title, _, _) in _categories) (c, title)],
+          hostCategory: uiHiddenPages.category,
           onChanged: () {
             if (mounted) setState(() {});
           },
