@@ -4690,6 +4690,32 @@ const haKioskMenu = SettingDef<bool>(
 /// on a small screen the view tabs are the last navigation left, and this
 /// gives their job to the whole screen instead. Strategy dashboards without
 /// listable views and single-view dashboards leave the script inert.
+/// Builds every view of the dashboard once, at idle after a load, so the
+/// first switch to each is as fast as the second (see
+/// preload_views_script.dart). Measured on a px30 panel over a three-view
+/// dashboard: first switch 1060ms and 232ms, every later one 9ms -- the
+/// cost is entirely the first visit, and this moves it off the moment
+/// someone is watching.
+///
+/// Off by default, because it is a trade rather than a free win: every
+/// preloaded view stays in hui-root's cache for the life of the page, and
+/// a panel with many heavy views can spend more memory than a slow first
+/// switch is worth. Views carrying a camera card are skipped whatever this
+/// says -- preloading one would start its stream.
+const haPreloadViews = SettingDef<bool>(
+  key: 'ha.preload_views',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Preload dashboard views',
+  description:
+      'After the dashboard loads, build its other views in the background '
+      'so switching to them is instant. Uses more memory, and views with a '
+      'camera card are always skipped.',
+  category: 'Home Assistant',
+  section: 'User Interface',
+  subpage: 'User Interface',
+);
+
 const haDashboardCarousel = SettingDef<bool>(
   key: 'ha.dashboard_carousel',
   type: SettingType.boolean,
@@ -7825,6 +7851,7 @@ const List<SettingDef<Object>> allSettings = [
   haKioskHideSidebar,
   haKioskMenu,
   haDashboardCarousel,
+  haPreloadViews,
   haCarouselOverCards,
   haHaptics,
   haHapticsStrength,
