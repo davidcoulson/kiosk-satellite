@@ -8,6 +8,7 @@ import '../core/events.dart';
 import '../managers/sendspin/music_assistant_api.dart';
 import '../managers/settings/definitions.dart' as defs;
 import '../managers/update/update_manager.dart';
+import 'kiosk_status_tiles.dart';
 import 'kit.dart';
 import 'theme.dart';
 import 'toast.dart';
@@ -548,6 +549,14 @@ class KioskDrawer extends StatelessWidget {
                   );
                 },
               ),
+              // The Overview status tiles, on the panel itself: the wall is
+              // where someone stands when something looks wrong, and often
+              // the panel's own connection is what is wrong, which is the
+              // one case reaching for Remote Admin cannot answer. Same
+              // commands Remote Admin reads, so the two cannot disagree.
+              // Restricted menu leaves them out for the same reason it
+              // leaves out the update notice.
+              if (!restricted) KioskStatusTiles(container: c),
               // Above the theme switcher: the update notice when GitHub has
               // a newer release, the running version otherwise — the wall is
               // where an update is noticed, not the repo page. Not in the
