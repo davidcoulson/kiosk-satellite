@@ -561,6 +561,8 @@ class BtProxyManager extends Manager {
         'scanDuty': _settings.get(defs.btproxyScanDuty),
         'minConnectRssi':
             int.tryParse(_settings.get(defs.btproxyMinConnectRssi)) ?? 0,
+        'minAdvertiseRssi':
+            int.tryParse(_settings.get(defs.btproxyMinAdvertiseRssi)) ?? 0,
         'entities': _settings.get(defs.esphomeEntities)
             ? await _entities.build()
             : const <Map<String, Object?>>[],
