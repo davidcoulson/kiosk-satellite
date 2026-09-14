@@ -322,6 +322,7 @@ void main() {
       // min_connect_rssi keeps its place beside the connections toggle.
       defs.btproxyMinAdvertiseRssi.key,
       defs.btproxyFilter.key,
+      defs.btproxyFilterIrks.key,
       defs.btproxyConnections.key,
       defs.btproxyMinConnectRssi.key,
       defs.btproxyMacLookup.key,
