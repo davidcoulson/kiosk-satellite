@@ -90,6 +90,12 @@ internal class BleScanEngine(
      * cycle either way. This cuts everything after the scan callback.
      */
     private val minAdvertiseRssi: Int = 0,
+    /**
+     * Identity-level filtering: IRKs, address allowlists, manufacturer
+     * blocklists. Null relays everything the RSSI gate above admits, which
+     * is the stock behaviour. See [AdvertisementFilter].
+     */
+    private val filter: AdvertisementFilter? = null,
 ) {
     private companion object {
         const val TAG = "KsBtProxy"
@@ -264,6 +270,19 @@ internal class BleScanEngine(
                 return
             }
             val advertisement = toAdvertisement(result) ?: return
+            // After parsing, because identity lives in the address and the
+            // payload: the cheap signal gate above is what keeps that
+            // parsing off the majority of packets.
+            val active = filter
+            if (active != null && !active.allows(
+                    advertisement.address,
+                    advertisement.addressType,
+                    result.rssi,
+                    advertisement.data,
+                )
+            ) {
+                return
+            }
             onAdvertisement(advertisement)
         }
 

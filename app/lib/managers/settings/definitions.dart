@@ -6581,6 +6581,50 @@ const btproxyPort = SettingDef<String>(
 ///
 /// Does not save radio: the scan runs at the same duty cycle either way.
 /// What it cuts is everything after the scan callback.
+/// Identity-level filtering for the Bluetooth proxy, as a JSON object.
+/// Modelled on esphome-bluetooth-proxy-filter, which solves the same
+/// problem on the ESP32 proxies: core ESPHome forwards every packet, and so
+/// does this one.
+///
+/// ```json
+/// {
+///   "irks": ["ec0234a357c8ad05341010a60a397d9b"],
+///   "macs": ["AA:BB:CC:DD:EE:FF"],
+///   "manufacturers": ["0x004C"],
+///   "dropNonResolvable": true,
+///   "allowlistExclusive": false,
+///   "rssiFloor": -90,
+///   "rssiThreshold": -70
+/// }
+/// ```
+///
+/// An advertisement is categorised before it is measured: an allowlisted
+/// address or a resolvable private address matching one of the IRKs is
+/// *protected*, which exempts it from the threshold and the manufacturer
+/// blocklist. That protection is the point -- your own phones advertise
+/// Apple manufacturer data, so a blocklist of Apple would otherwise discard
+/// exactly the devices the IRK list exists to keep. An RPA matching none of
+/// the IRKs belongs to someone else, rotates, and can never be tracked, so
+/// it is dropped.
+///
+/// Secret: an IRK is the key that identifies a person's phone wherever it
+/// goes, and it does not belong in an ordinary settings export.
+const btproxyFilter = SettingDef<String>(
+  key: 'btproxy.filter',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Advertisement filter',
+  description:
+      'JSON filter deciding which devices reach Home Assistant: identity '
+      'keys (IRKs) for your own phones and watches, address allowlists, and '
+      'manufacturer blocklists. Empty relays everything.',
+  category: 'ESPHome',
+  section: 'Bluetooth Proxy',
+  subpage: 'Bluetooth Proxy',
+  secret: true,
+  dependsOn: 'btproxy.enabled',
+);
+
 const btproxyMinAdvertiseRssi = SettingDef<String>(
   key: 'btproxy.min_advertise_rssi',
   type: SettingType.select,
@@ -7810,6 +7854,7 @@ const List<SettingDef<Object>> allSettings = [
   btproxyEnabled,
   btproxyScanDuty,
   btproxyMinAdvertiseRssi,
+  btproxyFilter,
   btproxyConnections,
   btproxyMinConnectRssi,
   btproxyMacLookup,
