@@ -113,4 +113,54 @@ class AdvertisementFilterTest {
         assertEquals(1L, f.counters()["forwarded"])
         assertEquals(1L, f.counters()["dropped"])
     }
+
+    /** A real iBeacon frame: AD length, 0xFF, company 004C LE, subtype 02,
+     *  length 15, 16-byte UUID, major and minor big-endian, tx power. */
+    private fun ibeacon(uuidHex: String, major: Int, minor: Int): ByteArray {
+        val uuid = AdvertisementFilter.hexToBytes(uuidHex.replace("-", ""), 16)!!
+        return byteArrayOf(0x1A, 0xFF.toByte(), 0x4C, 0x00, 0x02, 0x15) + uuid +
+            byteArrayOf(
+                ((major shr 8) and 0xFF).toByte(), (major and 0xFF).toByte(),
+                ((minor shr 8) and 0xFF).toByte(), (minor and 0xFF).toByte(),
+                0xC5.toByte(),
+            )
+    }
+
+    @Test
+    fun `a named iBeacon is protected from the threshold like an allowlisted tag`() {
+        // The tracked-pet case: a tag heard weakly here is the reading that
+        // places it nearer another proxy, so the threshold must not take it.
+        val f = filter(
+            """{"ibeacons":[{"uuidPrefix":"DECAFBAD-FEED-FACE-F00D"}],
+                "rssiThreshold":-60,"rssiFloor":-90}"""
+        )
+        val tag = ibeacon("DECAFBAD-FEED-FACE-F00D-E3AC06854000", 10011, 19641)
+        assertTrue(f.allows(0xE3AC06854000L, 1, -85, tag))
+        // The floor still bounds it.
+        assertFalse(f.allows(0xE3AC06854000L, 1, -95, tag))
+        // A different namespace gets no protection and pays the threshold.
+        val other = ibeacon("FDA50693-A4E2-4FB1-AFCF-C6EB07647825", 10011, 19641)
+        assertFalse(f.allows(0xC6EB07647825L, 1, -85, other))
+    }
+
+    @Test
+    fun `major and minor narrow an iBeacon rule when given`() {
+        val f = filter(
+            """{"ibeacons":[{"uuidPrefix":"DECAFBAD-FEED-FACE-F00D","major":10011,"minor":19641}],
+                "allowlistExclusive":true}"""
+        )
+        assertTrue(f.allows(0x1L, 1, -50, ibeacon("DECAFBAD-FEED-FACE-F00D-E3AC06854000", 10011, 19641)))
+        assertFalse(f.allows(0x1L, 1, -50, ibeacon("DECAFBAD-FEED-FACE-F00D-E3AC06854000", 10011, 1)))
+        assertFalse(f.allows(0x1L, 1, -50, ibeacon("DECAFBAD-FEED-FACE-F00D-E3AC06854000", 1, 19641)))
+    }
+
+    @Test
+    fun `a non-iBeacon Apple frame is not mistaken for one`() {
+        // Continuity, HomeKit and the rest share company 0x004C; only
+        // subtype 0x02 with length 0x15 is an iBeacon.
+        val f = filter("""{"ibeacons":[{"uuidPrefix":"decafbad"}],"allowlistExclusive":true}""")
+        val continuity = byteArrayOf(0x0B, 0xFF.toByte(), 0x4C, 0x00, 0x10, 0x06) +
+            ByteArray(8) { 0xDE.toByte() }
+        assertFalse(f.allows(0x1L, 1, -50, continuity))
+    }
 }
