@@ -59,6 +59,8 @@ class BluetoothProxyBridge(private val context: Context, messenger: BinaryMessen
                                 connections = call.argument<Boolean>("connections") ?: false,
                                 minConnectRssi =
                                     call.argument<Int>("minConnectRssi") ?: 0,
+                                minAdvertiseRssi =
+                                    call.argument<Int>("minAdvertiseRssi") ?: 0,
                                 scanDuty = call.argument<String>("scanDuty")
                                     ?: "balanced",
                                 entities = entities,

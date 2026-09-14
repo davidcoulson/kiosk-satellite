@@ -27,6 +27,8 @@ internal object BluetoothProxyRuntime {
         val connections: Boolean,
         /** Refuse connects for devices heard below this RSSI; 0 = no gate. */
         val minConnectRssi: Int = 0,
+        /** Advertisements weaker than this are not relayed; 0 relays all. */
+        val minAdvertiseRssi: Int = 0,
         /** The scan duty cycle, by the setting's key (see [ScanDuty]). */
         val scanDuty: String = ScanDuty.BALANCED.key,
         /** The ESPHome node name to answer as: the mDNS instance, the
@@ -92,6 +94,7 @@ internal object BluetoothProxyRuntime {
                 onStateChange = { state, mode ->
                     server?.reportScannerState(state, mode)
                 },
+                minAdvertiseRssi = config.minAdvertiseRssi,
                 onLog = { line -> log("scan: $line") },
                 scanDuty = ScanDuty.fromKey(config.scanDuty),
             )
