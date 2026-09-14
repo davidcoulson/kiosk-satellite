@@ -50,6 +50,47 @@ class BleSupport {
   };
 }
 
+/// One filter for the scanner, out of the two settings the UI keeps apart.
+///
+/// The thresholds and allowlists are ordinary configuration and belong in a
+/// backup; the identity keys beside them must not, so they are stored
+/// separately and joined here rather than being edited as one blob the
+/// export would have to redact whole.
+///
+/// Either side may be empty or malformed -- these are text fields -- and
+/// the result of nonsense is no filter at all rather than a filter that
+/// silently drops everything.
+String mergedAdvertisementFilter(String filterJson, String irksJson) {
+  Map<String, Object?> filter;
+  try {
+    final decoded = jsonDecode(filterJson.trim().isEmpty ? '{}' : filterJson);
+    filter = decoded is Map ? Map<String, Object?>.from(decoded) : <String, Object?>{};
+  } catch (_) {
+    filter = <String, Object?>{};
+  }
+  final irks = <String>[];
+  if (irksJson.trim().isNotEmpty) {
+    try {
+      final decoded = jsonDecode(irksJson);
+      if (decoded is List) {
+        irks.addAll(decoded.whereType<String>().where((k) => k.trim().isNotEmpty));
+      }
+    } catch (_) {
+      // A pasted key list that is not JSON still has one key per line often
+      // enough to be worth accepting rather than silently ignoring.
+      irks.addAll(
+        irksJson
+            .split(RegExp(r'[\s,]+'))
+            .map((k) => k.trim())
+            .where((k) => k.isNotEmpty),
+      );
+    }
+  }
+  if (irks.isNotEmpty) filter['irks'] = irks;
+  if (filter.isEmpty) return '';
+  return jsonEncode(filter);
+}
+
 class BtProxyManager extends Manager {
   BtProxyManager(super.bus, super.commands, super.log, this._settings);
 
@@ -563,7 +604,10 @@ class BtProxyManager extends Manager {
             int.tryParse(_settings.get(defs.btproxyMinConnectRssi)) ?? 0,
         'minAdvertiseRssi':
             int.tryParse(_settings.get(defs.btproxyMinAdvertiseRssi)) ?? 0,
-        'advertisementFilter': _settings.get(defs.btproxyFilter),
+        'advertisementFilter': mergedAdvertisementFilter(
+          _settings.get(defs.btproxyFilter),
+          _settings.get(defs.btproxyFilterIrks),
+        ),
         'entities': _settings.get(defs.esphomeEntities)
             ? await _entities.build()
             : const <Map<String, Object?>>[],
