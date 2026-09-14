@@ -42,8 +42,23 @@ import org.json.JSONObject
  * thing that can say someone is standing in front of it -- so this carries
  * the parts that serve that and says plainly that it carries no more.
  */
+/** One iBeacon allowlist rule: a UUID prefix and optional major/minor. */
+internal data class IBeaconRule(
+    /** Hex, dashes stripped, matched as a prefix so a family of tags that
+     *  share a namespace needs one rule rather than one per animal. */
+    val uuidPrefix: String,
+    val major: Int?,
+    val minor: Int?,
+) {
+    fun matches(uuidHex: String, major: Int, minor: Int): Boolean =
+        uuidHex.startsWith(uuidPrefix) &&
+            (this.major == null || this.major == major) &&
+            (this.minor == null || this.minor == minor)
+}
+
 internal class AdvertisementFilter private constructor(
     private val irks: List<ByteArray>,
+    private val ibeacons: List<IBeaconRule>,
     private val macAllowlist: Set<Long>,
     private val manufacturerBlocklist: Set<Int>,
     private val dropNonResolvable: Boolean,
@@ -59,7 +74,8 @@ internal class AdvertisementFilter private constructor(
     val active: Boolean
         get() = irks.isNotEmpty() || macAllowlist.isNotEmpty() ||
             manufacturerBlocklist.isNotEmpty() || dropNonResolvable ||
-            allowlistExclusive || rssiFloor != 0 || rssiThreshold != 0
+            allowlistExclusive || rssiFloor != 0 || rssiThreshold != 0 ||
+            ibeacons.isNotEmpty()
 
     fun counters(): Map<String, Any> = mapOf(
         "forwarded" to forwarded,
@@ -86,6 +102,13 @@ internal class AdvertisementFilter private constructor(
         // Cheapest first: a set lookup, then AES only for actual RPAs.
         val allowlisted = macAllowlist.contains(address)
         var protectedAdv = allowlisted
+        // An iBeacon the owner named is protected like an allowlisted
+        // address, and for the same reason: a tracked tag heard weakly here
+        // is the measurement that places it nearer another proxy, so the
+        // threshold must not take it. The floor above still bounds it.
+        if (!protectedAdv && ibeacons.isNotEmpty() && matchesIbeacon(payload)) {
+            protectedAdv = true
+        }
         if (!allowlisted && irks.isNotEmpty() && isResolvable(address, addressType)) {
             if (!irkMatches(address)) {
                 droppedRpa++
@@ -107,6 +130,42 @@ internal class AdvertisementFilter private constructor(
             return false
         }
         return true
+    }
+
+    /**
+     * iBeacon is Apple manufacturer data (company 0x004C) with subtype 0x02
+     * and length 0x15, carrying a 16-byte UUID then big-endian major and
+     * minor. Parsed here rather than trusted from a name, since the name is
+     * the one field a beacon need not carry.
+     */
+    private fun matchesIbeacon(payload: ByteArray): Boolean {
+        var index = 0
+        while (index + 1 < payload.size) {
+            val len = payload[index].toInt() and 0xFF
+            if (len == 0) return false
+            val type = payload[index + 1].toInt() and 0xFF
+            // 0xFF, 004C, 02, 15, 16-byte uuid, major, minor = 25 bytes of
+            // data after the length byte.
+            if (type == 0xFF && len >= 25 && index + 25 < payload.size &&
+                (payload[index + 2].toInt() and 0xFF) == 0x4C &&
+                (payload[index + 3].toInt() and 0xFF) == 0x00 &&
+                (payload[index + 4].toInt() and 0xFF) == 0x02 &&
+                (payload[index + 5].toInt() and 0xFF) == 0x15
+            ) {
+                val uuid = StringBuilder(32)
+                for (i in 0 until 16) {
+                    uuid.append("%02x".format(payload[index + 6 + i].toInt() and 0xFF))
+                }
+                val major = ((payload[index + 22].toInt() and 0xFF) shl 8) or
+                    (payload[index + 23].toInt() and 0xFF)
+                val minor = ((payload[index + 24].toInt() and 0xFF) shl 8) or
+                    (payload[index + 25].toInt() and 0xFF)
+                val hex = uuid.toString()
+                for (rule in ibeacons) if (rule.matches(hex, major, minor)) return true
+            }
+            index += 1 + len
+        }
+        return false
     }
 
     /** Manufacturer data is AD type 0xFF, company id little-endian first. */
@@ -205,8 +264,25 @@ internal class AdvertisementFilter private constructor(
                     if (value != null && value in 0..0xFFFF) manufacturers.add(value)
                 }
             }
+            val ibeacons = mutableListOf<IBeaconRule>()
+            root.optJSONArray("ibeacons")?.let { array ->
+                for (i in 0 until array.length()) {
+                    val rule = array.optJSONObject(i) ?: continue
+                    val prefix = rule.optString("uuidPrefix")
+                        .replace("-", "").replace(":", "").lowercase()
+                    if (prefix.isEmpty()) continue
+                    ibeacons.add(
+                        IBeaconRule(
+                            uuidPrefix = prefix,
+                            major = if (rule.has("major")) rule.optInt("major") else null,
+                            minor = if (rule.has("minor")) rule.optInt("minor") else null,
+                        )
+                    )
+                }
+            }
             val filter = AdvertisementFilter(
                 irks = irks,
+                ibeacons = ibeacons,
                 macAllowlist = macs,
                 manufacturerBlocklist = manufacturers,
                 dropNonResolvable = root.optBoolean("dropNonResolvable", false),
