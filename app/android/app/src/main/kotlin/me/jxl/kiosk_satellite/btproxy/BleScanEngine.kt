@@ -74,6 +74,22 @@ internal class BleScanEngine(
     private val onStateChange: (ScannerState, ScannerMode) -> Unit,
     private val onLog: (String) -> Unit = {},
     scanDuty: ScanDuty = ScanDuty.BALANCED,
+    /**
+     * Advertisements heard weaker than this are dropped instead of
+     * relayed. 0 keeps everything, which is the stock behaviour.
+     *
+     * A panel on a wall hears the whole building: one here sees 131
+     * devices while holding zero connections, and every one of those
+     * advertisements crosses the platform channel, the API server and the
+     * network to Home Assistant. Where dedicated proxies already cover the
+     * house, the advertisements worth relaying from a panel are the ones
+     * close enough to mean "someone is standing at it" -- presence no
+     * distant proxy can report.
+     *
+     * Honest about what it does not save: the radio scans at the same duty
+     * cycle either way. This cuts everything after the scan callback.
+     */
+    private val minAdvertiseRssi: Int = 0,
 ) {
     private companion object {
         const val TAG = "KsBtProxy"
@@ -228,6 +244,8 @@ internal class BleScanEngine(
                         if (minimalSettings) " (minimal scan settings)" else "")
                 }
             }
+            // Cheapest possible check, before parsing the payload.
+            if (minAdvertiseRssi != 0 && result.rssi < minAdvertiseRssi) return
             val advertisement = toAdvertisement(result) ?: return
             onAdvertisement(advertisement)
         }

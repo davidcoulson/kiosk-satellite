@@ -6762,6 +6762,44 @@ const btproxyPort = SettingDef<String>(
 /// later, all while its held slot blocked the proxy that could actually
 /// hold it. Refusing weak connects makes Home Assistant fail over to a
 /// closer proxy immediately. Last in its group by request.
+/// A wall panel hears the whole building: one here sees 131 devices while
+/// holding zero connections, and every one of those advertisements crosses
+/// the platform channel, the API server and the network to Home Assistant.
+///
+/// Where dedicated proxies already cover the house, the advertisements
+/// worth relaying from a panel are the ones close enough to mean "someone
+/// is standing at it" -- presence a distant proxy cannot report. A floor
+/// around -55 to -60 dBm is roughly arm's length to a few metres, though
+/// BLE RSSI varies enough by device and pocket that the right number is
+/// found by watching, not calculated.
+///
+/// Does not save radio: the scan runs at the same duty cycle either way.
+/// What it cuts is everything after the scan callback.
+const btproxyMinAdvertiseRssi = SettingDef<String>(
+  key: 'btproxy.min_advertise_rssi',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Only relay devices this close',
+  description:
+      'Drop advertisements heard weaker than this instead of relaying them '
+      'to Home Assistant, so the panel reports what is in front of it '
+      'rather than the whole building. Scanning itself is unchanged.',
+  category: 'ESPHome',
+  section: 'Bluetooth Proxy',
+  subpage: 'Bluetooth Proxy',
+  options: ['', '-50', '-55', '-60', '-65', '-70', '-80'],
+  optionLabels: {
+    '': 'Relay everything',
+    '-50': '-50 dBm (at the panel)',
+    '-55': '-55 dBm (arm\'s length)',
+    '-60': '-60 dBm (standing in front)',
+    '-65': '-65 dBm (same room)',
+    '-70': '-70 dBm',
+    '-80': '-80 dBm (most of the floor)',
+  },
+  dependsOn: 'btproxy.enabled',
+);
+
 const btproxyMinConnectRssi = SettingDef<String>(
   key: 'btproxy.min_connect_rssi',
   type: SettingType.select,
@@ -8001,6 +8039,7 @@ const List<SettingDef<Object>> allSettings = [
   announcementsChimeFile,
   btproxyEnabled,
   btproxyScanDuty,
+  btproxyMinAdvertiseRssi,
   btproxyConnections,
   btproxyMinConnectRssi,
   btproxyMacLookup,
