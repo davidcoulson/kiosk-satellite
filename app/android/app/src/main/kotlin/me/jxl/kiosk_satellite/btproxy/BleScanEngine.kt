@@ -93,6 +93,10 @@ internal class BleScanEngine(
 ) {
     private companion object {
         const val TAG = "KsBtProxy"
+        /** Android's sentinel for "the adapter did not report a signal
+         *  strength", which is a value a device can genuinely advertise
+         *  with, not a reading of 127 dBm. */
+        const val RSSI_UNAVAILABLE = 127
         /** Stay under Android's 5-per-30s undocumented scan-start throttle. */
         const val MAX_STARTS = 4
         const val START_WINDOW_MS = 30_000L
@@ -245,7 +249,20 @@ internal class BleScanEngine(
                 }
             }
             // Cheapest possible check, before parsing the payload.
-            if (minAdvertiseRssi != 0 && result.rssi < minAdvertiseRssi) return
+            //
+            // 127 is Android's "RSSI not available", not a very strong
+            // signal, and it is not rare: on a panel here half the relayed
+            // devices reported it. Comparing it numerically lets exactly
+            // the devices whose distance cannot be established sail past a
+            // floor that exists to establish distance, so an unknown
+            // reading is dropped with the weak ones whenever a floor is
+            // set. With no floor, nothing is dropped and 127 relays as
+            // before.
+            if (minAdvertiseRssi != 0 &&
+                (result.rssi == RSSI_UNAVAILABLE || result.rssi < minAdvertiseRssi)
+            ) {
+                return
+            }
             val advertisement = toAdvertisement(result) ?: return
             onAdvertisement(advertisement)
         }
