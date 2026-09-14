@@ -55,7 +55,23 @@ android {
         minSdk = maxOf(24, flutter.minSdkVersion)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        // This fork's builds are not upstream's, and a panel reporting a
+        // bare upstream version cannot be told apart from one running it --
+        // in the ESPHome device page, the mDNS TXT record, Remote Admin, or
+        // an issue report. The stamp lives in app/djc_build.txt as
+        // yyyy.MM.dd.NN and is appended to whatever upstream version the
+        // pubspec carries, so a rebase changes the left half and a rebuild
+        // on the same day changes only the counter.
+        //
+        // Not in the pubspec version itself: pub parses that as semver,
+        // which forbids the leading zeros a zero-padded date has.
+        versionName = rootProject.file("../djc_build.txt").let { stamp ->
+            if (stamp.exists()) {
+                "${flutter.versionName}-djc-${stamp.readText().trim()}"
+            } else {
+                flutter.versionName
+            }
+        }
 
         externalNativeBuild {
             cmake {
