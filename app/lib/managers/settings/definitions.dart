@@ -6801,8 +6801,11 @@ const btproxyPort = SettingDef<String>(
 /// the IRKs belongs to someone else, rotates, and can never be tracked, so
 /// it is dropped.
 ///
-/// Secret: an IRK is the key that identifies a person's phone wherever it
-/// goes, and it does not belong in an ordinary settings export.
+/// Not secret, and deliberately so: thresholds and allowlists are ordinary
+/// configuration, and a panel restored from a backup should come back
+/// filtering the way it did. The key material lives in
+/// [btproxyFilterIrks], which is secret, so protecting it costs no backup
+/// coverage here.
 const btproxyFilter = SettingDef<String>(
   key: 'btproxy.filter',
   type: SettingType.string,
@@ -6812,6 +6815,36 @@ const btproxyFilter = SettingDef<String>(
       'JSON filter deciding which devices reach Home Assistant: identity '
       'keys (IRKs) for your own phones and watches, address allowlists, and '
       'manufacturer blocklists. Empty relays everything.',
+  category: 'ESPHome',
+  section: 'Bluetooth Proxy',
+  subpage: 'Bluetooth Proxy',
+  dependsOn: 'btproxy.enabled',
+);
+
+/// Identity Resolving Keys for this household's own phones and watches, as
+/// a JSON array of 32-character hex strings, mirrored from Home Assistant's
+/// private_ble_device entries.
+///
+/// Kept apart from [btproxyFilter] because the two want opposite handling.
+/// An IRK identifies a person's phone wherever that phone goes, for as long
+/// as the key lives, so it must not travel in an ordinary settings export --
+/// while the thresholds and allowlists beside it are exactly what a restored
+/// panel should get back. The two are merged into one filter before it
+/// reaches the scanner.
+///
+/// Empty means no IRK test runs and every resolvable private address is
+/// relayed, which is a reasonable choice for a panel: Home Assistant holds
+/// the keys centrally and resolves identity there.
+const btproxyFilterIrks = SettingDef<String>(
+  key: 'btproxy.filter_irks',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Identity keys (IRKs)',
+  description:
+      'JSON array of Identity Resolving Keys for your own phones and '
+      'watches. With any listed, a rotating private address resolving to '
+      'none of them is dropped as somebody else\'s. Empty relays them all '
+      'and leaves identity to Home Assistant.',
   category: 'ESPHome',
   section: 'Bluetooth Proxy',
   subpage: 'Bluetooth Proxy',
@@ -8087,6 +8120,7 @@ const List<SettingDef<Object>> allSettings = [
   btproxyScanDuty,
   btproxyMinAdvertiseRssi,
   btproxyFilter,
+  btproxyFilterIrks,
   btproxyConnections,
   btproxyMinConnectRssi,
   btproxyMacLookup,
