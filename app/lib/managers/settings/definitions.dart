@@ -6783,7 +6783,9 @@ const btproxyMinAdvertiseRssi = SettingDef<String>(
   description:
       'Drop advertisements heard weaker than this instead of relaying them '
       'to Home Assistant, so the panel reports what is in front of it '
-      'rather than the whole building. Scanning itself is unchanged.',
+      'rather than the whole building. Devices that report no signal '
+      'strength are dropped too, since their distance cannot be judged. '
+      'Scanning itself is unchanged.',
   category: 'ESPHome',
   section: 'Bluetooth Proxy',
   subpage: 'Bluetooth Proxy',
