@@ -481,6 +481,27 @@ class KioskDrawer extends StatelessWidget {
                           ),
                         ),
                       ),
+                      // The Overview status tiles, on the panel itself: the
+                      // wall is where someone stands when something looks
+                      // wrong, and often the panel's own connection is what
+                      // is wrong, which is the one case reaching for Remote
+                      // Admin cannot answer. Same commands Remote Admin
+                      // reads, so the two cannot disagree. Restricted menu
+                      // leaves them out for the same reason it leaves out
+                      // the update notice.
+                      //
+                      // Inside the scroll region with the actions, not
+                      // pinned below it: as a fixed-height sibling of the
+                      // Expanded that holds the menu, the tile list took the
+                      // height it wanted and left the menu whatever was
+                      // over. On a 750px panel with eight tiles that was one
+                      // row -- Settings, and everything under it, simply
+                      // unreachable from the drawer. The actions are what
+                      // the menu is for, so they get the space and the tiles
+                      // scroll with them; on a screen tall enough for both,
+                      // this renders exactly where it did before.
+                      if (!restricted)
+                        KioskStatusTiles(container: c, visible: visible),
                     ],
                   ),
                 ),
@@ -555,14 +576,6 @@ class KioskDrawer extends StatelessWidget {
                   );
                 },
               ),
-              // The Overview status tiles, on the panel itself: the wall is
-              // where someone stands when something looks wrong, and often
-              // the panel's own connection is what is wrong, which is the
-              // one case reaching for Remote Admin cannot answer. Same
-              // commands Remote Admin reads, so the two cannot disagree.
-              // Restricted menu leaves them out for the same reason it
-              // leaves out the update notice.
-              if (!restricted) KioskStatusTiles(container: c, visible: visible),
               // Above the theme switcher: the update notice when GitHub has
               // a newer release, the running version otherwise — the wall is
               // where an update is noticed, not the repo page. Not in the
