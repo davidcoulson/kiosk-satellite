@@ -398,8 +398,9 @@ class PersonSensorManager extends Manager {
   /// Keeps the switches off where the device has no person sensor: at
   /// boot, and whenever something turns one on.
   Future<void> _guardSupport() async {
-    final support = await sensorSupport();
-    if (support.supported) return;
+    // The switches first: see the note in ProximityManager._guardSupport.
+    // The probe is a platform round trip whose answer only ever turns these
+    // off, so with both already off there is nothing to guard.
     final on = [
       if (_settings.get(defs.screensaverDismissOnPerson))
         defs.screensaverDismissOnPerson,
@@ -407,6 +408,8 @@ class PersonSensorManager extends Manager {
         defs.screensaverPostponeOnPerson,
     ];
     if (on.isEmpty) return;
+    final support = await sensorSupport();
+    if (support.supported) return;
     for (final def in on) {
       await _settings.set(def, false);
     }
