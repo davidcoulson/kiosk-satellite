@@ -518,6 +518,17 @@ class DeviceManager extends Manager {
   /// fallback for hosts without the channel, screened the same way, since
   /// the plugin passes Android's "unsupported" sentinel through as a level.
   Future<int?> _batteryLevel() async {
+    // A panel whose board invents a battery (issue: 50% forever on a
+    // mains-only kiosk) is told so by a switch, and the answer is no
+    // battery -- the same answer a desktop gives, so every consumer
+    // downstream already knows what to do with it.
+    if (_settings.get(defs.noBattery)) {
+      if (!_batteryLogged) {
+        _batteryLogged = true;
+        log.info(name, 'no battery: this panel is configured as mains-only');
+      }
+      return null;
+    }
     int? level;
     final native = await DeviceDetails.battery();
     if (native != null) {
