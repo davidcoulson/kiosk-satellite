@@ -229,16 +229,36 @@ class _KioskStatusTilesState extends State<KioskStatusTiles> {
   /// round trip -- the manager already holds them, published as they
   /// change -- so they cost nothing to include and cannot lag the
   /// Overview's copy.
-  List<StatusTile> get _pluginTiles => [
-    for (final tile in c.plugins.statusTileList)
-      StatusTile(
-        // The plugin's own name, so a tile that says something surprising
-        // can be traced to what put it there.
-        '${tile['pluginName'] ?? tile['pluginId']}',
-        '${tile['title'] ?? ''}: ${tile['text'] ?? ''}'.trim(),
-        '${tile['level'] ?? ''}',
-      ),
-  ];
+  ///
+  /// The label is the plugin's name, so a row that says something
+  /// surprising can be traced to what put it there, and the value is the
+  /// tile's text and nothing else. These rows are narrow -- the value
+  /// elides after roughly thirty characters next to "Validated" and
+  /// "Entities and BT proxy" -- and a plugin whose single tile is titled
+  /// after itself ("Device Performance" / "WebView responsiveness") spent
+  /// that whole width on the label twice over, eliding the actual answer:
+  /// "Device Performance  WebView responsiv..." rather than "smooth".
+  ///
+  /// A plugin may publish two tiles, and then the name alone cannot say
+  /// which is which, so those rows are labelled by tile title instead.
+  List<StatusTile> get _pluginTiles {
+    final tiles = c.plugins.statusTileList;
+    final perPlugin = <String, int>{};
+    for (final tile in tiles) {
+      final owner = '${tile['pluginId']}';
+      perPlugin[owner] = (perPlugin[owner] ?? 0) + 1;
+    }
+    return [
+      for (final tile in tiles)
+        StatusTile(
+          (perPlugin['${tile['pluginId']}'] ?? 1) > 1
+              ? '${tile['title'] ?? tile['pluginName'] ?? tile['pluginId']}'
+              : '${tile['pluginName'] ?? tile['pluginId']}',
+          '${tile['text'] ?? ''}'.trim(),
+          '${tile['level'] ?? ''}',
+        ),
+    ];
+  }
 
   Future<void> _read() async {
     final results = await Future.wait([
