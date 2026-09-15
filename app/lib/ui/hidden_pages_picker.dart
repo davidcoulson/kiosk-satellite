@@ -36,7 +36,7 @@ class HiddenPagesRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hidden = decodeHiddenPages(settings.get(uiHiddenPages));
+    final hidden = decodeStringSet(settings.get(uiHiddenPages));
     final hiddenTitles = [
       for (final (category, title) in pages)
         if (hidden.contains(category)) title,

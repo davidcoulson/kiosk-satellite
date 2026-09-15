@@ -353,22 +353,55 @@ class _CategoryIcon extends StatelessWidget {
 /// the first opens with room above it, so the heading reads as a break
 /// between groups rather than as the previous tile's caption.
 class _RailHeading extends StatelessWidget {
-  const _RailHeading(this.text, {required this.first});
+  const _RailHeading(
+    this.text, {
+    required this.first,
+    this.collapsed = false,
+    this.onTap,
+  });
 
   final String text;
   final bool first;
 
+  /// Whether this group's tiles are folded away. Only meaningful with
+  /// [onTap]; a heading with no handler is a plain label, as it was.
+  final bool collapsed;
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, first ? 4 : 18, 16, 6),
-      child: Text(
-        text.toUpperCase(),
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1,
+    final label = Text(
+      text.toUpperCase(),
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1,
+      ),
+    );
+    final padding = EdgeInsets.fromLTRB(16, first ? 4 : 18, 16, 6);
+
+    if (onTap == null) return Padding(padding: padding, child: label);
+
+    // The whole heading row is the target, not just the chevron: it is a
+    // wall panel, and the label is the part a finger aims at.
+    return Semantics(
+      button: true,
+      expanded: !collapsed,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: padding,
+          child: Row(
+            children: [
+              Expanded(child: label),
+              Icon(
+                collapsed ? Icons.expand_more : Icons.expand_less,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -428,9 +461,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// stable -- selection and the icon palette are positional -- so hiding
   /// happens at render, never by filtering the table itself.
   Set<String> get _hidden =>
-      decodeHiddenPages(widget.container.settings.get(uiHiddenPages));
+      decodeStringSet(widget.container.settings.get(uiHiddenPages));
 
   bool _isHidden(String category) => _hidden.contains(category);
+
+  /// Rail groups the owner has rolled up, by heading. Read at render like
+  /// [_hidden], so a change from Remote Admin or another surface shows up
+  /// without this screen holding its own copy to keep in step.
+  Set<String> get _collapsedGroups =>
+      decodeStringSet(widget.container.settings.get(uiCollapsedGroups));
+
+  bool _isCollapsed(String heading) => _collapsedGroups.contains(heading);
+
+  /// The heading of the group [category] belongs to, not just the one it
+  /// draws: [_headingFor] answers only for the category that opens a group,
+  /// and the tiles under it need to know what they are folded into.
+  String? _groupOf(String category) {
+    String? current;
+    for (final (_, (candidate, _, _, _)) in _categories.indexed) {
+      final heading = _railGroups[candidate];
+      if (heading != null) current = heading;
+      if (candidate == category) return current;
+    }
+    return null;
+  }
+
+  /// Whether this category's tile is folded away right now. A category
+  /// ahead of the first heading belongs to no group and never folds.
+  bool _isFolded(String category) {
+    final group = _groupOf(category);
+    return group != null && _isCollapsed(group);
+  }
+
+  Future<void> _toggleGroup(String heading) async {
+    final next = {..._collapsedGroups};
+    if (!next.remove(heading)) next.add(heading);
+    await widget.container.settings.set(
+      uiCollapsedGroups,
+      json.encode(next.toList()..sort()),
+    );
+    if (mounted) setState(() {});
+  }
 
   /// The group heading this category should draw, if any.
   ///
@@ -827,14 +898,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   _RailHeading(
                                     heading,
                                     first: index == _firstVisibleIndex,
+                                    collapsed: _isCollapsed(heading),
+                                    onTap: () => _toggleGroup(heading),
                                   ),
-                                _railTile(
-                                  context,
-                                  index,
-                                  title,
-                                  icon,
-                                  subtitle,
-                                ),
+                                // The rail runs flat over every category, so
+                                // the tile asks which group it sits under
+                                // rather than reading a heading it may not
+                                // have drawn itself.
+                                if (!_isFolded(category))
+                                  _railTile(
+                                    context,
+                                    index,
+                                    title,
+                                    icon,
+                                    subtitle,
+                                  ),
                               ],
                             ],
                           ],
@@ -1090,7 +1168,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             _RailHeading(
                               heading,
                               first: index == _firstVisibleHubGroup,
+                              collapsed: _isCollapsed(heading),
+                              onTap: () => _toggleGroup(heading),
                             ),
+                            if (!_isCollapsed(heading))
                             SettingsCard(
                               children: [
                                 for (final (
