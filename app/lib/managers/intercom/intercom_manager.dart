@@ -385,7 +385,22 @@ class IntercomManager extends Manager {
     // Another Voice Satellite turn or a page taking the microphone ends
     // the call: the page holds the microphone exclusively.
     micHub.browserCapturing.addListener(_onBrowserCapture);
-    await _readFleet();
+    // Not awaited, because this manager is last in AppContainer._ordered and
+    // every init() there runs sequentially behind an await: a cross-manager
+    // fleet command here lands squarely on the time from launch to "all
+    // managers initialized", on every panel, whether or not the intercom is
+    // ever used.
+    //
+    // Gating it on `enabled` would be wrong rather than merely rude. It feeds
+    // a row that renders with the intercom off: `available` drives the "The
+    // intercom needs the remote admin" notice, so skipping it while off would
+    // make a healthy panel claim its remote admin was missing.
+    //
+    // So it is started, not skipped. It publishes through _changed() when it
+    // lands, and the only window where a page could read the optimistic
+    // default is the first moments after launch, when the Intercom settings
+    // page cannot yet be open.
+    unawaited(_readFleet());
     if (enabled && key.isEmpty) await _ensureKey();
   }
 
