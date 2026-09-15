@@ -230,11 +230,13 @@ class ProximityManager extends Manager {
   /// Keeps the switch off where there is no sensor: at boot, and whenever
   /// something turns it on.
   Future<void> _guardSupport() async {
+    // The setting first: this runs awaited from init(), and the probe is a
+    // platform round trip whose answer is only ever used to turn the switch
+    // off. With the switch already off there is nothing to guard, so a panel
+    // that never wanted the feature should not pay for asking about it.
+    if (!_settings.get(defs.screensaverDismissOnProximity)) return;
     final support = await proximitySupport();
-    if (support.supported ||
-        !_settings.get(defs.screensaverDismissOnProximity)) {
-      return;
-    }
+    if (support.supported) return;
     await _settings.set(defs.screensaverDismissOnProximity, false);
     final why = support.hint ?? 'Not available on this device.';
     log.warn(

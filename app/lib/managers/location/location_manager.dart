@@ -239,8 +239,12 @@ class LocationManager extends Manager {
   /// Keeps the switch off where there is no receiver: at boot, and whenever
   /// something turns it on.
   Future<void> _guardSupport() async {
+    // The setting first: see the note in ProximityManager._guardSupport. The
+    // probe is a platform round trip whose answer only ever turns the switch
+    // off, so an already-off switch has nothing to guard.
+    if (!_settings.get(defs.locationEnabled)) return;
     final support = await locationSupport();
-    if (support.supported || !_settings.get(defs.locationEnabled)) return;
+    if (support.supported) return;
     await _settings.set(defs.locationEnabled, false);
     final why = support.hint ?? 'Not available on this device.';
     log.warn(
