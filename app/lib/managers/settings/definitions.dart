@@ -7710,6 +7710,35 @@ const fleetLastSyncAt = SettingDef<num>(
 
 // ── Device ─────────────────────────────────────────────────────────────
 
+/// Suppress the battery readings on a panel whose board invents one.
+///
+/// The mains-powered kiosk boards in this fleet report a battery that does
+/// not exist: `present: true`, a level pinned at exactly 50, 3300 mV, a
+/// charge counter of -1000, and a status of DISCHARGING while sitting on
+/// AC. Every one of those passes the range check in [batteryPercent], so
+/// the panel shows "50%" forever and Home Assistant gets a battery sensor
+/// that never moves.
+///
+/// A switch rather than a heuristic on purpose. The obvious tell -- a
+/// negative or absent charge counter -- is also what a genuine tablet
+/// reports when its kernel simply does not expose that property, and a real
+/// battery hidden by a clever guess is a worse failure than a fake one
+/// shown. Whoever mounted the panel on the wall knows whether it has a
+/// battery; nothing else on the device does.
+const noBattery = SettingDef<bool>(
+  key: 'device.no_battery',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'No battery',
+  description:
+      'Hide the battery readings on a mains-powered panel. Some kiosk '
+      'boards report a battery that is not there, stuck at a level that '
+      'never changes; turn this on and the charge is left out of the '
+      'status widget, Home Assistant and the admin pages entirely.',
+  category: 'Device',
+  perDevice: true,
+);
+
 const deviceName = SettingDef<String>(
   key: 'device.name',
   type: SettingType.string,
@@ -8257,6 +8286,7 @@ const List<SettingDef<Object>> allSettings = [
   esphomeRealMac,
   esphomeMacOverride,
   deviceName,
+  noBattery,
   deviceHostname,
   disableImpeller,
   legacyWebView,
