@@ -369,9 +369,35 @@ class IntercomManager extends Manager {
     // Another Voice Satellite turn or a page taking the microphone ends
     // the call: the page holds the microphone exclusively.
     micHub.browserCapturing.addListener(_onBrowserCapture);
-    _aec = await audio.echoCancellerAvailable();
-    await _readFleet();
+    // Neither of these is awaited, because this manager is last in
+    // AppContainer._ordered and every init() there runs sequentially behind
+    // an await: a platform round trip and a cross-manager command here land
+    // squarely on the time from launch to "all managers initialized", on
+    // every panel, whether or not the intercom is ever used.
+    //
+    // Gating them on `enabled` would be wrong rather than merely rude. Both
+    // feed rows that render with the intercom off: `available` drives the
+    // "The intercom needs the remote admin" notice, and `aec` disables the
+    // Talk mode row and says why. Skipping them while off would make a
+    // healthy panel claim its remote admin was missing.
+    //
+    // So they are started, not skipped. Each publishes through _changed()
+    // when it lands, and the only window where a page could read the
+    // optimistic defaults is the first moments after launch, when the
+    // Intercom settings page cannot yet be open.
+    unawaited(_resolveAec());
+    unawaited(_readFleet());
     if (enabled && key.isEmpty) await _ensureKey();
+  }
+
+  /// The echo canceller verdict, off the startup path. Defaults optimistic
+  /// ([_aec] starts true) and corrects itself here; a device without one
+  /// forces push to talk, which the Talk mode row explains once this lands.
+  Future<void> _resolveAec() async {
+    final aec = await audio.echoCancellerAvailable();
+    if (aec == _aec) return;
+    _aec = aec;
+    _changed();
   }
 
   @override

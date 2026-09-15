@@ -50,9 +50,23 @@ class IntercomAudio(context: Context, messenger: BinaryMessenger) {
 
     private val appContext = context.applicationContext
     private val channel = MethodChannel(messenger, "kiosk_satellite/intercom_audio")
-    private val communication = CommunicationPlayback.get(appContext)
-    private val worker = HandlerThread("ks-intercom").apply { start() }
-    private val workerHandler = Handler(worker.looper)
+    // Built on first use, not at construction. This object is created from
+    // KioskApplication, so eager fields here cost every launch on every
+    // panel -- including the ones that never place a call. A HandlerThread
+    // is a real OS thread with a real stack reservation, which is a poor
+    // thing to hold for a feature that is off.
+    //
+    // Safe to defer because nothing touches these until the intercom
+    // actually plays: start/ring/chime reach them directly, stop() and
+    // applyVolume() both return early while `track` is null, and the
+    // volume listener is registered in start() rather than here.
+    //
+    // `by lazy` is synchronized by default, which matters: the method
+    // channel calls arrive on the main thread but the queue drains on the
+    // worker, so first use can be raced.
+    private val communication by lazy { CommunicationPlayback.get(appContext) }
+    private val worker by lazy { HandlerThread("ks-intercom").apply { start() } }
+    private val workerHandler by lazy { Handler(worker.looper) }
     private val mainHandler = Handler(Looper.getMainLooper())
 
     @Volatile private var track: AudioTrack? = null
