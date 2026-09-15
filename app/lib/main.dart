@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter/services.dart';
 
 import 'app_container.dart';
@@ -52,6 +53,27 @@ Future<void> main() async {
     version: container.device.appVersion,
     osVersion: container.device.osVersion,
   );
+
+  // Chrome DevTools over ADB, when the panel has been asked for it.
+  //
+  // Android turns this on by itself only when ro.debuggable is 1, which is
+  // true of a userdebug panel and of no production one -- so the panels
+  // that most need profiling are exactly the ones that cannot be profiled.
+  // A static call, so it has to happen before any WebView is created and
+  // cannot be changed without a restart; the setting says so.
+  //
+  // Off by default. The DevTools endpoint is an abstract unix socket
+  // reachable only from the device, so this grants nothing that ADB access
+  // does not already grant -- but a wall panel should not leave a debugger
+  // attachable just in case.
+  if (container.settings.get(defs.webviewDebugging)) {
+    try {
+      await InAppWebViewController.setWebContentsDebuggingEnabled(true);
+      container.log.info('app', 'WebView debugging enabled');
+    } catch (e) {
+      container.log.warn('app', 'could not enable WebView debugging: $e');
+    }
+  }
 
   // Self-signed certificates are the norm for LAN Home Assistant servers;
   // accept them for the configured HA host (and only that host) across
