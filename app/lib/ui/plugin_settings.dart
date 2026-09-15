@@ -807,6 +807,11 @@ class _PluginSettingsState extends State<_PluginSettings> {
             initialValue: draft,
             autofocus: true,
             maxLength: 512,
+            obscureText: raw['secret'] == true,
+            // A token is pasted, never typed, and autocorrect on a 180
+            // character string is only ever damage.
+            autocorrect: raw['secret'] != true,
+            enableSuggestions: raw['secret'] != true,
             textInputAction: TextInputAction.done,
             decoration: InputDecoration(
               hintText: raw['description'] as String?,
@@ -862,12 +867,18 @@ class _PluginSettingsState extends State<_PluginSettings> {
     }
     if (raw['type'] == 'string') {
       final value = '${_values[raw['key']] ?? raw['default']}';
+      // A string setting marked secret holds a credential -- an access
+      // token, an API key. Home Assistant Setup shows its own token as
+      // dots for the same reason: a wall panel's settings screen is read
+      // by whoever is standing in front of it, and the value is no more
+      // useful on screen than its length is.
+      final secret = raw['secret'] == true;
       return SettingsRow(
         title: Text('${raw['title']}'),
         subtitle: Text(
           value.isEmpty
               ? raw['description']?.toString() ?? deviceText(context, 'Not set')
-              : value,
+              : (secret ? '•' * 8 : value),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
