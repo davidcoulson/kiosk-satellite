@@ -4750,7 +4750,41 @@ String? _validateHiddenPages(Object? value) {
   return 'Expected a JSON array of category names.';
 }
 
-Set<String> decodeHiddenPages(String value) {
+/// Rail groups rolled up on this device, by their heading.
+///
+/// The sibling of [uiHiddenPages], for the case where a whole group is
+/// uninteresting rather than a page: the heading stays, its tiles fold
+/// away, and one tap brings them back. Hiding a page is a decision about
+/// this panel; rolling up a group is a view of the list, so a rolled-up
+/// group is still a tap from open and nothing is removed.
+///
+/// Stored by heading rather than by category, so a group that gains a page
+/// upstream keeps its state, and a heading that is renamed simply comes
+/// back open rather than stranding its tiles out of reach.
+const uiCollapsedGroups = SettingDef<String>(
+  key: 'ui.collapsed_groups',
+  type: SettingType.string,
+  defaultValue: '[]',
+  title: 'Rolled-up settings groups',
+  description:
+      'Groups to show rolled up in the on-device settings list. Tapping the '
+      'heading opens one again; nothing is hidden from search or Remote Admin.',
+  category: 'Device',
+  validator: _validateCollapsedGroups,
+);
+
+String? _validateCollapsedGroups(Object? value) {
+  try {
+    final decoded = json.decode(value as String);
+    if (decoded is List && decoded.every((e) => e is String)) return null;
+  } catch (_) {}
+  return 'Expected a JSON array of group headings.';
+}
+
+/// A settings value holding a JSON array of strings, as a set. Shared by
+/// the hidden-pages and rolled-up-groups lists; a missing or malformed
+/// value reads as empty rather than throwing at a wall panel.
+Set<String> decodeStringSet(String value) {
   try {
     final decoded = json.decode(value);
     if (decoded is List) return decoded.whereType<String>().toSet();
@@ -8011,6 +8045,7 @@ const List<SettingDef<Object>> allSettings = [
   haKioskMenu,
   haDashboardCarousel,
   uiHiddenPages,
+  uiCollapsedGroups,
   haPreloadViews,
   haCarouselOverCards,
   haHaptics,
