@@ -64,16 +64,36 @@ const preloadViewsScript = '''
 
   // A camera anywhere in a view's cards, including nested inside the
   // stack and grid cards people actually build dashboards out of.
-  function hasCamera(node) {
+  // Walks the whole view config rather than the card types and the four
+  // lists a built-in layout happens to use.
+  //
+  // The first version of this matched `type` against "camera" and recursed
+  // through cards/sections/badges/elements. It missed the shape that
+  // actually costs something: a `picture-entity` card whose *entity* is a
+  // `camera.*`, sitting inside a custom layout that keeps its children
+  // somewhere other than `cards`. On the basement panel that view was
+  // preloaded, two ha-web-rtc-players started, and they kept decoding for a
+  // view nobody was looking at -- 181% of four cores, against 6% with them
+  // stopped, on the slowest panel in the fleet.
+  //
+  // So: any key at any depth, and a camera is a `camera.` entity id, a
+  // camera_image/camera_view key, or a card type that says camera. Depth
+  // limited because a config is data and data can be cyclic.
+  function hasCamera(node, depth) {
     try {
       if (!node || typeof node !== 'object') return false;
-      var t = node.type;
-      if (typeof t === 'string' && t.indexOf('camera') !== -1) return true;
-      var lists = [node.cards, node.sections, node.badges, node.elements];
-      for (var i = 0; i < lists.length; i++) {
-        var l = lists[i];
-        if (!l || !l.length) continue;
-        for (var j = 0; j < l.length; j++) if (hasCamera(l[j])) return true;
+      if (depth > 24) return true;  // too deep to be sure: skip the view
+      var keys = Object.keys(node);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (k === 'camera_image' || k === 'camera_view') return true;
+        var v = node[k];
+        if (typeof v === 'string') {
+          if (v.indexOf('camera.') === 0) return true;
+          if (k === 'type' && v.indexOf('camera') !== -1) return true;
+        } else if (v && typeof v === 'object') {
+          if (hasCamera(v, depth + 1)) return true;
+        }
       }
       return false;
     } catch (e) { return true; }  // unreadable: treat as camera, skip it
@@ -114,7 +134,7 @@ const preloadViewsScript = '''
     var todo = [];
     for (var i = 0; i < views.length; i++) {
       if (cached(i)) continue;
-      if (hasCamera(views[i])) continue;
+      if (hasCamera(views[i], 0)) continue;
       todo.push({ i: i, path: views[i].path == null ? String(i) : views[i].path });
     }
     if (!todo.length) return;
