@@ -179,7 +179,11 @@ class _ReadingRow extends StatelessWidget {
             ),
         ],
       ),
-      textAlign: multiline ? TextAlign.start : TextAlign.end,
+      // Right-aligned even when it wraps to several lines, so a list reads
+      // down the same edge as every single-line value beside it. A ragged
+      // left edge is the price; a value column that changes side halfway
+      // down the card was the worse one.
+      textAlign: TextAlign.end,
       style: readingStyle?.copyWith(
         color: reading['state'] == null || reading['state'] == ''
             ? muted

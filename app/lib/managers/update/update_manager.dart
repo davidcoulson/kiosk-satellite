@@ -74,6 +74,22 @@ class UpdateManager extends Manager {
   final String? Function() customSource;
   static String? _noCustomSource() => null;
 
+  /// The repository this build checks for updates.
+  ///
+  /// This fork, not upstream. A panel running a fork build that offers an
+  /// upstream release is offering to overwrite itself with a build missing
+  /// every fork change, behind a one-tap "Update available" notice on a wall
+  /// panel that anyone can press. Upstream's releases are still the right
+  /// thing to watch -- they are what the fork rebases onto -- but that is a
+  /// job for whoever maintains the fork, not an offer to make on the wall.
+  ///
+  /// Keep in step with [releasesPage].
+  static const updateRepository = 'davidcoulson/kiosk-satellite';
+
+  /// Where the notice sends someone who wants to read about a release.
+  static const releasesPage =
+      'https://github.com/$updateRepository/releases';
+
   /// The releases list rather than `/releases/latest`: one request either
   /// way, but the list also carries the bodies of releases the device
   /// skipped, which is what lets the notice show everything that changed
@@ -81,7 +97,7 @@ class UpdateManager extends Manager {
   /// window is a display cap, not a paging cursor: a device further behind
   /// than this gets the newest releases and a pointer to the history.
   static const _releasesUrl =
-      'https://api.github.com/repos/jxlarrea/kiosk-satellite/'
+      'https://api.github.com/repos/$updateRepository/'
       'releases?per_page=30';
 
   /// The file a custom repository serves in place of the GitHub query:
@@ -434,9 +450,7 @@ class UpdateManager extends Manager {
                 version: tag,
                 apkUrl: url,
                 notes: _combinedNotes(releases, tagOf),
-                releaseUrl:
-                    latest['html_url'] as String? ??
-                    'https://github.com/jxlarrea/kiosk-satellite/releases',
+                releaseUrl: latest['html_url'] as String? ?? releasesPage,
                 apkSize: (apk['size'] as num?)?.toInt(),
               )
             : null,
