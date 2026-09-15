@@ -407,7 +407,11 @@
     transition: transform .12s ease; }
   .nav-group.collapsed .nav-head::after {
     transform: rotate(45deg) translate(-1px, -1px); }
-  .nav-group.collapsed button { display: none; }
+  /* Qualified with nav#tabs deliberately: the rail rule above is
+     `nav#tabs button { display: flex }`, whose id outranks any plain class
+     selector, so an unqualified `.nav-group.collapsed button` loses the
+     cascade and folds nothing -- the chevron turns and the rows stay. */
+  nav#tabs .nav-group.collapsed button { display: none; }
   .nav-head:focus-visible { outline: 2px solid var(--accent, currentColor);
     outline-offset: 2px; border-radius: 4px; }
   @media (prefers-reduced-motion: reduce) {
