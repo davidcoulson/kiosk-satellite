@@ -664,6 +664,19 @@ const ignoreSslErrors = SettingDef<bool>(
   category: 'Browser',
 );
 
+const webviewDebugging = SettingDef<bool>(
+  key: 'browser.webview_debugging',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'WebView debugging',
+  description:
+      'Let Chrome DevTools attach to the dashboard over ADB, for profiling '
+      'and inspecting the page. Off by default: it is a diagnostic, not '
+      'something a wall panel needs running. Takes effect at the next '
+      'restart. A userdebug panel has this on regardless of this switch.',
+  category: 'Browser',
+);
+
 // ── Web content (permissions, à la Fully Kiosk) ────────────────────────
 
 const webMicrophone = SettingDef<bool>(
@@ -7855,6 +7868,7 @@ const List<SettingDef<Object>> allSettings = [
   browserInjectJsExternal,
   allowMixedContent,
   ignoreSslErrors,
+  webviewDebugging,
   webMicrophone,
   webCamera,
   webGeolocation,
