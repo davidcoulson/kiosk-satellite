@@ -11,6 +11,7 @@ import {
 import { MIC_GROUP_NOTE, cameraAction, exportFileName } from './cameras.js';
 import { $, api, cacheSettings, cmd, depSatisfied, state } from './core.js';
 import { readOnlyRow, renderAnalyticsIntro, renderUpdateHelper, renderUpdateSourceDocs } from './device.js';
+import { initNavGroups } from './navgroups.js';
 import { permissionSpecs } from './permissions.js';
 import { renderServicePage } from './service.js';
 import { renderShizukuPage } from './shizuku.js';
@@ -279,6 +280,9 @@ async function renderSettings({ cached = false } = {}) {
   renderedSettings.clear();
   for (const setting of settings) renderedSettings.set(setting.key, JSON.stringify(setting));
   refreshNavigationText();
+  // The sidebar's rolled-up groups live in these settings too, so wire
+  // and repaint them from the same load rather than fetching twice.
+  initNavGroups();
   // Named once for every second-level page, including the ones with no
   // settings of their own (Voice Satellite's are live entity rows).
   state.subpageHints = subpageHints || {};

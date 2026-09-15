@@ -397,7 +397,22 @@
   .nav-group { display: flex; flex-direction: column; gap: 4px; }
   .nav-head { margin: 16px 0 4px; padding: 0 16px; font-size: 12.5px;
     font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
-    color: var(--muted); }
+    color: var(--muted); display: flex; align-items: center; gap: 6px;
+    cursor: pointer; user-select: none; }
+  /* The chevron points down when the group is folded, the way a disclosure
+     reads everywhere else: down is "there is more below". */
+  .nav-head::after { content: ''; width: 7px; height: 7px; margin-left: auto;
+    border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+    transform: rotate(-135deg) translate(-2px, -2px);
+    transition: transform .12s ease; }
+  .nav-group.collapsed .nav-head::after {
+    transform: rotate(45deg) translate(-1px, -1px); }
+  .nav-group.collapsed button { display: none; }
+  .nav-head:focus-visible { outline: 2px solid var(--accent, currentColor);
+    outline-offset: 2px; border-radius: 4px; }
+  @media (prefers-reduced-motion: reduce) {
+    .nav-head::after { transition: none; }
+  }
   .disc { flex: none; width: 38px; height: 38px; border-radius: 50%;
     display: grid; place-items: center; color: #fff; }
   .disc svg { width: 19px; height: 19px; }
