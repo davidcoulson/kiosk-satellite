@@ -194,6 +194,9 @@ test('a released camera keeps its shape and shows a blurred, dimmed still', asyn
   assert.equal(camera.style.aspectRatio, '1280 / 720');
   assert.equal(camera.style.overflow, 'hidden');
   assert.equal(camera.style.position, 'relative');
+  // HA sizes these players with height:100%, which resolves to 0 in a
+  // collapsed wrapper and leaves aspect-ratio with nothing to act on.
+  assert.equal(camera.style.height, 'auto');
 
   const still = camera.shadowRoot.getElementById('ks-camera-still');
   assert.ok(still, 'a still is painted over the released player');
@@ -209,6 +212,7 @@ test('a released camera keeps its shape and shows a blurred, dimmed still', asyn
   assert.equal(camera.shadowRoot.getElementById('ks-camera-still'), null);
   assert.equal(camera.style.aspectRatio, '');
   assert.equal(camera.style.overflow, '');
+  assert.equal(camera.style.height, '');
 });
 
 test('a camera with no snapshot or dimensions still holds a sane shape', async () => {
