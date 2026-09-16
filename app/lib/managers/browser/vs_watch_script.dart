@@ -15,6 +15,15 @@
 /// decides, under the same auto-reload setting and rate limit as every other
 /// self-initiated reload.
 ///
+/// A session that failed to start counts, not just one that died after
+/// running. The engine starts against `hass.states` before the frontend has
+/// filled it in and throws — "Native wake handoff failed: Cannot read
+/// properties of null" — and then never registers, which is how .145 sat
+/// unavailable inside a page whose socket was fine. Requiring the satellite
+/// to have been seen alive first would disarm this watcher for exactly the
+/// case it exists to repair: a page that loaded into a failed start has
+/// never seen it alive, and a reload is what fixes it.
+///
 /// Three guards keep it from reloading a panel that is working as intended:
 ///
 ///  - the engine has to be loaded. A panel whose bundle is deliberately
@@ -22,9 +31,11 @@
 ///    the element, its satellite is unavailable forever by design, and a
 ///    watcher without this guard would reload it every cooldown until
 ///    someone noticed;
-///  - the satellite has to have been alive once on this page. A session that
-///    never started is not a session that died, and is not repaired by a
-///    reload;
+///  - reloads are capped per tab. Since a never-started session now counts,
+///    the attempt count rides in `sessionStorage` so it survives the reloads
+///    it is counting. A panel a reload cannot fix gives up instead of
+///    cycling forever, and the count resets the moment the satellite is
+///    seen alive;
 ///  - Home Assistant has to be connected. A dead socket is the socket
 ///    watchdog's job, and reloading underneath it would race its repair.
 const voiceSatelliteWatchScript = '''
@@ -32,8 +43,24 @@ const voiceSatelliteWatchScript = '''
   if (window.__ksVsWatch) return;
   var CHECK_MS = 15000;
   var DOWN_MS = 60000;
-  var S = { seenAlive: false, downSince: 0, reported: false, entity: null };
+  var MAX_RELOADS = 3;
+  var COUNT_KEY = 'ks-vs-reloads';
+  var S = { downSince: 0, reported: false, entity: null };
   window.__ksVsWatch = S;
+
+  // Per tab, not per page: the count has to outlive the reloads it counts.
+  function attempts() {
+    try {
+      return parseInt(window.sessionStorage.getItem(COUNT_KEY), 10) || 0;
+    } catch (e) { return 0; }
+  }
+
+  function setAttempts(n) {
+    try {
+      if (n) window.sessionStorage.setItem(COUNT_KEY, '' + n);
+      else window.sessionStorage.removeItem(COUNT_KEY);
+    } catch (e) {}
+  }
 
   function satelliteEntity() {
     if (S.entity) return S.entity;
@@ -68,17 +95,21 @@ const voiceSatelliteWatchScript = '''
       if (!state) return;
 
       if (state !== 'unavailable') {
-        S.seenAlive = true;
+        // A working session clears the budget for the next outage.
         S.downSince = 0;
         S.reported = false;
+        setAttempts(0);
         return;
       }
-      // Unavailable from the first sample is a session that never started.
-      if (!S.seenAlive || S.reported) return;
+      if (S.reported) return;
+      // A panel a reload cannot repair stops asking rather than cycling.
+      var tries = attempts();
+      if (tries >= MAX_RELOADS) return;
       var now = Date.now();
       if (!S.downSince) { S.downSince = now; return; }
       if (now - S.downSince < DOWN_MS) return;
       S.reported = true;
+      setAttempts(tries + 1);
       try {
         window.flutter_inappwebview.callHandler(
             'ksVoiceSatelliteDown', id, Math.round((now - S.downSince) / 1000));
