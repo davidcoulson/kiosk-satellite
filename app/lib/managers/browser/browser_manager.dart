@@ -1622,6 +1622,35 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
     });
   }
 
+  /// How long between reloads prompted by a dead Voice Satellite session.
+  /// Long, because a reload costs the dashboard and its camera streams, and
+  /// the condition it repairs arrives with a Home Assistant restart rather
+  /// than repeatedly.
+  static const _vsReloadCooldown = Duration(minutes: 10);
+  DateTime _lastVsReload = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// The page reported a Voice Satellite session that died and stayed dead
+  /// (see vs_watch_script).
+  ///
+  /// Everything else about the page is healthy here — the socket is up and
+  /// entity state is flowing — so none of the socket repairs apply and only
+  /// a reload re-runs the engine. Gated on the same setting as every other
+  /// reload this app does on its own.
+  Future<void> onVoiceSatelliteDown(String entityId, int downSeconds) async {
+    if (!_settings.get(defs.autoReloadOnError)) {
+      log.warn(
+        name,
+        'voice satellite $entityId down ${downSeconds}s; '
+        'auto-reload is off, leaving it',
+      );
+      return;
+    }
+    if (DateTime.now().difference(_lastVsReload) < _vsReloadCooldown) return;
+    _lastVsReload = DateTime.now();
+    log.warn(name, 'voice satellite $entityId down ${downSeconds}s; reloading');
+    await _renavigate(reason: 'a dead Voice Satellite session');
+  }
+
   /// The page reported that the dashboard set may have moved (see
   /// dashboards_watch_script): relayed as is, the listeners coalesce.
   void onHaDashboardsChanged(String reason) {

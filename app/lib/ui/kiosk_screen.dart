@@ -27,6 +27,7 @@ import '../managers/browser/no_cache_script.dart';
 import '../managers/browser/pull_to_refresh_script.dart';
 import '../managers/browser/dashboards_watch_script.dart';
 import '../managers/browser/socket_watch_script.dart';
+import '../managers/browser/vs_watch_script.dart';
 import '../managers/browser/viewport_zoom_script.dart';
 import '../managers/browser/visibility_mask_script.dart';
 import '../managers/browser/ws_filter_script.dart';
@@ -891,6 +892,14 @@ class _KioskScreenState extends State<KioskScreen>
     // it has to work with the ws filter off.
     UserScript(
       source: haSocketWatchScript,
+      injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+    ),
+    // Reports a Voice Satellite session that died and stayed dead while the
+    // page around it is healthy, which no socket-level watch can see (see
+    // vs_watch_script). Always injected: it guards itself on the engine
+    // actually being loaded.
+    UserScript(
+      source: voiceSatelliteWatchScript,
       injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
     ),
     // Reports the moments the dashboard set can have moved (a dashboard
@@ -1796,6 +1805,15 @@ class _KioskScreenState extends State<KioskScreen>
       controller.addJavaScriptHandler(
         handlerName: 'ksHaSocketClosed',
         callback: (_) => c.browser.onHaSocketClosed(),
+      );
+      // A Voice Satellite session died and did not come back, on a page whose
+      // socket is fine (see vs_watch_script). Only a reload re-runs it.
+      controller.addJavaScriptHandler(
+        handlerName: 'ksVoiceSatelliteDown',
+        callback: (args) => c.browser.onVoiceSatelliteDown(
+          args.isNotEmpty ? '${args.first}' : '',
+          args.length > 1 ? int.tryParse('${args[1]}') ?? 0 : 0,
+        ),
       );
       // The dashboard set may have moved (see dashboards_watch_script).
       controller.addJavaScriptHandler(
