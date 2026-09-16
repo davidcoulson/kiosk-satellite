@@ -88,6 +88,11 @@ const dashboardCameraScript = r'''
         el.style.display = 'block';
         el.style.position = 'relative';
         el.style.overflow = 'hidden';
+        // Home Assistant sizes these players with height:100%, and inside a
+        // wrapper that collapsed with the video that resolves to 0, which
+        // makes aspect-ratio inert. Height has to go back to auto for the
+        // ratio to have anything to act on.
+        el.style.height = 'auto';
         el.style.aspectRatio = aspectRatio(el);
       }
       // Lit clears the shadow root as it renders the empty template, so the
@@ -107,6 +112,7 @@ const dashboardCameraScript = r'''
         el.style.display = '';
         el.style.position = '';
         el.style.overflow = '';
+        el.style.height = '';
         el.style.aspectRatio = '';
       }
       var root = el.shadowRoot;
