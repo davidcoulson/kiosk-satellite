@@ -113,6 +113,8 @@ class FleetDiscovery(
     private companion object {
         const val TAG = "KsFleet"
         const val SERVICE = "_kiosk-satellite._tcp.local"
+        // The first label of SERVICE, for the raw-bytes prefilter.
+        const val SERVICE_LABEL = "_kiosk-satellite"
         const val ANNOUNCE_INTERVAL_MS = 30_000L
         // How long the local-address list may be reused. Long enough that
         // a busy network's mDNS traffic cannot turn it into a per-packet
@@ -363,6 +365,11 @@ class FleetDiscovery(
             }
         }
         if (!fleet) return
+        // The same byte test as the hostname above, for the same reason: a
+        // kiosk announcement must spell out "_kiosk-satellite", and on a
+        // house network almost no mDNS packet does. Without this every
+        // Chromecast, printer and ESPHome node costs a full record walk.
+        if (!mentionsLabel(packet, SERVICE_LABEL)) return
         repeat(qd) { r.name(); r.u16(); r.u16() }
         // One packet, every record it carries; a kiosk's announcement holds
         // its PTR, SRV, TXT and A together, so a single pass finds the set.
@@ -564,8 +571,10 @@ class FleetDiscovery(
      * that would have happened anyway; a false negative is impossible,
      * since an A record for the name must spell the label out.
      */
-    private fun mentionsHost(packet: DatagramPacket, host: String): Boolean {
-        val label = host.substringBefore('.')
+    private fun mentionsHost(packet: DatagramPacket, host: String): Boolean =
+        mentionsLabel(packet, host.substringBefore('.'))
+
+    private fun mentionsLabel(packet: DatagramPacket, label: String): Boolean {
         if (label.isEmpty()) return false
         val needle = label.toByteArray(Charsets.US_ASCII)
         val data = packet.data
