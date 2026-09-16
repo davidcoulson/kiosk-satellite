@@ -140,8 +140,36 @@ class ProximityManager extends Manager {
   bool _screenOn = true;
 
   /// Whether the sensor should be watched right now.
+  /// Publishing the entity keeps the sensor running whatever the screen or
+  /// the screensaver is doing: an automation asking "is anyone at the
+  /// panel" wants an answer at 3am with the screen off, which is exactly
+  /// when the screensaver legs would have stopped watching.
+  bool get _sensorWanted => _settings.get(defs.proximitySensor);
+
   bool get _shouldRun =>
-      _screensaverActive ? enabled : _postponeEnabled && _screenOn;
+      _sensorWanted ||
+      (_screensaverActive ? enabled : _postponeEnabled && _screenOn);
+
+  /// The entity's own state, held over brief gaps by [_clear].
+  bool _near = false;
+  Timer? _clear;
+
+  void _publishNear(bool near) {
+    if (_near == near) return;
+    _near = near;
+    bus.publish(ProximityStateChanged(near: near));
+  }
+
+  /// A near holds the entity on until this many quiet seconds pass. The
+  /// hardware reports a clean far the moment a hand leaves, which would
+  /// make the entity chatter on every gesture; an automation wants "still
+  /// here" to survive that.
+  void _touchNear() {
+    _clear?.cancel();
+    _publishNear(true);
+    final seconds = _settings.get(defs.proximitySensorOffDelay).clamp(1, 300);
+    _clear = Timer(Duration(seconds: seconds), () => _publishNear(false));
+  }
 
   @override
   Future<void> init() async {
@@ -163,7 +191,8 @@ class ProximityManager extends Manager {
     bus.on<SettingChanged>().listen((e) {
       if (e.key != defs.screensaverDismissOnProximity.key &&
           e.key != defs.screensaverPostponeOnProximity.key &&
-          e.key != defs.screensaverEnabled.key) {
+          e.key != defs.screensaverEnabled.key &&
+          e.key != defs.proximitySensor.key) {
         return;
       }
       // The switch turned on where there is no sensor (the settings page
@@ -267,20 +296,25 @@ class ProximityManager extends Manager {
         final near = raw['near'] == true;
         if (raw['initial'] == true) {
           // The resting state at registration: something already on the
-          // sensor is not an approach, and a far is nothing at all.
+          // sensor is not an approach, and a far is nothing at all. The
+          // entity still wants it, since "already near at startup" is a
+          // true answer to its question even though it is not an arrival.
           log.debug(name, 'resting ${near ? 'near' : 'far'}');
+          if (near) _touchNear();
           return;
         }
         _hold?.cancel();
         _hold = null;
         if (!near) {
           log.debug(name, 'far');
-          return;
+          return;  // The entity clears on its own timer, not on this edge.
         }
         log.debug(name, 'near');
+        _touchNear();
         bus.publish(const ProximityDetected());
         _hold = Timer.periodic(holdInterval, (_) {
           log.debug(name, 'still near');
+          _touchNear();
           // Held: postpones the next screensaver, never dismisses one that
           // started with the thing already close.
           bus.publish(const ProximityDetected(held: true));
@@ -296,11 +330,17 @@ class ProximityManager extends Manager {
   void _stop() {
     _hold?.cancel();
     _hold = null;
+    _clear?.cancel();
+    _clear = null;
+    _publishNear(false);
     if (_sub == null) return;
     unawaited(_sub!.cancel());
     _sub = null;
     log.info(name, 'sensor off');
   }
+
+  /// The entity's current reading, for the surface that publishes it.
+  bool get near => _near;
 
   @override
   Future<void> dispose() async {

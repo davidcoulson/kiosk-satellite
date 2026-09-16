@@ -71,6 +71,9 @@ class EspEntitySurface {
   /// surface reaches managers through [commands], never by holding one.
   bool _camerasHeld = false;
 
+  /// Mirrors the proximity manager's entity state, tracked from its event.
+  bool _proximityNear = false;
+
   /// Called when the served catalog no longer matches what a fresh
   /// [build] would lay out (the dashboard view list moved). The ESPHome
   /// protocol lists entities once per connection, so only the manager's
@@ -662,6 +665,17 @@ class EspEntitySurface {
           'objectId': 'motion',
           'name': 'Motion',
           'deviceClass': 'motion',
+        },
+      // The device's own proximity sensor, when the panel has been asked to
+      // publish it. Occupancy rather than motion: it answers "is someone
+      // there", and it keeps answering while they stand still, which a
+      // motion device class would read as stale.
+      if (_settings.get(defs.proximitySensor))
+        {
+          'type': 'binary_sensor',
+          'objectId': 'proximity',
+          'name': 'Proximity',
+          'deviceClass': 'occupancy',
         },
       // Someone in view of the device's own person sensor (discussion
       // #353): occupancy, since it reports people at any angle, not a
@@ -1354,6 +1368,12 @@ class EspEntitySurface {
       }),
     );
     _subs.add(
+      bus.on<ProximityStateChanged>().listen((e) {
+        _proximityNear = e.near;
+        _send('proximity', e.near);
+      }),
+    );
+    _subs.add(
       bus.on<DashboardCamerasHoldChanged>().listen((e) {
         _camerasHeld = e.held;
         _send('dashboard_cameras', !e.held);
@@ -1905,6 +1925,9 @@ class EspEntitySurface {
     }
     await _send('screensaver_active', _screensaverActive);
     await _send('dashboard_cameras', !_camerasHeld);
+    if (_settings.get(defs.proximitySensor)) {
+      await _send('proximity', _proximityNear);
+    }
     await _send('now_playing', _nowPlayingShown);
     await _sendDeviceInfo();
     // Settings-backed entities all report their stored values.
