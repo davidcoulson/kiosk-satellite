@@ -507,6 +507,17 @@ class PersonSensorChanged extends AppEvent {
 /// [held] is false for the far-to-near flip and true for the repeats,
 /// the same split as [PersonDetected]: Dismiss on proximity acts on the
 /// approach, Postpone on proximity on the whole stay.
+/// The proximity sensor's near/far state, for the Home Assistant entity.
+///
+/// Separate from [ProximityDetected], which is an approach: the screensaver
+/// wants "someone arrived", an entity wants "someone is there", and the
+/// second has to fall back to false on its own after a quiet spell.
+class ProximityStateChanged extends AppEvent {
+  const ProximityStateChanged({required this.near});
+
+  final bool near;
+}
+
 class ProximityDetected extends AppEvent {
   const ProximityDetected({this.held = false});
 

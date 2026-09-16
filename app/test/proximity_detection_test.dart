@@ -295,4 +295,52 @@ void main() {
       expect(saver.isActive, isTrue);
     });
   });
+
+  test('the entity runs the sensor on its own, and clears on a timer', () async {
+    // The capability switch is separate from the screensaver legs: an
+    // automation asking "is anyone at the panel" wants an answer with the
+    // screen off, which is exactly when those legs stop watching.
+    await build({
+      'flutter.ks.proximity.sensor': true,
+      'flutter.ks.proximity.sensor_off_delay': 1,
+    });
+    await pump();
+
+    final states = <bool>[];
+    final sub = bus.on<ProximityStateChanged>().listen((e) => states.add(e.near));
+    addTearDown(sub.cancel);
+
+    reading(near: true);
+    await pump();
+    expect(states, [true], reason: 'near with no screensaver in sight');
+
+    // A far edge must NOT clear it: the hardware reports one every time a
+    // hand leaves, and an automation wants "still here" to survive that.
+    reading(near: false);
+    await pump();
+    expect(states, [true], reason: 'the far edge is not the clear');
+
+    await Future<void>.delayed(const Duration(milliseconds: 1400));
+    expect(states, [true, false], reason: 'cleared on its own timer');
+  });
+
+  test('a stopped sensor reports clear rather than sticking on', () async {
+    await build({
+      'flutter.ks.proximity.sensor': true,
+      'flutter.ks.proximity.sensor_off_delay': 60,
+    });
+    await pump();
+
+    final states = <bool>[];
+    final sub = bus.on<ProximityStateChanged>().listen((e) => states.add(e.near));
+    addTearDown(sub.cancel);
+
+    reading(near: true);
+    await pump();
+    expect(states.last, isTrue);
+
+    await settings.set(defs.proximitySensor, false);
+    await pump();
+    expect(states.last, isFalse, reason: 'the entity must not stay stuck on');
+  });
 }

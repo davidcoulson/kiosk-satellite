@@ -7725,6 +7725,47 @@ const fleetLastSyncAt = SettingDef<num>(
 /// battery hidden by a clever guess is a worse failure than a fake one
 /// shown. Whoever mounted the panel on the wall knows whether it has a
 /// battery; nothing else on the device does.
+/// Publish the proximity sensor to Home Assistant.
+///
+/// The sensor already drives screensaver dismissal; this is the capability
+/// switch that also makes it an entity, so an automation can use it — to
+/// pause a panel's camera streams when nobody is in front of it, say.
+///
+/// Off by default and separate from the screensaver switches on purpose:
+/// they are about waking a screen, this is about telling the house what the
+/// panel can see, and a panel may well want one without the other.
+const proximitySensor = SettingDef<bool>(
+  key: 'proximity.sensor',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Proximity sensor',
+  description:
+      'Expose proximity as a Home Assistant sensor, so automations can tell '
+      'whether someone is at the panel. Costs nothing to run — unlike the '
+      'camera motion sensor, the hardware reports changes on its own. Most '
+      'proximity sensors only reach a few centimetres, so check the range '
+      'before relying on it.',
+  category: 'Screensaver',
+  section: 'Proximity',
+  subpage: 'Proximity',
+);
+
+const proximitySensorOffDelay = SettingDef<int>(
+  key: 'proximity.sensor_off_delay',
+  type: SettingType.number,
+  defaultValue: 10,
+  title: 'Clear after',
+  description: 'Seconds without proximity before the sensor reads clear.',
+  category: 'Screensaver',
+  section: 'Proximity',
+  subpage: 'Proximity',
+  min: 1,
+  max: 300,
+  step: 1,
+  unit: 's',
+  dependsOn: 'proximity.sensor',
+);
+
 const noBattery = SettingDef<bool>(
   key: 'device.no_battery',
   type: SettingType.boolean,
@@ -8287,6 +8328,8 @@ const List<SettingDef<Object>> allSettings = [
   esphomeMacOverride,
   deviceName,
   noBattery,
+  proximitySensor,
+  proximitySensorOffDelay,
   deviceHostname,
   disableImpeller,
   legacyWebView,
