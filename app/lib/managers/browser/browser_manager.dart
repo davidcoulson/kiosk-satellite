@@ -408,6 +408,23 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
       )
       ..register(
         Command(
+          name: 'setDashboardCameras',
+          description:
+              'Play or pause the camera streams on the Home Assistant '
+              'dashboard, for a panel nobody is standing at',
+          params: const {'playing': 'true to play, false to pause'},
+          handler: (p) async {
+            final playing = p['playing'];
+            if (playing is! bool) {
+              return const CommandResult.fail('playing must be true or false');
+            }
+            setDashboardCamerasHeldPaused(!playing);
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
           name: 'hideOverlayPage',
           description:
               'Dismiss the overlay page and reveal the dashboard again',
@@ -807,13 +824,43 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   bool _screensaverHasOverlay = false;
   Timer? _cameraPauseDelay;
 
+  /// Held paused from outside, by whoever knows the room is empty.
+  ///
+  /// The screensaver rule below only helps a panel that runs one. A wall
+  /// panel that never sleeps decodes every camera on its dashboard around
+  /// the clock for nobody -- measured at 31 Mpx/s on an eight-core panel,
+  /// most of a day's worth of that with nothing in front of it. Presence
+  /// is not something this app can judge: the room may have an mmWave
+  /// sensor, or the panel's own motion sensor, or neither. So the decision
+  /// is left to Home Assistant and only the mechanism lives here.
+  bool _camerasHeldPaused = false;
+
   /// Camera suspension belongs to the main dashboard document. It also works
   /// with rendering pause disabled and with a website screensaver on HA's
   /// origin. A visible Dim dashboard keeps its streams playing.
   bool get dashboardCameraStreamsPaused =>
-      _settings.get(defs.pauseDashboardCameras) &&
-      _screensaverActive &&
-      (_screensaverHasOverlay || !_screenIsOn);
+      _camerasHeldPaused ||
+      (_settings.get(defs.pauseDashboardCameras) &&
+          _screensaverActive &&
+          (_screensaverHasOverlay || !_screenIsOn));
+
+  /// Whether the streams are being held paused from outside, as opposed to
+  /// paused by the screensaver, which owns its own rule.
+  bool get dashboardCamerasHeldPaused => _camerasHeldPaused;
+
+  /// Hold the dashboard's camera streams paused, or release them.
+  ///
+  /// Resuming is not instant -- a WebRTC stream takes a few seconds to come
+  /// back -- so this is worth driving from something that fires before
+  /// someone is actually reading the screen, which is what a presence
+  /// sensor does and what a touch does not.
+  void setDashboardCamerasHeldPaused(bool held) {
+    if (_camerasHeldPaused == held) return;
+    _camerasHeldPaused = held;
+    log.info(name, 'dashboard cameras ${held ? 'held paused' : 'released'}');
+    _scheduleDashboardCameraSync();
+    bus.publish(DashboardCamerasHoldChanged(held: held));
+  }
 
   void _scheduleDashboardCameraSync() {
     _cameraPauseDelay?.cancel();

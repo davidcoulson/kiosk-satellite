@@ -67,6 +67,10 @@ class EspEntitySurface {
   final Logger log;
   final SettingsManager _settings;
 
+  /// Mirrors the browser manager's hold, tracked from its event: this
+  /// surface reaches managers through [commands], never by holding one.
+  bool _camerasHeld = false;
+
   /// Called when the served catalog no longer matches what a fresh
   /// [build] would lay out (the dashboard view list moved). The ESPHome
   /// protocol lists entities once per connection, so only the manager's
@@ -476,6 +480,17 @@ class EspEntitySurface {
         'objectId': 'screensaver_active',
         'name': 'Screensaver active',
         'icon': 'mdi:sleep',
+      },
+      // Off pauses the camera streams on the dashboard, for a panel with
+      // nobody in front of it. Driven from whatever knows the room is
+      // empty -- an mmWave sensor where the room has one, this panel's own
+      // motion sensor where it does not -- because presence is not
+      // something the panel can judge for itself.
+      {
+        'type': 'switch',
+        'objectId': 'dashboard_cameras',
+        'name': 'Dashboard cameras',
+        'icon': 'mdi:cctv',
       },
       // The full-screen Now Playing view: on while it is on screen, and a
       // turn-on brings it up the way the kiosk menu entry does (a paused
@@ -1339,6 +1354,12 @@ class EspEntitySurface {
       }),
     );
     _subs.add(
+      bus.on<DashboardCamerasHoldChanged>().listen((e) {
+        _camerasHeld = e.held;
+        _send('dashboard_cameras', !e.held);
+      }),
+    );
+    _subs.add(
       bus.on<ScreensaverViewChanged>().listen((_) {
         _send('now_playing', _nowPlayingShown);
       }),
@@ -1602,6 +1623,8 @@ class EspEntitySurface {
           value == true ? 'startScreensaver' : 'stopScreensaver',
           const {},
         );
+      case 'dashboard_cameras':
+        await commands.execute('setDashboardCameras', {'playing': value == true});
       case 'now_playing':
         if (value == true) {
           await commands.execute('showNowPlaying', const {});
@@ -1881,6 +1904,7 @@ class EspEntitySurface {
       _nowPlayingActive = (player.data as Map)['fullscreenActive'] == true;
     }
     await _send('screensaver_active', _screensaverActive);
+    await _send('dashboard_cameras', !_camerasHeld);
     await _send('now_playing', _nowPlayingShown);
     await _sendDeviceInfo();
     // Settings-backed entities all report their stored values.
