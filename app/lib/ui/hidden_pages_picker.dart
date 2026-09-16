@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
-import '../managers/settings/definitions.dart';
 import '../managers/settings/settings_manager.dart';
 
 /// Picks which settings pages this panel leaves out of its own list.

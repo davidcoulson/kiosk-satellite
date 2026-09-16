@@ -7746,8 +7746,8 @@ const proximitySensor = SettingDef<bool>(
       'proximity sensors only reach a few centimetres, so check the range '
       'before relying on it.',
   category: 'Screensaver',
-  section: 'Proximity',
-  subpage: 'Proximity',
+  section: 'Proximity Detection',
+  subpage: 'Proximity Detection',
 );
 
 const proximitySensorOffDelay = SettingDef<int>(
@@ -7757,8 +7757,8 @@ const proximitySensorOffDelay = SettingDef<int>(
   title: 'Clear after',
   description: 'Seconds without proximity before the sensor reads clear.',
   category: 'Screensaver',
-  section: 'Proximity',
-  subpage: 'Proximity',
+  section: 'Proximity Detection',
+  subpage: 'Proximity Detection',
   min: 1,
   max: 300,
   step: 1,
