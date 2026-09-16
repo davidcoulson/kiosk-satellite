@@ -114,6 +114,10 @@ class FleetDiscovery(
         const val TAG = "KsFleet"
         const val SERVICE = "_kiosk-satellite._tcp.local"
         const val ANNOUNCE_INTERVAL_MS = 30_000L
+        // How long the local-address list may be reused. Long enough that
+        // a busy network's mDNS traffic cannot turn it into a per-packet
+        // interface walk, short enough that a rebooted router is noticed.
+        const val ADDRESS_CACHE_MS = 10_000L
         // Three announcements missed and a peer is gone.
         const val PEER_TTL_MS = 100_000L
         // The record TTLs, the mDNS conventions: 75 minutes for the
@@ -154,6 +158,31 @@ class FleetDiscovery(
     /** Whether the service records go out and the others are listened for. */
     @Volatile private var fleet: Boolean = true
     @Volatile private var hostClash: String = ""
+
+    /**
+     * The local addresses, cached, because the conflict check below runs on
+     * every mDNS response the network carries and the answer changes only
+     * when an interface does.
+     *
+     * Measured on a wall panel on a busy network: this receive thread was
+     * burning a full core (108% of one CPU), and the cost was almost
+     * entirely `NetworkInterface.getNetworkInterfaces()` -- a /proc walk
+     * plus an ioctl per interface -- being run once per packet, hundreds of
+     * times a second. Ten seconds of staleness is nothing against what this
+     * is for: warning that another device answers to the same hostname.
+     */
+    @Volatile private var cachedAddresses: Set<String> = emptySet()
+    @Volatile private var cachedAddressesAt: Long = 0L
+
+    private fun localAddressStrings(): Set<String> {
+        val now = System.currentTimeMillis()
+        val age = now - cachedAddressesAt
+        if (age in 0..ADDRESS_CACHE_MS && cachedAddresses.isNotEmpty()) return cachedAddresses
+        val fresh = localIpv4Addresses().mapNotNull { it.hostAddress }.toSet()
+        cachedAddresses = fresh
+        cachedAddressesAt = now
+        return fresh
+    }
     private val peers = LinkedHashMap<String, Peer>()
     private var lastAnsweredAt = 0L
     private var lastHostAnsweredAt = 0L
@@ -318,8 +347,14 @@ class FleetDiscovery(
             return
         }
         val mine = userHost
-        if (mine.isNotEmpty() && hostClash != hostname) {
-            val localAddresses = localIpv4Addresses().mapNotNull { it.hostAddress }.toSet()
+        // The name test first, and on the raw bytes: a conflict can only be
+        // in a packet that carries our hostname, and almost none of them do.
+        // Parsing every record of every response to discover that -- on top
+        // of the parse further down -- was the other half of this thread's
+        // cost. A DNS name travels as length-prefixed labels, so the first
+        // label appears verbatim in the datagram.
+        if (mine.isNotEmpty() && hostClash != hostname && mentionsHost(packet, mine)) {
+            val localAddresses = localAddressStrings()
             val conflict = MdnsPackets.conflictingHostAddress(packet, mine, localAddresses)
             if (conflict != null) {
                 Log.w(TAG, "$conflict also answers to $mine")
@@ -522,6 +557,34 @@ class FleetDiscovery(
      */
     private fun localIpv4(): Inet4Address? =
         localIpv4Addresses().firstOrNull { it.isSiteLocalAddress }
+
+    /**
+     * Whether a datagram carries our hostname's first label at all, tested
+     * on the bytes without parsing. A false positive costs one full parse
+     * that would have happened anyway; a false negative is impossible,
+     * since an A record for the name must spell the label out.
+     */
+    private fun mentionsHost(packet: DatagramPacket, host: String): Boolean {
+        val label = host.substringBefore('.')
+        if (label.isEmpty()) return false
+        val needle = label.toByteArray(Charsets.US_ASCII)
+        val data = packet.data
+        val from = packet.offset
+        val to = packet.offset + packet.length - needle.size
+        var i = from
+        outer@ while (i <= to) {
+            var j = 0
+            while (j < needle.size) {
+                // mDNS names are case-insensitive on the wire.
+                val a = data[i + j].toInt() and 0xff
+                val b = needle[j].toInt() and 0xff
+                if (a != b && (a or 0x20) != (b or 0x20)) { i++; continue@outer }
+                j++
+            }
+            return true
+        }
+        return false
+    }
 
     private fun localIpv4Addresses(): List<Inet4Address> = runCatching {
         NetworkInterface.getNetworkInterfaces().toList()
