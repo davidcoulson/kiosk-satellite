@@ -14,6 +14,7 @@ void main() {
   late EventBus bus;
   late BrowserManager browser;
   late SettingsManager settings;
+  late CommandRegistry commands;
   const channel = MethodChannel('kiosk_satellite/webview_freeze');
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
@@ -23,7 +24,7 @@ void main() {
     messenger.setMockMethodCallHandler(channel, (_) async => 1);
     bus = EventBus();
     final log = Logger();
-    final commands = CommandRegistry(log);
+    commands = CommandRegistry(log);
     settings = SettingsManager(bus, commands, log);
     await settings.init();
     browser = BrowserManager(bus, commands, log, settings);
@@ -53,6 +54,54 @@ void main() {
       expect(browser.dashboardCameraStreamsPaused, isFalse);
     },
   );
+
+  test('an outside hold pauses the streams with no screensaver involved', () async {
+    // The case this exists for: a wall panel that never runs a screensaver,
+    // decoding every camera on its dashboard for an empty room. Presence is
+    // Home Assistant's to judge, so the hold arrives as a command.
+    expect(browser.dashboardCameraStreamsPaused, isFalse);
+    expect(browser.dashboardCamerasHeldPaused, isFalse);
+
+    final events = <bool>[];
+    final sub = bus.on<DashboardCamerasHoldChanged>().listen(
+      (e) => events.add(e.held),
+    );
+    addTearDown(sub.cancel);
+
+    final off = await commands.execute('setDashboardCameras', {
+      'playing': false,
+    });
+    expect(off.ok, isTrue);
+    expect(
+      browser.dashboardCameraStreamsPaused,
+      isTrue,
+      reason: 'held paused without any screensaver',
+    );
+
+    final on = await commands.execute('setDashboardCameras', {'playing': true});
+    expect(on.ok, isTrue);
+    expect(browser.dashboardCameraStreamsPaused, isFalse);
+
+    await Future<void>.delayed(Duration.zero);
+    expect(events, [true, false], reason: 'each change announced once');
+  });
+
+  test('the hold does not depend on the screensaver setting', () async {
+    await settings.setFromJson(defs.pauseDashboardCameras.key, false);
+    await commands.execute('setDashboardCameras', {'playing': false});
+    expect(browser.dashboardCameraStreamsPaused, isTrue);
+    await commands.execute('setDashboardCameras', {'playing': true});
+    expect(browser.dashboardCameraStreamsPaused, isFalse);
+  });
+
+  test('the command refuses anything that is not a bool', () async {
+    final bad = await commands.execute('setDashboardCameras', {
+      'playing': 'false',
+    });
+    expect(bad.ok, isFalse, reason: 'a string "false" must not read as false');
+    expect(browser.dashboardCamerasHeldPaused, isFalse);
+  });
+
 
   test(
     'live toggles and screensaver mode changes restore camera streams',

@@ -121,6 +121,16 @@ class ScreensaverMotionPolicyChanged extends AppEvent {
 /// it). Internal: the browser's rendering freeze keys off whether an overlay
 /// actually covers the dashboard — Dim leaves the page visible, so hiding
 /// its WebView would blank the screen (issue #82).
+/// The dashboard's camera streams were held paused, or released, by
+/// something outside the screensaver -- a presence sensor, through Home
+/// Assistant.
+class DashboardCamerasHoldChanged extends AppEvent {
+  const DashboardCamerasHoldChanged({required this.held});
+
+  /// True while the streams are held paused from outside.
+  final bool held;
+}
+
 class ScreensaverViewChanged extends AppEvent {
   const ScreensaverViewChanged({required this.view});
 
