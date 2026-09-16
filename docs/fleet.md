@@ -108,7 +108,7 @@ Certain settings remain unique to each kiosk regardless of the profile configura
 | Shizuku | `shizuku.install_updates` |
 | Interface language | `ui.language` |
 | Remote admin & fleet | `remote.enabled`, `remote.port`, `remote.password`, `remote.fleet_discovery`, `fleet.*` |
-| Hardware picks | `camera.device`, `camera.rtsp.resolution`, `camera.rtsp.analysis`, `motion.camera`, `audio.mic_device`, `audio.speaker_device`, `audio.mic_channel`, `audio.mic_source`, `audio.mic_echo_cancellation`, `audio.mic_gain_db`, `audio.mic_agc`, `audio.mic_noise_suppression`, `audio.mic_capture_format`, `render.disable_impeller`, `render.legacy_webview`, `ui.scale`, `screen.ambient_display` |
+| Hardware picks | `camera.device`, `camera.rtsp.resolution`, `camera.rtsp.analysis`, `motion.camera`, `audio.mic_device`, `audio.speaker_device`, `audio.mic_channel`, `audio.mic_source`, `audio.mic_echo_cancellation`, `audio.mic_gain_db`, `audio.mic_agc`, `audio.mic_noise_suppression`, `audio.mic_capture_format`, `render.disable_impeller`, `render.legacy_webview`, `ui.scale`, `screen.ambient_display`, `device.no_battery` |
 | Followed player | `sendspin.player`, `sendspin.player_source`, `sendspin.player_name` |
 | Local state | `screensaver.saved_brightness`, `screensaver.immich_validated`, `sendspin.player_active`, `sendspin.player_pos`, `sendspin.sonos_hosts` |
 
