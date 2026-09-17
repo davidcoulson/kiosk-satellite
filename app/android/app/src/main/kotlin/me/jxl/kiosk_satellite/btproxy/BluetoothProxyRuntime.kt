@@ -206,6 +206,10 @@ internal object BluetoothProxyRuntime {
             "connections" to (s?.activeGattAddresses() ?: emptyList<String>()),
             "connectionSlots" to (gattEngine?.connectionLimit ?: 0),
             "lastAdvertisementAt" to (s?.lastReceivedAt?.get() ?: 0L),
+            // Absent, not zeroed, when no filter is configured: the Dart
+            // side publishes the filter's diagnostics only when there is
+            // something to publish about.
+            "filter" to (e?.filterCounters ?: emptyMap<String, Any>()),
             "log" to synchronized(logRing) { logRing.toList() },
         )
     }

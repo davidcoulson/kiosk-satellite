@@ -154,6 +154,11 @@ internal class BleScanEngine(
     private var adapterBounced = false
 
     val isScanning: Boolean get() = scanning
+
+    /** What the advertisement filter kept and dropped, or null when none is
+     *  configured. Surfaced so a panel's filtering is measurable from Home
+     *  Assistant rather than guessed at. See [AdvertisementFilter]. */
+    val filterCounters: Map<String, Any>? get() = filter?.counters()
     val lastAdvertisementAt: Long get() = lastCallbackAt
     val scanDuty: ScanDuty get() = duty
 

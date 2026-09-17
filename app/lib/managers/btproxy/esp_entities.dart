@@ -18,6 +18,7 @@ import '../screensaver/screensaver_manager.dart'
 import '../settings/definitions.dart' as defs;
 import '../sendspin/sendspin_manager.dart' show SendspinManager;
 import '../settings/settings_manager.dart';
+import 'bt_proxy_manager.dart' show mergedAdvertisementFilter;
 import 'countdown_stamp.dart';
 import 'lux_limiter.dart';
 
@@ -917,6 +918,59 @@ class EspEntitySurface {
           icon: 'mdi:bluetooth-audio',
           stateClass: 1,
         ),
+      // Advertisement accounting from the filter, so its effect is
+      // measurable per panel instead of guessed at -- the same five
+      // diagnostics the ESPHome proxies carry, so a panel and a proxy can
+      // be compared on one dashboard. Listed only when a filter is
+      // configured: with none, every one of them would sit at zero
+      // forever and say nothing.
+      if (_advertisementFilterConfigured) ...[
+        diagnostic(
+          'btproxy_adv_forwarded',
+          'BLE adverts forwarded',
+          icon: 'mdi:bluetooth-transfer',
+          unit: 'adv/min',
+          stateClass: 1,
+        ),
+        diagnostic(
+          'btproxy_adv_dropped',
+          'BLE adverts dropped',
+          icon: 'mdi:bluetooth-off',
+          unit: 'adv/min',
+          stateClass: 1,
+        ),
+        // A subset of "dropped" that answers a different question than the
+        // RSSI drops do: how much of what this panel hears is other
+        // people's phones and watches, which rotate and can never be
+        // tracked however close they come.
+        diagnostic(
+          'btproxy_adv_dropped_rpa',
+          'BLE RPAs dropped',
+          icon: 'mdi:cellphone-remove',
+          unit: 'adv/min',
+          stateClass: 1,
+        ),
+        // Adverts forwarded ONLY because a service UUID matched. It sits at
+        // zero while nothing is pairing, so any movement is direct evidence
+        // the passthrough fired -- which is what makes a failed
+        // commissioning attempt diagnosable instead of guesswork.
+        diagnostic(
+          'btproxy_adv_service_uuid',
+          'BLE service UUID allowed',
+          icon: 'mdi:key-wireless',
+          unit: 'adv/min',
+          stateClass: 1,
+        ),
+        // The tuning number: what fraction of what this panel hears is
+        // being suppressed.
+        diagnostic(
+          'btproxy_drop_rate',
+          'BLE advert drop rate',
+          icon: 'mdi:filter-variant',
+          unit: '%',
+          stateClass: 1,
+        ),
+      ],
       if (_settings.get(defs.btproxyEnabled) &&
           _settings.get(defs.btproxyConnections))
         // The ceiling the connected-devices count runs into, where the
@@ -2419,9 +2473,76 @@ class EspEntitySurface {
           ? (nearby.data as Map)['count']
           : null;
       if (count is num) await _send('btproxy_nearby', count.toInt());
+      await _sendFilterRates();
     }
     await _sendVoiceSatellite();
     // Every completed poll IS a sighting.
     await _send('last_seen', DateTime.now().toUtc().toIso8601String());
+  }
+
+  /// Whether an advertisement filter is configured at all, which is what
+  /// decides whether the filter's diagnostics are worth listing.
+  bool get _advertisementFilterConfigured =>
+      _settings.get(defs.btproxyEnabled) &&
+      mergedAdvertisementFilter(
+        _settings.get(defs.btproxyFilter),
+        _settings.get(defs.btproxyFilterIrks),
+      ).isNotEmpty;
+
+  /// The filter's totals as of the last poll, and when that was.
+  Map<String, num> _lastFilterCounters = const {};
+  DateTime? _lastFilterAt;
+
+  /// Publishes the filter's counters as rates, the way the ESPHome proxies
+  /// publish theirs.
+  ///
+  /// The native counters are free-running totals, so what goes out is the
+  /// delta since the last poll divided by the time it actually took --
+  /// normalised rather than assumed, because a panel that slept through
+  /// four polls would otherwise report one minute's worth of a four-minute
+  /// gap. A restart zeroes the totals, which shows up as a delta below
+  /// zero; the fresh total is the honest reading in that case.
+  Future<void> _sendFilterRates() async {
+    if (!_advertisementFilterConfigured) return;
+    final status = await commands.execute('esphomeStatus', const {});
+    if (!status.ok || status.data is! Map) return;
+    final filter = (status.data as Map)['filter'];
+    if (filter is! Map || filter.isEmpty) return;
+    final now = <String, num>{
+      for (final key in const [
+        'forwarded',
+        'dropped',
+        'droppedRpa',
+        'allowedServiceUuid',
+      ])
+        if (filter[key] is num) key: filter[key] as num,
+    };
+    final at = DateTime.now();
+    final since = _lastFilterAt;
+    _lastFilterAt = at;
+    final previous = _lastFilterCounters;
+    _lastFilterCounters = now;
+    // Nothing to compare the first reading against, and a rate needs two.
+    if (since == null || previous.isEmpty) return;
+    final minutes = at.difference(since).inMilliseconds / 60000.0;
+    if (minutes <= 0) return;
+    num delta(String key) {
+      final current = now[key] ?? 0;
+      final last = previous[key] ?? 0;
+      return current < last ? current : current - last;
+    }
+
+    double rate(String key) => delta(key) / minutes;
+    await _send('btproxy_adv_forwarded', rate('forwarded').round());
+    await _send('btproxy_adv_dropped', rate('dropped').round());
+    await _send('btproxy_adv_dropped_rpa', rate('droppedRpa').round());
+    await _send('btproxy_adv_service_uuid', rate('allowedServiceUuid').round());
+    final heard = delta('forwarded') + delta('dropped');
+    // Unknown rather than 0% when the panel heard nothing at all, so an
+    // idle radio is not misreported as a filter that dropped nothing.
+    await _send(
+      'btproxy_drop_rate',
+      heard == 0 ? null : (100 * delta('dropped') / heard),
+    );
   }
 }

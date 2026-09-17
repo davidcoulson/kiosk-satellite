@@ -117,6 +117,8 @@ Every item in this list corresponds directly to a kiosk setting. They are fully 
 | **Bluetooth devices nearby** | sensor | Requires the Bluetooth proxy to be enabled. See the [Nearby devices](#nearby-devices) section. |
 | **Bluetooth max connections** | sensor | Requires the proxy to be enabled with device connections allowed. |
 | **Bluetooth devices connected** | sensor | Requires the proxy to be enabled on an Android version that reports links (this requires an adapter and the Nearby devices permission on Android 12 and newer). |
+| **BLE adverts forwarded**, **BLE adverts dropped**, **BLE RPAs dropped**, **BLE service UUID allowed** | sensor | Only present when an Advertisement filter is configured. Rates in advertisements per minute, so the filter's effect is measurable per panel rather than guessed at. The RPA figure is the share of the noise that is other people's phones and watches, which rotate their addresses and can never be tracked; the service UUID figure sits at zero until a pairing or commissioning advertisement is carried through, so any movement in it is direct evidence that passthrough fired. |
+| **BLE advert drop rate** | sensor | Only present when an Advertisement filter is configured. The percentage of what the panel heard that was suppressed, which is the number to tune the filter against. Reports unknown rather than 0% when the panel heard nothing at all, so an idle radio does not look like a filter that dropped nothing. |
 | **Device** | text sensor | Displays the specific hardware model. |
 | **Panel brightness** | sensor | Reports the actual brightness level as read directly from the panel, in percentage. |
 | **Android version**, **Android build** | text sensor | System software identifiers. |
