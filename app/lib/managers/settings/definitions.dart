@@ -6902,22 +6902,50 @@ const btproxyPort = SettingDef<String>(
 /// {
 ///   "irks": ["ec0234a357c8ad05341010a60a397d9b"],
 ///   "macs": ["AA:BB:CC:DD:EE:FF"],
+///   "macBlocklist": ["11:22:33:44:55:66"],
 ///   "manufacturers": ["0x004C"],
+///   "names": ["airpods"],
+///   "serviceUuids": ["0xFFF6", "00467768-6228-2272-4663-277478268000"],
+///   "ibeacons": [{"uuidPrefix": "fde3b150-2f64-43ba", "major": 1, "rssi": -95}],
+///   "allowHomekit": true,
+///   "allowFindmy": {"rssi": -85},
 ///   "dropNonResolvable": true,
 ///   "allowlistExclusive": false,
 ///   "rssiFloor": -90,
-///   "rssiThreshold": -70
+///   "rssiThreshold": -70,
+///   "rssiMacAllowlist": 0,
+///   "rssiIrk": 0,
+///   "rssiServiceUuid": -90
 /// }
 /// ```
 ///
-/// An advertisement is categorised before it is measured: an allowlisted
-/// address or a resolvable private address matching one of the IRKs is
-/// *protected*, which exempts it from the threshold and the manufacturer
-/// blocklist. That protection is the point -- your own phones advertise
-/// Apple manufacturer data, so a blocklist of Apple would otherwise discard
-/// exactly the devices the IRK list exists to keep. An RPA matching none of
-/// the IRKs belongs to someone else, rotates, and can never be tracked, so
-/// it is dropped.
+/// Every key mirrors the ESPHome component's option of the same name, so a
+/// filter written for the house's proxies can be spelled in JSON here and
+/// behave the same way. Two differences in spelling only: the keys are
+/// camelCase, and an unset RSSI limit is `0` rather than the component's
+/// `-127`.
+///
+/// An advertisement is categorised before it is measured, which is what
+/// makes the limits independent: any category can be looser *or* stricter
+/// than the fleet threshold. An allowlisted address, a resolvable private
+/// address matching one of the IRKs, a named iBeacon, a FindMy accessory
+/// and an allowlisted service UUID are each *protected*, which exempts them
+/// from the manufacturer and name blocklists. That protection is the point
+/// -- your own phones advertise Apple manufacturer data, so a blocklist of
+/// Apple would otherwise discard exactly the devices the IRK list exists to
+/// keep, along with every HomeKit accessory (`allowHomekit`) and AirTag
+/// (`allowFindmy`). An RPA matching none of the IRKs belongs to someone
+/// else, rotates, and can never be tracked, so it is dropped.
+///
+/// A per-category limit of `0` inherits: `rssiMacAllowlist` leaves the
+/// allowlist bounded only by `rssiFloor`, and the rest fall back to
+/// `rssiThreshold`. An `rssi` on an iBeacon or FindMy rule overrides the
+/// floor as well, which is how a house's own calibration beacons are
+/// forwarded at any strength while tracked tags stay bounded.
+///
+/// With a filter configured the panel also publishes what it kept and
+/// dropped as five diagnostic sensors, matching the ones the ESPHome
+/// proxies carry, so a panel and a proxy can be compared on one dashboard.
 ///
 /// Not secret, and deliberately so: thresholds and allowlists are ordinary
 /// configuration, and a panel restored from a backup should come back
@@ -6931,8 +6959,9 @@ const btproxyFilter = SettingDef<String>(
   title: 'Advertisement filter',
   description:
       'JSON filter deciding which devices reach Home Assistant: identity '
-      'keys (IRKs) for your own phones and watches, address allowlists, and '
-      'manufacturer blocklists. Empty relays everything.',
+      'keys (IRKs) for your own phones and watches, address and service '
+      'UUID allowlists, iBeacon and FindMy rules, and manufacturer or name '
+      'blocklists, each with its own signal limit. Empty relays everything.',
   category: 'ESPHome',
   section: 'Bluetooth Proxy',
   subpage: 'Bluetooth Proxy',
