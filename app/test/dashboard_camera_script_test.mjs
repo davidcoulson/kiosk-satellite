@@ -245,3 +245,23 @@ test('the still is painted once, not stacked on every re-render', async () => {
 
   assert.equal(camera.shadowRoot.kids.length, 1);
 });
+
+test("a snapshot URL cannot close the still's CSS url() and carry on", async () => {
+  const p = pageWithStill();
+  const camera = new p.Camera();
+  camera.stateObj.attributes.entity_picture =
+      '/api/x?token=a"); background:url(http://evil.example/?\\';
+  p.elements.push(camera);
+  await p.define();
+
+  p.api.setPaused(true);
+  await settled();
+
+  const image = camera.shadowRoot.getElementById('ks-camera-still').style.backgroundImage;
+  // One quoted URL, start to end: the only quotes left are the two that open
+  // and close it, and no backslash survives to escape the closing one.
+  assert.equal(image.match(/"/g).length, 2);
+  assert.ok(image.startsWith('url("') && image.endsWith('")'));
+  assert.ok(!image.includes('\\'));
+  assert.match(image, /%22/);
+});
