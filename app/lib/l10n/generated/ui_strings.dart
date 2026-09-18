@@ -10046,6 +10046,42 @@ abstract class UiStrings {
   /// **'Not available on this device: its Android build has no Bluetooth LE support.'**
   String get esphomeBluetoothBuildUnsupported;
 
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Only relay devices this close'**
+  String get settingBtproxyMinAdvertiseRssiTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop advertisements heard weaker than this instead of relaying them to Home Assistant, so the panel reports what is in front of it rather than the whole building. Devices that report no signal strength are dropped too, since their distance cannot be judged. Scanning itself is unchanged.'**
+  String get settingBtproxyMinAdvertiseRssiDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Advertisement filter'**
+  String get settingBtproxyFilterTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON filter deciding which devices reach Home Assistant: identity keys (IRKs) for your own phones and watches, address and service UUID allowlists, iBeacon and FindMy rules, and manufacturer or name blocklists, each with its own signal limit. Empty relays everything.'**
+  String get settingBtproxyFilterDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity keys (IRKs)'**
+  String get settingBtproxyFilterIrksTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON array of Identity Resolving Keys for your own phones and watches. With any listed, a rotating private address resolving to none of them is dropped as somebody else\'s. Empty relays them all and leaves identity to Home Assistant.'**
+  String get settingBtproxyFilterIrksDescription;
+
   /// Inferred device class. Never translate an actual broadcast name or manufacturer name.
   ///
   /// In en, this message translates to:
