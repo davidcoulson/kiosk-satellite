@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nothing leaves the device by way of Android itself. The preferences hold
+     the Home Assistant token and the rest of a panel's credentials, and
+     allowBackup was never set, which means it was on: a panel signed in to a
+     Google account uploaded them to Drive. allowBackup="false" ends that up
+     to Android 11; from 12 these rules are what is read, and a device-to-device
+     transfer ignores allowBackup altogether.
+
+     The app's own export (Settings > Backup, /api/config/export) is the way
+     to move a panel, and says out loud that it carries secrets. It is also
+     the only one that works: the secrets are wrapped under a Keystore key
+     that does not travel (SecretVault.kt), so a copy of the file made this
+     way could not be read where it landed. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="."/>
+        <exclude domain="file" path="."/>
+        <exclude domain="database" path="."/>
+        <exclude domain="sharedpref" path="."/>
+        <exclude domain="external" path="."/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="."/>
+        <exclude domain="file" path="."/>
+        <exclude domain="database" path="."/>
+        <exclude domain="sharedpref" path="."/>
+        <exclude domain="external" path="."/>
+    </device-transfer>
+</data-extraction-rules>
