@@ -77,7 +77,13 @@ const dashboardCameraScript = r'''
           'transform:scale(1.12);' +
           'filter:blur(7px) saturate(0.55) brightness(0.62);';
       var url = stillUrl(el);
-      if (url) still.style.backgroundImage = 'url("' + url + '")';
+      // Percent-encoded where a character could end the quoted URL: the
+      // value is an entity attribute, and an attribute is whatever the
+      // integration that set it was given.
+      if (url) {
+        still.style.backgroundImage = 'url("' +
+            url.replace(/["\\\n\r]/g, encodeURIComponent) + '")';
+      }
       root.appendChild(still);
     } catch (e) {}
   }
