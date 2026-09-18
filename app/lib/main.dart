@@ -78,7 +78,14 @@ Future<void> main() async {
   // Self-signed certificates are the norm for LAN Home Assistant servers;
   // accept them for the configured HA host (and only that host) across
   // every HTTP and websocket client in the app.
-  HttpOverrides.global = HaHttpOverrides(container.settings);
+  HttpOverrides.global = HaHttpOverrides(container.settings)
+    ..onRefused = (host, fingerprint) => container.log.warn(
+      'tls',
+      '$host presented a certificate other than the one remembered '
+          '(sha256 $fingerprint) and was refused. If it was renewed, switch '
+          '"Ignore SSL errors" on, reconnect and switch it off, or run the '
+          'forgetCertificates command.',
+    );
 
   // Media permissions are NOT requested here. They are gated by the Web
   // Content toggles and the OS grant is requested lazily (see KioskScreen),
