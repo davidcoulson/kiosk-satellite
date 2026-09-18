@@ -72,4 +72,39 @@ void main() {
     expect(auth.validate(null), isFalse);
     expect(AuthStore('other-secret').validate(token), isFalse);
   });
+
+  group('tokens name the password they were issued under', () {
+    test('a token dies with the password it was issued under', () {
+      var version = 'v1';
+      final auth = AuthStore('k', passwordVersion: () => version);
+      final token = auth.issueToken();
+      expect(auth.validate(token), isTrue);
+      version = 'v2';
+      expect(auth.validate(token), isFalse);
+      expect(auth.validate(auth.issueToken()), isTrue);
+    });
+
+    test('a token from before the naming lasts until the password changes', () {
+      // Issued by a store that names nothing, as every older build did.
+      final old = AuthStore('k').issueToken();
+      var accepts = true;
+      final auth = AuthStore(
+        'k',
+        passwordVersion: () => 'v1',
+        acceptsUnversioned: () => accepts,
+      );
+      expect(auth.validate(old), isTrue);
+      accepts = false;
+      expect(auth.validate(old), isFalse);
+    });
+
+    test("a fleet token is the leader's and outlives a password change", () {
+      var version = 'v1';
+      final auth = AuthStore('k', passwordVersion: () => version);
+      final fleet = auth.issueToken(claims: {'fleet': 'leader-1'});
+      version = 'v2';
+      expect(auth.validate(fleet), isTrue);
+      expect(auth.claimsOf(fleet)?['pv'], isNull);
+    });
+  });
 }

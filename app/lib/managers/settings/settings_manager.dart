@@ -6,6 +6,7 @@ import '../../core/command_registry.dart';
 import '../../core/events.dart';
 import '../../core/manager.dart';
 import '../device_camera/camera_resolutions.dart';
+import '../remote/password_hash.dart';
 import 'definitions.dart';
 
 export 'definitions.dart';
@@ -297,7 +298,28 @@ class SettingsManager extends Manager {
   /// longer matches its definition's type is invisible to [get] — it falls
   /// back to the default — so a rename in place has to be rewritten once,
   /// here, before anything reads it.
+  static const _remotePasswordKey = 'remote.password';
+  static const _unversionedTokens = 'remote.unversioned_tokens';
+
+  /// Whether session tokens issued before they named a password are still
+  /// accepted: from the upgrade that introduced the naming until the first
+  /// password change after it.
+  bool get acceptsUnversionedTokens => internal(_unversionedTokens).isNotEmpty;
+
   Future<void> _migrate() async {
+    // A remote admin password kept as typed by an earlier build. Written
+    // straight to the store, not through set(): that would count as changing
+    // the password and sign out every automation holding a token, when all
+    // that changed is how the same password is kept.
+    final password = _prefs.getString(_prefix + _remotePasswordKey) ?? '';
+    if (password.isNotEmpty && !PasswordHash.isHashed(password)) {
+      await _prefs.setString(
+        _prefix + _remotePasswordKey,
+        PasswordHash.hash(password),
+      );
+      await setInternal(_unversionedTokens, '1');
+      log.info(name, 'remote admin password is no longer kept as typed');
+    }
     // The preview's automatic language choice is now explicit English.
     if (_prefs.get(_prefix + uiLanguage.key) == 'system') {
       await _prefs.setString(_prefix + uiLanguage.key, 'en');
@@ -426,6 +448,20 @@ class SettingsManager extends Manager {
   Future<void> set<T>(SettingDef<T> def, T value, {String? source}) async {
     final normalizer = def.normalizer;
     if (normalizer != null) value = normalizer(value as Object) as T;
+    // The one setting that is never kept as given (password_hash.dart). Done
+    // here rather than by each caller because there are five of them -- both
+    // wizards, both settings screens and an import -- and one that forgot
+    // would put a password back on disk as typed. A value already in the
+    // kept form is a backup being restored and is stored as it stands.
+    if (def.key == _remotePasswordKey &&
+        value is String &&
+        value.isNotEmpty &&
+        !PasswordHash.isHashed(value)) {
+      // On this isolate: it happens about once in a panel's life, and an
+      // isolate round trip never completes under a widget test's fake clock,
+      // which turned an import into a hang rather than a slow one.
+      value = PasswordHash.hash(value) as T;
+    }
     final previous = get(def);
     switch (value) {
       case final bool v:
@@ -455,6 +491,11 @@ class SettingsManager extends Manager {
     // one presented now is the one to trust, and what was remembered goes --
     // which is also how a renewed self-signed certificate is adopted without
     // a command line (ha_http_overrides.dart).
+    // Tokens issued before they named a password stay good only until the
+    // password next changes (auth.dart).
+    if (def.key == _remotePasswordKey && value != previous) {
+      await setInternal(_unversionedTokens, '');
+    }
     if (value != previous &&
         (def.key == 'ha.url' ||
             def.key == 'screensaver.immich_url' ||

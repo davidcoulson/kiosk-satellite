@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_satellite/managers/wake_word/system_permissions.dart';
 import 'package:kiosk_satellite/app_container.dart';
 import 'package:kiosk_satellite/core/app_locales.dart';
+import 'package:kiosk_satellite/managers/remote/password_hash.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
 import 'package:kiosk_satellite/l10n/generated/ui_strings.dart';
 import 'package:kiosk_satellite/l10n/generated/ui_strings_en.dart';
@@ -284,9 +285,18 @@ void main() {
         container.settings.get(defs.haSatelliteEntity),
         'assist_satellite.local',
       );
+      // Restored, and kept the way a password is kept rather than as the
+      // backup happened to spell it (password_hash.dart).
+      expect(
+        PasswordHash.verify(
+          container.settings.get(defs.remotePassword),
+          'fixture-backup-password',
+        ),
+        isTrue,
+      );
       expect(
         container.settings.get(defs.remotePassword),
-        'fixture-backup-password',
+        isNot(contains('fixture-backup-password')),
       );
       expect(
         find.text('La copia no tiene un panel de control'),

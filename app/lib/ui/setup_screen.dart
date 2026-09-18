@@ -122,6 +122,7 @@ class _SetupScreenState extends State<SetupScreen> {
   // token gets pasted and where the kiosk is managed afterwards.
   bool _remoteWanted = true;
   final _remotePassword = TextEditingController();
+  var _hasRemotePassword = false;
   String? _deviceIp;
 
   // Step 2 — connection.
@@ -211,7 +212,9 @@ class _SetupScreenState extends State<SetupScreen> {
     // A password already set (the remote wizard's first step, or an
     // earlier pass through this page) is the field's starting value, so
     // Next keeps it rather than refusing an empty box.
-    _remotePassword.text = c.settings.get(defs.remotePassword);
+    // No longer possible: what is kept is not the password (password_hash
+    // .dart). An empty box with one already set means keep it, below.
+    _hasRemotePassword = c.settings.get(defs.remotePassword).isNotEmpty;
     // A name already set (the remote wizard, or an earlier pass) stands;
     // otherwise the model, which is what the device would call itself
     // anyway, offered as a starting point rather than an empty box.
@@ -345,11 +348,16 @@ class _SetupScreenState extends State<SetupScreen> {
         await c.settings.set(defs.deviceName, _deviceName.text);
         if (_remoteWanted) {
           final password = _remotePassword.text;
-          if (password.length < 4) {
+          // Left empty with a password already set: keep that one.
+          final keep = password.isEmpty && _hasRemotePassword;
+          if (!keep && password.length < 4) {
             _fail(strings.setupPasswordShort, strings.setupPasswordMinimum);
             return;
           }
-          await c.settings.set(defs.remotePassword, password);
+          if (!keep) {
+            await c.settings.set(defs.remotePassword, password);
+            _hasRemotePassword = true;
+          }
           await c.settings.set(defs.remoteEnabled, true);
         } else {
           // The toggle is authoritative each time Next is pressed: coming
@@ -357,6 +365,7 @@ class _SetupScreenState extends State<SetupScreen> {
           // the password quietly survives and the switch lies.
           await c.settings.set(defs.remoteEnabled, false);
           await c.settings.set(defs.remotePassword, '');
+          _hasRemotePassword = false;
         }
         setState(() => _step = 1);
       case 1:
