@@ -1296,6 +1296,9 @@ class _ServiceSetupCardState extends State<_ServiceSetupCard>
           : TextButton(
               onPressed: () async {
                 await onGrant();
+                // The grant just changed, so the next read must see it
+                // rather than the cached pass this screen's own boot took.
+                SystemPermissions.invalidate();
                 await _refresh();
               },
               child: Text(l10n(context).commonGrant),
