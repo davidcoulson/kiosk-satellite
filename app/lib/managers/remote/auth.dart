@@ -91,7 +91,17 @@ class AuthStore {
     return failures.length >= _maxFailures;
   }
 
-  void recordFailure(String ip) => (_failures[ip] ??= []).add(DateTime.now());
+  void recordFailure(String ip) {
+    // Bounded: an address whose failures have all aged out throttles
+    // nothing, and IPv6 gives one machine as many addresses as it likes.
+    if (_failures.length >= 256) {
+      final cutoff = DateTime.now().subtract(_throttleWindow);
+      _failures.removeWhere(
+        (_, times) => times.every((t) => t.isBefore(cutoff)),
+      );
+    }
+    (_failures[ip] ??= []).add(DateTime.now());
+  }
 
   void clearFailures(String ip) => _failures.remove(ip);
 }

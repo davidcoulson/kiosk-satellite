@@ -314,7 +314,7 @@ class RemoteManager extends Manager {
     final port = _settings.get(defs.remotePort).toInt();
     try {
       _server = await shelf_io.serve(
-        const Pipeline().addHandler(_route),
+        const Pipeline().addMiddleware(_hardenResponses).addHandler(_route),
         InternetAddress.anyIPv4,
         port,
       );
@@ -408,11 +408,12 @@ class RemoteManager extends Manager {
     // Before the first password, setup may change only the bundled UI language.
     // Once a password exists, the same choice requires its authenticated session.
     if (path == 'api/setup/language' && request.method == 'POST') {
+      if (_crossOrigin(request)) return _json(403, {'error': 'cross-origin'});
       if (!_setupMode ||
           (!passwordless && !_auth.validate(_bearerToken(request)))) {
         return _json(403, {'error': 'setup language change not allowed'});
       }
-      final body = await _body(request);
+      final body = await _body(request, limit: _publicBodyLimit);
       final language = body?['language'];
       if (language is! String || !defs.uiLanguage.options!.contains(language)) {
         return _json(400, {'error': 'unsupported language'});
@@ -430,8 +431,9 @@ class RemoteManager extends Manager {
       });
     }
     if (path == 'api/setup/grant' && request.method == 'POST') {
+      if (_crossOrigin(request)) return _json(403, {'error': 'cross-origin'});
       if (!passwordless) return _json(403, {'error': 'setup already done'});
-      final body = await _body(request);
+      final body = await _body(request, limit: _publicBodyLimit);
       final which = body?['which'];
       if (which is! List) return _json(400, {'error': 'which required'});
       final out = await commands.execute('requestOsPermissions', {
@@ -440,6 +442,7 @@ class RemoteManager extends Manager {
       return _json(out.ok ? 200 : 400, out.toJson());
     }
     if (path == 'api/setup/password' && request.method == 'POST') {
+      if (_crossOrigin(request)) return _json(403, {'error': 'cross-origin'});
       if (!_setupMode) return _json(403, {'error': 'setup already done'});
       // Setting one is public (there is nothing to authenticate with yet);
       // changing one, from the wizard's Welcome step after a Back, needs
@@ -449,7 +452,7 @@ class RemoteManager extends Manager {
           !_auth.validate(_bearerToken(request))) {
         return _json(403, {'error': 'setup already done'});
       }
-      final body = await _body(request);
+      final body = await _body(request, limit: _publicBodyLimit);
       final password = body?['password'];
       if (password is! String || password.length < 4) {
         return _json(400, {'error': 'password must be at least 4 characters'});
@@ -484,14 +487,15 @@ class RemoteManager extends Manager {
           : _json(503, {'error': r.error});
     }
     if (path == 'api/fleet/invite' && request.method == 'POST') {
+      if (_crossOrigin(request)) return _json(403, {'error': 'cross-origin'});
       final ip = _clientIp(request);
       final last = _inviteAt[ip];
       final now = DateTime.now();
       if (last != null && now.difference(last) < const Duration(seconds: 3)) {
         return _json(429, {'error': 'too many invitations'});
       }
-      _inviteAt[ip] = now;
-      final body = await _body(request);
+      _rememberProbe(_inviteAt, ip, now, const Duration(seconds: 3));
+      final body = await _body(request, limit: _publicBodyLimit);
       if (body == null) return _json(400, {'error': 'invalid JSON'});
       final r = await commands.execute('fleetInviteReceived', {
         ...body,
@@ -519,14 +523,14 @@ class RemoteManager extends Manager {
       if (last != null && now.difference(last) < const Duration(seconds: 1)) {
         return _json(429, {'error': 'too many probes'});
       }
-      _identityAt[ip] = now;
+      _rememberProbe(_identityAt, ip, now, const Duration(seconds: 1));
       final r = await commands.execute('intercomIdentity', const {});
       return r.ok
           ? _json(200, (r.data as Map).cast<String, Object?>())
           : _json(503, {'error': r.error});
     }
     if (path == 'api/intercom/call' && request.method == 'POST') {
-      final body = await _body(request);
+      final body = await _body(request, limit: _publicBodyLimit);
       if (body == null) return _json(400, {'error': 'invalid JSON'});
       final r = await commands.execute('intercomIncoming', {
         ...body,
@@ -539,7 +543,7 @@ class RemoteManager extends Manager {
       return _json(code is int ? code : 200, data);
     }
     if (path.startsWith('api/intercom/call/') && request.method == 'POST') {
-      final body = await _body(request);
+      final body = await _body(request, limit: _publicBodyLimit);
       if (body == null) return _json(400, {'error': 'invalid JSON'});
       final r = await commands.execute('intercomSignal', {
         ...body,
@@ -705,7 +709,7 @@ class RemoteManager extends Manager {
     if (_auth.isThrottled(ip)) {
       return _json(429, {'error': 'too many attempts'});
     }
-    final body = await _body(request);
+    final body = await _body(request, limit: _publicBodyLimit);
     final password = body?['password'];
     if (password is String &&
         password.isNotEmpty &&
@@ -1456,20 +1460,100 @@ class RemoteManager extends Manager {
     });
   }
 
+  /// Headers every response carries. nosniff stops a browser second-guessing
+  /// a content type, which matters on a server that returns uploaded files
+  /// and proxied artwork; no-referrer keeps this origin's URLs out of other
+  /// sites' logs.
+  ///
+  /// Deliberately not X-Frame-Options or frame-ancestors: embedding the
+  /// admin in a Home Assistant webpage card is a legitimate use, and the
+  /// session token lives in localStorage, which browsers partition inside a
+  /// third-party frame, so a hostile frame gets a logged-out page.
+  static Handler _hardenResponses(Handler inner) => (request) async {
+    final response = await inner(request);
+    return response.change(
+      headers: const {
+        'x-content-type-options': 'nosniff',
+        'referrer-policy': 'no-referrer',
+      },
+    );
+  };
+
+  /// Records [ip]'s probe and keeps [seen] from growing without bound: an
+  /// entry older than [window] no longer throttles anything, and IPv6 hands
+  /// one machine as many source addresses as it cares to use.
+  static void _rememberProbe(
+    Map<String, DateTime> seen,
+    String ip,
+    DateTime now,
+    Duration window,
+  ) {
+    if (seen.length >= 256) {
+      seen.removeWhere((_, at) => now.difference(at) >= window);
+      if (seen.length >= 256) seen.clear();
+    }
+    seen[ip] = now;
+  }
+
   static String? _bearerToken(Request request) {
     final header = request.headers['authorization'];
     if (header == null || !header.startsWith('Bearer ')) return null;
     return header.substring(7);
   }
 
-  static Future<Map<String, Object?>?> _body(Request request) async {
+  /// What a request may send before it has proved anything: a password, an
+  /// invitation, a call offer. None of them is more than a few hundred bytes.
+  static const _publicBodyLimit = 64 * 1024;
+
+  /// The ceiling for an authenticated body. The largest legitimate one is a
+  /// base64 plugin ZIP (4 MB of package, a third more on the wire) or a
+  /// config import carrying the page's localStorage.
+  static const _bodyLimit = 16 * 1024 * 1024;
+
+  /// The JSON object in [request]'s body, or null when it is not one or runs
+  /// past [limit]. Counted as it streams rather than after: readAsString()
+  /// buffers whatever arrives, so an unauthenticated POST of a few gigabytes
+  /// to /api/login was enough to run a panel out of memory.
+  static Future<Map<String, Object?>?> _body(
+    Request request, {
+    int limit = _bodyLimit,
+  }) async {
     try {
-      final text = await request.readAsString();
-      final decoded = jsonDecode(text);
+      final declared = request.contentLength;
+      if (declared != null && declared > limit) return null;
+      final bytes = BytesBuilder(copy: false);
+      await for (final chunk in request.read()) {
+        if (bytes.length + chunk.length > limit) return null;
+        bytes.add(chunk);
+      }
+      final decoded = jsonDecode(utf8.decode(bytes.takeBytes()));
       return decoded is Map ? decoded.cast<String, Object?>() : null;
     } catch (_) {
       return null;
     }
+  }
+
+  /// Whether a browser sent [request] from a page on another origin. Every
+  /// browser names the page's origin on a cross-origin POST, and nothing
+  /// that is not a browser sends the header at all, so an automation or
+  /// another kiosk is never refused by this.
+  ///
+  /// It guards the endpoints that answer without a token. Those cannot be
+  /// protected by one, and a page open on any computer on the network could
+  /// otherwise POST to a panel still in setup and choose its admin password:
+  /// the browser would hide the reply from that page, but the page already
+  /// knows the password it sent.
+  static bool _crossOrigin(Request request) {
+    final origin = request.headers['origin'];
+    if (origin == null || origin.isEmpty) return false;
+    final host = request.headers['host'];
+    final page = Uri.tryParse(origin);
+    // Parsed the same way as the origin, so an IPv6 literal's brackets and
+    // an implied port compare equal on both sides.
+    final self = host == null ? null : Uri.tryParse('http://$host');
+    if (page == null || self == null) return true;
+    return page.host.toLowerCase() != self.host.toLowerCase() ||
+        page.port != self.port;
   }
 
   static Response _json(int status, Map<String, Object?> body) => Response(
