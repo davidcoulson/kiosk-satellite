@@ -143,4 +143,73 @@ void main() {
       expect(seen['volume'], 0.5);
     },
   );
+
+  group('who may call', () {
+    late List<String> ran;
+
+    Future<void> withMicrophone() async {
+      await build();
+      ran = [];
+      for (final name in ['startAudioStream', 'pipelineOpenMic']) {
+        commands.register(
+          Command(
+            name: name,
+            description: 'test stub',
+            handler: (p) async {
+              ran.add(name);
+              return const CommandResult.ok(true);
+            },
+          ),
+        );
+      }
+      api.isTrustedOrigin = (origin) => origin.host == 'ha.local';
+    }
+
+    test(
+      'a page that is not the configured one cannot open the microphone',
+      () async {
+        await withMicrophone();
+        await api.handleCall([
+          'startAudioStream',
+          <String, Object?>{},
+        ], origin: Uri.parse('https://evil.example'));
+        await api.handleCall([
+          'pipelineOpenMic',
+          <String, Object?>{},
+        ], origin: Uri.parse('https://evil.example'));
+        expect(ran, isEmpty);
+
+        await api.handleCall([
+          'startAudioStream',
+          <String, Object?>{},
+        ], origin: Uri.parse('http://ha.local:8123'));
+        expect(ran, ['startAudioStream']);
+      },
+    );
+
+    test('any dashboard may still drive the panel it is drawn on', () async {
+      // The API is documented for every page; only the microphone is
+      // reserved for the configured one.
+      await withMicrophone();
+      await api.handleCall([
+        'setBrightness',
+        {'value': 40},
+      ], origin: Uri.parse('https://evil.example'));
+      expect(seen['value'], 40);
+    });
+
+    test('a sub-frame is refused whatever it asks for', () async {
+      await withMicrophone();
+      seen = {};
+      await api.handleCall(
+        [
+          'setBrightness',
+          {'value': 40},
+        ],
+        origin: Uri.parse('http://ha.local:8123'),
+        mainFrame: false,
+      );
+      expect(seen, isEmpty);
+    });
+  });
 }
