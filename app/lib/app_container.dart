@@ -38,6 +38,7 @@ import 'managers/sendspin/sendspin_manager.dart';
 import 'managers/service/service_manager.dart';
 import 'managers/sound/sound_manager.dart';
 import 'managers/settings/provisioning.dart';
+import 'managers/settings/definitions.dart' as defs;
 import 'managers/settings/settings_manager.dart';
 import 'managers/update/update_manager.dart';
 import 'managers/voice_timers/voice_timer_manager.dart';
@@ -238,11 +239,32 @@ class AppContainer {
     // their settings; the channel also handles pushes while running.
     await ProvisioningChannel(settings, log).init();
     await device.init();
-    jsApi = JsApiManager(bus, commands, log, device.appVersion);
+    jsApi = JsApiManager(bus, commands, log, device.appVersion)
+      ..isTrustedOrigin = _isConfiguredOrigin;
     for (final manager in _ordered.skip(2)) {
       await manager.init();
     }
     log.info('app', 'all managers initialized');
+  }
+
+  /// Whether [origin] is a page this kiosk was pointed at, for the JS
+  /// bridge's microphone methods: Home Assistant, the start URL, or the
+  /// loopback proxy that serves either one as a secure context. Read from
+  /// the settings on every call, so changing the URL needs no re-wiring.
+  bool _isConfiguredOrigin(Uri origin) {
+    bool same(String configured) {
+      final uri = Uri.tryParse(configured.trim());
+      return uri != null &&
+          uri.host.isNotEmpty &&
+          uri.scheme == origin.scheme &&
+          uri.host.toLowerCase() == origin.host.toLowerCase() &&
+          uri.port == origin.port;
+    }
+
+    final loopback = proxy.loopbackOrigin;
+    return same(settings.get(defs.haUrl)) ||
+        same(settings.get(defs.startUrl)) ||
+        (loopback != null && same(loopback));
   }
 
   Future<void> dispose() async {

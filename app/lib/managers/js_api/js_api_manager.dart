@@ -139,11 +139,37 @@ class JsApiManager extends Manager {
     _controller = controller;
     controller.addJavaScriptHandler(
       handlerName: 'ksApi',
-      callback: (args) => identical(_controller?.platform, controller.platform)
-          ? _onCall(args)
+      // The form that says who is calling, not only what they sent.
+      callback: (JavaScriptHandlerFunctionData data) =>
+          identical(_controller?.platform, controller.platform)
+          ? _onCall(data.args, origin: data.origin, mainFrame: data.isMainFrame)
           : null,
     );
   }
+
+  /// Whether the page at an origin is one the kiosk was pointed at: Home
+  /// Assistant, the start URL or the loopback proxy standing in for them.
+  /// Set by the container, which knows those; null trusts every origin,
+  /// which is what a test with no settings behind it wants.
+  bool Function(Uri origin)? isTrustedOrigin;
+
+  /// The methods that open the microphone or send its audio somewhere.
+  /// Everything else a page may call is about the panel it is drawn on --
+  /// its brightness, its screensaver -- and the API is documented for any
+  /// dashboard, so those stay open. These are different in kind: Android
+  /// asks nobody before the app's own recorder starts, so the only thing
+  /// standing between a page and a live microphone is this list. A kiosk
+  /// that follows a link off Home Assistant, or is pointed at the wrong
+  /// page, must not hand that page a room to listen to.
+  static const _microphoneMethods = {
+    'startAudioStream',
+    'pipelineRun',
+    'pipelineOpenMic',
+    'pipelineStartBuffering',
+    'pipelineStartSending',
+    'setWakeWordConfig',
+    'setWakeWordActive',
+  };
 
   void _setPageInteraction(bool active, String reason) {
     if (!active && reason.isEmpty && _pageInteractions.isNotEmpty) {
@@ -204,11 +230,31 @@ class JsApiManager extends Manager {
   /// The ksApi handler body, reachable for tests (attach needs a live
   /// WebView controller).
   @visibleForTesting
-  Future<Object?> handleCall(List<dynamic> args) => _onCall(args);
+  Future<Object?> handleCall(
+    List<dynamic> args, {
+    Uri? origin,
+    bool mainFrame = true,
+  }) => _onCall(args, origin: origin, mainFrame: mainFrame);
 
-  Future<Object?> _onCall(List<dynamic> args) async {
+  Future<Object?> _onCall(
+    List<dynamic> args, {
+    Uri? origin,
+    bool mainFrame = true,
+  }) async {
     if (args.isEmpty || args.first is! String) return null;
     final method = args.first as String;
+    // The WebView is told not to give sub-frames a bridge at all; this is
+    // the same rule for a platform or plugin version that does not honour it.
+    if (!mainFrame) {
+      log.warn(name, 'refused $method from a sub-frame ($origin)');
+      return null;
+    }
+    if (_microphoneMethods.contains(method) &&
+        origin != null &&
+        isTrustedOrigin?.call(origin) == false) {
+      log.warn(name, 'refused $method from $origin: not a configured page');
+      return null;
+    }
     final params = args.length > 1 && args[1] is Map
         ? (args[1] as Map).cast<String, Object?>()
         : <String, Object?>{};

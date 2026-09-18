@@ -1641,6 +1641,14 @@ class _KioskScreenState extends State<KioskScreen>
     initialUserScripts: UnmodifiableListView(_userScripts),
     pullToRefreshController: _pullToRefresh,
     initialSettings: InAppWebViewSettings(
+      // The bridge to the app is for the page the kiosk was pointed at, not
+      // for whatever that page embeds. Left at the plugin's default it is
+      // injected into every frame, so a webpage card or an advert inside one
+      // could call window.kioskSatellite -- which can open the microphone
+      // with no prompt. Every script this app injects is main-frame only
+      // already, so nothing of ours is lost. Must be set at creation.
+      javaScriptBridgeForMainFrameOnly: true,
+      javaScriptHandlersForMainFrameOnly: true,
       // Hybrid composition, decided twice. Virtual display (false) freed
       // Flutter animations from syncing with the Android UI thread, but it
       // paced the WebView itself badly: a constantly-animating dashboard
