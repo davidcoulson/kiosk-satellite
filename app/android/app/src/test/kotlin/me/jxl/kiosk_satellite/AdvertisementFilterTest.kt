@@ -40,6 +40,29 @@ class AdvertisementFilterTest {
     }
 
     @Test
+    fun `a remembered answer survives more strangers than the memo holds`() {
+        val f = filter("""{"irks":["$specIrk"]}""")
+        assertTrue(f.allows(specRpa, 1, -55, ByteArray(0)))
+        // Far more distinct private addresses than are remembered, so the
+        // owner's is evicted and has to be resolved from the keys again. The
+        // top two bits mark each one resolvable, as they do the spec vector.
+        var strangers = 0L
+        for (i in 0 until 2000) {
+            val address = 0x400000000000L or (i.toLong() shl 8) or 0x5AL
+            if (address == specRpa) continue
+            if (!f.allows(address, 1, -55, ByteArray(0))) strangers++
+        }
+        // A 24-bit hash lets about one in sixteen million through by chance.
+        assertTrue(strangers >= 1999)
+        assertTrue(f.allows(specRpa, 1, -55, ByteArray(0)))
+        // Asked twice, a stranger is still a stranger and still counted.
+        val before = f.counters()["droppedRpa"] as Long
+        assertFalse(f.allows(0x7081940dfbabL, 1, -55, ByteArray(0)))
+        assertFalse(f.allows(0x7081940dfbabL, 1, -55, ByteArray(0)))
+        assertEquals(before + 2, f.counters()["droppedRpa"])
+    }
+
+    @Test
     fun `a public address is never treated as resolvable`() {
         // Espressif's 4C: OUI sits inside the RPA bit range, so matching on
         // bits alone would send every ESP32 through the IRK test and drop it.
