@@ -8,12 +8,38 @@ import '../../core/manager.dart';
 import '../device_camera/camera_resolutions.dart';
 import '../remote/password_hash.dart';
 import 'definitions.dart';
+import 'secret_vault.dart';
 
 export 'definitions.dart';
 
 /// Owns persistence and change notification for every declared setting.
 class SettingsManager extends Manager {
-  SettingsManager(super.bus, super.commands, super.log);
+  SettingsManager(
+    super.bus,
+    super.commands,
+    super.log, {
+    SecretVault vault = const SecretVault(),
+    // A named parameter cannot be private, so it cannot be a formal.
+    // ignore: prefer_initializing_formals
+  }) : _vault = vault;
+
+  final SecretVault _vault;
+
+  /// Whether this device's Keystore passed its round trip this run, which is
+  /// the condition for entrusting anything new to it.
+  var _vaultReady = false;
+
+  /// Every secret as typed, by preference key, read out of the Keystore once
+  /// at startup because [get] is synchronous and the Keystore is not.
+  final _secrets = <String, String>{};
+
+  /// Preference keys holding a wrapped value that would not unwrap this run.
+  /// Read as unset, and never written over by anything but a person: what is
+  /// on disk may well unwrap next launch, and it is the only copy.
+  final _unreadable = <String>{};
+
+  /// Stand-ins handed out by [secret] for an unreadable one, for this run.
+  final _ephemeral = <String, String>{};
 
   @override
   String get name => 'settings';
@@ -99,6 +125,8 @@ class SettingsManager extends Manager {
   @override
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
+    // Before the migrations: one of them reads a secret.
+    await _openVault();
     await _migrate();
 
     commands
@@ -311,9 +339,9 @@ class SettingsManager extends Manager {
     // straight to the store, not through set(): that would count as changing
     // the password and sign out every automation holding a token, when all
     // that changed is how the same password is kept.
-    final password = _prefs.getString(_prefix + _remotePasswordKey) ?? '';
+    final password = _secretValue(_prefix + _remotePasswordKey) ?? '';
     if (password.isNotEmpty && !PasswordHash.isHashed(password)) {
-      await _prefs.setString(
+      await _storeSecret(
         _prefix + _remotePasswordKey,
         PasswordHash.hash(password),
       );
@@ -431,7 +459,9 @@ class SettingsManager extends Manager {
   }
 
   T get<T>(SettingDef<T> def) {
-    final raw = _prefs.get(_prefix + def.key);
+    final raw = def.secret
+        ? _secretValue(_prefix + def.key)
+        : _prefs.get(_prefix + def.key);
     // The `raw != null` guard matters: when T is inferred nullable (e.g.
     // Object? from a caller's ternary), `null is T` is true, which would
     // wrongly return null for an unstored setting instead of its default.
@@ -467,7 +497,11 @@ class SettingsManager extends Manager {
       case final bool v:
         await _prefs.setBool(_prefix + def.key, v);
       case final String v:
-        await _prefs.setString(_prefix + def.key, v);
+        if (def.secret) {
+          await _storeSecret(_prefix + def.key, v);
+        } else {
+          await _prefs.setString(_prefix + def.key, v);
+        }
       case final num v:
         // A whole value is an int, not 10.0 — SharedPreferences keeps the two
         // apart, and get() reads back whichever was stored.
@@ -526,12 +560,109 @@ class SettingsManager extends Manager {
   /// Persisted internal value not exposed in the settings UI (e.g. the
   /// remote-auth signing secret). Returns [orElse] and stores it when absent.
   Future<String> secret(String key, String Function() orElse) async {
-    final existing = _prefs.getString('${_prefix}secret.$key');
+    final full = '${_prefix}secret.$key';
+    final existing = _secretValue(full);
     if (existing != null && existing.isNotEmpty) return existing;
+    // One is stored and would not unwrap. Minting a replacement over it would
+    // make a bad launch permanent -- every session token ever issued is
+    // signed with one of these -- so this run gets a stand-in and the stored
+    // one is left for a launch that can read it.
+    if (_unreadable.contains(full)) return _ephemeral[full] ??= orElse();
     final value = orElse();
-    await _prefs.setString('${_prefix}secret.$key', value);
+    await _storeSecret(full, value);
     return value;
   }
+
+  /// The secret at preference key [full] as typed, or null when there is
+  /// none or it could not be read this run.
+  String? _secretValue(String full) {
+    final known = _secrets[full];
+    if (known != null) return known;
+    final raw = _prefs.get(full);
+    if (raw is! String || SecretVault.isWrapped(raw)) return null;
+    return raw;
+  }
+
+  /// Stores [value] at [full], wrapped when this device can be trusted to
+  /// unwrap it again and as typed otherwise -- a secret the app cannot read
+  /// back is worse than one a file thief can.
+  Future<void> _storeSecret(String full, String value) async {
+    _secrets[full] = value;
+    _unreadable.remove(full);
+    _ephemeral.remove(full);
+    var stored = value;
+    if (_vaultReady && value.isNotEmpty) {
+      final wrapped = (await _vault.wrap([value])).single;
+      if (wrapped == null) {
+        log.warn(name, 'could not protect a secret; kept it as typed');
+      } else {
+        stored = wrapped;
+      }
+    }
+    await _prefs.setString(full, stored);
+  }
+
+  /// Reads every secret out of the Keystore, and moves any still kept as
+  /// typed into it (secret_vault.dart, SecretVault.kt).
+  Future<void> _openVault() async {
+    final keys = <String>{
+      for (final def in allSettings)
+        if (def.secret) _prefix + def.key,
+      ..._prefs.getKeys().where((k) => k.startsWith('${_prefix}secret.')),
+    };
+    final wrapped = <String, String>{};
+    final typed = <String, String>{};
+    for (final key in keys) {
+      final raw = _prefs.get(key);
+      if (raw is! String || raw.isEmpty) continue;
+      (SecretVault.isWrapped(raw) ? wrapped : typed)[key] = raw;
+    }
+
+    var pending = wrapped.keys.toList();
+    for (var attempt = 0; attempt < 2 && pending.isNotEmpty; attempt++) {
+      // Once more after a pause: a Keystore daemon still starting is the
+      // failure a panel booting straight into the app is most likely to meet.
+      if (attempt > 0) await Future<void>.delayed(_vaultRetry);
+      final plain = await _vault.unwrap([for (final k in pending) wrapped[k]!]);
+      final failed = <String>[];
+      for (var i = 0; i < pending.length; i++) {
+        final value = plain[i];
+        if (value == null) {
+          failed.add(pending[i]);
+        } else {
+          _secrets[pending[i]] = value;
+        }
+      }
+      pending = failed;
+    }
+    _unreadable.addAll(pending);
+    if (pending.isNotEmpty) {
+      log.error(
+        name,
+        '${pending.length} protected setting(s) could not be read and are '
+        'treated as unset for this run: '
+        '${pending.map((k) => k.substring(_prefix.length)).join(', ')}. '
+        'What is stored has been left alone.',
+      );
+    }
+
+    _vaultReady = await _vault.selfTest();
+    if (!_vaultReady || typed.isEmpty) return;
+    final order = typed.keys.toList();
+    final sealed = await _vault.wrap([for (final k in order) typed[k]!]);
+    var moved = 0;
+    for (var i = 0; i < order.length; i++) {
+      _secrets[order[i]] = typed[order[i]]!;
+      final value = sealed[i];
+      if (value == null) continue;
+      await _prefs.setString(order[i], value);
+      moved++;
+    }
+    if (moved > 0) log.info(name, 'moved $moved secret(s) into the Keystore');
+  }
+
+  /// How long [_openVault] waits before asking again for what failed.
+  static const _vaultRetry = Duration(milliseconds: 750);
 
   /// The certificate fingerprint remembered for [host], or null. A
   /// fingerprint is public, so this is ordinary storage: it is kept apart

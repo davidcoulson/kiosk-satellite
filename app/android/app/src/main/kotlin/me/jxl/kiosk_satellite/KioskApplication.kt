@@ -55,6 +55,7 @@ class KioskApplication : Application(), CameraXConfig.Provider {
     private lateinit var micRecorder: MicRecorder
     private lateinit var background: BackgroundBridge
     private lateinit var deviceDetails: DeviceDetails
+    private lateinit var secretVault: SecretVault
     private lateinit var brightness: BrightnessBridge
     private lateinit var sendspin: SendspinBridge
     private lateinit var audioRouting: AudioRoutingBridge
@@ -124,6 +125,9 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         val messenger = engine.dartExecutor.binaryMessenger
         // Before the mic: MicRecorder resolves its preferred device through
         // AudioRouting, which the bridge initializes.
+        // First: SettingsManager asks it for the secrets before any other
+        // manager has read a setting.
+        secretVault = SecretVault(messenger)
         audioRouting = AudioRoutingBridge(applicationContext, messenger)
         micRecorder = MicRecorder(applicationContext, messenger)
         background = BackgroundBridge(applicationContext, messenger)
