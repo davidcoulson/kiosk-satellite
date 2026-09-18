@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kiosk_satellite/managers/wake_word/system_permissions.dart';
 import 'package:kiosk_satellite/app_container.dart';
 import 'package:kiosk_satellite/core/app_locales.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
@@ -89,6 +90,11 @@ void main() {
   var overlayRequestable = false;
   final permissionCalls = <String>[];
   Future<void> boot() async {
+    // SystemPermissions caches its last read for a moment, so a burst of
+    // callers shares one pass over eighteen platform channels. That cache
+    // outlives a test: without this, a case that changes the mocked grants
+    // would be answered from the previous case's read.
+    SystemPermissions.invalidate();
     SharedPreferences.setMockInitialValues({});
     container = AppContainer();
     await container.settings.init();

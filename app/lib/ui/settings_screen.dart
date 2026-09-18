@@ -4290,6 +4290,9 @@ class _LauncherPermissionsTileState extends State<_LauncherPermissionsTile>
           : TextButton(
               onPressed: () async {
                 await onGrant();
+                // The grant just changed, so the next read must see it
+                // rather than the cached pass this screen's own boot took.
+                SystemPermissions.invalidate();
                 await _refresh();
               },
               child: Text(launcherText(context, 'Grant')),
@@ -8471,6 +8474,9 @@ class _ServicePermissionsTileState extends State<_ServicePermissionsTile>
           : TextButton(
               onPressed: () async {
                 await onGrant();
+                // The grant just changed, so the next read must see it
+                // rather than the cached pass this screen's own boot took.
+                SystemPermissions.invalidate();
                 await _refresh();
               },
               child: Text(deviceText(context, action)),
@@ -8671,6 +8677,9 @@ class _DevicePermissionsTileState extends State<_DevicePermissionsTile>
           : TextButton(
               onPressed: () async {
                 await onGrant();
+                // The grant just changed, so the next read must see it
+                // rather than the cached pass this screen's own boot took.
+                SystemPermissions.invalidate();
                 await _refresh();
               },
               child: Text(deviceText(context, action)),
