@@ -1380,6 +1380,18 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingBtproxyMinConnectRssiTitle",
     "description": "settingBtproxyMinConnectRssiDescription",
   },
+  "btproxy.min_advertise_rssi": {
+    "title": "settingBtproxyMinAdvertiseRssiTitle",
+    "description": "settingBtproxyMinAdvertiseRssiDescription",
+  },
+  "btproxy.filter": {
+    "title": "settingBtproxyFilterTitle",
+    "description": "settingBtproxyFilterDescription",
+  },
+  "btproxy.filter_irks": {
+    "title": "settingBtproxyFilterIrksTitle",
+    "description": "settingBtproxyFilterIrksDescription",
+  },
   "wake_word.background": {
     "title": "settingWakeWordBackgroundTitle",
     "description": "settingWakeWordBackgroundDescription",

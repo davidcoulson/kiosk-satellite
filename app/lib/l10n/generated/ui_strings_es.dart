@@ -5880,6 +5880,28 @@ class UiStringsEs extends UiStrings {
       'No disponible en este dispositivo: su versión de Android no admite Bluetooth LE.';
 
   @override
+  String get settingBtproxyMinAdvertiseRssiTitle =>
+      'Only relay devices this close';
+
+  @override
+  String get settingBtproxyMinAdvertiseRssiDescription =>
+      'Drop advertisements heard weaker than this instead of relaying them to Home Assistant, so the panel reports what is in front of it rather than the whole building. Devices that report no signal strength are dropped too, since their distance cannot be judged. Scanning itself is unchanged.';
+
+  @override
+  String get settingBtproxyFilterTitle => 'Advertisement filter';
+
+  @override
+  String get settingBtproxyFilterDescription =>
+      'JSON filter deciding which devices reach Home Assistant: identity keys (IRKs) for your own phones and watches, address and service UUID allowlists, iBeacon and FindMy rules, and manufacturer or name blocklists, each with its own signal limit. Empty relays everything.';
+
+  @override
+  String get settingBtproxyFilterIrksTitle => 'Identity keys (IRKs)';
+
+  @override
+  String get settingBtproxyFilterIrksDescription =>
+      'JSON array of Identity Resolving Keys for your own phones and watches. With any listed, a rotating private address resolving to none of them is dropped as somebody else\'s. Empty relays them all and leaves identity to Home Assistant.';
+
+  @override
   String get esphomeIdentityBthome => 'Sensor BTHome';
 
   @override

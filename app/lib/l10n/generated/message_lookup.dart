@@ -1624,6 +1624,16 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'esphomeBluetoothUnsupported' => strings.esphomeBluetoothUnsupported,
       'esphomeBluetoothBuildUnsupported' =>
         strings.esphomeBluetoothBuildUnsupported,
+      'settingBtproxyMinAdvertiseRssiTitle' =>
+        strings.settingBtproxyMinAdvertiseRssiTitle,
+      'settingBtproxyMinAdvertiseRssiDescription' =>
+        strings.settingBtproxyMinAdvertiseRssiDescription,
+      'settingBtproxyFilterTitle' => strings.settingBtproxyFilterTitle,
+      'settingBtproxyFilterDescription' =>
+        strings.settingBtproxyFilterDescription,
+      'settingBtproxyFilterIrksTitle' => strings.settingBtproxyFilterIrksTitle,
+      'settingBtproxyFilterIrksDescription' =>
+        strings.settingBtproxyFilterIrksDescription,
       'esphomeIdentityBthome' => strings.esphomeIdentityBthome,
       'esphomeIdentityXiaomi' => strings.esphomeIdentityXiaomi,
       'esphomeIdentityQingping' => strings.esphomeIdentityQingping,
