@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_satellite/app_container.dart';
 import 'package:kiosk_satellite/core/app_locales.dart';
+import 'package:kiosk_satellite/managers/remote/password_hash.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
 import 'package:kiosk_satellite/l10n/generated/ui_strings.dart';
 import 'package:kiosk_satellite/l10n/generated/ui_strings_en.dart';
@@ -115,9 +116,14 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text(entry.$2), findsOneWidget);
         expect(container.settings.get(defs.deviceName), 'Original kiosk');
+        // Kept as a hash (password_hash.dart), so compared by what it
+        // accepts rather than by what is stored.
         expect(
-          container.settings.get(defs.remotePassword),
-          'Original password',
+          PasswordHash.verify(
+            container.settings.get(defs.remotePassword),
+            'Original password',
+          ),
+          isTrue,
         );
         expect(tester.takeException(), isNull);
         await tester.pump(const Duration(seconds: 10));
