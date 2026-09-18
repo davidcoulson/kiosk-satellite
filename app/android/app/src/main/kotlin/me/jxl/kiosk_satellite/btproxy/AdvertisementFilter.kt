@@ -405,18 +405,60 @@ internal class AdvertisementFilter private constructor(
     }
 
     /**
+     * One initialised cipher per identity key, built on first use.
+     * Cipher.getInstance() walks the provider list and init() expands the key
+     * schedule; doing both for every key on every resolvable advertisement
+     * was most of what resolution cost. Null when the platform refuses AES,
+     * which resolves nothing -- the same answer the per-call version gave.
+     */
+    private val irkCiphers: List<Cipher>? by lazy(LazyThreadSafetyMode.NONE) {
+        try {
+            irks.map { key ->
+                Cipher.getInstance("AES/ECB/NoPadding").apply {
+                    init(Cipher.ENCRYPT_MODE, SecretKeySpec(key, "AES"))
+                }
+            }
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    /**
+     * Addresses already tested against the keys. A private address holds for
+     * about fifteen minutes and advertises several times a second throughout,
+     * and whether it resolves depends only on the address and the keys, which
+     * are fixed for the life of this filter -- so an answer never goes stale
+     * and the memo only needs a bound. Least recently seen goes first.
+     */
+    private val resolved = object : LinkedHashMap<Long, Boolean>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, Boolean>?) =
+            size > RESOLVED_CACHE_SIZE
+    }
+
+    /**
      * Bluetooth Core "ah": hash = e(IRK, 0-padding | prand) truncated to 24
      * bits, where an RPA is prand (top three bytes) followed by hash (bottom
      * three).
+     *
+     * Locked because a Cipher is not safe to share between threads and
+     * nothing here promises which thread a scan result arrives on.
      */
-    private fun irkMatches(address: Long): Boolean {
+    private fun irkMatches(address: Long): Boolean = synchronized(resolved) {
+        resolved[address]?.let { return it }
+        val matched = resolves(address)
+        resolved[address] = matched
+        matched
+    }
+
+    private fun resolves(address: Long): Boolean {
+        val ciphers = irkCiphers ?: return false
         val plaintext = ByteArray(16)
         plaintext[13] = ((address shr 40) and 0xFF).toByte()
         plaintext[14] = ((address shr 32) and 0xFF).toByte()
         plaintext[15] = ((address shr 24) and 0xFF).toByte()
-        for (irk in irks) {
+        for (cipher in ciphers) {
             val out = try {
-                aes(irk, plaintext)
+                cipher.doFinal(plaintext)
             } catch (_: Throwable) {
                 return false
             }
@@ -430,13 +472,10 @@ internal class AdvertisementFilter private constructor(
         return false
     }
 
-    private fun aes(key: ByteArray, block: ByteArray): ByteArray {
-        val cipher = Cipher.getInstance("AES/ECB/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(key, "AES"))
-        return cipher.doFinal(block)
-    }
-
     companion object {
+        /** Distinct private addresses remembered; a busy room holds a few dozen. */
+        private const val RESOLVED_CACHE_SIZE = 512
+
         /** 0000xxxx-0000-1000-8000-00805F9B34FB, the suffix a SIG short
          *  carries when it is advertised in its long form. */
         private val BASE_UUID_SUFFIX = byteArrayOf(
