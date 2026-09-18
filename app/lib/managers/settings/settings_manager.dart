@@ -103,6 +103,17 @@ class SettingsManager extends Manager {
     commands
       ..register(
         Command(
+          name: 'forgetCertificates',
+          description:
+              'Forget the certificates remembered for Home Assistant and '
+              'Immich, so the next one each presents is the one trusted. '
+              'For a self-signed certificate that was renewed.',
+          handler: (_) async =>
+              CommandResult.ok({'forgotten': await forgetCertificates()}),
+        ),
+      )
+      ..register(
+        Command(
           name: 'exportConfig',
           description:
               'Full configuration for backup or cloning: every setting '
@@ -439,6 +450,17 @@ class SettingsManager extends Manager {
     if (def.key == 'render.disable_impeller') {
       await _prefs.remove('${_prefix}render.disabled_by');
     }
+    // A remembered certificate belongs to the server it was seen on. Point
+    // the app at another server, or switch "Ignore SSL errors" on to say the
+    // one presented now is the one to trust, and what was remembered goes --
+    // which is also how a renewed self-signed certificate is adopted without
+    // a command line (ha_http_overrides.dart).
+    if (value != previous &&
+        (def.key == 'ha.url' ||
+            def.key == 'screensaver.immich_url' ||
+            (def.key == 'browser.ignore_ssl_errors' && value == true))) {
+      await forgetCertificates();
+    }
     log.info(
       name,
       'set ${def.key}${def.secret ? '' : ' = $value'}'
@@ -468,6 +490,33 @@ class SettingsManager extends Manager {
     final value = orElse();
     await _prefs.setString('${_prefix}secret.$key', value);
     return value;
+  }
+
+  /// The certificate fingerprint remembered for [host], or null. A
+  /// fingerprint is public, so this is ordinary storage: it is kept apart
+  /// from the settings because nobody chooses it and no export should carry
+  /// one panel's first sight of a server to another.
+  String? pinnedCertificate(String host) =>
+      _prefs.getString('${_prefix}certpin.${host.toLowerCase()}');
+
+  /// Remembers [fingerprint] for [host]. Not awaited by its one caller, a
+  /// TLS callback that must answer synchronously; the value is readable from
+  /// the in-memory cache at once and lands on disk behind it.
+  void pinCertificate(String host, String fingerprint) => unawaited(
+    _prefs.setString('${_prefix}certpin.${host.toLowerCase()}', fingerprint),
+  );
+
+  /// Forgets every remembered certificate, so the next one each server
+  /// presents is the one trusted. How many were forgotten.
+  Future<int> forgetCertificates() async {
+    final keys = _prefs
+        .getKeys()
+        .where((k) => k.startsWith('${_prefix}certpin.'))
+        .toList();
+    for (final key in keys) {
+      await _prefs.remove(key);
+    }
+    return keys.length;
   }
 
   SettingDef<Object>? defByKey(String key) {
