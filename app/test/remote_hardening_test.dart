@@ -180,4 +180,70 @@ void main() {
     expect(headers.value('x-content-type-options'), 'nosniff');
     expect(headers.value('referrer-policy'), 'no-referrer');
   });
+
+  group('the password as kept, and the sessions that hang off it', () {
+    Future<String?> login(String password) async {
+      final (status, body, _) = await post(
+        '/api/login',
+        jsonEncode({'password': password}),
+      );
+      return status == 200 ? body['token'] as String : null;
+    }
+
+    Future<int> info(String token) async {
+      final client = HttpClient();
+      try {
+        final req = await client.getUrl(
+          Uri.parse('http://127.0.0.1:$port/api/settings'),
+        );
+        req.headers.set('authorization', 'Bearer $token');
+        final res = await req.close();
+        await res.drain<void>();
+        return res.statusCode;
+      } finally {
+        client.close(force: true);
+      }
+    }
+
+    test(
+      'an upgrade stops keeping the password as typed, and nobody notices',
+      () async {
+        await boot(configured);
+        final prefs = await SharedPreferences.getInstance();
+        final stored = prefs.getString('ks.remote.password')!;
+        expect(stored, isNot(contains('secret')));
+        expect(stored, startsWith(r'pbkdf2-sha256$'));
+        // The same password still logs in.
+        expect(await login('secret'), isNotNull);
+        expect(await login('Secret'), isNull);
+        // And what is stored is not itself a way in.
+        expect(await login(stored), isNull);
+      },
+    );
+
+    test('changing the password signs every session out', () async {
+      await boot(configured);
+      final before = (await login('secret'))!;
+      expect(await info(before), 200);
+
+      await settings.set(defs.remotePassword, 'a-new-one');
+      expect(await info(before), 401);
+      expect(await login('secret'), isNull);
+      final after = (await login('a-new-one'))!;
+      expect(await info(after), 200);
+    });
+
+    test('removing the password leaves no session standing', () async {
+      await boot(configured);
+      final token = (await login('secret'))!;
+      await settings.set(defs.remotePassword, '');
+      // The server does not run without a password, so there is nothing
+      // left to present the token to; were it to answer, it must refuse.
+      try {
+        expect(await info(token), isNot(200));
+      } on SocketException {
+        // Closed, which is the stronger answer.
+      }
+    });
+  });
 }

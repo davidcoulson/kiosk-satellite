@@ -20,6 +20,7 @@ import '../../core/manager.dart';
 import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 import 'auth.dart';
+import 'password_hash.dart';
 import 'observations.dart';
 
 /// Embedded remote-management server (docs/remote-api.md).
@@ -106,7 +107,12 @@ class RemoteManager extends Manager {
         List<int>.generate(32, (_) => random.nextInt(256)),
       );
     });
-    _auth = AuthStore(secret);
+    _auth = AuthStore(
+      secret,
+      passwordVersion: () =>
+          PasswordHash.versionOf(_settings.get(defs.remotePassword)),
+      acceptsUnversioned: () => _settings.acceptsUnversionedTokens,
+    );
     // Minted for a fleet leader when this kiosk accepts its invitation:
     // the same signed token as a login, carrying the leader's id, which
     // the gate below reads to keep it off everything but the fleet
@@ -714,7 +720,11 @@ class RemoteManager extends Manager {
     final password = body?['password'];
     if (password is String &&
         password.isNotEmpty &&
-        password == _settings.get(defs.remotePassword)) {
+        password.length <= 1024 &&
+        await PasswordHash.verifyAsync(
+          _settings.get(defs.remotePassword),
+          password,
+        )) {
       _auth.clearFailures(ip);
       // ttl_days (issue #84): a Home Assistant rest_command cannot redo the
       // login dance every week, so an automation logs in once with a long

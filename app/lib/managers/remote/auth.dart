@@ -9,9 +9,31 @@ import 'package:crypto/crypto.dart';
 /// This is what keeps the remote UI logged in across the kiosk restarting —
 /// an in-memory store signed the user out on every relaunch.
 class AuthStore {
-  AuthStore(this._secret);
+  AuthStore(
+    this._secret, {
+    String Function()? passwordVersion,
+    bool Function()? acceptsUnversioned,
+    // ignore: prefer_initializing_formals
+  }) : _passwordVersion = passwordVersion,
+       // ignore: prefer_initializing_formals
+       _acceptsUnversioned = acceptsUnversioned;
 
   final String _secret;
+
+  /// Names the password in force (PasswordHash.versionOf). A session token
+  /// carries the name it was issued under as `pv` and stops validating the
+  /// moment the two differ, so changing the password signs everyone out --
+  /// which is what somebody changing a password after a leak is trying to
+  /// do, and what a token with its own signature and a ten-year expiry
+  /// otherwise shrugs off. Null (tests, mostly) checks nothing.
+  final String Function()? _passwordVersion;
+
+  /// Whether a token with no `pv` at all is still good. Every token issued
+  /// before this existed is one, including the ones pasted into Home
+  /// Assistant automations, and an upgrade must not break those: they stay
+  /// valid until the first password change, which retires them with the
+  /// rest.
+  final bool Function()? _acceptsUnversioned;
 
   static const _tokenTtl = Duration(days: 7);
 
@@ -36,8 +58,13 @@ class AuthStore {
         ? _tokenTtl
         : (ttl > maxTtl ? maxTtl : ttl);
     final exp = DateTime.now().add(effective).millisecondsSinceEpoch;
+    // A fleet token is the leader's, not an admin's: leaving the fleet is
+    // what revokes it, and the follower's password is none of its business.
+    final version = claims.containsKey('fleet')
+        ? null
+        : _passwordVersion?.call();
     final payload = base64Url.encode(
-      utf8.encode(jsonEncode({...claims, 'exp': exp})),
+      utf8.encode(jsonEncode({...claims, 'exp': exp, 'pv': ?version})),
     );
     return '$payload.${_sign(payload)}';
   }
@@ -60,7 +87,13 @@ class AuthStore {
       final payload =
           jsonDecode(utf8.decode(base64Url.decode(parts[0]))) as Map;
       final exp = payload['exp'] as int;
-      return DateTime.now().millisecondsSinceEpoch < exp;
+      if (DateTime.now().millisecondsSinceEpoch >= exp) return false;
+      if (payload.containsKey('fleet')) return true;
+      final current = _passwordVersion;
+      if (current == null) return true;
+      final issuedUnder = payload['pv'];
+      if (issuedUnder == null) return _acceptsUnversioned?.call() ?? false;
+      return issuedUnder == current();
     } catch (_) {
       return false;
     }
