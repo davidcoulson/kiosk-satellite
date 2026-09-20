@@ -21588,6 +21588,84 @@
       ]
     }
   },
+  "settingBtproxyMinAdvertiseRssiTitle": "Only relay devices this close",
+  "@settingBtproxyMinAdvertiseRssiTitle": {
+    "context": "Settings > ESPHome > Bluetooth Proxy",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > ESPHome > Bluetooth Proxy"
+      ],
+      "remoteAdmin": [
+        "ESPHome > Bluetooth Proxy"
+      ]
+    }
+  },
+  "settingBtproxyMinAdvertiseRssiDescription": "Drop advertisements heard weaker than this instead of relaying them to Home Assistant, so the panel reports what is in front of it rather than the whole building. Devices that report no signal strength are dropped too, since their distance cannot be judged. Scanning itself is unchanged.",
+  "@settingBtproxyMinAdvertiseRssiDescription": {
+    "context": "Settings > ESPHome > Bluetooth Proxy",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > ESPHome > Bluetooth Proxy"
+      ],
+      "remoteAdmin": [
+        "ESPHome > Bluetooth Proxy"
+      ]
+    }
+  },
+  "settingBtproxyFilterTitle": "Advertisement filter",
+  "@settingBtproxyFilterTitle": {
+    "context": "Settings > ESPHome > Bluetooth Proxy",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > ESPHome > Bluetooth Proxy"
+      ],
+      "remoteAdmin": [
+        "ESPHome > Bluetooth Proxy"
+      ]
+    }
+  },
+  "settingBtproxyFilterDescription": "JSON filter deciding which devices reach Home Assistant: identity keys (IRKs) for your own phones and watches, address and service UUID allowlists, iBeacon and FindMy rules, and manufacturer or name blocklists, each with its own signal limit. Empty relays everything.",
+  "@settingBtproxyFilterDescription": {
+    "context": "Settings > ESPHome > Bluetooth Proxy",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > ESPHome > Bluetooth Proxy"
+      ],
+      "remoteAdmin": [
+        "ESPHome > Bluetooth Proxy"
+      ]
+    }
+  },
+  "settingBtproxyFilterIrksTitle": "Identity keys (IRKs)",
+  "@settingBtproxyFilterIrksTitle": {
+    "context": "Settings > ESPHome > Bluetooth Proxy",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > ESPHome > Bluetooth Proxy"
+      ],
+      "remoteAdmin": [
+        "ESPHome > Bluetooth Proxy"
+      ]
+    }
+  },
+  "settingBtproxyFilterIrksDescription": "JSON array of Identity Resolving Keys for your own phones and watches. With any listed, a rotating private address resolving to none of them is dropped as somebody else's. Empty relays them all and leaves identity to Home Assistant.",
+  "@settingBtproxyFilterIrksDescription": {
+    "context": "Settings > ESPHome > Bluetooth Proxy",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > ESPHome > Bluetooth Proxy"
+      ],
+      "remoteAdmin": [
+        "ESPHome > Bluetooth Proxy"
+      ]
+    }
+  },
   "esphomeIdentityBthome": "Capteur BTHome",
   "@esphomeIdentityBthome": {
     "context": "Settings > ESPHome > Bluetooth Proxy > Nearby devices",
