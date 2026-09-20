@@ -84,12 +84,12 @@ void main() {
   group('Logger', () {
     test('keeps a bounded ring buffer', () {
       final logger = Logger();
-      for (var i = 0; i < 600; i++) {
+      for (var i = 0; i < 4100; i++) {
         logger.info('test', 'entry $i');
       }
-      expect(logger.recent, hasLength(500));
+      expect(logger.recent, hasLength(4000));
       expect(logger.recent.first.message, 'entry 100');
-      expect(logger.recent.last.message, 'entry 599');
+      expect(logger.recent.last.message, 'entry 4099');
     });
   });
 }
