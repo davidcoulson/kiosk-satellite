@@ -300,6 +300,37 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
       )
       ..register(
         Command(
+          name: 'holdBrightness',
+          description:
+              'Hold the panel at a level for this session without storing '
+              'it (theater mode). The knob and adaptive brightness keep '
+              'their values and land on release.',
+          params: const {'level': 'Brightness 0..1; 0 is the panel minimum'},
+          handler: (p) async {
+            final level = (p['level'] as num?)?.toDouble();
+            if (level == null || level < 0 || level > 1) {
+              return const CommandResult.fail('level must be 0..1');
+            }
+            return await holdBrightness(level)
+                ? const CommandResult.ok()
+                : const CommandResult.fail('brightness not set');
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'releaseBrightness',
+          description:
+              'End a holdBrightness: the level from before it returns, or '
+              'whatever was asked for while it held.',
+          handler: (_) async {
+            await releaseBrightness();
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
           name: 'screenOn',
           description: 'Wake the display (works on a sleeping panel)',
           params: const {
@@ -462,6 +493,22 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
 
   bool get _adaptiveOn =>
       _lightSensor && _settings.get(defs.adaptiveBrightness);
+
+  /// A level held on the panel by theater mode, or null. While one is held
+  /// nothing else reaches the panel: the knob, Home Assistant's light and
+  /// adaptive brightness go on computing and storing what they would show,
+  /// and it all lands at once on release. Nothing about a hold is stored --
+  /// it is a session layer above everything the settings describe, so a
+  /// crash mid-movie comes back at the brightness the settings say.
+  double? _held;
+
+  /// What the panel showed when the hold began, restored exactly on release
+  /// unless something asked for a different level in the meantime.
+  double? _heldFrom;
+
+  /// Something wrote the knob or the session ceiling during the hold, so
+  /// release must apply that rather than put the old panel level back.
+  bool _changedWhileHeld = false;
 
   /// The screensaver is showing, and whether it has taken the panel this
   /// session (a Dim or Black mode, its own brightness, a schedule entry's
@@ -640,6 +687,9 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
   /// step of it. [force] writes regardless: the curve moving is a change
   /// the user is watching for.
   Future<void> _applyFactor({bool force = false}) async {
+    // The factor still follows the room (and the lux sensor still reports);
+    // it is applied again when the hold ends.
+    if (_held != null) return;
     _adaptiveRetry?.cancel();
     _adaptiveRetry = null;
     final ceiling = await _seedCeiling();
@@ -772,10 +822,53 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
     }
   }
 
+  /// Put [level] on the panel and keep it there until [releaseBrightness],
+  /// storing nothing. Called again while holding, it moves the held level:
+  /// theater mode's phases are one hold at different levels, not a stack.
+  Future<bool> holdBrightness(double level) async {
+    final clamped = level.clamp(0.0, 1.0);
+    if (_held == null) {
+      _heldFrom = _lastWritten ?? await _readPanel();
+      _changedWhileHeld = false;
+    }
+    _held = clamped;
+    if (!await _write(clamped)) return false;
+    bus.publish(BrightnessChanged(level: _levelFor(clamped), panel: clamped));
+    return true;
+  }
+
+  /// End the hold. The panel returns to what it showed before, unless the
+  /// knob, Home Assistant or the room asked for something else meanwhile,
+  /// in which case that is what lands.
+  Future<void> releaseBrightness() async {
+    if (_held == null) return;
+    _held = null;
+    final from = _heldFrom;
+    _heldFrom = null;
+    final changed = _changedWhileHeld;
+    _changedWhileHeld = false;
+    if (changed || _adaptiveOn || from == null) {
+      // The room may have moved under an adaptive panel, and a knob turned
+      // mid-movie is the level the owner now wants.
+      await _applyKnob();
+      return;
+    }
+    if (await _write(from)) {
+      bus.publish(BrightnessChanged(level: _levelFor(from), panel: from));
+    }
+  }
+
   /// Set the bright-room level for this session and put it on the panel,
   /// dimmed by the factor.
   Future<bool> _setCeiling(double level) async {
     _ceiling = level;
+    final held = _held;
+    if (held != null) {
+      // Stored for release; the panel stays where theater mode put it.
+      _changedWhileHeld = true;
+      bus.publish(BrightnessChanged(level: _levelFor(held), panel: held));
+      return true;
+    }
     final panel = (level * _factor).clamp(0.0, 1.0);
     if (!await _write(panel)) return false;
     bus.publish(BrightnessChanged(level: _levelFor(panel), panel: panel));
