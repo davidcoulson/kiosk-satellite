@@ -45,6 +45,8 @@ Use **Settings > ESPHome > Excluded entities** to pick entities that should stay
 |---|---|---|
 | **Screen** | light | Controls the screen state (on or off) along with the panel brightness. |
 | **Screensaver active** | switch | Manually starts and stops the screensaver. |
+| **Theater mode** | switch | Turns [theater mode](theater.md) on and off. Always off when the app starts. |
+| **Theater peek** | button | Brightens a panel in theater mode for a few seconds. |
 | **Now Playing** | switch | Reads "on" while the full screen Now Playing view is visible. Turning it on brings the view up (paused if the music is paused); turning it off dismisses the view. Requires the setting "Now Playing" instead of the screensaver to be on. |
 | **Volume** | number | Controls the media volume percentage. |
 | **Voice Satellite** | switch | Starts and stops the voice engine on the page, identical to the Start and Stop buttons found in the kiosk's Voice Satellite settings. Requires a satellite bound to the kiosk (which is handled during the setup wizard or on the Voice Satellite settings page). Binding or unbinding a satellite will refresh the entity list on the next server start. |
@@ -87,6 +89,7 @@ Every item in this list corresponds directly to a kiosk setting. They are fully 
 | Entity | Type | Notes |
 |---|---|---|
 | **Screensaver brightness level**, **Assistant volume**, **Media volume** | number | Values in percentage. |
+| **Theater dimming**, **Theater peek time** | number | The theater mode Dimming (0 to 95%) and Stay bright for (3 to 60 s) settings. |
 | **Screensaver timeout** | number | The idle timeout in seconds, the same value as **Idle timeout** on the Screensaver page. A write restarts the idle clock at the new value right away, so an automation can shorten it at night and stretch it back in the morning. `0` turns the idle clock off, so the screensaver only starts from the switch, a schedule or a gesture. |
 | **Clock background** | text | The Clock screensaver's background photo: a path to an image on the device or an image URL the device fetches. Every write reloads the image, an unchanged value included. |
 | **Kiosk mode**, **Lockdown mode**, **HA kiosk mode**, **Keep screen on**, **Remote management**, **Screensaver brightness**, **Screensaver**, **Hold mode** | switch | Standard toggle switches. |
@@ -110,6 +113,7 @@ Every item in this list corresponds directly to a kiosk setting. They are fully 
 | **Battery** | sensor | Reports battery percentage. Only devices with a physical battery receive this entity; a mains powered device without a battery will only report the Charging status. |
 | **Charging** | binary sensor | Indicates if the device is currently receiving power. |
 | **CPU usage** | sensor | Reports current CPU load as a percentage. |
+| **Theater phase** | text sensor | `off`, `dim`, `peek` or `black`. |
 | **CPU temperature** | sensor | Only available on devices that report thermal data. |
 | **RAM available**, **RAM total** | sensor | Reported in Megabytes (MB). |
 | **Current page** | text sensor | Displays the URL currently on screen, perfectly tracking Single Page Application (SPA) navigations. |
@@ -397,6 +401,19 @@ The page has the same footing as any other link the kiosk opens: it follows the 
 ```
 
 On the [remote API](remote-api.md) the same two are the `showLinkPage` and `hideOverlayPage` commands, `showLinkPage` with the same `hold` flag.
+
+## Theater mode and navigation
+
+`esphome.<node name>_set_theater_mode` turns [theater mode](theater.md) on or off with `active`, and may set `overlay_opacity` and `backlight` (0 to 1) for that time only; -1 keeps the setting.
+
+`esphome.<node name>_navigate` moves the main page, not an overlay, to `url`: an http or https address, a path, or a `#` route. A `#` route, or the page showing named with a different fragment, changes in place without a reload, so a single-page app keeps its state. Other schemes are refused. On the [remote API](remote-api.md) it is the `navigate` command.
+
+```yaml
+- action: esphome.ks_theater_panel_set_theater_mode
+  data: { active: true, overlay_opacity: 0.7, backlight: -1 }
+- action: esphome.ks_theater_panel_navigate
+  data: { url: "#/showtime" }
+```
 
 ## GPS Sensor
 

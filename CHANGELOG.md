@@ -2,6 +2,13 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
+## v2026.9.69-djc
+
+### Added
+- **Theater mode.** Takes a panel in a dark room darker than its backlight goes, keeps motion and faces from lighting it, brightens it for a few seconds on a touch or an alert, and optionally goes black after a spell. The first touch in the dark wakes the panel without pressing anything. It is never stored and never writes brightness settings, so a restart or its end puts the panel back exactly as it was; a six hour cap ends a forgotten one. Driven from the page's JavaScript API, an ESPHome switch, button and action, the remote API and `ks://theater` links. See [Theater Mode](docs/theater.md).
+- **A navigate command.** Moves the main page to a URL, path or `#` route, changing a route in place without a reload. On the remote API and as an ESPHome action.
+- **A custom start page.** The Start page can be a custom http or https address instead of a Home Assistant dashboard. It counts as the dashboard, may use theater mode, and is never handed the Home Assistant session. Home Assistant's Default dashboard select offers it as Start page.
+
 ## v2026.9.69 - 2026-09-21
 
 ### Changed

@@ -31,6 +31,9 @@ A `ks://` link runs the same action a [gesture](gestures.md) can, with the same 
 | `ks://screensaver` | Starts the screensaver. |
 | `ks://screensaver/stop` | Stops it. |
 | `ks://hold` | Toggles hold mode, which pins the current view. |
+| `ks://theater` | Toggles [theater mode](theater.md). |
+| `ks://theater/on`, `ks://theater/off` | Turns it on or off. |
+| `ks://theater/peek` | Brightens a panel in theater mode for a few seconds. |
 | `ks://ha-kiosk` | Toggles HA kiosk mode, the Home Assistant header and sidebar. |
 | `ks://android-settings` | Opens the Android Settings app with the kiosk running behind it. |
 

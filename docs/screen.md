@@ -16,6 +16,10 @@ This option is disabled by default to prevent a default slider from overriding y
 
 Writing values directly to the system display requires the "Modify system settings" permission (an alert appears beneath the slider if this permission is missing). If this permission is not granted, brightness adjustments fall back to window level dimming, which darkens the app content but leaves the system brightness slider unchanged. Every direct system write automatically switches Android's brightness mode to manual, as system level adaptive brightness would otherwise override the set value over time.
 
+## Theater Mode
+
+[Theater mode](theater.md) holds the panel below its normal brightness for as long as it lasts, without writing Default brightness, Maximum brightness or adaptive brightness. Changes made meanwhile are kept and apply when it ends; with none, the panel returns to exactly where it was.
+
 ## Adaptive Brightness
 
 Navigate to **Settings > Screen & Audio > Adaptive brightness**. This menu option is available only on devices equipped with a physical ambient light sensor. If no sensor is detected, the setting appears disabled with an explanatory note.

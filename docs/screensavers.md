@@ -24,6 +24,8 @@ Navigate to **Settings > Screensaver** (available in the on device settings and 
 
 The **Widgets** configuration group sits directly beneath the mode settings, allowing small overlays to be anchored to display corners.
 
+The screensaver never starts while [theater mode](theater.md) is on, and one showing stops when it turns on. When theater mode ends, the idle timeout starts again from zero.
+
 ## The Modes
 
 ### Dim

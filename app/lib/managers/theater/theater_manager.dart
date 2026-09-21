@@ -280,6 +280,7 @@ class TheaterManager extends Manager {
     'source': _source,
     'backlight': _backlight,
     'overlayOpacity': _overlayOpacity,
+    'peekBrightness': _peekBrightness,
     'peekSeconds': _peekSeconds,
     'since': _since?.toIso8601String(),
   };
