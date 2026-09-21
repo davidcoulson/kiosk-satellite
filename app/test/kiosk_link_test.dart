@@ -81,4 +81,23 @@ void main() {
       expect(kioskLinkAction('ks://camera/%E0%A4%A'), isNull);
     });
   });
+
+  group('T-40 theater links', () {
+    test('ks://theater toggles, and on, off and peek name themselves', () {
+      expect(kioskLinkAction('ks://theater'), {'type': 'theater_toggle'});
+      expect(kioskLinkAction('ks://theater/on'), {'type': 'theater_on'});
+      expect(kioskLinkAction('ks://theater/off'), {'type': 'theater_off'});
+      expect(kioskLinkAction('ks://theater/peek'), {'type': 'theater_peek'});
+    });
+
+    test('the hostless form and a trailing slash parse too', () {
+      expect(kioskLinkAction('ks:theater'), {'type': 'theater_toggle'});
+      expect(kioskLinkAction('ks:theater/on/'), {'type': 'theater_on'});
+    });
+
+    test('an unknown subpath is no action', () {
+      expect(kioskLinkAction('ks://theater/dance'), isNull);
+      expect(kioskLinkAction('ks://theater/on/now'), isNull);
+    });
+  });
 }

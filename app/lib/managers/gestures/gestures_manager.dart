@@ -344,6 +344,21 @@ class GesturesManager extends Manager {
         // Redundant for touch (any tap dismisses), real for claps: hands
         // full across the room, the screen comes back without walking over.
         return _run('stopScreensaver', const {});
+      case 'theater_on':
+        return _run('setTheaterMode', const {'active': true, 'source': 'link'});
+      case 'theater_off':
+        return _run('setTheaterMode', const {
+          'active': false,
+          'source': 'link',
+        });
+      case 'theater_toggle':
+        // The state lives in the theater manager, so ask it rather than keep
+        // a copy here that a Home Assistant switch would make stale.
+        final now = await commands.execute('getTheaterMode', const {});
+        final on = now.ok && (now.data as Map?)?['active'] == true;
+        return _run('setTheaterMode', {'active': !on, 'source': 'link'});
+      case 'theater_peek':
+        return _run('theaterPeek', const {'source': 'link'});
       case 'hold_mode':
         // Toggle, not set: the same gesture pins the recipe and, performed
         // again, releases it (issue #266). The setting IS the state, so

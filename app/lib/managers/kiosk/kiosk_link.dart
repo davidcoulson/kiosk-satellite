@@ -56,6 +56,16 @@ Map<String, Object?>? kioskLinkAction(String url) {
         'stop' => const {'type': 'screensaver_stop'},
         _ => null,
       };
+    // Theater mode (docs/theater.md): a dashboard button that dims the room
+    // for a film, and one that brings it back.
+    case 'theater':
+      return switch (arg) {
+        null => const {'type': 'theater_toggle'},
+        'on' => const {'type': 'theater_on'},
+        'off' => const {'type': 'theater_off'},
+        'peek' => const {'type': 'theater_peek'},
+        _ => null,
+      };
     case 'camera':
       return switch (arg) {
         null => const {'type': 'camera_view', 'mode': 'show', 'viewId': ''},

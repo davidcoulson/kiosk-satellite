@@ -214,6 +214,14 @@ String describeGestureAction(Map<String, Object?> action) {
       return 'Start the screensaver';
     case 'screensaver_stop':
       return 'Stop the screensaver';
+    case 'theater_toggle':
+      return 'Toggle theater mode';
+    case 'theater_on':
+      return 'Turn theater mode on';
+    case 'theater_off':
+      return 'Turn theater mode off';
+    case 'theater_peek':
+      return 'Brighten theater mode for a moment';
     case 'hold_mode':
       return 'Toggle hold mode';
     case 'ha_kiosk':
