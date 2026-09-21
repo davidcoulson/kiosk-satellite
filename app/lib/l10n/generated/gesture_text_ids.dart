@@ -189,5 +189,9 @@ const gestureTextMessageIds = <String, String>{
   "No hand in view": "gestureNoHand",
   "Reading the hand": "gestureReadingHand",
   "No fingers up": "gestureNoFingers",
-  "A live look at the fingers the camera reads.": "gestureTesterSearch"
+  "A live look at the fingers the camera reads.": "gestureTesterSearch",
+  "Toggle theater mode": "gestureTheaterToggle",
+  "Turn theater mode on": "gestureTheaterOn",
+  "Turn theater mode off": "gestureTheaterOff",
+  "Brighten theater mode for a moment": "gestureTheaterPeek"
 };

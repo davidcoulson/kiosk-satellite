@@ -5016,6 +5016,58 @@
       ]
     }
   },
+  "gestureTheaterToggle": "Toggle theater mode",
+  "@gestureTheaterToggle": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureTheaterOn": "Turn theater mode on",
+  "@gestureTheaterOn": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureTheaterOff": "Turn theater mode off",
+  "@gestureTheaterOff": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureTheaterPeek": "Brighten theater mode for a moment",
+  "@gestureTheaterPeek": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
   "gestureDescribeCornerTaps": "{count}-mal auf die Ecke {corner} tippen",
   "@gestureDescribeCornerTaps": {
     "context": "Settings > Gestures > Configured gestures",
@@ -12461,6 +12513,39 @@
   },
   "overviewScreenOffState": "Bildschirm ausgeschaltet",
   "@overviewScreenOffState": {
+    "context": "Remote admin > Overview > Screenshot",
+    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Screenshot"
+      ]
+    }
+  },
+  "overviewTheaterDim": "Theater mode, dimmed",
+  "@overviewTheaterDim": {
+    "context": "Remote admin > Overview > Screenshot",
+    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Screenshot"
+      ]
+    }
+  },
+  "overviewTheaterPeek": "Theater mode, bright for a moment",
+  "@overviewTheaterPeek": {
+    "context": "Remote admin > Overview > Screenshot",
+    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Screenshot"
+      ]
+    }
+  },
+  "overviewTheaterBlack": "Theater mode, black",
+  "@overviewTheaterBlack": {
     "context": "Remote admin > Overview > Screenshot",
     "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
     "x-locations": {
@@ -24346,6 +24431,97 @@
       ]
     }
   },
+  "haStartPageTitle": "Start page",
+  "@haStartPageTitle": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Card heading.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
+  },
+  "haStartPageHelp": "The page this panel opens on launch and returns to on Go to dashboard.",
+  "@haStartPageHelp": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Help under the heading.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
+  },
+  "haStartPageHa": "Home Assistant dashboard",
+  "@haStartPageHa": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Choice label.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
+  },
+  "haStartPageCustom": "Custom URL",
+  "@haStartPageCustom": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Choice label.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
+  },
+  "haStartPageField": "Custom page address",
+  "@haStartPageField": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Text field label.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
+  },
+  "haStartPageOpenNow": "Open now",
+  "@haStartPageOpenNow": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Button label.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
+  },
+  "haStartPageInvalid": "Enter a full http:// or https:// address",
+  "@haStartPageInvalid": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Validation error under the field.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
+  },
   "settingHaThemeTitle": "Design",
   "@settingHaThemeTitle": {
     "context": "Settings:Home Assistant Setup:Theme",
@@ -30565,6 +30741,279 @@
   "@screenAudioAlwaysOnHelp": {
     "context": "Settings:Screen & Audio:Screen",
     "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Screen"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Screen"
+      ]
+    }
+  },
+  "settingTheaterBacklightTitle": "Backlight while dimmed",
+  "@settingTheaterBacklightTitle": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterBacklightDescription": "Screen brightness in theater mode. 0 is the lowest the panel can go; the dimming layer takes it darker still.",
+  "@settingTheaterBacklightDescription": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterOverlayOpacityTitle": "Dimming",
+  "@settingTheaterOverlayOpacityTitle": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterOverlayOpacityDescription": "How much a black layer darkens the page in theater mode, below what the backlight can do on its own.",
+  "@settingTheaterOverlayOpacityDescription": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterPeekBrightnessTitle": "Brightness when touched",
+  "@settingTheaterPeekBrightnessTitle": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterPeekBrightnessDescription": "Screen brightness while the panel is woken by a touch or an alert.",
+  "@settingTheaterPeekBrightnessDescription": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterPeekSecondsTitle": "Stay bright for",
+  "@settingTheaterPeekSecondsTitle": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterPeekSecondsDescription": "How long the panel stays bright after the last touch.",
+  "@settingTheaterPeekSecondsDescription": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterBlackAfterMinutesTitle": "Go black after",
+  "@settingTheaterBlackAfterMinutesTitle": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterBlackAfterMinutesDescription": "Turn the dimmed panel fully black after this long without a touch. The screen stays on, so the next touch shows a current page. 0 never goes black.",
+  "@settingTheaterBlackAfterMinutesDescription": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterFirstTouchWakesTitle": "First touch only wakes the screen",
+  "@settingTheaterFirstTouchWakesTitle": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterFirstTouchWakesDescription": "While dimmed, the first touch brightens the panel and is not passed to the page, so a finger landing on a button in the dark presses nothing.",
+  "@settingTheaterFirstTouchWakesDescription": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterIgnoreAmbientWakeTitle": "Ignore people moving",
+  "@settingTheaterIgnoreAmbientWakeTitle": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterIgnoreAmbientWakeDescription": "Motion, face, proximity and person detection do not brighten the panel in theater mode. Home Assistant still sees them.",
+  "@settingTheaterIgnoreAmbientWakeDescription": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterPeekOnAlertsTitle": "Brighten for alerts",
+  "@settingTheaterPeekOnAlertsTitle": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterPeekOnAlertsDescription": "Announcements, notifications, camera views, voice turns and the intercom brighten the panel while they show.",
+  "@settingTheaterPeekOnAlertsDescription": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterMuteWakeWordTitle": "Mute the wake word",
+  "@settingTheaterMuteWakeWordTitle": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterMuteWakeWordDescription": "Stop listening for the wake word in theater mode, so a film cannot set it off. It comes back when theater mode ends.",
+  "@settingTheaterMuteWakeWordDescription": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterMaxHoursTitle": "Turn off after",
+  "@settingTheaterMaxHoursTitle": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterMaxHoursDescription": "Theater mode turns itself off after this long however it was turned on, so a lost \"off\" never leaves the panel dark for days.",
+  "@settingTheaterMaxHoursDescription": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "screenAudioTheaterMode": "Theater mode",
+  "@screenAudioTheaterMode": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Section heading.",
     "x-locations": {
       "device": [
         "Settings > Screen & Audio > Screen"

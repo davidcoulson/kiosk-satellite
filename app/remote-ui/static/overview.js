@@ -458,6 +458,15 @@ export function paintShotBadge() {
     icon = ICONS.camera;
     text = quick.cameraView.viewName ? t('overviewCameraViewNamed', {name: quick.cameraView.viewName}) : overviewText('Camera view');
   } else if (quick.screensaverActive === true) { icon = ICONS.moon; text = overviewText('Screensaver'); }
+  else if (quick.theater && quick.theater !== 'off') {
+    // A dimmed frame reads as theater mode, not as a panel failing.
+    icon = ICONS.moon;
+    text = overviewText({
+      dim: 'Theater mode, dimmed',
+      peek: 'Theater mode, bright for a moment',
+      black: 'Theater mode, black',
+    }[quick.theater] || 'Theater mode, dimmed');
+  }
   el.classList.toggle('hidden', !text);
   el.innerHTML = icon;
   el.appendChild(document.createTextNode(text));

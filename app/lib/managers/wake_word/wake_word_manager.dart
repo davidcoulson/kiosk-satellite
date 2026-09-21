@@ -531,6 +531,16 @@ class WakeWordManager extends Manager
             'configured by the card once this device opens its dashboard.',
       );
     }
+    // Theater mode's own mute: 'muted' to anything keyed on the code, which
+    // is what it is, and the label says why and when it lifts.
+    if (_theaterMuted) {
+      return (
+        code: 'muted',
+        label:
+            'Muted for theater mode. Listening comes back when theater mode '
+            'ends.',
+      );
+    }
     if (_released) {
       // Why the card took the mic back is the card's to know: mute and "the
       // browser is taking detection back" are the same event to us.

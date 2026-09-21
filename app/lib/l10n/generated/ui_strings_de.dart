@@ -1430,6 +1430,18 @@ class UiStringsDe extends UiStrings {
       'Es wurde noch kein Kiosk im Netzwerk gefunden.';
 
   @override
+  String get gestureTheaterToggle => 'Toggle theater mode';
+
+  @override
+  String get gestureTheaterOn => 'Turn theater mode on';
+
+  @override
+  String get gestureTheaterOff => 'Turn theater mode off';
+
+  @override
+  String get gestureTheaterPeek => 'Brighten theater mode for a moment';
+
+  @override
   String gestureDescribeCornerTaps(String count, String corner) {
     return '$count-mal auf die Ecke $corner tippen';
   }
@@ -3478,6 +3490,15 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get overviewScreenOffState => 'Bildschirm ausgeschaltet';
+
+  @override
+  String get overviewTheaterDim => 'Theater mode, dimmed';
+
+  @override
+  String get overviewTheaterPeek => 'Theater mode, bright for a moment';
+
+  @override
+  String get overviewTheaterBlack => 'Theater mode, black';
 
   @override
   String get overviewGoView => 'Zu einer Ansicht wechseln';
@@ -6651,6 +6672,28 @@ class UiStringsDe extends UiStrings {
   String get haNoDashboards => 'Keine Dashboards gefunden';
 
   @override
+  String get haStartPageTitle => 'Start page';
+
+  @override
+  String get haStartPageHelp =>
+      'The page this panel opens on launch and returns to on Go to dashboard.';
+
+  @override
+  String get haStartPageHa => 'Home Assistant dashboard';
+
+  @override
+  String get haStartPageCustom => 'Custom URL';
+
+  @override
+  String get haStartPageField => 'Custom page address';
+
+  @override
+  String get haStartPageOpenNow => 'Open now';
+
+  @override
+  String get haStartPageInvalid => 'Enter a full http:// or https:// address';
+
+  @override
   String get settingHaThemeTitle => 'Design';
 
   @override
@@ -8339,6 +8382,80 @@ class UiStringsDe extends UiStrings {
   @override
   String get screenAudioAlwaysOnHelp =>
       'Das Ausschalten des Bildschirms versetzt das Gerät in den Ruhezustand, jedoch aktiviert die Funktion „Immer eingeschalteter Bildschirm“ den Sperrbildschirm wieder, und keine Anwendung kann dies verhindern. Deaktiviere „Uhrzeit und Informationen immer anzeigen“ in den Android-Einstellungen unter „Anzeige“ bei den Sperrbildschirm-Optionen. Einige Android-Versionen nennen diese Funktion „Always-On Display“. Die Bildschirm-Entität in Home Assistant bleibt nicht verfügbar, bis diese Funktion deaktiviert wurde.';
+
+  @override
+  String get settingTheaterBacklightTitle => 'Backlight while dimmed';
+
+  @override
+  String get settingTheaterBacklightDescription =>
+      'Screen brightness in theater mode. 0 is the lowest the panel can go; the dimming layer takes it darker still.';
+
+  @override
+  String get settingTheaterOverlayOpacityTitle => 'Dimming';
+
+  @override
+  String get settingTheaterOverlayOpacityDescription =>
+      'How much a black layer darkens the page in theater mode, below what the backlight can do on its own.';
+
+  @override
+  String get settingTheaterPeekBrightnessTitle => 'Brightness when touched';
+
+  @override
+  String get settingTheaterPeekBrightnessDescription =>
+      'Screen brightness while the panel is woken by a touch or an alert.';
+
+  @override
+  String get settingTheaterPeekSecondsTitle => 'Stay bright for';
+
+  @override
+  String get settingTheaterPeekSecondsDescription =>
+      'How long the panel stays bright after the last touch.';
+
+  @override
+  String get settingTheaterBlackAfterMinutesTitle => 'Go black after';
+
+  @override
+  String get settingTheaterBlackAfterMinutesDescription =>
+      'Turn the dimmed panel fully black after this long without a touch. The screen stays on, so the next touch shows a current page. 0 never goes black.';
+
+  @override
+  String get settingTheaterFirstTouchWakesTitle =>
+      'First touch only wakes the screen';
+
+  @override
+  String get settingTheaterFirstTouchWakesDescription =>
+      'While dimmed, the first touch brightens the panel and is not passed to the page, so a finger landing on a button in the dark presses nothing.';
+
+  @override
+  String get settingTheaterIgnoreAmbientWakeTitle => 'Ignore people moving';
+
+  @override
+  String get settingTheaterIgnoreAmbientWakeDescription =>
+      'Motion, face, proximity and person detection do not brighten the panel in theater mode. Home Assistant still sees them.';
+
+  @override
+  String get settingTheaterPeekOnAlertsTitle => 'Brighten for alerts';
+
+  @override
+  String get settingTheaterPeekOnAlertsDescription =>
+      'Announcements, notifications, camera views, voice turns and the intercom brighten the panel while they show.';
+
+  @override
+  String get settingTheaterMuteWakeWordTitle => 'Mute the wake word';
+
+  @override
+  String get settingTheaterMuteWakeWordDescription =>
+      'Stop listening for the wake word in theater mode, so a film cannot set it off. It comes back when theater mode ends.';
+
+  @override
+  String get settingTheaterMaxHoursTitle => 'Turn off after';
+
+  @override
+  String get settingTheaterMaxHoursDescription =>
+      'Theater mode turns itself off after this long however it was turned on, so a lost \"off\" never leaves the panel dark for days.';
+
+  @override
+  String get screenAudioTheaterMode => 'Theater mode';
 
   @override
   String get settingMediaVolumeTitle => 'Medienlautstärke';

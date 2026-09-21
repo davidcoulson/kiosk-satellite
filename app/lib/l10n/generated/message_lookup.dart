@@ -404,6 +404,10 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'gestureCameraClose' => strings.gestureCameraClose,
       'gestureCameraEmpty' => strings.gestureCameraEmpty,
       'gestureIntercomEmpty' => strings.gestureIntercomEmpty,
+      'gestureTheaterToggle' => strings.gestureTheaterToggle,
+      'gestureTheaterOn' => strings.gestureTheaterOn,
+      'gestureTheaterOff' => strings.gestureTheaterOff,
+      'gestureTheaterPeek' => strings.gestureTheaterPeek,
       'gestureDescribeOpenHand' => strings.gestureDescribeOpenHand,
       'gestureTopLeft' => strings.gestureTopLeft,
       'gestureTopRight' => strings.gestureTopRight,
@@ -912,6 +916,9 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'overviewLiveInterval' => strings.overviewLiveInterval,
       'overviewCameraView' => strings.overviewCameraView,
       'overviewScreenOffState' => strings.overviewScreenOffState,
+      'overviewTheaterDim' => strings.overviewTheaterDim,
+      'overviewTheaterPeek' => strings.overviewTheaterPeek,
+      'overviewTheaterBlack' => strings.overviewTheaterBlack,
       'overviewGoView' => strings.overviewGoView,
       'overviewLoadingViews' => strings.overviewLoadingViews,
       'overviewPickView' => strings.overviewPickView,
@@ -1845,6 +1852,13 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'haNoViews' => strings.haNoViews,
       'haNoViewsHelp' => strings.haNoViewsHelp,
       'haNoDashboards' => strings.haNoDashboards,
+      'haStartPageTitle' => strings.haStartPageTitle,
+      'haStartPageHelp' => strings.haStartPageHelp,
+      'haStartPageHa' => strings.haStartPageHa,
+      'haStartPageCustom' => strings.haStartPageCustom,
+      'haStartPageField' => strings.haStartPageField,
+      'haStartPageOpenNow' => strings.haStartPageOpenNow,
+      'haStartPageInvalid' => strings.haStartPageInvalid,
       'settingHaThemeTitle' => strings.settingHaThemeTitle,
       'settingHaThemeDescription' => strings.settingHaThemeDescription,
       'settingThemeMatchAppTitle' => strings.settingThemeMatchAppTitle,
@@ -2486,6 +2500,45 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'screenAudioAlwaysOn' => strings.screenAudioAlwaysOn,
       'screenAudioAlwaysOnClock' => strings.screenAudioAlwaysOnClock,
       'screenAudioAlwaysOnHelp' => strings.screenAudioAlwaysOnHelp,
+      'settingTheaterBacklightTitle' => strings.settingTheaterBacklightTitle,
+      'settingTheaterBacklightDescription' =>
+        strings.settingTheaterBacklightDescription,
+      'settingTheaterOverlayOpacityTitle' =>
+        strings.settingTheaterOverlayOpacityTitle,
+      'settingTheaterOverlayOpacityDescription' =>
+        strings.settingTheaterOverlayOpacityDescription,
+      'settingTheaterPeekBrightnessTitle' =>
+        strings.settingTheaterPeekBrightnessTitle,
+      'settingTheaterPeekBrightnessDescription' =>
+        strings.settingTheaterPeekBrightnessDescription,
+      'settingTheaterPeekSecondsTitle' =>
+        strings.settingTheaterPeekSecondsTitle,
+      'settingTheaterPeekSecondsDescription' =>
+        strings.settingTheaterPeekSecondsDescription,
+      'settingTheaterBlackAfterMinutesTitle' =>
+        strings.settingTheaterBlackAfterMinutesTitle,
+      'settingTheaterBlackAfterMinutesDescription' =>
+        strings.settingTheaterBlackAfterMinutesDescription,
+      'settingTheaterFirstTouchWakesTitle' =>
+        strings.settingTheaterFirstTouchWakesTitle,
+      'settingTheaterFirstTouchWakesDescription' =>
+        strings.settingTheaterFirstTouchWakesDescription,
+      'settingTheaterIgnoreAmbientWakeTitle' =>
+        strings.settingTheaterIgnoreAmbientWakeTitle,
+      'settingTheaterIgnoreAmbientWakeDescription' =>
+        strings.settingTheaterIgnoreAmbientWakeDescription,
+      'settingTheaterPeekOnAlertsTitle' =>
+        strings.settingTheaterPeekOnAlertsTitle,
+      'settingTheaterPeekOnAlertsDescription' =>
+        strings.settingTheaterPeekOnAlertsDescription,
+      'settingTheaterMuteWakeWordTitle' =>
+        strings.settingTheaterMuteWakeWordTitle,
+      'settingTheaterMuteWakeWordDescription' =>
+        strings.settingTheaterMuteWakeWordDescription,
+      'settingTheaterMaxHoursTitle' => strings.settingTheaterMaxHoursTitle,
+      'settingTheaterMaxHoursDescription' =>
+        strings.settingTheaterMaxHoursDescription,
+      'screenAudioTheaterMode' => strings.screenAudioTheaterMode,
       'settingMediaVolumeTitle' => strings.settingMediaVolumeTitle,
       'settingMediaVolumeDescription' => strings.settingMediaVolumeDescription,
       'settingAssistantVolumeTitle' => strings.settingAssistantVolumeTitle,

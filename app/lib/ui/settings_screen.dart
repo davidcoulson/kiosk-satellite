@@ -40,6 +40,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../core/permissions.dart';
 import '../managers/wake_word/background_listening.dart';
 import '../managers/wake_word/system_permissions.dart';
+import 'start_page_card.dart';
 import 'color_picker.dart';
 import 'date_picker.dart';
 import 'gesture_settings.dart';
@@ -1229,44 +1230,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           for (final (index, (heading, entries))
                               in _hubGroups.indexed)
                             if (entries.any((e) => !_isHidden(e.$2.$1))) ...[
-                            _RailHeading(
-                              heading,
-                              first: index == _firstVisibleHubGroup,
-                              collapsed: _isCollapsed(heading),
-                              onTap: () => _toggleGroup(heading),
-                            ),
-                            if (!_isCollapsed(heading))
-                            SettingsCard(
-                              children: [
-                                for (final (
-                                      index,
-                                      (category, title, icon, subtitle),
-                                    )
-                                    in entries)
-                                  if (!_isHidden(category))
-                                  ListTile(
-                                    leading: _CategoryIcon(
-                                      index: index,
-                                      icon: icon,
-                                    ),
-                                    title: Text(navigationText(context, title)),
-                                    subtitle: Text(
-                                      navigationText(context, subtitle),
-                                    ),
-                                    trailing: const Icon(Icons.chevron_right),
-                                    onTap: () => Navigator.of(context).push(
-                                      MaterialPageRoute<void>(
-                                        builder: (_) => CategorySettingsScreen(
-                                          container: widget.container,
-                                          title: title,
-                                          category: category,
+                              _RailHeading(
+                                heading,
+                                first: index == _firstVisibleHubGroup,
+                                collapsed: _isCollapsed(heading),
+                                onTap: () => _toggleGroup(heading),
+                              ),
+                              if (!_isCollapsed(heading))
+                                SettingsCard(
+                                  children: [
+                                    for (final (
+                                          index,
+                                          (category, title, icon, subtitle),
+                                        )
+                                        in entries)
+                                      if (!_isHidden(category))
+                                        ListTile(
+                                          leading: _CategoryIcon(
+                                            index: index,
+                                            icon: icon,
+                                          ),
+                                          title: Text(
+                                            navigationText(context, title),
+                                          ),
+                                          subtitle: Text(
+                                            navigationText(context, subtitle),
+                                          ),
+                                          trailing: const Icon(
+                                            Icons.chevron_right,
+                                          ),
+                                          onTap: () =>
+                                              Navigator.of(context).push(
+                                                MaterialPageRoute<void>(
+                                                  builder: (_) =>
+                                                      CategorySettingsScreen(
+                                                        container:
+                                                            widget.container,
+                                                        title: title,
+                                                        category: category,
+                                                      ),
+                                                ),
+                                              ),
                                         ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ],
+                                  ],
+                                ),
+                            ],
                         ],
                       ),
                     ),
@@ -2817,9 +2825,19 @@ class _CategoryContentState extends State<_CategoryContent> {
     return [
       SectionHeading(haText(context, 'Dashboard')),
       SearchLandingTarget(
-        id: 'x:dashboard_picker',
-        child: _DashboardPickerCard(container: container),
+        id: 'x:start_page',
+        child: StartPageCard(
+          container: container,
+          onChanged: () => setState(() {}),
+        ),
       ),
+      // The picker chooses a Home Assistant dashboard; with a custom start
+      // page there is nothing for it to choose.
+      if (container.settings.get(startPage) != 'custom')
+        SearchLandingTarget(
+          id: 'x:dashboard_picker',
+          child: _DashboardPickerCard(container: container),
+        ),
       ..._sectionedCards(container, [
         for (final def in _defsFor('Home Assistant'))
           if (def.key != haUrl.key &&

@@ -108,5 +108,38 @@
         "Overview > Screenshot"
       ]
     }
+  },
+  "overviewTheaterDim": "Theater mode, dimmed",
+  "@overviewTheaterDim": {
+    "context": "Remote admin > Overview > Screenshot",
+    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Screenshot"
+      ]
+    }
+  },
+  "overviewTheaterPeek": "Theater mode, bright for a moment",
+  "@overviewTheaterPeek": {
+    "context": "Remote admin > Overview > Screenshot",
+    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Screenshot"
+      ]
+    }
+  },
+  "overviewTheaterBlack": "Theater mode, black",
+  "@overviewTheaterBlack": {
+    "context": "Remote admin > Overview > Screenshot",
+    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Screenshot"
+      ]
+    }
   }
 }

@@ -92,29 +92,6 @@ void main() {
     await settle();
   }
 
-  /// The native observer reporting a system value that moved the panel.
-  Future<void> observe(double level) async {
-    panel = level;
-    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .handlePlatformMessage(
-          channel.name,
-          const StandardMethodCodec().encodeMethodCall(
-            MethodCall('brightnessChanged', level),
-          ),
-          (_) {},
-        );
-    await settle();
-  }
-
-  Future<double?> ceiling() async =>
-      (await commands.execute('getBrightness', const {'ceiling': true})).data
-          as double?;
-  Future<double?> panelLevel() async =>
-      (await commands.execute('getBrightness', const {'panel': true})).data
-          as double?;
-  Future<double?> knob() async =>
-      (await commands.execute('getBrightness', const {})).data as double?;
-
   /// Adaptive on with Minimum 20% and Maximum 80%: a floor of 0.25.
   const on = {
     'ks.screen.adaptive_brightness': true,

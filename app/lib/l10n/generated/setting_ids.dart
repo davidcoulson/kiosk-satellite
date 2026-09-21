@@ -1440,4 +1440,44 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "voiceChimeAnnounceTitle",
     "description": "voiceChimeAnnounceDescription",
   },
+  "theater.backlight": {
+    "title": "settingTheaterBacklightTitle",
+    "description": "settingTheaterBacklightDescription",
+  },
+  "theater.overlay_opacity": {
+    "title": "settingTheaterOverlayOpacityTitle",
+    "description": "settingTheaterOverlayOpacityDescription",
+  },
+  "theater.peek_brightness": {
+    "title": "settingTheaterPeekBrightnessTitle",
+    "description": "settingTheaterPeekBrightnessDescription",
+  },
+  "theater.peek_seconds": {
+    "title": "settingTheaterPeekSecondsTitle",
+    "description": "settingTheaterPeekSecondsDescription",
+  },
+  "theater.black_after_minutes": {
+    "title": "settingTheaterBlackAfterMinutesTitle",
+    "description": "settingTheaterBlackAfterMinutesDescription",
+  },
+  "theater.first_touch_wakes": {
+    "title": "settingTheaterFirstTouchWakesTitle",
+    "description": "settingTheaterFirstTouchWakesDescription",
+  },
+  "theater.ignore_ambient_wake": {
+    "title": "settingTheaterIgnoreAmbientWakeTitle",
+    "description": "settingTheaterIgnoreAmbientWakeDescription",
+  },
+  "theater.peek_on_alerts": {
+    "title": "settingTheaterPeekOnAlertsTitle",
+    "description": "settingTheaterPeekOnAlertsDescription",
+  },
+  "theater.mute_wake_word": {
+    "title": "settingTheaterMuteWakeWordTitle",
+    "description": "settingTheaterMuteWakeWordDescription",
+  },
+  "theater.max_hours": {
+    "title": "settingTheaterMaxHoursTitle",
+    "description": "settingTheaterMaxHoursDescription",
+  },
 };

@@ -802,7 +802,7 @@ class RemoteManager extends Manager {
   /// changes reach the client through the event feed (screenon/screenoff,
   /// screensaverstart/screensaverstop, cameraview); this is the snapshot
   /// they diff against.
-  /// The five reads are independent, so they run together rather than one
+  /// The reads are independent, so they run together rather than one
   /// after another: awaited in sequence this cost the sum of five platform
   /// round trips on every `/api/info`, and Remote Admin's boot waits on it.
   Future<Map<String, Object?>> _deviceState() async {
@@ -812,18 +812,23 @@ class RemoteManager extends Manager {
       commands.execute('isScreenOn', const {}),
       commands.execute('isScreensaverActive', const {}),
       commands.execute('getCameraViewState', const {}),
+      commands.execute('getTheaterMode', const {}),
     ]);
     final device = results[0];
     final brightness = results[1];
     final screenOn = results[2];
     final screensaver = results[3];
     final cameraView = results[4];
+    final theater = results[5];
     return {
       ...?(device.data as Map<String, Object?>?),
       'brightness': (brightness.data as num?)?.toDouble(),
       'screenOn': screenOn.ok ? screenOn.data as bool? : null,
       'screensaverActive': screensaver.ok ? screensaver.data as bool? : null,
       'cameraView': cameraView.ok ? cameraView.data : null,
+      'theater': theater.ok && theater.data is Map
+          ? (theater.data as Map)['phase']
+          : null,
       'currentUrl': _currentUrl,
     };
   }

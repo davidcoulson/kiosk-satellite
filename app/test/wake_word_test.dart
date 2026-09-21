@@ -985,6 +985,60 @@ void main() {
       expect(settings.get(defs.wakeWordPreferFp32), isFalse);
     });
   });
+
+  group('T-14 theater mode and the wake word', () {
+    late _FakeEngine engine;
+
+    Future<void> rebuild(Map<String, Object> prefs) async {
+      await wakeWord.dispose();
+      await bus.dispose();
+      SharedPreferences.setMockInitialValues(prefs);
+      bus = EventBus();
+      commands = CommandRegistry(log);
+      settings = SettingsManager(bus, commands, log);
+      await settings.init();
+      engine = _FakeEngine();
+      wakeWord = WakeWordManager(
+        bus,
+        commands,
+        log,
+        settings,
+        engines: {WakeWordEngineType.microWakeWord: engine},
+      );
+      await wakeWord.init();
+      await commands.execute('setWakeWordConfig', vsConfig);
+      expect(engine.running, isTrue);
+    }
+
+    Future<void> theater(bool on) async {
+      bus.publish(
+        TheaterModeChanged(active: on, phase: on ? 'dim' : 'off', source: 'ha'),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+
+    test('with "Mute the wake word" on, it stops for theater mode and comes '
+        'back after, with no config pushed again', () async {
+      await rebuild({'ks.theater.mute_wake_word': true});
+      await theater(true);
+      expect(engine.running, isFalse, reason: 'mic closed');
+      final state = await commands.execute('getWakeWordState', const {});
+      expect((state.data as Map)['status'], 'muted');
+      expect(
+        (state.data as Map)['statusLabel'],
+        contains('theater mode'),
+        reason: 'says why, not "Muted in Voice Satellite"',
+      );
+      await theater(false);
+      expect(engine.running, isTrue);
+    });
+
+    test('off by default: a film leaves the wake word alone', () async {
+      await rebuild({});
+      await theater(true);
+      expect(engine.running, isTrue);
+    });
+  });
 }
 
 class _RealHttpOverrides extends HttpOverrides {}

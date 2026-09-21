@@ -2553,6 +2553,30 @@ abstract class UiStrings {
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
+  /// **'Toggle theater mode'**
+  String get gestureTheaterToggle;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn theater mode on'**
+  String get gestureTheaterOn;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn theater mode off'**
+  String get gestureTheaterOff;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Brighten theater mode for a moment'**
+  String get gestureTheaterPeek;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
   /// **'{count} taps in the {corner} corner'**
   String gestureDescribeCornerTaps(String count, String corner);
 
@@ -5976,6 +6000,24 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Screen is off'**
   String get overviewScreenOffState;
+
+  /// Translate the interface text. Keep external names, versions and technical details unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater mode, dimmed'**
+  String get overviewTheaterDim;
+
+  /// Translate the interface text. Keep external names, versions and technical details unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater mode, bright for a moment'**
+  String get overviewTheaterPeek;
+
+  /// Translate the interface text. Keep external names, versions and technical details unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater mode, black'**
+  String get overviewTheaterBlack;
 
   /// Translate the interface text. Keep external names, versions and technical details unchanged.
   ///
@@ -11262,6 +11304,48 @@ abstract class UiStrings {
   /// **'No dashboards found'**
   String get haNoDashboards;
 
+  /// Card heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Start page'**
+  String get haStartPageTitle;
+
+  /// Help under the heading.
+  ///
+  /// In en, this message translates to:
+  /// **'The page this panel opens on launch and returns to on Go to dashboard.'**
+  String get haStartPageHelp;
+
+  /// Choice label.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant dashboard'**
+  String get haStartPageHa;
+
+  /// Choice label.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom URL'**
+  String get haStartPageCustom;
+
+  /// Text field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom page address'**
+  String get haStartPageField;
+
+  /// Button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Open now'**
+  String get haStartPageOpenNow;
+
+  /// Validation error under the field.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a full http:// or https:// address'**
+  String get haStartPageInvalid;
+
   /// Setting label.
   ///
   /// In en, this message translates to:
@@ -14159,6 +14243,132 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Turning the screen off puts the device to sleep, but the always-on display lights the lock screen back up and no app can stop it. Turn off \"Always show time and info\" in Android settings under Display, near the lock screen options; some ROMs call it always-on display. The Home Assistant screen entity stays unavailable until you do.'**
   String get screenAudioAlwaysOnHelp;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Backlight while dimmed'**
+  String get settingTheaterBacklightTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Screen brightness in theater mode. 0 is the lowest the panel can go; the dimming layer takes it darker still.'**
+  String get settingTheaterBacklightDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dimming'**
+  String get settingTheaterOverlayOpacityTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'How much a black layer darkens the page in theater mode, below what the backlight can do on its own.'**
+  String get settingTheaterOverlayOpacityDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Brightness when touched'**
+  String get settingTheaterPeekBrightnessTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Screen brightness while the panel is woken by a touch or an alert.'**
+  String get settingTheaterPeekBrightnessDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay bright for'**
+  String get settingTheaterPeekSecondsTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'How long the panel stays bright after the last touch.'**
+  String get settingTheaterPeekSecondsDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Go black after'**
+  String get settingTheaterBlackAfterMinutesTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn the dimmed panel fully black after this long without a touch. The screen stays on, so the next touch shows a current page. 0 never goes black.'**
+  String get settingTheaterBlackAfterMinutesDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'First touch only wakes the screen'**
+  String get settingTheaterFirstTouchWakesTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'While dimmed, the first touch brightens the panel and is not passed to the page, so a finger landing on a button in the dark presses nothing.'**
+  String get settingTheaterFirstTouchWakesDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignore people moving'**
+  String get settingTheaterIgnoreAmbientWakeTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion, face, proximity and person detection do not brighten the panel in theater mode. Home Assistant still sees them.'**
+  String get settingTheaterIgnoreAmbientWakeDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Brighten for alerts'**
+  String get settingTheaterPeekOnAlertsTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements, notifications, camera views, voice turns and the intercom brighten the panel while they show.'**
+  String get settingTheaterPeekOnAlertsDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute the wake word'**
+  String get settingTheaterMuteWakeWordTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop listening for the wake word in theater mode, so a film cannot set it off. It comes back when theater mode ends.'**
+  String get settingTheaterMuteWakeWordDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off after'**
+  String get settingTheaterMaxHoursTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater mode turns itself off after this long however it was turned on, so a lost \"off\" never leaves the panel dark for days.'**
+  String get settingTheaterMaxHoursDescription;
+
+  /// Section heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater mode'**
+  String get screenAudioTheaterMode;
 
   /// Setting label.
   ///

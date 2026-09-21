@@ -15,6 +15,7 @@ import { initNavGroups } from './navgroups.js';
 import { permissionSpecs } from './permissions.js';
 import { renderServicePage } from './service.js';
 import { renderShizukuPage } from './shizuku.js';
+import { renderStartPage } from './startpage.js';
 import { CATEGORY_TABS } from './gestures.js';
 import {
   updateAdaptiveBrightnessRows,
@@ -1780,8 +1781,12 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
       h.className = 'card-title';
       h.textContent = haText('Dashboard');
       root.appendChild(h);
+      // The start page first (URL-1); the picker below only chooses a Home
+      // Assistant dashboard, so a custom start page leaves it out.
+      const customStart = renderStartPage(root, byKey, loadSettings);
       const dcard = document.createElement('div');
       dcard.className = 'card';
+      dcard.hidden = customStart;
       root.appendChild(dcard);
       let dashList = [];
       try {

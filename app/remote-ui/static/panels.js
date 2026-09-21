@@ -484,7 +484,7 @@ $('#viewJump').addEventListener('change', async (e) => {
    is the device's: the state snapshot at connect (and /api/info at boot)
    seeds it, the event feed moves it, and a command this page sent is not
    assumed to have worked; the tile flips when the device says so. */
-export const quick = { screenOn: null, screensaverActive: null, cameraView: null };
+export const quick = { screenOn: null, screensaverActive: null, cameraView: null, theater: null };
 
 const STROKE = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
 // The off/dismiss face of each pair is the on face with a slash, the
@@ -537,6 +537,8 @@ export function applyQuickState(device, keep = {}) {
     quick.screensaverActive = device.screensaverActive;
   }
   if ('cameraView' in device && !keep.cameraView) quick.cameraView = device.cameraView;
+  // Theater mode's phase ('off', 'dim', 'peek', 'black'), for the badge.
+  if ('theater' in device && !keep.theater) quick.theater = device.theater;
   renderQuickControls();
 }
 
@@ -545,6 +547,7 @@ export function quickStateOf(event) {
   if (event === 'screenon' || event === 'screenoff') return 'screenOn';
   if (event === 'screensaverstart' || event === 'screensaverstop') return 'screensaverActive';
   if (event === 'cameraview') return 'cameraView';
+  if (event === 'theatermode') return 'theater';
   return null;
 }
 
@@ -555,6 +558,7 @@ export function applyQuickEvent(event, data) {
   else if (event === 'screensaverstart') quick.screensaverActive = true;
   else if (event === 'screensaverstop') quick.screensaverActive = false;
   else if (event === 'cameraview') quick.cameraView = data || { active: false };
+  else if (event === 'theatermode') quick.theater = data?.phase ?? null;
   else return;
   renderQuickControls();
 }

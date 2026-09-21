@@ -397,5 +397,96 @@
         "Home Assistant Setup"
       ]
     }
+  },
+  "haStartPageTitle": "Start page",
+  "@haStartPageTitle": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Card heading.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
+  },
+  "haStartPageHelp": "The page this panel opens on launch and returns to on Go to dashboard.",
+  "@haStartPageHelp": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Help under the heading.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
+  },
+  "haStartPageHa": "Home Assistant dashboard",
+  "@haStartPageHa": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Choice label.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
+  },
+  "haStartPageCustom": "Custom URL",
+  "@haStartPageCustom": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Choice label.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
+  },
+  "haStartPageField": "Custom page address",
+  "@haStartPageField": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Text field label.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
+  },
+  "haStartPageOpenNow": "Open now",
+  "@haStartPageOpenNow": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Button label.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
+  },
+  "haStartPageInvalid": "Enter a full http:// or https:// address",
+  "@haStartPageInvalid": {
+    "context": "Settings:Home Assistant Setup",
+    "description": "Validation error under the field.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup"
+      ]
+    }
   }
 }

@@ -108,5 +108,8 @@ export const overviewTextMessageIds = {
   "Default view": "overviewDefaultView",
   "No dashboards found": "overviewNoDashboards",
   "Views unavailable": "overviewViewsUnavailable",
-  "Screen is off": "overviewScreenOffState"
+  "Screen is off": "overviewScreenOffState",
+  "Theater mode, dimmed": "overviewTheaterDim",
+  "Theater mode, bright for a moment": "overviewTheaterPeek",
+  "Theater mode, black": "overviewTheaterBlack"
 };

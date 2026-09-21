@@ -123,5 +123,12 @@ export const haTextMessageIds = {
   "Enter only the base URL, without anything after the port. Example: https://homeassistant.local:8123": "baseUrlQuery",
   "Check the URL and token against your Home Assistant.": "searchHaValidate",
   "Serve a plain-http Home Assistant through a secure proxy inside the app.": "searchHaProxy",
-  "Pick the dashboard and view the kiosk shows.": "searchHaDashboard"
+  "Pick the dashboard and view the kiosk shows.": "searchHaDashboard",
+  "Start page": "haStartPageTitle",
+  "The page this panel opens on launch and returns to on Go to dashboard.": "haStartPageHelp",
+  "Home Assistant dashboard": "haStartPageHa",
+  "Custom URL": "haStartPageCustom",
+  "Custom page address": "haStartPageField",
+  "Open now": "haStartPageOpenNow",
+  "Enter a full http:// or https:// address": "haStartPageInvalid"
 };
