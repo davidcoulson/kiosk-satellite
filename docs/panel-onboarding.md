@@ -46,7 +46,13 @@ Everything after that is the script.
 
 - Bootloader unlocked, Magisk installed, device booted and on Wi-Fi.
 - USB cable to the laptop, USB debugging authorised for this machine.
-- The APK built: `cd app && flutter build apk --release`.
+- The APK built for arm64:
+  `cd app && flutter build apk --release --target-platform android-arm64`.
+  Every panel here is arm64, and this build is about 90 MB against the
+  universal APK's 189 — the rest is 32-bit ARM and x86_64 code no panel can
+  run, which matters over a panel's Wi-Fi. A 32-bit-only device would need
+  the universal build instead; `install` warns when an APK carries ABIs the
+  device cannot use.
 - An existing panel to copy from, reachable, and the admin password in
   `~/Desktop/ks-remote-pw.txt` or `KS_REMOTE_PW`.
 

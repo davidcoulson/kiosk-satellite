@@ -169,8 +169,15 @@ phase_tcpip() {
 phase_install() {
   pick_target
   [[ -n "$APK" ]] || APK=$(ls -t app/build/app/outputs/flutter-apk/app-release.apk 2>/dev/null | head -1 || true)
-  [[ -f "${APK:-}" ]] || die "no APK: pass --apk <path> (build with: cd app && flutter build apk --release)"
+  [[ -f "${APK:-}" ]] || die "no APK: pass --apk <path> (build with: cd app && flutter build apk --release --target-platform android-arm64)"
   say "Installing $(basename "$APK")"
+  local abis extra
+  abis=$(adbt shell getprop ro.product.cpu.abilist | tr -d '\r')
+  # An APK carrying ABIs this device cannot run is not wrong, only large,
+  # and over a panel's Wi-Fi large is slow. Say so rather than refuse.
+  extra=$(unzip -l "$APK" 'lib/*' 2>/dev/null | awk '{split($4,p,"/"); if (p[2]!="") print p[2]}' | sort -u |
+    while read -r abi; do [[ ",$abis," == *",$abi,"* ]] || printf '%s ' "$abi"; done)
+  [[ -n "$extra" ]] && warn "APK also carries ${extra}which this device cannot use — build with --target-platform android-arm64 to halve it"
   adbt install -r "$APK" | tail -1
 
   say "Runtime permissions"

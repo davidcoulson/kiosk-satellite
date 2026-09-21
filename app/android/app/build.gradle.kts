@@ -35,6 +35,27 @@ android {
     // Flutter has no 32-bit x86 engine, so keep those libraries out as before.
     packaging.jniLibs.excludes.add("**/x86/**")
 
+    // Flutter narrows its own engine to --target-platform, but dependencies
+    // still ship every ABI they have: an arm64 build carried 42 MB of 32-bit
+    // ARM and x86_64 libraries from plugins that no arm64 panel can load.
+    // Follow Flutter's choice for theirs too. A build with no
+    // --target-platform is handed every platform and keeps every ABI, so the
+    // universal APK is unchanged.
+    providers.gradleProperty("target-platform").orNull?.let { targets ->
+        val abiOf = mapOf(
+            "android-arm" to "armeabi-v7a",
+            "android-arm64" to "arm64-v8a",
+            "android-x64" to "x86_64",
+            "android-x86" to "x86",
+        )
+        val wanted = targets.split(',').mapNotNull { abiOf[it.trim()] }.toSet()
+        if (wanted.isNotEmpty()) {
+            for (abi in abiOf.values - wanted) {
+                packaging.jniLibs.excludes.add("**/$abi/**")
+            }
+        }
+    }
+
     // The face detection model (FaceDetector.kt) is memory-mapped straight
     // out of the APK, which only works on an asset stored uncompressed.
     androidResources {
