@@ -42,6 +42,7 @@ import '../managers/settings/definitions.dart' as defs;
 import 'app_launcher_overlay.dart';
 import 'ui_scale.dart' show UiScaleExempt;
 import 'lockdown_shield.dart';
+import 'theater_overlay.dart';
 import 'notification_overlay.dart';
 import 'plugin_overlay.dart';
 import 'offline_notice.dart';
@@ -1597,6 +1598,11 @@ class _KioskScreenState extends State<KioskScreen>
                   // the spoken text, in the same slot.
                   AnnouncementOverlay(container: c),
                   ScreensaverBlankOverlay(container: c),
+                  // Theater mode's wash and touch gate: over every plane
+                  // and overlay so the whole display dims and the first
+                  // touch in the dark presses nothing, and under the
+                  // lockdown shield, which still owns every touch (IX-8).
+                  TheaterOverlay(theater: c.theater),
                   // Lockdown Mode's touch shield: topmost, above every
                   // overlay, so nothing on screen is tappable while it
                   // holds. Transparent by default — the dashboard stays
