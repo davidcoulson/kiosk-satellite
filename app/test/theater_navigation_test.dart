@@ -4,6 +4,7 @@ import 'package:kiosk_satellite/core/event_bus.dart';
 import 'package:kiosk_satellite/core/logging.dart';
 import 'package:kiosk_satellite/managers/browser/browser_manager.dart';
 import 'package:kiosk_satellite/managers/browser/navigation.dart';
+import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
 import 'package:kiosk_satellite/managers/settings/settings_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -111,6 +112,85 @@ void main() {
         b.isHomeAssistantOrigin(Uri.parse('http://192.168.1.10:8123/x')),
         isTrue,
       );
+    });
+  });
+
+  group('URL-1 the start page choice and the start URL stay in step', () {
+    late SettingsManager settings;
+
+    Future<void> start(Map<String, Object> prefs) async {
+      SharedPreferences.setMockInitialValues({
+        'ks.ha.url': 'http://ha.local:8123',
+        'ks.browser.start_url': 'http://ha.local:8123/lovelace/0',
+        ...prefs,
+      });
+      final bus = EventBus();
+      final log = Logger();
+      final commands = CommandRegistry(log);
+      settings = SettingsManager(bus, commands, log);
+      await settings.init();
+      await BrowserManager(bus, commands, log, settings).init();
+    }
+
+    Future<void> settle() =>
+        Future<void>.delayed(const Duration(milliseconds: 20));
+
+    test('typing a custom URL makes it the start URL', () async {
+      await start({'ks.browser.start_page': 'custom'});
+      await settings.set(defs.customStartUrl, 'http://10.2.3.20:8787');
+      await settle();
+      expect(settings.get(defs.startUrl), 'http://10.2.3.20:8787');
+    });
+
+    test(
+      'a dashboard picked in between does not lose the custom URL',
+      () async {
+        await start({});
+        await settings.set(defs.startPage, 'custom');
+        await settings.set(defs.customStartUrl, 'http://10.2.3.20:8787');
+        await settle();
+        await settings.set(defs.startPage, 'ha');
+        await settle();
+        expect(
+          settings.get(defs.startUrl),
+          'http://ha.local:8123',
+          reason: 'not left on a page it would trust as Home Assistant',
+        );
+        await settings.set(defs.startPage, 'custom');
+        await settle();
+        expect(settings.get(defs.startUrl), 'http://10.2.3.20:8787');
+      },
+    );
+
+    test('a start URL written directly while custom is remembered', () async {
+      await start({'ks.browser.start_page': 'custom'});
+      await settings.set(defs.startUrl, 'http://10.2.3.20:8787/#/lobby');
+      await settle();
+      expect(
+        settings.get(defs.customStartUrl),
+        'http://10.2.3.20:8787/#/lobby',
+      );
+    });
+
+    test(
+      'choosing Home Assistant leaves a Home Assistant start URL alone',
+      () async {
+        await start({'ks.browser.start_page': 'custom'});
+        await settings.set(defs.startUrl, 'http://ha.local:8123/lovelace/2');
+        await settle();
+        await settings.set(defs.startPage, 'ha');
+        await settle();
+        expect(settings.get(defs.startUrl), 'http://ha.local:8123/lovelace/2');
+      },
+    );
+
+    test('a custom URL must be a web page', () {
+      expect(defs.validateCustomStartUrl('ftp://10.2.3.20/'), isNotNull);
+      expect(defs.validateCustomStartUrl('file:///sdcard/x'), isNotNull);
+      expect(defs.validateCustomStartUrl('javascript:alert(1)'), isNotNull);
+      expect(defs.validateCustomStartUrl('10.2.3.20:8787'), isNotNull);
+      expect(defs.validateCustomStartUrl('http://10.2.3.20:8787'), isNull);
+      expect(defs.validateCustomStartUrl('https://panel.example/'), isNull);
     });
   });
 }

@@ -501,6 +501,7 @@ class EspEntitySurface {
     };
 
     final intercomOn = _settings.get(defs.intercomEnabled);
+    _listedStartPage = _hasCustomStartPage;
     final catalog = <Map<String, Object?>>[
       // ── Controls ─────────────────────────────────────────────────────
       {
@@ -654,7 +655,13 @@ class EspEntitySurface {
           'objectId': 'default_dashboard',
           'name': 'Default dashboard',
           'icon': 'mdi:view-dashboard-edit-outline',
-          'options': _dashboardViews,
+          // Plus the custom start page, once one is set (URL-3), so an
+          // automation can switch between Home Assistant dashboards and
+          // it. Appended: the existing options keep their places.
+          'options': [
+            ..._dashboardViews,
+            if (_hasCustomStartPage) _startPageOption,
+          ],
           'category': 1,
         },
       ],
@@ -1871,6 +1878,16 @@ class EspEntitySurface {
       case 'dashboard_view':
         await commands.execute('haNavigate', {'path': '$value'});
       case 'default_dashboard':
+        if ('$value' == _startPageOption) {
+          await _settings.set(defs.startPage, 'custom', source: 'esphome');
+          return;
+        }
+        // Start page back to Home Assistant first: written the other way
+        // round, the browser would take the dashboard for the custom URL
+        // and remember it in place of the real one.
+        if (_settings.get(defs.startPage) == 'custom') {
+          await _settings.set(defs.startPage, 'ha', source: 'esphome');
+        }
         await _setDefaultDashboard('$value');
       case 'update':
         if ('$value' == 'install') {
@@ -1970,8 +1987,17 @@ class EspEntitySurface {
     if (e.key == defs.cameraEnabled.key || e.key == defs.motionSensor.key) {
       _sendMotionState();
     }
-    if (e.key == defs.startUrl.key) {
+    if (e.key == defs.startUrl.key || e.key == defs.startPage.key) {
       _sendDefaultDashboard();
+      return;
+    }
+    if (e.key == defs.customStartUrl.key) {
+      // The Start page option appears or goes; nothing else here changes.
+      final has = _hasCustomStartPage;
+      if (has != _listedStartPage) {
+        _listedStartPage = has;
+        onCatalogChanged?.call();
+      }
       return;
     }
     for (final entry in _settingSwitches.entries) {
@@ -2409,7 +2435,19 @@ class EspEntitySurface {
   /// select does. Nothing is sent for a start URL outside the list (a
   /// page on another host), which leaves the select on unknown rather
   /// than claiming a dashboard the kiosk does not open.
+  static const _startPageOption = 'Start page';
+
+  bool get _hasCustomStartPage =>
+      _settings.get(defs.customStartUrl).trim().isNotEmpty;
+
+  /// Whether the catalog last built carried the Start page option.
+  late bool _listedStartPage = _hasCustomStartPage;
+
   Future<void> _sendDefaultDashboard() async {
+    if (_settings.get(defs.startPage) == 'custom' && _hasCustomStartPage) {
+      await _send('default_dashboard', _startPageOption);
+      return;
+    }
     final match = matchDashboardView(
       _settings.get(defs.startUrl),
       _dashboardViews,

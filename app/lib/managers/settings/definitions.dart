@@ -391,6 +391,38 @@ const startPage = SettingDef<String>(
   hidden: true,
 );
 
+// The custom start page's URL, remembered apart from browser.start_url so
+// that picking a Home Assistant dashboard (from the settings or from Home
+// Assistant's Default dashboard select) does not lose it: choosing Custom URL
+// again, or the select's "Start page" option, brings it back. The browser
+// manager keeps the two in step; nothing else writes start_url for it.
+const customStartUrl = SettingDef<String>(
+  key: 'browser.custom_start_url',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Custom start URL',
+  description: 'The page loaded on launch when the start page is custom.',
+  category: 'Browser',
+  validator: validateCustomStartUrl,
+  hidden: true,
+);
+
+/// A custom start page is a web page: http or https with a host. The start
+/// page is also what theater mode and the page bridge trust, so anything
+/// else -- file:, javascript:, a bare word -- is refused here rather than
+/// discovered later.
+String? validateCustomStartUrl(Object? value) {
+  final text = '${value ?? ''}'.trim();
+  if (text.isEmpty) return null;
+  final uri = Uri.tryParse(text);
+  if (uri == null ||
+      !(uri.scheme == 'http' || uri.scheme == 'https') ||
+      uri.host.isEmpty) {
+    return 'Enter a full http:// or https:// address';
+  }
+  return null;
+}
+
 // Hidden from the generic renderers: both UIs hand-build this row inside
 // the Home Assistant connection card (below Validate connection), because
 // its enabled/disabled state derives from the HA URL's scheme — a plain
@@ -8576,4 +8608,5 @@ const List<SettingDef<Object>> allSettings = [
   theaterMuteWakeWord,
   theaterMaxHours,
   startPage,
+  customStartUrl,
 ];

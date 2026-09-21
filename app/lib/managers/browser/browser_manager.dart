@@ -134,6 +134,58 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
     overlayUrl.value = null;
   }
 
+  /// Keeps browser.start_url in step with the start page choice, whichever
+  /// surface changed which of them.
+  ///
+  /// * A custom URL typed while the start page is custom is remembered, so
+  ///   picking a Home Assistant dashboard later does not lose it.
+  /// * Choosing custom puts the remembered URL back.
+  /// * Choosing Home Assistant with a start URL that is not Home Assistant's
+  ///   resets it to the HA base URL. Left alone, the custom page would be
+  ///   trusted as Home Assistant -- and handed its session -- until someone
+  ///   picked a dashboard.
+  Future<void> _syncStartPage(SettingChanged e) async {
+    final custom = _settings.get(defs.startPage) == 'custom';
+    if (e.key == defs.customStartUrl.key && custom) {
+      final url = _settings.get(defs.customStartUrl).trim();
+      if (url.isNotEmpty && url != startUrl) {
+        await _settings.set(defs.startUrl, url, source: 'start page');
+      }
+      return;
+    }
+    // The start URL written directly while custom (the remote API's PATCH,
+    // which is how a custom page was set before this choice existed) is the
+    // custom URL too.
+    if (e.key == defs.startUrl.key && custom) {
+      final url = startUrl.trim();
+      if (url != _settings.get(defs.customStartUrl) &&
+          defs.validateCustomStartUrl(url) == null) {
+        await _settings.set(defs.customStartUrl, url, source: 'start page');
+      }
+      return;
+    }
+    if (e.key != defs.startPage.key) return;
+    if (custom) {
+      final url = _settings.get(defs.customStartUrl).trim();
+      if (url.isNotEmpty && url != startUrl) {
+        await _settings.set(defs.startUrl, url, source: 'start page');
+      }
+      return;
+    }
+    final base = _settings.get(defs.haUrl).trim();
+    final start = Uri.tryParse(startUrl);
+    final ha = Uri.tryParse(base);
+    final onHa =
+        start != null &&
+        ha != null &&
+        start.scheme == ha.scheme &&
+        start.host == ha.host &&
+        start.port == ha.port;
+    if (!onHa && base.isNotEmpty) {
+      await _settings.set(defs.startUrl, base, source: 'start page');
+    }
+  }
+
   /// Whether [url] belongs to the dashboard's own web origin — the page
   /// currently loaded (its proxied loopback form when the secure context
   /// proxy is on) or the configured start URL. Navigations inside these keep
@@ -297,6 +349,8 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
     bus.on<SettingChanged>().listen((e) {
       if (e.key == defs.haUrl.key) unawaited(_migrateStartUrlOrigin(e));
     });
+    // The start page choice and the start URL, kept in step (URL-1, URL-3).
+    bus.on<SettingChanged>().listen((e) => unawaited(_syncStartPage(e)));
     bus.on<SettingChanged>().listen((e) {
       if (e.key == defs.pauseDashboardCameras.key) {
         _scheduleDashboardCameraSync();

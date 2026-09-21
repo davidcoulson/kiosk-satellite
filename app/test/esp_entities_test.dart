@@ -1975,4 +1975,45 @@ void main() {
       ]);
     });
   });
+
+  group('URL-3 the start page on Default dashboard', () {
+    List<Object?> options(List<Map<String, Object?>> all) =>
+        all.singleWhere((e) => e['objectId'] == 'default_dashboard')['options']
+            as List<Object?>;
+
+    test('appears once a custom start page exists, after the existing '
+        'options', () async {
+      final before = options(await surface.build());
+      expect(before, isNot(contains('Start page')));
+      await settings.set(defs.customStartUrl, 'http://10.2.3.20:8787');
+      final after = options(await surface.build());
+      expect(after, [...before, 'Start page']);
+    });
+
+    test('choosing it makes the start page custom; choosing a view puts '
+        'Home Assistant back first', () async {
+      await settings.set(defs.customStartUrl, 'http://10.2.3.20:8787');
+      await surface.handleCommand('default_dashboard', 'Start page');
+      expect(settings.get(defs.startPage), 'custom');
+      final views = options(
+        await surface.build(),
+      ).where((o) => o != 'Start page').toList();
+      if (views.isNotEmpty) {
+        await surface.handleCommand('default_dashboard', views.first);
+        expect(settings.get(defs.startPage), 'ha');
+        expect(
+          settings.get(defs.customStartUrl),
+          'http://10.2.3.20:8787',
+          reason: 'remembered, not overwritten by the dashboard',
+        );
+      }
+    });
+
+    test('reports Start page while the start page is custom', () async {
+      await settings.set(defs.customStartUrl, 'http://10.2.3.20:8787');
+      await settings.set(defs.startPage, 'custom');
+      await attach();
+      expect(pushed, contains(('default_dashboard', 'Start page')));
+    });
+  });
 }
