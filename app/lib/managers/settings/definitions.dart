@@ -373,6 +373,24 @@ const startUrl = SettingDef<String>(
   hidden: true,
 );
 
+// What the start URL is: a Home Assistant dashboard (the picker's choice,
+// and every install before this existed) or a custom page such as the theater
+// panel's own web app. The URL itself stays in browser.start_url either way.
+// It decides one thing beyond the picker shown: whether the start page's
+// origin is trusted as Home Assistant's, which is what gates handing a page
+// the HA session. Hidden: both settings UIs build the choice by hand.
+const startPage = SettingDef<String>(
+  key: 'browser.start_page',
+  type: SettingType.select,
+  defaultValue: 'ha',
+  title: 'Start page',
+  description: 'A Home Assistant dashboard, or a custom URL.',
+  category: 'Browser',
+  options: ['ha', 'custom'],
+  optionLabels: {'ha': 'Home Assistant dashboard', 'custom': 'Custom URL'},
+  hidden: true,
+);
+
 // Hidden from the generic renderers: both UIs hand-build this row inside
 // the Home Assistant connection card (below Validate connection), because
 // its enabled/disabled state derives from the HA URL's scheme — a plain
@@ -8557,4 +8575,5 @@ const List<SettingDef<Object>> allSettings = [
   theaterPeekOnAlerts,
   theaterMuteWakeWord,
   theaterMaxHours,
+  startPage,
 ];

@@ -21,6 +21,7 @@ import '../device/webview_freeze.dart';
 import '../device/webview_recovery.dart';
 import '../sendspin/music_assistant_api.dart';
 import '../settings/definitions.dart' as defs;
+import 'navigation.dart';
 import '../settings/settings_manager.dart';
 import 'package:kiosk_satellite/core/lifecycle.dart';
 
@@ -155,7 +156,17 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// origin is not when the secure context proxy is on: the page runs on
   /// loopback, while a screensaver or link URL names the real host.
   bool isHomeAssistantOrigin(Uri url) {
-    if (isDashboardOrigin(url)) return true;
+    // The dashboard's own origin stands for Home Assistant only while the
+    // start page is a Home Assistant dashboard. A custom start page (URL-2)
+    // is some other site, and treating its origin as Home Assistant's would
+    // hand it the session: this check gates injecting hassTokens into
+    // WebViews. The HA base URL's origin below still counts either way.
+    // An explicit choice rather than comparing hosts, because a dashboard
+    // loading from an old IP while the HA URL names a domain (issue #216) is
+    // a real setup that a host comparison would quietly break.
+    if (_settings.get(defs.startPage) != 'custom' && isDashboardOrigin(url)) {
+      return true;
+    }
     final base = Uri.tryParse(_settings.get(defs.haUrl).trim());
     return base != null &&
         base.hasScheme &&
@@ -463,6 +474,41 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
               );
             }
             await loadUrl('${_stripSlash(base)}/$dashboard');
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'navigate',
+          description:
+              'Move the main view: an http(s) URL, or a path or #fragment '
+              'resolved against the page showing. A fragment on the same '
+              'page changes in place with no reload. Other schemes are '
+              'refused.',
+          params: const {'url': 'http(s) URL, /path or #fragment'},
+          handler: (p) async {
+            final decision = decideNavigation(
+              '${p['url'] ?? ''}',
+              _currentUrl.isNotEmpty ? _currentUrl : startUrl,
+              mapUrl: urlMapper,
+            );
+            switch (decision) {
+              case NavigationRefused(:final reason):
+                log.error(name, 'navigate refused: $reason');
+                return CommandResult.fail(reason);
+              case NavigationHash(:final fragment):
+                // Written through the page's own location, so it routes the
+                // way a click on an in-page link would.
+                await runJs('location.hash = ${jsonEncode('#$fragment')};');
+                log.info(name, 'navigate: #$fragment in place');
+              case NavigationLoad(:final url):
+                dismissOverlay();
+                await _controller?.loadUrl(
+                  urlRequest: URLRequest(url: WebUri(url)),
+                );
+                log.info(name, 'navigate: $url');
+            }
             return const CommandResult.ok();
           },
         ),
