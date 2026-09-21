@@ -42,6 +42,25 @@ String buildKioskSatelliteScript({
     getDeviceInfo: function () { return call('getDeviceInfo'); },
     getBrightness: function () { return call('getBrightness'); },
     setBrightness: function (level) { return call('setBrightness', { level: level }); },
+
+    // Theater mode (docs/theater.md): a dim, touch-safe panel that puts itself
+    // back. `active` is passed as given, not coerced, so a non-boolean resolves
+    // false rather than silently turning it on. Options are for this
+    // activation only.
+    setTheaterMode: function (active, options) {
+      var p = {};
+      if (options && typeof options === 'object') {
+        for (var k in options) {
+          if (Object.prototype.hasOwnProperty.call(options, k)) p[k] = options[k];
+        }
+      }
+      p.active = active;
+      return call('setTheaterMode', p);
+    },
+    getTheaterMode: function () { return call('getTheaterMode'); },
+    theaterPeek: function (seconds) {
+      return call('theaterPeek', seconds == null ? {} : { seconds: seconds });
+    },
     screenOn: function () { return call('screenOn'); },
     screenOff: function () { return call('screenOff'); },
     isScreenOn: function () { return call('isScreenOn'); },

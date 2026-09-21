@@ -42,6 +42,9 @@ class JsApiManager extends Manager {
     'getDeviceInfo': 'getDeviceInfo',
     'getBrightness': 'getBrightness',
     'setBrightness': 'setBrightness',
+    'setTheaterMode': 'setTheaterMode',
+    'getTheaterMode': 'getTheaterMode',
+    'theaterPeek': 'theaterPeek',
     'screenOn': 'screenOn',
     'screenOff': 'screenOff',
     'isScreenOn': 'isScreenOn',
@@ -162,6 +165,17 @@ class JsApiManager extends Manager {
   /// standing between a page and a live microphone is this list. A kiosk
   /// that follows a link off Home Assistant, or is pointed at the wrong
   /// page, must not hand that page a room to listen to.
+  /// Theater mode's methods, held to the same rule as the microphone's: the
+  /// start page or Home Assistant may dim this panel and hold its touches,
+  /// and nothing else may (JS-1). A page that followed a link off the
+  /// dashboard has no business turning the display dark under the person
+  /// using it.
+  static const _theaterMethods = {
+    'setTheaterMode',
+    'getTheaterMode',
+    'theaterPeek',
+  };
+
   static const _microphoneMethods = {
     'startAudioStream',
     'pipelineRun',
@@ -250,14 +264,18 @@ class JsApiManager extends Manager {
       log.warn(name, 'refused $method from a sub-frame ($origin)');
       return null;
     }
-    if (_microphoneMethods.contains(method) &&
+    if ((_microphoneMethods.contains(method) ||
+            _theaterMethods.contains(method)) &&
         origin != null &&
         isTrustedOrigin?.call(origin) == false) {
       log.warn(name, 'refused $method from $origin: not a configured page');
       return null;
     }
+    // A copy, not cast()'s view: the bridge rewrites params below (the
+    // legacy pauseScreensaver, theater mode's source), and a view writes
+    // through to the caller's map, which throws when that map is typed.
     final params = args.length > 1 && args[1] is Map
-        ? (args[1] as Map).cast<String, Object?>()
+        ? Map<String, Object?>.from(args[1] as Map)
         : <String, Object?>{};
 
     if (method == 'remoteSettingsChanged') {
@@ -298,6 +316,10 @@ class JsApiManager extends Manager {
     if (method == 'playSound' || method == 'setSoundVolume') {
       params.remove('volume');
     }
+    // Who turned theater mode on is the bridge's to say, not the page's:
+    // a page claiming 'ha' would read in the logs and on the event as Home
+    // Assistant having done it.
+    if (_theaterMethods.contains(method)) params['source'] = 'page';
     final result = await commands.execute(
       commandName,
       method == 'bringToFront' ? {...params, 'voiceInteraction': true} : params,
@@ -308,7 +330,13 @@ class JsApiManager extends Manager {
     return result.data ?? true;
   }
 
+  /// Sees every event dispatched to the page, for tests: the real dispatch
+  /// needs a live WebView controller.
+  @visibleForTesting
+  void Function(String wireName, Map<String, Object?> detail)? debugDispatch;
+
   void _dispatchToPage(String wireName, Map<String, Object?> detail) {
+    debugDispatch?.call(wireName, detail);
     final controller = _controller;
     if (controller == null) return;
     final js =
