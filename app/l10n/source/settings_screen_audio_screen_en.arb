@@ -623,5 +623,31 @@
         "Screen & Audio > Screen"
       ]
     }
+  },
+  "settingTheaterFrameUrlTitle": "Page allowed from a frame",
+  "@settingTheaterFrameUrlTitle": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
+  },
+  "settingTheaterFrameUrlDescription": "A page shown in a frame on a Home Assistant dashboard, such as a Webpage dashboard, that may turn theater mode on and off. Only that exact site is allowed. Leave empty for none.",
+  "@settingTheaterFrameUrlDescription": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Theater mode"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Theater mode"
+      ]
+    }
   }
 }

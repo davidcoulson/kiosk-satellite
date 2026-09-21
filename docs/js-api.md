@@ -36,7 +36,7 @@ Every method returns a `Promise`. To match the defensive coding style of Voice S
 
 ### Theater mode
 
-Only the configured start page and Home Assistant's own pages, in the main frame, get these; for any other page or a frame inside one they are not defined, so check before calling. See [Theater Mode](theater.md).
+Only the configured start page and Home Assistant's own pages, in the main frame, may use these; other pages get `null`. A page in a frame on a Home Assistant dashboard can ask the dashboard instead, if it is the one named in **Page allowed from a frame**. See [Theater Mode](theater.md#a-page-in-a-frame).
 
 | Method | Returns | Description |
 |---|---|---|
@@ -148,7 +148,7 @@ The API dispatches `CustomEvent`s directly on the `window` object:
 | `kiosksatellite:person` | `{held}` | Someone is visible to the device's own person sensor (currently supported on Meta Portals) while Dismiss on person is active. Repeats every 2 seconds while they remain in view. `held` is `true` on repeat events and `false` upon arrival. |
 | `kiosksatellite:screenon` / `:screenoff` | `{}` | The screen power state changed. |
 | `kiosksatellite:screensaverstart` / `:screensaverstop` | `{}` | The screensaver state changed. |
-| `kiosksatellite:theatermode` | `{active, phase, source}` | [Theater mode](theater.md) changed phase, and once more after every page load while it is on. Sent to trusted pages only. |
+| `kiosksatellite:theatermode` | `{active, phase, source}` | [Theater mode](theater.md) changed phase, and once more after every page load while it is on. |
 | `kiosksatellite:sound-started` | `{id}` | A `playSound` request actually began playing (audio is physically leaving the speaker). You should time stop word arming and UI state changes off this event, not off the `playSound` resolution. |
 | `kiosksatellite:sound-level` | `{id, level}` | Provides the playback level of a playing sound (the mean absolute amplitude from 0 to 1, updating at most ~20 times per second, with near duplicate samples skipped). This allows a page visualizer to animate to audio it never actually touches. Note: This is best-effort and will be absent on devices lacking a functional hardware `Visualizer`. |
 | `kiosksatellite:voice-chimes-changed` | `{filename: seconds}` | Selected local chime durations changed. Use these values for local microphone timing. Remote speakers continue to use Home Assistant sounds. |

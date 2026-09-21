@@ -202,6 +202,7 @@ void main() {
       'theater.peek_on_alerts',
       'theater.mute_wake_word',
       'theater.max_hours',
+      'theater.frame_url',
     });
     for (final r in group.values) {
       expect(r['category'], 'Screen & Audio', reason: '${r['key']}');

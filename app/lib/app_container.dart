@@ -7,6 +7,7 @@ import 'managers/shizuku/shizuku_manager.dart';
 import 'managers/assist_pipeline/assist_pipeline_manager.dart';
 import 'managers/audio/audio_routing_manager.dart';
 import 'managers/browser/browser_manager.dart';
+import 'managers/browser/navigation.dart';
 import 'managers/camera/camera_manager.dart';
 import 'managers/device/device_manager.dart';
 import 'managers/device_camera/device_camera_manager.dart';
@@ -248,7 +249,8 @@ class AppContainer {
     await ProvisioningChannel(settings, log).init();
     await device.init();
     jsApi = JsApiManager(bus, commands, log, device.appVersion)
-      ..isTrustedOrigin = _isConfiguredOrigin;
+      ..isTrustedOrigin = _isConfiguredOrigin
+      ..isTheaterFrameOrigin = _isTheaterFrameOrigin;
     for (final manager in _ordered.skip(2)) {
       await manager.init();
     }
@@ -259,6 +261,11 @@ class AppContainer {
   /// bridge's microphone methods: Home Assistant, the start URL, or the
   /// loopback proxy that serves either one as a secure context. Read from
   /// the settings on every call, so changing the URL needs no re-wiring.
+  /// Whether a frame at [origin] is the page the "Page allowed from a
+  /// frame" setting names: same scheme, host and port, nothing looser.
+  bool _isTheaterFrameOrigin(Uri origin) =>
+      isSameWebOrigin(settings.get(defs.theaterFrameUrl), origin);
+
   bool _isConfiguredOrigin(Uri origin) {
     bool same(String configured) {
       final uri = Uri.tryParse(configured.trim());

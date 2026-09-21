@@ -157,6 +157,12 @@ class JsApiManager extends Manager {
   /// which is what a test with no settings behind it wants.
   bool Function(Uri origin)? isTrustedOrigin;
 
+  /// Whether a frame at [origin] may use theater mode through the
+  /// dashboard's relay (theater_relay_script.dart): the "Page allowed from a
+  /// frame" setting. Null refuses every frame, unlike [isTrustedOrigin]: a
+  /// frame is never trusted by default.
+  bool Function(Uri origin)? isTheaterFrameOrigin;
+
   /// The methods that open the microphone or send its audio somewhere.
   /// Everything else a page may call is about the panel it is drawn on --
   /// its brightness, its screensaver -- and the API is documented for any
@@ -265,7 +271,8 @@ class JsApiManager extends Manager {
       return null;
     }
     if ((_microphoneMethods.contains(method) ||
-            _theaterMethods.contains(method)) &&
+            _theaterMethods.contains(method) ||
+            method == 'theaterRelay') &&
         origin != null &&
         isTrustedOrigin?.call(origin) == false) {
       log.warn(name, 'refused $method from $origin: not a configured page');
@@ -277,6 +284,8 @@ class JsApiManager extends Manager {
     final params = args.length > 1 && args[1] is Map
         ? Map<String, Object?>.from(args[1] as Map)
         : <String, Object?>{};
+
+    if (method == 'theaterRelay') return _relayTheater(params);
 
     if (method == 'remoteSettingsChanged') {
       bus.publish(const RemoteStatusChanged('voice'));
@@ -334,6 +343,37 @@ class JsApiManager extends Manager {
   /// needs a live WebView controller.
   @visibleForTesting
   void Function(String wireName, Map<String, Object?> detail)? debugDispatch;
+
+  /// A theater call a framed page made through the dashboard's relay. The
+  /// dashboard is trusted (the caller checked); the frame is trusted only at
+  /// the configured origin, and only for theater mode. The answer says
+  /// whether it was accepted, so the relay knows which frames to send the
+  /// theatermode event to.
+  Future<Map<String, Object?>> _relayTheater(
+    Map<String, Object?> params,
+  ) async {
+    const refused = {'accepted': false};
+    final inner = params['method'];
+    final raw = params['frameOrigin'];
+    final frameOrigin = raw is String ? Uri.tryParse(raw) : null;
+    if (inner is! String || !_theaterMethods.contains(inner)) return refused;
+    if (frameOrigin == null ||
+        isTheaterFrameOrigin?.call(frameOrigin) != true) {
+      log.warn(name, 'refused $inner from a frame at $raw: not allowed');
+      return refused;
+    }
+    final innerParams = params['params'] is Map
+        ? Map<String, Object?>.from(params['params'] as Map)
+        : <String, Object?>{};
+    innerParams['source'] = 'page';
+    final result = await commands.execute(_exposedMethods[inner]!, innerParams);
+    return {
+      'accepted': true,
+      'result': result.ok
+          ? (result.data ?? true)
+          : (result.data == null ? false : null),
+    };
+  }
 
   void _dispatchToPage(String wireName, Map<String, Object?> detail) {
     debugDispatch?.call(wireName, detail);

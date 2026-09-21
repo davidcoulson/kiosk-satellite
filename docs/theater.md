@@ -60,6 +60,7 @@ Under **Settings > Screen & Audio > Theater mode**, and the same section in the 
 | Brighten for alerts | On | Announcements, notifications, camera views, voice turns and the intercom peek while they show. |
 | Mute the wake word | Off | Stop listening for the wake word in theater mode. |
 | Turn off after | 6 h | The safety cap. |
+| Page allowed from a frame | empty | A page in a frame on a Home Assistant dashboard that may use theater mode. See [A page in a frame](#a-page-in-a-frame). |
 
 ## Turning it on
 
@@ -118,6 +119,10 @@ if (ks?.setTheaterMode) {
 
 The event is sent again after every page load, so a page that reloads in the middle of a film picks up the current phase straight away.
 
+### From a page in a frame
+
+A page shown inside a Home Assistant dashboard, rather than as the whole page, cannot reach `window.kioskSatellite`, but it can ask the dashboard around it. See [A page in a frame](#a-page-in-a-frame).
+
 ### From a dashboard link
 
 `ks://theater` toggles it; `ks://theater/on`, `ks://theater/off` and `ks://theater/peek` do what they say. See [Dashboard Links](dashboard-links.md).
@@ -125,6 +130,43 @@ The event is sent again after every page load, so a page that reloads in the mid
 ### From the remote API
 
 `setTheaterMode`, `getTheaterMode`, `theaterPeek` and `navigate` are ordinary commands. See [Remote API](remote-api.md).
+
+## A page in a frame
+
+Voice Satellite runs inside Home Assistant's own page, so a panel whose start page is some other web app has no wake word and no satellite. To keep both, show the web app inside Home Assistant instead: make a **Webpage** dashboard in Home Assistant with the app's address, make that dashboard the panel's start page, and turn on HA kiosk mode to hide Home Assistant's header and sidebar. Voice Satellite then runs in the dashboard as usual, with the app filling the screen inside it.
+
+The app is in a frame there, and frames never get the page bridge, since a frame with it could open the microphone. Instead, put the app's address in **Page allowed from a frame** under **Settings > Screen & Audio > Theater mode**. The dashboard then passes theater mode calls from a frame at exactly that address (the same scheme, host and port) to the app, and nothing else: not the microphone, not brightness, not a frame that page embeds.
+
+The framed page talks to the dashboard with `postMessage`:
+
+```js
+function theater(method, params) {
+  return new Promise((resolve) => {
+    const id = Math.random().toString(36).slice(2);
+    const done = (result) => { removeEventListener('message', onReply); resolve(result); };
+    const onReply = (e) => {
+      if (e.source === window.parent && e.data?.ksTheater === 1 && e.data.id === id) done(e.data.result);
+    };
+    addEventListener('message', onReply);
+    window.parent.postMessage({ ksTheater: 1, id, method, params }, '*');
+    setTimeout(() => done(null), 3000);   // not on a kiosk, or not allowed
+  });
+}
+
+await theater('setTheaterMode', { active: true, overlayOpacity: 0.6, peekSeconds: 8 });
+await theater('getTheaterMode', {});
+await theater('theaterPeek', { seconds: 10 });
+
+addEventListener('message', (e) => {
+  if (e.source === window.parent && e.data?.ksTheater === 1 && e.data.event === 'theatermode') {
+    render(e.data.detail.phase);        // {active, phase, source}
+  }
+});
+```
+
+Replies carry what the page bridge method would return, or `null` when the call was refused. Theater mode events reach the frame once the app has accepted a call from it, so call `getTheaterMode` when the page loads.
+
+With the app in a frame, `navigate` moves the Home Assistant page around it, not the app. Send the app to a route through the app itself.
 
 ## A custom start page
 

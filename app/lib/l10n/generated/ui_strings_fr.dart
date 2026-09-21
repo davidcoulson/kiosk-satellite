@@ -8413,6 +8413,13 @@ class UiStringsFr extends UiStrings {
   String get screenAudioTheaterMode => 'Theater mode';
 
   @override
+  String get settingTheaterFrameUrlTitle => 'Page allowed from a frame';
+
+  @override
+  String get settingTheaterFrameUrlDescription =>
+      'A page shown in a frame on a Home Assistant dashboard, such as a Webpage dashboard, that may turn theater mode on and off. Only that exact site is allowed. Leave empty for none.';
+
+  @override
   String get settingMediaVolumeTitle => 'Volume multimédia';
 
   @override

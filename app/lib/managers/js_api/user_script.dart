@@ -1,5 +1,6 @@
 import 'browser_microphone_script.dart';
 import 'remote_settings_script.dart';
+import 'theater_relay_script.dart';
 
 /// The `window.kioskSatellite` facade injected into every page at document
 /// start. Pages never touch the flutter_inappwebview transport directly.
@@ -26,6 +27,7 @@ String buildKioskSatelliteScript({
 
   $browserMicrophoneScript
   $remoteSettingsScript
+  $theaterRelayScript
 
   window.kioskSatellite = {
     platform: 'kiosksatellite',

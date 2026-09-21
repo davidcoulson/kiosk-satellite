@@ -2539,6 +2539,9 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'settingTheaterMaxHoursDescription' =>
         strings.settingTheaterMaxHoursDescription,
       'screenAudioTheaterMode' => strings.screenAudioTheaterMode,
+      'settingTheaterFrameUrlTitle' => strings.settingTheaterFrameUrlTitle,
+      'settingTheaterFrameUrlDescription' =>
+        strings.settingTheaterFrameUrlDescription,
       'settingMediaVolumeTitle' => strings.settingMediaVolumeTitle,
       'settingMediaVolumeDescription' => strings.settingMediaVolumeDescription,
       'settingAssistantVolumeTitle' => strings.settingAssistantVolumeTitle,

@@ -1478,5 +1478,9 @@
   "theater.max_hours": {
     "title": "settingTheaterMaxHoursTitle",
     "description": "settingTheaterMaxHoursDescription"
+  },
+  "theater.frame_url": {
+    "title": "settingTheaterFrameUrlTitle",
+    "description": "settingTheaterFrameUrlDescription"
   }
 }

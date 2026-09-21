@@ -8136,6 +8136,25 @@ const theaterMuteWakeWord = SettingDef<bool>(
   section: 'Theater mode',
 );
 
+// A page that may use theater mode from inside a frame: the theater
+// panel's web app on a Home Assistant Webpage dashboard, so the dashboard
+// around it keeps running Voice Satellite. The bridge itself stays main-frame
+// only; the dashboard relays theater calls from a frame at exactly this
+// origin (theater_relay_script.dart), and nothing else.
+const theaterFrameUrl = SettingDef<String>(
+  key: 'theater.frame_url',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Page allowed from a frame',
+  description:
+      'A page shown in a frame on a Home Assistant dashboard, such as a '
+      'Webpage dashboard, that may turn theater mode on and off. Only that '
+      'exact site is allowed. Leave empty for none.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  validator: validateCustomStartUrl,
+);
+
 const theaterMaxHours = SettingDef<num>(
   key: 'theater.max_hours',
   type: SettingType.number,
@@ -8607,6 +8626,7 @@ const List<SettingDef<Object>> allSettings = [
   theaterPeekOnAlerts,
   theaterMuteWakeWord,
   theaterMaxHours,
+  theaterFrameUrl,
   startPage,
   customStartUrl,
 ];

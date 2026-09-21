@@ -14373,6 +14373,18 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
+  /// **'Page allowed from a frame'**
+  String get settingTheaterFrameUrlTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'A page shown in a frame on a Home Assistant dashboard, such as a Webpage dashboard, that may turn theater mode on and off. Only that exact site is allowed. Leave empty for none.'**
+  String get settingTheaterFrameUrlDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
   /// **'Media volume'**
   String get settingMediaVolumeTitle;
 

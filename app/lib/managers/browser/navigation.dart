@@ -80,3 +80,17 @@ NavigationDecision decideNavigation(
   }
   return NavigationLoad(target.toString());
 }
+
+/// Whether [origin] is the web origin of [configured]: the same http(s)
+/// scheme, host and port, with default ports filled in. An empty or
+/// unparsable setting matches nothing, and so does an opaque origin (a
+/// sandboxed frame reports "null").
+bool isSameWebOrigin(String configured, Uri origin) {
+  final c = Uri.tryParse(configured.trim());
+  if (c == null || c.host.isEmpty) return false;
+  bool web(Uri u) => u.scheme == 'http' || u.scheme == 'https';
+  if (!web(c) || !web(origin) || origin.host.isEmpty) return false;
+  return c.scheme == origin.scheme &&
+      c.host.toLowerCase() == origin.host.toLowerCase() &&
+      c.port == origin.port;
+}

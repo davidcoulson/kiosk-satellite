@@ -1480,4 +1480,8 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingTheaterMaxHoursTitle",
     "description": "settingTheaterMaxHoursDescription",
   },
+  "theater.frame_url": {
+    "title": "settingTheaterFrameUrlTitle",
+    "description": "settingTheaterFrameUrlDescription",
+  },
 };
