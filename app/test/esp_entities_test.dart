@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:fake_async/fake_async.dart';
@@ -1777,6 +1778,201 @@ void main() {
         expect(lux(), [42]);
         surface.detach();
       });
+    });
+  });
+
+  group('theater mode', () {
+    late List<(String, Map<String, Object?>)> theaterCalls;
+
+    setUp(() {
+      theaterCalls = [];
+      for (final name in ['setTheaterMode', 'theaterPeek', 'navigate']) {
+        commands.register(
+          Command(
+            name: name,
+            description: 'stub',
+            handler: (p) async {
+              theaterCalls.add((name, Map<String, Object?>.from(p)));
+              final url = p['url'];
+              if (name == 'navigate' &&
+                  url is String &&
+                  !RegExp(r'^(https?://|/|#)').hasMatch(url)) {
+                return const CommandResult.fail('scheme not allowed');
+              }
+              return const CommandResult.ok(true);
+            },
+          ),
+        );
+      }
+    });
+
+    test('T-30 the five entities are exactly as specified, and no entity '
+        'that existed before is gone or changed', () async {
+      final all = await surface.build(includeExcluded: true);
+      Map<String, Object?> find(String id) =>
+          all.singleWhere((e) => e['objectId'] == id);
+
+      Map<String, Object?> shape(Map<String, Object?> e) => {
+        for (final k in ['type', 'name', 'icon', 'category'])
+          if (e[k] != null) k: e[k],
+      };
+      expect(shape(find('theater_mode')), {
+        'type': 'switch',
+        'name': 'Theater mode',
+        'icon': 'mdi:theater',
+      });
+      expect(shape(find('theater_phase')), {
+        'type': 'text_sensor',
+        'name': 'Theater phase',
+        'icon': 'mdi:theater',
+        'category': 2,
+      });
+      expect(shape(find('theater_peek')), {
+        'type': 'button',
+        'name': 'Theater peek',
+        'icon': 'mdi:gesture-tap',
+      });
+      expect(find('theater_overlay_opacity'), {
+        ...find('theater_overlay_opacity'),
+        'type': 'number',
+        'name': 'Theater dimming',
+        'min': 0,
+        'max': 95,
+        'unit': '%',
+        'category': 1,
+      });
+      expect(find('theater_peek_seconds'), {
+        ...find('theater_peek_seconds'),
+        'type': 'number',
+        'name': 'Theater peek time',
+        'min': 3,
+        'max': 60,
+        'unit': 's',
+        'category': 1,
+      });
+
+      // Object ids are permanent API: Home Assistant entity ids hang off
+      // them. Every entity from before theater mode must still be here, the
+      // same. Additions are fine; that is how the catalog grows.
+      final before =
+          (jsonDecode(
+                    File(
+                      'test/fixtures/esp_catalog_permanent.json',
+                    ).readAsStringSync(),
+                  )
+                  as List)
+              .cast<Map<String, Object?>>();
+      for (final old in before) {
+        final now = all.where((e) => e['objectId'] == old['objectId']);
+        expect(now, hasLength(1), reason: '${old['objectId']} is gone');
+        expect(
+          {
+            for (final k in ['objectId', 'type', 'name', 'icon', 'category'])
+              if (now.single[k] != null) k: now.single[k],
+          },
+          old,
+          reason: '${old['objectId']} changed',
+        );
+      }
+    });
+
+    test('T-31 the switch and button drive theater mode as Home Assistant, '
+        'and the numbers write their settings', () async {
+      await surface.handleCommand('theater_mode', true);
+      await surface.handleCommand('theater_mode', false);
+      await surface.handleCommand('theater_peek', null);
+      expect(theaterCalls.map((c) => c.$1), [
+        'setTheaterMode',
+        'setTheaterMode',
+        'theaterPeek',
+      ]);
+      expect(theaterCalls.map((c) => c.$2), [
+        {'active': true, 'source': 'ha'},
+        {'active': false, 'source': 'ha'},
+        {'source': 'ha'},
+      ]);
+      await surface.handleCommand('theater_overlay_opacity', 40);
+      await surface.handleCommand('theater_peek_seconds', 20);
+      expect(settings.get(defs.theaterOverlayOpacity), closeTo(0.4, 0.0001));
+      expect(settings.get(defs.theaterPeekSeconds), 20);
+      // Clamped to the entity's own range, not the setting's.
+      await surface.handleCommand('theater_overlay_opacity', 100);
+      expect(settings.get(defs.theaterOverlayOpacity), closeTo(0.95, 0.0001));
+    });
+
+    test('T-31 every transition is pushed to Home Assistant, and off is '
+        'reported on connect', () async {
+      await attach();
+      expect(
+        pushed,
+        containsAll([('theater_mode', false), ('theater_phase', 'off')]),
+      );
+      pushed.clear();
+      bus.publish(
+        const TheaterModeChanged(active: true, phase: 'dim', source: 'ha'),
+      );
+      await Future<void>.delayed(Duration.zero);
+      bus.publish(
+        const TheaterModeChanged(active: true, phase: 'peek', source: 'ha'),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        pushed,
+        containsAllInOrder([
+          ('theater_mode', true),
+          ('theater_phase', 'dim'),
+          ('theater_mode', true),
+          ('theater_phase', 'peek'),
+        ]),
+      );
+    });
+
+    test('T-32 the two services are declared with their argument types', () {
+      final services = {
+        for (final s in surface.buildServices()) s['name']: s['args'],
+      };
+      expect(services['set_theater_mode'], [
+        {'name': 'active', 'type': 'bool'},
+        {'name': 'overlay_opacity', 'type': 'float'},
+        {'name': 'backlight', 'type': 'float'},
+      ]);
+      expect(services['navigate'], [
+        {'name': 'url', 'type': 'string'},
+      ]);
+    });
+
+    test('set_theater_mode treats -1 as "the setting"', () async {
+      await surface.handleService('set_theater_mode', {
+        'active': true,
+        'overlay_opacity': -1,
+        'backlight': 0.1,
+      });
+      expect(theaterCalls.single.$1, 'setTheaterMode');
+      expect(theaterCalls.single.$2, {
+        'active': true,
+        'source': 'ha',
+        'backlight': 0.1,
+      });
+    });
+
+    test('T-32 navigate hands the URL over and never loads a refused '
+        'scheme', () async {
+      for (final url in [
+        'javascript:alert(1)',
+        'file:///sdcard/x',
+        'data:text/html,hi',
+        'intent://x#Intent;end',
+      ]) {
+        await surface.handleService('navigate', {'url': url});
+      }
+      await surface.handleService('navigate', {'url': '#/showtime'});
+      expect(theaterCalls.map((c) => c.$2['url']), [
+        'javascript:alert(1)',
+        'file:///sdcard/x',
+        'data:text/html,hi',
+        'intent://x#Intent;end',
+        '#/showtime',
+      ]);
     });
   });
 }

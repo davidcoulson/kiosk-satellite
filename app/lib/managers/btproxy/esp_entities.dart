@@ -71,6 +71,8 @@ class EspEntitySurface {
   /// Mirrors the browser manager's hold, tracked from its event: this
   /// surface reaches managers through [commands], never by holding one.
   bool _camerasHeld = false;
+  bool _theaterActive = false;
+  String _theaterPhase = 'off';
 
   /// Mirrors the proximity manager's entity state, tracked from its event.
   bool _proximityNear = false;
@@ -313,6 +315,34 @@ class EspEntitySurface {
       deviceClass: 'duration',
       mode: 1,
     ),
+    // Theater mode's dimming and peek time (docs/theater.md), so an
+    // automation can make the room darker for a film than for a match.
+    // Dimming stops at 95%: a fully opaque wash is the black phase's, and
+    // at 100% a dimmed panel would look switched off.
+    'theater_overlay_opacity': (
+      name: 'Theater dimming',
+      icon: 'mdi:theater',
+      def: defs.theaterOverlayOpacity,
+      fraction: true,
+      min: 0,
+      max: 95,
+      step: 5,
+      unit: '%',
+      deviceClass: null,
+      mode: 0,
+    ),
+    'theater_peek_seconds': (
+      name: 'Theater peek time',
+      icon: 'mdi:timer-outline',
+      def: defs.theaterPeekSeconds,
+      fraction: false,
+      min: 3,
+      max: 60,
+      step: 1,
+      unit: 's',
+      deviceClass: 'duration',
+      mode: 0,
+    ),
     'assistant_volume': _percent(
       'Assistant volume',
       'mdi:account-voice',
@@ -496,6 +526,14 @@ class EspEntitySurface {
         'name': 'Dashboard cameras',
         'icon': 'mdi:cctv',
       },
+      // Theater mode (docs/theater.md): runtime state rather than a
+      // setting, so a switch of its own. Off whenever the app starts.
+      {
+        'type': 'switch',
+        'objectId': 'theater_mode',
+        'name': 'Theater mode',
+        'icon': 'mdi:theater',
+      },
       // The full-screen Now Playing view: on while it is on screen, and a
       // turn-on brings it up the way the kiosk menu entry does (a paused
       // track opens paused). Only with the view enabled, like the menu
@@ -548,6 +586,7 @@ class EspEntitySurface {
         'Notifications dismiss all',
         'mdi:bell-off-outline',
       ),
+      button('theater_peek', 'Theater peek', 'mdi:gesture-tap'),
       button('reload', 'Reload page', 'mdi:refresh'),
       button('load_start_url', 'Go to dashboard', 'mdi:view-dashboard'),
       button('clear_cache', 'Clear cache', 'mdi:broom'),
@@ -856,6 +895,12 @@ class EspEntitySurface {
             'category': 1,
           },
       // ── Diagnostics ──────────────────────────────────────────────────
+      diagnostic(
+        'theater_phase',
+        'Theater phase',
+        icon: 'mdi:theater',
+        type: 'text_sensor',
+      ),
       if (batteryPresent)
         diagnostic(
           'battery',
@@ -1152,6 +1197,24 @@ class EspEntitySurface {
   /// values arrive positionally on the wire and land in users'
   /// automations by name.
   List<Map<String, Object?>> buildServices() => const [
+    // Theater mode with its levels for this activation. An action cannot
+    // leave an argument out, so -1 means "the setting" for both levels.
+    {
+      'name': 'set_theater_mode',
+      'args': [
+        {'name': 'active', 'type': 'bool'},
+        {'name': 'overlay_opacity', 'type': 'float'},
+        {'name': 'backlight', 'type': 'float'},
+      ],
+    },
+    // Move the main page: a hash on the page already showing changes in
+    // place with no reload, anything else loads (docs/theater.md).
+    {
+      'name': 'navigate',
+      'args': [
+        {'name': 'url', 'type': 'string'},
+      ],
+    },
     {
       'name': 'notification',
       // Answers with the kiosk's id for the card ({"id": 7}), which an
@@ -1268,6 +1331,22 @@ class EspEntitySurface {
     Map<String, Object?> args,
   ) async {
     switch (name) {
+      case 'set_theater_mode':
+        final opacity = args['overlay_opacity'];
+        final backlight = args['backlight'];
+        await commands.execute('setTheaterMode', {
+          'active': args['active'] == true,
+          'source': 'ha',
+          if (opacity is num && opacity >= 0) 'overlayOpacity': opacity,
+          if (backlight is num && backlight >= 0) 'backlight': backlight,
+        });
+        return null;
+      case 'navigate':
+        final r = await commands.execute('navigate', {
+          'url': '${args['url'] ?? ''}',
+        });
+        if (!r.ok) log.warn('esphome', 'navigate refused: ${r.error}');
+        return null;
       case 'notification':
         final result = await commands.execute('showNotification', {
           'message': '${args['message'] ?? ''}',
@@ -1425,6 +1504,14 @@ class EspEntitySurface {
       bus.on<ProximityStateChanged>().listen((e) {
         _proximityNear = e.near;
         _send('proximity', e.near);
+      }),
+    );
+    _subs.add(
+      bus.on<TheaterModeChanged>().listen((e) {
+        _theaterActive = e.active;
+        _theaterPhase = e.phase;
+        _send('theater_mode', e.active);
+        _send('theater_phase', e.phase);
       }),
     );
     _subs.add(
@@ -1698,7 +1785,16 @@ class EspEntitySurface {
           const {},
         );
       case 'dashboard_cameras':
-        await commands.execute('setDashboardCameras', {'playing': value == true});
+        await commands.execute('setDashboardCameras', {
+          'playing': value == true,
+        });
+      case 'theater_mode':
+        await commands.execute('setTheaterMode', {
+          'active': value == true,
+          'source': 'ha',
+        });
+      case 'theater_peek':
+        await commands.execute('theaterPeek', const {'source': 'ha'});
       case 'now_playing':
         if (value == true) {
           await commands.execute('showNowPlaying', const {});
@@ -1979,6 +2075,8 @@ class EspEntitySurface {
     }
     await _send('screensaver_active', _screensaverActive);
     await _send('dashboard_cameras', !_camerasHeld);
+    await _send('theater_mode', _theaterActive);
+    await _send('theater_phase', _theaterPhase);
     if (_settings.get(defs.proximitySensor)) {
       await _send('proximity', _proximityNear);
     }

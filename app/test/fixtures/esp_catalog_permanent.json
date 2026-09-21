@@ -1,0 +1,539 @@
+[
+  {
+    "objectId": "screen",
+    "type": "light",
+    "name": "Screen",
+    "icon": "mdi:tablet"
+  },
+  {
+    "objectId": "screensaver_active",
+    "type": "switch",
+    "name": "Screensaver active",
+    "icon": "mdi:sleep"
+  },
+  {
+    "objectId": "dashboard_cameras",
+    "type": "switch",
+    "name": "Dashboard cameras",
+    "icon": "mdi:cctv"
+  },
+  {
+    "objectId": "now_playing",
+    "type": "switch",
+    "name": "Now Playing",
+    "icon": "mdi:album"
+  },
+  {
+    "objectId": "volume",
+    "type": "number",
+    "name": "Volume",
+    "icon": "mdi:volume-high"
+  },
+  {
+    "objectId": "postpone_screensaver",
+    "type": "button",
+    "name": "Postpone screensaver",
+    "icon": "mdi:timer-refresh-outline"
+  },
+  {
+    "objectId": "screensaver_next_slide",
+    "type": "button",
+    "name": "Screensaver next slide",
+    "icon": "mdi:skip-next"
+  },
+  {
+    "objectId": "screensaver_previous_slide",
+    "type": "button",
+    "name": "Screensaver previous slide",
+    "icon": "mdi:skip-previous"
+  },
+  {
+    "objectId": "notifications_dismiss_all",
+    "type": "button",
+    "name": "Notifications dismiss all",
+    "icon": "mdi:bell-off-outline"
+  },
+  {
+    "objectId": "reload",
+    "type": "button",
+    "name": "Reload page",
+    "icon": "mdi:refresh"
+  },
+  {
+    "objectId": "load_start_url",
+    "type": "button",
+    "name": "Go to dashboard",
+    "icon": "mdi:view-dashboard"
+  },
+  {
+    "objectId": "clear_cache",
+    "type": "button",
+    "name": "Clear cache",
+    "icon": "mdi:broom"
+  },
+  {
+    "objectId": "restart",
+    "type": "button",
+    "name": "Restart app",
+    "icon": ""
+  },
+  {
+    "objectId": "bring_to_front",
+    "type": "button",
+    "name": "Bring to front",
+    "icon": "mdi:flip-to-front"
+  },
+  {
+    "objectId": "open_launcher",
+    "type": "button",
+    "name": "Open app launcher",
+    "icon": "mdi:apps"
+  },
+  {
+    "objectId": "camera_view",
+    "type": "select",
+    "name": "Camera view",
+    "icon": "mdi:cctv"
+  },
+  {
+    "objectId": "camera_view_v1",
+    "type": "button",
+    "name": "Show Front door",
+    "icon": "mdi:cctv"
+  },
+  {
+    "objectId": "close_camera_view",
+    "type": "button",
+    "name": "Close camera view",
+    "icon": "mdi:close-box-outline"
+  },
+  {
+    "objectId": "active_camera_view",
+    "type": "text_sensor",
+    "name": "Active camera view",
+    "icon": "mdi:cctv"
+  },
+  {
+    "objectId": "dashboard_view",
+    "type": "select",
+    "name": "Dashboard view",
+    "icon": "mdi:view-dashboard-outline"
+  },
+  {
+    "objectId": "default_dashboard",
+    "type": "select",
+    "name": "Default dashboard",
+    "icon": "mdi:view-dashboard-edit-outline",
+    "category": 1
+  },
+  {
+    "objectId": "update",
+    "type": "update",
+    "name": "Update"
+  },
+  {
+    "objectId": "screenshot",
+    "type": "camera",
+    "name": "Screenshot"
+  },
+  {
+    "objectId": "device_camera",
+    "type": "camera",
+    "name": "Camera"
+  },
+  {
+    "objectId": "take_snapshot",
+    "type": "button",
+    "name": "Take camera snapshot",
+    "icon": "mdi:camera-iris"
+  },
+  {
+    "objectId": "last_snapshot",
+    "type": "text_sensor",
+    "name": "Last camera snapshot",
+    "icon": "mdi:camera-timer"
+  },
+  {
+    "objectId": "take_screenshot",
+    "type": "button",
+    "name": "Take screenshot",
+    "icon": "mdi:monitor-screenshot"
+  },
+  {
+    "objectId": "last_screenshot",
+    "type": "text_sensor",
+    "name": "Last screenshot",
+    "icon": "mdi:monitor-screenshot"
+  },
+  {
+    "objectId": "illuminance",
+    "type": "sensor",
+    "name": "Ambient light"
+  },
+  {
+    "objectId": "motion",
+    "type": "binary_sensor",
+    "name": "Motion"
+  },
+  {
+    "objectId": "next_alarm",
+    "type": "text_sensor",
+    "name": "Next alarm",
+    "icon": "mdi:alarm"
+  },
+  {
+    "objectId": "last_interaction",
+    "type": "text_sensor",
+    "name": "Last interaction",
+    "icon": "mdi:gesture-tap"
+  },
+  {
+    "objectId": "next_screensaver",
+    "type": "text_sensor",
+    "name": "Next screensaver",
+    "icon": "mdi:timer-sand"
+  },
+  {
+    "objectId": "screensaver_brightness_level",
+    "type": "number",
+    "name": "Screensaver brightness level",
+    "icon": "mdi:brightness-6",
+    "category": 1
+  },
+  {
+    "objectId": "screensaver_timeout",
+    "type": "number",
+    "name": "Screensaver timeout",
+    "icon": "mdi:timer-outline",
+    "category": 1
+  },
+  {
+    "objectId": "assistant_volume",
+    "type": "number",
+    "name": "Assistant volume",
+    "icon": "mdi:account-voice",
+    "category": 1
+  },
+  {
+    "objectId": "media_volume",
+    "type": "number",
+    "name": "Media volume",
+    "icon": "mdi:music-note",
+    "category": 1
+  },
+  {
+    "objectId": "clock_background",
+    "type": "text",
+    "name": "Clock background",
+    "icon": "mdi:image-frame",
+    "category": 1
+  },
+  {
+    "objectId": "kiosk",
+    "type": "switch",
+    "name": "Kiosk mode",
+    "icon": "mdi:lock-outline",
+    "category": 1
+  },
+  {
+    "objectId": "lockdown",
+    "type": "switch",
+    "name": "Lockdown mode",
+    "icon": "mdi:shield-lock",
+    "category": 1
+  },
+  {
+    "objectId": "ha_kiosk",
+    "type": "switch",
+    "name": "HA kiosk mode",
+    "icon": "mdi:dock-top",
+    "category": 1
+  },
+  {
+    "objectId": "keep_screen_on",
+    "type": "switch",
+    "name": "Keep screen on",
+    "icon": "mdi:lightbulb-on-outline",
+    "category": 1
+  },
+  {
+    "objectId": "remote",
+    "type": "switch",
+    "name": "Remote management",
+    "icon": "mdi:remote-desktop",
+    "category": 1
+  },
+  {
+    "objectId": "screensaver_brightness",
+    "type": "switch",
+    "name": "Screensaver brightness",
+    "icon": "mdi:brightness-4",
+    "category": 1
+  },
+  {
+    "objectId": "adaptive_brightness",
+    "type": "switch",
+    "name": "Adaptive brightness",
+    "icon": "mdi:brightness-auto",
+    "category": 1
+  },
+  {
+    "objectId": "screensaver",
+    "type": "switch",
+    "name": "Screensaver",
+    "icon": "mdi:sleep",
+    "category": 1
+  },
+  {
+    "objectId": "hold_mode",
+    "type": "switch",
+    "name": "Hold mode",
+    "icon": "mdi:pause-circle-outline",
+    "category": 1
+  },
+  {
+    "objectId": "camera_enabled",
+    "type": "switch",
+    "name": "Camera enabled",
+    "icon": "mdi:camera-outline",
+    "category": 1
+  },
+  {
+    "objectId": "rtsp_streaming",
+    "type": "switch",
+    "name": "RTSP Streaming",
+    "icon": "mdi:video-wireless-outline",
+    "category": 1
+  },
+  {
+    "objectId": "screensaver_motion",
+    "type": "switch",
+    "name": "Screensaver motion detection",
+    "icon": "mdi:motion-sensor",
+    "category": 1
+  },
+  {
+    "objectId": "screensaver_face",
+    "type": "switch",
+    "name": "Screensaver face detection",
+    "icon": "mdi:face-recognition",
+    "category": 1
+  },
+  {
+    "objectId": "screensaver_proximity",
+    "type": "switch",
+    "name": "Screensaver proximity detection",
+    "icon": "mdi:radar",
+    "category": 1
+  },
+  {
+    "objectId": "intercom_enabled",
+    "type": "switch",
+    "name": "Intercom enabled",
+    "icon": "mdi:phone-in-talk-outline",
+    "category": 1
+  },
+  {
+    "objectId": "theme",
+    "type": "select",
+    "name": "Theme",
+    "icon": "mdi:theme-light-dark",
+    "category": 1
+  },
+  {
+    "objectId": "screensaver_mode",
+    "type": "select",
+    "name": "Screensaver mode",
+    "icon": "mdi:monitor-shimmer",
+    "category": 1
+  },
+  {
+    "objectId": "screensaver_clock_style",
+    "type": "select",
+    "name": "Clock style",
+    "icon": "mdi:clock-digital",
+    "category": 1
+  },
+  {
+    "objectId": "camera_device",
+    "type": "select",
+    "name": "Camera facing",
+    "icon": "mdi:camera-flip-outline",
+    "category": 1
+  },
+  {
+    "objectId": "battery",
+    "type": "sensor",
+    "name": "Battery",
+    "icon": "",
+    "category": 2
+  },
+  {
+    "objectId": "charging",
+    "type": "binary_sensor",
+    "name": "Charging",
+    "icon": "",
+    "category": 2
+  },
+  {
+    "objectId": "cpu",
+    "type": "sensor",
+    "name": "CPU usage",
+    "icon": "mdi:chip",
+    "category": 2
+  },
+  {
+    "objectId": "cpu_temp",
+    "type": "sensor",
+    "name": "CPU temperature",
+    "icon": "",
+    "category": 2
+  },
+  {
+    "objectId": "ram_free",
+    "type": "sensor",
+    "name": "RAM available",
+    "icon": "mdi:memory",
+    "category": 2
+  },
+  {
+    "objectId": "ram_total",
+    "type": "sensor",
+    "name": "RAM total",
+    "icon": "mdi:memory",
+    "category": 2
+  },
+  {
+    "objectId": "url",
+    "type": "text_sensor",
+    "name": "Current page",
+    "icon": "mdi:web",
+    "category": 2
+  },
+  {
+    "objectId": "foreground_app",
+    "type": "text_sensor",
+    "name": "Foreground app",
+    "icon": "mdi:application-outline",
+    "category": 2
+  },
+  {
+    "objectId": "btproxy_nearby",
+    "type": "sensor",
+    "name": "Bluetooth devices nearby",
+    "icon": "mdi:bluetooth-audio",
+    "category": 2
+  },
+  {
+    "objectId": "bt_max_connections",
+    "type": "sensor",
+    "name": "Bluetooth max connections",
+    "icon": "mdi:bluetooth-settings",
+    "category": 2
+  },
+  {
+    "objectId": "bt_devices_connected",
+    "type": "sensor",
+    "name": "Bluetooth devices connected",
+    "icon": "mdi:bluetooth-connect",
+    "category": 2
+  },
+  {
+    "objectId": "device_info",
+    "type": "text_sensor",
+    "name": "Device",
+    "icon": "mdi:information-outline",
+    "category": 2
+  },
+  {
+    "objectId": "panel_brightness",
+    "type": "sensor",
+    "name": "Panel brightness",
+    "icon": "mdi:brightness-percent",
+    "category": 2
+  },
+  {
+    "objectId": "android_version",
+    "type": "text_sensor",
+    "name": "Android version",
+    "icon": "mdi:android",
+    "category": 2
+  },
+  {
+    "objectId": "android_build",
+    "type": "text_sensor",
+    "name": "Android build",
+    "icon": "mdi:cellphone-cog",
+    "category": 2
+  },
+  {
+    "objectId": "app_version",
+    "type": "text_sensor",
+    "name": "App version",
+    "icon": "mdi:tag-outline",
+    "category": 2
+  },
+  {
+    "objectId": "ipv4_address",
+    "type": "text_sensor",
+    "name": "IPv4 address",
+    "icon": "mdi:ip-network",
+    "category": 2
+  },
+  {
+    "objectId": "ipv4_interfaces",
+    "type": "text_sensor",
+    "name": "IPv4 addresses by interface",
+    "icon": "mdi:lan",
+    "category": 2
+  },
+  {
+    "objectId": "ipv6_address",
+    "type": "text_sensor",
+    "name": "IPv6 address",
+    "icon": "mdi:ip-network-outline",
+    "category": 2
+  },
+  {
+    "objectId": "ipv6_interfaces",
+    "type": "text_sensor",
+    "name": "IPv6 addresses by interface",
+    "icon": "mdi:lan-connect",
+    "category": 2
+  },
+  {
+    "objectId": "app_uptime",
+    "type": "text_sensor",
+    "name": "App uptime",
+    "icon": "mdi:timer-outline",
+    "category": 2
+  },
+  {
+    "objectId": "network_uptime",
+    "type": "text_sensor",
+    "name": "Network uptime",
+    "icon": "mdi:timer-sync-outline",
+    "category": 2
+  },
+  {
+    "objectId": "last_seen",
+    "type": "text_sensor",
+    "name": "Last seen",
+    "icon": "mdi:clock-check-outline",
+    "category": 2
+  },
+  {
+    "objectId": "connectivity",
+    "type": "binary_sensor",
+    "name": "Connectivity",
+    "icon": "",
+    "category": 2
+  },
+  {
+    "objectId": "admin_url",
+    "type": "text_sensor",
+    "name": "Remote admin",
+    "icon": "mdi:remote-desktop",
+    "category": 2
+  }
+]
