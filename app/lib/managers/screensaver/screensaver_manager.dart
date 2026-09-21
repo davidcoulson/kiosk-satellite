@@ -166,6 +166,10 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
   String get name => 'screensaver';
 
   Timer? _idleTimer;
+
+  /// Theater mode is on: no screensaver starts, and one showing when it
+  /// turned on has been stopped. Its own brightness hold owns the panel.
+  bool _theater = false;
   Timer? _scheduleTimer;
   bool _active = false;
   bool _paused = false;
@@ -349,6 +353,15 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
       if (_paused) _stopForInteraction();
       _resetIdleTimer();
       if (!_paused) unawaited(_restoreAfterInteraction());
+    });
+    // Theater mode (IX-1) stands the screensaver down for as long as it is
+    // on, and re-arms the idle clock from zero when it ends, so the
+    // screensaver does not start the moment the lights come up.
+    bus.on<TheaterModeChanged>().listen((e) {
+      if (e.active == _theater) return;
+      _theater = e.active;
+      if (_theater && _active) unawaited(stop());
+      _resetIdleTimer();
     });
     bus.on<CameraViewStateChanged>().listen((event) {
       _cameraViewActive = event.active;
@@ -981,7 +994,10 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
   void _resetIdleTimer() {
     _idleTimer?.cancel();
     if (_cameraViewActive || _behindAnotherApp) return _setIdleDue(null);
-    if (!_settings.get(defs.screensaverEnabled) || _paused || _voiceTurn) {
+    if (!_settings.get(defs.screensaverEnabled) ||
+        _paused ||
+        _voiceTurn ||
+        _theater) {
       return _setIdleDue(null);
     }
     // Hold mode (issue #266): the current view stays put, so the idle
@@ -1185,11 +1201,12 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
     // Say why a start goes nowhere: a page hold that never gets released
     // (a leaked "interaction running" from the dashboard) otherwise reads
     // as "Now Playing launched" followed by nothing at all.
-    if (_paused || _voiceTurn || _cameraViewActive) {
+    if (_paused || _voiceTurn || _cameraViewActive || _theater) {
       final why = <String>[
         if (_paused) 'interaction held (${_interactions.held.join(', ')})',
         if (_voiceTurn) 'voice turn',
         if (_cameraViewActive) 'camera view',
+        if (_theater) 'theater mode',
       ];
       log.info(name, 'start refused: ${why.join(', ')}');
       return;

@@ -801,6 +801,17 @@ class HomeAssistantManager extends Manager {
       }
       _configureReturnHome();
     });
+    bus.on<TheaterModeChanged>().listen((e) {
+      if (e.active == _theater) return;
+      _theater = e.active;
+      if (_theater) {
+        _rotationTimer?.cancel();
+        _rotationTimer = null;
+      } else {
+        _resumeRotationIfIdle();
+      }
+      _configureReturnHome();
+    });
     bus.on<CameraViewStateChanged>().listen((event) {
       _cameraViewActive = event.active;
       if (event.active) {
@@ -829,6 +840,10 @@ class HomeAssistantManager extends Manager {
   Timer? _touchPauseTimer;
   Timer? _voiceSafetyTimer;
   bool _voiceInteracting = false;
+
+  /// Theater mode is on (IX-9): view rotation and the return-to-home timer
+  /// wait, as they do for a voice turn, and resume when it ends.
+  bool _theater = false;
   bool _cameraViewActive = false;
   bool _screensaverActive = false;
 
@@ -851,8 +866,12 @@ class HomeAssistantManager extends Manager {
       return;
     }
     // A voice interaction in progress keeps rotation held until it ends.
-    if (_voiceInteracting) {
-      log.info(name, 'view rotation enabled (held by voice interaction)');
+    if (_voiceInteracting || _theater) {
+      log.info(
+        name,
+        'view rotation enabled (held by '
+        '${_theater ? 'theater mode' : 'voice interaction'})',
+      );
     } else {
       _armRotationTimer();
       log.info(name, 'view rotation armed');
@@ -895,7 +914,10 @@ class HomeAssistantManager extends Manager {
   /// interaction and no pending touch-pause window.
   void _resumeRotationIfIdle() {
     if (!_settings.get(defs.haRotationEnabled)) return;
-    if (_voiceInteracting || _cameraViewActive || _touchPauseTimer != null) {
+    if (_voiceInteracting ||
+        _cameraViewActive ||
+        _theater ||
+        _touchPauseTimer != null) {
       return;
     }
     log.info(name, 'rotation resumed');
@@ -1008,6 +1030,7 @@ class HomeAssistantManager extends Manager {
     if (_screensaverActive ||
         _voiceInteracting ||
         _cameraViewActive ||
+        _theater ||
         _holdActive) {
       return;
     }

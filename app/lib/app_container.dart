@@ -40,6 +40,7 @@ import 'managers/sound/sound_manager.dart';
 import 'managers/settings/provisioning.dart';
 import 'managers/settings/definitions.dart' as defs;
 import 'managers/settings/settings_manager.dart';
+import 'managers/theater/theater_manager.dart';
 import 'managers/update/update_manager.dart';
 import 'managers/voice_timers/voice_timer_manager.dart';
 import 'managers/wake_word/wake_word_manager.dart';
@@ -69,6 +70,8 @@ class AppContainer {
     homeLauncher = HomeLauncherManager(bus, commands, log, settings);
     gestures = GesturesManager(bus, commands, log, settings);
     screensaver = ScreensaverManager(bus, commands, log, settings);
+    theater = TheaterManager(bus, commands, log, settings)
+      ..isTrustedOrigin = _isConfiguredOrigin;
     immich = ImmichManager(bus, commands, log, settings);
     // Before motion: its init runs the legacy motion-camera migration the
     // motion manager's gate reads.
@@ -147,6 +150,7 @@ class AppContainer {
   late final HomeLauncherManager homeLauncher;
   late final GesturesManager gestures;
   late final ScreensaverManager screensaver;
+  late final TheaterManager theater;
   late final ImmichManager immich;
   late final DeviceCameraManager deviceCamera;
   late final MotionManager motion;
@@ -194,6 +198,10 @@ class AppContainer {
     // forwards, and its acquire path invokes the kiosk_lock channel.
     homeLauncher,
     screensaver,
+    // After screen (its holdBrightness) and screensaver, which stands down
+    // on the event this publishes. Nothing here runs until something turns
+    // theater mode on.
+    theater,
     immich,
     deviceCamera,
     motion,

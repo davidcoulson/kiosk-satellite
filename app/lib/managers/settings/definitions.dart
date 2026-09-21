@@ -7953,6 +7953,155 @@ const uiScale = SettingDef<num>(
 );
 
 /// All settings, in display order.
+// Theater mode: a runtime state, not a setting (see TheaterManager). These
+// are the levels and behaviours it uses; a caller turning it on may override
+// the first six for that activation only. It lives on the Screen & Audio page
+// as a section rather than a page of its own, so the settings screen and the
+// remote admin render it with no code of their own.
+
+const theaterBacklight = SettingDef<num>(
+  key: 'theater.backlight',
+  type: SettingType.number,
+  defaultValue: 0,
+  title: 'Backlight while dimmed',
+  description:
+      'Screen brightness in theater mode. 0 is the lowest the panel can go; '
+      'the dimming layer takes it darker still.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  min: 0,
+  max: 1,
+  step: 0.05,
+  unit: '%',
+);
+
+const theaterOverlayOpacity = SettingDef<num>(
+  key: 'theater.overlay_opacity',
+  type: SettingType.number,
+  defaultValue: 0.6,
+  title: 'Dimming',
+  description:
+      'How much a black layer darkens the page in theater mode, below what '
+      'the backlight can do on its own.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  min: 0,
+  max: 0.95,
+  step: 0.05,
+  unit: '%',
+);
+
+const theaterPeekBrightness = SettingDef<num>(
+  key: 'theater.peek_brightness',
+  type: SettingType.number,
+  defaultValue: 0.3,
+  title: 'Brightness when touched',
+  description:
+      'Screen brightness while the panel is woken by a touch or an alert.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  min: 0,
+  max: 1,
+  step: 0.05,
+  unit: '%',
+);
+
+const theaterPeekSeconds = SettingDef<num>(
+  key: 'theater.peek_seconds',
+  type: SettingType.number,
+  defaultValue: 8,
+  title: 'Stay bright for',
+  description: 'How long the panel stays bright after the last touch.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  min: 3,
+  max: 60,
+  step: 1,
+  unit: 's',
+);
+
+const theaterBlackAfterMinutes = SettingDef<num>(
+  key: 'theater.black_after_minutes',
+  type: SettingType.number,
+  defaultValue: 0,
+  title: 'Go black after',
+  description:
+      'Turn the dimmed panel fully black after this long without a touch. '
+      'The screen stays on, so the next touch shows a current page. '
+      '0 never goes black.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  min: 0,
+  max: 240,
+  step: 5,
+  unit: ' min',
+);
+
+const theaterFirstTouchWakes = SettingDef<bool>(
+  key: 'theater.first_touch_wakes',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'First touch only wakes the screen',
+  description:
+      'While dimmed, the first touch brightens the panel and is not passed '
+      'to the page, so a finger landing on a button in the dark presses '
+      'nothing.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+);
+
+const theaterIgnoreAmbientWake = SettingDef<bool>(
+  key: 'theater.ignore_ambient_wake',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Ignore people moving',
+  description:
+      'Motion, face, proximity and person detection do not brighten the '
+      'panel in theater mode. Home Assistant still sees them.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+);
+
+const theaterPeekOnAlerts = SettingDef<bool>(
+  key: 'theater.peek_on_alerts',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Brighten for alerts',
+  description:
+      'Announcements, notifications, camera views, voice turns and the '
+      'intercom brighten the panel while they show.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+);
+
+const theaterMuteWakeWord = SettingDef<bool>(
+  key: 'theater.mute_wake_word',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Mute the wake word',
+  description:
+      'Stop listening for the wake word in theater mode, so a film cannot '
+      'set it off. It comes back when theater mode ends.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+);
+
+const theaterMaxHours = SettingDef<num>(
+  key: 'theater.max_hours',
+  type: SettingType.number,
+  defaultValue: 6,
+  title: 'Turn off after',
+  description:
+      'Theater mode turns itself off after this long however it was turned '
+      'on, so a lost "off" never leaves the panel dark for days.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  min: 0.05,
+  max: 24,
+  step: 0.05,
+  unit: ' h',
+);
+
 const List<SettingDef<Object>> allSettings = [
   startUrl,
   secureProxy,
@@ -8398,4 +8547,14 @@ const List<SettingDef<Object>> allSettings = [
   intercomRingSound,
   intercomAcceptAnnouncements,
   intercomTalkMode,
+  theaterBacklight,
+  theaterOverlayOpacity,
+  theaterPeekBrightness,
+  theaterPeekSeconds,
+  theaterBlackAfterMinutes,
+  theaterFirstTouchWakes,
+  theaterIgnoreAmbientWake,
+  theaterPeekOnAlerts,
+  theaterMuteWakeWord,
+  theaterMaxHours,
 ];

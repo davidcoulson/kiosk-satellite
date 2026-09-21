@@ -70,6 +70,38 @@ class BrightnessChanged extends AppEvent {
   Map<String, Object?> toJson() => {'level': level, 'panel': panel};
 }
 
+// ── Theater mode ───────────────────────────────────────────────────────
+
+/// Theater mode turned on or off, or moved between its phases (see
+/// TheaterManager). The page hears it as `kiosksatellite:theatermode`; the
+/// screensaver, adaptive brightness and the wake word stand down on it.
+class TheaterModeChanged extends AppEvent {
+  const TheaterModeChanged({
+    required this.active,
+    required this.phase,
+    required this.source,
+  });
+
+  final bool active;
+
+  /// 'off', 'dim', 'peek' or 'black'.
+  final String phase;
+
+  /// Who caused it: 'page', 'ha', 'remote', 'link', 'timeout' or
+  /// 'navigation'.
+  final String source;
+
+  @override
+  String get wireName => 'theatermode';
+
+  @override
+  Map<String, Object?> toJson() => {
+    'active': active,
+    'phase': phase,
+    'source': source,
+  };
+}
+
 // ── Screensaver ────────────────────────────────────────────────────────
 
 class ScreensaverStateChanged extends AppEvent {

@@ -316,7 +316,13 @@ class WakeWordManager extends Manager
 
   /// The satellite is muted (the card said so when it released the mic).
   /// Carried on [WakeWordStateChanged] so the clap detector goes quiet too.
-  bool get _muted => _released && _releaseReason == 'muted';
+  bool get _muted => (_released && _releaseReason == 'muted') || _theaterMuted;
+
+  /// Theater mode is on with "Mute the wake word" set (IX-7). Stops the
+  /// engine through [_sync] exactly as Lockdown Mode does, and it comes back
+  /// through the same sync when theater mode ends, with no setting touched
+  /// and no need for the page to push its configuration again.
+  bool _theaterMuted = false;
 
   /// Actively detecting. The engine can be running (mic open, models loaded)
   /// while detection is paused for the duration of a voice turn.
@@ -672,6 +678,16 @@ class WakeWordManager extends Manager
       } else {
         _stopMicLevelWatch();
       }
+    });
+    bus.on<TheaterModeChanged>().listen((e) {
+      final muted = e.active && _settings.get(defs.theaterMuteWakeWord);
+      if (muted == _theaterMuted) return;
+      _theaterMuted = muted;
+      log.info(
+        name,
+        muted ? 'muted for theater mode' : 'unmuted after theater mode',
+      );
+      unawaited(_sync());
     });
     bus.on<VoiceInteractionChanged>().listen((e) {
       if (e.reason != 'intercom' || e.active == _intercomHold) return;
@@ -1348,7 +1364,10 @@ class WakeWordManager extends Manager
     // comes back through this same sync when the mode lifts, exactly as if
     // the wake word toggle had been flipped, without touching the setting.
     final shouldRun =
-        enabled && available && !_settings.get(defs.lockdownEnabled);
+        enabled &&
+        available &&
+        !_settings.get(defs.lockdownEnabled) &&
+        !_theaterMuted;
     // A config that switched runners (vsWakeWord -> microWakeWord) leaves the
     // previous engine running and holding the mic. Stop it before starting the
     // new one, or two engines fight over the microphone.
