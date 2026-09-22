@@ -905,6 +905,9 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'overviewWakeFailed' => strings.overviewWakeFailed,
       'overviewNativeListening' => strings.overviewNativeListening,
       'overviewSuspended' => strings.overviewSuspended,
+      'overviewCpu' => strings.overviewCpu,
+      'overviewMemory' => strings.overviewMemory,
+      'overviewTemperature' => strings.overviewTemperature,
       'overviewNoScreenshot' => strings.overviewNoScreenshot,
       'overviewStill' => strings.overviewStill,
       'overviewLive' => strings.overviewLive,
@@ -2809,6 +2812,10 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingScreensaverImmichTagsTitle,
       'settingScreensaverImmichTagsDescription' =>
         strings.settingScreensaverImmichTagsDescription,
+      'settingScreensaverImmichExcludeTagsTitle' =>
+        strings.settingScreensaverImmichExcludeTagsTitle,
+      'settingScreensaverImmichExcludeTagsDescription' =>
+        strings.settingScreensaverImmichExcludeTagsDescription,
       'settingScreensaverImmichFavoritesOnlyTitle' =>
         strings.settingScreensaverImmichFavoritesOnlyTitle,
       'settingScreensaverImmichFavoritesOnlyDescription' =>
@@ -2832,6 +2839,9 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'screensaverMediaNoOneDevice' => strings.screensaverMediaNoOneDevice,
       'screensaverMediaAny' => strings.screensaverMediaAny,
       'screensaverMediaAnyDevice' => strings.screensaverMediaAnyDevice,
+      'screensaverMediaNoTagsChosen' => strings.screensaverMediaNoTagsChosen,
+      'screensaverMediaNoTagsChosenDevice' =>
+        strings.screensaverMediaNoTagsChosenDevice,
       'screensaverMediaNoPeople' => strings.screensaverMediaNoPeople,
       'screensaverMediaNoTags' => strings.screensaverMediaNoTags,
       'screensaverMediaPeopleFailed' => strings.screensaverMediaPeopleFailed,
@@ -2910,6 +2920,10 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingScreensaverImmichPairPortraitTitle,
       'settingScreensaverImmichPairPortraitDescription' =>
         strings.settingScreensaverImmichPairPortraitDescription,
+      'settingScreensaverImmichPairLandscapeTitle' =>
+        strings.settingScreensaverImmichPairLandscapeTitle,
+      'settingScreensaverImmichPairLandscapeDescription' =>
+        strings.settingScreensaverImmichPairLandscapeDescription,
       'settingScreensaverImmichEdgeTapsTitle' =>
         strings.settingScreensaverImmichEdgeTapsTitle,
       'settingScreensaverImmichEdgeTapsDescription' =>
@@ -3209,6 +3223,62 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.screensaverSummaryNowPlayingOn,
       'screensaverSummaryNowPlayingOff' =>
         strings.screensaverSummaryNowPlayingOff,
+      'screensaverWeatherMood' => strings.screensaverWeatherMood,
+      'screensaverWeatherMoodPage' => strings.screensaverWeatherMoodPage,
+      'screensaverWeatherMoodSummary' => strings.screensaverWeatherMoodSummary,
+      'settingScreensaverWeatherEntityTitle' =>
+        strings.settingScreensaverWeatherEntityTitle,
+      'settingScreensaverWeatherEntityDescription' =>
+        strings.settingScreensaverWeatherEntityDescription,
+      'settingScreensaverWeatherLightningTitle' =>
+        strings.settingScreensaverWeatherLightningTitle,
+      'settingScreensaverWeatherLightningDescription' =>
+        strings.settingScreensaverWeatherLightningDescription,
+      'screensaverWeatherMoodSelectEntity' =>
+        strings.screensaverWeatherMoodSelectEntity,
+      'screensaverWeatherPreviewGroup' =>
+        strings.screensaverWeatherPreviewGroup,
+      'settingScreensaverWeatherPreviewTitle' =>
+        strings.settingScreensaverWeatherPreviewTitle,
+      'settingScreensaverWeatherPreviewDescription' =>
+        strings.settingScreensaverWeatherPreviewDescription,
+      'settingScreensaverWeatherPreviewConditionTitle' =>
+        strings.settingScreensaverWeatherPreviewConditionTitle,
+      'settingScreensaverWeatherPreviewConditionDescription' =>
+        strings.settingScreensaverWeatherPreviewConditionDescription,
+      'settingScreensaverWeatherPreviewPeriodTitle' =>
+        strings.settingScreensaverWeatherPreviewPeriodTitle,
+      'settingScreensaverWeatherPreviewPeriodDescription' =>
+        strings.settingScreensaverWeatherPreviewPeriodDescription,
+      'screensaverWeatherPreviewSunny' =>
+        strings.screensaverWeatherPreviewSunny,
+      'screensaverWeatherPreviewPartlycloudy' =>
+        strings.screensaverWeatherPreviewPartlycloudy,
+      'screensaverWeatherPreviewCloudy' =>
+        strings.screensaverWeatherPreviewCloudy,
+      'screensaverWeatherPreviewRainy' =>
+        strings.screensaverWeatherPreviewRainy,
+      'screensaverWeatherPreviewPouring' =>
+        strings.screensaverWeatherPreviewPouring,
+      'screensaverWeatherPreviewSnowy' =>
+        strings.screensaverWeatherPreviewSnowy,
+      'screensaverWeatherPreviewSnowyRainy' =>
+        strings.screensaverWeatherPreviewSnowyRainy,
+      'screensaverWeatherPreviewFog' => strings.screensaverWeatherPreviewFog,
+      'screensaverWeatherPreviewHail' => strings.screensaverWeatherPreviewHail,
+      'screensaverWeatherPreviewLightning' =>
+        strings.screensaverWeatherPreviewLightning,
+      'screensaverWeatherPreviewLightningRainy' =>
+        strings.screensaverWeatherPreviewLightningRainy,
+      'screensaverWeatherPreviewWindy' =>
+        strings.screensaverWeatherPreviewWindy,
+      'screensaverWeatherPreviewWindyVariant' =>
+        strings.screensaverWeatherPreviewWindyVariant,
+      'screensaverWeatherPreviewExceptional' =>
+        strings.screensaverWeatherPreviewExceptional,
+      'screensaverWeatherPreviewDay' => strings.screensaverWeatherPreviewDay,
+      'screensaverWeatherPreviewNight' =>
+        strings.screensaverWeatherPreviewNight,
       'settingScreensaverWebsiteUrlTitle' =>
         strings.settingScreensaverWebsiteUrlTitle,
       'settingScreensaverWebsiteUrlDescription' =>

@@ -2,6 +2,46 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
+## v2026.9.74 - 2026-09-22
+
+### Added
+- **Weather Mood screensaver.** Animated skies follow a Home Assistant weather entity, with day and night scenes controlled by `sun.sun` and local time as a fallback. Clouds, rain, snow, fog, hail and thunderstorms support all corner widgets and At a Glance pills. Pick the weather entity and control lightning flashes from the device or Remote Admin, with English, German, Spanish and French translations. Until an entity is selected, a black screen explains where to choose one. Older devices use fewer cloud samples, a lower frame rate and adaptive resolution to keep the dashboard responsive, with a quiet background if the weather renderer stops.
+- **Preview Weather Mood scenes.** A Weather Preview group on the device and in Remote Admin lets you enable preview and choose any weather scene in its day or night variant. Preview works without a weather entity and returns to live weather when disabled. Its settings stay local to each kiosk.
+
+### Changed
+- **A cleaner full screen intercom kiosk list.** Rounded rows use one call icon per kiosk with consistent spacing and larger status text. Smaller headings and a more compact Announce to all button keep the list in focus. Long names can wrap and unavailable kiosks keep their status readable.
+
+### Fixed
+- **Weather Mood uses the standard on-device entity picker.** The selected weather entity appears by friendly name in the same boxed control used for the Announcements text to speech engine. The radio list shows entity IDs below their names and lets you clear the selection.
+- **Unsupported device languages fall back to English.** Generated translation catalogs no longer cause the app to choose German when the device language is unavailable.
+- **The sun and moon stay smooth at reduced cloud resolution.** A separate rendering pass preserves their detail while reusing cloud and fog coverage. Older devices also get a modest increase in cloud detail.
+
+## v2026.9.73 - 2026-09-21
+
+### Added
+- **Pair landscape photos on the Immich Media screensaver.** The mirror of Pair portrait photos for a portrait mounted tablet: two landscape photos stack one above the other and fill the screen instead of sitting small between blurred bands or losing their subject to a crop. It works the same way, one slide for the pair, the playlist rearranged so each landscape photo reaches ahead for the next, square photos and videos left alone, and it only acts on a portrait screen, so both settings can stay on and the frame does the right thing whichever way it is mounted. With the metadata overlay on, each photo gets its own panel in its own bottom corner on the overlay's side, so the screen's top corners stay free for widgets (#644).
+- **Exclude tags on the Immich Media screensaver.** A new filter next to Tags, mirroring Exclude people: any asset carrying one of the selected tags stays out of the playlist, whatever albums, people or other tags it matches. Excluding a parent tag covers its child tags too. Tag the few photos that do not belong on a shared screen and the rest of the library keeps flowing in without curation (#645).
+
+## v2026.9.72 - 2026-09-21
+
+### Fixed
+- **Camera views no longer skip HLS on a slow start.** The camera page loads its HLS player separately, and on a slow open the page could start connecting before the player had finished loading, log "HLS unavailable (no MediaSource)" and move on to WebRTC and MJPEG as if the device could not play HLS at all. A Home Assistant camera whose WebRTC path delivers nothing then sat on retries for half a minute before a picture appeared. The page now waits for the player to load before deciding, and the warning names a player that did not load separately from a device with no MediaSource (#643).
+
+## v2026.9.71 - 2026-09-21
+
+### Added
+- **CPU, memory and temperature tiles on the Overview.** Three new tiles in the Status card, CPU, RAM and Temp, show the last fifteen minutes of CPU load, memory use and CPU temperature as a terminal style stack of cells, one column per sample, lit up to the value and colored green, amber or red by the band each cell sits in, with the scale's ceiling and floor beside it. The device samples every fifteen seconds whether or not an admin page is open, so the chart is full the moment the page connects. The state line carries the live value, free memory in GB for the memory tile, and the dot follows the same thresholds as the header's temperature tint. The `stats` push and `getStats` now include free and total memory and `getStatsHistory` returns the samples.
+
+### Changed
+- **The intercom takes the whole screen.** Call a kiosk is now a full screen like the app launcher, on the same ground, instead of a dialog: Announce to all at the top and every kiosk as a row with its name and status in two columns on a tablet, a Ready kiosk's row placing the call and the others staying on the list dimmed with their reason. The call itself fills the screen too, with the other kiosk's name large, the timer under it, a twelve bar level meter that rises with the voice and bigger call buttons. With push to talk the End or Done button sits under the talk button, beside it only on a short screen such as a phone on its side, and the line under the name says who hears you while it is held. The X, back, HOME, a call starting and the screensaver all close the Call a kiosk screen. The app launcher carries the same mark and name in its top left corner, so the two full screen views read as one family, and a tap on the empty ground no longer closes either of them: the X, back or a back swipe does.
+- **Quick controls on the Overview are wide tiles.** The icon now sits beside a left-aligned label instead of above it, so a label that wraps to two lines, Postpone screensaver or a longer translation, no longer stretches the row and leaves its one-line neighbors with more room under the text than above the icon. Every tile in the grid keeps the same inset, four fit across the desktop column and a phone keeps two per row. The icon colors now step through the accents by row and column rather than in markup order, so a column is never one color top to bottom.
+
+## v2026.9.70 - 2026-09-21
+
+### Fixed
+- **Refreshing the Home Assistant Update entity now checks for a release.** Calling `homeassistant.update_entity` on the kiosk's Update entity used to be logged and ignored, so a release that had already landed in a custom repository stayed hidden until the next scheduled check or an app restart. It now runs the same immediate check as tapping the version line in the remote admin and the entity refreshes when the answer differs (#635).
+- **Quiet microphones no longer end up on the wrong capture format.** Some microphones hand over exact zeros whenever the room is quiet, and two seconds of that used to walk capture down the format ladder and leave it on 48 kHz mono for good, where voice stopped working on Lenovo M10 tablets. A format that has delivered audio is now trusted through thirty seconds of silence, and when every format reads silence capture returns to the one that worked, retrying the ladder after a wait that doubles up to ten minutes instead of logging a warning every two seconds (#638).
+
 ## v2026.9.69 - 2026-09-21
 
 ### Changed

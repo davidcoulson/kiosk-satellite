@@ -23,6 +23,7 @@ The settings page is organized into five main sections: Server Connection, Media
 | Slideshow | Transition | Crossfade | Options include none, crossfade, slide, zoom, Ken Burns, or random. |
 | Slideshow | Fill the screen | Smart | Controls how aggressively photos are cropped to fit the screen. |
 | Slideshow | Pair portrait photos | on | Displays two portrait photos side by side in landscape mode. |
+| Slideshow | Pair landscape photos | on | Displays two landscape photos one above the other in portrait mode. |
 | Slideshow | Tap edges to change slides | on | A tap on the left or right fifth of the screen shows the previous or next photo instead of dismissing the screensaver. |
 | Metadata | Show metadata | off | Displays photo details in a designated corner of the screen. |
 | Metadata | Album name, Date taken, Camera details, Location | on | Toggles individual metadata lines. |
@@ -31,6 +32,7 @@ The settings page is organized into five main sections: Server Connection, Media
 | Filters | People | Anyone | Filter by specific recognized individuals. |
 | Filters | Exclude people | No one | Exclude media containing specific individuals. |
 | Filters | Tags | Any | Filter by specific Immich tags. |
+| Filters | Exclude tags | No tags | Exclude media carrying specific Immich tags. |
 | Filters | Favorites only | off | Limits the slideshow to photos marked as favorites in Immich. |
 | Filters | Taken within | Any time | Restricts photos based on a rolling or pinned timeframe. |
 | Filters | From | Any time | Defines the starting date for Since or Timeframe filters. |
@@ -45,6 +47,7 @@ A full phone backup often contains receipts, documents, and screenshots alongsid
 * **People:** Displays media containing any of the selected individuals. Tap the row to select recognized people from your Immich library. Be sure to name your recognized face clusters in Immich first, as unnamed clusters will not appear in the picker. Individuals you have hidden in Immich will appear marked as **Hidden** with a struck out eye icon. Hiding someone in Immich only removes them from Immich's internal views, so both filters still work as expected.
 * **Exclude people:** Automatically skips any media containing the specified people, regardless of who else is in the shot. Because Immich cannot perform this check directly, the kiosk requests person data for each asset and filters out matches locally.
 * **Tags:** Limits media to assets tagged with specific keywords using full path names (e.g., `Family/Kids`).
+* **Exclude tags:** Skips any media carrying one of the selected tags, no matter which albums, people or other tags it matches. Tag the handful of photos that do not belong on a shared screen (a `kiosk-hide` tag, say) and leave the rest of the library alone, so new uploads show up without any curation step. Immich tags are hierarchical, and excluding a parent tag also excludes everything under it. The search API cannot exclude by tag, so the kiosk lists the assets behind each excluded tag first and drops them from the playlist locally.
 * **Favorites only:** Restricts playback to items you have starred or favorited in Immich. This is often the easiest way to curate a display list.
 * **Taken within:** Filters photos outside a specific time window. Rolling options include the past month, 3 months, 1 year, 2 years, 5 years, or 10 years, moving along automatically with the calendar. Selecting **Since** or **Timeframe** pins a fixed window instead. **Since** reveals a **From** date to display everything taken from that point forward. **Timeframe** reveals both **From** and **To** dates, displaying photos taken between those dates inclusive. You can select dates directly from the calendar picker or tap the month header to jump straight to a year. Tapping **Clear** in the picker leaves an end open, while choosing **Any time** removes the filter entirely. Fixed date ranges work best for events like weddings or births where you want a consistent starting point.
 
@@ -64,7 +67,7 @@ Most users prefer photos to fill the entire display. The **Fill the screen** set
 
 The **Always** mode has no awareness of a photo's subject, so anything outside the crop area is lost. If a photo features an off center subject like a person or a pet, this setting may crop them out.
 
-For portrait photos on landscape screens, the **Pair portrait photos** setting provides a much better solution without severe cropping.
+For portrait photos on landscape screens, the **Pair portrait photos** setting provides a much better solution without severe cropping, and **Pair landscape photos** does the same for landscape photos on portrait screens.
 
 ## Pair Portrait Photos
 
@@ -77,6 +80,12 @@ The pairing logic intelligently searches your playlist. When the playlist loads,
 To pair up, both images must be taller than they are wide (square images are excluded since fitting two on a screen would make them very small), and the device must be in landscape orientation. Videos are never paired. If an odd number of portrait photos leaves one without a partner, it displays on its own as usual. Photos are measured using the dimensions reported by Immich, which accounts for orientation EXIF tags automatically.
 
 When the metadata overlay is enabled, a portrait pair displays two distinct sets of details: the left photo's information sits in the bottom left corner, and the right photo's details sit in the bottom right corner directly beneath each image. While a pair is on screen, any [widgets](screensavers.md#widgets) in those two bottom corners are temporarily hidden so details remain readable. They reappear automatically on the next single photo slide.
+
+## Pair Landscape Photos
+
+A portrait mounted tablet has the opposite problem: landscape photos either sit small between two blurred bands or lose their subject to a heavy crop. With **Pair landscape photos** enabled (on by default), the app stacks two landscape photos, one above the other, each filling half the screen's height. It works exactly like portrait pairing, only turned on its side: a pair counts as one slide, the playlist is rearranged so each landscape photo reaches ahead for the next landscape photo, square images and videos never pair, an odd photo out shows on its own and the device must be in portrait orientation. Each setting only acts on the screen shape it names, so leaving both on lets the same configuration follow the frame whichever way it is mounted.
+
+With the metadata overlay on, a stacked pair puts each photo's details in the bottom corner of that photo, on the side your **Metadata position** setting names: the top photo's halfway down the screen and the bottom photo's in the screen's bottom corner. Only that bottom corner is taken from the [widgets](screensavers.md#widgets), so the top corners stay available to them.
 
 ## Metadata Overlay
 
@@ -93,7 +102,7 @@ When placed in a right hand corner, text and icons align to the right, mirroring
 
 The **Text scaling** slider (50% to 200%) sizes the details text, icons and spacing for the screen and previews live while the screensaver is running. It stays out of [fleet](fleet.md) sync by default like the other scale settings, since it corrects for one panel. **Text drop shadow** is enabled by default and adds a defined shadow beneath metadata text. It is independent of the widget text shadow toggle and updates live. The overlay rests on a subtle dark vignette to keep text readable against bright photos. You can adjust the **Vignette strength** slider from 0 to 100 percent (40 percent by default). Setting it to 0 removes the vignette entirely, leaving clean text over the photo.
 
-When a pair of portrait photos is on screen, the overlay overrides your corner selection and uses both bottom corners so each photo's metadata sits directly underneath it.
+When a pair of portrait photos is on screen, the overlay overrides your corner selection and uses both bottom corners so each photo's metadata sits directly underneath it. A stacked pair of landscape photos keeps your chosen side and puts each photo's details in the bottom corner of that photo.
 
 ## The Local Cache
 

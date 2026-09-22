@@ -227,6 +227,7 @@ const Map<String, String> subpageHints = {
   'Photo Gallery screensaver': 'Photos, timing, shuffle, transition',
   'Immich Media screensaver': 'Server, media, slideshow, metadata, filters',
   'Camera Streams screensaver': 'Views to show, seconds per view, sound',
+  'Weather Mood screensaver': 'Weather entity, lightning, preview',
   'Widgets': 'Corner overlays and their scale',
   'At a Glance': 'Entities shown over the screensaver',
   'RTSP & ONVIF Streaming': 'Share the device camera via RTSP or ONVIF',
@@ -1726,6 +1727,7 @@ const screensaverMode = SettingDef<String>(
     'dim',
     'black',
     'clock',
+    'weather_mood',
     'media',
     'local',
     'gallery',
@@ -1737,6 +1739,7 @@ const screensaverMode = SettingDef<String>(
     'dim': 'Dim',
     'black': 'Black',
     'clock': 'Clock',
+    'weather_mood': 'Weather Mood',
     'media': 'Home Assistant Media',
     'local': 'Local Media',
     'gallery': 'Photo Gallery',
@@ -1744,6 +1747,109 @@ const screensaverMode = SettingDef<String>(
     'website': 'Website',
     'camera': 'Camera Streams',
   },
+);
+
+// Weather Mood follows the selected weather entity and sun.sun.
+const screensaverWeatherEntity = SettingDef<String>(
+  key: 'screensaver.weather_entity',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Weather entity',
+  description:
+      'The Home Assistant weather entity that controls the animated scene. Day and night follow sun.sun, with local time as a fallback.',
+  category: 'Screensaver',
+  section: 'Weather Mood screensaver',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'weather_mood',
+);
+
+const screensaverWeatherLightning = SettingDef<bool>(
+  key: 'screensaver.weather_lightning',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Lightning flashes',
+  description: 'Show lightning strikes and cloud flashes during thunderstorms.',
+  category: 'Screensaver',
+  section: 'Weather Mood screensaver',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'weather_mood',
+);
+
+const screensaverWeatherPreview = SettingDef<bool>(
+  key: 'screensaver.weather_preview',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Enable weather preview',
+  description:
+      'Show the selected scene instead of live weather. Turn off to follow Home Assistant again.',
+  category: 'Screensaver',
+  section: 'Weather Preview',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'weather_mood',
+  perDevice: true,
+);
+
+const screensaverWeatherPreviewCondition = SettingDef<String>(
+  key: 'screensaver.weather_preview_condition',
+  type: SettingType.select,
+  defaultValue: 'sunny',
+  title: 'Weather type',
+  description: 'The animated weather scene to preview.',
+  category: 'Screensaver',
+  section: 'Weather Preview',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_preview',
+  perDevice: true,
+  options: [
+    'sunny',
+    'partlycloudy',
+    'cloudy',
+    'rainy',
+    'pouring',
+    'snowy',
+    'snowy-rainy',
+    'fog',
+    'hail',
+    'lightning',
+    'lightning-rainy',
+    'windy',
+    'windy-variant',
+    'exceptional',
+  ],
+  optionLabels: {
+    'sunny': 'Clear',
+    'partlycloudy': 'Partly cloudy',
+    'cloudy': 'Cloudy',
+    'rainy': 'Rain',
+    'pouring': 'Heavy rain',
+    'snowy': 'Snow',
+    'snowy-rainy': 'Snow and rain',
+    'fog': 'Fog',
+    'hail': 'Hail',
+    'lightning': 'Lightning',
+    'lightning-rainy': 'Lightning and rain',
+    'windy': 'Wind',
+    'windy-variant': 'Wind and clouds',
+    'exceptional': 'Exceptional weather',
+  },
+);
+
+const screensaverWeatherPreviewPeriod = SettingDef<String>(
+  key: 'screensaver.weather_preview_period',
+  type: SettingType.select,
+  defaultValue: 'day',
+  title: 'Time of day',
+  description: 'Choose the day or night version of the scene.',
+  category: 'Screensaver',
+  section: 'Weather Preview',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_preview',
+  perDevice: true,
+  options: ['day', 'night'],
+  optionLabels: {'day': 'Day', 'night': 'Night'},
 );
 
 // ── Black (mode: black) ──
@@ -2803,6 +2909,23 @@ const screensaverImmichPairPortrait = SettingDef<bool>(
   dependsOn: 'screensaver.immich_validated',
 );
 
+// The same for a portrait panel: two landscape photos one above the other
+// (issue #644). Each setting only ever acts on the panel shape it names,
+// so both stay on by default and the frame does the right thing whichever
+// way it is mounted.
+const screensaverImmichPairLandscape = SettingDef<bool>(
+  key: 'screensaver.immich_pair_landscape',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Pair landscape photos',
+  description:
+      'Show two landscape photos one above the other so they fill a portrait screen.',
+  category: 'Screensaver',
+  section: 'Slideshow',
+  subpage: 'Immich Media screensaver',
+  dependsOn: 'screensaver.immich_validated',
+);
+
 const screensaverImmichEdgeTaps = SettingDef<bool>(
   key: 'screensaver.immich_edge_taps',
   type: SettingType.boolean,
@@ -3009,6 +3132,18 @@ const screensaverImmichTags = SettingDef<String>(
   defaultValue: '[]',
   title: 'Tags',
   description: 'Show only media with any of these tags.',
+  category: 'Screensaver',
+  section: 'Filters',
+  subpage: 'Immich Media screensaver',
+  dependsOn: 'screensaver.immich_validated',
+);
+
+const screensaverImmichExcludeTags = SettingDef<String>(
+  key: 'screensaver.immich_exclude_tags',
+  type: SettingType.string,
+  defaultValue: '[]',
+  title: 'Exclude tags',
+  description: 'Skip media with any of these tags.',
   category: 'Screensaver',
   section: 'Filters',
   subpage: 'Immich Media screensaver',
@@ -8061,6 +8196,11 @@ const List<SettingDef<Object>> allSettings = [
   screensaverMiniClock24h,
   screensaverMiniClockDate,
   screensaverMode,
+  screensaverWeatherEntity,
+  screensaverWeatherLightning,
+  screensaverWeatherPreview,
+  screensaverWeatherPreviewCondition,
+  screensaverWeatherPreviewPeriod,
   // One titled panel per mode, in the dropdown's order; only the panel of
   // the selected mode is visible (each setting depends on the mode).
   screensaverDimLevel,
@@ -8123,6 +8263,7 @@ const List<SettingDef<Object>> allSettings = [
   screensaverImmichTransition,
   screensaverImmichFill,
   screensaverImmichPairPortrait,
+  screensaverImmichPairLandscape,
   screensaverImmichEdgeTaps,
   screensaverImmichMetadata,
   screensaverImmichMetadataAlbum,
@@ -8136,6 +8277,7 @@ const List<SettingDef<Object>> allSettings = [
   screensaverImmichPeople,
   screensaverImmichExcludePeople,
   screensaverImmichTags,
+  screensaverImmichExcludeTags,
   screensaverImmichFavoritesOnly,
   screensaverImmichTakenWithin,
   screensaverImmichTakenFrom,
