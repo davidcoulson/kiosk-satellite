@@ -2,13 +2,31 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
-## v2026.9.74-djc
+## v2026.9.76-djc
 
 ### Added
 - **Theater mode.** Takes a panel in a dark room darker than its backlight goes, keeps motion and faces from lighting it, brightens it for a few seconds on a touch or an alert, and optionally goes black after a spell. The first touch in the dark wakes the panel without pressing anything. It is never stored and never writes brightness settings, so a restart or its end puts the panel back exactly as it was; a six hour cap ends a forgotten one. Driven from the page's JavaScript API, an ESPHome switch, button and action, the remote API and `ks://theater` links. See [Theater Mode](docs/theater.md).
 - **Theater mode for a page in a frame.** A web app shown on a Home Assistant Webpage dashboard can use theater mode through the dashboard, so Voice Satellite keeps running around it. Only the page named in the new Page allowed from a frame setting, and only theater mode; frames still never get the page bridge.
 - **A navigate command.** Moves the main page to a URL, path or `#` route, changing a route in place without a reload. On the remote API and as an ESPHome action.
 - **A custom start page.** The Start page can be a custom http or https address instead of a Home Assistant dashboard. It counts as the dashboard, may use theater mode, and is never handed the Home Assistant session. Home Assistant's Default dashboard select offers it as Start page.
+
+## v2026.9.76 - 2026-09-22
+
+### Changed
+- **Weather Mood renders directly in Flutter.** Native GPU shaders draw the sky and clouds while Flutter draws rain, snow, hail and lightning. The screensaver no longer needs a WebView. The sun, moon and stars stay sharp as cloud resolution adjusts on slower devices. Weather entities, day and night scenes, previews, widgets and At a Glance work as before.
+- **Weather Mood reuses backgrounds on older devices.** The sky stays cached at the display's resolution and clouds update separately from precipitation. Rain, snow, stars and lightning can animate more often without reducing cloud detail further. Preview changes still update immediately.
+
+### Fixed
+- **Portal Go camera images reach Home Assistant.** Camera snapshots now omit unused bytes after the JPEG end marker. The Portal Go could append more than 12 MB of padding to a small image, causing Home Assistant to discard it for exceeding its image size limit. The original image quality and metadata are preserved.
+
+## v2026.9.75 - 2026-09-22
+
+### Added
+- **Internal storage sensors in ESPHome.** Internal storage free and Internal storage total appear alongside the RAM diagnostics in Home Assistant. They report the available space and capacity of Android's internal data partition in MiB and refresh every minute (#650).
+
+### Fixed
+- **ESPHome camera previews keep entities online.** Large camera images now send in chunks as the connection drains instead of filling the outgoing message queue and disconnecting Home Assistant. Opening a camera preview or refreshing the device page no longer interrupts sensor updates on affected devices such as the Portal Go.
+- **Weather Mood skies render on affected Android GPUs.** The sky texture is now allocated before it is attached to the render target and attached again after resizing. This fixes a black background with only precipitation visible on devices such as the Galaxy Tab S8, including missing clouds, sun and moon.
 
 ## v2026.9.74 - 2026-09-22
 
