@@ -28,6 +28,16 @@ The screensaver never starts while [theater mode](theater.md) is on, and one sho
 
 ## The Modes
 
+### Weather Mood
+
+Choose **Weather Mood** and open its subpage to pick a Home Assistant `weather.*` entity. Animated skies follow all 15 Home Assistant weather conditions, including rain, snow, fog, hail, wind and thunderstorms. The scene changes between day and night using `sun.sun`. If that entity is unavailable, local time supplies daytime from 6 AM to 6 PM.
+
+Weather Mood displays only the animated scene. Add a weather widget under **Widgets** to show weather information. All widget types can use any corner and At a Glance pills remain available. Outside preview mode, if no weather entity is selected for Weather Mood, a black screen asks you to select one in its settings. Widgets and At a Glance stay hidden until an entity is selected.
+
+The **Weather Preview** group on the device and in Remote Admin lets you try any scene. Turn on **Enable weather preview** to reveal **Weather type** and **Time of day**. The active Weather Mood screensaver changes immediately to your selection, including when no weather entity is configured. Turn preview off to follow Home Assistant again. Preview changes only the animated background, so weather widgets continue showing their own entity readings. Preview settings stay local to each kiosk.
+
+Turn off **Lightning flashes** to keep thunderstorm clouds and rain without the flashes. The renderer works from bundled assets, pauses when the display turns off or the app goes into the background and respects reduced motion. Older devices use fewer cloud samples, a smaller render surface and a lower frame rate. The resolution decreases further when frames remain slow. A separate pass adds detail around the sun and moon so their shapes stay smooth as cloud detail decreases. If weather data becomes unavailable, the scene retains its last known condition. Before the first valid reading it shows a neutral cloudy sky.
+
 ### Dim
 
 Reduces the display backlight to the configured **Dim level** while keeping the live Home Assistant dashboard visible underneath. Because the dashboard remains visible, the **Pause dashboard during screensaver** optimization cannot be applied in this mode. As a result, the browser process continues to consume CPU, GPU, and battery power.
@@ -82,7 +92,7 @@ Operates similarly to Local Media, but selects files using the native system gal
 
 ### Immich Media
 
-Turns the kiosk into an automated photo frame backed by an [Immich](https://immich.app/) server. Includes local image caching, optional metadata overlays, and intelligent side-by-side portrait pairing. Detailed documentation is available on the [Immich](immich.md) guide page.
+Turns the kiosk into an automated photo frame backed by an [Immich](https://immich.app/) server. Includes local image caching, optional metadata overlays, and intelligent photo pairing: portrait photos side by side on landscape screens, landscape photos stacked on portrait screens. Detailed documentation is available on the [Immich](immich.md) guide page.
 
 ### Website
 
@@ -127,7 +137,7 @@ Widgets are small status overlays anchored to display corners, configured within
 
 Every widget has its own **Scale** slider (-50% to +50%) in its editor, which sizes that widget relative to the others. The **Global widget scaling** slider (50% to 200%) then scales all of them together for the display, keeping their relative sizes, and previews live while the screensaver is running. Widgets draw in Rubik unless the **Global font family** and **Global font weight** rows say otherwise, with the same choices as the Clock screensaver's Font Family and Font weight rows. Each widget's editor has its own **Font family** and **Font weight** pickers, Default following the global rows, so one widget can wear the clock's face while the rest stay in Rubik. When running over the Clock screensaver in Night mode, all active widgets inherit the clock's **Night color** to maintain low light levels. **Text drop shadow**, enabled by default, adds a defined shadow beneath widget text. Turn it off for text without a shadow. Changes preview live. Widgets render over a soft dark vignette to ensure text readability against bright background images. The **Vignette strength** slider (0% to 100%, 40% default) adjusts vignette opacity with live previewing. Setting this to 0% removes shading entirely for a clean frame look.
 
-Widgets hold corner priority over the Immich metadata overlay; if a widget claims a corner, the Immich overlay automatically moves to the next available corner. However, when Immich displays a side-by-side portrait pair, both bottom corners are reserved for photo details, temporarily hiding any widgets assigned to those corners until the next single slide displays.
+Widgets hold corner priority over the Immich metadata overlay; if a widget claims a corner, the Immich overlay automatically moves to the next available corner. However, when Immich displays a side-by-side portrait pair, both bottom corners are reserved for photo details, temporarily hiding any widgets assigned to those corners until the next single slide displays. A stacked landscape pair only reserves the bottom corner on the overlay's side, since the top photo's details sit at the bottom of its own half, so the top corners stay free.
 
 ### Small Clock
 

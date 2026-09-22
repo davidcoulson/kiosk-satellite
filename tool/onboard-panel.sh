@@ -141,11 +141,13 @@ phase_debloat() {
   [[ $APPLY -eq 1 ]] || { say "Dry run"; note "would remove $(wc -l < "$list" | tr -d ' ') package(s); pass --apply"; sed 's/^/    /' "$list"; return; }
   say "Removing for the current user (reversible; the APK stays in the image)"
   local pkg
+  # adb shell reads stdin; without </dev/null the first call swallows the
+  # rest of the list and only one package is ever removed.
   while read -r pkg; do
     [[ -z "$pkg" || "$pkg" == \#* ]] && continue
-    if adbt shell pm uninstall -k --user 0 "$pkg" 2>&1 | grep -q Success; then
+    if adbt shell pm uninstall -k --user 0 "$pkg" </dev/null 2>&1 | grep -q Success; then
       note "removed  $pkg"
-    elif adbt shell pm disable-user --user 0 "$pkg" 2>&1 | grep -q "new state"; then
+    elif adbt shell pm disable-user --user 0 "$pkg" </dev/null 2>&1 | grep -q "new state"; then
       note "disabled $pkg"
     else
       warn "left     $pkg (protected; a Magisk module can hide it — see the doc)"

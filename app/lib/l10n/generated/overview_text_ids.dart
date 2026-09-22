@@ -111,5 +111,8 @@ const overviewTextMessageIds = <String, String>{
   "Screen is off": "overviewScreenOffState",
   "Theater mode, dimmed": "overviewTheaterDim",
   "Theater mode, bright for a moment": "overviewTheaterPeek",
-  "Theater mode, black": "overviewTheaterBlack"
+  "Theater mode, black": "overviewTheaterBlack",
+  "CPU": "overviewCpu",
+  "RAM": "overviewMemory",
+  "Temp": "overviewTemperature"
 };

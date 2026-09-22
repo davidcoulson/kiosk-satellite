@@ -3380,6 +3380,30 @@ class UiStringsEn extends UiStrings {
   String get overviewSuspended => 'Ready (suspended during a voice session)';
 
   @override
+  String get overviewCpu => 'CPU';
+
+  @override
+  String get overviewMemory => 'RAM';
+
+  @override
+  String get overviewTemperature => 'Temp';
+
+  @override
+  String overviewMemoryFree(String amount) {
+    return '$amount GB free';
+  }
+
+  @override
+  String overviewMetricPercent(String value) {
+    return '$value%';
+  }
+
+  @override
+  String overviewMetricDegrees(String value) {
+    return '$value°C';
+  }
+
+  @override
   String get overviewNoScreenshot => 'No screenshot';
 
   @override
@@ -8992,6 +9016,13 @@ class UiStringsEn extends UiStrings {
       'Show only media with any of these tags.';
 
   @override
+  String get settingScreensaverImmichExcludeTagsTitle => 'Exclude tags';
+
+  @override
+  String get settingScreensaverImmichExcludeTagsDescription =>
+      'Skip media with any of these tags.';
+
+  @override
   String get settingScreensaverImmichFavoritesOnlyTitle => 'Favorites only';
 
   @override
@@ -9039,6 +9070,12 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get screensaverMediaAnyDevice => 'Any.';
+
+  @override
+  String get screensaverMediaNoTagsChosen => 'No tags';
+
+  @override
+  String get screensaverMediaNoTagsChosenDevice => 'No tags.';
 
   @override
   String get screensaverMediaNoPeople =>
@@ -9209,6 +9246,14 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingScreensaverImmichPairPortraitDescription =>
       'Show two portrait photos side by side so they fill the screen.';
+
+  @override
+  String get settingScreensaverImmichPairLandscapeTitle =>
+      'Pair landscape photos';
+
+  @override
+  String get settingScreensaverImmichPairLandscapeDescription =>
+      'Show two landscape photos one above the other so they fill a portrait screen.';
 
   @override
   String get settingScreensaverImmichEdgeTapsTitle =>
@@ -9943,6 +9988,106 @@ class UiStringsEn extends UiStrings {
   String screensaverScreenOffAfter(String minutes) {
     return 'Screen off after $minutes min';
   }
+
+  @override
+  String get screensaverWeatherMood => 'Weather Mood';
+
+  @override
+  String get screensaverWeatherMoodPage => 'Weather Mood screensaver';
+
+  @override
+  String get screensaverWeatherMoodSummary =>
+      'Weather entity, lightning, preview';
+
+  @override
+  String get settingScreensaverWeatherEntityTitle => 'Weather entity';
+
+  @override
+  String get settingScreensaverWeatherEntityDescription =>
+      'The Home Assistant weather entity that controls the animated scene. Day and night follow sun.sun, with local time as a fallback.';
+
+  @override
+  String get settingScreensaverWeatherLightningTitle => 'Lightning flashes';
+
+  @override
+  String get settingScreensaverWeatherLightningDescription =>
+      'Show lightning strikes and cloud flashes during thunderstorms.';
+
+  @override
+  String get screensaverWeatherMoodSelectEntity =>
+      'Select a weather entity in Settings > Screensaver > Weather Mood.';
+
+  @override
+  String get screensaverWeatherPreviewGroup => 'Weather Preview';
+
+  @override
+  String get settingScreensaverWeatherPreviewTitle => 'Enable weather preview';
+
+  @override
+  String get settingScreensaverWeatherPreviewDescription =>
+      'Show the selected scene instead of live weather. Turn off to follow Home Assistant again.';
+
+  @override
+  String get settingScreensaverWeatherPreviewConditionTitle => 'Weather type';
+
+  @override
+  String get settingScreensaverWeatherPreviewConditionDescription =>
+      'The animated weather scene to preview.';
+
+  @override
+  String get settingScreensaverWeatherPreviewPeriodTitle => 'Time of day';
+
+  @override
+  String get settingScreensaverWeatherPreviewPeriodDescription =>
+      'Choose the day or night version of the scene.';
+
+  @override
+  String get screensaverWeatherPreviewSunny => 'Clear';
+
+  @override
+  String get screensaverWeatherPreviewPartlycloudy => 'Partly cloudy';
+
+  @override
+  String get screensaverWeatherPreviewCloudy => 'Cloudy';
+
+  @override
+  String get screensaverWeatherPreviewRainy => 'Rain';
+
+  @override
+  String get screensaverWeatherPreviewPouring => 'Heavy rain';
+
+  @override
+  String get screensaverWeatherPreviewSnowy => 'Snow';
+
+  @override
+  String get screensaverWeatherPreviewSnowyRainy => 'Snow and rain';
+
+  @override
+  String get screensaverWeatherPreviewFog => 'Fog';
+
+  @override
+  String get screensaverWeatherPreviewHail => 'Hail';
+
+  @override
+  String get screensaverWeatherPreviewLightning => 'Lightning';
+
+  @override
+  String get screensaverWeatherPreviewLightningRainy => 'Lightning and rain';
+
+  @override
+  String get screensaverWeatherPreviewWindy => 'Wind';
+
+  @override
+  String get screensaverWeatherPreviewWindyVariant => 'Wind and clouds';
+
+  @override
+  String get screensaverWeatherPreviewExceptional => 'Exceptional weather';
+
+  @override
+  String get screensaverWeatherPreviewDay => 'Day';
+
+  @override
+  String get screensaverWeatherPreviewNight => 'Night';
 
   @override
   String get settingScreensaverWebsiteUrlTitle => 'Website URL';

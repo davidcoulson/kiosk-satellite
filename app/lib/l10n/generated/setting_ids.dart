@@ -556,6 +556,10 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingScreensaverImmichPairPortraitTitle",
     "description": "settingScreensaverImmichPairPortraitDescription",
   },
+  "screensaver.immich_pair_landscape": {
+    "title": "settingScreensaverImmichPairLandscapeTitle",
+    "description": "settingScreensaverImmichPairLandscapeDescription",
+  },
   "screensaver.immich_edge_taps": {
     "title": "settingScreensaverImmichEdgeTapsTitle",
     "description": "settingScreensaverImmichEdgeTapsDescription",
@@ -615,6 +619,10 @@ const settingMessageIds = <String, Map<String, String>>{
   "screensaver.immich_tags": {
     "title": "settingScreensaverImmichTagsTitle",
     "description": "settingScreensaverImmichTagsDescription",
+  },
+  "screensaver.immich_exclude_tags": {
+    "title": "settingScreensaverImmichExcludeTagsTitle",
+    "description": "settingScreensaverImmichExcludeTagsDescription",
   },
   "screensaver.immich_favorites_only": {
     "title": "settingScreensaverImmichFavoritesOnlyTitle",
@@ -1483,5 +1491,25 @@ const settingMessageIds = <String, Map<String, String>>{
   "theater.frame_url": {
     "title": "settingTheaterFrameUrlTitle",
     "description": "settingTheaterFrameUrlDescription",
+  },
+  "screensaver.weather_entity": {
+    "title": "settingScreensaverWeatherEntityTitle",
+    "description": "settingScreensaverWeatherEntityDescription",
+  },
+  "screensaver.weather_lightning": {
+    "title": "settingScreensaverWeatherLightningTitle",
+    "description": "settingScreensaverWeatherLightningDescription",
+  },
+  "screensaver.weather_preview": {
+    "title": "settingScreensaverWeatherPreviewTitle",
+    "description": "settingScreensaverWeatherPreviewDescription",
+  },
+  "screensaver.weather_preview_condition": {
+    "title": "settingScreensaverWeatherPreviewConditionTitle",
+    "description": "settingScreensaverWeatherPreviewConditionDescription",
+  },
+  "screensaver.weather_preview_period": {
+    "title": "settingScreensaverWeatherPreviewPeriodTitle",
+    "description": "settingScreensaverWeatherPreviewPeriodDescription",
   },
 };

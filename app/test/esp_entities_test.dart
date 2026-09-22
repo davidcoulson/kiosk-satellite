@@ -254,6 +254,7 @@ void main() {
       'showCameraView',
       'haNavigate',
       'installUpdate',
+      'checkUpdateNow',
       'takeCameraSnapshot',
       'vsEngine',
       'vsSetBrowserSettings',
@@ -1058,6 +1059,7 @@ void main() {
     await surface.handleCommand('camera_view', 'Closed');
     await surface.handleCommand('dashboard_view', 'lovelace/cameras');
     await surface.handleCommand('update', 'install');
+    await surface.handleCommand('update', 'check');
     expect(executed.map((e) => e.$1).toList(), [
       'screenOff',
       'setBrightness',
@@ -1067,6 +1069,7 @@ void main() {
       'hideCameraView',
       'haNavigate',
       'installUpdate',
+      'checkUpdateNow',
     ]);
     expect(executed[3].$2['viewId'], 'v1');
     expect(executed[4].$2['viewId'], 'v1');
