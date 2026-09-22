@@ -252,9 +252,10 @@ class AioesphomeapiE2eTest {
             # own key, so both entities get their frame from one request.
             cli.request_single_image()
             data = await asyncio.wait_for(images[by_obj["snap"].key], 10)
-            assert len(data) == 40_000 and data[0] == 0x7A, (len(data), data[:2])
+            assert data == b"\x7a" * (6 * 1024 * 1024), (len(data), data[:2])
             shot = await asyncio.wait_for(images[by_obj["shot"].key], 10)
-            assert shot == b"\x53\x48\x4f\x54", shot
+            import base64
+            assert shot == base64.b64decode(sys.argv[3]), len(shot)
             print("CAMERA_OK", flush=True)
 
             # Arguments travel positionally and untyped-by-name; the ints
@@ -317,8 +318,11 @@ class AioesphomeapiE2eTest {
         val commands = java.util.concurrent.CopyOnWriteArrayList<Pair<String, Any?>>()
         val actions =
             java.util.concurrent.CopyOnWriteArrayList<Pair<String, Map<String, Any?>>>()
-        // A 40KB "jpeg" exercises the 16KB chunking (3 chunks, done last).
-        val jpeg = ByteArray(40_000) { 0x7A }
+        // A large capture must stream through Noise without overflowing
+        // the 256-frame control queue or breaking either camera's image.
+        // Stay below aioesphomeapi's 8 MiB image assembly limit.
+        val jpeg = ByteArray(6 * 1024 * 1024) { 0x7A }
+        val shot = javaClass.getResourceAsStream("/camera/baseline.jpg")!!.use { it.readBytes() }
         lateinit var server: ApiServer
         val hub = EntityHub(listOf(
             EspEntity.Light("screen", "Screen"),
@@ -333,7 +337,10 @@ class AioesphomeapiE2eTest {
                 server.publishCameraImage("snap", jpeg)
             }
             if (objectId == "shot" && value == "capture") {
-                server.publishCameraImage("shot", "SHOT".toByteArray())
+                // Match the Portal Go capture buffer, including the padding
+                // that exceeds Home Assistant's image assembly limit.
+                val padded = java.nio.ByteBuffer.wrap(shot.copyOf(12_174_771))
+                server.publishCameraImage("shot", me.jxl.kiosk_satellite.JpegData.read(padded))
             }
         }, services = listOf(
             EspService(
@@ -371,6 +378,7 @@ class AioesphomeapiE2eTest {
                 python, scriptFile.absolutePath,
                 server.boundPort.toString(),
                 Base64.getEncoder().encodeToString(psk),
+                Base64.getEncoder().encodeToString(shot),
             ).redirectErrorStream(true).start()
             val finished = process.waitFor(60, TimeUnit.SECONDS)
             val output = process.inputStream.bufferedReader().readText()
