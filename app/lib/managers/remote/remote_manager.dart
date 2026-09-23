@@ -781,6 +781,13 @@ class RemoteManager extends Manager {
       'screenOn': screenOn.ok ? screenOn.data : null,
       'brightness': (brightness.data as num?)?.toDouble(),
       'screen': det['screen'],
+      // The system WebView, which updates itself out from under the app and
+      // is the first thing to ask about when one panel renders a dashboard
+      // differently from its neighbours.
+      'webview': det['webview'],
+      // Cable or Wi-Fi, and how strong: the first question about a panel
+      // that keeps dropping off.
+      'link': det['link'],
       'ram': det['ram'],
       'storage': det['storage'],
       'cpu': {'usage': info['cpu'], 'temp': info['temp']},

@@ -11,6 +11,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.net.Network
 import android.os.Build
@@ -24,7 +25,10 @@ import android.provider.Settings
 import android.system.Os
 import android.system.OsConstants
 import android.system.StructTimeval
+import android.hardware.display.DisplayManager
 import android.util.DisplayMetrics
+import android.view.Display
+import android.view.Surface
 import android.view.WindowManager
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
@@ -311,6 +315,11 @@ class DeviceDetails(
         return mapOf(
             "app" to
                 (SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()) / 1000,
+            // Since the device booted. elapsedRealtime counts through sleep,
+            // so this is the reboot clock a fleet view wants beside the app's:
+            // a panel whose app restarts hourly under a device up for months
+            // is a different problem from one that reboots every night.
+            "device" to SystemClock.elapsedRealtime() / 1000,
             "network" to network,
             "networkSource" to source,
         )
@@ -611,7 +620,45 @@ class DeviceDetails(
         "storage" to storage(),
         "screen" to screen(),
         "webview" to webview(),
+        "link" to link(),
     )
+
+    /**
+     * What the default network is carried over, and how well.
+     *
+     * A fleet view has to tell a panel on a cable from one clinging to a far
+     * access point, and "it drops every evening" is nearly always the second.
+     * The SSID is deliberately absent: reading it needs the location grant,
+     * which is a permission prompt on every panel for one row of text.
+     */
+    private fun link(): Map<String, Any?> = try {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val caps = cm.activeNetwork?.let { cm.getNetworkCapabilities(it) }
+        val type = when {
+            caps == null -> null
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "vpn"
+            else -> "other"
+        }
+        // Signal and speed are Wi-Fi's to answer; on a cable they are null
+        // rather than a zero that would draw as a dead link.
+        @Suppress("DEPRECATION")
+        val info = if (type == "wifi") {
+            (context.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager)
+                ?.connectionInfo
+        } else {
+            null
+        }
+        mapOf(
+            "type" to type,
+            "rssi" to info?.rssi?.takeIf { it in -127..-1 },
+            "speedMbps" to info?.linkSpeed?.takeIf { it > 0 },
+        )
+    } catch (e: Exception) {
+        mapOf("type" to null, "rssi" to null, "speedMbps" to null)
+    }
 
     private fun ram(): Map<String, Any> {
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -649,9 +696,9 @@ class DeviceDetails(
         )
     }
 
-    private fun screen(): Map<String, Any> {
+    private fun screen(): Map<String, Any?> {
         val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        val size = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // maximumWindowMetrics, not currentWindowMetrics: the latter needs a
             // visual (Activity) context and throws from the application context
             // this now runs in. The maximum bounds are the full display — the
@@ -667,6 +714,32 @@ class DeviceDetails(
             val dm = DisplayMetrics().also { wm.defaultDisplay.getRealMetrics(it) }
             mapOf("width" to dm.widthPixels, "height" to dm.heightPixels, "density" to dm.density)
         }
+        val width = size["width"] as Int
+        val height = size["height"] as Int
+        return size + mapOf(
+            // Which way up the panel is, as the reported size already shows;
+            // named so a fleet view does not have to compare two numbers.
+            "orientation" to if (height > width) "portrait" else "landscape",
+            // How far the OS has turned that picture from the panel's natural
+            // orientation. A wall panel mounted sideways reads 90 or 270 here
+            // while its size still reads landscape, which is the one thing the
+            // size alone cannot say.
+            "rotation" to rotationDegrees(),
+        )
+    }
+
+    /** The display's rotation in degrees, or null where it cannot be read. */
+    private fun rotationDegrees(): Int? = try {
+        val dm = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+        when (dm.getDisplay(Display.DEFAULT_DISPLAY)?.rotation) {
+            Surface.ROTATION_0 -> 0
+            Surface.ROTATION_90 -> 90
+            Surface.ROTATION_180 -> 180
+            Surface.ROTATION_270 -> 270
+            else -> null
+        }
+    } catch (e: Exception) {
+        null
     }
 
     /**
