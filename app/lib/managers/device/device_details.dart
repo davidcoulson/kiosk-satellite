@@ -180,6 +180,13 @@ class DeviceDetails {
   int? get screenHeight => (_map('screen')?['height'] as num?)?.toInt();
   double? get screenDensity => (_map('screen')?['density'] as num?)?.toDouble();
 
+  /// 'portrait' or 'landscape', as the reported size already says.
+  String? get screenOrientation => _map('screen')?['orientation'] as String?;
+
+  /// How far the display is turned from the panel's natural orientation, in
+  /// degrees (0, 90, 180, 270), or null where it cannot be read.
+  int? get screenRotation => (_map('screen')?['rotation'] as num?)?.toInt();
+
   /// The WebView implementation in use — not the app's, the system's, and it
   /// updates itself out from under the app.
   String? get webviewPackage => _map('webview')?['package'] as String?;
@@ -188,6 +195,16 @@ class DeviceDetails {
   /// False when Android reports no WebView provider at all (API 26+); null
   /// where the platform cannot say.
   bool? get webviewAvailable => _map('webview')?['available'] as bool?;
+
+  /// How the default network is carried: 'ethernet', 'wifi', 'cellular',
+  /// 'vpn', 'other', or null while there is no network.
+  String? get linkType => _map('link')?['type'] as String?;
+
+  /// Wi-Fi signal in dBm, null on a cable or where it cannot be read.
+  int? get linkRssi => (_map('link')?['rssi'] as num?)?.toInt();
+
+  /// Negotiated Wi-Fi link speed in Mbps, null on a cable.
+  int? get linkSpeedMbps => (_map('link')?['speedMbps'] as num?)?.toInt();
 
   Map<String, Object?> toJson() => {
     'brand': brand,
@@ -201,8 +218,11 @@ class DeviceDetails {
       'width': screenWidth,
       'height': screenHeight,
       'density': screenDensity,
+      'orientation': screenOrientation,
+      'rotation': screenRotation,
     },
     'webview': {'package': webviewPackage, 'version': webviewVersion},
+    'link': {'type': linkType, 'rssi': linkRssi, 'speedMbps': linkSpeedMbps},
   };
 }
 

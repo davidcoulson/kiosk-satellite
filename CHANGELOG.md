@@ -2,6 +2,11 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
+## v2026.9.77-djc - 2026-09-22
+
+### Added
+- **`/api/health` answers the questions a fleet view asks.** The unauthenticated health endpoint now carries the system `webview` (`package`, `version`), the network `link` (`type` — ethernet, wifi, cellular, vpn or other — with `rssi` and `speedMbps` on Wi-Fi) and `uptime.device`, the seconds since the device booted, beside the app and network clocks it already reported. `screen` gained `orientation` ("portrait" or "landscape") and `rotation`, the degrees the display is turned from the panel's natural orientation. A monitor polling health can now say which panel is a WebView release behind its neighbours, which one is mounted sideways, which one is clinging to a far access point and which one reboots nightly — none of which needed an admin token to be worth knowing. The Wi-Fi SSID is deliberately not among them: reading it needs the location grant, a permission prompt on every panel for one row of text.
+
 ## v2026.9.77 - 2026-09-22
 
 ### Changed

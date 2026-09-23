@@ -260,8 +260,9 @@ class DeviceManager extends Manager {
       Command(
         name: 'getUptime',
         description:
-            'Seconds since the app process started (app) and since the '
-            'default network last came up (network, null while offline).',
+            'Seconds since the app process started (app), since the device '
+            'booted (device) and since the default network last came up '
+            '(network, null while offline).',
         handler: (_) async {
           final data = await DeviceDetails.uptime();
           // Once per run: whether the kernel's address timestamp answered
