@@ -229,8 +229,11 @@ phase_provision() {
   # Smallest possible step: the admin server, so everything after it can go
   # over HTTP instead of through intent extras, which the shell would have to
   # quote and the Binder would cap.
-  adbt shell am start -n "$PKG/.MainActivity" \
-    --es ks.provision "$(python3 -c 'import json,sys;print(json.dumps({"remote.enabled":True,"remote.password":sys.argv[1]}))' "$pw")" >/dev/null
+  # adb shell hands its arguments to the device's shell as one command
+  # line, which strips the JSON's quotes unless they are quoted for it too.
+  adbt shell "$(python3 -c 'import json,shlex,sys
+payload = json.dumps({"remote.enabled": True, "remote.password": sys.argv[2]})
+print("am start -n " + sys.argv[1] + "/.MainActivity --es ks.provision " + shlex.quote(payload))' "$PKG" "$pw")" >/dev/null
   wait_for_admin "$ip"
   local token; token=$(login "$ip")
   [[ -n "$token" ]] || die "could not log in to the new panel"
@@ -254,6 +257,10 @@ phase_provision() {
     -H "authorization: Bearer $token" -H 'content-type: application/json' \
     --data-binary "@$profile")
   note "imported: $applied"
+  # The profile carries the admin password in its stored (hashed) form, and
+  # storing a password signs out every token issued before it, ours too.
+  token=$(login "$ip")
+  [[ -n "$token" ]] || die "could not log in again after the import"
 
   say "This panel's own identity"
   [[ -z "$HOSTNAME" ]] && HOSTNAME="ks-$(tr '[:upper:] ' '[:lower:]-' <<<"$NAME")"
@@ -267,6 +274,9 @@ print(json.dumps({
   "device.hostname": host,
   "browser.start_url": dash,
   "ha.satellite_entity": sat,
+  # The source panel may never have needed it; a new one must come back
+  # in front after a reboot instead of behind the stock launcher.
+  "kiosk.start_on_boot": True,
   # Left empty on purpose: the next start names the node after the device
   # name, which keeps mDNS unique without anybody choosing a hex suffix.
   "esphome.node_name": "",

@@ -2,13 +2,22 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
-## v2026.9.76-djc
+## v2026.9.77-djc
 
 ### Added
 - **Theater mode.** Takes a panel in a dark room darker than its backlight goes, keeps motion and faces from lighting it, brightens it for a few seconds on a touch or an alert, and optionally goes black after a spell. The first touch in the dark wakes the panel without pressing anything. It is never stored and never writes brightness settings, so a restart or its end puts the panel back exactly as it was; a six hour cap ends a forgotten one. Driven from the page's JavaScript API, an ESPHome switch, button and action, the remote API and `ks://theater` links. See [Theater Mode](docs/theater.md).
 - **Theater mode for a page in a frame.** A web app shown on a Home Assistant Webpage dashboard can use theater mode through the dashboard, so Voice Satellite keeps running around it. Only the page named in the new Page allowed from a frame setting, and only theater mode; frames still never get the page bridge.
 - **A navigate command.** Moves the main page to a URL, path or `#` route, changing a route in place without a reload. On the remote API and as an ESPHome action.
 - **A custom start page.** The Start page can be a custom http or https address instead of a Home Assistant dashboard. It counts as the dashboard, may use theater mode, and is never handed the Home Assistant session. Home Assistant's Default dashboard select offers it as Start page.
+
+## v2026.9.77 - 2026-09-22
+
+### Changed
+- **The About page's Localization Credits row now carries a hint.** The row reads "Contributors by language" under its name on the device and in Remote Admin, in English, Spanish, German and French, like every other page entry.
+
+### Fixed
+- **The Immich screensaver no longer opens on a black screen.** Every start listed the library from the server and then fetched and decoded the first photo, all behind a black screen that could last several seconds on a large library or a slow link. The playlist is now kept between sessions and refreshed in the background once it is ten minutes old, and while the idle clock counts down toward the Immich screensaver the app fetches the first photo ahead of time, so the start pays only the decode. One preview is held, a few hundred kilobytes, and it is dropped when the filters change or another screensaver is due. Photo to photo transitions already held the current photo until the next one was decoded (#659).
+- **No more 125 °C spikes from the CPU temperature sensor on MediaTek tablets.** When a device has a CPU thermal zone that returns a bad reading for one poll, the sensor now skips that update instead of falling back to a board sensor. On the Fire HD 8 the fallback landed on an unwired sensor parked at 125 °C several times a day. Readings of 125 °C or more are also dropped as sensor placeholders (#654).
 
 ## v2026.9.76 - 2026-09-22
 
