@@ -655,9 +655,13 @@ class DeviceDetails(
             "type" to type,
             "rssi" to info?.rssi?.takeIf { it in -127..-1 },
             "speedMbps" to info?.linkSpeed?.takeIf { it > 0 },
+            // The channel's centre frequency. Which band a panel landed on
+            // is the useful half of it, and unlike the SSID it needs no
+            // location grant; the channel number is arithmetic from here.
+            "frequencyMhz" to info?.frequency?.takeIf { it > 0 },
         )
     } catch (e: Exception) {
-        mapOf("type" to null, "rssi" to null, "speedMbps" to null)
+        mapOf("type" to null, "rssi" to null, "speedMbps" to null, "frequencyMhz" to null)
     }
 
     private fun ram(): Map<String, Any> {
