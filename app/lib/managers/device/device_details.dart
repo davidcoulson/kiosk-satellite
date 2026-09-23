@@ -206,6 +206,10 @@ class DeviceDetails {
   /// Negotiated Wi-Fi link speed in Mbps, null on a cable.
   int? get linkSpeedMbps => (_map('link')?['speedMbps'] as num?)?.toInt();
 
+  /// The Wi-Fi channel's centre frequency in MHz, which says which band the
+  /// panel is on. Null on a cable.
+  int? get linkFrequencyMhz => (_map('link')?['frequencyMhz'] as num?)?.toInt();
+
   Map<String, Object?> toJson() => {
     'brand': brand,
     'manufacturer': manufacturer,
@@ -222,7 +226,12 @@ class DeviceDetails {
       'rotation': screenRotation,
     },
     'webview': {'package': webviewPackage, 'version': webviewVersion},
-    'link': {'type': linkType, 'rssi': linkRssi, 'speedMbps': linkSpeedMbps},
+    'link': {
+      'type': linkType,
+      'rssi': linkRssi,
+      'speedMbps': linkSpeedMbps,
+      'frequencyMhz': linkFrequencyMhz,
+    },
   };
 }
 
