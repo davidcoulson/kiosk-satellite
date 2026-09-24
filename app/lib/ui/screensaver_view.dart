@@ -47,7 +47,6 @@ import 'camera_view_overlay.dart' show ClosingCameraPlayer;
 import 'clock_faces.dart';
 import 'digital_clock_face.dart';
 import 'weather_readings.dart';
-import 'weather_mood_information.dart';
 import 'photo_frames.dart';
 import 'plugin_screensaver.dart';
 import 'weather_mood_screensaver.dart';
@@ -393,15 +392,9 @@ class _ScreensaverOverlayState extends State<ScreensaverOverlay> {
                     builder: (context, scheduled, _) =>
                         ValueListenableBuilder<Set<String>>(
                           valueListenable: container.screensaver.claimedCorners,
-                          builder: (context, claimed, _) => Padding(
-                            padding: EdgeInsets.only(
-                              bottom: view == 'weather_mood'
-                                  ? weatherMoodBarHeight(
-                                      MediaQuery.sizeOf(context),
-                                      container.settings,
-                                    )
-                                  : 0,
-                            ),
+                          builder: (context, claimed, _) => _AboveWeatherChips(
+                            container: container,
+                            enabled: view == 'weather_mood',
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
@@ -1892,9 +1885,11 @@ class _EntityWidgetOverlayState extends State<EntityWidgetOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    // Nothing until the first reading: an empty corner beats a widget that
-    // says "…" on the way in.
-    if (_entity.state == null) return const SizedBox.shrink();
+    // Nothing until the first reading, and nothing while the value is
+    // blank: an empty corner beats a widget that says "…".
+    if (_entity.state == null || glanceValueBlank(_entity)) {
+      return const SizedBox.shrink();
+    }
     final corner = _cornerAlignment(widget.spec.position);
     final color = widget.nightColor ?? _widgetRgb(widget.spec.config['color']);
     final size = MediaQuery.of(context).size;
@@ -4850,4 +4845,30 @@ class _CameraScreensaverState extends State<CameraScreensaver>
             ),
     ),
   );
+}
+
+/// Lifts the bottom corner widgets just above the Weather Mood chips, by
+/// the height the chips measured after layout.
+class _AboveWeatherChips extends StatelessWidget {
+  const _AboveWeatherChips({
+    required this.container,
+    required this.enabled,
+    required this.child,
+  });
+  final AppContainer container;
+  final bool enabled;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return child;
+    return ValueListenableBuilder<double>(
+      valueListenable: container.screensaver.weatherChipsHeight,
+      builder: (context, height, child) => Padding(
+        padding: EdgeInsets.only(bottom: height),
+        child: child,
+      ),
+      child: child,
+    );
+  }
 }

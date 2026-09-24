@@ -8,7 +8,7 @@ const weatherMoodPresets = <String, List<double>>{
   'sunny': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   'clear-night': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   'partlycloudy': [.10, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  'cloudy': [.68, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  'cloudy': [.51, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   'rainy': [.95, 0, 1, 0, 0, 0, 0, 0, 0, 0],
   'snowy': [.77, 0, 0, 0, 1, 0, 0, 0, 0, 0],
   'fog': [.7, 0, 0, 1, 0, 0, 0, 0, 0, 0],
@@ -124,7 +124,7 @@ class WeatherMoodScene {
 class WeatherMoodQuality {
   WeatherMoodQuality({required this.lowPower})
     : scale = _learnedScale[lowPower] ?? (lowPower ? .64 : 1),
-      tiles = _learnedTiles[lowPower] ?? (lowPower ? 12 : 1),
+      tiles = _learnedTiles[lowPower] ?? (lowPower ? 6 : 1),
       _slowAt = _learnedSlowAt[lowPower] ?? 0;
   // Later screensaver sessions start where the previous one settled.
   static final _learnedTiles = <bool, int>{};
@@ -154,6 +154,16 @@ class WeatherMoodQuality {
       math.max(1, (1000000 / fps / period.inMicroseconds).round());
   Duration get interval => period * vsyncs;
 
+  /// Ray samples a single band may take. One draw over the whole cloud
+  /// image ran long enough on a busy Portal Go for the GPU driver to reset
+  /// the GPU and kill the app, so every device splits keyframes at least
+  /// this finely, whatever the frame rate allows.
+  static const maxBandSamples = 6000000;
+
+  /// The fewest bands a [width] by [height] cloud image may render in.
+  int minimumTiles(int width, int height) =>
+      math.max(1, (width * height * steps / maxBandSamples).ceil());
+
   /// Scene wind from 0 to 1, set by the renderer.
   double wind = 0;
 
@@ -161,9 +171,18 @@ class WeatherMoodQuality {
   /// it, so keyframes come closer together as the wind picks up.
   int get maxTiles => math.max(
     1,
-    (1200000 * (1 - wind.clamp(0.0, 1.0) * .5) / interval.inMicroseconds)
+    (1200000 *
+            (1 - wind.clamp(0.0, 1.0) * .5) /
+            (interval.inMicroseconds * bandEvery))
         .round(),
   );
+
+  /// Frames per cloud band. Mali drivers spend a fixed amount of CPU on
+  /// every offscreen render pass, about one percent of a core per pass per
+  /// second on an Echo Show 8, so low-power devices render a band on every
+  /// other frame. Wider spacing makes each band heavy enough to miss
+  /// refreshes.
+  int get bandEvery => lowPower ? 2 : 1;
 
   /// Leaves out the next few frame intervals, which carry deliberate one-off
   /// work such as the first full cloud image after a settings change.
