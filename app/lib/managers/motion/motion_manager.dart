@@ -93,6 +93,8 @@ class MotionManager extends Manager {
   bool _disposed = false;
   Future<void> _rtspConfiguration = Future.value();
   Map<String, Object>? _lastRtspConfig;
+  String? _rtspTlsError;
+  StreamSubscription<TlsIdentityChanged>? _tlsSubscription;
 
   bool get _rtspEnabled =>
       _settings.get(defs.cameraEnabled) &&
@@ -107,6 +109,7 @@ class MotionManager extends Manager {
       'camera': _settings.get(defs.cameraDevice),
       'analysis': _settings.get(defs.cameraRtspAnalysis),
       'protocol': _settings.get(defs.cameraStreamingProtocol),
+      'tls': _settings.get(defs.cameraRtspTls),
       'name': _settings.get(defs.deviceName),
       'audio': _settings.get(defs.cameraRtspAudio),
       'dateTime': _settings.get(defs.cameraRtspDateTime),
@@ -154,7 +157,24 @@ class MotionManager extends Manager {
             await ensureOsPermission(Permission.microphone);
           }
         }
-        final status = await NativeRtsp.configure(config);
+        Map<String, Object> native = config;
+        _rtspTlsError = null;
+        if (config['enabled'] == true && config['tls'] == true) {
+          try {
+            final material = await _settings.tls.load();
+            material.securityContext();
+            native = {
+              ...config,
+              'certificate': material.certificate,
+              'privateKey': material.privateKey,
+            };
+          } catch (e) {
+            _rtspTlsError = 'Encrypted stream unavailable: $e';
+            native = {...config, 'enabled': false};
+            _lastRtspConfig = null;
+          }
+        }
+        final status = await NativeRtsp.configure(native);
         if (status['error'] != null) log.warn(name, 'RTSP: ${status['error']}');
       } catch (e) {
         _lastRtspConfig = null;
@@ -406,6 +426,7 @@ class MotionManager extends Manager {
           try {
             return CommandResult.ok({
               ...await NativeRtsp.status(),
+              if (_rtspTlsError != null) 'error': _rtspTlsError,
               if (_rtspAudio.error != null) 'audioError': _rtspAudio.error,
               'audioSuspended': _rtspAudio.suspended,
             });
@@ -590,6 +611,13 @@ class MotionManager extends Manager {
     if (_cameraSetupDone || !_settings.get(defs.cameraEnabled)) return;
     _cameraSetupDone = true;
     await _diagnostics.start();
+    _tlsSubscription = bus.on<TlsIdentityChanged>().listen((_) {
+      if (_rtspEnabled &&
+          _settings.get(defs.cameraRtspTls) &&
+          _settings.get(defs.cameraStreamingProtocol) == 'rtsp') {
+        _configureRtsp(force: true);
+      }
+    });
     NativeRtsp.onDemand(
       (wanted) {
         if (_disposed) return;
@@ -897,6 +925,7 @@ class MotionManager extends Manager {
     _endPreview();
     handTest.value = null;
     if (_camera == null) return;
+    bus.publish(const PalmDetected(hands: 0, fingers: null));
     _camera!.cancel();
     _camera = null;
     log.info(name, 'camera off');
@@ -942,6 +971,7 @@ class MotionManager extends Manager {
   void startHandTest() {
     if (_handTesting) return;
     _handTesting = true;
+    bus.publish(const PalmDetected(hands: 0, fingers: null));
     log.info(name, 'hand gesture tester open');
     _sync();
   }
@@ -951,6 +981,7 @@ class MotionManager extends Manager {
   void stopHandTest() {
     if (!_handTesting) return;
     _handTesting = false;
+    bus.publish(const PalmDetected(hands: 0, fingers: null));
     handTest.value = null;
     log.info(name, 'hand gesture tester closed');
     _sync();
@@ -964,6 +995,7 @@ class MotionManager extends Manager {
   @override
   Future<void> dispose() async {
     _disposed = true;
+    await _tlsSubscription?.cancel();
     await _diagnostics.dispose();
     NativeRtsp.onDemand(null);
     await _rtspAudio.dispose();
