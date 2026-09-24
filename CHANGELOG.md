@@ -2,7 +2,7 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
-## v2026.9.79-djc - 2026-09-24
+## v2026.9.80-djc - 2026-09-24
 
 ### Added
 - **Theater mode.** Takes a panel in a dark room darker than its backlight goes, keeps motion and faces from lighting it, brightens it for a few seconds on a touch or an alert, and optionally goes black after a spell. The first touch in the dark wakes the panel without pressing anything. It is never stored and never writes brightness settings, so a restart or its end puts the panel back exactly as it was; a six hour cap ends a forgotten one. Driven from the page's JavaScript API, an ESPHome switch, button and action, the remote API and `ks://theater` links. See [Theater Mode](docs/theater.md).
@@ -10,6 +10,23 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 - **A navigate command.** Moves the main page to a URL, path or `#` route, changing a route in place without a reload. On the remote API and as an ESPHome action.
 - **A custom start page.** The Start page can be a custom http or https address instead of a Home Assistant dashboard. It counts as the dashboard, may use theater mode, and is never handed the Home Assistant session. Home Assistant's Default dashboard select offers it as Start page.
 - **`/api/health` answers the questions a fleet view asks.** The unauthenticated health endpoint now carries the system `webview` (`package`, `version`), the network `link` (`type` — ethernet, wifi, cellular, vpn or other — with `rssi`, `speedMbps` and `frequencyMhz` — the channel's centre frequency, which says whether a panel landed on 2.4 or 5 GHz — on Wi-Fi) and `uptime.device`, the seconds since the device booted, beside the app and network clocks it already reported. `screen` gained `orientation` ("portrait" or "landscape") and `rotation`, the degrees the display is turned from the panel's natural orientation. A monitor polling health can now say which panel is a WebView release behind its neighbours, which one is mounted sideways, which one is clinging to a far access point and which one reboots nightly — none of which needed an admin token to be worth knowing. The Wi-Fi SSID is deliberately not among them: reading it needs the location grant, a permission prompt on every panel for one row of text.
+## v2026.9.80 - 2026-09-24
+
+### Changed
+- **microWakeWord uses about a third of the CPU it did.** The whole audio frontend now runs in native code, with results identical to before. On an Echo Show 8 the wake word thread dropped from 5.7% to 2.1% of a CPU core while listening.
+- **vsWakeWord listening is lighter.** Audio features are computed natively straight from the audio buffer, and the silence check only runs when a wake word matches. On an Echo Show 8 each 80 ms of audio takes 18% less processing, with identical detections.
+- **Weather information chips in Weather Mood.** The full-width weather bar is now a set of chips floating over the scene. A chip at the bottom left shows the conditions icon, temperature and conditions. Each reading gets a matching chip at the bottom right with its icon, title and value. All chips share one height in the style of the At a Glance pills. The chips are glass: the scene behind them bends at their rounded edges like a lens under a bright rim of light, so they take on the colors of every sky from day to dusk to night. Devices without the Impeller renderer show tinted chips instead. Background opacity sets how dark the glass is and defaults to 60%. Text drop shadow is now on by default. On narrow screens the reading chips sit above the main chip and wrap as needed.
+- **Cleaner clouds on 32-bit devices.** Weather Mood clouds on low-power devices such as the Echo Show 8 no longer look grainy or dirty. Each pixel now spreads its cloud samples evenly instead of at random, which leaves only fine noise that a slightly wider smoothing removes, at no extra cost.
+- **Weather Mood uses less CPU on 32-bit devices.** Clouds render on every other frame instead of every frame, which halves the offscreen passes that Mali graphics drivers charge a fixed CPU cost for. On an Echo Show 8 with the Impeller renderer, cloudy scenes dropped from about 65% to 47% of a core with the same frame rate. Glass chips share one read of the scene behind them, and devices without backdrop shaders show plain tinted chips instead of a per-frame blur.
+- **More open skies in the Cloudy scene.** Weather Mood's Cloudy scene has a quarter less cloud cover, so more of the sky shows between the clouds.
+- **Immich Media leaves out archived media.** Photos and videos archived in Immich no longer show in the slideshow, including ones inside a selected album. Immich keeps archived media out of the timeline, and the screensaver now does the same.
+
+### Fixed
+- **The setup QR scanner's Flip camera button is translated.** It showed in English in Spanish, German and French.
+- **Blank values hide the entity widget and At a Glance chips.** A text sensor with no value showed "…", over a corner vignette on the entity widget. The entity widget now disappears completely and its At a Glance chip drops out of the row while the state, or the chosen attribute, is blank. Both return with the next value.
+- **Do not disturb no longer follows the fleet leader.** Turning on Do not disturb on a leader put every follower on Do not disturb too, because the intercom answer mode synced with the Intercom category. The answer mode now joins the settings new profiles leave out, and profiles whose exclusions were never edited pick it up automatically. Add **Answer mode** back to a profile to share it across the fleet.
+- **Weather Mood no longer restarts the app in a loop on the Meta Portal Go.** Cloud images could render in one long GPU draw when the screensaver started. On a busy Portal Go that draw ran long enough for the graphics driver to reset the GPU and close the app, and each relaunch did it again about 17 seconds later. Clouds now always render in small pieces and fade in over the sky.
+
 ## v2026.9.79 - 2026-09-24
 
 ### Added

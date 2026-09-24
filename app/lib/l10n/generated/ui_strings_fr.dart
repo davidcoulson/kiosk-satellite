@@ -11621,7 +11621,7 @@ class UiStringsFr extends UiStrings {
       'Autorisations demandées sur l\'appareil';
 
   @override
-  String get setupQrFlipCamera => 'Flip camera';
+  String get setupQrFlipCamera => 'Changer de caméra';
 
   @override
   String get setupQrCameraFailed => 'Impossible de démarrer la caméra.';

@@ -151,8 +151,10 @@ class _WeatherMoodRendererState extends State<WeatherMoodRenderer> {
   // The painter crossfades from the previous cloud keyframe to the next one
   // while the following keyframe is built one band per frame.
   ui.Image? _cloudPrevious, _cloudNext;
+  // Transparent stand-in for the first fade, so clouds appear gradually.
+  ui.Image? _clear;
   _BandBuild? _build;
-  int _cloudTick = 0, _cycleTiles = 1;
+  int _cloudTick = 0, _cycleTiles = 1, _bandWait = 0;
   double _cloudMix = 1;
   _Frame? _frame;
   Timer? _timer;
@@ -193,6 +195,11 @@ class _WeatherMoodRendererState extends State<WeatherMoodRenderer> {
       _blendShader = programs.blend.fragmentShader()
         ..setFloat(3, programs.flipBlend ? 1 : 0);
       await _particles.load();
+      final recorder = ui.PictureRecorder();
+      Canvas(recorder);
+      final empty = recorder.endRecording();
+      _clear = empty.toImageSync(1, 1);
+      empty.dispose();
       if (!mounted) {
         _release();
         return;
@@ -407,48 +414,76 @@ class _WeatherMoodRendererState extends State<WeatherMoodRenderer> {
     final width = math.max(1, (size.width * scale).round()),
         height = math.max(1, (size.height * scale).round());
     final current = _cloudNext;
-    if (_snap ||
-        !_animate ||
-        current == null ||
-        current.width != width ||
-        current.height != height) {
+    if (current != null &&
+        (current.width != width || current.height != height)) {
       _clearClouds();
-      final build = _BandBuild(width, height, 1, denoise: widget.lowPower)
+    }
+    // The controller adapts upward from the floor, not from below it, and
+    // no further than the longest keyframe interval allows.
+    final floor = _quality.minimumTiles(width, height);
+    final bands = _quality.tiles = math.max(
+      floor,
+      math.min(_quality.tiles, _quality.maxTiles),
+    );
+    if (!_animate) {
+      // Paused scenes still render everything at once, but as separate
+      // band draws so no single GPU submission runs long.
+      _clearClouds();
+      final build = _BandBuild(width, height, bands, denoise: widget.lowPower)
         ..frame = frame;
-      _renderBand(_cloudShader!, build);
+      while (!build.done) {
+        _renderBand(_cloudShader!, build);
+      }
       _cloudNext = build.compose();
-      _quality.skipTick();
-      _cycleTiles = _quality.tiles;
       _diagnosticClouds++;
       return;
     }
-    final build = _build ??= _BandBuild(
-      width,
-      height,
-      _cycleTiles,
-      denoise: widget.lowPower,
-    );
-    if (build.width != width || build.height != height) {
-      build.dispose();
+    // A snapshot from before a settings change is stale. The clouds on
+    // screen stay until the new ones fade in over them.
+    if (_snap) {
+      _build?.dispose();
       _build = null;
+    }
+    // Frames between bands, spent crossfading toward the keyframe already
+    // on screen.
+    final every = _quality.bandEvery;
+    if (_cloudNext != null && _bandWait < every - 1) {
+      _bandWait++;
+      _cloudTick++;
+      _cloudMix = math.min(1, (_cloudTick + 1) / (_cycleTiles * every));
       return;
     }
-    build.frame ??= frame;
+    _bandWait = 0;
+    var build = _build;
+    if (build != null && (build.width != width || build.height != height)) {
+      build.dispose();
+      build = _build = null;
+    }
+    if (build == null) {
+      build = _build = _BandBuild(
+        width,
+        height,
+        bands,
+        denoise: widget.lowPower,
+      )..frame = frame;
+      _cycleTiles = build.tiles;
+    }
     _renderBand(_cloudShader!, build);
     if (build.done) {
-      _cloudPrevious?.dispose();
-      _cloudPrevious = current;
+      final shown = _cloudNext;
+      if (_cloudPrevious != _clear) _cloudPrevious?.dispose();
+      // The first clouds fade in from the bare sky.
+      _cloudPrevious = shown ?? _clear;
       _cloudNext = build.compose();
       _build = null;
-      // The next keyframe takes this many frames, so the fade to this one
-      // finishes exactly when it arrives.
-      _cycleTiles = _quality.tiles;
       _cloudTick = 0;
       _diagnosticClouds++;
     } else {
       _cloudTick++;
     }
-    _cloudMix = math.min(1, (_cloudTick + 1) / _cycleTiles);
+    _cloudMix = _cloudNext == null
+        ? 1
+        : math.min(1, (_cloudTick + 1) / (_cycleTiles * every));
   }
 
   void _renderBand(ui.FragmentShader shader, _BandBuild build) {
@@ -467,7 +502,7 @@ class _WeatherMoodRendererState extends State<WeatherMoodRenderer> {
   void _clearClouds() {
     _build?.dispose();
     _build = null;
-    _cloudPrevious?.dispose();
+    if (_cloudPrevious != _clear) _cloudPrevious?.dispose();
     _cloudPrevious = null;
     _cloudNext?.dispose();
     _cloudNext = null;
@@ -512,6 +547,8 @@ class _WeatherMoodRendererState extends State<WeatherMoodRenderer> {
     _blendShader?.dispose();
     _blendShader = null;
     _clearClouds();
+    _clear?.dispose();
+    _clear = null;
     _skyBuild?.dispose();
     _skyBuild = null;
     _skyImage?.dispose();
@@ -590,8 +627,8 @@ class _BandBuild {
           Offset.zero,
           Paint()
             ..imageFilter = ui.ImageFilter.blur(
-              sigmaX: .75,
-              sigmaY: .75,
+              sigmaX: 1.1,
+              sigmaY: 1.1,
               tileMode: TileMode.clamp,
             ),
         ),

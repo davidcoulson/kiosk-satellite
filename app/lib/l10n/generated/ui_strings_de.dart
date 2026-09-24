@@ -11670,7 +11670,7 @@ class UiStringsDe extends UiStrings {
       'Berechtigungen wurden auf dem Gerät angefordert';
 
   @override
-  String get setupQrFlipCamera => 'Flip camera';
+  String get setupQrFlipCamera => 'Kamera wechseln';
 
   @override
   String get setupQrCameraFailed => 'Die Kamera konnte nicht gestartet werden.';

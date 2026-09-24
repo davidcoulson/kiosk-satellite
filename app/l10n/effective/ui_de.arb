@@ -42577,7 +42577,7 @@
       ]
     }
   },
-  "setupQrFlipCamera": "Flip camera",
+  "setupQrFlipCamera": "Kamera wechseln",
   "@setupQrFlipCamera": {
     "context": "First-time setup > Connect > Scan token QR code",
     "description": "Button that switches between the front and back cameras.",
