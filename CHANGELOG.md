@@ -2,7 +2,7 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
-## v2026.9.77-djc - 2026-09-22
+## v2026.9.79-djc - 2026-09-24
 
 ### Added
 - **Theater mode.** Takes a panel in a dark room darker than its backlight goes, keeps motion and faces from lighting it, brightens it for a few seconds on a touch or an alert, and optionally goes black after a spell. The first touch in the dark wakes the panel without pressing anything. It is never stored and never writes brightness settings, so a restart or its end puts the panel back exactly as it was; a six hour cap ends a forgotten one. Driven from the page's JavaScript API, an ESPHome switch, button and action, the remote API and `ks://theater` links. See [Theater Mode](docs/theater.md).
@@ -10,6 +10,41 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 - **A navigate command.** Moves the main page to a URL, path or `#` route, changing a route in place without a reload. On the remote API and as an ESPHome action.
 - **A custom start page.** The Start page can be a custom http or https address instead of a Home Assistant dashboard. It counts as the dashboard, may use theater mode, and is never handed the Home Assistant session. Home Assistant's Default dashboard select offers it as Start page.
 - **`/api/health` answers the questions a fleet view asks.** The unauthenticated health endpoint now carries the system `webview` (`package`, `version`), the network `link` (`type` — ethernet, wifi, cellular, vpn or other — with `rssi`, `speedMbps` and `frequencyMhz` — the channel's centre frequency, which says whether a panel landed on 2.4 or 5 GHz — on Wi-Fi) and `uptime.device`, the seconds since the device booted, beside the app and network clocks it already reported. `screen` gained `orientation` ("portrait" or "landscape") and `rotation`, the degrees the display is turned from the panel's natural orientation. A monitor polling health can now say which panel is a WebView release behind its neighbours, which one is mounted sideways, which one is clinging to a far access point and which one reboots nightly — none of which needed an admin token to be worth knowing. The Wi-Fi SSID is deliberately not among them: reading it needs the location grant, a permission prompt on every panel for one row of text.
+## v2026.9.79 - 2026-09-24
+
+### Added
+- **Ukrainian localization.** Українська is available during onboarding and in Settings on the device and in Remote Admin. All 3,318 current messages are translated. Localization Credits lists kdinya with a GitHub profile link.
+- **Rain on the glass in Weather Mood.** Rainy, pouring, snowy-rainy and thunderstorm scenes show drops landing on the glass in front of the sky. Drops vary in outline and proportion, including a few that have run together. Larger drops slide down and leave a wet trail with small beads behind. Heavier rain brings more drops, and they catch the light of lightning flashes. Falling rain is lighter to make room for them.
+
+### Changed
+- **Weather Mood runs smoothly on older devices.** Clouds now render a few rows per frame and crossfade between cloud images, so no single frame stalls while a whole cloud layer renders. Frames follow the display's refresh rate for even motion. The number of rows per frame adapts to what each device sustains, and cloud resolution drops only as a last resort. The Meta Portal Go went from 3 to 8 frames per second to a steady 30 with full-quality clouds. The Echo Show 8 no longer freezes for 140 ms several times per second. Cached skies, batched snow and hail and a lighter cloud shader reduce the work on every device.
+- **Smoother clouds on low-power devices.** Clouds on 32-bit devices no longer show a grainy texture.
+- **A more realistic sun in Weather Mood.** The sun is a larger overexposed disk that fades into a bright bloom without a hard edge, with a paler sky around it. Dawn and dusk keep their warm tones.
+- **Livelier clear skies in Weather Mood.** Fewer, softer and more visible motes float in clear weather, spread evenly across the sky. Each one glows for a few seconds, fades away and reappears somewhere else. Motes fade out near the sun instead of competing with it.
+
+### Fixed
+- **The Weather Mood bar edge follows its opacity.** The thin line along the top of the weather bar now fades with the Background opacity slider instead of staying visible over a transparent bar.
+- **Rain icons in the weather bar and Weather widget.** Rainy and pouring conditions show the rain cloud icons Home Assistant uses instead of an umbrella.
+
+## v2026.9.78 - 2026-09-23
+
+### Added
+- **Optional TLS encryption.** Protect remote administration, the API, WebSockets, ONVIF services and RTSP video and audio with a shared device certificate. Each feature has its own encryption switch, including independent intercom encryption. Intercom refuses calls between kiosks with different encryption settings and skips incompatible announcement targets. Manage certificates under Device > TLS. Remote Administration protocol changes show a copyable address and require confirmation before reconnecting. Fleet and intercom connections work with self-signed certificates automatically. Private keys stay encrypted on the device and are excluded from configuration exports and fleet synchronization (#672). Certificate controls, dialogs, errors and encryption guidance are localized in English, German, Spanish and French.
+- **Adjustable hand gesture hold duration.** Require the same finger gesture for 0.5 to 3 seconds to reduce accidental triggers in busy rooms. The default is 1 second, with Instant available for immediate actions. The new Hand Gestures group appears below Clapper on the device and in Remote Admin. The Hand Gesture Tester shows confirmation progress. All new controls and feedback are localized in English, German, Spanish and French.
+- **Set brightness through ESPHome actions.** The new `set_brightness` and `set_screensaver_brightness` actions accept a brightness percentage from 0 to 100, including 0% for devices that can turn off their backlight. They update Default brightness or the screensaver brightness level and require adaptive brightness to be off (#670).
+- **Dawn and dusk in Weather Mood.** A third time-of-day variant keeps blue skies overhead with a soft peach horizon, a lower warm sun and subtle warm cloud lighting across every weather type. It follows solar elevation near sunrise and sunset, falls back to local time and is available in Weather Preview in all supported languages.
+- **A built-in clock for Weather Mood.** The Clock group shows the digital Clock screensaver face over the weather scene and is enabled by default. Its independent font family, font weight, 24-hour format, date, size and color controls use the same defaults as the Clock screensaver. Text drop shadow helps the digits stand out against the sky.
+- **A weather information bar for Weather Mood.** Weather information shows live readings from the selected weather entity along the bottom and is enabled by default. Control text scale, color, background opacity, shadow, location name and optional weather readings. The bar adapts to narrow screens and leaves room for widgets and At a Glance pills. All new controls are available on the device and in Remote Admin in English, Spanish, German and French.
+
+### Changed
+- **Clarify encrypted streaming compatibility.** Camera and TLS documentation explain that VLC 3.0.x cannot open RTSPS streams and include an FFplay example for encrypted playback.
+- **Scan setup QR codes with the front camera.** The token scanner opens the front camera by default and includes a Flip camera button for switching between front and back. Devices with only a rear camera fall back to it and the flashlight control is disabled when the selected camera has no flash (#668).
+- **Clearer weather temperatures and larger widget details.** The Weather widget shows the apparent temperature on a separate localized Feels like line. Its Feels like only option labels the apparent reading beneath its value. The Weather Mood bar uses a single temperature and its Feels like toggle substitutes the apparent reading when available. Weather widget conditions, readings and icons are larger relative to the temperature and the Clock widget date is larger.
+- **Weather Mood is easier to read.** Partly cloudy scenes have slightly more cloud coverage and soft silver linings from the sun or moon. The sun and moon sit farther right and the moon has a soft bloom. The sun is larger with the same soft edges. The clock and date sit closer together and use the same color. The weather readings form a group at the right edge of the bar, with wider gaps that adapt to the screen width. Larger titles sit centered above their readings and use fully opaque text. The bar defaults to white text without a drop shadow over a 50% opaque black background and uses reduced vertical padding. A localized Scene blur slider softens only the animated background.
+
+### Fixed
+- **Visible intercom push-to-talk control.** Use a solid teal fill so the idle button stays distinct from the light background. Holding it switches to a teal-tinted fill with a stronger outline and a soft glow.
+- **Fresh screenshots show Weather Mood.** Overview captures Flutter's active surface after the dashboard stops rendering behind Weather Mood. Refreshing the preview no longer returns a black image while the screensaver remains visible on the device.
 
 ## v2026.9.77 - 2026-09-22
 

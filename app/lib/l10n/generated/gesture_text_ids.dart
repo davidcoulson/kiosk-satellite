@@ -193,5 +193,6 @@ const gestureTextMessageIds = <String, String>{
   "Toggle theater mode": "gestureTheaterToggle",
   "Turn theater mode on": "gestureTheaterOn",
   "Turn theater mode off": "gestureTheaterOff",
-  "Brighten theater mode for a moment": "gestureTheaterPeek"
+  "Brighten theater mode for a moment": "gestureTheaterPeek",
+  "Hand Gestures": "gestureHandGestures"
 };
