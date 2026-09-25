@@ -385,6 +385,11 @@ class EspEntitySurface {
         light.ok && light.data is Map && (light.data as Map)['present'] == true;
     final cam = await commands.execute('hasDeviceCamera', const {});
     final cameraPresent = !(cam.ok && cam.data == false);
+    // An agent draws no dashboard, so its screen belongs to whatever that
+    // box is running. A Screenshot camera there hands Home Assistant a
+    // picture of someone else's UI, and every fetch makes the device read
+    // back and encode a frame for it.
+    final agent = _settings.get(defs.agentMode);
     // The proximity switch is the one pessimistic entity: rare hardware,
     // so it exists only once the probe has said there is a sensor.
     final prox = await commands.execute('getProximitySupport', const {});
@@ -671,10 +676,11 @@ class EspEntitySurface {
         'name': 'Update',
         'deviceClass': 'firmware',
       },
-      // The display as a still camera, on every device: what the remote
+      // The display as a still camera, on every kiosk: what the remote
       // admin's preview shows, fed by the Take screenshot button and by a
-      // fetch from Home Assistant.
-      {'type': 'camera', 'objectId': 'screenshot', 'name': 'Screenshot'},
+      // fetch from Home Assistant. Not on an agent - see above.
+      if (!agent)
+        {'type': 'camera', 'objectId': 'screenshot', 'name': 'Screenshot'},
       if (cameraPresent) ...[
         {'type': 'camera', 'objectId': 'device_camera', 'name': 'Camera'},
         button('take_snapshot', 'Take camera snapshot', 'mdi:camera-iris'),
@@ -686,14 +692,16 @@ class EspEntitySurface {
           'deviceClass': 'timestamp',
         },
       ],
-      button('take_screenshot', 'Take screenshot', 'mdi:monitor-screenshot'),
-      {
-        'type': 'text_sensor',
-        'objectId': 'last_screenshot',
-        'name': 'Last screenshot',
-        'icon': 'mdi:monitor-screenshot',
-        'deviceClass': 'timestamp',
-      },
+      if (!agent) ...[
+        button('take_screenshot', 'Take screenshot', 'mdi:monitor-screenshot'),
+        {
+          'type': 'text_sensor',
+          'objectId': 'last_screenshot',
+          'name': 'Last screenshot',
+          'icon': 'mdi:monitor-screenshot',
+          'deviceClass': 'timestamp',
+        },
+      ],
       if (lightSensorPresent)
         {
           'type': 'sensor',

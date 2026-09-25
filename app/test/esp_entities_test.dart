@@ -2256,4 +2256,31 @@ void main() {
       expect(pushed, contains(('default_dashboard', 'Start page')));
     });
   });
+  group('agent mode', () {
+    /// An agent draws no dashboard, so the Screenshot camera would hand Home
+    /// Assistant a picture of whatever else that box is running - and every
+    /// fetch makes the device encode a frame for it.
+    Future<List<Map<String, Object?>>> agentCatalog() async {
+      await settings.set(defs.agentMode, true);
+      return surface.build();
+    }
+
+    test('drops the screenshot camera, its button and its timestamp', () async {
+      final ids = (await agentCatalog()).map((e) => e['objectId']).toList();
+      expect(ids, isNot(contains('screenshot')));
+      expect(ids, isNot(contains('take_screenshot')));
+      expect(ids, isNot(contains('last_screenshot')));
+    });
+
+    test('a kiosk still has all three', () async {
+      final ids = (await surface.build()).map((e) => e['objectId']).toList();
+      expect(ids, containsAll(['screenshot', 'take_screenshot', 'last_screenshot']));
+    });
+
+    test('the device itself is untouched: sensors, update and restart stay', () async {
+      final ids = (await agentCatalog()).map((e) => e['objectId']).toList();
+      expect(ids, containsAll(['update', 'restart', 'volume']));
+    });
+  });
+
 }
