@@ -16,7 +16,7 @@ final Future<ui.FragmentProgram?> _glassProgram =
 /// fill follows the opacity, and the edge and icon circles fade with it, so
 /// a fully transparent chip leaves only its content.
 class GlassPalette {
-  GlassPalette(this.opacity)
+  GlassPalette(this.opacity, {this.blur = 0})
     : fill = const Color(0xFF1C1C1E).withValues(alpha: opacity),
       edge = Colors.white.withValues(alpha: .16 * opacity),
       circle = Colors.white.withValues(
@@ -28,6 +28,13 @@ class GlassPalette {
 
   final double opacity;
   final Color fill, edge, circle;
+
+  /// How much the glass blurs the scene behind it, as a blur sigma in
+  /// logical pixels. The engine's blur runs before the glass shader, which
+  /// costs a fast device next to nothing and a slow one a quarter of its
+  /// frames, so it stays 0 there and the shader's own light frosting is
+  /// all.
+  final double blur;
 
   /// The thin light ring around an icon's disc, like the chip's own rim.
   final Color ring;
@@ -92,6 +99,7 @@ class GlassChip extends StatelessWidget {
           child: _GlassBackdrop(
             program: program,
             tint: palette.opacity,
+            blur: palette.blur,
             backdropKey: BackdropGroup.of(context)?.backdropKey,
             child: child,
           ),
@@ -105,16 +113,17 @@ class _GlassBackdrop extends SingleChildRenderObjectWidget {
   const _GlassBackdrop({
     required this.program,
     required this.tint,
+    required this.blur,
     required this.backdropKey,
     super.child,
   });
   final ui.FragmentProgram program;
-  final double tint;
+  final double tint, blur;
   final BackdropKey? backdropKey;
 
   @override
   RenderObject createRenderObject(BuildContext context) =>
-      _RenderGlassBackdrop(program.fragmentShader(), tint, backdropKey);
+      _RenderGlassBackdrop(program.fragmentShader(), tint, blur, backdropKey);
 
   @override
   void updateRenderObject(
@@ -122,16 +131,23 @@ class _GlassBackdrop extends SingleChildRenderObjectWidget {
     _RenderGlassBackdrop renderObject,
   ) => renderObject
     ..tint = tint
+    ..blur = blur
     ..backdropKey = backdropKey;
 }
 
 /// Paints its child over the glass. The shader needs the chip's place on
 /// screen, which is only known once it paints.
 class _RenderGlassBackdrop extends RenderProxyBox {
-  _RenderGlassBackdrop(this._shader, this._tint, this._backdropKey);
+  _RenderGlassBackdrop(this._shader, this._tint, this._blur, this._backdropKey);
   final ui.FragmentShader _shader;
-  double _tint;
+  double _tint, _blur;
   BackdropKey? _backdropKey;
+
+  set blur(double value) {
+    if (value == _blur) return;
+    _blur = value;
+    markNeedsPaint();
+  }
 
   set backdropKey(BackdropKey? value) {
     if (value == _backdropKey) return;
@@ -173,7 +189,16 @@ class _RenderGlassBackdrop extends RenderProxyBox {
       ..setFloat(7, rect.height / size.height * ratio);
     final layer = (this.layer as BackdropFilterLayer?) ?? BackdropFilterLayer();
     layer
-      ..filter = ui.ImageFilter.shader(_shader)
+      ..filter = _blur > 0
+          ? ui.ImageFilter.compose(
+              outer: ui.ImageFilter.shader(_shader),
+              inner: ui.ImageFilter.blur(
+                sigmaX: _blur,
+                sigmaY: _blur,
+                tileMode: TileMode.clamp,
+              ),
+            )
+          : ui.ImageFilter.shader(_shader)
       ..backdropKey = _backdropKey;
     this.layer = layer;
     context.pushLayer(layer, super.paint, offset);

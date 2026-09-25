@@ -19,6 +19,25 @@ const _textShadows = [
   Shadow(color: Colors.black87, offset: Offset(0, 2), blurRadius: 4),
 ];
 
+/// Whether Weather Mood runs its low-power path: devices without a 64-bit
+/// ABI, such as the Echo Show 8. Their clouds take fewer samples and their
+/// glass chips skip the backdrop blur.
+bool weatherMoodLowPower(AppContainer container) {
+  final abis = container.device.abis;
+  return abis.isNotEmpty && !abis.any((abi) => abi.contains('64'));
+}
+
+/// The glass of Weather Mood's chips, shared by the weather chips and At a
+/// Glance: tinted by Background opacity and blurring the scene behind them
+/// except on low-power devices, where a blur costs a quarter of the frames.
+GlassPalette weatherMoodGlass(AppContainer container) => GlassPalette(
+  (container.settings.get(defs.screensaverWeatherBarOpacity) / 100).clamp(
+    0.0,
+    1.0,
+  ),
+  blur: weatherMoodLowPower(container) ? 0 : 20,
+);
+
 Color _color(String value) {
   final parts = value.split(',').map(int.tryParse).toList();
   if (parts.length != 3 || parts.any((v) => v == null)) {
@@ -204,11 +223,7 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
                       child: GlanceRow(
                         container: c,
                         scale: math.min(1.0, size.height / 480).clamp(.75, 1.0),
-                        glass: GlassPalette(
-                          (c.settings.get(defs.screensaverWeatherBarOpacity) /
-                                  100)
-                              .clamp(0.0, 1.0),
-                        ),
+                        glass: weatherMoodGlass(c),
                         // And the same Text drop shadow.
                         shadows:
                             c.settings.get(defs.screensaverWeatherBarShadow)
@@ -260,11 +275,7 @@ class WeatherMoodBar extends StatelessWidget {
     final shadows = s.get(defs.screensaverWeatherBarShadow)
         ? _textShadows
         : const <Shadow>[];
-    final opacity = (s.get(defs.screensaverWeatherBarOpacity) / 100).clamp(
-      0.0,
-      1.0,
-    );
-    final glass = GlassPalette(opacity);
+    final glass = weatherMoodGlass(container);
     TextStyle style(
       double fontSize, {
       FontWeight weight = FontWeight.w400,

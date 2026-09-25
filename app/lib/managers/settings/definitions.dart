@@ -1957,7 +1957,7 @@ const screensaverWeatherBarColor = SettingDef<String>(
 const screensaverWeatherBarOpacity = SettingDef<num>(
   key: 'screensaver.weather_bar_opacity',
   type: SettingType.number,
-  defaultValue: 60,
+  defaultValue: 50,
   title: "Background opacity",
   description: "Darken the bottom bar to keep weather information readable.",
   category: 'Screensaver',

@@ -56,7 +56,7 @@ void main() {
       expect(defs.screensaverWeatherClockShadow.defaultValue, true);
       expect(defs.screensaverWeatherBarShadow.defaultValue, true);
       expect(defs.screensaverWeatherBarTitles.defaultValue, false);
-      expect(defs.screensaverWeatherBarOpacity.defaultValue, 60);
+      expect(defs.screensaverWeatherBarOpacity.defaultValue, 50);
     },
   );
   test(
@@ -92,6 +92,17 @@ void main() {
       expect(r.available, false);
     },
   );
+  test('the glass blurs the scene except on low-power devices', () async {
+    final c = await container({'ks.screensaver.weather_bar_opacity': 40});
+    c.device.abis = const ['arm64-v8a', 'armeabi-v7a'];
+    expect(weatherMoodLowPower(c), false);
+    expect(weatherMoodGlass(c).blur, 20);
+    expect(weatherMoodGlass(c).opacity, closeTo(.4, 1e-9));
+    // A 32-bit device like the Echo Show 8 keeps the shader's frosting.
+    c.device.abis = const ['armeabi-v7a', 'armeabi'];
+    expect(weatherMoodLowPower(c), true);
+    expect(weatherMoodGlass(c).blur, 0);
+  });
   testWidgets('rain uses a rain cloud icon with the text shadow', (
     tester,
   ) async {
