@@ -6,7 +6,7 @@ import android.content.Intent
 
 /**
  * Launches the kiosk when the device powers on, if the "Start on boot"
- * setting is on. The Flutter engine is not running at boot, so the setting
+ * setting is on - the service always, the Activity only for a kiosk. The Flutter engine is not running at boot, so the setting
  * is read straight from the shared_preferences store ("flutter." + the
  * app's "ks." prefix). On Android 10+ a background activity start is only
  * honored because the app holds the draw-over-apps grant — the setting's
@@ -26,6 +26,12 @@ class BootReceiver : BroadcastReceiver() {
             "FlutterSharedPreferences", Context.MODE_PRIVATE)
         if (!prefs.getBoolean("flutter.ks.kiosk.start_on_boot", false)) return
         KioskSatelliteService.ensureRunning(context)
+        // Agent mode has no dashboard to start. Bringing the Activity up
+        // there would take a projector's screen away from whatever it was
+        // showing, at every boot, to display a status card nobody asked
+        // for. The keep-alive service above is the whole point on such a
+        // device: ESPHome, the remote admin and updates all live behind it.
+        if (prefs.getBoolean("flutter.ks.device.agent_mode", false)) return
         // As the device's home app the system has already launched the
         // kiosk itself, before this broadcast arrives; a second start is
         // harmless but log-noisy (issue #219).
