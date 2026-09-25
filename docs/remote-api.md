@@ -24,6 +24,13 @@ adb shell am start -n me.jxl.kiosk_satellite/.MainActivity \
   --es ks.provision '"{\"remote.enabled\":true,\"remote.password\":\"secret\"}"'
 ```
 
+A provisioning intent is accepted while the kiosk has no Start page yet —
+the out-of-the-box case this exists for. Once the kiosk is set up it is
+refused, and the refusal is logged, unless **Allow provisioning intents**
+(Settings → Device → Remote Administration) is on. Any app on the device can
+send an intent and the payload sets the admin password, so a kiosk on a wall
+should leave that switch off; an MDM that re-provisions in place turns it on.
+
 ## Reaching a kiosk by name
 
 Every kiosk with its remote admin on answers to a hostname on the local

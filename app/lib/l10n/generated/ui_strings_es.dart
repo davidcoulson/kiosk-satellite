@@ -5136,6 +5136,13 @@ class UiStringsEs extends UiStrings {
       'Cifra la administración remota, la API y WebSocket. El navegador puede pedirte que aceptes el certificado del dispositivo.';
 
   @override
+  String get settingProvisioningAllowTitle => 'Allow provisioning intents';
+
+  @override
+  String get settingProvisioningAllowDescription =>
+      'Let an Android intent change settings on a kiosk that is already set up. Any app on the device can send one, so leave this off unless an MDM re-provisions this kiosk in place. A kiosk with no Start page yet always accepts provisioning.';
+
+  @override
   String get settingServiceCpuAwakeTitle =>
       'Mantener la CPU activa con la pantalla apagada';
 

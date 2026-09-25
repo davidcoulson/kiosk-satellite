@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import '../../core/logging.dart';
+import 'definitions.dart' as defs;
 import 'settings_manager.dart';
 
 /// Provisioning via Android launch-intent extras — configure a device from
@@ -13,8 +14,12 @@ import 'settings_manager.dart';
 ///
 /// Keys/values are the same JSON the remote API's settings import accepts.
 ///
-/// TODO(security): gate behind a "provisioning allowed" setting (or
-/// first-run-only) before release — any app on the device can send intents.
+/// Any app on the device can send an intent, and that payload includes the
+/// admin password, so this is gated rather than open: a kiosk with no Start
+/// page yet is being set up and has nothing to take over, and after that it
+/// takes the explicit Allow provisioning intents switch. An MDM that
+/// re-provisions in place turns that on; a panel on a wall does not, and a
+/// refused payload is logged rather than swallowed.
 class ProvisioningChannel {
   ProvisioningChannel(this._settings, this._log);
 
@@ -40,7 +45,23 @@ class ProvisioningChannel {
     }
   }
 
+  /// Whether a payload may be applied at all. First run is open because
+  /// provisioning is how an unconfigured kiosk gets its Start page in the
+  /// first place - tool/onboard-panel.sh does exactly this - and a kiosk
+  /// with nothing configured has nothing worth taking.
+  bool get _accepting =>
+      _settings.get(defs.startUrl).isEmpty ||
+      _settings.get(defs.provisioningAllow);
+
   Future<void> _apply(String json) async {
+    if (!_accepting) {
+      _log.warn(
+        'provision',
+        'refused a provisioning intent: this kiosk is already set up and '
+        'Allow provisioning intents is off',
+      );
+      return;
+    }
     try {
       final decoded = jsonDecode(json);
       if (decoded is! Map) return;

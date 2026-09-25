@@ -5173,6 +5173,13 @@ class UiStringsDe extends UiStrings {
       'Verschlüsselt die Fernverwaltung, API und WebSocket-Verbindungen. Dein Browser kann dich auffordern, das Gerätezertifikat zu akzeptieren.';
 
   @override
+  String get settingProvisioningAllowTitle => 'Allow provisioning intents';
+
+  @override
+  String get settingProvisioningAllowDescription =>
+      'Let an Android intent change settings on a kiosk that is already set up. Any app on the device can send one, so leave this off unless an MDM re-provisions this kiosk in place. A kiosk with no Start page yet always accepts provisioning.';
+
+  @override
   String get settingServiceCpuAwakeTitle =>
       'CPU bei ausgeschaltetem Bildschirm aktiv halten';
 
