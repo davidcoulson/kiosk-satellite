@@ -49,6 +49,9 @@ class RemoteManager extends Manager {
   @override
   String get commandSource => 'remote admin';
 
+  /// The full screen views up right now, from [FullscreenViewChanged].
+  final _fullscreenViews = <String>{};
+
   late final _intercomRoutes = IntercomRoutes(
     commands,
     requiresTls: () => _settings.get(defs.intercomTls),
@@ -265,6 +268,25 @@ class RemoteManager extends Manager {
       bus.on<MicLevelSample>().listen((e) {
         if (_wsClients.isEmpty) return;
         _broadcast({'type': 'micLevel', 'rms': e.rms});
+      }),
+    );
+
+    // Now Playing and the intercom screens, likewise internal: the
+    // Overview labels its screenshot by them and takes a fresh one.
+    _subscriptions.add(
+      bus.on<FullscreenViewChanged>().listen((e) {
+        if (e.shown) {
+          _fullscreenViews.add(e.view);
+        } else {
+          _fullscreenViews.remove(e.view);
+        }
+        if (_wsClients.isEmpty) return;
+        // With the screen events: the same clients redraw from both.
+        _broadcast({
+          'type': 'fullscreen-view',
+          'view': e.view,
+          'shown': e.shown,
+        }, topic: 'events');
       }),
     );
 
@@ -851,9 +873,10 @@ class RemoteManager extends Manager {
   /// "Screen off" or "Screen on" by what the panel is doing, and a tile
   /// born saying one of them before anyone asked would be guessing. Live
   /// changes reach the client through the event feed (screenon/screenoff,
-  /// screensaverstart/screensaverstop, cameraview); this is the snapshot
-  /// they diff against.
-  /// The reads are independent, so they run together rather than one
+  /// screensaverstart/screensaverstop, cameraview, and fullscreen-view
+  /// messages for Now Playing and the intercom screens); this is the
+  /// snapshot they diff against.
+  /// The six reads are independent, so they run together rather than one
   /// after another: awaited in sequence this cost the sum of five platform
   /// round trips on every `/api/info`, and Remote Admin's boot waits on it.
   Future<Map<String, Object?>> _deviceState() async {
@@ -880,6 +903,8 @@ class RemoteManager extends Manager {
       'theater': theater.ok && theater.data is Map
           ? (theater.data as Map)['phase']
           : null,
+      'nowPlayingShown': _fullscreenViews.contains('nowPlaying'),
+      'intercomShown': _fullscreenViews.contains('intercom'),
       'currentUrl': _currentUrl,
     };
   }
