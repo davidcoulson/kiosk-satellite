@@ -10518,6 +10518,13 @@ class UiStringsUk extends UiStrings {
       'Затемнювати нижню панель, щоб погодна інформація залишалася розбірливою.';
 
   @override
+  String get settingScreensaverWeatherBarTitlesTitle => 'Показувати заголовки';
+
+  @override
+  String get settingScreensaverWeatherBarTitlesDescription =>
+      'Підписувати кожен показник над його значенням. Без заголовків значення мають розмір температури.';
+
+  @override
   String get screensaverWeatherBarHumidityDescription =>
       'Показувати вологість, коли погодний об\'єкт повідомляє її.';
 

@@ -80,6 +80,37 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
     bus.publish(const WebViewMissing());
   }
 
+  /// A provider that is installed but failed to start: the creation threw
+  /// AndroidRuntimeException around an InvocationTargetException. Seen
+  /// while Android System WebView updates itself (over in a minute) and
+  /// on a board whose WebView build does not run at all. The watchdog's
+  /// restart every minute changes nothing either way, so the dashboard
+  /// slot shows the WebView notice and the build is tried again after
+  /// [retryAfter]; a provider that came good takes over on that retry, a
+  /// broken one lands here again for another wait.
+  Timer? _webViewRetry;
+
+  void markWebViewBroken(
+    String why, {
+    Duration retryAfter = const Duration(minutes: 5),
+  }) {
+    if (_webViewMissing) return;
+    _webViewMissing = true;
+    log.error(
+      name,
+      'the WebView provider failed to start ($why): the dashboard cannot '
+      'be shown; trying again in ${retryAfter.inMinutes} minutes',
+    );
+    bus.publish(const WebViewMissing());
+    _webViewRetry?.cancel();
+    _webViewRetry = Timer(retryAfter, () {
+      _webViewRetry = null;
+      _webViewMissing = false;
+      log.info(name, 'retrying the WebView after the provider failure');
+      bus.publish(const WebViewMissing());
+    });
+  }
+
   Future<void> _probeWebView() async {
     final details = await DeviceDetails.read();
     if (details.webviewAvailable == false) {

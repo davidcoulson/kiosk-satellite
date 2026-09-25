@@ -10660,6 +10660,13 @@ class UiStringsDe extends UiStrings {
       'Die untere Leiste abdunkeln, damit die Wetterinformationen gut lesbar bleiben.';
 
   @override
+  String get settingScreensaverWeatherBarTitlesTitle => 'Titel anzeigen';
+
+  @override
+  String get settingScreensaverWeatherBarTitlesDescription =>
+      'Jeden Messwert über seinem Wert benennen. Ohne Titel erscheinen die Werte so groß wie die Temperatur.';
+
+  @override
   String get screensaverWeatherBarHumidityDescription =>
       'Die Luftfeuchtigkeit anzeigen, wenn die Wetterentität sie meldet.';
 

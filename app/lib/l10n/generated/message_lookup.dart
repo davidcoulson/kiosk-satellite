@@ -3448,6 +3448,10 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingScreensaverWeatherBarOpacityTitle,
       'settingScreensaverWeatherBarOpacityDescription' =>
         strings.settingScreensaverWeatherBarOpacityDescription,
+      'settingScreensaverWeatherBarTitlesTitle' =>
+        strings.settingScreensaverWeatherBarTitlesTitle,
+      'settingScreensaverWeatherBarTitlesDescription' =>
+        strings.settingScreensaverWeatherBarTitlesDescription,
       'screensaverWeatherBarHumidityDescription' =>
         strings.screensaverWeatherBarHumidityDescription,
       'screensaverWeatherBarWindDescription' =>

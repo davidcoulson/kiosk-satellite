@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'dart:ui' show Brightness;
 
-import 'package:flutter/foundation.dart' show ValueNotifier;
+import 'package:flutter/foundation.dart' show ValueNotifier, visibleForTesting;
 import 'package:flutter/widgets.dart'
     show WidgetsBinding, WidgetsBindingObserver;
 
@@ -1433,9 +1433,14 @@ class HomeAssistantManager extends Manager {
                 // registry lookup's reply carries anything to read. A failure
                 // (an old Home Assistant without get_entries) just leaves
                 // states unrounded, which is what the row always did.
+                if (msg['id'] == 1 && msg['success'] == true) {
+                  subscription._startHeartbeat();
+                }
                 if (msg['id'] == 2 && msg['success'] == true) {
                   onPrecision?.call(_displayPrecisions(msg['result']));
                 }
+              case 'pong':
+                subscription._pong();
               case 'event':
                 _handleEntityEvent(msg['event'], onState);
             }
@@ -2428,8 +2433,18 @@ class HaWebRtcSession {
 class GlanceSubscription {
   GlanceSubscription._(this._channel);
 
+  /// How often a live subscription pings Home Assistant, and how long it
+  /// waits for the pong.
+  @visibleForTesting
+  static Duration heartbeat = const Duration(seconds: 30);
+  @visibleForTesting
+  static Duration pongTimeout = const Duration(seconds: 10);
+
   final WebSocketChannel _channel;
   bool _closed = false;
+  Timer? _heartbeat, _deadline;
+  // Ids 1 and 2 are the subscribe and registry commands.
+  int _pingId = 3;
 
   bool get isClosed => _closed;
 
@@ -2439,15 +2454,50 @@ class GlanceSubscription {
   /// screensaver cycled.
   void Function()? onClosed;
 
+  /// A connection that dies without closing, such as one a router drops
+  /// while the device sleeps, delivers nothing and never reports it. Home
+  /// Assistant answers every ping, so a missed pong counts as a close and
+  /// the owner reopens. Without it Weather Mood kept last night's sun and
+  /// weather at noon.
+  void _startHeartbeat() {
+    _heartbeat?.cancel();
+    _heartbeat = Timer.periodic(heartbeat, (_) {
+      if (_closed) return;
+      try {
+        _channel.sink.add(jsonEncode({'id': _pingId++, 'type': 'ping'}));
+      } catch (_) {}
+      _deadline ??= Timer(pongTimeout, _lost);
+    });
+  }
+
+  void _pong() {
+    _deadline?.cancel();
+    _deadline = null;
+  }
+
+  void _lost() {
+    if (_closed) return;
+    _markClosed();
+    unawaited(_channel.sink.close().catchError((_) {}));
+  }
+
+  void _stopHeartbeat() {
+    _heartbeat?.cancel();
+    _deadline?.cancel();
+    _heartbeat = _deadline = null;
+  }
+
   void _markClosed() {
     if (_closed) return;
     _closed = true;
+    _stopHeartbeat();
     onClosed?.call();
   }
 
   Future<void> close() async {
     if (_closed) return;
     _closed = true;
+    _stopHeartbeat();
     try {
       await _channel.sink.close();
     } catch (_) {}

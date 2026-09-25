@@ -10406,6 +10406,13 @@ class UiStringsEn extends UiStrings {
       'Darken the bottom bar to keep weather information readable.';
 
   @override
+  String get settingScreensaverWeatherBarTitlesTitle => 'Show titles';
+
+  @override
+  String get settingScreensaverWeatherBarTitlesDescription =>
+      'Name each reading above its value. When off, values match the temperature size.';
+
+  @override
   String get screensaverWeatherBarHumidityDescription =>
       'Show humidity when the weather entity reports it.';
 

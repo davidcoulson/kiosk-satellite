@@ -519,6 +519,8 @@ export const screensaverTextMessageIds = {
   "The color of the weather information.": "settingScreensaverWeatherBarColorDescription",
   "Background opacity": "settingScreensaverWeatherBarOpacityTitle",
   "Darken the bottom bar to keep weather information readable.": "settingScreensaverWeatherBarOpacityDescription",
+  "Show titles": "settingScreensaverWeatherBarTitlesTitle",
+  "Name each reading above its value. When off, values match the temperature size.": "settingScreensaverWeatherBarTitlesDescription",
   "Show humidity when the weather entity reports it.": "screensaverWeatherBarHumidityDescription",
   "Show wind speed when the weather entity reports it.": "screensaverWeatherBarWindDescription",
   "Show visibility when the weather entity reports it.": "screensaverWeatherBarVisibilityDescription",

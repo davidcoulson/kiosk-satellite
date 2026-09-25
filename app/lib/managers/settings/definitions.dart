@@ -2036,7 +2036,7 @@ const screensaverWeatherBarColor = SettingDef<String>(
 const screensaverWeatherBarOpacity = SettingDef<num>(
   key: 'screensaver.weather_bar_opacity',
   type: SettingType.number,
-  defaultValue: 60,
+  defaultValue: 50,
   title: "Background opacity",
   description: "Darken the bottom bar to keep weather information readable.",
   category: 'Screensaver',
@@ -2057,6 +2057,19 @@ const screensaverWeatherBarShadow = SettingDef<bool>(
   title: "Text drop shadow",
   description:
       "Add a drop shadow to text for readability over the weather scene.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_bar',
+);
+
+const screensaverWeatherBarTitles = SettingDef<bool>(
+  key: 'screensaver.weather_bar_titles',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: "Show titles",
+  description:
+      "Name each reading above its value. When off, values match the temperature size.",
   category: 'Screensaver',
   section: 'Weather information',
   subpage: 'Weather Mood screensaver',
@@ -8872,6 +8885,7 @@ const List<SettingDef<Object>> allSettings = [
   screensaverWeatherBarColor,
   screensaverWeatherBarOpacity,
   screensaverWeatherBarShadow,
+  screensaverWeatherBarTitles,
   screensaverWeatherBarLocation,
   screensaverWeatherBarFeelsLike,
   screensaverWeatherBarForecast,
