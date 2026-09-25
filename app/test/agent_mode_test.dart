@@ -100,4 +100,17 @@ void main() {
     addTearDown(agent.stop);
     expect(agent.running, isFalse);
   });
+
+  test('an agent can still be told to restart, which is how it is undone', () async {
+    // restartApp belongs to the kiosk manager, which an agent does not run,
+    // and applying a change to agent mode needs a restart: without this the
+    // mode is a one-way door from the remote admin.
+    final c = await build(agent: true);
+    // What init() does for an agent, without the platform plugins a full
+    // init needs: the kiosk manager that owns restartApp is not running,
+    // so the container registers it itself.
+    expect(c.managersForTest, isNot(contains(c.kiosk)));
+    c.registerAgentRestart();
+    expect(c.commands.all.map((x) => x.name), contains('restartApp'));
+  });
 }

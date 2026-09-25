@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import 'core/command_registry.dart';
 import 'core/event_bus.dart';
@@ -297,6 +298,56 @@ class AppContainer {
     intercom,
   ];
 
+  /// Agent mode's one borrowed command.
+  ///
+  /// restartApp belongs to the kiosk manager, which an agent does not run -
+  /// and turning agent mode off needs a restart to take effect. Without this
+  /// an agent could be switched on from the remote admin and not switched
+  /// back off from it, which on a projector with no keyboard means fetching
+  /// a laptop and adb. The kiosk manager's own version refuses first on
+  /// Android 10+ without the draw-over-apps grant, because a process that
+  /// cannot bring itself back must not kill itself; nothing about that
+  /// changes here.
+  @visibleForTesting
+  void registerAgentRestart() {
+    const background = MethodChannel('kiosk_satellite/background');
+    commands.register(
+      Command(
+        name: 'restartApp',
+        description:
+            'Kill and relaunch the whole app. In agent mode this is what '
+            'applies a change to Agent mode itself.',
+        handler: (_) async {
+          final info = await commands.execute('getDeviceInfo', const {});
+          final sdk = info.data is Map
+              ? ((info.data as Map)['sdkInt'] as num?)?.toInt()
+              : null;
+          if (sdk != null && sdk >= 29) {
+            final canReturn =
+                await background.invokeMethod<bool>('canBringToFront') ?? false;
+            if (!canReturn) {
+              return const CommandResult.fail(
+                'Restarting needs the "Display over other apps" permission '
+                'or the app cannot bring itself back.',
+              );
+            }
+          }
+          log.info('app', 'restarting application (agent mode)');
+          try {
+            await background.invokeMethod<void>('restartProcess', {
+              'reason': 'restart requested (agent mode)',
+            });
+          } on PlatformException catch (e) {
+            return CommandResult.fail('restart failed: $e');
+          } on MissingPluginException {
+            return const CommandResult.fail('restart is Android-only');
+          }
+          return const CommandResult.ok();
+        },
+      ),
+    );
+  }
+
   /// The managers this container will actually start, for the agent-mode
   /// test: the list is a contract about what a device stops doing, and a
   /// regression there is silent on a box nobody looks at.
@@ -318,6 +369,7 @@ class AppContainer {
     for (final manager in _ordered.skip(2)) {
       await manager.init();
     }
+    if (agentMode) registerAgentRestart();
     log.info('app', 'all managers initialized');
   }
 
