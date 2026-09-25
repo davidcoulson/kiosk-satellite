@@ -648,6 +648,20 @@ void main() {
       expect(kiosk(intercom.status(), 'kitchen')['status'], 'unreachable');
     });
 
+    test('an agent is never on the roster, nor probed', () async {
+      await build();
+      await settle();
+      sent.clear();
+      peers.first['agent'] = true;
+      bus.publish(FleetChanged(devices: peers));
+      await settle();
+      final ids = [
+        for (final k in intercom.status()['kiosks'] as List) (k as Map)['id'],
+      ];
+      expect(ids, isNot(contains('kitchen')));
+      expect(sent.any((r) => r.url.host == peers.first['address']), isFalse);
+    });
+
     test('a kiosk with the same key and its intercom on is ready', () async {
       await build();
       await settle();

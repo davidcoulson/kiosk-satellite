@@ -620,6 +620,12 @@ class IntercomManager extends Manager {
           _selfVersion = '${d['version'] ?? ''}';
           continue;
         }
+        // An agent (a projector, a media box) runs no intercom at all:
+        // listing it would only offer a kiosk that can never answer.
+        if (d['agent'] == true) {
+          _kiosks.remove(id);
+          continue;
+        }
         heard.add(id);
         final k = _kiosks[id];
         if (k == null) {

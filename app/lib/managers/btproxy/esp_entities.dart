@@ -506,7 +506,8 @@ class EspEntitySurface {
       'category': 2,
     };
 
-    final intercomOn = _settings.get(defs.intercomEnabled);
+    // An agent never starts the intercom, whatever the setting says.
+    final intercomOn = _settings.get(defs.intercomEnabled) && !agent;
     _listedStartPage = _hasCustomStartPage;
     final catalog = <Map<String, Object?>>[
       // ── Controls ─────────────────────────────────────────────────────
@@ -896,7 +897,9 @@ class EspEntitySurface {
                     e.key != 'screensaver_motion' &&
                     e.key != 'screensaver_face')) &&
             (proximityPresent || e.key != 'screensaver_proximity') &&
-            (lightSensorPresent || e.key != 'adaptive_brightness'))
+            (lightSensorPresent || e.key != 'adaptive_brightness') &&
+            // An agent never starts the intercom: its switch would do nothing.
+            (!agent || e.key != 'intercom_enabled'))
           {
             'type': 'switch',
             'objectId': e.key,

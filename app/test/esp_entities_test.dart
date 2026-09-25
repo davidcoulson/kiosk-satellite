@@ -2274,13 +2274,19 @@ void main() {
 
     test('a kiosk still has all three', () async {
       final ids = (await surface.build()).map((e) => e['objectId']).toList();
-      expect(ids, containsAll(['screenshot', 'take_screenshot', 'last_screenshot']));
+      expect(
+        ids,
+        containsAll(['screenshot', 'take_screenshot', 'last_screenshot']),
+      );
     });
 
-    test('the device itself is untouched: sensors, update and restart stay', () async {
-      final ids = (await agentCatalog()).map((e) => e['objectId']).toList();
-      expect(ids, containsAll(['update', 'restart', 'volume']));
-    });
+    test(
+      'the device itself is untouched: sensors, update and restart stay',
+      () async {
+        final ids = (await agentCatalog()).map((e) => e['objectId']).toList();
+        expect(ids, containsAll(['update', 'restart', 'volume']));
+      },
+    );
   });
 
   group('headless management', () {
@@ -2293,9 +2299,15 @@ void main() {
       final event = await entity('remote_key');
       expect(event?['type'], 'event');
       final types = (event?['eventTypes'] as List).cast<String>();
-      expect(types, containsAll(['home', 'back', 'dpad_up', 'media_play_pause', 'red']));
+      expect(
+        types,
+        containsAll(['home', 'back', 'dpad_up', 'media_play_pause', 'red']),
+      );
       // Never text: no letters, digits or space among the event types.
-      expect(types.where((t) => RegExp(r'^([a-z]|\d|space)$').hasMatch(t)), isEmpty);
+      expect(
+        types.where((t) => RegExp(r'^([a-z]|\d|space)$').hasMatch(t)),
+        isEmpty,
+      );
     });
 
     test('a reported key fires the event while reporting is on', () async {
@@ -2309,20 +2321,43 @@ void main() {
     test('the media entities follow Report what is playing', () async {
       expect(await entity('media_title'), isNull);
       await settings.set(defs.nowPlaying, true);
-      for (final id in ['media_state', 'media_app', 'media_title', 'media_artist', 'media_play_pause', 'media_next']) {
+      for (final id in [
+        'media_state',
+        'media_app',
+        'media_title',
+        'media_artist',
+        'media_play_pause',
+        'media_next',
+      ]) {
         expect(await entity(id), isNotNull, reason: id);
       }
     });
 
-    test('now playing reaches Home Assistant, empty fields as unknown', () async {
-      await settings.set(defs.nowPlaying, true);
-      await attach();
-      bus.publish(
-        const NowPlayingChanged({'state': 'playing', 'app': 'Plezy', 'title': 'Alien', 'artist': ''}),
-      );
-      await pumpEventQueue();
-      expect(pushed, containsAll([('media_state', 'playing'), ('media_app', 'Plezy'), ('media_title', 'Alien'), ('media_artist', null)]));
-    });
+    test(
+      'now playing reaches Home Assistant, empty fields as unknown',
+      () async {
+        await settings.set(defs.nowPlaying, true);
+        await attach();
+        bus.publish(
+          const NowPlayingChanged({
+            'state': 'playing',
+            'app': 'Plezy',
+            'title': 'Alien',
+            'artist': '',
+          }),
+        );
+        await pumpEventQueue();
+        expect(
+          pushed,
+          containsAll([
+            ('media_state', 'playing'),
+            ('media_app', 'Plezy'),
+            ('media_title', 'Alien'),
+            ('media_artist', null),
+          ]),
+        );
+      },
+    );
 
     test('an agent reports its self repairs', () async {
       expect(await entity('self_repairs'), isNull);
@@ -2331,10 +2366,28 @@ void main() {
       expect(await entity('last_self_repair'), isNotNull);
     });
 
+    test(
+      'an agent lists no intercom entities, even with the setting on',
+      () async {
+        await settings.set(defs.intercomEnabled, true);
+        final kiosk = (await surface.build())
+            .map((e) => e['objectId'])
+            .toList();
+        await settings.set(defs.agentMode, true);
+        final agent = (await surface.build())
+            .map((e) => e['objectId'])
+            .toList();
+        final intercom = kiosk
+            .where((id) => '$id'.startsWith('intercom'))
+            .toList();
+        expect(intercom, isNotEmpty);
+        expect(agent.where((id) => '$id'.startsWith('intercom')), isEmpty);
+      },
+    );
+
     test('send_key and media_control are Home Assistant actions', () {
       final names = surface.buildServices().map((s) => s['name']).toList();
       expect(names, containsAll(['send_key', 'media_control']));
     });
   });
-
 }
