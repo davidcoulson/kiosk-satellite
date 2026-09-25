@@ -4,6 +4,7 @@ import { loadPlugins } from './plugins.js';
 import { api, showView, state } from './core.js';
 import { refreshUpdateBadge } from './device.js';
 import { initFleet } from './fleet.js';
+import { applyAgentTrim } from './agent.js';
 import { loadConsole } from './logs.js';
 import { initOverview } from './overview.js';
 import { loadScreenshot, loadViewJump } from './panels.js';
@@ -59,6 +60,7 @@ export async function start() {
   }
   showView('app');
   initFleet();
+  applyAgentTrim();
   // The screenshot is the one thing not worth holding the splash for: the
   // tablet reads back and encodes its screen, and the panel has its own
   // placeholder. It lands into the visible page.

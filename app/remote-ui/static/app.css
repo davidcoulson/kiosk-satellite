@@ -268,6 +268,13 @@
     padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
     letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
     flex: none; background: var(--surface-2); color: var(--muted); }
+  /* The header's kind-of-kiosk tag: quieter than a status, since it is a
+     fact about the device rather than something to act on. */
+  .agent-pill { align-self: center; margin-left: 8px; padding: 1px 8px;
+    border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .04em;
+    text-transform: uppercase; background: var(--surface-2); color: var(--muted);
+    white-space: nowrap; }
+  body.agent #npTitle, body.agent #npCard { display: none !important; }
   .tag.device { background: var(--secondary-container);
     color: var(--on-secondary-container); font-size: 10px; }
   /* Agent: a different kind of kiosk, not a state of this one, so it reads
