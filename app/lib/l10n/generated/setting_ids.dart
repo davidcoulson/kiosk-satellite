@@ -1608,4 +1608,8 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingIntercomTlsTitle",
     "description": "settingIntercomTlsDescription",
   },
+  "device.agent_mode": {
+    "title": "settingAgentModeTitle",
+    "description": "settingAgentModeDescription",
+  },
 };

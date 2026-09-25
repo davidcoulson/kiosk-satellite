@@ -15,6 +15,7 @@ import 'core/ha_http_overrides.dart';
 import 'core/locale_dates.dart';
 import 'managers/settings/definitions.dart' as defs;
 import 'ui/key_nav.dart';
+import 'ui/agent_screen.dart';
 import 'ui/kiosk_screen.dart';
 import 'ui/ui_scale.dart';
 import 'ui/setup_screen.dart';
@@ -306,7 +307,11 @@ class _KioskSatelliteAppState extends State<KioskSatelliteApp>
         child: FocusTraversalGroup(policy: KsTraversalPolicy(), child: child!),
       ),
       navigatorObservers: [kioskRouteObserver],
-      home: configured
+      // Agent mode never shows a page, so it never needs a Start URL and
+      // never runs the setup wizard that asks for one.
+      home: container.agentMode
+          ? AgentScreen(container: container)
+          : configured
           ? KioskScreen(container: container)
           : SetupScreen(container: container),
     );

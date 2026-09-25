@@ -1606,5 +1606,9 @@
   "intercom.tls": {
     "title": "settingIntercomTlsTitle",
     "description": "settingIntercomTlsDescription"
+  },
+  "device.agent_mode": {
+    "title": "settingAgentModeTitle",
+    "description": "settingAgentModeDescription"
   }
 }

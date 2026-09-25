@@ -5893,6 +5893,13 @@ class UiStringsFr extends UiStrings {
   String get deviceThemeSystem => 'Système';
 
   @override
+  String get settingAgentModeTitle => 'Agent mode';
+
+  @override
+  String get settingAgentModeDescription =>
+      'Run as a management agent instead of a kiosk: no dashboard, screensaver, voice or cameras, but still a Home Assistant device with its sensors, the remote admin, updates and fleet membership. For a projector, a media box or anything that is not a wall panel. Takes a restart.';
+
+  @override
   String get settingDlnaEnabledTitle => 'Activer le récepteur DLNA';
 
   @override

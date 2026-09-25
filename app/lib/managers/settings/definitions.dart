@@ -8489,6 +8489,40 @@ const legacyWebView = SettingDef<bool>(
 // scales; the WebViews opt back out (UiScaleExempt), since web pages have
 // their own zoom settings and are the reason a high density device needs
 // this at all: the dashboard is sized right while the chrome reads tiny.
+/// Runs this install as a management agent rather than a kiosk.
+///
+/// Not every Android box on the network is a wall panel. A projector, a
+/// media box, a spare tablet: the useful part of Kiosk Satellite there is
+/// what it already knows how to do - publish the device to Home Assistant
+/// over ESPHome, answer the remote admin, take updates and belong to the
+/// fleet - and the useless part is everything that draws a dashboard or
+/// listens for a wake word.
+///
+/// So this is a mode, not a second build: one branch in the manager list
+/// rather than a separate artifact to build, sign and deploy on every sync.
+/// The browser, kiosk lock, launchers, screensavers, theater mode, cameras,
+/// motion, voice, media players and the intercom are never started; settings,
+/// the screen, the foreground service, ESPHome, the remote admin, updates and
+/// fleet membership are. The app shows a status screen instead of a page.
+///
+/// Read once at startup, because managers are constructed and initialized
+/// there - changing it takes a restart, which the description says.
+const agentMode = SettingDef<bool>(
+  key: 'device.agent_mode',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Agent mode',
+  description:
+      'Run as a management agent instead of a kiosk: no dashboard, '
+      'screensaver, voice or cameras, but still a Home Assistant device with '
+      'its sensors, the remote admin, updates and fleet membership. For a '
+      'projector, a media box or anything that is not a wall panel. Takes a '
+      'restart.',
+  category: 'Device',
+  section: 'User Interface',
+  perDevice: true,
+);
+
 const uiScale = SettingDef<num>(
   key: 'ui.scale',
   type: SettingType.number,
@@ -9116,6 +9150,7 @@ const List<SettingDef<Object>> allSettings = [
   // The User Interface group: consecutive, or the heading would repeat.
   uiLanguage,
   uiTheme,
+  agentMode,
   uiScale,
   // The two pages, service first, close the Device page.
   serviceCpuAwake,

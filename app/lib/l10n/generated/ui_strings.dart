@@ -10099,6 +10099,18 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
+  /// **'Agent mode'**
+  String get settingAgentModeTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Run as a management agent instead of a kiosk: no dashboard, screensaver, voice or cameras, but still a Home Assistant device with its sensors, the remote admin, updates and fleet membership. For a projector, a media box or anything that is not a wall panel. Takes a restart.'**
+  String get settingAgentModeDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
   /// **'Enable DLNA renderer'**
   String get settingDlnaEnabledTitle;
 

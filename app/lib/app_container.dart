@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'core/command_registry.dart';
 import 'core/event_bus.dart';
 import 'core/logging.dart';
@@ -179,10 +181,63 @@ class AppContainer {
   late final FleetSyncManager fleetSync;
   late final IntercomManager intercom;
 
-  /// Built after [device.init] so it can carry the app version.
+  /// Built after [device.init] so it can carry the app version, and only
+  /// for a kiosk: the page bridge has nothing to attach to without a
+  /// browser, and every caller of it lives in KioskScreen.
   late final JsApiManager jsApi;
+  bool _jsApiBuilt = false;
 
-  List<Manager> get _ordered => [
+  /// Whether this install runs as a management agent rather than a kiosk.
+  /// Read from the settings, which are loaded before anything below starts.
+  bool get agentMode => settings.get(defs.agentMode);
+
+  /// What agent mode leaves out: everything whose job is to face a person
+  /// through this device's own screen or microphone. What stays is what a
+  /// projector or a media box is actually useful for - the ESPHome device
+  /// and its sensors (btProxy owns that surface), the remote admin, updates,
+  /// plugins and fleet membership - plus the pieces those rest on: the
+  /// foreground service, the screen state, files and Shizuku.
+  ///
+  /// Skipped rather than disabled. Each of these can already be turned off
+  /// by its own setting, but every one of them is still constructed here and
+  /// still runs init(), and init() is where the cost is: a WebView, a camera
+  /// binding, an audio engine, platform channels and settings listeners, on
+  /// a box that will never show a dashboard. The objects themselves are
+  /// cheap and are built either way - this list is about what never starts.
+  List<Manager> get _agentOmits => [
+    browser,
+    camera,
+    kiosk,
+    launcher,
+    homeLauncher,
+    screensaver,
+    theater,
+    immich,
+    deviceCamera,
+    motion,
+    proximity,
+    personSensor,
+    audio,
+    gestures,
+    wakeWord,
+    pipeline,
+    sendspin,
+    dlna,
+    glance,
+    sound,
+    voiceTimers,
+    notifications,
+    intercom,
+  ];
+
+  List<Manager> get _ordered {
+    final all = _everyManager;
+    if (!agentMode) return all;
+    final omit = Set<Manager>.identity()..addAll(_agentOmits);
+    return all.where((m) => !omit.contains(m)).toList();
+  }
+
+  List<Manager> get _everyManager => [
     settings,
     device,
     screen,
@@ -190,7 +245,7 @@ class AppContainer {
     proxy,
     browser,
     camera,
-    jsApi,
+    if (_jsApiBuilt) jsApi,
     kiosk,
     // After kiosk: it listens for the AppLaunched its launchApp emits,
     // and its bringToFront/screenOn calls resolve at execute time.
@@ -242,15 +297,24 @@ class AppContainer {
     intercom,
   ];
 
+  /// The managers this container will actually start, for the agent-mode
+  /// test: the list is a contract about what a device stops doing, and a
+  /// regression there is silent on a box nobody looks at.
+  @visibleForTesting
+  List<Manager> get managersForTest => _ordered;
+
   Future<void> init() async {
     await settings.init();
     // Apply any adb/MDM intent provisioning before other managers read
     // their settings; the channel also handles pushes while running.
     await ProvisioningChannel(settings, log).init();
     await device.init();
-    jsApi = JsApiManager(bus, commands, log, device.appVersion)
-      ..isTrustedOrigin = _isConfiguredOrigin
-      ..isTheaterFrameOrigin = _isTheaterFrameOrigin;
+    if (!agentMode) {
+      jsApi = JsApiManager(bus, commands, log, device.appVersion)
+        ..isTrustedOrigin = _isConfiguredOrigin
+        ..isTheaterFrameOrigin = _isTheaterFrameOrigin;
+      _jsApiBuilt = true;
+    }
     for (final manager in _ordered.skip(2)) {
       await manager.init();
     }
