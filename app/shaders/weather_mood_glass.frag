@@ -1,7 +1,9 @@
 #version 460 core
 #include <flutter/runtime_effect.glsl>
-// A glass chip over the Weather Mood scene: frosted, lit softly from above,
-// with a thin even rim and a faint bevel inside it.
+// A glass chip over the Weather Mood scene: lightly frosted, with a thin
+// even rim, a bevel that catches light along the top and a soft gloss.
+// Highlights follow the brightness behind the chip, so the glass reads
+// against a bright sky without glaring against a night one.
 uniform vec2 uSize;
 // The chip in the backdrop's pixels: left, top, width, height.
 uniform vec4 uRect;
@@ -44,23 +46,35 @@ void main() {
   float bevel = min(radius * .6, 14. * uScale);
   float rim = 1. - clamp(depth / bevel, 0., 1.);
   vec2 view = pixel - normal * rim * rim * bevel * .35;
-  // Frosted: a soft blur of what is behind, two rings of taps.
-  float near = 3. * uScale, far = 7. * uScale;
+  // Frosted, but lightly: the sky still shows through, softened.
+  float near = 2. * uScale, far = 4.5 * uScale;
   vec3 color = backdrop(view) * .2;
   for (int i = 0; i < 8; i++) {
     float angle = float(i) * .7853982 + .3927;
     vec2 dir = vec2(cos(angle), sin(angle));
     color += backdrop(view + dir * near) * .06 + backdrop(view + dir * far) * .04;
   }
-  // Tint for legibility, then a frosted lift, brighter toward the top.
-  color = mix(color, vec3(.06, .07, .09), uTint * .62);
-  float height = clamp((pixel.y - origin.y) / uRect.w, 0., 1.);
-  color += vec3(.075) + vec3(.045) * (1. - smoothstep(0., .7, height));
-  // An even rim, a touch brighter along the top and bottom, over a faint
-  // bevel glow just inside it.
-  float line = exp(-pow(depth / (1.7 * uScale), 2.));
+  // Light on glass shows against a bright sky and glares against a dark
+  // one, so every highlight follows the brightness behind the chip.
+  float luma = dot(color, vec3(.2126, .7152, .0722));
+  float light = mix(.35, 1., smoothstep(.03, .45, luma));
+  float day = smoothstep(.15, .55, luma);
+  // Darken for legibility, keeping the scene's own contrast, then a faint
+  // frosted lift.
+  color = color * (1. - uTint * .5) + vec3(.06, .07, .09) * uTint * .12;
+  color += vec3(.035) * light;
+  // A soft gloss across the upper left, like light on a curved pane.
+  vec2 local = (pixel - origin) / uRect.zw;
+  float gloss = 1. - smoothstep(.15, .75, local.x * .45 + local.y);
+  color += vec3(.07) * gloss * light;
+  // Inside the rim the pane catches light along the top and shades along
+  // the bottom, which gives it depth against a bright sky.
   float inner = exp(-depth / (4.5 * uScale));
+  color += vec3(.08) * inner * max(-normal.y, 0.) * light;
+  color -= vec3(.06) * inner * max(normal.y, 0.) * day;
+  // A thin, even rim, a touch brighter along the top and bottom.
+  float line = exp(-pow(depth / (1.5 * uScale), 2.));
   float edge = .75 + .25 * abs(normal.y);
-  color += vec3(1.) * (line * .36 + inner * .07) * edge;
+  color += vec3(.34) * line * edge * light;
   fragColor = vec4(clamp(color, 0., 1.), 1.);
 }

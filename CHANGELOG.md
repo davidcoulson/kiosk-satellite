@@ -9,7 +9,7 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ### Changed
 - **At a Glance matches the Weather Mood chips.** Over Weather Mood the At a Glance pills are glass like the weather chips and follow the same Background opacity and Text drop shadow. A colored icon shows in its color on a clear disc. Other screensavers keep the dark pills.
-- **Frosted Weather Mood glass.** The weather chips are now frosted glass with a thin, even light rim, a soft bevel inside it and a gentle sheen from above, in place of the lens that bent the scene at their edges. Icons sit in clear discs with a light ring.
+- **Frosted Weather Mood glass.** The weather chips are now lightly frosted glass with a thin, even light rim, a bevel that catches light along the top and a soft gloss, in place of the lens that bent the scene at their edges. The highlights follow the brightness of the sky behind each chip, so the glass reads against a bright day without glaring at night. Icons sit in clear discs with a light ring.
 
 ### Fixed
 - **Weather Mood and screensaver widgets no longer freeze on old Home Assistant states.** A connection that died without closing, such as one a router drops while the device sleeps, left Weather Mood showing night and hours old weather at noon until the screensaver restarted. At a Glance and the corner widgets could freeze the same way. These connections now check in with Home Assistant every 30 seconds and reconnect when it stops answering.
