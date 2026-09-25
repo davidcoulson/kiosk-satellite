@@ -156,27 +156,49 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
   @override
   void initState() {
     super.initState();
-    _tick();
+    _schedule();
   }
 
-  void _tick() {
-    _now = DateTime.now();
+  @override
+  void didUpdateWidget(WeatherMoodInformation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A settings change rebuilds this widget, and Show seconds changes how
+    // often the clock needs to tick.
+    _schedule();
+  }
+
+  bool get _seconds =>
+      widget.container.settings.get(defs.screensaverWeatherClock) &&
+      widget.container.settings.get(defs.screensaverWeatherClockSeconds);
+
+  /// Wakes at the next second while seconds show, the next minute
+  /// otherwise.
+  void _schedule() {
+    _timer?.cancel();
+    final now = DateTime.now();
     _timer = Timer(
-      Duration(milliseconds: 60000 - _now.second * 1000 - _now.millisecond),
+      _seconds
+          ? Duration(milliseconds: 1000 - now.millisecond)
+          : Duration(milliseconds: 60000 - now.second * 1000 - now.millisecond),
       () {
         if (!mounted) return;
+        final previous = _now;
         setState(() {
-          if (widget.container.settings.get(defs.screensaverPixelShift)) {
-            final random = math.Random();
-            _offset = Offset(
-              random.nextDouble() * 20 - 10,
-              random.nextDouble() * 20 - 10,
-            );
-          } else {
-            _offset = Offset.zero;
+          _now = DateTime.now();
+          // Pixel shift still moves once a minute, not with every second.
+          if (_now.minute != previous.minute || _now.hour != previous.hour) {
+            if (widget.container.settings.get(defs.screensaverPixelShift)) {
+              final random = math.Random();
+              _offset = Offset(
+                random.nextDouble() * 20 - 10,
+                random.nextDouble() * 20 - 10,
+              );
+            } else {
+              _offset = Offset.zero;
+            }
           }
-          _tick();
         });
+        _schedule();
       },
     );
   }
@@ -195,8 +217,11 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
         ? _now.hour
         : (_now.hour % 12 == 0 ? 12 : _now.hour % 12);
     final hours = use24h ? '$hour'.padLeft(2, '0') : '$hour';
+    final seconds = s.get(defs.screensaverWeatherClockSeconds)
+        ? ':${'${_now.second}'.padLeft(2, '0')}'
+        : '';
     final time =
-        '$hours:${'${_now.minute}'.padLeft(2, '0')}${use24h
+        '$hours:${'${_now.minute}'.padLeft(2, '0')}$seconds${use24h
             ? ''
             : _now.hour < 12
             ? ' AM'

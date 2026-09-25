@@ -41,6 +41,7 @@ void main() {
           defs.screensaverClockFontWeight,
         ),
         (defs.screensaverWeatherClock24h, defs.screensaverClock24h),
+        (defs.screensaverWeatherClockSeconds, defs.screensaverClockSeconds),
         (defs.screensaverWeatherClockDate, defs.screensaverClockDate),
         (defs.screensaverWeatherClockScale, defs.screensaverClockScale),
         (defs.screensaverWeatherClockColor, defs.screensaverClockColor),
@@ -180,6 +181,10 @@ void main() {
       );
       expect(
         find.text(strings.settingScreensaverWidgetTextShadowTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(strings.settingScreensaverClockSecondsTitle),
         findsOneWidget,
       );
       await tester.tap(find.text(strings.settingScreensaverClock24hTitle));
@@ -365,6 +370,14 @@ void main() {
       expect(face.date, isNull);
       expect(face.shadows, isEmpty);
       expect(face.time, matches(RegExp(r'^\d{2}:\d{2}$')));
+      // Show seconds adds them to the same face.
+      await c.settings.set(defs.screensaverWeatherClockSeconds, true);
+      await show(const Size(1280, 800), 100, 'fr');
+      expect(
+        tester.widget<DigitalClockFace>(find.byType(DigitalClockFace)).time,
+        matches(RegExp(r'^\d{2}:\d{2}:\d{2}$')),
+      );
+      await c.settings.set(defs.screensaverWeatherClockSeconds, false);
       List<ShapeDecoration> chips() => [
         for (final box in tester.widgetList<DecoratedBox>(
           find.descendant(
