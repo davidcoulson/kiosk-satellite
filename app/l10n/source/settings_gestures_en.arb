@@ -286,5 +286,57 @@
         "type": "String"
       }
     }
+  },
+  "settingGestureRemoteKeysTitle": "Remote keys",
+  "@settingGestureRemoteKeysTitle": {
+    "context": "Settings > Gestures",
+    "description": "Setting title.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
+    }
+  },
+  "settingGestureRemoteKeysDescription": "Run the actions mapped to keys on the remote, whatever app is in front.",
+  "@settingGestureRemoteKeysDescription": {
+    "context": "Settings > Gestures",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
+    }
+  },
+  "gestureRemoteKeysServiceOff": "Remote keys need the Kiosk Satellite accessibility service. Enable it in Android Accessibility settings.",
+  "@gestureRemoteKeysServiceOff": {
+    "context": "Settings > Gestures",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
+    }
+  },
+  "gestureRemoteKeysHelp": "A mapped key runs its action whatever app is in front, and does nothing else.",
+  "@gestureRemoteKeysHelp": {
+    "context": "Settings > Gestures",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
+    }
   }
 }

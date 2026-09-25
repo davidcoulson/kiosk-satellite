@@ -806,22 +806,10 @@ class BackgroundBridge(
 
     /// Bring another app to the front. Returns false when the package is
     /// not installed or exposes no launchable activity, so the caller can
-    /// say so rather than appearing to do nothing.
-    private fun launchApp(packageName: String?): Boolean {
-        if (packageName.isNullOrBlank()) return false
-        val intent = context.packageManager.getLaunchIntentForPackage(packageName)
-            ?: return false
-        return try {
-            // NEW_TASK because this may be launched with no Activity of ours
-            // on screen at all (an automation over ESPHome, the remote admin).
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-            true
-        } catch (e: Exception) {
-            android.util.Log.w("kiosk_satellite", "launchApp $packageName failed", e)
-            false
-        }
-    }
+    /// say so rather than appearing to do nothing. Shared with remote keys
+    /// (AppLaunch), which open apps from the accessibility service.
+    private fun launchApp(packageName: String?): Boolean =
+        AppLaunch.launchApp(context, packageName)
 
     /// Every app with a launcher activity, as [{package, label}] sorted by
     /// label. The set a home screen shows — which is also exactly the set
@@ -1016,29 +1004,10 @@ class BackgroundBridge(
 
     /// Open a URI with whatever app claims it (ACTION_VIEW). Returns false
     /// when nothing on the device can handle it, so the caller can say so.
-    private fun openUri(uri: String?): Boolean {
-        if (uri.isNullOrBlank()) return false
-        return try {
-            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(uri))
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-            true
-        } catch (e: Exception) {
-            android.util.Log.w("kiosk_satellite", "openUri $uri failed", e)
-            false
-        }
-    }
+    private fun openUri(uri: String?): Boolean = AppLaunch.openUri(context, uri)
 
     /// Open the Android Settings app.
-    private fun openSystemSettings(): Boolean = try {
-        val intent = Intent(Settings.ACTION_SETTINGS)
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
-        true
-    } catch (e: Exception) {
-        android.util.Log.w("kiosk_satellite", "openSystemSettings failed", e)
-        false
-    }
+    private fun openSystemSettings(): Boolean = AppLaunch.openSystemSettings(context)
 
     /// The next alarm clock set on the device, whichever app set it: this is
     /// the same value the status bar's alarm icon reflects. Null when none is

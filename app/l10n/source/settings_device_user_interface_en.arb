@@ -159,5 +159,31 @@
         "Device > User Interface"
       ]
     }
+  },
+  "settingKeepAccessibilityTitle": "Keep accessibility service on",
+  "@settingKeepAccessibilityTitle": {
+    "context": "Settings > Gestures",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
+    }
+  },
+  "settingKeepAccessibilityDescription": "Turn the Kiosk Satellite accessibility service back on whenever something turns it off. Needs android.permission.WRITE_SECURE_SETTINGS granted over adb; does nothing without it.",
+  "@settingKeepAccessibilityDescription": {
+    "context": "Settings > Gestures",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
+    }
   }
 }

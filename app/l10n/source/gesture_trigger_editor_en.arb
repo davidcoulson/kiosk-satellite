@@ -538,5 +538,122 @@
         "Gestures > Add gesture"
       ]
     }
+  },
+  "gestureRemoteKey": "Remote key",
+  "@gestureRemoteKey": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureKey": "Key",
+  "@gestureKey": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureKeyNone": "No key yet",
+  "@gestureKeyNone": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureKeyCapture": "Capture key",
+  "@gestureKeyCapture": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureKeyWaiting": "Press the key on the remote…",
+  "@gestureKeyWaiting": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureKeyMissed": "No key was pressed.",
+  "@gestureKeyMissed": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureKeyError": "Capture a key first.",
+  "@gestureKeyError": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureLongPress": "Long press",
+  "@gestureLongPress": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureLongPressHelp": "Runs when the key is held for half a second. While a key has a long press action, a short press runs only its own action, if it has one.",
+  "@gestureLongPressHelp": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
   }
 }

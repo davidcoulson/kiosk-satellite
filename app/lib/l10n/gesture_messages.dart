@@ -68,6 +68,11 @@ String localizedGestureTrigger(
           : count == 1
           ? s.gestureDescribeOneFinger('$count')
           : s.gestureDescribeFingers('$count');
+    case 'remote_key':
+      final key = remoteKeyName(trigger);
+      return trigger['longPress'] == true
+          ? s.gestureDescribeRemoteKeyLong(key)
+          : s.gestureDescribeRemoteKey(key);
   }
   return gestureText(context, 'Gesture');
 }

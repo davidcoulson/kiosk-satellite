@@ -96,6 +96,14 @@ adb shell settings put secure enabled_accessibility_services me.jxl.kiosk_satell
 adb shell settings put secure accessibility_enabled 1
 ```
 
+To append instead, keeping whatever is already enabled (only when the list is not empty: an empty one reads back as `null`):
+
+```
+adb shell 'settings put secure enabled_accessibility_services "$(settings get secure enabled_accessibility_services):me.jxl.kiosk_satellite/me.jxl.kiosk_satellite.KioskAccessibilityService"'
+```
+
+The same service carries [remote key mappings](gestures.md#remote-keys).
+
 After running these command blocks, check **Settings > Device > Permissions Manager** (or open the page in the remote admin). Every row should now display as Granted.
 
 ## The Kiosk Satellite Service

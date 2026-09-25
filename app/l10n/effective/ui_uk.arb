@@ -5501,6 +5501,44 @@
     },
     "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
   },
+  "gestureDescribeRemoteKey": "Press the {key} key",
+  "@gestureDescribeRemoteKey": {
+    "context": "Settings > Gestures > Configured gestures",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Configured gestures"
+      ],
+      "remoteAdmin": [
+        "Gestures > Configured gestures"
+      ]
+    },
+    "placeholders": {
+      "key": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "gestureDescribeRemoteKeyLong": "Long press the {key} key",
+  "@gestureDescribeRemoteKeyLong": {
+    "context": "Settings > Gestures > Configured gestures",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Configured gestures"
+      ],
+      "remoteAdmin": [
+        "Gestures > Configured gestures"
+      ]
+    },
+    "placeholders": {
+      "key": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
   "gestureValid": "Виглядає добре.",
   "@gestureValid": {
     "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
@@ -6680,6 +6718,123 @@
   },
   "gestureSequenceError": "Додайте щонайменше два кути.",
   "@gestureSequenceError": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureRemoteKey": "Remote key",
+  "@gestureRemoteKey": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureKey": "Key",
+  "@gestureKey": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureKeyNone": "No key yet",
+  "@gestureKeyNone": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureKeyCapture": "Capture key",
+  "@gestureKeyCapture": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureKeyWaiting": "Press the key on the remote…",
+  "@gestureKeyWaiting": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureKeyMissed": "No key was pressed.",
+  "@gestureKeyMissed": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureKeyError": "Capture a key first.",
+  "@gestureKeyError": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureLongPress": "Long press",
+  "@gestureLongPress": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureLongPressHelp": "Runs when the key is held for half a second. While a key has a long press action, a short press runs only its own action, if it has one.",
+  "@gestureLongPressHelp": {
     "context": "Settings > Gestures > Add gesture",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -21552,6 +21707,32 @@
       ]
     }
   },
+  "settingKeepAccessibilityTitle": "Keep accessibility service on",
+  "@settingKeepAccessibilityTitle": {
+    "context": "Settings > Gestures",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
+    }
+  },
+  "settingKeepAccessibilityDescription": "Turn the Kiosk Satellite accessibility service back on whenever something turns it off. Needs android.permission.WRITE_SECURE_SETTINGS granted over adb; does nothing without it.",
+  "@settingKeepAccessibilityDescription": {
+    "context": "Settings > Gestures",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
+    }
+  },
   "settingDlnaEnabledTitle": "Увімкнути рендерер DLNA",
   "@settingDlnaEnabledTitle": {
     "context": "Settings > DLNA Renderer",
@@ -23932,6 +24113,58 @@
       "seconds": {
         "type": "String"
       }
+    }
+  },
+  "settingGestureRemoteKeysTitle": "Remote keys",
+  "@settingGestureRemoteKeysTitle": {
+    "context": "Settings > Gestures",
+    "description": "Setting title.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
+    }
+  },
+  "settingGestureRemoteKeysDescription": "Run the actions mapped to keys on the remote, whatever app is in front.",
+  "@settingGestureRemoteKeysDescription": {
+    "context": "Settings > Gestures",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
+    }
+  },
+  "gestureRemoteKeysServiceOff": "Remote keys need the Kiosk Satellite accessibility service. Enable it in Android Accessibility settings.",
+  "@gestureRemoteKeysServiceOff": {
+    "context": "Settings > Gestures",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
+    }
+  },
+  "gestureRemoteKeysHelp": "A mapped key runs its action whatever app is in front, and does nothing else.",
+  "@gestureRemoteKeysHelp": {
+    "context": "Settings > Gestures",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
     }
   },
   "settingHaHoldModeTitle": "Режим утримання",

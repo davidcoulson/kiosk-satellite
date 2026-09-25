@@ -21,6 +21,9 @@ export function cameraField(label, value = '', type = 'text') {
 }
 
 export const CAMERA_ICONS = {
+  // A remote control: the remote_key gesture trigger.
+  remote: '<rect x="8" y="2" width="8" height="20" rx="2"/>'
+    + '<circle cx="12" cy="7" r="1.6"/><path d="M11 12h2M11 15h2M11 18h2"/>',
   dns: '<rect x="3" y="4" width="18" height="6" rx="2"/>'
     + '<rect x="3" y="14" width="18" height="6" rx="2"/>'
     + '<path d="M7 7h.01M7 17h.01M11 7h7M11 17h7"/>',

@@ -21,11 +21,13 @@ export function isAgent() {
 
 // Pages whose subject an agent does not run. ESPHome, Screen & Audio and
 // App Launcher are deliberately absent: the ESPHome device, the screen and
-// opening another app are what an agent is for.
+// opening another app are what an agent is for. Gestures stays for its
+// remote keys, the one input a projector has; the page itself offers an
+// agent only that trigger (gestures.js).
 const HIDDEN_TABS = [
   'homeassistant', 'voicesatellite', 'screensaver', 'browser',
   'sendspin', 'dlna', 'intercom', 'camera', 'cameras',
-  'kiosk', 'lockdown', 'home', 'gestures',
+  'kiosk', 'lockdown', 'home',
 ];
 
 // Quick controls. A tile is named by its id where it has one, and by the

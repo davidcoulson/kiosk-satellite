@@ -193,5 +193,17 @@
   "Turn theater mode on": "gestureTheaterOn",
   "Turn theater mode off": "gestureTheaterOff",
   "Brighten theater mode for a moment": "gestureTheaterPeek",
-  "Hand Gestures": "gestureHandGestures"
+  "Hand Gestures": "gestureHandGestures",
+  "Remote keys": "settingGestureRemoteKeysTitle",
+  "Remote keys need the Kiosk Satellite accessibility service. Enable it in Android Accessibility settings.": "gestureRemoteKeysServiceOff",
+  "A mapped key runs its action whatever app is in front, and does nothing else.": "gestureRemoteKeysHelp",
+  "Remote key": "gestureRemoteKey",
+  "Key": "gestureKey",
+  "No key yet": "gestureKeyNone",
+  "Capture key": "gestureKeyCapture",
+  "Press the key on the remote…": "gestureKeyWaiting",
+  "No key was pressed.": "gestureKeyMissed",
+  "Capture a key first.": "gestureKeyError",
+  "Long press": "gestureLongPress",
+  "Runs when the key is held for half a second. While a key has a long press action, a short press runs only its own action, if it has one.": "gestureLongPressHelp"
 }

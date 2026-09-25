@@ -1542,6 +1542,16 @@ class UiStringsFr extends UiStrings {
   }
 
   @override
+  String gestureDescribeRemoteKey(String key) {
+    return 'Press the $key key';
+  }
+
+  @override
+  String gestureDescribeRemoteKeyLong(String key) {
+    return 'Long press the $key key';
+  }
+
+  @override
   String get gestureValid => 'Tout semble correct.';
 
   @override
@@ -1857,6 +1867,34 @@ class UiStringsFr extends UiStrings {
 
   @override
   String get gestureSequenceError => 'Ajoutez au moins deux coins.';
+
+  @override
+  String get gestureRemoteKey => 'Remote key';
+
+  @override
+  String get gestureKey => 'Key';
+
+  @override
+  String get gestureKeyNone => 'No key yet';
+
+  @override
+  String get gestureKeyCapture => 'Capture key';
+
+  @override
+  String get gestureKeyWaiting => 'Press the key on the remote…';
+
+  @override
+  String get gestureKeyMissed => 'No key was pressed.';
+
+  @override
+  String get gestureKeyError => 'Capture a key first.';
+
+  @override
+  String get gestureLongPress => 'Long press';
+
+  @override
+  String get gestureLongPressHelp =>
+      'Runs when the key is held for half a second. While a key has a long press action, a short press runs only its own action, if it has one.';
 
   @override
   String get intercomCall => 'Appeler';
@@ -5903,6 +5941,13 @@ class UiStringsFr extends UiStrings {
       'Run as a management agent instead of a kiosk: no dashboard, screensaver, voice or cameras, but still a Home Assistant device with its sensors, the remote admin, updates and fleet membership. For a projector, a media box or anything that is not a wall panel. Takes a restart.';
 
   @override
+  String get settingKeepAccessibilityTitle => 'Keep accessibility service on';
+
+  @override
+  String get settingKeepAccessibilityDescription =>
+      'Turn the Kiosk Satellite accessibility service back on whenever something turns it off. Needs android.permission.WRITE_SECURE_SETTINGS granted over adb; does nothing without it.';
+
+  @override
   String get settingDlnaEnabledTitle => 'Activer le récepteur DLNA';
 
   @override
@@ -6528,6 +6573,21 @@ class UiStringsFr extends UiStrings {
   String gestureHoldSeconds(String seconds) {
     return '$seconds s';
   }
+
+  @override
+  String get settingGestureRemoteKeysTitle => 'Remote keys';
+
+  @override
+  String get settingGestureRemoteKeysDescription =>
+      'Run the actions mapped to keys on the remote, whatever app is in front.';
+
+  @override
+  String get gestureRemoteKeysServiceOff =>
+      'Remote keys need the Kiosk Satellite accessibility service. Enable it in Android Accessibility settings.';
+
+  @override
+  String get gestureRemoteKeysHelp =>
+      'A mapped key runs its action whatever app is in front, and does nothing else.';
 
   @override
   String get settingHaHoldModeTitle => 'Mode maintien';

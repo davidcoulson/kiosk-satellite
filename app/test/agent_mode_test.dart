@@ -81,6 +81,10 @@ void main() {
       // Not a slip: it owns installedApps, foregroundApp and the
       // foreground_app sensor, which is what an agent is asked about.
       c.launcher,
+      // A projector's remote is its one input: remote keys need both the
+      // key table and the manager that runs what a key maps to.
+      c.gestures,
+      c.remoteKeys,
     ]) {
       expect(c.managersForTest, contains(kept));
     }
@@ -131,7 +135,8 @@ void main() {
     expect(c.managersForTest, isNot(contains(c.kiosk)));
     c.registerAgentAppCommands();
     final names = c.commands.all.map((x) => x.name);
-    expect(names, containsAll(['launchApp', 'openUri']));
+    // openSystemSettings: the gear key's mapping on a projector.
+    expect(names, containsAll(['launchApp', 'openUri', 'openSystemSettings']));
   });
 
   test('an agent is never "unconfigured" to the remote admin', () async {

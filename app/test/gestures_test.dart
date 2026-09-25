@@ -64,10 +64,13 @@ void main() {
           '{"id":"g4","trigger":{"type":"claps","claps":2},'
           '"action":{"type":"menu"}},'
           '{"id":"g5","trigger":{"type":"fingers","fingers":2},'
+          '"action":{"type":"menu"}},'
+          '{"id":"g6","trigger":{"type":"remote_key","keyCode":3},'
           '"action":{"type":"menu"}}]',
         ),
       );
-      // Claps and hands are not touch: the native engine never sees them.
+      // Claps, hands and remote keys are not touch: the native engine
+      // never sees them (keys go to the accessibility service).
       expect(triggers, [
         {'id': 'g1', 'type': 'corner_taps', 'corner': 'tl', 'taps': 3},
         {'id': 'g2', 'type': 'finger_hold', 'fingers': 2, 'holdMs': 1500},
@@ -81,6 +84,39 @@ void main() {
   });
 
   group('describe helpers', () {
+    test('remote key labels use the captured name, else the code', () {
+      expect(
+        describeGestureTrigger({
+          'type': 'remote_key',
+          'keyCode': 3,
+          'keyName': 'Home',
+        }),
+        'Press the Home key',
+      );
+      expect(
+        describeGestureTrigger({
+          'type': 'remote_key',
+          'keyCode': 134,
+          'keyName': 'F4',
+          'longPress': true,
+        }),
+        'Long press the F4 key',
+      );
+      expect(
+        describeGestureTrigger({'type': 'remote_key', 'keyCode': 82}),
+        'Press the 82 key',
+      );
+      expect(
+        hasRemoteKeyTrigger(
+          decodeGestureMappings(
+            '[{"id":"k1","trigger":{"type":"remote_key","keyCode":3},'
+            '"action":{"type":"android_settings"}}]',
+          ),
+        ),
+        isTrue,
+      );
+    });
+
     test('trigger labels', () {
       expect(
         describeGestureTrigger({

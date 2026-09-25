@@ -1612,4 +1612,12 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingAgentModeTitle",
     "description": "settingAgentModeDescription",
   },
+  "gestures.remote_keys.enabled": {
+    "title": "settingGestureRemoteKeysTitle",
+    "description": "settingGestureRemoteKeysDescription",
+  },
+  "device.keep_accessibility": {
+    "title": "settingKeepAccessibilityTitle",
+    "description": "settingKeepAccessibilityDescription",
+  },
 };

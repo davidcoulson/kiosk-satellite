@@ -490,6 +490,15 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'gestureChangeHelp' => strings.gestureChangeHelp,
       'gestureChooseError' => strings.gestureChooseError,
       'gestureSequenceError' => strings.gestureSequenceError,
+      'gestureRemoteKey' => strings.gestureRemoteKey,
+      'gestureKey' => strings.gestureKey,
+      'gestureKeyNone' => strings.gestureKeyNone,
+      'gestureKeyCapture' => strings.gestureKeyCapture,
+      'gestureKeyWaiting' => strings.gestureKeyWaiting,
+      'gestureKeyMissed' => strings.gestureKeyMissed,
+      'gestureKeyError' => strings.gestureKeyError,
+      'gestureLongPress' => strings.gestureLongPress,
+      'gestureLongPressHelp' => strings.gestureLongPressHelp,
       'intercomCall' => strings.intercomCall,
       'intercomNoReady' => strings.intercomNoReady,
       'intercomOneReady' => strings.intercomOneReady,
@@ -1620,6 +1629,9 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'deviceThemeSystem' => strings.deviceThemeSystem,
       'settingAgentModeTitle' => strings.settingAgentModeTitle,
       'settingAgentModeDescription' => strings.settingAgentModeDescription,
+      'settingKeepAccessibilityTitle' => strings.settingKeepAccessibilityTitle,
+      'settingKeepAccessibilityDescription' =>
+        strings.settingKeepAccessibilityDescription,
       'settingDlnaEnabledTitle' => strings.settingDlnaEnabledTitle,
       'settingDlnaEnabledDescription' => strings.settingDlnaEnabledDescription,
       'settingDlnaAudioBackgroundTitle' =>
@@ -1827,6 +1839,11 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'settingHandGestureHoldSecondsDescription' =>
         strings.settingHandGestureHoldSecondsDescription,
       'gestureHoldInstant' => strings.gestureHoldInstant,
+      'settingGestureRemoteKeysTitle' => strings.settingGestureRemoteKeysTitle,
+      'settingGestureRemoteKeysDescription' =>
+        strings.settingGestureRemoteKeysDescription,
+      'gestureRemoteKeysServiceOff' => strings.gestureRemoteKeysServiceOff,
+      'gestureRemoteKeysHelp' => strings.gestureRemoteKeysHelp,
       'settingHaHoldModeTitle' => strings.settingHaHoldModeTitle,
       'settingHaHoldModeDescription' => strings.settingHaHoldModeDescription,
       'settingHaHoldReleaseMinutesTitle' =>

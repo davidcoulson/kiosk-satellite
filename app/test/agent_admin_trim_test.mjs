@@ -56,15 +56,16 @@ test('an agent loses the pages whose managers never start', () => {
   const { hidden } = shell({ agent: true });
   for (const tab of ['homeassistant', 'voicesatellite', 'screensaver', 'browser',
     'sendspin', 'dlna', 'intercom', 'camera', 'cameras', 'kiosk', 'lockdown',
-    'home', 'gestures']) {
+    'home']) {
     assert.ok(hidden.has(`tab:${tab}:hidden`), `${tab} should be hidden`);
   }
 });
 
 test('it keeps the pages an agent exists for', () => {
   const { hidden } = shell({ agent: true });
+  // Gestures stays for remote keys, a projector's one input.
   for (const tab of ['esphome', 'screenaudio', 'launcher', 'device', 'fleet',
-    'files', 'plugins', 'logs', 'about']) {
+    'files', 'plugins', 'logs', 'about', 'gestures']) {
     assert.ok(!hidden.has(`tab:${tab}:hidden`), `${tab} should stay`);
   }
 });
@@ -91,7 +92,7 @@ test('every tab and tile the trim names exists in the shell', () => {
   const names = [...source.matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
   for (const tab of ['homeassistant', 'voicesatellite', 'screensaver', 'browser',
     'sendspin', 'dlna', 'intercom', 'camera', 'cameras', 'kiosk', 'lockdown',
-    'home', 'gestures']) {
+    'home']) {
     assert.ok(names.includes(tab), `${tab} is named by the trim`);
     assert.ok(html.includes(`data-tab="${tab}"`), `${tab} exists in index.html`);
   }

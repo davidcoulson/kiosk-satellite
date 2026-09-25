@@ -210,6 +210,25 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:theme="@android:style/Theme.NoDisplay"/>
+        <!-- The NexiGo Aurora Pro's gear key for remote key mappings: its
+             window policy starts this action on every press (the stock
+             Zeasn launcher's settings tab, absent on the Aurora) and drops
+             the key when nothing answers. Behind DUMP like
+             ProvisionActivity: the system passes any permission check,
+             other apps cannot. See GearKeyActivity. -->
+        <activity
+            android:name=".GearKeyActivity"
+            android:exported="true"
+            android:permission="android.permission.DUMP"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="com.zeasn.whale.open.launcher.TabType"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
         <!-- The screen-on fallback: launching this lights the panel where
              the app's wake lock does not. See WakeActivity. -->
         <activity

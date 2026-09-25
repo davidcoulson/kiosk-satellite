@@ -76,11 +76,16 @@ const _triggerTypes = <(String, String)>[
   ('corner_sequence', 'Corner sequence'),
   ('claps', 'Claps'),
   ('fingers', 'Show fingers'),
+  ('remote_key', 'Remote key'),
 ];
 
 class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
   AppContainer get c => widget.container;
   double? _handHoldDrag;
+
+  /// Whether the accessibility service is up, read once per page visit:
+  /// no remote key works without it, so its absence is worth a warning.
+  late final Future<Map<String, Object?>> _remoteKeys = c.remoteKeys.status();
 
   List<GestureMapping> get _mappings =>
       decodeGestureMappings(c.settings.get(defs.gestureMappings));
@@ -139,6 +144,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                 leading: Icon(switch (mapping.triggerType) {
                   'claps' => Icons.sign_language_outlined,
                   'fingers' => Icons.waving_hand_outlined,
+                  'remote_key' => Icons.settings_remote_outlined,
                   _ => Icons.gesture,
                 }),
                 title: Text(localizedGestureTrigger(context, mapping.trigger)),
@@ -170,6 +176,67 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
             'dashboard, so corners and multi-finger shapes keep them from '
             'firing anything there.',
           ),
+        ),
+        SectionHeading(gestureText(context, 'Remote keys')),
+        SettingsCard(
+          children: [
+            SearchLandingTarget(
+              id: defs.gestureRemoteKeysEnabled.key,
+              child: SettingsRow(
+                title: Text(
+                  defs.gestureRemoteKeysEnabled.localizedTitle(context),
+                ),
+                subtitle: Text(
+                  defs.gestureRemoteKeysEnabled.localizedDescription(context),
+                ),
+                trailing: Switch(
+                  value: c.settings.get(defs.gestureRemoteKeysEnabled),
+                  onChanged: (value) async {
+                    await c.settings.set(defs.gestureRemoteKeysEnabled, value);
+                    if (mounted) setState(() {});
+                  },
+                ),
+              ),
+            ),
+            SearchLandingTarget(
+              id: defs.keepAccessibility.key,
+              child: SettingsRow(
+                title: Text(defs.keepAccessibility.localizedTitle(context)),
+                subtitle: Text(
+                  defs.keepAccessibility.localizedDescription(context),
+                ),
+                trailing: Switch(
+                  value: c.settings.get(defs.keepAccessibility),
+                  onChanged: (value) async {
+                    await c.settings.set(defs.keepAccessibility, value);
+                    if (mounted) setState(() {});
+                  },
+                ),
+              ),
+            ),
+            FutureBuilder<Map<String, Object?>>(
+              future: _remoteKeys,
+              builder: (context, snapshot) {
+                final running = snapshot.data?['serviceRunning'] == true;
+                if (!snapshot.hasData || running) {
+                  return HintRow(
+                    gestureText(
+                      context,
+                      'A mapped key runs its action whatever app is in '
+                      'front, and does nothing else.',
+                    ),
+                  );
+                }
+                return WarnRow(
+                  gestureText(
+                    context,
+                    'Remote keys need the Kiosk Satellite accessibility '
+                    'service. Enable it in Android Accessibility settings.',
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         SectionHeading(gestureText(context, 'Clapper')),
         SettingsCard(
@@ -281,6 +348,15 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
     var holdMs = (existing?.trigger['holdMs'] as num?)?.toInt() ?? 1500;
     var claps = (existing?.trigger['claps'] as num?)?.toInt() ?? 2;
     var fingerCount = (existing?.trigger['fingers'] as num?)?.toInt() ?? 5;
+    var keyCode = type == 'remote_key'
+        ? (existing?.trigger['keyCode'] as num?)?.toInt()
+        : null;
+    var keyName = type == 'remote_key'
+        ? '${existing?.trigger['keyName'] ?? ''}'
+        : '';
+    var longPress = existing?.trigger['longPress'] == true;
+    var capturing = false;
+    var captureMissed = false;
     final sequence = [
       for (final s in (existing?.trigger['sequence'] as List?) ?? const [])
         '$s',
@@ -296,7 +372,8 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
           final holdSeconds = holdMs / 1000;
           final canSave =
               action != null &&
-              (type != 'corner_sequence' || sequence.length >= 2);
+              (type != 'corner_sequence' || sequence.length >= 2) &&
+              (type != 'remote_key' || keyCode != null);
           return AlertDialog(
             title: Text(
               existing == null
@@ -525,6 +602,75 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
+                      if (type == 'remote_key') ...[
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.settings_remote_outlined),
+                          title: Text(
+                            capturing
+                                ? gestureText(
+                                    context,
+                                    'Press the key on the remote…',
+                                  )
+                                : keyCode == null
+                                ? gestureText(context, 'No key yet')
+                                : remoteKeyName({
+                                    'keyCode': keyCode,
+                                    'keyName': keyName,
+                                  }),
+                          ),
+                          subtitle: captureMissed
+                              ? Text(
+                                  gestureText(context, 'No key was pressed.'),
+                                )
+                              : null,
+                          trailing: capturing
+                              ? const SizedBox.square(
+                                  dimension: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : OutlinedButton(
+                                  onPressed: () async {
+                                    setDialogState(() {
+                                      capturing = true;
+                                      captureMissed = false;
+                                    });
+                                    final key = await c.remoteKeys.capture();
+                                    if (!context.mounted) return;
+                                    setDialogState(() {
+                                      capturing = false;
+                                      if (key == null) {
+                                        captureMissed = true;
+                                      } else {
+                                        keyCode = (key['keyCode'] as num?)
+                                            ?.toInt();
+                                        keyName = '${key['keyName'] ?? ''}';
+                                      }
+                                    });
+                                  },
+                                  child: Text(
+                                    gestureText(context, 'Capture key'),
+                                  ),
+                                ),
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(gestureText(context, 'Long press')),
+                          subtitle: Text(
+                            gestureText(
+                              context,
+                              'Runs when the key is held for half a second. '
+                              'While a key has a long press action, a short '
+                              'press runs only its own action, if it has one.',
+                            ),
+                          ),
+                          value: longPress,
+                          onChanged: (value) =>
+                              setDialogState(() => longPress = value),
+                        ),
+                      ],
                       if (type == 'corner_sequence') ...[
                         Text(
                           sequence.isEmpty
@@ -596,11 +742,16 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, false),
+                onPressed: () {
+                  if (capturing) c.remoteKeys.cancelCapture();
+                  Navigator.pop(context, false);
+                },
                 child: Text(gestureText(context, 'Cancel')),
               ),
               FilledButton(
-                onPressed: canSave ? () => Navigator.pop(context, true) : null,
+                onPressed: canSave && !capturing
+                    ? () => Navigator.pop(context, true)
+                    : null,
                 child: Text(gestureText(context, 'Save')),
               ),
             ],
@@ -620,6 +771,11 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
       if (type == 'corner_sequence') 'sequence': sequence,
       if (type == 'claps') 'claps': claps,
       if (type == 'fingers') 'fingers': fingerCount,
+      if (type == 'remote_key') ...{
+        'keyCode': keyCode,
+        if (keyName.isNotEmpty) 'keyName': keyName,
+        'longPress': longPress,
+      },
     };
     final mapping = GestureMapping(
       id: existing?.id ?? 'g${DateTime.now().millisecondsSinceEpoch}',

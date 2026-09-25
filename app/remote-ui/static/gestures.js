@@ -9,6 +9,7 @@ import {
   cameraSelectField,
 } from './cameras.js';
 import { api, cmd, state } from './core.js';
+import { isAgent } from './agent.js';
 import { applyManagedBanners } from './fleetsync.js';
 import { settingRow } from './rows.js';
 import { fetchViews, radioRow } from './views.js';
@@ -33,7 +34,16 @@ export const GESTURE_TRIGGERS = [
   ['corner_sequence', 'Corner sequence'],
   ['claps', 'Claps'],
   ['fingers', 'Show fingers'],
+  ['remote_key', 'Remote key'],
 ];
+
+// What an agent can map: it has no touch dashboard, microphone or camera,
+// only its remote - and only the actions whose commands it registers.
+const AGENT_TRIGGERS = ['remote_key'];
+const AGENT_ACTIONS = new Set([
+  'plugin_action', 'launch_app', 'open_uri', 'android_settings',
+  'ha_service', 'ha_script', 'ha_automation', 'ha_event',
+]);
 export const GESTURE_ACTION_GROUPS = [
   ['Kiosk Satellite', [
     ['navigate', 'Go to a dashboard view', 'grid'],
@@ -86,8 +96,17 @@ export function describeGestureTrigger(trigger) {
       const count = Number(trigger.fingers) || 5;
       return count === 5 ? gestureText('Show an open hand') : t(count === 1 ? 'gestureDescribeOneFinger' : 'gestureDescribeFingers', {count});
     }
+    case 'remote_key':
+      return t(trigger.longPress === true ? 'gestureDescribeRemoteKeyLong' : 'gestureDescribeRemoteKey',
+        {key: remoteKeyName(trigger)});
   }
   return gestureText('Gesture');
+}
+
+// A remote key's display name: the one captured with it, else its code.
+export function remoteKeyName(trigger) {
+  const name = String(trigger.keyName || '').trim();
+  return name || String(trigger.keyCode ?? '?');
 }
 
 export function describeGestureAction(a) {
@@ -439,7 +458,10 @@ export async function configureGestureHaEvent(current) {
 // nothing to configure resolve directly.
 export async function pickGestureAction(current) {
   const items = [];
-  for (const [group, actions] of GESTURE_ACTION_GROUPS) {
+  const agent = isAgent();
+  for (const [group, all] of GESTURE_ACTION_GROUPS) {
+    const actions = agent ? all.filter(([value]) => AGENT_ACTIONS.has(value)) : all;
+    if (!actions.length) continue;
     items.push({ header: group });
     for (const [value, label, icon] of actions) {
       items.push({
@@ -518,11 +540,13 @@ export async function editGesture(existing) {
   // Show fingers needs a hand runtime this Android version cannot load
   // (issue #331): not offered, though an existing mapping still opens.
   const handsOk = !(state.visionSupport && state.visionSupport.hands === false);
+  const agent = isAgent();
   const typeSel = cameraSelectField(gestureText('Gesture'),
     GESTURE_TRIGGERS
       .filter(([value]) => handsOk || value !== 'fingers' || triggerValue.type === 'fingers')
+      .filter(([value]) => !agent || AGENT_TRIGGERS.includes(value) || triggerValue.type === value)
       .map(([value, label]) => ({ value, label: gestureText(label) })),
-    triggerValue.type || 'corner_taps');
+    triggerValue.type || (agent ? 'remote_key' : 'corner_taps'));
   const cornerSel = cameraSelectField(gestureText('Corner'),
     Object.entries(GESTURE_CORNERS).map(([value, label]) => ({
       value, label: gestureCorner(value),
@@ -597,6 +621,56 @@ export async function editGesture(existing) {
   paintSeq();
   seqWrap.append(seqText, seqButtons);
 
+  // Remote key: the captured key, and whether it is a long press.
+  let key = triggerValue.type === 'remote_key' && Number(triggerValue.keyCode) > 0
+    ? { keyCode: Number(triggerValue.keyCode), keyName: triggerValue.keyName || '' }
+    : null;
+  const keyRow = document.createElement('div');
+  keyRow.className = 'row';
+  const keyInfo = document.createElement('div');
+  keyInfo.className = 'info';
+  const keyName = document.createElement('div');
+  keyName.className = 'name';
+  const keyDesc = document.createElement('div');
+  keyDesc.className = 'desc';
+  keyInfo.append(keyName, keyDesc);
+  const paintKey = (note = '') => {
+    keyName.textContent = key ? remoteKeyName(key) : gestureText('No key yet');
+    keyDesc.textContent = note;
+  };
+  paintKey();
+  const captureButton = cameraAction(gestureText('Capture key'), async () => {
+    captureButton.disabled = true;
+    paintKey(gestureText('Press the key on the remote…'));
+    let result;
+    try {
+      result = await cmd('captureRemoteKey', { seconds: 20 }, { timeoutMs: 25000 });
+    } catch (_) { result = null; }
+    captureButton.disabled = false;
+    if (result?.ok && Number(result.data?.keyCode) > 0) {
+      key = { keyCode: Number(result.data.keyCode), keyName: result.data.keyName || '' };
+      paintKey();
+    } else {
+      paintKey(result?.error || gestureText('No key was pressed.'));
+    }
+  });
+  keyRow.append(keyInfo, captureButton);
+  const longWrap = document.createElement('label');
+  longWrap.className = 'form-field';
+  longWrap.style.cssText = 'display:flex; gap:10px; align-items:flex-start;';
+  const longInput = document.createElement('input');
+  longInput.type = 'checkbox';
+  longInput.checked = triggerValue.longPress === true;
+  const longText = document.createElement('span');
+  const longTitle = document.createElement('span');
+  longTitle.textContent = gestureText('Long press');
+  const longHelp = document.createElement('span');
+  longHelp.className = 'desc';
+  longHelp.style.display = 'block';
+  longHelp.textContent = gestureText('Runs when the key is held for half a second. While a key has a long press action, a short press runs only its own action, if it has one.');
+  longText.append(longTitle, longHelp);
+  longWrap.append(longInput, longText);
+
   const actionRow = document.createElement('div');
   actionRow.className = 'row';
   actionRow.style.borderBottom = 'none';
@@ -619,7 +693,7 @@ export async function editGesture(existing) {
 
   body.append(typeSel.wrap, cornerSel.wrap, tapsSel.wrap, fingersSel.wrap,
     fingerTapsSel.wrap, clapsSel.wrap, clapsNote, fingerCountSel.wrap,
-    holdWrap, palmNote, seqWrap, actionRow);
+    holdWrap, palmNote, seqWrap, keyRow, longWrap, actionRow);
   const update = () => {
     const type = typeSel.select.value;
     cornerSel.wrap.style.display =
@@ -635,6 +709,8 @@ export async function editGesture(existing) {
     holdWrap.style.display =
       type === 'corner_hold' || type === 'finger_hold' ? '' : 'none';
     seqWrap.style.display = type === 'corner_sequence' ? '' : 'none';
+    keyRow.style.display = type === 'remote_key' ? '' : 'none';
+    longWrap.style.display = type === 'remote_key' ? '' : 'none';
   };
   typeSel.select.addEventListener('change', update);
   update();
@@ -647,6 +723,9 @@ export async function editGesture(existing) {
       if (!action) return { ok: false, error: gestureText('Choose an action.') };
       if (type === 'corner_sequence' && sequence.length < 2) {
         return { ok: false, error: gestureText('Add at least two corners.') };
+      }
+      if (type === 'remote_key' && !key) {
+        return { ok: false, error: gestureText('Capture a key first.') };
       }
       const trigger = { type };
       if (type === 'corner_taps' || type === 'corner_hold') {
@@ -663,6 +742,11 @@ export async function editGesture(existing) {
       if (type === 'corner_sequence') trigger.sequence = [...sequence];
       if (type === 'claps') trigger.claps = Number(clapsSel.select.value);
       if (type === 'fingers') trigger.fingers = Number(fingerCountSel.select.value);
+      if (type === 'remote_key') {
+        trigger.keyCode = key.keyCode;
+        if (key.keyName) trigger.keyName = key.keyName;
+        trigger.longPress = longInput.checked;
+      }
       const mappings = readGestureMappings();
       const mapping = {
         id: existing?.id || `g${Date.now()}`, trigger, action,
@@ -731,7 +815,7 @@ export async function loadGestures() {
         }, false, 'delete'),
       ],
       {
-        icon: { claps: 'clap', fingers: 'hand' }[mapping.trigger?.type] || 'gesture',
+        icon: { claps: 'clap', fingers: 'hand', remote_key: 'remote' }[mapping.trigger?.type] || 'gesture',
         onClick: async () => {
           if (await editGesture(mapping)) refresh();
         },
@@ -748,10 +832,42 @@ export async function loadGestures() {
     },
   ));
 
-  const note = document.createElement('div');
-  note.className = 'group-note';
-  note.textContent = gestureText('Gestures are observed, not blocked: the taps also reach the dashboard, so corners and multi-finger shapes keep them from firing anything there.');
-  root.appendChild(note);
+  const agent = isAgent();
+  if (!agent) {
+    const note = document.createElement('div');
+    note.className = 'group-note';
+    note.textContent = gestureText('Gestures are observed, not blocked: the taps also reach the dashboard, so corners and multi-finger shapes keep them from firing anything there.');
+    root.appendChild(note);
+  }
+
+  // Mirrors the device's Remote keys section (ui/gesture_settings.dart).
+  const remoteKeys = settings.find((s) => s.key === 'gestures.remote_keys.enabled');
+  if (remoteKeys) {
+    const keysHeading = document.createElement('h2');
+    keysHeading.className = 'card-title';
+    keysHeading.style.marginTop = agent ? '' : '22px';
+    keysHeading.textContent = gestureText('Remote keys');
+    root.appendChild(keysHeading);
+    const keysCard = document.createElement('div');
+    keysCard.className = 'card';
+    keysCard.appendChild(settingRow(remoteKeys));
+    const keep = settings.find((s) => s.key === 'device.keep_accessibility');
+    if (keep) keysCard.appendChild(settingRow(keep));
+    root.appendChild(keysCard);
+    const keysNote = document.createElement('div');
+    keysNote.className = 'group-note';
+    keysNote.textContent = gestureText('A mapped key runs its action whatever app is in front, and does nothing else.');
+    root.appendChild(keysNote);
+    cmd('remoteKeysStatus').then((status) => {
+      if (status?.ok && status.data?.serviceRunning === false) {
+        keysNote.style.color = 'var(--warn, var(--error))';
+        keysNote.textContent = gestureText('Remote keys need the Kiosk Satellite accessibility service. Enable it in Android Accessibility settings.');
+      }
+    }).catch(() => {});
+  }
+  // An agent has no microphone or camera running: the clap and hand
+  // settings would tune detectors that never start.
+  if (agent) return;
 
   // Mirrors the device's Clapper section (ui/gesture_settings.dart).
   const strictness = settings.find((s) => s.key === 'gestures.clap_strictness');

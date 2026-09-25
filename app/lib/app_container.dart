@@ -18,6 +18,7 @@ import 'managers/btproxy/bt_proxy_manager.dart';
 import 'managers/dlna/dlna_manager.dart';
 import 'managers/files/files_manager.dart';
 import 'managers/gestures/gestures_manager.dart';
+import 'managers/gestures/remote_keys_manager.dart';
 import 'managers/glance/glance_manager.dart';
 import 'managers/home_assistant/home_assistant_manager.dart';
 import 'managers/js_api/js_api_manager.dart';
@@ -73,6 +74,7 @@ class AppContainer {
     launcher = AppLauncherManager(bus, commands, log, settings);
     homeLauncher = HomeLauncherManager(bus, commands, log, settings);
     gestures = GesturesManager(bus, commands, log, settings);
+    remoteKeys = RemoteKeysManager(bus, commands, log, settings);
     screensaver = ScreensaverManager(bus, commands, log, settings);
     theater = TheaterManager(bus, commands, log, settings)
       ..isTrustedOrigin = _isConfiguredOrigin;
@@ -153,6 +155,7 @@ class AppContainer {
   late final AppLauncherManager launcher;
   late final HomeLauncherManager homeLauncher;
   late final GesturesManager gestures;
+  late final RemoteKeysManager remoteKeys;
   late final ScreensaverManager screensaver;
   late final TheaterManager theater;
   late final ImmichManager immich;
@@ -200,7 +203,10 @@ class AppContainer {
   /// projector or a media box is actually useful for - the ESPHome device
   /// and its sensors (btProxy owns that surface), the remote admin, updates,
   /// plugins and fleet membership - plus the pieces those rest on: the
-  /// foreground service, the screen state, files and Shizuku.
+  /// foreground service, the screen state, files and Shizuku. Gestures stay
+  /// too, for one trigger: a remote key is the one input a projector has,
+  /// and the gestures manager is what runs the actions its keys map to.
+  /// Nothing else in it starts without a touch, clap or hand mapping.
   ///
   /// Skipped rather than disabled. Each of these can already be turned off
   /// by its own setting, but every one of them is still constructed here and
@@ -221,7 +227,6 @@ class AppContainer {
     proximity,
     personSensor,
     audio,
-    gestures,
     wakeWord,
     pipeline,
     sendspin,
@@ -277,6 +282,8 @@ class AppContainer {
     // selector and tuning must be seeded first. Commands resolve at execute
     // time, so running late costs nothing.
     gestures,
+    // After gestures: the keys it hands back run as GestureDetected.
+    remoteKeys,
     wakeWord,
     pipeline,
     sendspin,
@@ -368,7 +375,9 @@ class AppContainer {
         params: const {'package': 'Android package, e.g. com.edde746.plezy'},
         handler: (p) async {
           final package = '${p['package'] ?? ''}'.trim();
-          if (package.isEmpty) return const CommandResult.fail('package required');
+          if (package.isEmpty) {
+            return const CommandResult.fail('package required');
+          }
           try {
             final ok =
                 await background.invokeMethod<bool>('launchApp', {
@@ -409,6 +418,27 @@ class AppContainer {
             return const CommandResult.fail('opening a URI is Android-only');
           } on PlatformException catch (e) {
             return CommandResult.fail('could not open the URI: $e');
+          }
+        },
+      ),
+    );
+    // The gear key's usual mapping on a projector (remote keys).
+    commands.register(
+      Command(
+        name: 'openSystemSettings',
+        description: 'Open the Android Settings app.',
+        handler: (_) async {
+          try {
+            final ok =
+                await background.invokeMethod<bool>('openSystemSettings') ??
+                false;
+            return ok
+                ? const CommandResult.ok()
+                : const CommandResult.fail('could not open settings');
+          } on MissingPluginException {
+            return const CommandResult.fail('Android settings is Android-only');
+          } on PlatformException catch (e) {
+            return CommandResult.fail('could not open settings: $e');
           }
         },
       ),

@@ -146,5 +146,11 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         fleet = FleetBridge(applicationContext, messenger)
         intercomAudio = IntercomAudio(applicationContext, messenger)
         plugins = me.jxl.kiosk_satellite.plugins.PluginBridge(applicationContext, messenger)
+        // Engine-scoped, not Activity-scoped: remote keys must work on an
+        // agent, which never opens an Activity, and from boot.
+        RemoteKeysBridge(applicationContext, messenger)
+        // Puts the accessibility service back when firmware turns it off;
+        // inert without WRITE_SECURE_SETTINGS granted over adb.
+        AccessibilityKeeper.install(applicationContext)
     }
 }

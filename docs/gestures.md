@@ -10,7 +10,7 @@ Two of the available gestures do not require touching the screen at all. **Claps
 
 Navigate to **Settings**, then **Gestures**. Here you will find the list of active gestures and the specific actions they trigger. This same page is also available in the remote admin interface. Any gesture configured here will function whenever the app is running, regardless of whether Kiosk Mode is enabled.
 
-If you are using Kiosk Mode, you can use the **Disable Gestures** switch. When Kiosk Mode is active and this switch is turned on, all custom gestures become dormant. They will automatically rearm the moment lockdown ends.
+If you are using Kiosk Mode, you can use the **Disable Gestures** switch. When Kiosk Mode is active and this switch is turned on, all custom gestures become dormant. They will automatically rearm the moment lockdown ends. Remote keys are the exception: they have their own switch (see [Remote keys](#remote-keys)).
 
 Each entry on this page binds one specific gesture to one specific action. When adding a new entry, the app will first ask for the gesture's shape, and then the action. Each action type only requests the information it specifically requires (like a URL, a dashboard view, or a Home Assistant service call). The Home Assistant configuration dialogs include a **Validate** button, which actively checks the domain, service, and entity against your connected instance before saving anything.
 
@@ -25,6 +25,7 @@ Each entry on this page binds one specific gesture to one specific action. When 
 | Corner sequence | An ordered sequence of corner taps, functioning like a knock code. |
 | Claps | 2 to 4 distinct claps, detected through the device microphone. |
 | Show fingers | An open hand, or a hand showing 1 to 4 fingers, presented to the device camera. |
+| Remote key | A key on the device's remote (or any hardware keyboard), short or long press. See [Remote keys](#remote-keys). |
 
 The corner hitboxes are approximately 1.5 centimeters square. You can map two different gestures to the exact same corner using different tap counts; the system will automatically wait a beat after the shorter sequence to ensure you aren't simply entering the longer one.
 
@@ -94,6 +95,50 @@ Camera behavior for Show Fingers:
 * Once an action fires, the finger count must physically change (or the hand must drop out of frame) before that specific mapping can fire again. Simply holding the hand up will not repeat the action. However, smoothly switching from two fingers to an open hand will fire both associated actions in sequence. A second hand resting in view will not block detection.
 * Lockdown Mode and Kiosk Mode's Disable Gestures toggle will silence the hand gesture exactly as they do touch gestures. When silenced, the camera is not even bound for hand detection.
 * As long as a hand mapping exists, the camera's exposure is dynamically steered by the video frames themselves. Because a front camera typically meters for the whole room (which often leaves a person standing in front of it in silhouette), the app will ask the camera to step up the exposure for dark frames and step it down for bright ones, adjusting every couple of seconds. The motion analyzer and any snapshots taken simultaneously will use these same adjusted frames. Hands still require some ambient light to be read, though less than faces. A palm held up near a dim night light will be detected, though it may take a beat longer than in daylight. The gesture will not function in complete darkness.
+
+## Remote keys
+
+A **Remote key** gesture maps a key on the device's remote to an action, whatever app is in front: Home can open your own launcher, the gear key Android settings, and a spare key a plugin command. It is built for Android TV boxes and projectors, where the focused app (often the TV input showing HDMI) keeps keys like Home for itself and nothing else ever sees them.
+
+Remote keys need the **System UI guard** accessibility service (see [Kiosk and Lockdown](kiosk.md#required-system-permissions)), since only an accessibility service receives keys meant for another app. The Gestures page warns while it is off. On a device that already has an accessibility service enabled, such as Projectivy's, **append** Kiosk Satellite to the list rather than replacing it:
+
+```
+adb shell 'settings put secure enabled_accessibility_services "$(settings get secure enabled_accessibility_services):me.jxl.kiosk_satellite/me.jxl.kiosk_satellite.KioskAccessibilityService"'
+adb shell settings put secure accessibility_enabled 1
+```
+
+Some firmware turns the service off again on its own; the HY260 projector does, and comes back from a reboot with it off. For those, grant Kiosk Satellite permission to put it back itself. **Keep accessibility service on** (Settings, Device, User Interface; on by default) then re-enables the service whenever it is removed, alongside anything else enabled:
+
+```
+adb shell pm grant me.jxl.kiosk_satellite android.permission.WRITE_SECURE_SETTINGS
+```
+
+With that grant, Kiosk Satellite also turns the service on by itself, so the `settings put` lines above are not needed.
+
+To add one, choose **Remote key**, press **Capture key** and press the key on the remote. The key is swallowed while it is captured, so pressing Home to map it does not also go home. Keys are matched on their Android key code, so one mapping covers every remote that sends that key.
+
+* A mapped key is **consumed**: the app in front never sees it. Unmapped keys pass through untouched, and the service asks Android for key events only while at least one remote key is mapped.
+* **Long press** fires when the key is held for half a second. A key can carry both a short and a long mapping. While it has a long one, a short press runs only its own mapping (or nothing), because whether a press will turn long is unknowable when it starts.
+* A few keys cannot be mapped: some device firmware takes a key for itself before any accessibility service sees it, and **Capture key** then reports that no key was pressed. The NexiGo Aurora Pro's gear key used to be one. Its firmware tries to open a stock launcher the projector does not have, and drops the key when that fails. Kiosk Satellite now answers that request, so the gear key arrives like any other key (captured as F4).
+* **Open another app**, **Open a deep link** and **Open Android Settings** run straight from the accessibility service, so they work from boot, before the rest of the app is up, and on an [agent](#agents). Every other action runs like any other gesture.
+* Remote keys have their own switch, **Remote keys**, instead of following Kiosk Mode's **Disable Gestures**: a mapped key is the device's remote, not a hidden admin gesture.
+* Keys are compared against the mappings and never logged, stored or read as text.
+
+A mapping is stored in `gestures.mappings` like every other gesture, so settings import, export and fleet sync carry it:
+
+```json
+{
+  "id": "k1",
+  "trigger": {"type": "remote_key", "keyCode": 3, "keyName": "Home", "longPress": false},
+  "action": {"type": "launch_app", "package": "com.spocky.projengmenu"}
+}
+```
+
+`keyCode` is the Android `KeyEvent` code (3 is Home, 82 Menu, 134 F4). `keyName` is only what the editors show.
+
+### Agents
+
+A device in agent mode shows the Gestures page with this one trigger and the actions an agent can run: opening an app, a deep link or Android settings, a plugin action, and the Home Assistant actions.
 
 ## Timing
 

@@ -2729,6 +2729,18 @@ abstract class UiStrings {
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
+  /// **'Press the {key} key'**
+  String gestureDescribeRemoteKey(String key);
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Long press the {key} key'**
+  String gestureDescribeRemoteKeyLong(String key);
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
   /// **'Looks good.'**
   String get gestureValid;
 
@@ -3271,6 +3283,60 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Add at least two corners.'**
   String get gestureSequenceError;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote key'**
+  String get gestureRemoteKey;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Key'**
+  String get gestureKey;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'No key yet'**
+  String get gestureKeyNone;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture key'**
+  String get gestureKeyCapture;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Press the key on the remote…'**
+  String get gestureKeyWaiting;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'No key was pressed.'**
+  String get gestureKeyMissed;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture a key first.'**
+  String get gestureKeyError;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Long press'**
+  String get gestureLongPress;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs when the key is held for half a second. While a key has a long press action, a short press runs only its own action, if it has one.'**
+  String get gestureLongPressHelp;
 
   /// Label or guidance in this section.
   ///
@@ -10117,6 +10183,18 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
+  /// **'Keep accessibility service on'**
+  String get settingKeepAccessibilityTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn the Kiosk Satellite accessibility service back on whenever something turns it off. Needs android.permission.WRITE_SECURE_SETTINGS granted over adb; does nothing without it.'**
+  String get settingKeepAccessibilityDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
   /// **'Enable DLNA renderer'**
   String get settingDlnaEnabledTitle;
 
@@ -11169,6 +11247,30 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'{seconds} s'**
   String gestureHoldSeconds(String seconds);
+
+  /// Setting title.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote keys'**
+  String get settingGestureRemoteKeysTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Run the actions mapped to keys on the remote, whatever app is in front.'**
+  String get settingGestureRemoteKeysDescription;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote keys need the Kiosk Satellite accessibility service. Enable it in Android Accessibility settings.'**
+  String get gestureRemoteKeysServiceOff;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'A mapped key runs its action whatever app is in front, and does nothing else.'**
+  String get gestureRemoteKeysHelp;
 
   /// Setting label.
   ///

@@ -949,6 +949,22 @@ const gestureMappings = SettingDef<String>(
   hidden: true,
 );
 
+// Remote key mappings: the remote_key gestures, caught by the accessibility
+// service (RemoteKeys.kt). Their own switch rather than Kiosk Mode's Disable
+// Gestures: a mapped key is the device's remote, not a hidden admin
+// gesture, and silencing it with the touch gestures would take a
+// projector's Home key away with them.
+const gestureRemoteKeysEnabled = SettingDef<bool>(
+  key: 'gestures.remote_keys.enabled',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Remote keys',
+  description:
+      'Run the actions mapped to keys on the remote, whatever app is in '
+      'front.',
+  category: 'Gestures',
+);
+
 // Deliberateness thresholds for the clap detector (discussion #177: a child
 // playing with toys near the device produced enough clap-shaped impulses to
 // false-trigger). Standard already requires a quiet lead-in and consistent
@@ -8523,6 +8539,27 @@ const agentMode = SettingDef<bool>(
   perDevice: true,
 );
 
+// The accessibility service carries remote keys and the System UI guard,
+// and some firmware turns it off behind the owner's back (the HY260
+// projector clears it at random). With WRITE_SECURE_SETTINGS granted over
+// adb, Kiosk Satellite puts its own service back whenever it is removed
+// (AccessibilityKeeper.kt). Without the grant this does nothing.
+const keepAccessibility = SettingDef<bool>(
+  key: 'device.keep_accessibility',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Keep accessibility service on',
+  description:
+      'Turn the Kiosk Satellite accessibility service back on whenever '
+      'something turns it off. Needs android.permission.WRITE_SECURE_SETTINGS '
+      'granted over adb; does nothing without it.',
+  category: 'Gestures',
+  // Shown in the Gestures page's Remote keys card (both UIs), beside the
+  // warning it answers, not in a generic settings list.
+  hidden: true,
+  perDevice: true,
+);
+
 const uiScale = SettingDef<num>(
   key: 'ui.scale',
   type: SettingType.number,
@@ -8741,6 +8778,7 @@ const List<SettingDef<Object>> allSettings = [
   kioskDisablePullRefresh,
   kioskDisableGestures,
   gestureMappings,
+  gestureRemoteKeysEnabled,
   clapStrictness,
   handGestureHoldSeconds,
   kioskAllowDrawer,
@@ -9151,6 +9189,7 @@ const List<SettingDef<Object>> allSettings = [
   uiLanguage,
   uiTheme,
   agentMode,
+  keepAccessibility,
   uiScale,
   // The two pages, service first, close the Device page.
   serviceCpuAwake,

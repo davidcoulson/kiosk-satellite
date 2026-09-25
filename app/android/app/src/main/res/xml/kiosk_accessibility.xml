@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The System UI guard's contract with Android: window-state events only,
-     no window content access, no feedback. See KioskAccessibilityService. -->
+     no window content access, no feedback. See KioskAccessibilityService.
+     canRequestFilterKeyEvents is the capability remote key mappings need
+     (RemoteKeys); the service switches key filtering on at runtime only
+     while a remote key mapping exists, so the flag is not set here. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:notificationTimeout="0"
     android:canRetrieveWindowContent="false"
+    android:canRequestFilterKeyEvents="true"
     android:description="@string/ui_guard_description" />

@@ -1,10 +1,12 @@
 package me.jxl.kiosk_satellite
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 
 /**
@@ -34,6 +36,11 @@ import android.view.accessibility.AccessibilityEvent
  * system binds this service before any Activity exists; [onServiceConnected]
  * seeds from the settings mirror so a kiosk that starts on boot is guarded
  * from the first frame.
+ *
+ * The same service carries remote key mappings ([RemoteKeys]): with a
+ * remote_key gesture configured it asks Android for key events
+ * ([filterKeys]) and swallows the mapped keys before the focused app sees
+ * them. Only then - a device with no remote keys routes no key through it.
  */
 class KioskAccessibilityService : AccessibilityService() {
     companion object {
@@ -51,11 +58,41 @@ class KioskAccessibilityService : AccessibilityService() {
         @Volatile
         var running = false
             private set
+
+        /// The bound service, for switching key filtering on and off as
+        /// remote key mappings come and go. Main thread only.
+        @Volatile
+        var instance: KioskAccessibilityService? = null
+            private set
     }
+
+    /// Whether Android is sending this service key events right now.
+    var filteringKeys = false
+        private set
+
+    /**
+     * Ask for key events, or stop. The XML declares only the capability
+     * (canRequestFilterKeyEvents); the flag is set here at runtime, so key
+     * filtering exists exactly while a remote key mapping or a capture
+     * needs it.
+     */
+    fun filterKeys(on: Boolean) {
+        val info = serviceInfo ?: return
+        val flag = AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS
+        if ((info.flags and flag != 0) != on) {
+            info.flags = if (on) info.flags or flag else info.flags and flag.inv()
+            serviceInfo = info
+        }
+        filteringKeys = on
+    }
+
+    override fun onKeyEvent(event: KeyEvent): Boolean = RemoteKeys.onKey(event)
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         running = true
+        instance = this
+        RemoteKeys.serviceConnected(this)
         if (!guardShade && !guardRecents) {
             val prefs =
                 getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE)
@@ -71,13 +108,20 @@ class KioskAccessibilityService : AccessibilityService() {
     }
 
     override fun onUnbind(intent: android.content.Intent?): Boolean {
-        running = false
+        released()
         return super.onUnbind(intent)
     }
 
     override fun onDestroy() {
-        running = false
+        released()
         super.onDestroy()
+    }
+
+    private fun released() {
+        running = false
+        if (instance === this) instance = null
+        filteringKeys = false
+        RemoteKeys.serviceGone(applicationContext)
     }
 
     private val main = Handler(Looper.getMainLooper())
