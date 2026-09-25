@@ -1858,6 +1858,18 @@ const screensaverWeatherClock24h = SettingDef<bool>(
   dependsOn: 'screensaver.weather_clock',
 );
 
+const screensaverWeatherClockSeconds = SettingDef<bool>(
+  key: 'screensaver.weather_clock_seconds',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Show seconds',
+  description: 'Include seconds in the clock.',
+  category: 'Screensaver',
+  section: 'Clock',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_clock',
+);
+
 const screensaverWeatherClockDate = SettingDef<bool>(
   key: 'screensaver.weather_clock_show_date',
   type: SettingType.boolean,
@@ -8254,6 +8266,7 @@ const List<SettingDef<Object>> allSettings = [
   screensaverWeatherClockFont,
   screensaverWeatherClockFontWeight,
   screensaverWeatherClock24h,
+  screensaverWeatherClockSeconds,
   screensaverWeatherClockDate,
   screensaverWeatherClockScale,
   screensaverWeatherClockColor,

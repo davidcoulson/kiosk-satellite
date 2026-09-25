@@ -34,7 +34,7 @@ Use **Scene blur** in the main group to soften the weather scene from 0 to 30 pi
 
 Weather Mood starts with only the animated scene. Its **Clock** and **Weather information** groups add optional information directly to the scene. All widget types and At a Glance pills remain available. Outside preview mode, if no weather entity is selected for Weather Mood, a black screen asks you to select one in its settings. The clock, weather chips, widgets and At a Glance stay hidden until an entity is selected.
 
-Turn on **Enable clock** to reveal **Font Family**, **Font weight**, **24-hour clock**, **Show date**, **Clock size**, **Clock color** and **Text drop shadow**. The clock uses the same digital face and defaults as the Clock screensaver, with a drop shadow enabled for readability. These settings belong to Weather Mood and do not change the Clock screensaver.
+Turn on **Enable clock** to reveal **Font Family**, **Font weight**, **24-hour clock**, **Show seconds**, **Show date**, **Clock size**, **Clock color** and **Text drop shadow**. The clock uses the same digital face and defaults as the Clock screensaver, with a drop shadow enabled for readability. These settings belong to Weather Mood and do not change the Clock screensaver.
 
 Weather information appears as chips over the scene. A chip at the bottom left shows the conditions icon, temperature and conditions. Each reading gets a matching chip at the bottom right with its icon and value. The chips default to white text with a drop shadow on frosted glass with a thin light rim, so they take on the colors of every sky. The glass blurs the scene behind it, except on 32-bit devices, where the blur would cost too many frames. Devices that do not use the Impeller renderer show tinted chips instead.
 

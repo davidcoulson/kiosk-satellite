@@ -1472,6 +1472,10 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingScreensaverClock24hTitle",
     "description": "settingScreensaverClock24hDescription",
   },
+  "screensaver.weather_clock_seconds": {
+    "title": "settingScreensaverClockSecondsTitle",
+    "description": "settingScreensaverClockSecondsDescription",
+  },
   "screensaver.weather_clock_show_date": {
     "title": "settingScreensaverClockDateTitle",
     "description": "settingScreensaverClockDateDescription",
