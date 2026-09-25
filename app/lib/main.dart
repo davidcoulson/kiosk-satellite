@@ -43,6 +43,9 @@ Future<void> main() async {
     onMissingWebView: () => container.browser.markWebViewMissing(
       'the WebView creation threw MissingWebViewPackageException',
     ),
+    onBrokenWebView: () => container.browser.markWebViewBroken(
+      'the WebView provider threw InvocationTargetException while starting',
+    ),
   );
 
   // The app names itself on the wire from here on: the device manager has
