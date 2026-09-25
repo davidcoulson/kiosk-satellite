@@ -406,6 +406,23 @@ void main() {
           );
         }
       }
+      // At a Glance takes the chips' Text drop shadow too.
+      List<Shadow>? glanceShadows() => tester
+          .widget<Text>(
+            find
+                .descendant(
+                  of: find.byType(GlanceRow),
+                  matching: find.byType(Text),
+                )
+                .first,
+          )
+          .style!
+          .shadows;
+      expect(glanceShadows(), isNotEmpty);
+      await c.settings.set(defs.screensaverWeatherBarShadow, false);
+      await show(const Size(1280, 800), 100, 'fr');
+      expect(glanceShadows(), isEmpty);
+      await c.settings.set(defs.screensaverWeatherBarShadow, true);
       List<Rect> chipRects() => [
         for (final element
             in find

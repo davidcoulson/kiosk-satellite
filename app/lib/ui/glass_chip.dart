@@ -21,10 +21,23 @@ class GlassPalette {
       edge = Colors.white.withValues(alpha: .16 * opacity),
       circle = Colors.white.withValues(
         alpha: .14 * (opacity / .7).clamp(0.0, 1.0),
+      ),
+      ring = Colors.white.withValues(
+        alpha: .26 * (opacity / .5).clamp(0.0, 1.0),
       );
 
   final double opacity;
   final Color fill, edge, circle;
+
+  /// The thin light ring around an icon's disc, like the chip's own rim.
+  final Color ring;
+
+  /// An icon's disc: a translucent circle inside a light ring.
+  BoxDecoration disc(double scale) => BoxDecoration(
+    color: circle,
+    shape: BoxShape.circle,
+    border: Border.all(color: ring, width: 1.2 * scale),
+  );
 
   /// Light catching the top of the glass: a faint sheen that fades out
   /// toward the bottom of each chip.
@@ -47,10 +60,9 @@ class GlassPalette {
   );
 }
 
-/// A chip of clear glass over the scene: the backdrop refracts at the
-/// rounded edge under a bright rim. Renderers without backdrop shaders, the
-/// moments before the shader loads and a fully transparent [palette] show
-/// [fallback] instead. A blurred copy of the scene behind every chip would
+/// A chip of frosted glass over the scene under a thin light rim.
+/// Renderers without backdrop shaders, the moments before the shader loads
+/// and a fully transparent [palette] show [fallback] instead. A blurred copy of the scene behind every chip would
 /// cost the legacy renderer a backdrop read and blur per chip on every
 /// frame. Chips under one [BackdropGroup] share a single read of the scene.
 class GlassChip extends StatelessWidget {

@@ -209,6 +209,11 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
                                   100)
                               .clamp(0.0, 1.0),
                         ),
+                        // And the same Text drop shadow.
+                        shadows:
+                            c.settings.get(defs.screensaverWeatherBarShadow)
+                            ? _textShadows
+                            : const [],
                       ),
                     ),
                   if (c.settings.get(defs.screensaverWeatherBar) &&
@@ -288,7 +293,7 @@ class WeatherMoodBar extends StatelessWidget {
       width: diameter * scale,
       height: diameter * scale,
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: glass.circle, shape: BoxShape.circle),
+      decoration: glass.disc(scale),
       child: icon,
     );
     // Without titles a reading shows its value alone, at the size of the

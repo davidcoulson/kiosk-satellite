@@ -42,9 +42,14 @@ class GlanceRow extends StatelessWidget {
     this.night,
     this.narrow = false,
     this.glass,
+    this.shadows = const [],
   });
 
   final AppContainer container;
+
+  /// A drop shadow under the chips' text and icons, as Weather Mood gives
+  /// its own chips. Chips style only.
+  final List<Shadow> shadows;
 
   /// Weather Mood's glass, so the chips match its weather chips: the scene
   /// bends at their edges under the same rim and tint. Null keeps the dark
@@ -169,6 +174,7 @@ class GlanceRow extends StatelessWidget {
                         night: night,
                         font: font,
                         glass: glass,
+                        shadows: shadows,
                       ),
                     ],
                   ],
@@ -207,6 +213,7 @@ class GlanceRow extends StatelessWidget {
                             night: night,
                             font: font,
                             glass: glass,
+                            shadows: shadows,
                           ),
                         ),
                       ],
@@ -418,11 +425,15 @@ class _GlanceCard extends StatelessWidget {
     required this.font,
     this.night,
     this.glass,
+    this.shadows = const [],
   });
 
   final GlanceEntity entity;
   final double scale;
   final GlanceFont font;
+
+  /// A drop shadow under the text and icon, as [GlanceRow.shadows].
+  final List<Shadow> shadows;
 
   /// The Clock screensaver's night color while its Night mode holds.
   final Color? night;
@@ -490,17 +501,23 @@ class _GlanceCard extends StatelessWidget {
           width: 40 * scale,
           height: 40 * scale,
           alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: accent ?? circle,
-            shape: BoxShape.circle,
-          ),
+          // Glass keeps the disc clear and lights the glyph in the
+          // accent instead, with the chip glowing in the same color.
+          decoration:
+              glass?.disc(scale) ??
+              BoxDecoration(color: accent ?? circle, shape: BoxShape.circle),
           // Full white on the neutral circle; the dark glyph only on a
           // pastel, where white would wash out. The night color on its
           // own wash at night.
           child: GlanceIcon(
             entity: entity,
             size: 22 * scale,
-            color: accent != null ? _iconOnAccent : value,
+            shadows: shadows,
+            color: glass != null
+                ? accent ?? value
+                : accent != null
+                ? _iconOnAccent
+                : value,
           ),
         ),
         SizedBox(width: 10 * scale),
@@ -518,6 +535,7 @@ class _GlanceCard extends StatelessWidget {
                     color: label,
                     fontSize: 13 * scale,
                     height: 1.15,
+                    shadows: shadows,
                   ),
                 ),
               Text(
@@ -529,6 +547,7 @@ class _GlanceCard extends StatelessWidget {
                   fontSize: (hideName ? valueAloneSize : 17) * scale,
                   height: 1.2,
                   weight: FontWeight.w600,
+                  shadows: shadows,
                 ),
               ),
             ],
@@ -695,20 +714,28 @@ class GlanceIcon extends StatelessWidget {
     required this.entity,
     required this.size,
     required this.color,
+    this.shadows = const [],
   });
 
   final GlanceEntity entity;
   final double size;
   final Color color;
+  final List<Shadow> shadows;
 
   @override
   Widget build(BuildContext context) {
     final own = entity.icon;
     final fallback = glanceIcon(entity);
     if (own == null || !MdiIcons.looksLikeIcon(own)) {
-      return Icon(fallback, size: size, color: color);
+      return Icon(fallback, size: size, color: color, shadows: shadows);
     }
-    return MdiIcon(name: own, size: size, color: color, fallback: fallback);
+    return MdiIcon(
+      name: own,
+      size: size,
+      color: color,
+      fallback: fallback,
+      shadows: shadows,
+    );
   }
 }
 
@@ -789,12 +816,14 @@ class GlanceFont {
     required double fontSize,
     double? height,
     FontWeight? weight,
+    List<Shadow>? shadows,
   }) {
     final w = this.weight ?? weight ?? FontWeight.w400;
     return TextStyle(
       color: color,
       fontSize: fontSize,
       height: height,
+      shadows: shadows,
       fontWeight: w,
       fontFamily: family,
       fontVariations: clockFontVariations(opticalSize, w),
