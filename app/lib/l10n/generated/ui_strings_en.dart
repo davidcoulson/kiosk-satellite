@@ -716,6 +716,9 @@ class UiStringsEn extends UiStrings {
       'The kiosks this one leads, their state and a way to add one.';
 
   @override
+  String get fleetAgentTag => 'Agent';
+
+  @override
   String get fleetAddAKiosk => 'Add a kiosk';
 
   @override

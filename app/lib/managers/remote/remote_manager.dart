@@ -919,12 +919,47 @@ class RemoteManager extends Manager {
     };
   }
 
-  Map<String, Object?> _settingsPayload() => {
-    'settings': _settings.describe(),
-    // Named second-level pages, so the remote can label an entry
-    // row for a page that has no settings of its own.
-    'subpageHints': subpageHints,
+  /// Settings for machinery an agent does not run. The definitions still
+  /// exist - they are compiled in, and turning agent mode off brings the
+  /// features back - but a projector's admin listing Screensaver, Voice
+  /// Satellite or Kiosk pages invites someone to configure a dashboard that
+  /// will never be drawn, and then to wonder why nothing happened.
+  ///
+  /// Screen & Audio, Device, ESPHome, Fleet and Launcher are deliberately not
+  /// here: the screen, the ESPHome device, fleet membership and opening
+  /// another app are exactly what an agent is for.
+  static const _agentHiddenCategories = {
+    'Browser',
+    'Camera',
+    'Cameras',
+    'DLNA',
+    'Gestures',
+    'Home',
+    'Home Assistant',
+    'Intercom',
+    'Kiosk',
+    'Lockdown',
+    'Screensaver',
+    'Sendspin',
+    'Voice Satellite',
+    'Web Content',
   };
+
+  Map<String, Object?> _settingsPayload() {
+    final all = _settings.describe();
+    final settings = _settings.get(defs.agentMode)
+        ? [
+            for (final row in all)
+              if (!_agentHiddenCategories.contains(row['category'])) row,
+          ]
+        : all;
+    return {
+      'settings': settings,
+      // Named second-level pages, so the remote can label an entry
+      // row for a page that has no settings of its own.
+      'subpageHints': subpageHints,
+    };
+  }
 
   /// The reads the admin page makes at boot, one shape whether they come
   /// over HTTP or as a `get` request on the socket, so a connected page

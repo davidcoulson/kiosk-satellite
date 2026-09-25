@@ -201,6 +201,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.fleetFleetManagementDocumentation,
       'fleetMore' => strings.fleetMore,
       'fleetSearchFollowers' => strings.fleetSearchFollowers,
+      'fleetAgentTag' => strings.fleetAgentTag,
       'fleetAddAKiosk' => strings.fleetAddAKiosk,
       'fleetKiosksMemberOfTheFleetAFollowerMustConfirm' =>
         strings.fleetKiosksMemberOfTheFleetAFollowerMustConfirm,

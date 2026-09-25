@@ -66,6 +66,9 @@ function deviceRow(d) {
   addr.textContent = d.address;
   desc.appendChild(addr);
   if (d.version) desc.appendChild(tag(d.version));
+  // An agent has no dashboard: worth knowing before picking one, since its
+  // admin is a different place with a different half of the settings.
+  if (d.agent) desc.appendChild(tag(fleetText('Agent'), 'agent'));
   if (d.self) desc.appendChild(tag(fleetText('This device'), 'device'));
   info.append(name, desc);
   row.appendChild(info);

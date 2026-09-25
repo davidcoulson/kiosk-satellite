@@ -98,6 +98,10 @@ class FleetDiscovery(
         val seenAt: Long,
         val host: String = "",
         val tls: Boolean = false,
+        // Whether that kiosk runs as a management agent rather than a
+        // panel: it has no dashboard, and the switcher says so rather than
+        // opening one and leaving someone to work it out.
+        val agent: Boolean = false,
     ) {
         fun toMap(): Map<String, Any?> = mapOf(
             "id" to id,
@@ -106,6 +110,7 @@ class FleetDiscovery(
             "address" to address,
             "port" to port,
             "tls" to tls,
+            "agent" to agent,
         )
     }
 
@@ -174,6 +179,7 @@ class FleetDiscovery(
     private var name: String = ""
     private var port: Int = 0
     @Volatile private var tls = false
+    @Volatile private var agent = false
     /** The label this kiosk answers to as `<hostname>.local`; empty for none. */
     @Volatile private var hostname: String = ""
     /** Whether the service records go out and the others are listened for. */
@@ -211,10 +217,18 @@ class FleetDiscovery(
         }
     }
 
-    fun start(name: String, port: Int, hostname: String = "", fleet: Boolean = true, tls: Boolean = false) {
+    fun start(
+        name: String,
+        port: Int,
+        hostname: String = "",
+        fleet: Boolean = true,
+        tls: Boolean = false,
+        agent: Boolean = false,
+    ) {
         this.name = name.ifBlank { Build.MODEL ?: "Kiosk Satellite" }
         this.port = port
         this.tls = tls
+        this.agent = agent
         if (this.hostname != hostname) hostClash = ""
         this.hostname = hostname.lowercase()
         hostNeedle = if (this.hostname.isEmpty()) ByteArray(0)
@@ -383,6 +397,7 @@ class FleetDiscovery(
             seenAt = System.currentTimeMillis(),
             host = hostname,
             tls = tls,
+            agent = agent,
         )
         return Snapshot(self, list, listening && running, hostClash)
     }
@@ -525,6 +540,7 @@ class FleetDiscovery(
                         seenAt = now,
                         host = entries["host"]?.lowercase() ?: "",
                         tls = entries["tls"] == "1",
+                        agent = entries["agent"] == "1",
                     )
                     val before = peers[peerId]
                     peers[peerId] = peer
@@ -687,7 +703,8 @@ class FleetDiscovery(
             body.lengthPrefixed { t ->
                 val entries = listOf("id=$id", "name=$name", "version=$version", "port=$port") +
                     (if (hostname.isEmpty()) emptyList() else listOf("host=$hostname")) +
-                    (if (tls) listOf("tls=1") else emptyList())
+                    (if (tls) listOf("tls=1") else emptyList()) +
+                    (if (agent) listOf("agent=1") else emptyList())
                 for (entry in entries) {
                     // A TXT entry is at most 255 bytes; a name past that is cut.
                     val bytes = entry.toByteArray(Charsets.UTF_8).take(255).toByteArray()

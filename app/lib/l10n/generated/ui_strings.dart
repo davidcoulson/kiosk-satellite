@@ -1381,6 +1381,12 @@ abstract class UiStrings {
   /// **'The kiosks this one leads, their state and a way to add one.'**
   String get fleetSearchFollowers;
 
+  /// Tag on a kiosk in the switcher that runs in agent mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get fleetAgentTag;
+
   /// Visible label, help or status in this section.
   ///
   /// In en, this message translates to:

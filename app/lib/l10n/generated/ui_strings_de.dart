@@ -728,6 +728,9 @@ class UiStringsDe extends UiStrings {
       'Die Kiosks, die diesem folgen, ihr Status sowie die Möglichkeit, einen weiteren hinzuzufügen.';
 
   @override
+  String get fleetAgentTag => 'Agent';
+
+  @override
   String get fleetAddAKiosk => 'Kiosk hinzufügen';
 
   @override

@@ -28,6 +28,11 @@ function onOverview() {
 }
 const settingVal = (k) => (state.settings || []).find((s) => s.key === k)?.value;
 const settingOn = (k) => settingVal(k) === true;
+// An agent has no dashboard, no voice satellite and no media player - the
+// managers behind them never start. Telling its admin that Home Assistant is
+// "not set up" or that Voice Satellite's status is "unavailable" is reporting
+// the absence of things nobody asked for.
+const agentMode = () => settingOn('device.agent_mode');
 // A command's data, or null for a refusal, an error or a missing answer.
 const ask = (name, params) => cmd(name, params)
   .then((r) => (r && r.ok !== false && r.data !== undefined ? r.data : null))
@@ -55,9 +60,11 @@ const TILES = [
   ['service', 'Service', 'device/Kiosk Satellite Service'],
   ['update', 'App Version', 'about'],
 ];
+const AGENT_HIDES_TILES = new Set(['voice', 'media']);
 function buildTiles() {
   const grid = $('#statusGrid');
   for (const [id, name, tab] of TILES) {
+    if (agentMode() && AGENT_HIDES_TILES.has(id)) continue;
     if (grid.querySelector(`[data-status="${id}"]`)) continue;
     const b = document.createElement('button');
     b.type = 'button';
@@ -517,7 +524,9 @@ function paintHealth({ filter = true } = {}) {
       action: (btn) => { overviewLabel(btn, 'Install'); attachUpdateInstall(btn, () => health.upd); },
     });
   }
-  if (ha && !ha.configured) {
+  if (agentMode()) {
+    // Nothing below applies: an agent loads no dashboard.
+  } else if (ha && !ha.configured) {
     items.push({
       key: 'ha-setup',
       name: overviewText('Home Assistant not set up'),

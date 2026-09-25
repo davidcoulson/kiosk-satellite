@@ -47,6 +47,7 @@ class FleetBridge(context: Context, messenger: BinaryMessenger) {
                         hostname = call.argument<String>("hostname") ?: "",
                         fleet = call.argument<Boolean>("fleet") ?: true,
                         tls = call.argument<Boolean>("tls") ?: false,
+                        agent = call.argument<Boolean>("agent") ?: false,
                     )
                     result.success(null)
                 }

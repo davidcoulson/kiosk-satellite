@@ -726,6 +726,9 @@ class UiStringsFr extends UiStrings {
       'Les kiosques que celui-ci dirige, leur état et un moyen d\'en ajouter un.';
 
   @override
+  String get fleetAgentTag => 'Agent';
+
+  @override
   String get fleetAddAKiosk => 'Ajouter un kiosque';
 
   @override

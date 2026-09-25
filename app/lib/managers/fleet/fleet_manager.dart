@@ -19,6 +19,7 @@ class FleetDevice {
     required this.port,
     this.self = false,
     this.tls = false,
+    this.agent = false,
   });
 
   final String id;
@@ -29,6 +30,11 @@ class FleetDevice {
 
   /// Whether this is the device the list was read from.
   final bool self;
+
+  /// Whether that kiosk runs in agent mode - no dashboard, no voice, no
+  /// screensaver. Carried in its mDNS TXT record, so the switcher can label
+  /// it without opening it.
+  final bool agent;
   final bool tls;
 
   /// Where its remote admin answers.
@@ -48,6 +54,7 @@ class FleetDevice {
       port: port.toInt(),
       self: self,
       tls: raw['tls'] == true,
+      agent: raw['agent'] == true,
     );
   }
 
@@ -58,6 +65,7 @@ class FleetDevice {
     'address': address,
     'port': port,
     if (tls) 'tls': true,
+    if (agent) 'agent': true,
     'url': url,
     'self': self,
   };
@@ -70,6 +78,7 @@ class FleetDevice {
     'address': address,
     'port': port,
     if (tls) 'tls': true,
+    if (agent) 'agent': true,
   };
 
   static FleetDevice? directoryEntry(Object? raw) {
@@ -268,6 +277,9 @@ class FleetManager extends Manager {
       'name': _settings.get(defs.deviceName),
       'port': _settings.get(defs.remotePort).toInt(),
       if (_settings.get(defs.remoteTls)) 'tls': true,
+      // So the switcher can say which of these is an agent rather than a
+      // panel, without opening each one to find out.
+      if (_settings.get(defs.agentMode)) 'agent': true,
       'hostname': host,
       'fleet': enabled,
     };

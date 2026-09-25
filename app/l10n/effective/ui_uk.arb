@@ -2329,6 +2329,16 @@
       ]
     }
   },
+  "fleetAgentTag": "Agent",
+  "@fleetAgentTag": {
+    "context": "Fleet switcher",
+    "description": "Tag on a kiosk in the switcher that runs in agent mode.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Switch kiosk"
+      ]
+    }
+  },
   "fleetAddAKiosk": "Додати кіоск",
   "@fleetAddAKiosk": {
     "context": "Settings > Fleet Management > Add a kiosk and device invitation prompt",

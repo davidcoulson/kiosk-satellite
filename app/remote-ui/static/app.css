@@ -270,6 +270,10 @@
     flex: none; background: var(--surface-2); color: var(--muted); }
   .tag.device { background: var(--secondary-container);
     color: var(--on-secondary-container); font-size: 10px; }
+  /* Agent: a different kind of kiosk, not a state of this one, so it reads
+     as its own thing rather than as a warning. */
+  .tag.agent { background: var(--tertiary-container, var(--surface-2));
+    color: var(--on-tertiary-container, var(--text)); font-size: 10px; }
   /* The picker's rows. A tap is the pick, so there is no control, and
      the phone reflow (the row's info flattened into a wrapping line, for
      a control beside the name) is switched back off for them: the name

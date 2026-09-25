@@ -725,6 +725,9 @@ class UiStringsEs extends UiStrings {
       'Los kioskos que siguen a este, su estado y la opción de añadir uno.';
 
   @override
+  String get fleetAgentTag => 'Agent';
+
+  @override
   String get fleetAddAKiosk => 'Añadir un kiosko';
 
   @override
