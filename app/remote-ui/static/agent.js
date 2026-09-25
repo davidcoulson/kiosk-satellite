@@ -41,16 +41,22 @@ export function applyAgentTrim() {
   if (!isAgent()) return;
   document.body.classList.add('agent');
 
-  // The header says which kind of kiosk this is, beside the name that
-  // opens the switcher - the same word the switcher tags it with.
-  const brand = document.querySelector('.mbrand');
-  if (brand && !brand.querySelector('.agent-pill')) {
-    const pill = document.createElement('span');
-    pill.className = 'agent-pill';
-    pill.textContent = 'Agent';
-    pill.title = 'Management agent: no dashboard, voice, screensaver or cameras';
-    brand.appendChild(pill);
+  // The header says which kind of kiosk this is, on the title line: just
+  // before the connection dot on a wide screen, after the title on a phone.
+  // The same word the switcher tags it with.
+  const pill = () => {
+    const el = document.createElement('span');
+    el.className = 'agent-pill';
+    el.textContent = 'Agent';
+    el.title = 'Management agent: no dashboard, voice, screensaver or cameras';
+    return el;
+  };
+  const title = document.querySelector('.brand-title');
+  if (title && !title.querySelector('.agent-pill')) {
+    title.insertBefore(pill(), document.getElementById('connDot'));
   }
+  const mtitle = document.querySelector('.mobilebar .mtitle');
+  if (mtitle && !mtitle.querySelector('.agent-pill')) mtitle.appendChild(pill());
 
   for (const tab of HIDDEN_TABS) {
     document.querySelector(`#sidebar [data-tab="${tab}"]`)?.classList.add('hidden');

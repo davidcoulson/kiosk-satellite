@@ -26,7 +26,10 @@ function shell({ agent }) {
     document: {
       body: { classList: { add: (c) => classes.add(c) } },
       querySelector: (sel) => {
-        if (sel === '.mbrand') {
+        if (sel === '.brand-title') {
+          return { querySelector: () => null, insertBefore: (c) => made.push(c) };
+        }
+        if (sel === '.mobilebar .mtitle') {
           return { querySelector: () => null, appendChild: (c) => made.push(c) };
         }
         const tab = /data-tab="([^"]+)"/.exec(sel);
@@ -80,10 +83,14 @@ test('quick controls that would fail on the device are removed', () => {
   }
 });
 
-test('an agent says so in the header', () => {
+test('an agent says so in the header, wide and phone alike', () => {
   const { made, classes } = shell({ agent: true });
-  assert.equal(made.length, 1);
-  assert.equal(made[0].textContent, 'Agent');
+  assert.equal(made.length, 2);
+  assert.deepEqual(made.map((m) => m.textContent), ['Agent', 'Agent']);
+  // Both headers exist in the shell for the pill to land in.
+  assert.ok(html.includes('class="brand-title"'));
+  assert.ok(html.includes('id="connDot"'));
+  assert.ok(html.includes('class="mtitle"'));
   assert.ok(classes.has('agent'));
 });
 
