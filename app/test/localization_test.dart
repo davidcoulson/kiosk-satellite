@@ -60,7 +60,10 @@ void main() {
       if (def.titleMessageId == null) continue;
       // The MAC override is rendered by both interfaces after a failed
       // hardware read, although it is hidden from the generic settings list.
-      if (def.key != esphomeMacOverride.key) {
+      // Keep accessibility service on is too: both Gestures pages show it
+      // in their Remote keys card, beside the warning it answers.
+      if (def.key != esphomeMacOverride.key &&
+          def.key != keepAccessibility.key) {
         expect(
           def.hidden,
           isFalse,
