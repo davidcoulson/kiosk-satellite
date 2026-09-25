@@ -4,6 +4,9 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ## Unreleased
 
+### Added
+- **Show titles for the Weather Mood reading chips.** A new Show titles toggle in Weather information names each reading above its value. It is off by default, so the reading chips show only their values, at the same size as the temperature.
+
 ### Fixed
 - **A WebView that fails to start no longer restarts the app every minute.** When the WebView provider is installed but cannot start, which happens while Android System WebView updates itself and on a board whose WebView build does not run, the creation throws and the frame watchdog restarted the process every minute for as long as it lasted, thirty times on four devices. The dashboard now shows the WebView notice, the watchdog stands down and the WebView is tried again five minutes later, so an update finishing in the meantime takes over on its own.
 - **A refused launch at boot no longer crashes the app.** On a Fire TV Stick the system threw its own error out of the start request the boot receiver makes, at every boot, and the receiver took the app down with it. The launch is now caught and logged; the always-on service is already up at that point and its heartbeat brings the kiosk back.

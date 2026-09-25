@@ -1984,6 +1984,19 @@ const screensaverWeatherBarShadow = SettingDef<bool>(
   dependsOn: 'screensaver.weather_bar',
 );
 
+const screensaverWeatherBarTitles = SettingDef<bool>(
+  key: 'screensaver.weather_bar_titles',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: "Show titles",
+  description:
+      "Name each reading above its value. When off, values match the temperature size.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_bar',
+);
+
 const screensaverWeatherBarLocation = SettingDef<String>(
   key: 'screensaver.weather_bar_location',
   type: SettingType.string,
@@ -8250,6 +8263,7 @@ const List<SettingDef<Object>> allSettings = [
   screensaverWeatherBarColor,
   screensaverWeatherBarOpacity,
   screensaverWeatherBarShadow,
+  screensaverWeatherBarTitles,
   screensaverWeatherBarLocation,
   screensaverWeatherBarFeelsLike,
   screensaverWeatherBarForecast,

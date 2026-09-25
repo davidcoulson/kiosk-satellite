@@ -55,6 +55,7 @@ void main() {
       expect(defs.screensaverWeatherBar.defaultValue, true);
       expect(defs.screensaverWeatherClockShadow.defaultValue, true);
       expect(defs.screensaverWeatherBarShadow.defaultValue, true);
+      expect(defs.screensaverWeatherBarTitles.defaultValue, false);
       expect(defs.screensaverWeatherBarOpacity.defaultValue, 60);
     },
   );
@@ -183,6 +184,10 @@ void main() {
       expect(
         find.text(strings.settingScreensaverWidgetTextShadowTitle),
         findsNWidgets(2),
+      );
+      expect(
+        find.text(strings.settingScreensaverWeatherBarTitlesTitle),
+        findsOneWidget,
       );
       expect(find.text(strings.screensaverOverlayFeelsLikeOnly), findsNothing);
       expect(
@@ -451,6 +456,23 @@ void main() {
         stacked.where((rect) => rect != main).every((r) => r.bottom < main.top),
         isTrue,
       );
+      // Without titles each reading shows its value alone, at the size of
+      // the temperature, and every chip keeps the same height.
+      await c.settings.set(defs.screensaverWeatherBarTitles, true);
+      await show(const Size(1280, 800), 100, 'en');
+      final titled = chipRects();
+      expect(find.text('Humidity'), findsOneWidget);
+      await c.settings.set(defs.screensaverWeatherBarTitles, false);
+      await show(const Size(1280, 800), 100, 'en');
+      expect(find.text('Humidity'), findsNothing);
+      double fontSize(String text) =>
+          tester.widget<Text>(find.text(text)).style!.fontSize!;
+      expect(fontSize('72%'), fontSize('29°C'));
+      final untitled = chipRects();
+      expect(untitled, hasLength(titled.length));
+      for (final rect in untitled) {
+        expect(rect.height, closeTo(titled.first.height, .5));
+      }
       // With every reading off, the lone conditions chip sits centered.
       await c.settings.set(defs.screensaverWeatherBarHumidity, false);
       await c.settings.set(defs.screensaverWeatherBarWind, false);

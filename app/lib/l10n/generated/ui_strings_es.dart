@@ -10405,6 +10405,13 @@ class UiStringsEs extends UiStrings {
       'Oscurecer la barra inferior para facilitar la lectura de la información meteorológica.';
 
   @override
+  String get settingScreensaverWeatherBarTitlesTitle => 'Mostrar títulos';
+
+  @override
+  String get settingScreensaverWeatherBarTitlesDescription =>
+      'Nombrar cada dato sobre su valor. Si se desactiva, los valores tienen el tamaño de la temperatura.';
+
+  @override
   String get screensaverWeatherBarHumidityDescription =>
       'Mostrar la humedad cuando la entidad meteorológica la proporcione.';
 

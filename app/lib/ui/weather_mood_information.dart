@@ -311,6 +311,9 @@ class WeatherMoodBar extends StatelessWidget {
       decoration: BoxDecoration(color: circle, shape: BoxShape.circle),
       child: icon,
     );
+    // Without titles a reading shows its value alone, at the size of the
+    // temperature in the main chip.
+    final titles = s.get(defs.screensaverWeatherBarTitles);
     Widget metric(String title, String value, IconData icon) => chip(
       Row(
         mainAxisSize: MainAxisSize.min,
@@ -321,24 +324,31 @@ class WeatherMoodBar extends StatelessWidget {
           ),
           SizedBox(width: 10 * scale),
           Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  screensaverText(context, title),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: style(13, alpha: .8),
-                ),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: style(17, weight: FontWeight.w600),
-                ),
-              ],
-            ),
+            child: titles
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        screensaverText(context, title),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: style(13, alpha: .8),
+                      ),
+                      Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: style(17, weight: FontWeight.w600),
+                      ),
+                    ],
+                  )
+                : Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: style(24, weight: FontWeight.w600),
+                  ),
           ),
         ],
       ),

@@ -38349,6 +38349,32 @@
       ]
     }
   },
+  "settingScreensaverWeatherBarTitlesTitle": "Показувати заголовки",
+  "@settingScreensaverWeatherBarTitlesTitle": {
+    "context": "Settings:Screensaver:Weather Mood screensaver",
+    "description": "Weather Mood clock or weather information bar control.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Weather Mood screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Weather Mood screensaver"
+      ]
+    }
+  },
+  "settingScreensaverWeatherBarTitlesDescription": "Підписувати кожен показник над його значенням. Без заголовків значення мають розмір температури.",
+  "@settingScreensaverWeatherBarTitlesDescription": {
+    "context": "Settings:Screensaver:Weather Mood screensaver",
+    "description": "Weather Mood clock or weather information bar control.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Weather Mood screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Weather Mood screensaver"
+      ]
+    }
+  },
   "screensaverWeatherBarHumidityDescription": "Показувати вологість, коли погодний об'єкт повідомляє її.",
   "@screensaverWeatherBarHumidityDescription": {
     "context": "Settings:Screensaver:Weather Mood screensaver",

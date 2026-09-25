@@ -38349,6 +38349,32 @@
       ]
     }
   },
+  "settingScreensaverWeatherBarTitlesTitle": "Mostrar títulos",
+  "@settingScreensaverWeatherBarTitlesTitle": {
+    "context": "Settings:Screensaver:Weather Mood screensaver",
+    "description": "Weather Mood clock or weather information bar control.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Weather Mood screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Weather Mood screensaver"
+      ]
+    }
+  },
+  "settingScreensaverWeatherBarTitlesDescription": "Nombrar cada dato sobre su valor. Si se desactiva, los valores tienen el tamaño de la temperatura.",
+  "@settingScreensaverWeatherBarTitlesDescription": {
+    "context": "Settings:Screensaver:Weather Mood screensaver",
+    "description": "Weather Mood clock or weather information bar control.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Weather Mood screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Weather Mood screensaver"
+      ]
+    }
+  },
   "screensaverWeatherBarHumidityDescription": "Mostrar la humedad cuando la entidad meteorológica la proporcione.",
   "@screensaverWeatherBarHumidityDescription": {
     "context": "Settings:Screensaver:Weather Mood screensaver",

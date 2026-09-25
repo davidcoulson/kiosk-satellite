@@ -17707,6 +17707,18 @@ abstract class UiStrings {
   /// Weather Mood clock or weather information bar control.
   ///
   /// In en, this message translates to:
+  /// **'Show titles'**
+  String get settingScreensaverWeatherBarTitlesTitle;
+
+  /// Weather Mood clock or weather information bar control.
+  ///
+  /// In en, this message translates to:
+  /// **'Name each reading above its value. When off, values match the temperature size.'**
+  String get settingScreensaverWeatherBarTitlesDescription;
+
+  /// Weather Mood clock or weather information bar control.
+  ///
+  /// In en, this message translates to:
   /// **'Show humidity when the weather entity reports it.'**
   String get screensaverWeatherBarHumidityDescription;
 

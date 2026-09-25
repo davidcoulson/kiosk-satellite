@@ -1508,6 +1508,10 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingScreensaverWidgetTextShadowTitle",
     "description": "screensaverWeatherTextShadowDescription",
   },
+  "screensaver.weather_bar_titles": {
+    "title": "settingScreensaverWeatherBarTitlesTitle",
+    "description": "settingScreensaverWeatherBarTitlesDescription",
+  },
   "screensaver.weather_bar_location": {
     "title": "screensaverOverlayLocationName",
     "description": "screensaverOverlayLocationHelp",
