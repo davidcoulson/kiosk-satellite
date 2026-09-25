@@ -15,8 +15,56 @@ import 'glance_row.dart';
 import 'glass_chip.dart';
 import 'weather_readings.dart';
 
-const _textShadows = [
-  Shadow(color: Colors.black87, offset: Offset(0, 2), blurRadius: 4),
+/// A soft shadow for text over the open sky, sized to the text: a faint
+/// contact shadow that holds the edges and a wide, light one for depth. A
+/// hard shadow read as a dark copy under every glyph.
+List<Shadow> _skyShadows(double size) => [
+  Shadow(
+    color: const Color(0x40000000),
+    offset: Offset(0, size * .006),
+    blurRadius: size * .014,
+  ),
+  Shadow(
+    color: const Color(0x4D000000),
+    offset: Offset(0, size * .02),
+    blurRadius: size * .08,
+  ),
+];
+
+/// The date's version: small, thin text needs more around it than the
+/// digits do to stay readable over bright clouds.
+List<Shadow> _dateShadows(double size) => [
+  Shadow(
+    color: const Color(0x66000000),
+    offset: Offset(0, size * .015),
+    blurRadius: size * .05,
+  ),
+  Shadow(
+    color: const Color(0x4D000000),
+    offset: Offset(0, size * .03),
+    blurRadius: size * .15,
+  ),
+  Shadow(
+    color: const Color(0x40000000),
+    offset: Offset(0, size * .05),
+    blurRadius: size * .4,
+  ),
+];
+
+/// The chips' lighter version at text scale [scale]: the glass already
+/// darkens behind their text, so the shadow only needs to hold the edges
+/// where Background opacity leaves little tint.
+List<Shadow> _chipShadows(double scale) => [
+  Shadow(
+    color: const Color(0x33000000),
+    offset: Offset(0, 1 * scale),
+    blurRadius: 2 * scale,
+  ),
+  Shadow(
+    color: const Color(0x33000000),
+    offset: Offset(0, 2 * scale),
+    blurRadius: 10 * scale,
+  ),
 ];
 
 /// Whether Weather Mood runs its low-power path: devices without a 64-bit
@@ -157,6 +205,9 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
     final scale =
         (s.get(defs.screensaverWeatherClockScale) / 100).clamp(.5, 3.0) *
         (glance ? .72 : 1);
+    final clockSize = math.min(size.width * .20, size.height * .30) * scale;
+    final dateSize = math.min(size.width * .05, size.height * .07) * scale;
+    final shadow = s.get(defs.screensaverWeatherClockShadow);
     return Padding(
       padding: const EdgeInsets.all(28),
       child: Center(
@@ -172,8 +223,8 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
                   ? fullDate(_now)
                   : null,
               color: _color(s.get(defs.screensaverWeatherClockColor)),
-              clockSize: math.min(size.width * .20, size.height * .30) * scale,
-              dateSize: math.min(size.width * .05, size.height * .07) * scale,
+              clockSize: clockSize,
+              dateSize: dateSize,
               fontFamily: clockFontFamily(font),
               weight:
                   clockWeightOverride(
@@ -181,9 +232,12 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
                   ) ??
                   clockFontWeight(font),
               opticalSize: clockOpticalSize(font),
-              shadows: s.get(defs.screensaverWeatherClockShadow)
-                  ? _textShadows
-                  : const [],
+              // Each line's shadow is sized to its own text.
+              shadows: shadow ? _skyShadows(clockSize) : const [],
+              dateShadows: shadow ? _dateShadows(dateSize) : const [],
+              // A step heavier than the Clock screensaver's, so the thin
+              // strokes hold up over white clouds.
+              dateWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -227,7 +281,10 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
                         // And the same Text drop shadow.
                         shadows:
                             c.settings.get(defs.screensaverWeatherBarShadow)
-                            ? _textShadows
+                            ? _chipShadows(
+                                c.settings.get(defs.screensaverGlanceScale) /
+                                    100,
+                              )
                             : const [],
                       ),
                     ),
@@ -273,7 +330,7 @@ class WeatherMoodBar extends StatelessWidget {
     final scale = (s.get(defs.screensaverWeatherBarScale) / 100).clamp(.5, 2.0);
     final color = _color(s.get(defs.screensaverWeatherBarColor));
     final shadows = s.get(defs.screensaverWeatherBarShadow)
-        ? _textShadows
+        ? _chipShadows(scale)
         : const <Shadow>[];
     final glass = weatherMoodGlass(container);
     TextStyle style(

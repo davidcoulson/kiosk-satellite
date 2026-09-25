@@ -9,6 +9,7 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ### Changed
 - **At a Glance matches the Weather Mood chips.** Over Weather Mood the At a Glance pills are glass like the weather chips and follow the same Background opacity and Text drop shadow. A colored icon shows in its color on a clear disc. Other screensavers keep the dark pills.
+- **Softer Weather Mood text shadows.** The clock and date drop the hard shadow that read as a dark copy under every glyph for a soft one sized to each line: a faint contact shadow that holds the edges and a wide, light one for depth, so both stay readable over bright clouds. The date is also a step heavier, with a stronger shadow of its own. The weather chips and At a Glance keep their Text drop shadow toggle with a lighter version of the same shadow.
 - **Frosted Weather Mood glass.** The weather chips are now lightly frosted glass with a thin, even light rim, a bevel that catches light along the top and a soft gloss, in place of the lens that bent the scene at their edges. The highlights follow the brightness of the sky behind each chip, so the glass reads against a bright day without glaring at night. The glass blurs the scene behind it on every device except 32-bit ones such as the Echo Show 8, where the blur would cost about a quarter of the frame rate. Background opacity now defaults to 50%. Icons sit in clear discs with a light ring.
 
 ### Fixed
