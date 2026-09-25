@@ -40,6 +40,7 @@ void main() {
     for (final skipped in [
       c.browser,
       c.kiosk,
+      c.homeLauncher,
       c.screensaver,
       c.theater,
       c.deviceCamera,
@@ -72,6 +73,9 @@ void main() {
       c.fleet,
       c.fleetSync,
       c.files,
+      // Not a slip: it owns installedApps, foregroundApp and the
+      // foreground_app sensor, which is what an agent is asked about.
+      c.launcher,
     ]) {
       expect(c.managersForTest, contains(kept));
     }
@@ -112,5 +116,16 @@ void main() {
     expect(c.managersForTest, isNot(contains(c.kiosk)));
     c.registerAgentRestart();
     expect(c.commands.all.map((x) => x.name), contains('restartApp'));
+  });
+
+  test('an agent can start another app, which is the point on a projector', () async {
+    final c = await build(agent: true);
+    // launchApp and openUri belong to the kiosk manager, which an agent does
+    // not run - and ESPHome's launch_app action calls straight through to
+    // launchApp, so without these an automation fails at the last step.
+    expect(c.managersForTest, isNot(contains(c.kiosk)));
+    c.registerAgentAppCommands();
+    final names = c.commands.all.map((x) => x.name);
+    expect(names, containsAll(['launchApp', 'openUri']));
   });
 }

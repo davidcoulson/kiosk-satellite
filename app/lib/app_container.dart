@@ -193,7 +193,10 @@ class AppContainer {
   bool get agentMode => settings.get(defs.agentMode);
 
   /// What agent mode leaves out: everything whose job is to face a person
-  /// through this device's own screen or microphone. What stays is what a
+  /// through this device's own screen or microphone. The app launcher is a
+  /// deliberate exception - its overlay never opens on an agent, but it owns
+  /// installedApps, foregroundApp and the foreground_app sensor, and "which
+  /// app is this projector running" is most of what an agent is for. What stays is what a
   /// projector or a media box is actually useful for - the ESPHome device
   /// and its sensors (btProxy owns that surface), the remote admin, updates,
   /// plugins and fleet membership - plus the pieces those rest on: the
@@ -209,7 +212,6 @@ class AppContainer {
     browser,
     camera,
     kiosk,
-    launcher,
     homeLauncher,
     screensaver,
     theater,
@@ -348,6 +350,71 @@ class AppContainer {
     );
   }
 
+  /// Opening another app is the kiosk manager's, and an agent is usually a
+  /// box whose job is to run one: a projector told from Home Assistant to
+  /// start Plezy or Kodi. The kiosk version wraps the same platform call in
+  /// screen-pinning bookkeeping that has no meaning without a kiosk lock, so
+  /// these are the plain calls. ESPHome already carries a launch_app action,
+  /// which is what makes this reachable from an automation.
+  @visibleForTesting
+  void registerAgentAppCommands() {
+    const background = MethodChannel('kiosk_satellite/background');
+    commands.register(
+      Command(
+        name: 'launchApp',
+        description:
+            'Open another Android app by package name. Fails when the '
+            'package is not installed or has nothing launchable.',
+        params: const {'package': 'Android package, e.g. com.edde746.plezy'},
+        handler: (p) async {
+          final package = '${p['package'] ?? ''}'.trim();
+          if (package.isEmpty) return const CommandResult.fail('package required');
+          try {
+            final ok =
+                await background.invokeMethod<bool>('launchApp', {
+                  'package': package,
+                }) ??
+                false;
+            return ok
+                ? const CommandResult.ok()
+                : CommandResult.fail(
+                    '$package is not installed, or has no app to open',
+                  );
+          } on MissingPluginException {
+            return const CommandResult.fail('opening apps is Android-only');
+          } on PlatformException catch (e) {
+            return CommandResult.fail('could not open the app: $e');
+          }
+        },
+      ),
+    );
+    commands.register(
+      Command(
+        name: 'openUri',
+        description:
+            'Open a deep link or custom URI with whatever app claims it - '
+            'the precise way to start a player on a particular thing.',
+        params: const {'uri': 'URI to open, e.g. plezy://item/123'},
+        handler: (p) async {
+          final uri = '${p['uri'] ?? ''}'.trim();
+          if (uri.isEmpty) return const CommandResult.fail('uri required');
+          try {
+            final ok =
+                await background.invokeMethod<bool>('openUri', {'uri': uri}) ??
+                false;
+            return ok
+                ? const CommandResult.ok()
+                : CommandResult.fail('nothing on this device opens $uri');
+          } on MissingPluginException {
+            return const CommandResult.fail('opening a URI is Android-only');
+          } on PlatformException catch (e) {
+            return CommandResult.fail('could not open the URI: $e');
+          }
+        },
+      ),
+    );
+  }
+
   /// The managers this container will actually start, for the agent-mode
   /// test: the list is a contract about what a device stops doing, and a
   /// regression there is silent on a box nobody looks at.
@@ -369,7 +436,10 @@ class AppContainer {
     for (final manager in _ordered.skip(2)) {
       await manager.init();
     }
-    if (agentMode) registerAgentRestart();
+    if (agentMode) {
+      registerAgentRestart();
+      registerAgentAppCommands();
+    }
     log.info('app', 'all managers initialized');
   }
 
