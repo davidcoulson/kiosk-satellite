@@ -9,6 +9,7 @@ import '../../core/events.dart';
 import '../../core/manager.dart';
 import '../../core/permissions.dart';
 import '../assist_pipeline/native_audio_source.dart';
+import '../audio/mic_level_monitor.dart';
 import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 import 'background_listening.dart';
@@ -227,7 +228,6 @@ class WakeWordManager extends Manager
   /// dialog subscribes while it is open. Off (no engine overhead) otherwise.
   final _telemetry = StreamController<Map<String, Object?>>.broadcast();
   int _testers = 0;
-  int _meters = 0;
 
   /// Live per-inference scores from the running engine, while a tester holds
   /// [startTest] open.
@@ -248,44 +248,34 @@ class WakeWordManager extends Manager
     _applyTelemetry();
   }
 
-  /// Begin streaming telemetry for a mic level METER: rms only, real
-  /// detections keep firing. The meter used to ride [startTest], which
-  /// silently made the device deaf while any settings page showed it —
-  /// worse, the page's copy instructs the person to SPEAK at it.
-  void startMeter() {
-    _meters++;
-    _applyTelemetry();
-  }
-
-  void stopMeter() {
-    if (_meters == 0) return;
-    _meters--;
-    _applyTelemetry();
-  }
-
-  // Remote mic-level watch. The admin UI cannot hold an in-process telemetry
+  // Remote mic-level watch. The admin UI cannot hold an in-process
   // subscription, so it re-arms this while its meter is visible and the
   // watch self-expires - a browser that vanishes mid-watch can never leave
-  // telemetry running.
+  // the microphone open. Levels come off the shared capture
+  // ([MicLevelMonitor]), not the engine, so the meter also works before
+  // Voice Satellite has started one. Like the device's meter, never with
+  // detection off: then this app does not open the microphone at all.
   Timer? _micLevelExpiry;
   bool _remoteMicObserved = false;
   StreamSubscription<RemoteObserversChanged>? _remoteObservers;
-  StreamSubscription<Map<String, Object?>>? _micLevelSub;
+  StreamSubscription<double>? _micLevelSub;
   int _lastMicLevelPushMs = 0;
 
   void _watchMicLevel() {
+    if (!enabled) return;
     _micLevelExpiry?.cancel();
     if (!_remoteMicObserved) {
       _micLevelExpiry = Timer(const Duration(seconds: 15), _stopMicLevelWatch);
     }
     if (_micLevelSub != null) return;
-    startMeter();
-    _micLevelSub = telemetry.listen((m) {
+    final monitor = MicLevelMonitor.instance;
+    _micLevelSub = monitor.levels.listen((rms) {
       final now = DateTime.now().millisecondsSinceEpoch;
       if (now - _lastMicLevelPushMs < 100) return;
       _lastMicLevelPushMs = now;
-      bus.publish(MicLevelSample(rms: (m['rms'] as num?)?.toDouble() ?? 0));
+      bus.publish(MicLevelSample(rms: rms));
     });
+    monitor.start();
   }
 
   void _stopMicLevelWatch() {
@@ -294,22 +284,21 @@ class WakeWordManager extends Manager
     if (_micLevelSub == null) return;
     _micLevelSub!.cancel();
     _micLevelSub = null;
-    stopMeter();
+    MicLevelMonitor.instance.stop();
   }
 
   /// Point the active engine's telemetry at our stream (or unhook it).
   /// Re-run whenever the running engine changes, so requesting a test
   /// before the engine is up — or across an engine switch — still lands on
-  /// the one actually inferring. Suppression follows the testers alone:
-  /// a mic level meter watching at the same time never blocks detections.
+  /// the one actually inferring.
   void _applyTelemetry() {
-    final want = _testers > 0 || _meters > 0;
+    final want = _testers > 0;
     _engine.onTelemetry = want
         ? ((m) {
             if (!_telemetry.isClosed) _telemetry.add(m);
           })
         : null;
-    _engine.setTelemetry(want, tester: _testers > 0);
+    _engine.setTelemetry(want, tester: want);
   }
 
   bool get enabled => _settings.get(defs.wakeWordEnabled);
@@ -928,12 +917,13 @@ class WakeWordManager extends Manager
           name: 'watchMicLevel',
           description:
               'Stream microphone level samples to admin clients for '
-              'the settings meter. Expires after 15 s: callers re-arm it while '
+              'the settings meter, opening the microphone when no wake word '
+              'engine holds it. Expires after 15 s: callers re-arm it while '
               'their meter is visible, so a closed browser stops the stream '
               'on its own.',
           handler: (_) async {
-            if (!_engine.running) {
-              return const CommandResult.fail('wake word engine not running');
+            if (!enabled) {
+              return const CommandResult.fail('wake word detection is off');
             }
             _watchMicLevel();
             return const CommandResult.ok();
@@ -1376,9 +1366,9 @@ class WakeWordManager extends Manager
           '${_engine.supportsStopWord ? ' + stop word' : ''}',
         );
         _runningEngine = _engine;
-        // A tester or meter opened before this engine came up (or across
-        // an engine switch) still gets its telemetry.
-        if (_testers > 0 || _meters > 0) _applyTelemetry();
+        // A tester opened before this engine came up (or across an engine
+        // switch) still gets its telemetry.
+        if (_testers > 0) _applyTelemetry();
       } else if (!_failed) {
         // The engine reports its own failures (a refused mic, models that would
         // not download) through onFailure, which has already run and said

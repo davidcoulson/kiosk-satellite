@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_satellite/app_container.dart';
+import 'package:kiosk_satellite/managers/audio/mic_level_monitor.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart';
 import 'package:kiosk_satellite/ui/kit.dart';
 import 'package:kiosk_satellite/ui/settings_screen.dart';
@@ -18,6 +19,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// pushes a route, the wide one swaps the split view's right pane.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  // The Microphone level row opens a capture; closing it at once leaves no
+  // linger timer behind when a test disposes the page.
+  MicLevelMonitor.instance.linger = Duration.zero;
 
   late AppContainer container;
 

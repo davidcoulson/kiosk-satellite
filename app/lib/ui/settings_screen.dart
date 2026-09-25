@@ -3497,10 +3497,9 @@ class _CategoryContentState extends State<_CategoryContent> {
                 child: MicChannelTile(container: container),
               ),
             // Live capture level under the gain it verifies. Only with
-            // detection on: it reads the engine's telemetry, and with
-            // detection off this app never opens the microphone.
-            if (container.settings.get(wakeWordEnabled))
-              MicLevelTile(container: container),
+            // detection on: it opens the microphone when no engine holds
+            // it, and with detection off this app never opens it.
+            if (container.settings.get(wakeWordEnabled)) const MicLevelTile(),
           ],
         ),
       ];
