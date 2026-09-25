@@ -596,7 +596,11 @@ async function refreshWake() {
 }
 
 /* ---- Screen ---- */
-let live = localStorage.getItem('ks_shot_live') === '1';
+// An agent's screen is the box's own - a projector showing Plezy, or its
+// launcher. Capturing and encoding that every five seconds to paint a card
+// in this admin is work for a picture of something the kiosk does not own,
+// so the card goes and nothing is ever captured for it.
+let live = localStorage.getItem('ks_shot_live') === '1' && !agentMode();
 function paintShotMode() {
   document.querySelectorAll('#shotMode button').forEach((b) =>
     b.classList.toggle('active', (b.dataset.live === '1') === live));
@@ -938,6 +942,10 @@ document.addEventListener('visibilitychange', () => { if (onOverview()) overview
 // Boot: built behind the splash with the rest of the app, so the page
 // opens populated rather than filling in.
 export async function initOverview() {
+  if (agentMode()) {
+    live = false;
+    $('#shotCard')?.classList.add('hidden');
+  }
   buildTiles();
   buildMetricTiles();
   paintShotMode();

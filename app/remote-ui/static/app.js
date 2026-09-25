@@ -1,7 +1,7 @@
 import { setLanguagePreference } from './localization.js';
 import { readRoute, routeHash } from './routes.js';
 import { loadPlugins } from './plugins.js';
-import { api, showView } from './core.js';
+import { api, showView, state } from './core.js';
 import { refreshUpdateBadge } from './device.js';
 import { initFleet } from './fleet.js';
 import { loadConsole } from './logs.js';
@@ -62,7 +62,11 @@ export async function start() {
   // The screenshot is the one thing not worth holding the splash for: the
   // tablet reads back and encodes its screen, and the panel has its own
   // placeholder. It lands into the visible page.
-  loadScreenshot();
+  // Not on an agent: there is no dashboard to look at, and the card that
+  // would show it is hidden (see initOverview).
+  if (!(state.settings || []).some((s) => s.key === 'device.agent_mode' && s.value === true)) {
+    loadScreenshot();
+  }
   // No auto-refresh by default: each capture makes the tablet read back
   // and encode its screen, and an admin tab left open would otherwise poll
   // the device forever. One shot on load plus Refresh is the deal, which
