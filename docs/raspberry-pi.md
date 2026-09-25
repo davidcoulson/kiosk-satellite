@@ -1,8 +1,8 @@
 # Raspberry Pi 4
 
-This setup has been verified on a Raspberry Pi 4 Model B (2 GB) running KonstaKANG's LineageOS 23.2 (Android 16) with a USB microphone. The WM8960 audio HAT section comes from a working setup on the same build. Other Android builds for the Pi, such as Emteria, may ship the same audio configuration, so check them for the two files covered below.
+This setup has been verified on a Raspberry Pi 4 Model B (2 GB) running KonstaKANG's LineageOS 23.2 (Android 16) with two USB microphones: a mono wireless headset microphone and a reSpeaker XVF3800 array. The WM8960 audio HAT section comes from a working setup on the same build. Other Android builds for the Pi, such as Emteria, may ship the same audio configuration, so check them for the two files covered below.
 
-Out of the box no microphone works on this build. The built-in audio path hands apps generated audio and mono USB microphones are refused. Two edits to `/vendor` fix both.
+Out of the box no microphone works on this build. The built-in audio path hands apps generated audio and most USB microphones are refused. Two edits to `/vendor` fix both.
 
 ## Install
 
@@ -84,7 +84,14 @@ With it, Android's primary audio HAL hands apps generated audio instead of the s
 </devicePort>
 ```
 
-Android then opens every USB microphone at 48 kHz stereo. Most USB microphones only record mono, so the open fails and the app receives silence. The app log still reports the capture pinned to the USB microphone and no **Capture format** setting helps, because every format ends at the same stereo open. Stock Android leaves this port without a profile so it reads the microphone's own formats. The second command in the audio block above removes the profile. Stereo USB microphones work either way.
+Android then opens every USB microphone at 48 kHz stereo. A microphone that cannot record exactly that refuses the open and the app receives silence. No **Capture format** setting helps, because every format ends at the same stereo open. The app log shows `capture delivered nothing for 3s from <microphone>` for each one. Stock Android leaves this port without a profile so it reads the microphone's own formats. The second command in the audio block above removes the profile. Only microphones that record 48 kHz stereo work without it.
+
+| Microphone | Records | Stock profile | Profile removed |
+| --- | --- | --- | --- |
+| Antlion wireless microphone | Mono, 8 to 48 kHz | Silent | Works |
+| reSpeaker XVF3800 4-Mic Array | 2 channels, 16 kHz only | Silent | Works, detected as soon as it is plugged in |
+
+The XVF3800 hands over two processed channels, not its four raw microphones, so the **Microphone channel** row appears for it. See [Microphone Channel](microphone.md#microphone-channel) for which channel to pick.
 
 To confirm a USB microphone hits this, check its channel count and the audio HAL's log:
 
@@ -93,7 +100,7 @@ adb shell cat /proc/asound/card*/stream0
 adb logcat | grep -E "AlsaUtils|start failed"
 ```
 
-A mono card (`Channels: 1`) together with `openProxyForExternalDevice: fail to prepare for device address=<N,0> error=-22` is this issue. To apply the edit without a reboot, restart the audio services instead:
+A card without 48000 in its rates or with a channel count other than 2, together with `openProxyForExternalDevice: fail to prepare for device address=<N,0> error=-22`, is this issue. To apply the edit without a reboot, restart the audio services instead:
 
 ```
 adb shell setprop ctl.restart vendor.audio-rpi
@@ -173,7 +180,7 @@ adb shell dpm remove-active-admin me.jxl.kiosk_satellite/.KioskAdminReceiver
 | Quirk | Effect | What to do |
 | --- | --- | --- |
 | Built-in audio is simulated | Apps get generated audio instead of the sound card's recording. HAT microphones show a constant level and never detect a wake word. | Comment out `ro.boot.audio.tinyalsa.simulate_input=true` in `/vendor/build.prop` and reboot. |
-| USB microphone input is pinned to 48 kHz stereo | Mono USB microphones fail to open and the app receives silence. | Remove the profile from **USB Device In** in `/vendor/etc/usb_audio_policy_configuration.xml` and restart the audio services or reboot. |
+| USB microphone input is pinned to 48 kHz stereo | USB microphones that cannot record 48 kHz stereo, mono ones and 16 kHz arrays like the reSpeaker XVF3800 alike, fail to open and the app receives silence. | Remove the profile from **USB Device In** in `/vendor/etc/usb_audio_policy_configuration.xml` and restart the audio services or reboot. |
 | ROM updates restore `/vendor` | A reflash or ROM update brings back both audio lines. | Run the audio block again after every ROM update. |
 | Wireless debugging changes its port on every reboot | A setup that ends in a reboot drops a Wireless debugging connection. | Use port 5555 or read the new port from the Wireless debugging screen. |
 | `adb root` restarts ADB | The authorization prompt appears again unless the computer was always allowed. | Tick **Always allow from this computer** on the first prompt. |

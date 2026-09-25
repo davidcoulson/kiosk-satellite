@@ -5,7 +5,7 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 ## Unreleased
 
 ### Added
-- **Raspberry Pi 4 guide.** A new device guide covers provisioning a Pi 4 running LineageOS over ADB and the two ROM settings that silence every microphone on it: a line that feeds apps generated audio instead of the built-in audio and a USB audio profile that mono USB microphones cannot open. Both are fixed with a few ADB commands. It also covers the WM8960 audio HAT.
+- **Raspberry Pi 4 guide.** A new device guide covers provisioning a Pi 4 running LineageOS over ADB and the two ROM settings that silence every microphone on it: a line that feeds apps generated audio instead of the built-in audio and a USB audio profile that most USB microphones cannot open, the reSpeaker XVF3800 array included. Both are fixed with a few ADB commands. It also covers the WM8960 audio HAT.
 - **Show titles for the Weather Mood reading chips.** A new Show titles toggle in Weather information names each reading above its value. It is off by default, so the reading chips show only their values, at the same size as the temperature.
 
 ### Changed
