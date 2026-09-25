@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_satellite/app_container.dart';
+import 'package:kiosk_satellite/core/frame_watchdog.dart';
 import 'package:kiosk_satellite/managers/js_api/js_api_manager.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -84,5 +85,19 @@ void main() {
   test('the switch is off by default and never rides fleet sync', () {
     expect(defs.agentMode.defaultValue, isFalse);
     expect(defs.agentMode.perDevice, isTrue);
+  });
+
+  test('the renderer watchdog never arms an agent', () async {
+    // It reads "foregrounded with no WebView" as a wedged renderer, which is
+    // an agent's normal state: armed, it restarted a healthy agent every 30
+    // seconds. Caught on the office test panel, not in this file - hence the
+    // test.
+    final kiosk = FrameWatchdog(await build())..start();
+    addTearDown(kiosk.stop);
+    expect(kiosk.running, isTrue);
+
+    final agent = FrameWatchdog(await build(agent: true))..start();
+    addTearDown(agent.stop);
+    expect(agent.running, isFalse);
   });
 }

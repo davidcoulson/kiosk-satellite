@@ -25,7 +25,8 @@ import '../managers/settings/definitions.dart' as defs;
 ///     background bridge, not the engine's lifecycle reporting.
 ///  2. A configured kiosk has no WebView attached — the platform view
 ///     cannot come up without a working attach, so its prolonged absence
-///     is the wedge. Transients (a settings-triggered WebView rebuild) last
+///     is the wedge. (A kiosk: an agent-mode install has no WebView by
+///     design, and the watchdog never arms there.) Transients (a settings-triggered WebView rebuild) last
 ///     moments; the watchdog needs three consecutive strikes 5s apart.
 ///
 /// Recovery escalates. First a WebView rebuild in place: the create-raced-
@@ -67,7 +68,24 @@ class FrameWatchdog {
   int _framesAtFirstStrike = 0;
   bool _rebuildRequested = false;
 
+  /// Whether the periodic probe is running. False in agent mode, where the
+  /// premise below does not hold.
+  bool get running => _timer?.isActive ?? false;
+
   void start() {
+    // Agent mode has no WebView on purpose, and this watchdog reads "no
+    // WebView while foregrounded" as a wedged renderer - so left armed it
+    // restarts a perfectly healthy agent every thirty seconds, forever.
+    // Unconfigured kiosks and devices with no WebView provider already get
+    // the same pass further down; this is the third way to legitimately
+    // have no WebView.
+    if (_container.agentMode) {
+      _container.log.info(
+        'watchdog',
+        'agent mode: no WebView is expected here, so the watchdog stays down',
+      );
+      return;
+    }
     _container.log.info('watchdog', 'armed (${_interval.inSeconds}s checks)');
     try {
       SchedulerBinding.instance.addPersistentFrameCallback((_) => _frames++);
