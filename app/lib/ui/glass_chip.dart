@@ -1,0 +1,175 @@
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+
+/// The glass shader, on renderers that can run it as a backdrop filter.
+final Future<ui.FragmentProgram?> _glassProgram =
+    ui.ImageFilter.isShaderFilterSupported
+    ? ui.FragmentProgram.fromAsset(
+        'shaders/weather_mood_glass.frag',
+      ).then<ui.FragmentProgram?>((program) => program, onError: (_) => null)
+    : Future.value(null);
+
+/// The colors of a glass chip at a Background opacity from 0 to 1, for
+/// the tinted chip renderers without backdrop shaders draw instead. The
+/// fill follows the opacity, and the edge and icon circles fade with it, so
+/// a fully transparent chip leaves only its content.
+class GlassPalette {
+  GlassPalette(this.opacity)
+    : fill = const Color(0xFF1C1C1E).withValues(alpha: opacity),
+      edge = Colors.white.withValues(alpha: .16 * opacity),
+      circle = Colors.white.withValues(
+        alpha: .14 * (opacity / .7).clamp(0.0, 1.0),
+      );
+
+  final double opacity;
+  final Color fill, edge, circle;
+
+  /// Light catching the top of the glass: a faint sheen that fades out
+  /// toward the bottom of each chip.
+  Color get sheen => Color.alphaBlend(
+    Colors.white.withValues(alpha: .12 * (opacity / .5).clamp(0.0, 1.0)),
+    fill,
+  );
+
+  /// The tinted chip. A StadiumBorder keeps the radius at half the chip's
+  /// own height; an oversized corner radius once froze Impeller's raster
+  /// thread.
+  ShapeDecoration get decoration => ShapeDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [sheen, fill],
+      stops: const [0, .6],
+    ),
+    shape: StadiumBorder(side: BorderSide(color: edge)),
+  );
+}
+
+/// A chip of clear glass over the scene: the backdrop refracts at the
+/// rounded edge under a bright rim. Renderers without backdrop shaders, the
+/// moments before the shader loads and a fully transparent [palette] show
+/// [fallback] instead. A blurred copy of the scene behind every chip would
+/// cost the legacy renderer a backdrop read and blur per chip on every
+/// frame. Chips under one [BackdropGroup] share a single read of the scene.
+class GlassChip extends StatelessWidget {
+  const GlassChip({
+    super.key,
+    required this.palette,
+    required this.fallback,
+    required this.child,
+  });
+  final GlassPalette palette;
+  final Widget fallback;
+
+  /// The chip's content without any decoration: the glass draws the tint
+  /// and rim itself.
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (palette.opacity <= 0) return fallback;
+    return FutureBuilder<ui.FragmentProgram?>(
+      future: _glassProgram,
+      builder: (context, snapshot) {
+        final program = snapshot.data;
+        if (program == null) return fallback;
+        return ClipPath(
+          clipper: const ShapeBorderClipper(shape: StadiumBorder()),
+          child: _GlassBackdrop(
+            program: program,
+            tint: palette.opacity,
+            backdropKey: BackdropGroup.of(context)?.backdropKey,
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _GlassBackdrop extends SingleChildRenderObjectWidget {
+  const _GlassBackdrop({
+    required this.program,
+    required this.tint,
+    required this.backdropKey,
+    super.child,
+  });
+  final ui.FragmentProgram program;
+  final double tint;
+  final BackdropKey? backdropKey;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderGlassBackdrop(program.fragmentShader(), tint, backdropKey);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderGlassBackdrop renderObject,
+  ) => renderObject
+    ..tint = tint
+    ..backdropKey = backdropKey;
+}
+
+/// Paints its child over the glass. The shader needs the chip's place on
+/// screen, which is only known once it paints.
+class _RenderGlassBackdrop extends RenderProxyBox {
+  _RenderGlassBackdrop(this._shader, this._tint, this._backdropKey);
+  final ui.FragmentShader _shader;
+  double _tint;
+  BackdropKey? _backdropKey;
+
+  set backdropKey(BackdropKey? value) {
+    if (value == _backdropKey) return;
+    _backdropKey = value;
+    markNeedsPaint();
+  }
+
+  set tint(double value) {
+    if (value == _tint) return;
+    _tint = value;
+    markNeedsPaint();
+  }
+
+  @override
+  bool get alwaysNeedsCompositing => true;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    // The backdrop is in the view's device pixels. The root view's own
+    // ratio applies here: the MediaQuery ratio below a UI scale exemption
+    // differs from it.
+    RenderObject root = this;
+    while (root.parent != null) {
+      root = root.parent!;
+    }
+    final ratio = root is RenderView
+        ? root.configuration.devicePixelRatio
+        : 1.0;
+    final rect = MatrixUtils.transformRect(
+      getTransformTo(null),
+      Offset.zero & size,
+    );
+    _shader
+      ..setFloat(2, rect.left * ratio)
+      ..setFloat(3, rect.top * ratio)
+      ..setFloat(4, rect.width * ratio)
+      ..setFloat(5, rect.height * ratio)
+      ..setFloat(6, _tint)
+      ..setFloat(7, rect.height / size.height * ratio);
+    final layer = (this.layer as BackdropFilterLayer?) ?? BackdropFilterLayer();
+    layer
+      ..filter = ui.ImageFilter.shader(_shader)
+      ..backdropKey = _backdropKey;
+    this.layer = layer;
+    context.pushLayer(layer, super.paint, offset);
+  }
+
+  @override
+  void dispose() {
+    _shader.dispose();
+    super.dispose();
+  }
+}

@@ -7,6 +7,9 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 ### Added
 - **Show titles for the Weather Mood reading chips.** A new Show titles toggle in Weather information names each reading above its value. It is off by default, so the reading chips show only their values, at the same size as the temperature.
 
+### Changed
+- **At a Glance matches the Weather Mood chips.** Over Weather Mood the At a Glance pills are glass like the weather chips, with the scene bending at their edges under the same rim, and follow the same Background opacity. Other screensavers keep the dark pills.
+
 ### Fixed
 - **Weather Mood and screensaver widgets no longer freeze on old Home Assistant states.** A connection that died without closing, such as one a router drops while the device sleeps, left Weather Mood showing night and hours old weather at noon until the screensaver restarted. At a Glance and the corner widgets could freeze the same way. These connections now check in with Home Assistant every 30 seconds and reconnect when it stops answering.
 - **A WebView that fails to start no longer restarts the app every minute.** When the WebView provider is installed but cannot start, which happens while Android System WebView updates itself and on a board whose WebView build does not run, the creation throws and the frame watchdog restarted the process every minute for as long as it lasted, thirty times on four devices. The dashboard now shows the WebView notice, the watchdog stands down and the WebView is tried again five minutes later, so an update finishing in the meantime takes over on its own.

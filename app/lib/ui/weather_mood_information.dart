@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -13,6 +12,7 @@ import '../managers/settings/definitions.dart' as defs;
 import 'clock_faces.dart';
 import 'digital_clock_face.dart';
 import 'glance_row.dart';
+import 'glass_chip.dart';
 import 'weather_readings.dart';
 
 const _textShadows = [
@@ -199,9 +199,16 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
                             ? 24
                             : size.height * .06,
                       ),
+                      // The pills wear the weather chips' glass at the same
+                      // Background opacity, so both rows match.
                       child: GlanceRow(
                         container: c,
                         scale: math.min(1.0, size.height / 480).clamp(.75, 1.0),
+                        glass: GlassPalette(
+                          (c.settings.get(defs.screensaverWeatherBarOpacity) /
+                                  100)
+                              .clamp(0.0, 1.0),
+                        ),
                       ),
                     ),
                   if (c.settings.get(defs.screensaverWeatherBar) &&
@@ -252,19 +259,7 @@ class WeatherMoodBar extends StatelessWidget {
       0.0,
       1.0,
     );
-    // The fill follows Background opacity. The edge and icon circles fade
-    // with it, so a fully transparent chip leaves only its text.
-    final fill = const Color(0xFF1C1C1E).withValues(alpha: opacity);
-    // Light catching the top of the glass: a faint sheen that fades out
-    // toward the bottom of each chip.
-    final sheen = Color.alphaBlend(
-      Colors.white.withValues(alpha: .12 * (opacity / .5).clamp(0.0, 1.0)),
-      fill,
-    );
-    final edge = Colors.white.withValues(alpha: .16 * opacity);
-    final circle = Colors.white.withValues(
-      alpha: .14 * (opacity / .7).clamp(0.0, 1.0),
-    );
+    final glass = GlassPalette(opacity);
     TextStyle style(
       double fontSize, {
       FontWeight weight = FontWeight.w400,
@@ -279,36 +274,21 @@ class WeatherMoodBar extends StatelessWidget {
     );
     // A StadiumBorder keeps the radius at half the chip's own height; an
     // oversized corner radius once froze Impeller's raster thread.
-    Widget chip(Widget child, EdgeInsets padding) {
-      final glass = Container(
+    Widget chip(Widget child, EdgeInsets padding) => GlassChip(
+      palette: glass,
+      fallback: Container(
         padding: padding * scale,
-        decoration: ShapeDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [sheen, fill],
-            stops: const [0, .6],
-          ),
-          shape: StadiumBorder(side: BorderSide(color: edge)),
-        ),
+        decoration: glass.decoration,
         child: child,
-      );
-      if (opacity <= 0) return glass;
-      // Without backdrop shaders the tinted chip stands alone: a blurred
-      // copy of the scene behind every chip costs the legacy renderer a
-      // backdrop read and blur per chip on every frame.
-      return _GlassChip(
-        tint: opacity,
-        fallback: glass,
-        child: Padding(padding: padding * scale, child: child),
-      );
-    }
+      ),
+      child: Padding(padding: padding * scale, child: child),
+    );
 
     Widget disc(double diameter, Widget icon) => Container(
       width: diameter * scale,
       height: diameter * scale,
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: circle, shape: BoxShape.circle),
+      decoration: BoxDecoration(color: glass.circle, shape: BoxShape.circle),
       child: icon,
     );
     // Without titles a reading shows its value alone, at the size of the
@@ -541,131 +521,5 @@ class _RenderReportHeight extends RenderProxyBox {
       SchedulerBinding.instance.addPostFrameCallback((_) => onHeight(0));
     }
     super.detach();
-  }
-}
-
-/// The glass shader, on renderers that can run it as a backdrop filter.
-final Future<ui.FragmentProgram?> _glassProgram =
-    ui.ImageFilter.isShaderFilterSupported
-    ? ui.FragmentProgram.fromAsset(
-        'shaders/weather_mood_glass.frag',
-      ).then<ui.FragmentProgram?>((program) => program, onError: (_) => null)
-    : Future.value(null);
-
-/// A chip of clear glass over the scene: the backdrop refracts at the
-/// rounded edge under a bright rim. Renderers without backdrop shaders, and
-/// the moments before the shader loads, show [fallback] instead.
-class _GlassChip extends StatelessWidget {
-  const _GlassChip({
-    required this.tint,
-    required this.fallback,
-    required this.child,
-  });
-  final double tint;
-  final Widget fallback;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => FutureBuilder<ui.FragmentProgram?>(
-    future: _glassProgram,
-    builder: (context, snapshot) {
-      final program = snapshot.data;
-      if (program == null) return fallback;
-      return ClipPath(
-        clipper: const ShapeBorderClipper(shape: StadiumBorder()),
-        // One read of the scene behind serves every chip in the group.
-        child: _GlassBackdrop(
-          program: program,
-          tint: tint,
-          backdropKey: BackdropGroup.of(context)?.backdropKey,
-          child: child,
-        ),
-      );
-    },
-  );
-}
-
-class _GlassBackdrop extends SingleChildRenderObjectWidget {
-  const _GlassBackdrop({
-    required this.program,
-    required this.tint,
-    required this.backdropKey,
-    super.child,
-  });
-  final ui.FragmentProgram program;
-  final double tint;
-  final BackdropKey? backdropKey;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) =>
-      _RenderGlassBackdrop(program.fragmentShader(), tint, backdropKey);
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    _RenderGlassBackdrop renderObject,
-  ) => renderObject
-    ..tint = tint
-    ..backdropKey = backdropKey;
-}
-
-/// Paints its child over the glass. The shader needs the chip's place on
-/// screen, which is only known once it paints.
-class _RenderGlassBackdrop extends RenderProxyBox {
-  _RenderGlassBackdrop(this._shader, this._tint, this._backdropKey);
-  final ui.FragmentShader _shader;
-  double _tint;
-  BackdropKey? _backdropKey;
-
-  set backdropKey(BackdropKey? value) {
-    if (value == _backdropKey) return;
-    _backdropKey = value;
-    markNeedsPaint();
-  }
-
-  set tint(double value) {
-    if (value == _tint) return;
-    _tint = value;
-    markNeedsPaint();
-  }
-
-  @override
-  bool get alwaysNeedsCompositing => true;
-
-  @override
-  void paint(PaintingContext context, Offset offset) {
-    // The backdrop is in the view's device pixels. The root view's own
-    // ratio applies here: the MediaQuery ratio below a UI scale exemption
-    // differs from it.
-    RenderObject root = this;
-    while (root.parent != null) {
-      root = root.parent!;
-    }
-    final ratio = root is RenderView
-        ? root.configuration.devicePixelRatio
-        : 1.0;
-    final rect = MatrixUtils.transformRect(
-      getTransformTo(null),
-      Offset.zero & size,
-    );
-    _shader
-      ..setFloat(2, rect.left * ratio)
-      ..setFloat(3, rect.top * ratio)
-      ..setFloat(4, rect.width * ratio)
-      ..setFloat(5, rect.height * ratio)
-      ..setFloat(6, _tint)
-      ..setFloat(7, rect.height / size.height * ratio);
-    final layer = (this.layer as BackdropFilterLayer?) ?? BackdropFilterLayer();
-    layer
-      ..filter = ui.ImageFilter.shader(_shader)
-      ..backdropKey = _backdropKey;
-    this.layer = layer;
-    context.pushLayer(layer, super.paint, offset);
-  }
-
-  @override
-  void dispose() {
-    _shader.dispose();
-    super.dispose();
   }
 }

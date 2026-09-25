@@ -372,6 +372,22 @@ void main() {
         await c.settings.set(defs.screensaverWeatherBarOpacity, opacity);
         await show(const Size(1280, 800), 100, 'fr');
         expect(chips(), hasLength(4));
+        // At a Glance wears the same glass, tinted alike.
+        final pills = [
+          for (final box in tester.widgetList<DecoratedBox>(
+            find.descendant(
+              of: find.byType(GlanceRow),
+              matching: find.byType(DecoratedBox),
+            ),
+          ))
+            if (box.decoration case final ShapeDecoration decoration)
+              decoration,
+        ];
+        expect(pills, hasLength(1));
+        expect(
+          (pills.single.gradient! as LinearGradient).colors.last.a,
+          closeTo(opacity / 100, .01),
+        );
         // The test renderer has no backdrop shaders, so the chips are the
         // plain tinted fallback: no per-frame backdrop blur.
         expect(
