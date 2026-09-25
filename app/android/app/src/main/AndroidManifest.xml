@@ -1,6 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Never granted by installing: only `adb shell pm grant` can give it,
+         and only to an app that declares it here. Lets AccessibilityKeeper
+         put the accessibility service back when firmware clears it. -->
+    <uses-permission
+        android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <!-- SendSpin server discovery over mDNS: receiving multicast needs the
          wifi multicast lock, which needs both of these. -->
