@@ -61,6 +61,14 @@ object RemoteKeys {
     @Volatile
     private var configured = false
 
+    /** Report presses of these key codes to Dart (Home Assistant's Remote
+     *  key event). Empty = reporting off. The list is Dart's: only remote
+     *  keys, never letters, digits or symbols, so a keyboard typing into
+     *  an app is never reported. Reporting only observes: it swallows
+     *  nothing. */
+    @Volatile
+    private var reportCodes: Set<Int> = emptySet()
+
     @Volatile
     private var bridge: RemoteKeysBridge? = null
 
@@ -111,10 +119,12 @@ object RemoteKeys {
         }
     }
 
-    /** Dart's push: the whole gestures.mappings JSON and the switch. */
-    fun configure(mappingsJson: String?, enabled: Boolean) {
+    /** Dart's push: the whole gestures.mappings JSON, the switch, and
+     *  the key codes to report. */
+    fun configure(mappingsJson: String?, enabled: Boolean, report: Collection<Int> = emptyList()) {
         configured = true
         this.enabled = enabled
+        reportCodes = report.toSet()
         matcher.mappings = parseRemoteKeyMappings(mappingsJson)
         applyFilter()
     }
@@ -143,7 +153,8 @@ object RemoteKeys {
      *  key keeps it on until its release arrives: switched off after the
      *  down, the up went to the app instead and left the key looking held. */
     fun wantsKeys(): Boolean =
-        capturing || captured != null || (enabled && matcher.mappings.isNotEmpty())
+        capturing || captured != null || reportCodes.isNotEmpty() ||
+            (enabled && matcher.mappings.isNotEmpty())
 
     private fun applyFilter() {
         main.post { KioskAccessibilityService.instance?.filterKeys(wantsKeys()) }
@@ -152,6 +163,11 @@ object RemoteKeys {
     /** One key event from the service. True consumes it. */
     fun onKey(event: KeyEvent): Boolean {
         val code = event.keyCode
+        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
+            code in reportCodes && !capturing
+        ) {
+            bridge?.reported(code)
+        }
         if (captured == code) {
             val freshDown = event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0
             if (!freshDown) {
@@ -345,6 +361,7 @@ class RemoteKeysBridge(
                     RemoteKeys.configure(
                         call.argument<String>("mappings"),
                         call.argument<Boolean>("enabled") ?: true,
+                        call.argument<List<Int>>("report") ?: emptyList(),
                     )
                     result.success(null)
                 }
@@ -352,6 +369,12 @@ class RemoteKeysBridge(
                     RemoteKeys.capture(call.argument<Int>("seconds") ?: 20)
                     result.success(KioskAccessibilityService.running)
                 }
+                // A key pressed from Home Assistant (KeySender).
+                "sendKey" -> result.success(
+                    KeySender.send(context, call.argument<String>("key") ?: ""),
+                )
+                // The keeper's record of what it has put back since install.
+                "selfRepairs" -> result.success(AccessibilityKeeper.record(context))
                 "cancelCapture" -> {
                     RemoteKeys.cancelCapture()
                     result.success(null)
@@ -368,12 +391,23 @@ class RemoteKeysBridge(
             }
         }
         RemoteKeys.attach(this, context)
+        AccessibilityKeeper.onRepaired = { repaired(it) }
     }
 
     /** A mapped key fired. [ran] is the native action's outcome, or null
      *  when Dart must run the action itself. */
     fun pressed(id: String, ran: Boolean?) {
         channel.invokeMethod("pressed", mapOf("id" to id, "ran" to ran))
+    }
+
+    /** A remote key was pressed (reporting on): Home Assistant's event. */
+    fun reported(keyCode: Int) {
+        channel.invokeMethod("reported", mapOf("keyCode" to keyCode))
+    }
+
+    /** The accessibility keeper put something back (self-repair report). */
+    fun repaired(record: Map<String, Any?>) {
+        channel.invokeMethod("repaired", record)
     }
 
     fun captured(keyCode: Int, name: String) {

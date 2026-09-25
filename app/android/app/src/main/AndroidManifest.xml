@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Uninstall from the remote admin's Installed apps list: Android
+         shows its own confirmation on the device (ACTION_DELETE). -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES"/>
     <!-- Never granted by installing: only `adb shell pm grant` can give it,
          and only to an app that declares it here. Lets AccessibilityKeeper
          put the accessibility service back when firmware clears it. -->
@@ -275,6 +278,17 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/kiosk_accessibility"/>
         </service>
+        <!-- Only for other apps' media sessions (now playing): Android
+             answers getActiveSessions for an enabled notification
+             listener. It reads no notifications. See MediaSessions. -->
+        <service
+            android:name=".KioskNotificationListener"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService"/>
+            </intent-filter>
+        </service>
         <receiver
             android:name=".CrashHeartbeatReceiver"
             android:exported="false"/>
@@ -356,6 +370,13 @@
         <intent>
             <action android:name="android.intent.action.MAIN"/>
             <category android:name="android.intent.category.LAUNCHER"/>
+        </intent>
+        <!-- Android TV apps that have only a leanback launcher entry
+             (Projectivy, Plezy on a projector): launchable too, and listed
+             in the remote admin's Installed apps. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
         </intent>
         <!-- Resolving the CURRENT default home app (HomeRole): who to hand
              the screen back to when the home-launcher feature is turned

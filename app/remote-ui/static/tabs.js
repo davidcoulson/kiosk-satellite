@@ -7,6 +7,7 @@ import { loadFiles } from './files.js';
 import { fleetShown } from './fleetsync.js';
 import { intercomShown } from './intercom.js';
 import { loadGestures } from './gestures.js';
+import { loadInstalledApps } from './apps.js';
 import { subpageIcon } from './icons.js';
 import { loadLogs } from './logs.js';
 import { loadPlugins } from './plugins.js';
@@ -181,6 +182,7 @@ export function showTab(name, { push = true, refresh = true } = {}) {
   if (tab === 'logs') loadLogs();
   if (tab === 'files') loadFiles();
   if (tab === 'gestures') loadGestures();
+  if (tab === 'launcher') loadInstalledApps();
   if (tab === 'cameras') loadCameras();
   if (tab === 'device') loadDeviceInfo();
   // The fleet is other kiosks' state: re-read on every visit and polled

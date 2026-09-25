@@ -8759,6 +8759,113 @@ const theaterMaxHours = SettingDef<num>(
   unit: ' h',
 );
 
+// ── Headless management ────────────────────────────────────────────────
+//
+// For a box whose screen belongs to another app - a projector, a media
+// box - usually in agent mode: the remote, the playback and the app in
+// front, as Home Assistant sees them (AgentToolsManager). Every one is off
+// until turned on, and per device.
+
+const remoteKeysReport = SettingDef<bool>(
+  key: 'gestures.remote_keys.report',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Send remote keys to Home Assistant',
+  description:
+      'Fire the Remote key event in Home Assistant for each key pressed on '
+      'the remote: navigation, media, volume, colour and function keys, '
+      'never letters or digits. Needs the accessibility service.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
+const nowPlaying = SettingDef<bool>(
+  key: 'device.now_playing',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Report what is playing',
+  description:
+      'Publish the app, title, artist and state of whatever plays on this '
+      'device to Home Assistant, with play, pause and skip controls. Needs '
+      'notification access, which Kiosk Satellite turns on itself when it '
+      'holds WRITE_SECURE_SETTINGS.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
+const homeApp = SettingDef<String>(
+  key: 'device.home_app',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Home app',
+  description:
+      'The package this device should normally show, such as '
+      'com.spocky.projengmenu. Empty for none.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
+const homeAppAtBoot = SettingDef<bool>(
+  key: 'device.home_app_at_boot',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Open the home app at boot',
+  description: 'Start the home app once the device has booted.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
+const homeAppIdleMinutes = SettingDef<num>(
+  key: 'device.home_app_idle_minutes',
+  type: SettingType.number,
+  defaultValue: 0,
+  min: 0,
+  max: 240,
+  step: 5,
+  unit: 'min',
+  title: 'Return to the home app when idle',
+  description:
+      'After this many minutes with no remote key pressed and nothing '
+      'playing, bring the home app back to the front. 0 turns it off.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
+const rebootTime = SettingDef<String>(
+  key: 'device.reboot_time',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Daily restart',
+  description:
+      'Restart the device every day at this time (24-hour, HH:MM). Empty '
+      'for never. Needs Kiosk Satellite to be able to restart the device '
+      '(device owner).',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
+const hotThreshold = SettingDef<num>(
+  key: 'device.hot_threshold',
+  type: SettingType.number,
+  defaultValue: 85,
+  min: 50,
+  max: 110,
+  step: 1,
+  unit: '°C',
+  title: 'Running hot above',
+  description:
+      'The Running hot sensor turns on while the CPU is hotter than this.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
 const List<SettingDef<Object>> allSettings = [
   startUrl,
   secureProxy,
@@ -9217,6 +9324,13 @@ const List<SettingDef<Object>> allSettings = [
   shizukuInstallUpdates,
   // The Kiosk Satellite Analytics page is the last group on the Device
   // page, after Permissions Manager (settings_screen places its entry).
+  remoteKeysReport,
+  nowPlaying,
+  homeApp,
+  homeAppAtBoot,
+  homeAppIdleMinutes,
+  rebootTime,
+  hotThreshold,
   analyticsBasic,
   analyticsUsage,
   analyticsDiagnostics,

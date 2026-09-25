@@ -1316,6 +1316,25 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'devicePasswordSet' => strings.devicePasswordSet,
       'deviceSaveFailed' => strings.deviceSaveFailed,
       'deviceOpenSettingsDevice' => strings.deviceOpenSettingsDevice,
+      'settingRemoteKeysReportTitle' => strings.settingRemoteKeysReportTitle,
+      'settingRemoteKeysReportDescription' =>
+        strings.settingRemoteKeysReportDescription,
+      'settingNowPlayingTitle' => strings.settingNowPlayingTitle,
+      'settingNowPlayingDescription' => strings.settingNowPlayingDescription,
+      'settingHomeAppTitle' => strings.settingHomeAppTitle,
+      'settingHomeAppDescription' => strings.settingHomeAppDescription,
+      'settingHomeAppAtBootTitle' => strings.settingHomeAppAtBootTitle,
+      'settingHomeAppAtBootDescription' =>
+        strings.settingHomeAppAtBootDescription,
+      'settingHomeAppIdleMinutesTitle' =>
+        strings.settingHomeAppIdleMinutesTitle,
+      'settingHomeAppIdleMinutesDescription' =>
+        strings.settingHomeAppIdleMinutesDescription,
+      'settingRebootTimeTitle' => strings.settingRebootTimeTitle,
+      'settingRebootTimeDescription' => strings.settingRebootTimeDescription,
+      'settingHotThresholdTitle' => strings.settingHotThresholdTitle,
+      'settingHotThresholdDescription' =>
+        strings.settingHotThresholdDescription,
       'deviceHardwarePage' => strings.deviceHardwarePage,
       'deviceWebViewPage' => strings.deviceWebViewPage,
       'deviceModel' => strings.deviceModel,

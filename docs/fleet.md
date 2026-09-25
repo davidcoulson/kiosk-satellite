@@ -111,6 +111,7 @@ Certain settings remain unique to each kiosk regardless of the profile configura
 | Remote admin & fleet | `remote.enabled`, `remote.port`, `remote.tls`, `remote.password`, `remote.fleet_discovery`, `fleet.*` |
 | Intercom encryption | `intercom.tls` |
 | Accessibility self-repair (needs a per-device adb grant) | `device.keep_accessibility` |
+| Headless management (each box's remote, player and home app) | `gestures.remote_keys.report`, `device.now_playing`, `device.home_app`, `device.home_app_at_boot`, `device.home_app_idle_minutes`, `device.reboot_time`, `device.hot_threshold` |
 | Hardware picks | `camera.device`, `camera.rtsp.tls`, `camera.rtsp.resolution`, `camera.rtsp.analysis`, `motion.camera`, `audio.mic_device`, `audio.speaker_device`, `audio.mic_channel`, `audio.mic_source`, `audio.mic_echo_cancellation`, `audio.mic_gain_db`, `audio.mic_agc`, `audio.mic_noise_suppression`, `audio.mic_capture_format`, `render.disable_impeller`, `render.legacy_webview`, `ui.scale`, `device.agent_mode`, `screen.ambient_display`, `device.no_battery` |
 | Followed player | `sendspin.player`, `sendspin.player_source`, `sendspin.player_name` |
 | Weather preview | `screensaver.weather_preview`, `screensaver.weather_preview_condition`, `screensaver.weather_preview_period` |

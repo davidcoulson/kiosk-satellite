@@ -868,6 +868,29 @@ class VolumeKeyPressed extends AppEvent {
 /// A configured hidden gesture was detected natively. [id] is the mapping
 /// id from gestures.mappings; the gestures manager resolves and runs the
 /// mapped action.
+/// A remote key was pressed, while reporting keys (Home Assistant's Remote
+/// key event) or the home-app guard wants to know the remote is in use.
+/// [type] is the event type Home Assistant sees ('home', 'dpad_up').
+class RemoteKeyReported extends AppEvent {
+  const RemoteKeyReported({required this.keyCode, required this.type});
+  final int keyCode;
+  final String type;
+}
+
+/// What plays on the device changed (another app's media session).
+/// [snapshot] carries state, package, app, title, artist, album.
+class NowPlayingChanged extends AppEvent {
+  const NowPlayingChanged(this.snapshot);
+  final Map<String, Object?> snapshot;
+}
+
+/// The accessibility keeper put something back that firmware took away.
+/// [record] is the running total: {count, last (epoch ms), what}.
+class SelfRepaired extends AppEvent {
+  const SelfRepaired(this.record);
+  final Map<String, Object?> record;
+}
+
 class GestureDetected extends AppEvent {
   const GestureDetected({required this.id});
   final String id;

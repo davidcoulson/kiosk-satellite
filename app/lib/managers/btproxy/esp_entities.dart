@@ -10,6 +10,7 @@ import '../../core/event_bus.dart';
 import '../../core/events.dart';
 import '../../core/logging.dart';
 import '../device/ip_addresses.dart';
+import '../gestures/remote_keys_manager.dart' show remoteKeyEventTypes;
 import 'dashboard_views.dart';
 import 'interaction_stamp.dart';
 import '../sendspin/music_assistant_api.dart';
@@ -509,6 +510,47 @@ class EspEntitySurface {
     _listedStartPage = _hasCustomStartPage;
     final catalog = <Map<String, Object?>>[
       // ── Controls ─────────────────────────────────────────────────────
+      // Headless management (AgentToolsManager, RemoteKeys.kt): the remote
+      // as an event, and whatever another app is playing.
+      if (_settings.get(defs.remoteKeysReport))
+        {
+          'type': 'event',
+          'objectId': 'remote_key',
+          'name': 'Remote key',
+          'icon': 'mdi:remote',
+          'deviceClass': 'button',
+          'eventTypes': remoteKeyEventTypes.values.toList(),
+        },
+      if (_settings.get(defs.nowPlaying)) ...[
+        {
+          'type': 'text_sensor',
+          'objectId': 'media_state',
+          'name': 'Media state',
+          'icon': 'mdi:play-pause',
+        },
+        {
+          'type': 'text_sensor',
+          'objectId': 'media_app',
+          'name': 'Media app',
+          'icon': 'mdi:application-outline',
+        },
+        {
+          'type': 'text_sensor',
+          'objectId': 'media_title',
+          'name': 'Media title',
+          'icon': 'mdi:music-note',
+        },
+        {
+          'type': 'text_sensor',
+          'objectId': 'media_artist',
+          'name': 'Media artist',
+          'icon': 'mdi:account-music',
+        },
+        button('media_play_pause', 'Media play/pause', 'mdi:play-pause'),
+        button('media_next', 'Media next', 'mdi:skip-next'),
+        button('media_previous', 'Media previous', 'mdi:skip-previous'),
+        button('media_stop', 'Media stop', 'mdi:stop'),
+      ],
       {
         'type': 'light',
         'objectId': 'screen',
@@ -945,6 +987,32 @@ class EspEntitySurface {
           unit: '°C',
           stateClass: 1,
         ),
+      // On while the CPU is hotter than Running hot above: a projector in a
+      // cabinet is where this matters, and an automation can act on it.
+      if (cpuTempPresent)
+        diagnostic(
+          'running_hot',
+          'Running hot',
+          icon: 'mdi:thermometer-alert',
+          deviceClass: 'heat',
+          type: 'binary_sensor',
+        ),
+      // What the accessibility keeper put back after firmware took it
+      // away: a sensor, so a vendor that keeps doing it shows in history.
+      if (agent) ...[
+        diagnostic(
+          'self_repairs',
+          'Self repairs',
+          icon: 'mdi:wrench-check',
+          stateClass: 2,
+        ),
+        diagnostic(
+          'last_self_repair',
+          'Last self repair',
+          icon: 'mdi:wrench-clock',
+          type: 'text_sensor',
+        ),
+      ],
       diagnostic(
         'ram_free',
         'RAM available',
@@ -1299,6 +1367,25 @@ class EspEntitySurface {
         {'name': 'package_name', 'type': 'string'},
       ],
     },
+    // Presses a key on the device (KeySender.kt): back, home, recents,
+    // notifications, the media keys and volume; the D-pad and OK from
+    // Android 13. Answers the reason when a key cannot be sent.
+    {
+      'name': 'send_key',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'key', 'type': 'string'},
+      ],
+    },
+    // Controls whatever plays in another app (Report what is playing):
+    // play, pause, play_pause, next, previous or stop.
+    {
+      'name': 'media_control',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'action', 'type': 'string'},
+      ],
+    },
     // An announcement on this kiosk: a message Home Assistant speaks or
     // an audio URL, with a chime first (the Announcements page under
     // ESPHome). Each kiosk is addressed through its own device.
@@ -1483,6 +1570,18 @@ class EspEntitySurface {
         });
         if (!result.ok) throw StateError(result.error ?? 'refused');
         return const {};
+      case 'send_key':
+        final result = await commands.execute('sendKey', {
+          'key': '${args['key'] ?? ''}',
+        });
+        if (!result.ok) throw StateError(result.error ?? 'refused');
+        return const {};
+      case 'media_control':
+        final result = await commands.execute('mediaControl', {
+          'action': '${args['action'] ?? ''}',
+        });
+        if (!result.ok) throw StateError(result.error ?? 'refused');
+        return const {};
       case 'announce':
         final result = await commands.execute('announce', {
           'message': '${args['message'] ?? ''}',
@@ -1540,6 +1639,51 @@ class EspEntitySurface {
     }
   }
 
+  /// The media entities, from another app's session. Empty fields read as
+  /// unknown rather than as a blank string.
+  Future<void> _sendNowPlaying(Map<String, Object?> s) async {
+    if (!_settings.get(defs.nowPlaying)) return;
+    String? text(Object? v) => '${v ?? ''}'.isEmpty ? null : '$v';
+    await _send('media_state', '${s['state'] ?? 'idle'}');
+    await _send('media_app', text(s['app']));
+    await _send('media_title', text(s['title']));
+    await _send('media_artist', text(s['artist']));
+  }
+
+  Future<void> _sendRepairs(Map<String, Object?> r) async {
+    if (!_settings.get(defs.agentMode)) return;
+    await _send('self_repairs', (r['count'] as num?)?.toInt() ?? 0);
+    final last = (r['last'] as num?)?.toInt() ?? 0;
+    if (last == 0) {
+      await _send('last_self_repair', 'Never');
+      return;
+    }
+    final t = DateTime.fromMillisecondsSinceEpoch(last);
+    String two(int n) => n.toString().padLeft(2, '0');
+    await _send(
+      'last_self_repair',
+      '${r['what']} (${t.year}-${two(t.month)}-${two(t.day)} '
+          '${two(t.hour)}:${two(t.minute)})',
+    );
+  }
+
+  /// First values for the headless entities, which otherwise wait for
+  /// the next change.
+  Future<void> _seedHeadless() async {
+    if (_settings.get(defs.nowPlaying)) {
+      final s = await commands.execute('nowPlayingStatus', const {});
+      if (s.ok && s.data is Map) {
+        await _sendNowPlaying((s.data as Map).cast<String, Object?>());
+      }
+    }
+    if (_settings.get(defs.agentMode)) {
+      final r = await commands.execute('selfRepairs', const {});
+      if (r.ok && r.data is Map) {
+        await _sendRepairs((r.data as Map).cast<String, Object?>());
+      }
+    }
+  }
+
   /// Starts serving values: initial snapshot, change events, slow poll.
   void attach(
     Future<void> Function(String, Object?) push,
@@ -1557,6 +1701,16 @@ class EspEntitySurface {
         (e) => _send(e.objectId, e.value),
       ),
     );
+    _subs.add(
+      bus.on<RemoteKeyReported>().listen((e) {
+        if (_settings.get(defs.remoteKeysReport)) _send('remote_key', e.type);
+      }),
+    );
+    _subs.add(
+      bus.on<NowPlayingChanged>().listen((e) => _sendNowPlaying(e.snapshot)),
+    );
+    _subs.add(bus.on<SelfRepaired>().listen((e) => _sendRepairs(e.record)));
+    unawaited(_seedHeadless());
     // Every attach faces a fresh native hub with no values: the anchors
     // must go out again even when they did not move, or the uptime
     // sensors sit on "unknown" until the app itself restarts.
@@ -1911,6 +2065,14 @@ class EspEntitySurface {
         await commands.execute('restartApp', const {});
       case 'restart_device':
         await commands.execute('rebootDevice', const {});
+      case 'media_play_pause':
+        await commands.execute('mediaControl', const {'action': 'play_pause'});
+      case 'media_next':
+        await commands.execute('mediaControl', const {'action': 'next'});
+      case 'media_previous':
+        await commands.execute('mediaControl', const {'action': 'previous'});
+      case 'media_stop':
+        await commands.execute('mediaControl', const {'action': 'stop'});
       case 'bring_to_front':
         await commands.execute('bringToFront', const {});
       case 'open_launcher':
@@ -2633,6 +2795,9 @@ class EspEntitySurface {
       if (cpu != null) await _send('cpu', cpu);
       final temp = data['temp'] as num?;
       if (temp != null) await _send('cpu_temp', temp.round());
+      if (temp != null) {
+        await _send('running_hot', temp > _settings.get(defs.hotThreshold));
+      }
     }
     final details = await commands.execute('getDeviceDetails', const {});
     final ram = details.ok && details.data is Map

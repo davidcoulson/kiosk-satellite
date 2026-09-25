@@ -19,6 +19,7 @@ import 'managers/dlna/dlna_manager.dart';
 import 'managers/files/files_manager.dart';
 import 'managers/gestures/gestures_manager.dart';
 import 'managers/gestures/remote_keys_manager.dart';
+import 'managers/agent/agent_tools_manager.dart';
 import 'managers/glance/glance_manager.dart';
 import 'managers/home_assistant/home_assistant_manager.dart';
 import 'managers/js_api/js_api_manager.dart';
@@ -75,6 +76,7 @@ class AppContainer {
     homeLauncher = HomeLauncherManager(bus, commands, log, settings);
     gestures = GesturesManager(bus, commands, log, settings);
     remoteKeys = RemoteKeysManager(bus, commands, log, settings);
+    agentTools = AgentToolsManager(bus, commands, log, settings);
     screensaver = ScreensaverManager(bus, commands, log, settings);
     theater = TheaterManager(bus, commands, log, settings)
       ..isTrustedOrigin = _isConfiguredOrigin;
@@ -156,6 +158,7 @@ class AppContainer {
   late final HomeLauncherManager homeLauncher;
   late final GesturesManager gestures;
   late final RemoteKeysManager remoteKeys;
+  late final AgentToolsManager agentTools;
   late final ScreensaverManager screensaver;
   late final TheaterManager theater;
   late final ImmichManager immich;
@@ -284,6 +287,8 @@ class AppContainer {
     gestures,
     // After gestures: the keys it hands back run as GestureDetected.
     remoteKeys,
+    // After remoteKeys (whose reported presses reset its idle clock).
+    agentTools,
     wakeWord,
     pipeline,
     sendspin,

@@ -152,5 +152,7 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         // Puts the accessibility service back when firmware turns it off;
         // inert without WRITE_SECURE_SETTINGS granted over adb.
         AccessibilityKeeper.install(applicationContext)
+        // Other apps' playback (now playing); idle without notification access.
+        MediaSessions.attach(applicationContext, messenger)
     }
 }

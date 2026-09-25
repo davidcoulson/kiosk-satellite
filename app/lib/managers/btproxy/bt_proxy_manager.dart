@@ -222,6 +222,10 @@ class BtProxyManager extends Manager {
       'screensaver.dismiss_on_person',
       // The intercom entities exist only while the intercom is on.
       'intercom.enabled',
+      // The Remote key event and the media entities exist only while
+      // their headless switches are on.
+      'gestures.remote_keys.report',
+      'device.now_playing',
     };
     // The remote admin server's settings, which decide the web page port
     // reported to Home Assistant (the device page's Visit link).

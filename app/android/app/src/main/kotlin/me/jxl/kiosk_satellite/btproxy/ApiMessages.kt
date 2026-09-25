@@ -67,6 +67,8 @@ internal object Msg {
     const val LIST_ENTITIES_UPDATE_RESPONSE = 116
     const val UPDATE_STATE_RESPONSE = 117
     const val UPDATE_COMMAND_REQUEST = 118
+    const val LIST_ENTITIES_EVENT_RESPONSE = 107
+    const val EVENT_RESPONSE = 108
     const val SUBSCRIBE_LOGS_REQUEST = 28
     const val SUBSCRIBE_HOMEASSISTANT_SERVICES_REQUEST = 34
     const val GET_TIME_REQUEST = 36

@@ -148,6 +148,14 @@ class BackgroundBridge(
                     val apps = listApps()
                     Handler(Looper.getMainLooper()).post { result.success(apps) }
                 }.start()
+                // Every launchable app with its version and dates, for the
+                // remote admin's Installed apps list (headless management).
+                "listAppsDetailed" -> Thread {
+                    val apps = listAppsDetailed()
+                    Handler(Looper.getMainLooper()).post { result.success(apps) }
+                }.start()
+                // Android's own uninstall confirmation, on the device.
+                "uninstallApp" -> result.success(uninstallApp(call.argument<String>("package")))
                 // One app's launcher icon as PNG bytes, for the launcher grid
                 // and the on-device picker. Null when the package is gone.
                 "appIcon" -> {
@@ -967,8 +975,73 @@ class BackgroundBridge(
     /// missing or no foreground event has been seen. ACTIVITY_RESUMED shares
     /// its value with the pre-29 MOVE_TO_FOREGROUND, so one comparison
     /// covers every supported release.
+    /// Launchable apps (phone and TV launcher entries) with what the
+    /// admin's Installed apps list shows: version, install and update
+    /// times, and whether it came with the system.
+    private fun listAppsDetailed(): List<Map<String, Any?>> = try {
+        val pm = context.packageManager
+        val packages = sortedSetOf<String>()
+        for (category in listOf(Intent.CATEGORY_LAUNCHER, Intent.CATEGORY_LEANBACK_LAUNCHER)) {
+            @Suppress("DEPRECATION")
+            pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(category), 0)
+                .mapNotNullTo(packages) { it.activityInfo?.packageName }
+        }
+        packages.mapNotNull { pkg ->
+            try {
+                @Suppress("DEPRECATION")
+                val info = pm.getPackageInfo(pkg, 0)
+                val app = info.applicationInfo
+                mapOf(
+                    "package" to pkg,
+                    "label" to (app?.let { pm.getApplicationLabel(it).toString() } ?: pkg),
+                    "version" to (info.versionName ?: ""),
+                    "versionCode" to if (Build.VERSION.SDK_INT >= 28) info.longVersionCode
+                        else @Suppress("DEPRECATION") info.versionCode.toLong(),
+                    "installed" to info.firstInstallTime,
+                    "updated" to info.lastUpdateTime,
+                    "system" to ((app?.flags ?: 0) and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0),
+                    "enabled" to (app?.enabled ?: true),
+                    "self" to (pkg == context.packageName),
+                )
+            } catch (_: Exception) {
+                null
+            }
+        }.sortedBy { (it["label"] as String).lowercase() }
+    } catch (e: Exception) {
+        android.util.Log.w("kiosk_satellite", "listAppsDetailed failed", e)
+        emptyList()
+    }
+
+    /// Opens Android's uninstall confirmation for [pkg] on the device. The
+    /// person at the device confirms; nothing is removed without that.
+    private fun uninstallApp(pkg: String?): Boolean {
+        if (pkg.isNullOrBlank() || pkg == context.packageName) return false
+        return try {
+            val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg"))
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            true
+        } catch (e: Exception) {
+            android.util.Log.w("kiosk_satellite", "uninstall $pkg failed", e)
+            false
+        }
+    }
+
+    private fun labelOf(pkg: String): String = try {
+        val pm = context.packageManager
+        pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+    } catch (_: Exception) {
+        pkg
+    }
+
     private fun foregroundApp(): Map<String, String>? {
-        if (!hasUsageAccess()) return null
+        // Without Usage access, the accessibility service's window events
+        // still say which app is in front (projectors, where nobody grants
+        // Usage access, but remote keys already need the service).
+        if (!hasUsageAccess()) {
+            val pkg = KioskAccessibilityService.foregroundPackage ?: return null
+            return mapOf("package" to pkg, "label" to labelOf(pkg))
+        }
         try {
             val usm = context.getSystemService(Context.USAGE_STATS_SERVICE)
                 as android.app.usage.UsageStatsManager
@@ -989,13 +1062,7 @@ class BackgroundBridge(
             }
             lastUsageQueryEnd = now
             val pkg = lastForegroundPkg ?: return null
-            val label = try {
-                val pm = context.packageManager
-                pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
-            } catch (_: Exception) {
-                pkg
-            }
-            return mapOf("package" to pkg, "label" to label)
+            return mapOf("package" to pkg, "label" to labelOf(pkg))
         } catch (e: Exception) {
             android.util.Log.w("kiosk_satellite", "foregroundApp failed", e)
             return null

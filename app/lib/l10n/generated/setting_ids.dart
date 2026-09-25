@@ -1624,4 +1624,32 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingKeepAccessibilityTitle",
     "description": "settingKeepAccessibilityDescription",
   },
+  "gestures.remote_keys.report": {
+    "title": "settingRemoteKeysReportTitle",
+    "description": "settingRemoteKeysReportDescription",
+  },
+  "device.now_playing": {
+    "title": "settingNowPlayingTitle",
+    "description": "settingNowPlayingDescription",
+  },
+  "device.home_app": {
+    "title": "settingHomeAppTitle",
+    "description": "settingHomeAppDescription",
+  },
+  "device.home_app_at_boot": {
+    "title": "settingHomeAppAtBootTitle",
+    "description": "settingHomeAppAtBootDescription",
+  },
+  "device.home_app_idle_minutes": {
+    "title": "settingHomeAppIdleMinutesTitle",
+    "description": "settingHomeAppIdleMinutesDescription",
+  },
+  "device.reboot_time": {
+    "title": "settingRebootTimeTitle",
+    "description": "settingRebootTimeDescription",
+  },
+  "device.hot_threshold": {
+    "title": "settingHotThresholdTitle",
+    "description": "settingHotThresholdDescription",
+  },
 };

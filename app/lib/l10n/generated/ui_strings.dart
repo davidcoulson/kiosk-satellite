@@ -8277,6 +8277,90 @@ abstract class UiStrings {
   /// **'Open settings on device'**
   String get deviceOpenSettingsDevice;
 
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Send remote keys to Home Assistant'**
+  String get settingRemoteKeysReportTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Fire the Remote key event in Home Assistant for each key pressed on the remote: navigation, media, volume, colour and function keys, never letters or digits. Needs the accessibility service.'**
+  String get settingRemoteKeysReportDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Report what is playing'**
+  String get settingNowPlayingTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish the app, title, artist and state of whatever plays on this device to Home Assistant, with play, pause and skip controls. Needs notification access, which Kiosk Satellite turns on itself when it holds WRITE_SECURE_SETTINGS.'**
+  String get settingNowPlayingDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Home app'**
+  String get settingHomeAppTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'The package this device should normally show, such as com.spocky.projengmenu. Empty for none.'**
+  String get settingHomeAppDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the home app at boot'**
+  String get settingHomeAppAtBootTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the home app once the device has booted.'**
+  String get settingHomeAppAtBootDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to the home app when idle'**
+  String get settingHomeAppIdleMinutesTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'After this many minutes with no remote key pressed and nothing playing, bring the home app back to the front. 0 turns it off.'**
+  String get settingHomeAppIdleMinutesDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily restart'**
+  String get settingRebootTimeTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart the device every day at this time (24-hour, HH:MM). Empty for never. Needs Kiosk Satellite to be able to restart the device (device owner).'**
+  String get settingRebootTimeDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Running hot above'**
+  String get settingHotThresholdTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'The Running hot sensor turns on while the CPU is hotter than this.'**
+  String get settingHotThresholdDescription;
+
   /// Label or explanation on this Device settings page.
   ///
   /// In en, this message translates to:

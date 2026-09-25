@@ -59,6 +59,13 @@ class KioskAccessibilityService : AccessibilityService() {
         var running = false
             private set
 
+        /// The app whose Activity was last brought to the front, from the
+        /// window-state events this service receives anyway: the
+        /// foreground app without Usage access. Null until one is seen.
+        @Volatile
+        var foregroundPackage: String? = null
+            private set
+
         /// The bound service, for switching key filtering on and off as
         /// remote key mappings come and go. Main thread only.
         @Volatile
@@ -134,6 +141,7 @@ class KioskAccessibilityService : AccessibilityService() {
         }
         val pkg = event.packageName?.toString() ?: return
         val cls = event.className?.toString() ?: ""
+        noteForeground(pkg, cls)
         // Any SystemUI window while armed: the dismiss is a no-op unless
         // the shade or quick settings are actually open, so firing it on
         // a volume panel or a transient bar costs nothing.
@@ -143,6 +151,27 @@ class KioskAccessibilityService : AccessibilityService() {
         if (guardRecents && cls.contains("RecentsActivity")) {
             performGlobalAction(GLOBAL_ACTION_BACK)
         }
+    }
+
+    /** Window classes already judged: an Activity (true) or not (a
+     *  dialog, a toast, the IME). */
+    private val activityClasses = HashMap<String, Boolean>()
+
+    /** A window-state change counts as the foreground app only when the
+     *  window is an Activity: a volume panel or a keyboard comes and goes
+     *  over the app without replacing it. */
+    private fun noteForeground(pkg: String, cls: String) {
+        if (cls.isEmpty()) return
+        val key = "$pkg/$cls"
+        val isActivity = activityClasses.getOrPut(key) {
+            try {
+                packageManager.getActivityInfo(android.content.ComponentName(pkg, cls), 0)
+                true
+            } catch (_: Exception) {
+                false
+            }
+        }
+        if (isActivity) foregroundPackage = pkg
     }
 
     /**

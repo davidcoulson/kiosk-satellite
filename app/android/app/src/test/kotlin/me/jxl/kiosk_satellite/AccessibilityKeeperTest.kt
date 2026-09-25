@@ -75,6 +75,50 @@ class AccessibilityKeeperTest {
         assertEquals(0, a11yOn())
     }
 
+    private fun listeners(): String? =
+        Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
+
+    private fun prefs() = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+
+    @Test
+    fun `now playing on grants notification access, beside others`() {
+        grant()
+        val other = "com.example/.Listener"
+        Settings.Secure.putString(context.contentResolver, "enabled_notification_listeners", other)
+        prefs().edit().putBoolean("flutter.ks.device.now_playing", true).commit()
+        AccessibilityKeeper.ensure(context)
+        val me = MediaSessions.listener(context).flattenToString()
+        assertEquals("$other:$me", listeners())
+    }
+
+    @Test
+    fun `now playing off takes back only what the keeper granted`() {
+        grant()
+        val other = "com.example/.Listener"
+        Settings.Secure.putString(context.contentResolver, "enabled_notification_listeners", other)
+        prefs().edit().putBoolean("flutter.ks.device.now_playing", true).commit()
+        AccessibilityKeeper.ensure(context)
+        prefs().edit().putBoolean("flutter.ks.device.now_playing", false).commit()
+        AccessibilityKeeper.ensure(context)
+        assertEquals(other, listeners())
+
+        // Granted by the owner, not the keeper: left alone.
+        val me = MediaSessions.listener(context).flattenToString()
+        Settings.Secure.putString(context.contentResolver, "enabled_notification_listeners", "$other:$me")
+        AccessibilityKeeper.ensure(context)
+        assertEquals("$other:$me", listeners())
+    }
+
+    @Test
+    fun `a restore is counted`() {
+        grant()
+        Settings.Secure.putString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, "")
+        AccessibilityKeeper.ensure(context)
+        val record = AccessibilityKeeper.record(context)
+        assertEquals(1, record["count"])
+        assertEquals("Accessibility service turned back on", record["what"])
+    }
+
     @Test
     fun `the switch turned off leaves it alone`() {
         grant()

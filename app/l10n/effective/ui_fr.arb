@@ -17613,6 +17613,188 @@
       ]
     }
   },
+  "settingRemoteKeysReportTitle": "Send remote keys to Home Assistant",
+  "@settingRemoteKeysReportTitle": {
+    "context": "Settings > Device > Headless",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingRemoteKeysReportDescription": "Fire the Remote key event in Home Assistant for each key pressed on the remote: navigation, media, volume, colour and function keys, never letters or digits. Needs the accessibility service.",
+  "@settingRemoteKeysReportDescription": {
+    "context": "Settings > Device > Headless",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingNowPlayingTitle": "Report what is playing",
+  "@settingNowPlayingTitle": {
+    "context": "Settings > Device > Headless",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingNowPlayingDescription": "Publish the app, title, artist and state of whatever plays on this device to Home Assistant, with play, pause and skip controls. Needs notification access, which Kiosk Satellite turns on itself when it holds WRITE_SECURE_SETTINGS.",
+  "@settingNowPlayingDescription": {
+    "context": "Settings > Device > Headless",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingHomeAppTitle": "Home app",
+  "@settingHomeAppTitle": {
+    "context": "Settings > Device > Headless",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingHomeAppDescription": "The package this device should normally show, such as com.spocky.projengmenu. Empty for none.",
+  "@settingHomeAppDescription": {
+    "context": "Settings > Device > Headless",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingHomeAppAtBootTitle": "Open the home app at boot",
+  "@settingHomeAppAtBootTitle": {
+    "context": "Settings > Device > Headless",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingHomeAppAtBootDescription": "Start the home app once the device has booted.",
+  "@settingHomeAppAtBootDescription": {
+    "context": "Settings > Device > Headless",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingHomeAppIdleMinutesTitle": "Return to the home app when idle",
+  "@settingHomeAppIdleMinutesTitle": {
+    "context": "Settings > Device > Headless",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingHomeAppIdleMinutesDescription": "After this many minutes with no remote key pressed and nothing playing, bring the home app back to the front. 0 turns it off.",
+  "@settingHomeAppIdleMinutesDescription": {
+    "context": "Settings > Device > Headless",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingRebootTimeTitle": "Daily restart",
+  "@settingRebootTimeTitle": {
+    "context": "Settings > Device > Headless",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingRebootTimeDescription": "Restart the device every day at this time (24-hour, HH:MM). Empty for never. Needs Kiosk Satellite to be able to restart the device (device owner).",
+  "@settingRebootTimeDescription": {
+    "context": "Settings > Device > Headless",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingHotThresholdTitle": "Running hot above",
+  "@settingHotThresholdTitle": {
+    "context": "Settings > Device > Headless",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingHotThresholdDescription": "The Running hot sensor turns on while the CPU is hotter than this.",
+  "@settingHotThresholdDescription": {
+    "context": "Settings > Device > Headless",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
   "deviceHardwarePage": "Matériel",
   "@deviceHardwarePage": {
     "context": "Settings:Device:Hardware / Home Assistant / WebView",

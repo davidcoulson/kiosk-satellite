@@ -16,7 +16,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const channel = MethodChannel('kiosk_satellite/remote_keys');
-  const home = '[{"id":"k1","trigger":{"type":"remote_key","keyCode":3,'
+  const home =
+      '[{"id":"k1","trigger":{"type":"remote_key","keyCode":3,'
       '"keyName":"Home"},"action":{"type":"launch_app",'
       '"package":"com.spocky.projengmenu"}},'
       '{"id":"k2","trigger":{"type":"remote_key","keyCode":82,'
@@ -134,6 +135,33 @@ void main() {
     final result = await commands.execute('captureRemoteKey', {'seconds': 1});
     expect(result.ok, isFalse);
     expect(result.error, contains('accessibility service'));
+  });
+
+  test('remote keys are reported only while wanted, and never text', () async {
+    await build();
+    expect(
+      calls.singleWhere((c) => c.method == 'configure').arguments,
+      isNot(contains('report')),
+    );
+    calls.clear();
+    await settings.set(defs.remoteKeysReport, true);
+    await pumpEventQueue();
+    final report = (calls.last.arguments as Map)['report'] as List;
+    expect(report, containsAll([3, 4, 19, 23, 85]));
+    // Letters (29-54), digits (7-16) and space (62) are never asked for.
+    expect(
+      report.where(
+        (c) => (c as int) >= 7 && c <= 16 || c >= 29 && c <= 54 || c == 62,
+      ),
+      isEmpty,
+    );
+
+    final seen = <String>[];
+    bus.on<RemoteKeyReported>().listen((e) => seen.add(e.type));
+    await fromNative('reported', {'keyCode': 3});
+    await fromNative('reported', {'keyCode': 29});
+    await pumpEventQueue();
+    expect(seen, ['home']);
   });
 
   test('remote keys are on by default and ride fleet sync', () {
