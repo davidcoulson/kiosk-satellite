@@ -6,7 +6,7 @@ import 'dart:math' show Random;
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart' show md5;
-import 'package:flutter/foundation.dart' show ValueNotifier;
+import 'package:flutter/foundation.dart' show ValueNotifier, visibleForTesting;
 import 'package:flutter/services.dart'
     show AssetBundle, AssetManifest, rootBundle;
 import 'package:shelf/shelf.dart';
@@ -365,7 +365,17 @@ class RemoteManager extends Manager {
 
   /// Unconfigured device: the remote onboarding wizard must be reachable,
   /// password or not — its own first step is to set one.
-  bool get _setupMode => _settings.get(defs.startUrl).isEmpty;
+  ///
+  /// An agent is never unconfigured, whatever the Start page says. It has no
+  /// page by definition, so the "no Start URL yet" test that means "nobody
+  /// has set this kiosk up" is simply wrong there: left alone it asks for a
+  /// Home Assistant URL and token forever, for a dashboard it will never
+  /// show, and holds the setup routes open on a device that is finished.
+  bool get _setupMode =>
+      !_settings.get(defs.agentMode) && _settings.get(defs.startUrl).isEmpty;
+
+  @visibleForTesting
+  bool get setupNeededForTest => _setupMode;
 
   Future<void> _sync() {
     final next = (_syncQueue ?? Future<void>.value()).then((_) => _syncNow());

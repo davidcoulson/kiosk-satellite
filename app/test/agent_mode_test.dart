@@ -1,6 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_satellite/app_container.dart';
+import 'package:kiosk_satellite/core/command_registry.dart';
+import 'package:kiosk_satellite/core/event_bus.dart';
 import 'package:kiosk_satellite/core/frame_watchdog.dart';
+import 'package:kiosk_satellite/core/logging.dart';
+import 'package:kiosk_satellite/managers/remote/remote_manager.dart';
+import 'package:kiosk_satellite/managers/settings/settings_manager.dart';
 import 'package:kiosk_satellite/managers/js_api/js_api_manager.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -127,5 +132,21 @@ void main() {
     c.registerAgentAppCommands();
     final names = c.commands.all.map((x) => x.name);
     expect(names, containsAll(['launchApp', 'openUri']));
+  });
+
+  test('an agent is never "unconfigured" to the remote admin', () async {
+    // The wizard decides that from an empty Start page, which an agent never
+    // has: logging into a projector's admin asked for a Home Assistant URL
+    // and token, for a dashboard it will never show.
+    SharedPreferences.setMockInitialValues({
+      'flutter.ks.device.agent_mode': true,
+      'flutter.ks.remote.password': 'set',
+    });
+    final bus = EventBus();
+    final log = Logger();
+    final settings = SettingsManager(bus, CommandRegistry(log), log);
+    await settings.init();
+    final remote = RemoteManager(bus, CommandRegistry(log), log, settings);
+    expect(remote.setupNeededForTest, isFalse);
   });
 }
