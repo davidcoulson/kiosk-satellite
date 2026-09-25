@@ -823,11 +823,13 @@ class RemoteManager extends Manager {
       commands.execute('getDeviceDetails', const {}),
       commands.execute('isScreenOn', const {}),
       commands.execute('getBrightness', const {}),
+      commands.execute('getNetworkLink', const {}),
     ]);
     final device = results[0];
     final details = results[1];
     final screenOn = results[2];
     final brightness = results[3];
+    final link = results[4];
     final info = (device.data as Map?)?.cast<String, Object?>() ?? const {};
     final det = (details.data as Map?)?.cast<String, Object?>() ?? const {};
     return _json(200, {
@@ -845,16 +847,14 @@ class RemoteManager extends Manager {
       'screenOn': screenOn.ok ? screenOn.data : null,
       'brightness': (brightness.data as num?)?.toDouble(),
       'screen': det['screen'],
-      // The system WebView, which updates itself out from under the app and
-      // is the first thing to ask about when one panel renders a dashboard
-      // differently from its neighbours.
-      'webview': det['webview'],
-      // Cable or Wi-Fi, and how strong: the first question about a panel
-      // that keeps dropping off.
-      'link': det['link'],
       'ram': det['ram'],
       'storage': det['storage'],
       'cpu': {'usage': info['cpu'], 'temp': info['temp']},
+      // The system WebView updates itself out from under the app, so it is
+      // the first suspect when one panel renders unlike its neighbors.
+      'webview': det['webview'],
+      // Null while offline. Wi-Fi adds signal, link speed and frequency.
+      'link': link.ok ? link.data : null,
       // Seconds. `network` is null while offline; its clock starts at app
       // start at the earliest (see DeviceDetails.uptime).
       'uptime': info['uptime'],

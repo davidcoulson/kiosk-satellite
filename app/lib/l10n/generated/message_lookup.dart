@@ -1413,9 +1413,6 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'deviceServerStopped' => strings.deviceServerStopped,
       'settingRemoteTlsTitle' => strings.settingRemoteTlsTitle,
       'settingRemoteTlsDescription' => strings.settingRemoteTlsDescription,
-      'settingProvisioningAllowTitle' => strings.settingProvisioningAllowTitle,
-      'settingProvisioningAllowDescription' =>
-        strings.settingProvisioningAllowDescription,
       'settingServiceCpuAwakeTitle' => strings.settingServiceCpuAwakeTitle,
       'settingServiceCpuAwakeDescription' =>
         strings.settingServiceCpuAwakeDescription,

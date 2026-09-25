@@ -139,8 +139,9 @@ class DeviceDetails {
     }
   }
 
-  /// Seconds since the process started (`app`) and since the default network
-  /// last came up (`network`, null while offline). The network number reads
+  /// Seconds since the process started (`app`), since the device booted
+  /// (`device`) and since the default network last came up (`network`, null
+  /// while offline). The network number reads
   /// the kernel's own timestamp on the interface's IP address where it can,
   /// so it survives app restarts; where the kernel read is refused it falls
   /// back to a clock anchored at app start at the earliest, which then reads
@@ -152,6 +153,18 @@ class DeviceDetails {
           const {};
     } catch (_) {
       return const {};
+    }
+  }
+
+  /// The default network's `type` (ethernet, wifi, cellular, vpn or other)
+  /// and, on Wi-Fi, `rssi` (dBm), `speedMbps` and `frequencyMhz`, each null
+  /// when Android reports it as unknown. Null while offline or off Android.
+  /// No SSID: that needs a location grant.
+  static Future<Map<String, Object?>?> link() async {
+    try {
+      return await _channel.invokeMapMethod<String, Object?>('link');
+    } catch (_) {
+      return null;
     }
   }
 
@@ -180,11 +193,11 @@ class DeviceDetails {
   int? get screenHeight => (_map('screen')?['height'] as num?)?.toInt();
   double? get screenDensity => (_map('screen')?['density'] as num?)?.toDouble();
 
-  /// 'portrait' or 'landscape', as the reported size already says.
+  /// `landscape` or `portrait`, from the current size.
   String? get screenOrientation => _map('screen')?['orientation'] as String?;
 
-  /// How far the display is turned from the panel's natural orientation, in
-  /// degrees (0, 90, 180, 270), or null where it cannot be read.
+  /// Degrees the display is turned from its natural orientation (0, 90, 180
+  /// or 270). A panel mounted sideways reads landscape at 90.
   int? get screenRotation => (_map('screen')?['rotation'] as num?)?.toInt();
 
   /// The WebView implementation in use — not the app's, the system's, and it
@@ -195,20 +208,6 @@ class DeviceDetails {
   /// False when Android reports no WebView provider at all (API 26+); null
   /// where the platform cannot say.
   bool? get webviewAvailable => _map('webview')?['available'] as bool?;
-
-  /// How the default network is carried: 'ethernet', 'wifi', 'cellular',
-  /// 'vpn', 'other', or null while there is no network.
-  String? get linkType => _map('link')?['type'] as String?;
-
-  /// Wi-Fi signal in dBm, null on a cable or where it cannot be read.
-  int? get linkRssi => (_map('link')?['rssi'] as num?)?.toInt();
-
-  /// Negotiated Wi-Fi link speed in Mbps, null on a cable.
-  int? get linkSpeedMbps => (_map('link')?['speedMbps'] as num?)?.toInt();
-
-  /// The Wi-Fi channel's centre frequency in MHz, which says which band the
-  /// panel is on. Null on a cable.
-  int? get linkFrequencyMhz => (_map('link')?['frequencyMhz'] as num?)?.toInt();
 
   Map<String, Object?> toJson() => {
     'brand': brand,
@@ -226,12 +225,6 @@ class DeviceDetails {
       'rotation': screenRotation,
     },
     'webview': {'package': webviewPackage, 'version': webviewVersion},
-    'link': {
-      'type': linkType,
-      'rssi': linkRssi,
-      'speedMbps': linkSpeedMbps,
-      'frequencyMhz': linkFrequencyMhz,
-    },
   };
 }
 

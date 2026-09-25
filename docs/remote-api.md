@@ -20,16 +20,14 @@ the left edge → Settings),
 or an Android provisioning intent:
 
 ```sh
-adb shell am start -n me.jxl.kiosk_satellite/.MainActivity \
+adb shell am start -n me.jxl.kiosk_satellite/.ProvisionActivity \
   --es ks.provision '"{\"remote.enabled\":true,\"remote.password\":\"secret\"}"'
 ```
 
-A provisioning intent is accepted while the kiosk has no Start page yet —
-the out-of-the-box case this exists for. Once the kiosk is set up it is
-refused, and the refusal is logged, unless **Allow provisioning intents**
-(Settings → Device → Remote Administration) is on. Any app on the device can
-send an intent and the payload sets the admin password, so a kiosk on a wall
-should leave that switch off; an MDM that re-provisions in place turns it on.
+The payload takes any setting, in the same JSON the settings import
+accepts. Only the adb shell can send it: Android refuses the intent from
+other apps on the device. Older builds took the extra on
+`.MainActivity`, which now ignores it.
 
 ## Reaching a kiosk by name
 
@@ -122,7 +120,7 @@ is administrable here by construction.
 |---|---|---|
 | `/api/login` | POST | `{password}` → `{token}`. Optional `ttl_days` for a long-lived automation token (max 3650) |
 | `/api/info` | GET | Device info, app version, battery, screen, current URL |
-| `/api/health` | GET | The Device Info tab's Hardware section as one JSON object: identity, addresses, battery (null on a device without one), screen (size, density, `orientation` and `rotation` in degrees), the system `webview` (package and version), the network `link` (`type`: ethernet/wifi/cellular/vpn/other, plus `rssi`, `speedMbps` and `frequencyMhz` on Wi-Fi), RAM, storage, CPU usage and temperature, and uptimes (`uptime.app`, `uptime.device` and `uptime.network`, seconds; `network` is null while offline and starts counting at app start at the earliest). Meant for external monitoring to poll, so it is the one endpoint that needs no token |
+| `/api/health` | GET | The Device Info tab's Hardware section as one JSON object: identity, addresses, battery (null on a device without one), screen (`width`, `height`, `density`, `orientation` and `rotation` in degrees from the panel's natural orientation), RAM, storage, CPU usage and temperature, the system WebView (`webview.package` and `webview.version`), the network link and uptimes. `link.type` is `ethernet`, `wifi`, `cellular`, `vpn` or `other`, and on Wi-Fi `link` adds `rssi` (dBm), `speedMbps` and `frequencyMhz`, each null when Android does not know it. `link` is null while offline and never carries the network name, which needs a location permission. `uptime.app`, `uptime.device` and `uptime.network` are in seconds since the app started, the device booted and the network came up. `network` is null while offline and starts counting at app start at the earliest. Meant for external monitoring to poll, so it is the one endpoint that needs no token |
 | `/api/settings` | GET | All setting definitions + current values |
 | `/api/settings` | PATCH | `{key: value, ...}` partial update |
 | `/api/settings/export` | GET | Full config as JSON (for provisioning) |
@@ -154,11 +152,7 @@ playback troubleshooting. See [TTS playback diagnostics](tts-diagnostics.md).
 
 Representative commands (`POST /api/commands/<name>`): `loadUrl {url}`,
 `loadDashboard {dashboard}`, `loadStartUrl` (back to the configured
-Start URL), `navigate {url}` (move the main page; a `#` route changes in
-place with no reload, and only http and https are accepted),
-`setTheaterMode {active, overlayOpacity?, backlight?, peekBrightness?,
-peekSeconds?, blackAfterMinutes?}` / `getTheaterMode` / `theaterPeek
-{seconds?}` ([theater mode](theater.md)), `reload`, `screenOn` / `screenOff` / `isScreenOn` (`screenOn {path: "activity"}`
+Start URL), `reload`, `screenOn` / `screenOff` / `isScreenOn` (`screenOn {path: "activity"}`
 skips the wake lock and wakes through the Activity route only, to tell
 which of the two works on a panel that stays dark),
 `setBrightness {level}` (turns Default brightness, or Maximum brightness

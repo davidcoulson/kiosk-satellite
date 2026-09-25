@@ -258,6 +258,17 @@ class DeviceManager extends Manager {
 
     commands.register(
       Command(
+        name: 'getNetworkLink',
+        description:
+            'The default network: type (ethernet, wifi, cellular, vpn or '
+            'other) and, on Wi-Fi, rssi (dBm), speedMbps and frequencyMhz. '
+            'Null while offline.',
+        handler: (_) async => CommandResult.ok(await DeviceDetails.link()),
+      ),
+    );
+
+    commands.register(
+      Command(
         name: 'getUptime',
         description:
             'Seconds since the app process started (app), since the device '

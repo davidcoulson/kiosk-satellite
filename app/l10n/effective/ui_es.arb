@@ -18723,32 +18723,6 @@
       ]
     }
   },
-  "settingProvisioningAllowTitle": "Allow provisioning intents",
-  "settingProvisioningAllowDescription": "Let an Android intent change settings on a kiosk that is already set up. Any app on the device can send one, so leave this off unless an MDM re-provisions this kiosk in place. A kiosk with no Start page yet always accepts provisioning.",
-  "@settingProvisioningAllowTitle": {
-    "context": "Settings:Device:Remote Administration",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Remote Administration"
-      ],
-      "remoteAdmin": [
-        "Device > Remote Administration"
-      ]
-    }
-  },
-  "@settingProvisioningAllowDescription": {
-    "context": "Settings:Device:Remote Administration",
-    "description": "Help below the setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Remote Administration"
-      ],
-      "remoteAdmin": [
-        "Device > Remote Administration"
-      ]
-    }
-  },
   "settingServiceCpuAwakeTitle": "Mantener la CPU activa con la pantalla apagada",
   "@settingServiceCpuAwakeTitle": {
     "context": "Settings:Device:Kiosk Satellite Service",

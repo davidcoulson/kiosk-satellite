@@ -7612,31 +7612,6 @@ const remotePassword = SettingDef<String>(
   perDevice: true,
 );
 
-/// Whether a provisioning intent may configure an already-configured kiosk.
-///
-/// Any app on the device can send an intent, and the payload is the same JSON
-/// the settings import takes - including the admin password. On a kiosk that
-/// has never been set up there is nothing to take over and provisioning is
-/// how it gets configured, so the intent is accepted while the Start page is
-/// still empty whatever this says. Once the kiosk is configured it stays shut
-/// unless someone opens it deliberately, which is what an MDM that
-/// re-provisions in place needs.
-const provisioningAllow = SettingDef<bool>(
-  key: 'provisioning.allow',
-  type: SettingType.boolean,
-  defaultValue: false,
-  title: 'Allow provisioning intents',
-  description:
-      'Let an Android intent change settings on a kiosk that is already set '
-      'up. Any app on the device can send one, so leave this off unless an '
-      'MDM re-provisions this kiosk in place. A kiosk with no Start page yet '
-      'always accepts provisioning.',
-  category: 'Device',
-  section: 'Remote Administration',
-  subpage: 'Remote Administration',
-  perDevice: true,
-);
-
 const remoteFleetDiscovery = SettingDef<bool>(
   key: 'remote.fleet_discovery',
   type: SettingType.boolean,
@@ -9148,7 +9123,6 @@ const List<SettingDef<Object>> allSettings = [
   remotePort,
   remoteTls,
   remotePassword,
-  provisioningAllow,
   remoteFleetDiscovery,
   updateSource,
   updateSourceUrl,

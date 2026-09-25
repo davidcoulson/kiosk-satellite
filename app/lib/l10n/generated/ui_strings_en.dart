@@ -5046,13 +5046,6 @@ class UiStringsEn extends UiStrings {
       'Encrypt the remote admin, API and WebSocket. Your browser may ask you to accept the device certificate.';
 
   @override
-  String get settingProvisioningAllowTitle => 'Allow provisioning intents';
-
-  @override
-  String get settingProvisioningAllowDescription =>
-      'Let an Android intent change settings on a kiosk that is already set up. Any app on the device can send one, so leave this off unless an MDM re-provisions this kiosk in place. A kiosk with no Start page yet always accepts provisioning.';
-
-  @override
   String get settingServiceCpuAwakeTitle =>
       'Keep the CPU awake while the screen is off';
 

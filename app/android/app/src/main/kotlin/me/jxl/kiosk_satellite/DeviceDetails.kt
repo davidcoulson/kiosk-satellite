@@ -10,10 +10,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.hardware.display.DisplayManager
 import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Environment
 import android.os.Handler
@@ -25,7 +27,6 @@ import android.provider.Settings
 import android.system.Os
 import android.system.OsConstants
 import android.system.StructTimeval
-import android.hardware.display.DisplayManager
 import android.util.DisplayMetrics
 import android.view.Display
 import android.view.Surface
@@ -138,6 +139,7 @@ class DeviceDetails(
 ) {
     private val channel = MethodChannel(messenger, "kiosk_satellite/device_details")
     private val cpuWorker = MethodWorker("ks-cpu")
+    private val linkWorker = MethodWorker("ks-link")
 
     /**
      * When the current default network came up, on the elapsedRealtime clock,
@@ -250,6 +252,10 @@ class DeviceDetails(
                 // history: the full read walks storage, the screen and the
                 // WebView to answer a question asked every few seconds.
                 "ram" -> result.success(ram())
+                // The default network's transport and, on Wi-Fi, its signal.
+                // Binder calls into system_server, so off the main thread:
+                // a stalled system server must not cost the UI a frame.
+                "link" -> linkWorker.read(result) { link() }
                 else -> result.notImplemented()
             }
         }
@@ -257,6 +263,7 @@ class DeviceDetails(
 
     fun dispose() {
         cpuWorker.shutdown()
+        linkWorker.shutdown()
         channel.setMethodCallHandler(null)
         try {
             context.unregisterReceiver(aclReceiver)
@@ -282,9 +289,10 @@ class DeviceDetails(
     }
 
     /**
-     * Seconds this process has been alive (`app`) and seconds since the
-     * default network last came up (`network`, `null` while offline). The
-     * app clock is elapsedRealtime, so a wall-clock change cannot bend it.
+     * Seconds this process has been alive (`app`), seconds since the device
+     * booted (`device`) and seconds since the default network last came up
+     * (`network`, `null` while offline). The app and device clocks are
+     * elapsedRealtime, so a wall-clock change cannot bend them.
      *
      * The network number prefers the kernel's own timestamp on the default
      * interface's IP address (see [addressAgeSeconds]): the kernel stamps
@@ -315,10 +323,6 @@ class DeviceDetails(
         return mapOf(
             "app" to
                 (SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()) / 1000,
-            // Since the device booted. elapsedRealtime counts through sleep,
-            // so this is the reboot clock a fleet view wants beside the app's:
-            // a panel whose app restarts hourly under a device up for months
-            // is a different problem from one that reboots every night.
             "device" to SystemClock.elapsedRealtime() / 1000,
             "network" to network,
             "networkSource" to source,
@@ -620,49 +624,7 @@ class DeviceDetails(
         "storage" to storage(),
         "screen" to screen(),
         "webview" to webview(),
-        "link" to link(),
     )
-
-    /**
-     * What the default network is carried over, and how well.
-     *
-     * A fleet view has to tell a panel on a cable from one clinging to a far
-     * access point, and "it drops every evening" is nearly always the second.
-     * The SSID is deliberately absent: reading it needs the location grant,
-     * which is a permission prompt on every panel for one row of text.
-     */
-    private fun link(): Map<String, Any?> = try {
-        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val caps = cm.activeNetwork?.let { cm.getNetworkCapabilities(it) }
-        val type = when {
-            caps == null -> null
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "vpn"
-            else -> "other"
-        }
-        // Signal and speed are Wi-Fi's to answer; on a cable they are null
-        // rather than a zero that would draw as a dead link.
-        @Suppress("DEPRECATION")
-        val info = if (type == "wifi") {
-            (context.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager)
-                ?.connectionInfo
-        } else {
-            null
-        }
-        mapOf(
-            "type" to type,
-            "rssi" to info?.rssi?.takeIf { it in -127..-1 },
-            "speedMbps" to info?.linkSpeed?.takeIf { it > 0 },
-            // The channel's centre frequency. Which band a panel landed on
-            // is the useful half of it, and unlike the SSID it needs no
-            // location grant; the channel number is arithmetic from here.
-            "frequencyMhz" to info?.frequency?.takeIf { it > 0 },
-        )
-    } catch (e: Exception) {
-        mapOf("type" to null, "rssi" to null, "speedMbps" to null, "frequencyMhz" to null)
-    }
 
     private fun ram(): Map<String, Any> {
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -700,40 +662,38 @@ class DeviceDetails(
         )
     }
 
+    /**
+     * The panel's size, density and how it sits. `rotation` is the display's
+     * turn from its natural orientation in degrees, which the size alone
+     * cannot say: a panel mounted sideways reads landscape at 90.
+     */
     private fun screen(): Map<String, Any?> {
         val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        val size = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        val (width, height, density) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // maximumWindowMetrics, not currentWindowMetrics: the latter needs a
             // visual (Activity) context and throws from the application context
             // this now runs in. The maximum bounds are the full display — the
             // right answer for a fullscreen kiosk anyway.
             val b = wm.maximumWindowMetrics.bounds
-            mapOf(
-                "width" to b.width(),
-                "height" to b.height(),
-                "density" to context.resources.displayMetrics.density,
-            )
+            Triple(b.width(), b.height(), context.resources.displayMetrics.density)
         } else {
             @Suppress("DEPRECATION")
             val dm = DisplayMetrics().also { wm.defaultDisplay.getRealMetrics(it) }
-            mapOf("width" to dm.widthPixels, "height" to dm.heightPixels, "density" to dm.density)
+            Triple(dm.widthPixels, dm.heightPixels, dm.density)
         }
-        val width = size["width"] as Int
-        val height = size["height"] as Int
-        return size + mapOf(
-            // Which way up the panel is, as the reported size already shows;
-            // named so a fleet view does not have to compare two numbers.
-            "orientation" to if (height > width) "portrait" else "landscape",
-            // How far the OS has turned that picture from the panel's natural
-            // orientation. A wall panel mounted sideways reads 90 or 270 here
-            // while its size still reads landscape, which is the one thing the
-            // size alone cannot say.
-            "rotation" to rotationDegrees(),
+        return mapOf(
+            "width" to width,
+            "height" to height,
+            "density" to density,
+            "orientation" to if (width >= height) "landscape" else "portrait",
+            "rotation" to rotation(),
         )
     }
 
-    /** The display's rotation in degrees, or null where it cannot be read. */
-    private fun rotationDegrees(): Int? = try {
+    /** The default display's rotation in degrees, or null where it cannot
+     *  be read. DisplayManager rather than the context's display, which an
+     *  application context does not have. */
+    private fun rotation(): Int? = try {
         val dm = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         when (dm.getDisplay(Display.DEFAULT_DISPLAY)?.rotation) {
             Surface.ROTATION_0 -> 0
@@ -744,6 +704,42 @@ class DeviceDetails(
         }
     } catch (e: Exception) {
         null
+    }
+
+    /**
+     * The default network's transport, or null while offline. On Wi-Fi it
+     * adds the signal (`rssi`, dBm), the negotiated link speed (`speedMbps`)
+     * and the channel frequency (`frequencyMhz`, which says 2.4 or 5 GHz).
+     * Android treats none of those as location data, so ACCESS_WIFI_STATE
+     * covers them. The SSID and BSSID need a location grant and are left
+     * out. Wi-Fi is checked before VPN because a VPN over Wi-Fi carries both
+     * transports, and the radio is what explains a panel that drops out.
+     * A value Android reports as unknown comes back null.
+     */
+    private fun link(): Map<String, Any?>? {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = cm.activeNetwork ?: return null
+        val caps = cm.getNetworkCapabilities(network) ?: return null
+        val type = when {
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "vpn"
+            else -> "other"
+        }
+        if (type != "wifi") return mapOf("type" to type)
+        // Deprecated at API 31 in favor of the callback's TransportInfo, but
+        // still answered, and the one read that works from API 24 up.
+        @Suppress("DEPRECATION")
+        val info = (context.applicationContext.getSystemService(Context.WIFI_SERVICE)
+            as? WifiManager)?.connectionInfo
+        return mapOf(
+            "type" to type,
+            // -127 is WifiInfo.INVALID_RSSI.
+            "rssi" to info?.rssi?.takeIf { it in -126..-1 },
+            "speedMbps" to info?.linkSpeed?.takeIf { it > 0 },
+            "frequencyMhz" to info?.frequency?.takeIf { it > 0 },
+        )
     }
 
     /**
@@ -835,72 +831,27 @@ class DeviceDetails(
      * residency is what the silicon actually did, whatever the clocks claim.
      *
      * The window covers awake time since the previous call (the admin polls
-     * every few seconds, ESPHome once a minute). Short suspends between
-     * regular polls are excluded from the calculation too.
-     *
-     * Never blocks. This used to take a paired sample -- snapshot,
-     * `Thread.sleep(500)`, snapshot -- whenever the previous one was less
-     * than half a second of awake time old or older than five minutes,
-     * which made the *frequent* caller pay: two calls in quick succession
-     * guaranteed the sleep, and `@Synchronized` made a second caller wait
-     * out the first one's before taking its own. Remote Admin's boot does
-     * exactly that, so `/api/info` took ~1s and `/api/health` -- the
-     * endpoint documented for monitoring to poll -- paid it on nearly
-     * every poll.
-     *
-     * Now a call that cannot form a usable window serves the last computed
-     * value instead of manufacturing a window to measure. The baseline is
-     * kept rather than replaced in that case, so a burst of calls widens
-     * the window toward usability instead of resetting it, and the next
-     * caller past half a second gets a real measurement. Callers that poll
-     * on any cadence slower than that -- all of the real ones -- are
-     * unaffected and still measure the window since their own last call.
+     * every few seconds, ESPHome once a minute). A first call, a window with
+     * less than half a second awake or a sample older than five minutes
+     * takes a short paired sample instead. Short suspends between regular
+     * polls are excluded from the calculation too.
      */
     @Synchronized
     private fun cpuUsage(): Double? {
+        var first = lastIdle ?: idleSnapshot() ?: return frequencyLoad()
+        val age = SystemClock.elapsedRealtimeNanos() - first.elapsedNanos
+        val awakeAge = System.nanoTime() - first.awakeNanos
+        if (awakeAge < 500_000_000L || age > 300_000_000_000L) {
+            first = idleSnapshot() ?: return frequencyLoad()
+            try {
+                Thread.sleep(500)
+            } catch (_: InterruptedException) {
+                return frequencyLoad()
+            }
+        }
         val now = idleSnapshot() ?: return frequencyLoad()
-        val first = lastIdle
-        if (first == null) {
-            // Nothing to diff against yet: start the window, answer with
-            // the fallback rather than holding the caller for one.
-            lastIdle = now
-            return lastCpuUsage() ?: frequencyLoad()
-        }
-        val age = now.elapsedNanos - first.elapsedNanos
-        if (age > STALE_SAMPLE_NANOS) {
-            // Baseline too old to describe the present: restart from here.
-            lastIdle = now
-            return lastCpuUsage() ?: frequencyLoad()
-        }
-        if (now.awakeNanos - first.awakeNanos < MIN_WINDOW_NANOS) {
-            // Too close to the baseline for a meaningful delta. Keep the
-            // baseline, so the window keeps widening for the next caller.
-            return lastCpuUsage() ?: frequencyLoad()
-        }
-        val usage = now.usageSince(first) ?: return frequencyLoad()
         lastIdle = now
-        lastUsage = usage
-        lastUsageAt = now.elapsedNanos
-        return usage
-    }
-
-    /** The shortest awake window that yields a meaningful idle delta. */
-    private val MIN_WINDOW_NANOS = 500_000_000L
-
-    /** Past this, a baseline or a remembered value describes the past
-     *  rather than the present, and the fallback is the honest answer. */
-    private val STALE_SAMPLE_NANOS = 300_000_000_000L
-
-    /** The last real measurement, and when it was taken. */
-    private var lastUsage: Double? = null
-    private var lastUsageAt: Long = 0L
-
-    /** The remembered value while it is still recent enough to mean
-     *  anything, else null so the caller falls back. */
-    private fun lastCpuUsage(): Double? {
-        val value = lastUsage ?: return null
-        val age = SystemClock.elapsedRealtimeNanos() - lastUsageAt
-        return if (age > STALE_SAMPLE_NANOS) null else value
+        return now.usageSince(first) ?: frequencyLoad()
     }
 
     /**

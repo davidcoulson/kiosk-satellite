@@ -231,9 +231,14 @@ phase_provision() {
   # quote and the Binder would cap.
   # adb shell hands its arguments to the device's shell as one command
   # line, which strips the JSON's quotes unless they are quoted for it too.
+  # .ProvisionActivity, not .MainActivity: since upstream #695 the launcher
+  # Activity ignores the extra (any app can reach it), and the provisioning
+  # door is an Activity behind android.permission.DUMP, which only the adb
+  # shell holds. `am start` reports success either way, so a stale component
+  # here would look like a panel that simply did not take its settings.
   adbt shell "$(python3 -c 'import json,shlex,sys
 payload = json.dumps({"remote.enabled": True, "remote.password": sys.argv[2]})
-print("am start -n " + sys.argv[1] + "/.MainActivity --es ks.provision " + shlex.quote(payload))' "$PKG" "$pw")" >/dev/null
+print("am start -n " + sys.argv[1] + "/.ProvisionActivity --es ks.provision " + shlex.quote(payload))' "$PKG" "$pw")" >/dev/null
   wait_for_admin "$ip"
   local token; token=$(login "$ip")
   [[ -n "$token" ]] || die "could not log in to the new panel"

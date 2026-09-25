@@ -1608,8 +1608,4 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingIntercomTlsTitle",
     "description": "settingIntercomTlsDescription",
   },
-  "provisioning.allow": {
-    "title": "settingProvisioningAllowTitle",
-    "description": "settingProvisioningAllowDescription",
-  },
 };

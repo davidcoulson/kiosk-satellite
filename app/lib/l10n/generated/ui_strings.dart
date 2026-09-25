@@ -8832,18 +8832,6 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
-  /// **'Allow provisioning intents'**
-  String get settingProvisioningAllowTitle;
-
-  /// Help below the setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Let an Android intent change settings on a kiosk that is already set up. Any app on the device can send one, so leave this off unless an MDM re-provisions this kiosk in place. A kiosk with no Start page yet always accepts provisioning.'**
-  String get settingProvisioningAllowDescription;
-
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
   /// **'Keep the CPU awake while the screen is off'**
   String get settingServiceCpuAwakeTitle;
 
