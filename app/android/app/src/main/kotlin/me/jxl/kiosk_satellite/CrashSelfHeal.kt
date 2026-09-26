@@ -92,6 +92,9 @@ object CrashSelfHeal {
         // a dark panel whose Activity is alive and merely paused, and
         // must not start it again.
         if (ActivityState.resumed || ActivityState.attached) return
+        // An agent's process is back already (this runs in it), and its
+        // Activity is only ever opened by hand (see AgentMode).
+        if (AgentMode.isOn(context)) return
         val prefs = context.getSharedPreferences(
             "FlutterSharedPreferences", Context.MODE_PRIVATE)
         if (!prefs.getBoolean("flutter.ks.browser.auto_reload_on_error", true)) return

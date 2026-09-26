@@ -8,6 +8,8 @@ Several of these rest on the Kiosk Satellite accessibility service (see [Remote 
 adb shell pm grant me.jxl.kiosk_satellite android.permission.WRITE_SECURE_SETTINGS
 ```
 
+An agent also stays out of sight. At boot, after an update, after **Restart app** and after a crash it brings back only its background service, never its own screen, so the box keeps showing whatever it was showing: on a projector, the TV input keeps its picture and the vendor's firmware never lights the laser for an Android screen nobody asked for. Its status screen still opens from the app icon.
+
 An agent lists only what it runs in Home Assistant: the dashboard, screensaver, theater, kiosk, camera and voice entities are left out, and so are the Screen light and Panel brightness, which drive Android's backlight rather than a projector's picture (see [ESPHome](esphome.md#kiosk-entities)). Plugins are told the host is an agent (`getHostApi` answers `agent: true`), so they can leave out their kiosk-only parts too.
 
 ## Remote keys in Home Assistant

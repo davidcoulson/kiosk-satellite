@@ -60,9 +60,27 @@ class BackgroundBridge(
         }
 
         fun scheduleRestartAlarm(context: Context) {
+            if (AgentMode.isOn(context)) {
+                scheduleHeadlessRestart(context)
+                return
+            }
             val launch = HomeRole.launchIntent(context) ?: return
             val restart = restartIntent(context, launch, PendingIntent.FLAG_CANCEL_CURRENT)
                 ?: return
+            val alarm = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarm.set(AlarmManager.RTC, System.currentTimeMillis() + 800, restart)
+        }
+
+        /** An agent's restart brings the service back, never the Activity
+         *  (see AgentMode). A broadcast rather than a service PendingIntent:
+         *  ensureRunning picks the start Android allows at that moment. */
+        private fun scheduleHeadlessRestart(context: Context) {
+            val restart = PendingIntent.getBroadcast(
+                context,
+                RESTART_REQUEST,
+                Intent(context, AgentRestartReceiver::class.java),
+                PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
             val alarm = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             alarm.set(AlarmManager.RTC, System.currentTimeMillis() + 800, restart)
         }
@@ -1243,6 +1261,9 @@ class BackgroundBridge(
     }
 
     private fun bringToFront(): Boolean {
+        // Nothing of an agent's belongs in front, and waking the display
+        // is not its call either: the screen is the other app's.
+        if (AgentMode.isOn(context)) return false
         // A sleeping panel first: starting the Activity does not wake the
         // display, so a wake word heard with the screen off would answer
         // into darkness. Same wake-lock pattern as the kiosk's power-button

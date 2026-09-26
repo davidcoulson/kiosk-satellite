@@ -441,7 +441,7 @@ class KioskSatelliteService : Service() {
                 // died: a Meta Portal's bar can finish it through paths
                 // the back swallow never sees (issue #219).
                 HomeRole.isHeld(this)
-        if (!exiting && guarded &&
+        if (!exiting && guarded && !AgentMode.isOn(this) &&
             android.provider.Settings.canDrawOverlays(this)
         ) {
             HomeRole.launchIntent(this)?.let {

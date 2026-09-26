@@ -32,7 +32,7 @@ class BootReceiver : BroadcastReceiver() {
         // showing, at every boot, to display a status card nobody asked
         // for. The keep-alive service above is the whole point on such a
         // device: ESPHome, the remote admin and updates all live behind it.
-        if (prefs.getBoolean("flutter.ks.device.agent_mode", false)) return
+        if (AgentMode.isOn(context)) return
         // As the device's home app the system has already launched the
         // kiosk itself, before this broadcast arrives; a second start is
         // harmless but log-noisy (issue #219).

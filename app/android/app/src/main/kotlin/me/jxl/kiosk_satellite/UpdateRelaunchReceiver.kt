@@ -21,6 +21,12 @@ import android.util.Log
 class UpdateRelaunchReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
+        // An agent comes back headless: the service, not the Activity
+        // (see AgentMode).
+        if (AgentMode.isOn(context)) {
+            AgentMode.startHeadless(context)
+            return
+        }
         val launch = HomeRole.launchIntent(context) ?: return
         if (launch.hasCategory(Intent.CATEGORY_HOME)) {
             // Package replacement can leave an empty regular task in

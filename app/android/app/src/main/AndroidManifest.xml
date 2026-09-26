@@ -325,6 +325,11 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
             </intent-filter>
         </receiver>
+        <!-- An agent's deliberate restart: brings the service back, never
+             the Activity (AgentMode). -->
+        <receiver
+            android:name=".AgentRestartReceiver"
+            android:exported="false"/>
         <!-- In-app updates: exposes the downloaded APK (app cache, updates/)
              to the system package installer. -->
         <provider
