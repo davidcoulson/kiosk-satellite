@@ -10,6 +10,7 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 - **Theater mode for a page in a frame.** A web app shown on a Home Assistant Webpage dashboard can use theater mode through the dashboard, so Voice Satellite keeps running around it. Only the page named in the new Page allowed from a frame setting, and only theater mode; frames still never get the page bridge.
 - **A navigate command.** Moves the main page to a URL, path or `#` route, changing a route in place without a reload. On the remote API and as an ESPHome action.
 - **A custom start page.** The Start page can be a custom http or https address instead of a Home Assistant dashboard. It counts as the dashboard, may use theater mode, and is never handed the Home Assistant session. Home Assistant's Default dashboard select offers it as Start page.## Unreleased
+- **Last boot sensor.** A diagnostic timestamp beside App uptime and Network uptime: when the device itself last started, so a daily restart, a power cut or a firmware reboot shows up in Home Assistant's history, and an app restart does not.
 
 ## v2026.9.83 - 2026-09-25
 

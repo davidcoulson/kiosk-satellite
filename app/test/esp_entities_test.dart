@@ -189,7 +189,7 @@ void main() {
         }),
       ),
     );
-    stub('getUptime', {'app': 4200, 'network': 100});
+    stub('getUptime', {'app': 4200, 'network': 100, 'device': 90000});
     commands.register(
       Command(
         name: 'getIpAddresses',
@@ -832,6 +832,7 @@ void main() {
         'ipv6_address',
         'app_uptime',
         'network_uptime',
+        'last_boot',
         'admin_url',
       ]),
     );
@@ -1162,6 +1163,11 @@ void main() {
     final appAnchor = DateTime.parse('${byId['app_uptime']}');
     final drift = DateTime.now().toUtc().difference(appAnchor).inSeconds - 4200;
     expect(drift.abs(), lessThan(30));
+    // Last boot is the device's start, a day before this one.
+    final bootAnchor = DateTime.parse('${byId['last_boot']}');
+    final bootDrift =
+        DateTime.now().toUtc().difference(bootAnchor).inSeconds - 90000;
+    expect(bootDrift.abs(), lessThan(30));
     expect(DateTime.parse('${byId['last_seen']}'), isA<DateTime>());
     expect(byId['foreground_app'], 'me.jxl.kiosk_satellite');
     expect(byId['btproxy_nearby'], 13);
@@ -1245,6 +1251,7 @@ void main() {
     expect(again, hasLength(1));
     expect(DateTime.parse('${again.single}'), isA<DateTime>());
     expect(pushed.where((p) => p.$1 == 'network_uptime'), hasLength(1));
+    expect(pushed.where((p) => p.$1 == 'last_boot'), hasLength(1));
   });
 
   test(

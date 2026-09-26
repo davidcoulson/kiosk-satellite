@@ -131,6 +131,7 @@ Every item in this list corresponds directly to a kiosk setting. They are fully 
 | **IPv4 address**, **IPv6 address** | text sensor | Displays the primary network address. For IPv6, it prioritizes a routable address over a link local `fe80::` address. |
 | **IPv4 addresses by interface**, **IPv6 addresses by interface** | text sensor | Displays addresses broken down by interface (e.g., `wlan0: 192.168.1.5; eth0: 10.0.3.2`), allowing automations to easily distinguish wired from wireless connections. Re checks moments after any network change. |
 | **App uptime**, **Network uptime** | timestamp | Records exactly when the app launched and when the network connection was established. |
+| **Last boot** | timestamp | When the device itself last started. Moves on a reboot, not when only the app restarts. |
 | **Last seen** | timestamp | Updates on every completed poll. |
 | **Connectivity** | binary sensor | Reads "on" while the kiosk is reachable on the network and "unavailable" (not "off") when it drops, because losing the connection takes every single entity with it. |
 | **Remote admin** | text sensor | Displays the full URL to the remote admin page. Reads `disabled` while remote management is turned off. |

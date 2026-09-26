@@ -1228,6 +1228,15 @@ class EspEntitySurface {
         deviceClass: 'timestamp',
         type: 'text_sensor',
       ),
+      // The device's own start, not the app's: a crash-restarted app
+      // leaves this alone, a reboot (daily restart, power cut) moves it.
+      diagnostic(
+        'last_boot',
+        'Last boot',
+        icon: 'mdi:restart',
+        deviceClass: 'timestamp',
+        type: 'text_sensor',
+      ),
       diagnostic(
         'last_seen',
         'Last seen',
@@ -2842,6 +2851,10 @@ class EspEntitySurface {
         'network_uptime',
         network == null ? null : now.subtract(Duration(seconds: network)),
       );
+      final device = (uptime['device'] as num?)?.toInt();
+      if (device != null) {
+        await _sendAnchor('last_boot', now.subtract(Duration(seconds: device)));
+      }
     }
     final light = await commands.execute('getLightLevel', const {});
     var lux = light.ok && light.data is Map
