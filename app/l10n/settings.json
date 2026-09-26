@@ -1654,5 +1654,9 @@
   "device.hot_threshold": {
     "title": "settingHotThresholdTitle",
     "description": "settingHotThresholdDescription"
+  },
+  "wake_word.diagnostics": {
+    "title": "voiceDiagnosticsTitle",
+    "description": "voiceDiagnosticsDescription"
   }
 }

@@ -21,6 +21,30 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 - **No battery also drops Charging.** The switch said the charge was left out of Home Assistant entirely, but the Charging sensor stayed, reading on. It now goes with the level, and turning the switch on or off re-lists the entities without an app restart.
 - **IPv6 address and the two by-interface address sensors start disabled** in a newly added Home Assistant device. IPv4 address covers the usual need; existing devices keep them as they are.
 
+## v2026.9.85 - 2026-09-26
+
+### Added
+- **Sendspin playback in the system media controls.** The Sendspin player is now an Android media session with a media notification, so the notification shade, the lock screen and anything else that reads the device's media sessions show the track, artist, cover and progress, with play, pause, next, previous and seek. Hardware media keys and Bluetooth remotes steer it too. The controls go through the same controller path as the Now Playing view and only offer what the Sendspin server accepts. A track shows up once it has played, stays as paused until the player disconnects and does not flash to paused between songs.
+- **Download wake word diagnostics clips.** Each activation and near miss on the Wake word diagnostics page in the remote admin has a Download button next to Play, which saves its 3 second clip as a WAV named after the device, the wake word and the time.
+
+### Fixed
+- **Analytics no longer resends an old crash journal every day.** The sender remembered the last fifty crash entries it had reported, but the journal can hold more short entries than that, so a kiosk whose journal held 53 watchdog notes from one bad morning sent them, forgot the oldest as the list rolled, and sent them all again the next day, seventy reports a day for a week. Only the newest forty entries are candidates now and two hundred are remembered, so a report goes out once.
+- **The service notification can no longer get the app killed.** Android answers a notification whose icon it cannot load with "Bad notification" and kills the app, and for a moment around an update it could not load this app's icon resource: a Galaxy Tab A lost two processes in three seconds that way and a fresh Xperia install died on its first update. The Kiosk Satellite Service now sends its status bar icon as pixels rather than a resource id, drawn once when the service starts, so the system has nothing to look up.
+- **Weather Mood and screensaver widgets recover after a Wi-Fi drop.** When the connection dropped and the first reconnect ran into Wi-Fi that was still down, the failed attempt was never reported, so nothing tried again and Weather Mood kept the weather from before the drop for hours. A failed or stalled connection attempt now counts as a closed one and is retried like any other.
+- **Home Assistant no longer sets the Bluetooth proxy to passive scanning.** Since 2026.6, Home Assistant sets the scanning mode of each ESPHome proxy from the mode the proxy reports on first connect. The proxy never reported one, which reads as passive, so Home Assistant saved Passive and warned that the scanner was passive-only whenever an integration asked for active scans (#717). The proxy now reports active, which is what the Android scanner does anyway, so new setups get Home Assistant's Auto mode. An existing proxy keeps the saved Passive until you change it: in Home Assistant, open **Settings > Devices & services > ESPHome**, then **Configure** on the kiosk and set **Bluetooth scanning mode** to **Auto**.
+
+## v2026.9.84 - 2026-09-26
+
+### Added
+- **Wake word diagnostics.** A new Wake word diagnostics page keeps the last 10 wake word activations and the last 10 near misses, moments when the score reached 75% of the threshold and fell back without triggering. Each shows its score and threshold, the peak and average level of the audio, a Clipped flag when the microphone hit full scale and, for vsWakeWord, the phonemes it heard, with a 3 second clip that plays on the device or in the browser. The page opens from the Wake Word Tester group on the device and from the Voice Satellite page in the remote admin. It is off by default. Turning it off deletes the recordings.
+- **Play back the last 10 seconds in the wake word tester.** The tester's new Play last 10 seconds button plays what the wake word engine heard through the kiosk's speaker, so you can hear whether the microphone is clipping or too quiet. Detection is held off while it plays, so the recording cannot trigger the wake word.
+
+### Changed
+- **A faster, smoother wake word tester.** The chart scrolls smoothly over a 10 second window, settles its scale on round numbers instead of jumping with every peak and shows the microphone level under the score, with each detection marked through both. The dialog no longer rebuilds its whole layout several times a second and the log only draws the lines on screen.
+
+### Fixed
+- **Remote admin settings pages no longer re-render when the screensaver wakes.** Waking from the screensaver saves the screen brightness in a hidden setting. The remote admin rebuilt every settings page for that change, including whichever page was open, so every wake word that woke the screen reset the page in front of you.
+
 ## v2026.9.83 - 2026-09-25
 
 ### Added

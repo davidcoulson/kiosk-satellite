@@ -1656,4 +1656,8 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingHotThresholdTitle",
     "description": "settingHotThresholdDescription",
   },
+  "wake_word.diagnostics": {
+    "title": "voiceDiagnosticsTitle",
+    "description": "voiceDiagnosticsDescription",
+  },
 };
