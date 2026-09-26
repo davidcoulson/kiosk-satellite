@@ -132,7 +132,7 @@ class AppContainer {
     // After homeAssistant: it reads states through it for the fallback.
     glance = GlanceManager(bus, commands, log, settings, homeAssistant);
     shizuku = ShizukuManager(bus, commands, log);
-    plugins = PluginManager(bus, commands, log);
+    plugins = PluginManager(bus, commands, log, agent: () => agentMode);
     settings.pluginScreensavers = () => plugins.screensaverOptions;
     remote = RemoteManager(bus, commands, log, settings);
     fleet = FleetManager(bus, commands, log, settings);

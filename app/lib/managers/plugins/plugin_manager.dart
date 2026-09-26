@@ -31,9 +31,13 @@ class PluginManager extends Manager {
     super.commands,
     super.log, {
     PluginRepository? repository,
+    this.agent,
   }) : repository = repository ?? PluginRepository();
 
   final PluginRepository repository;
+
+  /// Whether the host is an agent, for getHostApi to tell the plugins.
+  final bool Function()? agent;
   List<Map<String, Object?>> _entities = [];
   final _runtimeEntities = <String, List<Map<String, Object?>>>{};
   static const maxZipBytes = PluginRepository.maxPackageBytes;
@@ -129,6 +133,7 @@ class PluginManager extends Manager {
       commands,
       bus,
       (event) => channel.invokeMethod<void>('hostEvent', event),
+      agent: agent,
     );
     channel.setMethodCallHandler((call) async {
       if (_disposed) return null;

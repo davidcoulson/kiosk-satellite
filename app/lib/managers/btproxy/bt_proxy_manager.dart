@@ -64,7 +64,9 @@ String mergedAdvertisementFilter(String filterJson, String irksJson) {
   Map<String, Object?> filter;
   try {
     final decoded = jsonDecode(filterJson.trim().isEmpty ? '{}' : filterJson);
-    filter = decoded is Map ? Map<String, Object?>.from(decoded) : <String, Object?>{};
+    filter = decoded is Map
+        ? Map<String, Object?>.from(decoded)
+        : <String, Object?>{};
   } catch (_) {
     filter = <String, Object?>{};
   }
@@ -73,7 +75,9 @@ String mergedAdvertisementFilter(String filterJson, String irksJson) {
     try {
       final decoded = jsonDecode(irksJson);
       if (decoded is List) {
-        irks.addAll(decoded.whereType<String>().where((k) => k.trim().isNotEmpty));
+        irks.addAll(
+          decoded.whereType<String>().where((k) => k.trim().isNotEmpty),
+        );
       }
     } catch (_) {
       // A pasted key list that is not JSON still has one key per line often
@@ -226,6 +230,8 @@ class BtProxyManager extends Manager {
       // their headless switches are on.
       'gestures.remote_keys.report',
       'device.now_playing',
+      // No battery takes the Battery and Charging sensors away.
+      'device.no_battery',
     };
     // The remote admin server's settings, which decide the web page port
     // reported to Home Assistant (the device page's Visit link).

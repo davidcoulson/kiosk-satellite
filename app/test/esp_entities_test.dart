@@ -2291,9 +2291,123 @@ void main() {
       'the device itself is untouched: sensors, update and restart stay',
       () async {
         final ids = (await agentCatalog()).map((e) => e['objectId']).toList();
-        expect(ids, containsAll(['update', 'restart', 'volume']));
+        expect(
+          ids,
+          containsAll([
+            'update',
+            'restart',
+            'volume',
+            'remote',
+            'cpu',
+            'ram_free',
+            'storage_free',
+            'foreground_app',
+            'app_uptime',
+            'network_uptime',
+            'last_boot',
+            'last_seen',
+            'connectivity',
+            'admin_url',
+            'charging',
+          ]),
+        );
       },
     );
+
+    test('lists nothing of the dashboard, screensaver, theater, kiosk modes, '
+        'cameras, voice or the backlight', () async {
+      final ids = (await agentCatalog()).map((e) => '${e['objectId']}').toSet();
+      for (final gone in [
+        'screen',
+        'panel_brightness',
+        'keep_screen_on',
+        'screensaver',
+        'screensaver_active',
+        'postpone_screensaver',
+        'screensaver_timeout',
+        'screensaver_mode',
+        'screensaver_clock_style',
+        'clock_background',
+        'next_screensaver',
+        'theater_mode',
+        'theater_peek',
+        'theater_overlay_opacity',
+        'theater_phase',
+        'reload',
+        'load_start_url',
+        'clear_cache',
+        'bring_to_front',
+        'url',
+        'theme',
+        'dashboard_cameras',
+        'kiosk',
+        'lockdown',
+        'ha_kiosk',
+        'hold_mode',
+        'notifications_dismiss_all',
+        'next_alarm',
+        'last_interaction',
+        'device_camera',
+        'take_snapshot',
+        'last_snapshot',
+        'camera_enabled',
+        'rtsp_streaming',
+        'motion',
+        'assistant_volume',
+        'media_volume',
+      ]) {
+        expect(ids, isNot(contains(gone)), reason: gone);
+      }
+      expect(ids.where((id) => id.startsWith('camera_view')), isEmpty);
+      expect(ids.where((id) => id.startsWith('dashboard_view')), isEmpty);
+    });
+
+    test('a kiosk keeps them', () async {
+      final ids = (await surface.build()).map((e) => e['objectId']).toSet();
+      expect(
+        ids,
+        containsAll([
+          'screen',
+          'panel_brightness',
+          'screensaver',
+          'theater_mode',
+          'kiosk',
+          'reload',
+          'next_alarm',
+          'media_volume',
+        ]),
+      );
+    });
+
+    test('values for unlisted entities are never sent', () async {
+      await settings.set(defs.agentMode, true);
+      await surface.build();
+      await attach();
+      final sent = pushed.map((p) => p.$1).toSet();
+      for (final id in ['panel_brightness', 'theater_phase', 'url', 'screen']) {
+        expect(sent, isNot(contains(id)), reason: id);
+      }
+      expect(sent, contains('cpu'));
+    });
+  });
+
+  group('no battery', () {
+    test('drops Charging with the level, and sends it no value', () async {
+      await settings.set(defs.noBattery, true);
+      final ids = (await surface.build()).map((e) => e['objectId']).toList();
+      expect(ids, isNot(contains('charging')));
+      await attach();
+      expect(pushed.map((p) => p.$1), isNot(contains('charging')));
+    });
+  });
+
+  test('the per-interface and IPv6 addresses start disabled in a new '
+      'Home Assistant device; IPv4 address does not', () async {
+    final all = {for (final e in await surface.build()) '${e['objectId']}': e};
+    for (final id in ['ipv4_interfaces', 'ipv6_address', 'ipv6_interfaces']) {
+      expect(all[id]?['disabled'], true, reason: id);
+    }
+    expect(all['ipv4_address']?['disabled'], isNull);
   });
 
   group('headless management', () {

@@ -10,11 +10,21 @@ import '../settings/definitions.dart' as defs;
 
 /// Explicit SDK 1 host surface. Registry additions do not expand plugin access.
 class PluginHostApi {
-  PluginHostApi(this.commands, EventBus bus, this.sendEvent) {
+  PluginHostApi(
+    this.commands,
+    EventBus bus,
+    this.sendEvent, {
+    bool Function()? agent,
+  }) : _agent = agent ?? (() => false) {
     _events = bus.stream.listen(_onEvent);
   }
 
   final CommandRegistry commands;
+
+  /// Whether the host runs as an agent (no dashboard, no WebView), so a
+  /// plugin can leave out what only a kiosk has. Fixed for a run: the mode
+  /// changes with an app restart, which restarts the plugins too.
+  final bool Function() _agent;
   final Future<void> Function(Map<String, Object?>) sendEvent;
   late final StreamSubscription<AppEvent> _events;
   final _sessions = <String, _HostSession>{};
@@ -318,6 +328,7 @@ class PluginHostApi {
     if (name == 'getHostApi') {
       return CommandResult.ok({
         'apiVersion': 1,
+        'agent': _agent(),
         'entitySubscriptions': session.canRead
             ? {'eventPrefix': 'ha.entity.', 'maxEntities': 16}
             : null,

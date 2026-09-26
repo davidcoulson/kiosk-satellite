@@ -11,6 +11,11 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 - **A navigate command.** Moves the main page to a URL, path or `#` route, changing a route in place without a reload. On the remote API and as an ESPHome action.
 - **A custom start page.** The Start page can be a custom http or https address instead of a Home Assistant dashboard. It counts as the dashboard, may use theater mode, and is never handed the Home Assistant session. Home Assistant's Default dashboard select offers it as Start page.## Unreleased
 - **Last boot sensor.** A diagnostic timestamp beside App uptime and Network uptime: when the device itself last started, so a daily restart, a power cut or a firmware reboot shows up in Home Assistant's history, and an app restart does not.
+- **An agent lists only what it runs in Home Assistant.** Agent mode left the whole kiosk entity set in place, most of it on unknown or wired to managers that never start. An agent now leaves out every dashboard, WebView, screensaver and clock, theater, kiosk, lockdown and hold mode, notification, camera, voice and audio fader entity, and the Screen light and Panel brightness, which drive Android's backlight value and do nothing to a projector's picture. Home Assistant removes them on the next connection. What stays is the device: health, updates, restarts, volume, the foreground app, remote admin and the headless entities. Plugins can tell too: `getHostApi` now answers `agent`, so a plugin can leave out its kiosk-only sensors.
+
+### Changed
+- **No battery also drops Charging.** The switch said the charge was left out of Home Assistant entirely, but the Charging sensor stayed, reading on. It now goes with the level, and turning the switch on or off re-lists the entities without an app restart.
+- **IPv6 address and the two by-interface address sensors start disabled** in a newly added Home Assistant device. IPv4 address covers the usual need; existing devices keep them as they are.
 
 ## v2026.9.83 - 2026-09-25
 

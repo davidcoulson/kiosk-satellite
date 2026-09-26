@@ -8,6 +8,8 @@ Several of these rest on the Kiosk Satellite accessibility service (see [Remote 
 adb shell pm grant me.jxl.kiosk_satellite android.permission.WRITE_SECURE_SETTINGS
 ```
 
+An agent lists only what it runs in Home Assistant: the dashboard, screensaver, theater, kiosk, camera and voice entities are left out, and so are the Screen light and Panel brightness, which drive Android's backlight rather than a projector's picture (see [ESPHome](esphome.md#kiosk-entities)). Plugins are told the host is an agent (`getHostApi` answers `agent: true`), so they can leave out their kiosk-only parts too.
+
 ## Remote keys in Home Assistant
 
 **Send remote keys to Home Assistant** adds an event entity, **Remote key**, that fires for each key pressed on the remote, whatever app is in front. Its event types are the keys a remote has that are not text: `home`, `back`, `menu`, the D-pad (`dpad_up` … `dpad_center`), the media keys, volume, `red`/`green`/`yellow`/`blue`, `f1`–`f12`, `settings`, `tv_input`, `info`, `guide` and a few more. Letters, digits and symbols are never reported, so a keyboard typing into an app is never sent anywhere. Reporting only observes: the key still does what it did.

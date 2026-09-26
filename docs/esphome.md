@@ -37,6 +37,8 @@ Each connection attempt temporarily pauses scanning to perform its handshake (si
 
 Turn on **Expose kiosk entities** to add all the entities listed below to the device in Home Assistant. This is off by default, meaning if you only enable ESPHome for the Bluetooth proxy, no extra entities are created. Rows marked with a requirement only appear if that hardware is present; for example, a kiosk with no camera simply will not have camera entities, rather than displaying dead ones. Because the ESPHome protocol does not use attributes, any hardware details that would normally ride on a sensor as an attribute are split into their own distinct entities.
 
+On an install in agent mode (see [Headless management](headless.md)), everything that belongs to the dashboard, the screensaver, theater mode, the kiosk, lockdown and hold modes, notifications, cameras, voice and the audio faders is left out, along with the **Screen** light and **Panel brightness**: they drive Android's backlight value, which on a projector or a media box is not the picture. The device's health, updates, restarts, volume and foreground app stay.
+
 Use **Settings > ESPHome > Excluded entities** to pick entities that should stay out of Home Assistant. All available entities are exposed unless you select them here. Clear an entity's checkbox to expose it again or use **Clear** to expose all available entities. **Select all** selects every entity for exclusion, including entities outside the current search results. Saving reconnects ESPHome so Home Assistant receives the updated entity list. Each row shows its Home Assistant category before its entity type. You can search by name, category or type. The same picker is available in the remote admin.
 
 ### Controls
@@ -111,7 +113,7 @@ Every item in this list corresponds directly to a kiosk setting. They are fully 
 | Entity | Type | Notes |
 |---|---|---|
 | **Battery** | sensor | Reports battery percentage. Only devices with a physical battery receive this entity; a mains powered device without a battery will only report the Charging status. |
-| **Charging** | binary sensor | Indicates if the device is currently receiving power. |
+| **Charging** | binary sensor | Indicates if the device is currently receiving power. Left out when **No battery** is on. |
 | **CPU usage** | sensor | Reports current CPU load as a percentage. |
 | **Theater phase** | text sensor | `off`, `dim`, `peek` or `black`. |
 | **CPU temperature** | sensor | Only available on devices that report thermal data. |
@@ -129,7 +131,7 @@ Every item in this list corresponds directly to a kiosk setting. They are fully 
 | **Android version**, **Android build** | text sensor | System software identifiers. |
 | **App version** | text sensor | Reports the specific release of Kiosk Satellite running on the device. This is excellent for sorting a fleet of kiosks by version. |
 | **IPv4 address**, **IPv6 address** | text sensor | Displays the primary network address. For IPv6, it prioritizes a routable address over a link local `fe80::` address. |
-| **IPv4 addresses by interface**, **IPv6 addresses by interface** | text sensor | Displays addresses broken down by interface (e.g., `wlan0: 192.168.1.5; eth0: 10.0.3.2`), allowing automations to easily distinguish wired from wireless connections. Re checks moments after any network change. |
+| **IPv4 addresses by interface**, **IPv6 addresses by interface** | text sensor | Displays addresses broken down by interface (e.g., `wlan0: 192.168.1.5; eth0: 10.0.3.2`), allowing automations to easily distinguish wired from wireless connections. Re checks moments after any network change. These two and **IPv6 address** start disabled in a newly added device; enable them in Home Assistant to use them. |
 | **App uptime**, **Network uptime** | timestamp | Records exactly when the app launched and when the network connection was established. |
 | **Last boot** | timestamp | When the device itself last started. Moves on a reboot, not when only the app restarts. |
 | **Last seen** | timestamp | Updates on every completed poll. |

@@ -435,7 +435,8 @@ class EspEntitySurface {
     // A device without a battery gets no Battery sensor (issue #367): the
     // one gate every consumer reads through answers null for a mains-
     // powered box, and an entity that could only ever show a sentinel is
-    // worse than none. Charging stays: the box still says it is plugged.
+    // worse than none. Charging stays unless No battery is on (see
+    // _unlisted): a board without a battery still says it is plugged.
     final batteryPresent =
         stats.ok && stats.data is Map && (stats.data as Map)['battery'] != null;
     // Bluetooth connections ride the proxy's master switch, and only exist
@@ -495,6 +496,7 @@ class EspEntitySurface {
       String unit = '',
       int stateClass = 0,
       String type = 'sensor',
+      bool disabled = false,
     }) => {
       'type': type,
       'objectId': id,
@@ -504,6 +506,7 @@ class EspEntitySurface {
       'unit': unit,
       'stateClass': stateClass,
       'category': 2,
+      if (disabled) 'disabled': true,
     };
 
     // An agent never starts the intercom, whatever the setting says.
@@ -1192,23 +1195,29 @@ class EspEntitySurface {
         icon: 'mdi:ip-network',
         type: 'text_sensor',
       ),
+      // The address detail, off in a new Home Assistant device: IPv4
+      // address answers the usual question, and these are there to enable
+      // for an automation that tells wired from wireless.
       diagnostic(
         'ipv4_interfaces',
         'IPv4 addresses by interface',
         icon: 'mdi:lan',
         type: 'text_sensor',
+        disabled: true,
       ),
       diagnostic(
         'ipv6_address',
         'IPv6 address',
         icon: 'mdi:ip-network-outline',
         type: 'text_sensor',
+        disabled: true,
       ),
       diagnostic(
         'ipv6_interfaces',
         'IPv6 addresses by interface',
         icon: 'mdi:lan-connect',
         type: 'text_sensor',
+        disabled: true,
       ),
       // Timestamps, not counters: the recorder logs the moments
       // the anchors move (a restart, a reconnect) and Home Assistant
@@ -1261,6 +1270,8 @@ class EspEntitySurface {
         type: 'text_sensor',
       ),
     ];
+    // Before the plugins' entities join: their ids are their own.
+    catalog.removeWhere((entity) => _unlisted('${entity['objectId']}'));
     final pluginEntities = await commands.execute(
       'getPluginEntities',
       const {},
@@ -1284,7 +1295,88 @@ class EspEntitySurface {
   String? _excludedValue;
   Set<String> _excludedIds = {};
 
+  /// What an agent does not list: everything that belongs to the dashboard,
+  /// the WebView, the screensaver and its clock, theater mode, the kiosk,
+  /// lockdown and hold modes, notifications, cameras, voice and the audio
+  /// faders - the managers behind them never start on an agent, so each
+  /// would sit on unknown or do nothing. The Screen light and Panel
+  /// brightness go too: they drive Android's backlight value, which on a
+  /// projector or a media box is not the picture. What stays is the
+  /// device: health, updates, restarts, volume, the foreground app and the
+  /// headless entities.
+  static const _agentUnlisted = {
+    'screen',
+    'panel_brightness',
+    'adaptive_brightness',
+    'keep_screen_on',
+    'screensaver',
+    'screensaver_active',
+    'postpone_screensaver',
+    'screensaver_next_slide',
+    'screensaver_previous_slide',
+    'screensaver_brightness',
+    'screensaver_brightness_level',
+    'screensaver_timeout',
+    'screensaver_mode',
+    'screensaver_clock_style',
+    'clock_background',
+    'screensaver_motion',
+    'screensaver_face',
+    'screensaver_proximity',
+    'next_screensaver',
+    'theater_mode',
+    'theater_peek',
+    'theater_overlay_opacity',
+    'theater_peek_seconds',
+    'theater_phase',
+    'reload',
+    'load_start_url',
+    'clear_cache',
+    'bring_to_front',
+    'url',
+    'theme',
+    'dashboard_view',
+    'default_dashboard',
+    'dashboard_cameras',
+    'kiosk',
+    'lockdown',
+    'ha_kiosk',
+    'hold_mode',
+    'notifications_dismiss_all',
+    'next_alarm',
+    'last_interaction',
+    'camera_view',
+    'close_camera_view',
+    'active_camera_view',
+    'device_camera',
+    'take_snapshot',
+    'last_snapshot',
+    'camera_enabled',
+    'camera_device',
+    'rtsp_streaming',
+    'motion',
+    'proximity',
+    'person',
+    'voice_satellite',
+    'voice_satellite_auto_start',
+    'assistant_volume',
+    'media_volume',
+    'now_playing',
+    'show_music_assistant',
+  };
+
+  /// Entities this device does not list at all, whatever the exclusion
+  /// setting says: an agent's kiosk-only set, and Charging on a panel set
+  /// to No battery (its level is already gone; a mains-only box has no
+  /// charging to report either).
+  bool _unlisted(String objectId) =>
+      (_settings.get(defs.agentMode) &&
+          (_agentUnlisted.contains(objectId) ||
+              objectId.startsWith('camera_view_'))) ||
+      (objectId == 'charging' && _settings.get(defs.noBattery));
+
   bool _isExcluded(String objectId) {
+    if (_unlisted(objectId)) return true;
     final value = _settings.get(defs.esphomeExcludedEntities);
     if (value != _excludedValue) {
       _excludedValue = value;
