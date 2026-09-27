@@ -89,27 +89,30 @@ class AudioRoutingManager extends Manager {
       }
     });
 
-    commands.register(Command(
-      name: 'getAudioDevices',
-      description:
-          'The selectable capture and playback devices, as '
-          '{inputs: [{selector, label, type}], outputs: [...]} plus the '
-          'current selections (empty selector = automatic).',
-      handler: (_) async {
-        try {
-          final devices =
-              await _channel.invokeMapMethod<String, Object?>('list');
-          return CommandResult.ok({
-            ...?devices,
-            'outputs': _annotateOutputs(devices?['outputs']),
-            'micSelected': _settings.get(defs.audioMicDevice),
-            'speakerSelected': _settings.get(defs.audioSpeakerDevice),
-          });
-        } on PlatformException catch (e) {
-          return CommandResult.fail('audio device listing failed: $e');
-        }
-      },
-    ));
+    commands.register(
+      Command(
+        name: 'getAudioDevices',
+        description:
+            'The selectable capture and playback devices, as '
+            '{inputs: [{selector, label, type}], outputs: [...]} plus the '
+            'current selections (empty selector = automatic).',
+        handler: (_) async {
+          try {
+            final devices = await _channel.invokeMapMethod<String, Object?>(
+              'list',
+            );
+            return CommandResult.ok({
+              ...?devices,
+              'outputs': _annotateOutputs(devices?['outputs']),
+              'micSelected': _settings.get(defs.audioMicDevice),
+              'speakerSelected': _settings.get(defs.audioSpeakerDevice),
+            });
+          } on PlatformException catch (e) {
+            return CommandResult.fail('audio device listing failed: $e');
+          }
+        },
+      ),
+    );
   }
 
   /// Classic Bluetooth cannot run its hi-fi profile while the same
@@ -126,7 +129,11 @@ class AudioRoutingManager extends Manager {
         if (o is Map &&
             '${o['type']}' == '8' &&
             '${o['selector']}'.split('|').elementAtOrNull(1) == micAddress)
-          {...o, 'label': '${o['label']} (unavailable with the Bluetooth microphone)'}
+          {
+            ...o,
+            'label':
+                '${o['label']} (unavailable with the Bluetooth microphone)',
+          }
         else
           o,
     ];
@@ -141,10 +148,11 @@ class AudioRoutingManager extends Manager {
     _micDeviceId = id;
     if (moved) {
       log.info(
-          name,
-          id == null
-              ? 'selected microphone disappeared; capture falls back'
-              : 'selected microphone (re)appeared; capture moves to it');
+        name,
+        id == null
+            ? 'selected microphone disappeared; capture falls back'
+            : 'selected microphone (re)appeared; capture moves to it',
+      );
       // A capture held open only by the clap detector has no engine restart
       // to move it; reopen it here so it follows the device.
       await MicHub.instance.bounce();
@@ -156,8 +164,9 @@ class AudioRoutingManager extends Manager {
     final selector = _settings.get(defs.audioMicDevice);
     if (selector.isEmpty) return null;
     try {
-      return await _channel
-          .invokeMethod<int>('resolveInput', {'selector': selector});
+      return await _channel.invokeMethod<int>('resolveInput', {
+        'selector': selector,
+      });
     } on PlatformException {
       return null;
     }

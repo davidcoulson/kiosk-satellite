@@ -44,6 +44,7 @@ class AgentToolsManager extends Manager {
   Timer? _tick;
 
   Map<String, Object?> _nowPlaying = const {'state': 'idle'};
+
   /// The last remote key press, or startup: set in [init], not lazily,
   /// so the idle clock runs from when the app started.
   DateTime _lastKey = DateTime.fromMillisecondsSinceEpoch(0);

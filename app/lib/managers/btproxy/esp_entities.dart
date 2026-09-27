@@ -432,6 +432,15 @@ class EspEntitySurface {
     final stats = await commands.execute('getStats', const {});
     final cpuTempPresent =
         stats.ok && stats.data is Map && (stats.data as Map)['temp'] != null;
+    // A kernel without cpuidle answers only the clock's position between
+    // its slowest and fastest speed. That is not load, so such a device
+    // lists CPU clock instead of a CPU usage that would read 100% on a
+    // chip a fifth busy.
+    final cpuClockOnly =
+        stats.ok &&
+        stats.data is Map &&
+        (stats.data as Map)['cpu'] == null &&
+        (stats.data as Map)['cpuClock'] != null;
     // A device without a battery gets no Battery sensor (issue #367): the
     // one gate every consumer reads through answers null for a mains-
     // powered box, and an entity that could only ever show a sentinel is
@@ -978,13 +987,22 @@ class EspEntitySurface {
         deviceClass: 'battery_charging',
         type: 'binary_sensor',
       ),
-      diagnostic(
-        'cpu',
-        'CPU usage',
-        icon: 'mdi:chip',
-        unit: '%',
-        stateClass: 1,
-      ),
+      if (!cpuClockOnly)
+        diagnostic(
+          'cpu',
+          'CPU usage',
+          icon: 'mdi:chip',
+          unit: '%',
+          stateClass: 1,
+        )
+      else
+        diagnostic(
+          'cpu_clock',
+          'CPU clock',
+          icon: 'mdi:speedometer',
+          unit: '%',
+          stateClass: 1,
+        ),
       if (cpuTempPresent)
         diagnostic(
           'cpu_temp',
@@ -2897,6 +2915,8 @@ class EspEntitySurface {
       await _send('charging', data['charging'] == true);
       final cpu = (data['cpu'] as num?)?.round();
       if (cpu != null) await _send('cpu', cpu);
+      final clock = (data['cpuClock'] as num?)?.round();
+      if (clock != null) await _send('cpu_clock', clock);
       final temp = data['temp'] as num?;
       if (temp != null) await _send('cpu_temp', temp.round());
       if (temp != null) {

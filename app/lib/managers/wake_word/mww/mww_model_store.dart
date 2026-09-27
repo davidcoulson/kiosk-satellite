@@ -35,10 +35,13 @@ class MwwModelStore {
         .get(Uri.parse(manifestUrl))
         .timeout(const Duration(seconds: 30));
     if (manifestResp.statusCode != 200) {
-      throw StateError('manifest HTTP ${manifestResp.statusCode}: $manifestUrl');
+      throw StateError(
+        'manifest HTTP ${manifestResp.statusCode}: $manifestUrl',
+      );
     }
     final manifest = MwwManifest.fromJson(
-        jsonDecode(manifestResp.body) as Map<String, Object?>);
+      jsonDecode(manifestResp.body) as Map<String, Object?>,
+    );
     if (manifest == null) {
       throw StateError('not a microWakeWord manifest: $manifestUrl');
     }
@@ -66,8 +69,9 @@ class MwwModelStore {
     if (await file.exists() && await file.length() > 0) {
       return file.readAsBytes();
     }
-    final resp =
-        await http.get(Uri.parse(url)).timeout(const Duration(seconds: 60));
+    final resp = await http
+        .get(Uri.parse(url))
+        .timeout(const Duration(seconds: 60));
     if (resp.statusCode != 200) {
       throw StateError('tflite HTTP ${resp.statusCode}: $url');
     }

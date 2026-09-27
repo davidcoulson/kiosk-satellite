@@ -191,9 +191,10 @@ class ClapDetector {
     // Quiet lead-in: a first clap that is a command comes out of calm, not
     // out of ongoing clatter. Only the sequence's first clap needs it —
     // later ones follow other claps by design.
-    final leadOk = _onsets.isNotEmpty ||
-        _frame - _lastLoudFrame >= _quietLeadFrames;
-    final canDetect = _frame > _warmupFrames &&
+    final leadOk =
+        _onsets.isNotEmpty || _frame - _lastLoudFrame >= _quietLeadFrames;
+    final canDetect =
+        _frame > _warmupFrames &&
         _frame >= _suppressedUntil &&
         (_onsets.isEmpty || _frame - _onsets.last >= _refractoryFrames);
     if (canDetect &&

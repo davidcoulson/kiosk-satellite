@@ -124,5 +124,4 @@ class IntercomRoutes {
     }
     seen[ip] = now;
   }
-
 }

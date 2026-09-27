@@ -751,13 +751,20 @@ class DeviceDetails(
      * does let an untrusted app read, under the same label as the cpufreq
      * files, is cpuidle: each core's cumulative residency in its idle states.
      * Awake time not spent idle gives utilization, so the usage number
-     * is derived from that (see [cpuUsage]), with the old
-     * frequency-position estimate as the fallback where cpuidle is absent.
+     * is derived from that (see [cpuUsage]).
+     *
+     * A kernel without cpuidle leaves only the clock: how far each core
+     * sits between its minimum and maximum speed. That is not load - an
+     * interactive governor stepping between three speeds reads 0, 66 or
+     * 100% while the chip is 20% busy - so it is reported as `clock`, and
+     * `usage` stays null rather than carry it under the wrong name.
      */
     private fun cpu(): Map<String, Any?> {
         val temp = cpuTemp()
+        val idle = hasCpuIdle()
         val out = mutableMapOf<String, Any?>(
-            "usage" to cpuUsage(),
+            "usage" to if (idle) cpuUsage() else null,
+            "clock" to if (idle) null else frequencyLoad(),
             "temp" to temp,
         )
         // Field diagnosis for devices that report no temperature (issue
@@ -782,6 +789,13 @@ class DeviceDetails(
             if (readable) type else "$type!"
         }
     }
+
+    /** Whether this kernel exposes cpuidle at all, asked once: it does not
+     *  appear or go away while the process lives. */
+    private var cpuIdlePresent: Boolean? = null
+
+    private fun hasCpuIdle(): Boolean =
+        cpuIdlePresent ?: (idleSnapshot() != null).also { cpuIdlePresent = it }
 
     /** The previous snapshot, so each report covers the window since the
      *  last one instead of blocking to measure a fresh window. */
@@ -838,25 +852,26 @@ class DeviceDetails(
      */
     @Synchronized
     private fun cpuUsage(): Double? {
-        var first = lastIdle ?: idleSnapshot() ?: return frequencyLoad()
+        var first = lastIdle ?: idleSnapshot() ?: return null
         val age = SystemClock.elapsedRealtimeNanos() - first.elapsedNanos
         val awakeAge = System.nanoTime() - first.awakeNanos
         if (awakeAge < 500_000_000L || age > 300_000_000_000L) {
-            first = idleSnapshot() ?: return frequencyLoad()
+            first = idleSnapshot() ?: return null
             try {
                 Thread.sleep(500)
             } catch (_: InterruptedException) {
-                return frequencyLoad()
+                return null
             }
         }
-        val now = idleSnapshot() ?: return frequencyLoad()
+        val now = idleSnapshot() ?: return null
         lastIdle = now
-        return now.usageSince(first) ?: frequencyLoad()
+        return now.usageSince(first)
     }
 
     /**
-     * The old estimate, kept as the fallback for kernels without cpuidle
-     * sysfs: per core, how far the current clock sits between min and max.
+     * Where the kernel has no cpuidle sysfs, the one thing left to read:
+     * per core, how far the current clock sits between min and max. Speed,
+     * not load (see [cpu]).
      */
     private fun frequencyLoad(): Double? {
         val cores = File("/sys/devices/system/cpu")

@@ -114,7 +114,8 @@ Every item in this list corresponds directly to a kiosk setting. They are fully 
 |---|---|---|
 | **Battery** | sensor | Reports battery percentage. Only devices with a physical battery receive this entity; a mains powered device without a battery will only report the Charging status. |
 | **Charging** | binary sensor | Indicates if the device is currently receiving power. Left out when **No battery** is on. |
-| **CPU usage** | sensor | Reports current CPU load as a percentage. |
+| **CPU usage** | sensor | Reports current CPU load as a percentage, from how long the cores sat idle. |
+| **CPU clock** | sensor | In place of CPU usage on a device whose kernel does not report idle time: how far the cores' clock sits between its slowest and fastest speed, as a percentage. That is speed, not load: a chip stepping between three speeds reads 0, 66 or 100% whatever it is doing. |
 | **Theater phase** | text sensor | `off`, `dim`, `peek` or `black`. |
 | **CPU temperature** | sensor | Only available on devices that report thermal data. |
 | **RAM available**, **RAM total** | sensor | Reported in Megabytes (MB). |
