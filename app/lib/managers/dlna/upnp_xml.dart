@@ -107,15 +107,55 @@ String _stateVar(String name, String type, {bool events = false}) =>
 
 final avtScpd = _scpd(
   '<actionList>'
-  '${_action('SetAVTransportURI', [('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'), ('CurrentURI', 'in', 'AVTransportURI'), ('CurrentURIMetaData', 'in', 'AVTransportURIMetaData')])}'
-  '${_action('Play', [('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'), ('Speed', 'in', 'TransportPlaySpeed')])}'
+  '${_action('SetAVTransportURI', [
+        ('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'),
+        ('CurrentURI', 'in', 'AVTransportURI'),
+        ('CurrentURIMetaData', 'in', 'AVTransportURIMetaData'),
+      ])}'
+  '${_action('Play', [
+        ('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'),
+        ('Speed', 'in', 'TransportPlaySpeed'),
+      ])}'
   '${_action('Pause', [('InstanceID', 'in', 'A_ARG_TYPE_InstanceID')])}'
   '${_action('Stop', [('InstanceID', 'in', 'A_ARG_TYPE_InstanceID')])}'
-  '${_action('Seek', [('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'), ('Unit', 'in', 'A_ARG_TYPE_SeekMode'), ('Target', 'in', 'A_ARG_TYPE_SeekTarget')])}'
-  '${_action('GetCurrentTransportActions', [('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'), ('Actions', 'out', 'CurrentTransportActions')])}'
-  '${_action('GetTransportInfo', [('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'), ('CurrentTransportState', 'out', 'TransportState'), ('CurrentTransportStatus', 'out', 'TransportStatus'), ('CurrentSpeed', 'out', 'TransportPlaySpeed')])}'
-  '${_action('GetPositionInfo', [('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'), ('Track', 'out', 'CurrentTrack'), ('TrackDuration', 'out', 'CurrentTrackDuration'), ('TrackMetaData', 'out', 'CurrentTrackMetaData'), ('TrackURI', 'out', 'CurrentTrackURI'), ('RelTime', 'out', 'RelativeTimePosition'), ('AbsTime', 'out', 'AbsoluteTimePosition'), ('RelCount', 'out', 'RelativeCounterPosition'), ('AbsCount', 'out', 'AbsoluteCounterPosition')])}'
-  '${_action('GetMediaInfo', [('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'), ('NrTracks', 'out', 'NumberOfTracks'), ('MediaDuration', 'out', 'CurrentMediaDuration'), ('CurrentURI', 'out', 'AVTransportURI'), ('CurrentURIMetaData', 'out', 'AVTransportURIMetaData'), ('NextURI', 'out', 'NextAVTransportURI'), ('NextURIMetaData', 'out', 'NextAVTransportURIMetaData'), ('PlayMedium', 'out', 'PlaybackStorageMedium'), ('RecordMedium', 'out', 'RecordStorageMedium'), ('WriteStatus', 'out', 'RecordMediumWriteStatus')])}'
+  '${_action('Seek', [
+        ('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'),
+        ('Unit', 'in', 'A_ARG_TYPE_SeekMode'),
+        ('Target', 'in', 'A_ARG_TYPE_SeekTarget'),
+      ])}'
+  '${_action('GetCurrentTransportActions', [
+        ('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'),
+        ('Actions', 'out', 'CurrentTransportActions'),
+      ])}'
+  '${_action('GetTransportInfo', [
+        ('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'),
+        ('CurrentTransportState', 'out', 'TransportState'),
+        ('CurrentTransportStatus', 'out', 'TransportStatus'),
+        ('CurrentSpeed', 'out', 'TransportPlaySpeed'),
+      ])}'
+  '${_action('GetPositionInfo', [
+        ('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'),
+        ('Track', 'out', 'CurrentTrack'),
+        ('TrackDuration', 'out', 'CurrentTrackDuration'),
+        ('TrackMetaData', 'out', 'CurrentTrackMetaData'),
+        ('TrackURI', 'out', 'CurrentTrackURI'),
+        ('RelTime', 'out', 'RelativeTimePosition'),
+        ('AbsTime', 'out', 'AbsoluteTimePosition'),
+        ('RelCount', 'out', 'RelativeCounterPosition'),
+        ('AbsCount', 'out', 'AbsoluteCounterPosition'),
+      ])}'
+  '${_action('GetMediaInfo', [
+        ('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'),
+        ('NrTracks', 'out', 'NumberOfTracks'),
+        ('MediaDuration', 'out', 'CurrentMediaDuration'),
+        ('CurrentURI', 'out', 'AVTransportURI'),
+        ('CurrentURIMetaData', 'out', 'AVTransportURIMetaData'),
+        ('NextURI', 'out', 'NextAVTransportURI'),
+        ('NextURIMetaData', 'out', 'NextAVTransportURIMetaData'),
+        ('PlayMedium', 'out', 'PlaybackStorageMedium'),
+        ('RecordMedium', 'out', 'RecordStorageMedium'),
+        ('WriteStatus', 'out', 'RecordMediumWriteStatus'),
+      ])}'
   '</actionList>'
   '<serviceStateTable>'
   '${_stateVar('TransportState', 'string')}'
@@ -148,10 +188,26 @@ final avtScpd = _scpd(
 
 final rcsScpd = _scpd(
   '<actionList>'
-  '${_action('GetVolume', [('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'), ('Channel', 'in', 'A_ARG_TYPE_Channel'), ('CurrentVolume', 'out', 'Volume')])}'
-  '${_action('SetVolume', [('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'), ('Channel', 'in', 'A_ARG_TYPE_Channel'), ('DesiredVolume', 'in', 'Volume')])}'
-  '${_action('GetMute', [('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'), ('Channel', 'in', 'A_ARG_TYPE_Channel'), ('CurrentMute', 'out', 'Mute')])}'
-  '${_action('SetMute', [('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'), ('Channel', 'in', 'A_ARG_TYPE_Channel'), ('DesiredMute', 'in', 'Mute')])}'
+  '${_action('GetVolume', [
+        ('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'),
+        ('Channel', 'in', 'A_ARG_TYPE_Channel'),
+        ('CurrentVolume', 'out', 'Volume'),
+      ])}'
+  '${_action('SetVolume', [
+        ('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'),
+        ('Channel', 'in', 'A_ARG_TYPE_Channel'),
+        ('DesiredVolume', 'in', 'Volume'),
+      ])}'
+  '${_action('GetMute', [
+        ('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'),
+        ('Channel', 'in', 'A_ARG_TYPE_Channel'),
+        ('CurrentMute', 'out', 'Mute'),
+      ])}'
+  '${_action('SetMute', [
+        ('InstanceID', 'in', 'A_ARG_TYPE_InstanceID'),
+        ('Channel', 'in', 'A_ARG_TYPE_Channel'),
+        ('DesiredMute', 'in', 'Mute'),
+      ])}'
   '</actionList>'
   '<serviceStateTable>'
   '<stateVariable sendEvents="no"><name>Volume</name><dataType>ui2</dataType>'
@@ -166,9 +222,23 @@ final rcsScpd = _scpd(
 
 final cmsScpd = _scpd(
   '<actionList>'
-  '${_action('GetProtocolInfo', [('Source', 'out', 'SourceProtocolInfo'), ('Sink', 'out', 'SinkProtocolInfo')])}'
-  '${_action('GetCurrentConnectionIDs', [('ConnectionIDs', 'out', 'CurrentConnectionIDs')])}'
-  '${_action('GetCurrentConnectionInfo', [('ConnectionID', 'in', 'A_ARG_TYPE_ConnectionID'), ('RcsID', 'out', 'A_ARG_TYPE_RcsID'), ('AVTransportID', 'out', 'A_ARG_TYPE_AVTransportID'), ('ProtocolInfo', 'out', 'A_ARG_TYPE_ProtocolInfo'), ('PeerConnectionManager', 'out', 'A_ARG_TYPE_ConnectionManager'), ('PeerConnectionID', 'out', 'A_ARG_TYPE_ConnectionID'), ('Direction', 'out', 'A_ARG_TYPE_Direction'), ('Status', 'out', 'A_ARG_TYPE_ConnectionStatus')])}'
+  '${_action('GetProtocolInfo', [
+        ('Source', 'out', 'SourceProtocolInfo'),
+        ('Sink', 'out', 'SinkProtocolInfo'),
+      ])}'
+  '${_action('GetCurrentConnectionIDs', [
+        ('ConnectionIDs', 'out', 'CurrentConnectionIDs'),
+      ])}'
+  '${_action('GetCurrentConnectionInfo', [
+        ('ConnectionID', 'in', 'A_ARG_TYPE_ConnectionID'),
+        ('RcsID', 'out', 'A_ARG_TYPE_RcsID'),
+        ('AVTransportID', 'out', 'A_ARG_TYPE_AVTransportID'),
+        ('ProtocolInfo', 'out', 'A_ARG_TYPE_ProtocolInfo'),
+        ('PeerConnectionManager', 'out', 'A_ARG_TYPE_ConnectionManager'),
+        ('PeerConnectionID', 'out', 'A_ARG_TYPE_ConnectionID'),
+        ('Direction', 'out', 'A_ARG_TYPE_Direction'),
+        ('Status', 'out', 'A_ARG_TYPE_ConnectionStatus'),
+      ])}'
   '</actionList>'
   '<serviceStateTable>'
   '${_stateVar('SourceProtocolInfo', 'string', events: true)}'
@@ -184,11 +254,7 @@ final cmsScpd = _scpd(
   '</serviceStateTable>',
 );
 
-String soapResponse(
-  String serviceType,
-  String action,
-  Map<String, String> args,
-) =>
+String soapResponse(String serviceType, String action, Map<String, String> args) =>
     '<?xml version="1.0" encoding="utf-8"?>'
     '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" '
     's:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>'
@@ -209,10 +275,10 @@ String soapFault(int code, String description) =>
 /// The LastChange payload GENA notifies carry: current state variables of
 /// one service instance, themselves XML, escaped into the property value.
 String lastChange(String serviceNs, Map<String, String> vars) => escapeXml(
-  '<Event xmlns="$serviceNs"><InstanceID val="0">'
-  '${vars.entries.map((e) => '<${e.key} val="${escapeXml(e.value)}"/>').join()}'
-  '</InstanceID></Event>',
-);
+      '<Event xmlns="$serviceNs"><InstanceID val="0">'
+      '${vars.entries.map((e) => '<${e.key} val="${escapeXml(e.value)}"/>').join()}'
+      '</InstanceID></Event>',
+    );
 
 String propertySet(Map<String, String> props) =>
     '<?xml version="1.0" encoding="utf-8"?>'

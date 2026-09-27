@@ -111,7 +111,8 @@ class UpdateManager extends Manager {
   static const updateRepository = 'davidcoulson/kiosk-satellite';
 
   /// Where the notice sends someone who wants to read about a release.
-  static const releasesPage = 'https://github.com/$updateRepository/releases';
+  static const releasesPage =
+      'https://github.com/$updateRepository/releases';
 
   /// The releases list rather than `/releases/latest`: one request either
   /// way, but the list also carries the bodies of releases the device

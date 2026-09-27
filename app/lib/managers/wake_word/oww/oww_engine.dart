@@ -18,7 +18,7 @@ import 'oww_model_store.dart';
 /// word finished (see WakeWordEngine.startAudioStream).
 class OwwEngine extends IsolateWakeEngine {
   OwwEngine(super.log, {OwwModelStore? store, super.mic, super.spawner})
-    : _store = store ?? OwwModelStore();
+      : _store = store ?? OwwModelStore();
 
   final OwwModelStore _store;
 
@@ -70,9 +70,7 @@ class OwwEngine extends IsolateWakeEngine {
         });
         hasStop = true;
         log.info(
-          tag,
-          'downloaded stop model "${stopRef.id}" (${bytes.length} bytes)',
-        );
+            tag, 'downloaded stop model "${stopRef.id}" (${bytes.length} bytes)');
       } catch (e) {
         log.error(tag, 'download stop model "${stopRef.id}" failed: $e');
       }

@@ -307,7 +307,7 @@ class ProximityManager extends Manager {
         _hold = null;
         if (!near) {
           log.debug(name, 'far');
-          return; // The entity clears on its own timer, not on this edge.
+          return;  // The entity clears on its own timer, not on this edge.
         }
         log.debug(name, 'near');
         _touchNear();

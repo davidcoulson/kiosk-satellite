@@ -42,13 +42,10 @@ class VswwModelStore {
         .get(Uri.parse(manifestUrl))
         .timeout(const Duration(seconds: 20));
     if (manifestResp.statusCode != 200) {
-      throw StateError(
-        'manifest HTTP ${manifestResp.statusCode}: $manifestUrl',
-      );
+      throw StateError('manifest HTTP ${manifestResp.statusCode}: $manifestUrl');
     }
     final manifest = VswwManifest.fromJson(
-      jsonDecode(manifestResp.body) as Map<String, dynamic>,
-    );
+        jsonDecode(manifestResp.body) as Map<String, dynamic>);
     if (!manifest.isCtc) {
       throw StateError('unsupported vsWakeWord format: ${manifest.format}');
     }
@@ -94,17 +91,13 @@ class VswwModelStore {
 
   Future<Uint8List> _fetchOnnxCached(String onnxUrl) async {
     final dir = await _cacheDir();
-    final key = sha256
-        .convert(utf8.encode(onnxUrl))
-        .toString()
-        .substring(0, 24);
+    final key = sha256.convert(utf8.encode(onnxUrl)).toString().substring(0, 24);
     final file = File('${dir.path}/$key.onnx');
     if (await file.exists() && await file.length() > 0) {
       return file.readAsBytes();
     }
-    final resp = await http
-        .get(Uri.parse(onnxUrl))
-        .timeout(const Duration(seconds: 60));
+    final resp =
+        await http.get(Uri.parse(onnxUrl)).timeout(const Duration(seconds: 60));
     if (resp.statusCode != 200) {
       throw StateError('onnx HTTP ${resp.statusCode}: $onnxUrl');
     }

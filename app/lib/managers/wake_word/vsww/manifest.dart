@@ -103,14 +103,15 @@ class VswwCtcConfig {
   final List<int> targetMaxEditDistance;
   final List<double> targetMinMatchedConfidence;
 
-  int maxEditFor(int targetIndex) => targetIndex < targetMaxEditDistance.length
-      ? targetMaxEditDistance[targetIndex]
-      : maxEditDistance;
+  int maxEditFor(int targetIndex) =>
+      targetIndex < targetMaxEditDistance.length
+          ? targetMaxEditDistance[targetIndex]
+          : maxEditDistance;
 
   double minConfidenceFor(int targetIndex) =>
       targetIndex < targetMinMatchedConfidence.length
-      ? targetMinMatchedConfidence[targetIndex]
-      : minMatchedConfidence;
+          ? targetMinMatchedConfidence[targetIndex]
+          : minMatchedConfidence;
 
   factory VswwCtcConfig.fromJson(Map<String, dynamic> j) {
     List<List<int>> targets = ((j['wake_word_targets'] as List?) ?? const [])
@@ -125,8 +126,7 @@ class VswwCtcConfig {
       maxEditDistance: (j['max_edit_distance'] as num?)?.toInt() ?? 1,
       trailTolerance: (j['wake_word_trail_tolerance'] as num?)?.toInt() ?? -1,
       minMatchedConfidence:
-          (j['min_matched_confidence'] as num?)?.toDouble() ??
-          double.negativeInfinity,
+          (j['min_matched_confidence'] as num?)?.toDouble() ?? double.negativeInfinity,
       targetMaxEditDistance:
           ((j['target_max_edit_distance'] as List?) ?? const [])
               .map((e) => (e as num).toInt())
@@ -138,9 +138,10 @@ class VswwCtcConfig {
       inventory: ((j['inventory'] as List?) ?? const [])
           .map((e) => '$e')
           .toList(),
-      targetPhonemes: ((j['wake_word_target_phonemes'] as List?) ?? const [])
-          .map((t) => (t as List).map((e) => '$e').toList())
-          .toList(),
+      targetPhonemes:
+          ((j['wake_word_target_phonemes'] as List?) ?? const [])
+              .map((t) => (t as List).map((e) => '$e').toList())
+              .toList(),
     );
   }
 }
@@ -209,8 +210,7 @@ class VswwManifest {
 
   factory VswwManifest.fromJson(Map<String, dynamic> j) {
     final feature = VswwFeatureConfig.fromJson(
-      (j['feature_config'] as Map).cast<String, dynamic>(),
-    );
+        (j['feature_config'] as Map).cast<String, dynamic>());
     return VswwManifest(
       name: j['name'] as String,
       format: j['format'] as String,
@@ -225,11 +225,9 @@ class VswwManifest {
       feature: feature,
       ctc: VswwCtcConfig.fromJson((j['ctc'] as Map).cast<String, dynamic>()),
       runtime: VswwRuntimeConfig.fromJson(
-        ((j['runtime'] as Map?) ?? const {}).cast<String, dynamic>(),
-      ),
+          ((j['runtime'] as Map?) ?? const {}).cast<String, dynamic>()),
       // window_ms drives the stream frame timing; default from window/sr.
-      windowMs:
-          ((j['feature_config'] as Map)['window_ms'] as num?)?.toDouble() ??
+      windowMs: ((j['feature_config'] as Map)['window_ms'] as num?)?.toDouble() ??
           (feature.windowSamples * 1000 / feature.sampleRate),
     );
   }

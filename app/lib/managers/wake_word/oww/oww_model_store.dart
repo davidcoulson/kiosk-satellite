@@ -70,9 +70,8 @@ class OwwModelStore {
     if (await file.exists() && await file.length() > 0) {
       bytes = await file.readAsBytes();
     } else {
-      final resp = await http
-          .get(Uri.parse(url))
-          .timeout(const Duration(seconds: 60));
+      final resp =
+          await http.get(Uri.parse(url)).timeout(const Duration(seconds: 60));
       if (resp.statusCode != 200) {
         throw StateError('onnx HTTP ${resp.statusCode}: $url');
       }

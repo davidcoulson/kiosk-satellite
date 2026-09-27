@@ -45,14 +45,8 @@ void owwIsolateEntry(SendPort mainPort) {
 }
 
 class _Kw {
-  _Kw(
-    this.id,
-    this.wakeWord,
-    this.session,
-    this.inputName,
-    this.gate, {
-    this.isStop = false,
-  });
+  _Kw(this.id, this.wakeWord, this.session, this.inputName, this.gate,
+      {this.isStop = false});
   final String id;
   final String wakeWord;
   final nearMiss = NearMissTracker();
@@ -122,31 +116,25 @@ class _OwwWorker {
       final emb = load(msg['embedding'] as Uint8List);
       _pipeline = OwwPipeline(melSession: mel, embeddingSession: emb);
       _runOptions = OrtRunOptions();
-      _clsInput = ReusableInputTensor.create([
-        1,
-        OwwPipeline.embeddingWindow,
-        OwwPipeline.embeddingDim,
-      ]);
+      _clsInput = ReusableInputTensor.create(
+          [1, OwwPipeline.embeddingWindow, OwwPipeline.embeddingDim]);
 
       for (final md in (msg['models'] as List)) {
         final session = load(md['onnx'] as Uint8List);
         final cutoff = (md['cutoff'] as num).toDouble();
         final isStop = md['stop'] == true;
-        _kws.add(
-          _Kw(
-            md['id'] as String,
-            md['wakeWord'] as String,
-            session,
-            session.inputNames.first,
-            OwwGate(cutoff: cutoff),
-            isStop: isStop,
-          ),
-        );
+        _kws.add(_Kw(
+          md['id'] as String,
+          md['wakeWord'] as String,
+          session,
+          session.inputNames.first,
+          OwwGate(cutoff: cutoff),
+          isStop: isStop,
+        ));
         _log(
-          'info',
-          'loaded "${md['id']}"${isStop ? ' (stop classifier)' : ''} '
-              '(cutoff ${cutoff.toStringAsFixed(3)})',
-        );
+            'info',
+            'loaded "${md['id']}"${isStop ? ' (stop classifier)' : ''} '
+            '(cutoff ${cutoff.toStringAsFixed(3)})');
       }
       if (_kws.isEmpty) {
         _main.send({'type': WakeMsg.error, 'message': 'no models loaded'});
@@ -272,18 +260,14 @@ class _OwwWorker {
       if (_tester) continue;
 
       if (k.isStop) {
-        _log(
-          'info',
-          'stop word detected (${trigger.name}, score ${probability.toStringAsFixed(3)})',
-        );
+        _log('info',
+            'stop word detected (${trigger.name}, score ${probability.toStringAsFixed(3)})');
         _main.send({'type': WakeMsg.detection, 'id': k.id, 'stop': true});
         return;
       }
 
-      _log(
-        'info',
-        'detected "${k.id}" (${trigger.name}, score ${probability.toStringAsFixed(3)})',
-      );
+      _log('info',
+          'detected "${k.id}" (${trigger.name}, score ${probability.toStringAsFixed(3)})');
       _detected = true;
       _main.send({
         'type': WakeMsg.detection,

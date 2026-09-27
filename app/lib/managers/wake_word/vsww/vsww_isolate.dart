@@ -155,16 +155,13 @@ class _IsolateWorker {
       }
       for (final md in (msg['models'] as List)) {
         final manifest = VswwManifest.fromJson(
-          jsonDecode(md['manifestJson'] as String) as Map<String, dynamic>,
-        );
+            jsonDecode(md['manifestJson'] as String) as Map<String, dynamic>);
         // One log-mel extractor feeds every model, so they must agree on the
         // feature shape. Rejecting a mismatch beats silently scoring a model
         // against features it was never trained on.
         if (_feature != null && !_sameFeature(_feature!, manifest.feature)) {
-          _log(
-            'warn',
-            'skipped "${md['id']}": feature config differs from the loaded models',
-          );
+          _log('warn',
+              'skipped "${md['id']}": feature config differs from the loaded models');
           continue;
         }
         final opts = OrtSessionOptions()
@@ -180,25 +177,22 @@ class _IsolateWorker {
         final scale = (md['confidenceScale'] as num?)?.toDouble() ?? 1.0;
         final decoder = CtcDecoder(manifest.ctc, confidenceScale: scale);
         final isStop = md['stop'] == true;
-        _kws.add(
-          _Kw(
-            md['id'] as String,
-            md['wakeWord'] as String,
-            manifest,
-            session,
-            session.inputNames.first,
-            decoder,
-            StreamMatcher(manifest, decoder),
-            DetectionGate(manifest.runtime, confidenceScale: scale),
-            isStop: isStop,
-          ),
-        );
+        _kws.add(_Kw(
+          md['id'] as String,
+          md['wakeWord'] as String,
+          manifest,
+          session,
+          session.inputNames.first,
+          decoder,
+          StreamMatcher(manifest, decoder),
+          DetectionGate(manifest.runtime, confidenceScale: scale),
+          isStop: isStop,
+        ));
         _feature ??= manifest.feature;
         _log(
-          'info',
-          'loaded "${md['id']}"${isStop ? ' (stop classifier)' : ''}'
-              '${scale == 1.0 ? '' : ', conf gate scale x${scale.toStringAsFixed(2)}'}',
-        );
+            'info',
+            'loaded "${md['id']}"${isStop ? ' (stop classifier)' : ''}'
+            '${scale == 1.0 ? '' : ', conf gate scale x${scale.toStringAsFixed(2)}'}');
       }
       if (_kws.isEmpty) {
         _main.send({'type': WakeMsg.error, 'message': 'no models loaded'});
@@ -210,11 +204,10 @@ class _IsolateWorker {
       _input = ReusableInputTensor.create([1, f.frames, f.nMels]);
       _runOptions = OrtRunOptions();
       _log(
-        'info',
-        _energyEnabled
-            ? 'energy gate on (wake rms $_wakeRms, sleep after $_sleepAfterChunks quiet chunks)'
-            : 'energy gate off',
-      );
+          'info',
+          _energyEnabled
+              ? 'energy gate on (wake rms $_wakeRms, sleep after $_sleepAfterChunks quiet chunks)'
+              : 'energy gate off');
       _main.send({'type': WakeMsg.ready});
     } catch (e) {
       _main.send({'type': WakeMsg.error, 'message': '$e'});
@@ -340,11 +333,11 @@ class _IsolateWorker {
     // whole 1.3 s window on every chunk. The ring is full, so its oldest
     // sample (the window's first) is at _head.
     double? windowRms;
-    double rms() => windowRms ??= math.sqrt(
-      extractor.sumSquares(ring, _head) / ring.length,
-    );
+    double rms() => windowRms ??=
+        math.sqrt(extractor.sumSquares(ring, _head) / ring.length);
 
-    final features = extractor.extractRing(ring, _head, newSamples: newSamples);
+    final features =
+        extractor.extractRing(ring, _head, newSamples: newSamples);
     _input!.write(features);
 
     for (final k in _kws) {
@@ -449,10 +442,8 @@ class _IsolateWorker {
       if (fired && _tester) continue;
       if (fired) {
         if (k.isStop) {
-          _log(
-            'info',
-            'stop word detected (conf ${combined.matchedConfidence.toStringAsFixed(2)}, ed ${combined.editDistance})',
-          );
+          _log('info',
+              'stop word detected (conf ${combined.matchedConfidence.toStringAsFixed(2)}, ed ${combined.editDistance})');
           // Report and keep listening. We do NOT disarm ourselves: the card
           // owns the stop state and disarms us as part of tearing the
           // interruptible state down. Deciding here would fork that state.
@@ -461,15 +452,9 @@ class _IsolateWorker {
           _main.send({'type': WakeMsg.detection, 'id': k.id, 'stop': true});
           return;
         }
-        final wakeEnd = _wakeEndSample(
-          k,
-          combined,
-          identical(combined, perWindow),
-        );
-        _log(
-          'info',
-          'detected "${k.id}" (conf ${combined.matchedConfidence.toStringAsFixed(2)}, ed ${combined.editDistance}, wake ended ${_absSamples - wakeEnd} samples back)',
-        );
+        final wakeEnd = _wakeEndSample(k, combined, identical(combined, perWindow));
+        _log('info',
+            'detected "${k.id}" (conf ${combined.matchedConfidence.toStringAsFixed(2)}, ed ${combined.editDistance}, wake ended ${_absSamples - wakeEnd} samples back)');
         _detected = true;
         final conf = combined.matchedConfidence;
         _main.send({

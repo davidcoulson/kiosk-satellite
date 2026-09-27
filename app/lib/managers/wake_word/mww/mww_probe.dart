@@ -20,10 +20,8 @@ Object _zeros(List<int> shape) {
 /// The browser runs them under TFLite WASM, which is the same runtime family,
 /// but that is an argument rather than evidence. This answers it on the actual
 /// hardware before any of the fixed-point frontend gets ported.
-Future<Map<String, Object?>> probeMww(
-  String url, {
-  bool compare = false,
-}) async {
+Future<Map<String, Object?>> probeMww(String url,
+    {bool compare = false}) async {
   final result = <String, Object?>{'url': url};
   try {
     final resp = await http.get(Uri.parse(url));
@@ -92,10 +90,8 @@ Map<String, Object?> compareDelegates(Uint8List model, {int steps = 80}) {
   final delegate = VariableOpsXnnpackDelegate.create();
   if (delegate == null) return {'ok': false, 'error': 'delegate unavailable'};
   final a = Interpreter.fromBuffer(model);
-  final b = Interpreter.fromBuffer(
-    model,
-    options: InterpreterOptions()..addDelegate(delegate),
-  );
+  final b = Interpreter.fromBuffer(model,
+      options: InterpreterOptions()..addDelegate(delegate));
   try {
     final inA = a.getInputTensor(0);
     final inB = b.getInputTensor(0);

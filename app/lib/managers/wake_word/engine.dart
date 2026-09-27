@@ -46,25 +46,24 @@ enum EngineFailure {
 /// Reported so the manager can tell Voice Satellite it is not covered, rather
 /// than leave the card trusting a runner that has gone deaf, and so the UIs can
 /// say something truer than "it isn't working". [detail] is for the log.
-typedef EngineFailureCallback =
-    void Function(EngineFailure kind, String detail);
+typedef EngineFailureCallback = void Function(EngineFailure kind, String detail);
 
 enum WakeWordEngineType { microWakeWord, openWakeWord, vsWakeWord }
 
 WakeWordEngineType? engineTypeFromWire(String? value) => switch (value) {
-  'microWakeWord' || 'mww' => WakeWordEngineType.microWakeWord,
-  'openWakeWord' || 'oww' => WakeWordEngineType.openWakeWord,
-  'vsWakeWord' || 'vww' => WakeWordEngineType.vsWakeWord,
-  _ => null,
-};
+      'microWakeWord' || 'mww' => WakeWordEngineType.microWakeWord,
+      'openWakeWord' || 'oww' => WakeWordEngineType.openWakeWord,
+      'vsWakeWord' || 'vww' => WakeWordEngineType.vsWakeWord,
+      _ => null,
+    };
 
 extension WakeWordEngineTypeLabel on WakeWordEngineType {
   /// Human-readable engine name for the settings UI.
   String get label => switch (this) {
-    WakeWordEngineType.microWakeWord => 'microWakeWord',
-    WakeWordEngineType.openWakeWord => 'openWakeWord',
-    WakeWordEngineType.vsWakeWord => 'vsWakeWord',
-  };
+        WakeWordEngineType.microWakeWord => 'microWakeWord',
+        WakeWordEngineType.openWakeWord => 'openWakeWord',
+        WakeWordEngineType.vsWakeWord => 'vsWakeWord',
+      };
 }
 
 /// A model as pushed by Voice Satellite: identity plus where to fetch the
@@ -106,12 +105,12 @@ class WakeWordModelRef {
   final double confidenceScale;
 
   Map<String, Object?> toJson() => {
-    'id': id,
-    'wakeWord': wakeWord,
-    'manifestUrl': manifestUrl,
-    'confidenceScale': confidenceScale,
-    if (cutoff != null) 'cutoff': cutoff,
-  };
+        'id': id,
+        'wakeWord': wakeWord,
+        'manifestUrl': manifestUrl,
+        'confidenceScale': confidenceScale,
+        if (cutoff != null) 'cutoff': cutoff,
+      };
 
   @override
   bool operator ==(Object other) =>
@@ -150,11 +149,8 @@ class EnergyGateConfig {
   final int sleepAfterChunks;
 
   /// A disabled gate: what an older card that sends none implies.
-  static const off = EnergyGateConfig(
-    enabled: false,
-    wakeRms: 0,
-    sleepAfterChunks: 0,
-  );
+  static const off =
+      EnergyGateConfig(enabled: false, wakeRms: 0, sleepAfterChunks: 0);
 
   static EnergyGateConfig fromJson(Object? raw) {
     if (raw is! Map) return off;
@@ -169,10 +165,10 @@ class EnergyGateConfig {
   }
 
   Map<String, Object?> toJson() => {
-    'enabled': enabled,
-    'wakeRms': wakeRms,
-    'sleepAfterChunks': sleepAfterChunks,
-  };
+        'enabled': enabled,
+        'wakeRms': wakeRms,
+        'sleepAfterChunks': sleepAfterChunks,
+      };
 
   @override
   bool operator ==(Object other) =>
@@ -281,6 +277,7 @@ abstract class WakeWordEngine {
   /// classifier loaded when we answer false.
   bool get supportsStopWord => false;
 
+
   Future<void> start({
     required WakeWordConfig config,
     required DetectionCallback onDetection,
@@ -381,8 +378,7 @@ abstract class WakeWordEngine {
   /// classifier engine gives up the audio between wake end and detection, the
   /// same audio the browser gives up, and nothing more.
   Future<void> startAudioStream(
-    void Function(Uint8List pcm, bool preRoll) onChunk,
-  ) async {}
+      void Function(Uint8List pcm, bool preRoll) onChunk) async {}
   Future<void> stopAudioStream() async {}
 }
 
