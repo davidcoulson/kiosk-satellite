@@ -110,3 +110,12 @@ test('every tab and tile the trim names exists in the shell', () => {
     assert.ok(html.includes(`data-cmd="${cmd}"`), `${cmd} exists in index.html`);
   }
 });
+
+test('an agent\'s overview has no Home Assistant, Voice Satellite or Media Player tile', () => {
+  // An agent sets none of them up, so each could only report an absence.
+  const overview = readFileSync(new URL('../remote-ui/static/overview.js', import.meta.url), 'utf8');
+  const list = /const AGENT_HIDES_TILES = new Set\(\[([^\]]*)\]\)/.exec(overview);
+  assert.ok(list, 'AGENT_HIDES_TILES not found');
+  const ids = [...list[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  assert.deepEqual(new Set(ids), new Set(['ha', 'voice', 'media']));
+});

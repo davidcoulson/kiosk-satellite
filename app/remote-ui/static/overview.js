@@ -60,7 +60,7 @@ const TILES = [
   ['service', 'Service', 'device/Kiosk Satellite Service'],
   ['update', 'App Version', 'about'],
 ];
-const AGENT_HIDES_TILES = new Set(['voice', 'media']);
+const AGENT_HIDES_TILES = new Set(['ha', 'voice', 'media']);
 function buildTiles() {
   const grid = $('#statusGrid');
   for (const [id, name, tab] of TILES) {

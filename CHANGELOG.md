@@ -19,6 +19,7 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ### Changed
 - **No battery also drops Charging.** The switch said the charge was left out of Home Assistant entirely, but the Charging sensor stayed, reading on. It now goes with the level, and turning the switch on or off re-lists the entities without an app restart.
+- **An agent's remote admin no longer shows a Home Assistant tile.** It read "Not set up" on every agent, which never sets Home Assistant up; the Voice Satellite and Media Player tiles were already left out for the same reason.
 - **IPv6 address and the two by-interface address sensors start disabled** in a newly added Home Assistant device. IPv4 address covers the usual need; existing devices keep them as they are.
 
 ## v2026.9.85 - 2026-09-26
