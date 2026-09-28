@@ -137,8 +137,13 @@ class WakeWordManager extends Manager
     }
   }
 
+  /// Voice interactions from the dashboard's Voice Satellite or the native
+  /// one: either can bring the kiosk forward and send it back after.
   void _onBackgroundInteraction(VoiceInteractionChanged event) {
-    if (event.source != InteractionSource.page) return;
+    if (event.source != InteractionSource.page &&
+        event.source != InteractionSource.native) {
+      return;
+    }
     if (event.active) {
       _pageInteractions.add(event.reason);
       _backgroundReturnTimer?.cancel();
@@ -824,39 +829,11 @@ class WakeWordManager extends Manager
             if (config == null) {
               return const CommandResult.fail('invalid wake word config');
             }
-            // A genuinely new config (different wake word, stop word toggled on)
-            // has to reach the engine, and it only reads the config at start.
-            // Re-pushing the same config on every page load must NOT restart it,
-            // though: that would re-download every model on each navigation.
-            // A push after a failure must retry, even when the config is
-            // identical: whatever broke (mic permission, a model 404) may well be
-            // fixed by now, and this is the only retry there is.
-            final changed = _config != config || _released || _failed;
-            _released = false; // a fresh push takes the mic back
-            _releaseReason = null;
-            _failed = false; // and re-earns the right to claim availability
-            _config = config;
             // The card announces whether it knows the delegated pipeline
             // transport; absent means a build that predates it. Recorded per
             // push (one per page load), so a downgrade reads honest.
             _pagePipelineSupport = p['nativePipeline'] == true;
-            if (changed && _engine.running) {
-              log.info(name, 'config changed; restarting engine');
-              await _engine.stop();
-            }
-            log.info(
-              name,
-              'configured by page: ${config.engine.name} '
-              '[${config.models.map((m) => m.id).join(', ')}]'
-              '${config.stopModel == null ? '' : ' + stop:${config.stopModel!.id}'}'
-              '${available ? '' : ' (no native runner, reporting unavailable)'}',
-            );
-            await _sync();
-            // A page that has just (re)configured us owns no interruptible state
-            // yet, so it cannot want the stop word armed. Without this, a reload
-            // would inherit the previous page's arming: it never disarms on the
-            // way out, and an unchanged config does not restart the engine.
-            await _engine.setStopWordActive(false);
+            await configure(config, source: 'page');
             return CommandResult.ok({
               'available': available,
               'stopWordAvailable': stopWordAvailable,
@@ -877,20 +854,7 @@ class WakeWordManager extends Manager
             'reason': "optional: 'muted' | 'browser', shown to the user",
           },
           handler: (p) async {
-            if (_released) return const CommandResult.ok();
-            _released = true;
-            _releaseReason = p['reason'] as String?;
-            _resumeTimer?.cancel();
-            _active = true; // a later re-push starts listening, not suspended
-            await _engine.stop();
-            log.info(name, 'released by page (mic closed)');
-            bus.publish(
-              WakeWordStateChanged(
-                active: _active,
-                listening: listening,
-                muted: _muted,
-              ),
-            );
+            await release(p['reason'] as String?, source: 'page');
             return const CommandResult.ok();
           },
         ),
@@ -1325,12 +1289,17 @@ class WakeWordManager extends Manager
               }).toList();
               double maxRaw = 0, maxScore = 0;
               var fired = 0;
+              // Each model's best score in the window: several classifiers
+              // listen at once, and one firing says nothing of the others.
+              final byModel = <String, double>{};
               for (final m in inWin) {
                 final raw = (m['raw'] as num?)?.toDouble() ?? 0;
                 final sc = (m['score'] as num?)?.toDouble() ?? 0;
                 if (raw > maxRaw) maxRaw = raw;
                 if (sc > maxScore) maxScore = sc;
                 if (m['fired'] == true) fired++;
+                final id = '${m['id']}';
+                if (sc > (byModel[id] ?? -1)) byModel[id] = sc;
               }
               perClip.add({
                 'clipStartMs': w['startMs'],
@@ -1338,6 +1307,7 @@ class WakeWordManager extends Manager
                 'maxRaw': maxRaw,
                 'maxScore': maxScore,
                 'fired': fired,
+                'models': byModel,
               });
             }
             return CommandResult.ok({
@@ -1347,7 +1317,8 @@ class WakeWordManager extends Manager
               'telemetrySamples': samples.length,
               'firedAtMs': [
                 for (final m in samples)
-                  if (m['fired'] == true) (m['t'] as num).toInt() - startMs,
+                  if (m['fired'] == true && (m['t'] as num).toInt() >= startMs)
+                    (m['t'] as num).toInt() - startMs,
               ],
               'clips': perClip,
             });
@@ -1380,10 +1351,72 @@ class WakeWordManager extends Manager
   /// Whether an intercom call holds detection (see _sync).
   bool _intercomHold = false;
 
+  /// Run [config]: what Voice Satellite pushes from the page, or what the
+  /// native satellite builds from its own settings ([source] says which, for
+  /// the log). A genuinely new config (a different wake word, the stop word
+  /// switched on) restarts the engine, which only reads it at start; the
+  /// same config again does not, since that would reload every model. A push
+  /// after a failure retries even when identical: whatever broke (a mic
+  /// permission, a missing model) may be fixed by now.
+  Future<void> configure(
+    WakeWordConfig config, {
+    String source = 'page',
+  }) async {
+    final changed = _config != config || _released || _failed;
+    _released = false; // a fresh config takes the mic back
+    _releaseReason = null;
+    _failed = false; // and re-earns the right to claim availability
+    _config = config;
+    if (changed && _engine.running) {
+      log.info(name, 'config changed; restarting engine');
+      await _engine.stop();
+    }
+    log.info(
+      name,
+      'configured by $source: ${config.engine.name} '
+      '[${config.models.map((m) => m.id).join(', ')}]'
+      '${config.stopModel == null ? '' : ' + stop:${config.stopModel!.id}'}'
+      '${available ? '' : ' (no native runner, reporting unavailable)'}',
+    );
+    await _sync();
+    // A fresh config owns no interruptible state yet, so it cannot want the
+    // stop word armed. Without this, a page reload would inherit the previous
+    // page's arming: it never disarms on the way out, and an unchanged config
+    // does not restart the engine.
+    await _engine.setStopWordActive(false);
+  }
+
+  /// Stop detection and close the microphone until the next [configure]:
+  /// the satellite muted ('muted'), detection taken elsewhere ('browser'),
+  /// or the native satellite standing down.
+  Future<void> release(String? reason, {String source = 'page'}) async {
+    if (_released) return;
+    _released = true;
+    _releaseReason = reason;
+    _resumeTimer?.cancel();
+    _active = true; // a later config starts listening, not suspended
+    await _engine.stop();
+    log.info(name, 'released by $source (mic closed)');
+    bus.publish(
+      WakeWordStateChanged(
+        active: _active,
+        listening: listening,
+        muted: _muted,
+      ),
+    );
+  }
+
+  /// Arm or disarm the stop word classifier; false when none is loaded.
+  Future<bool> setStopWordArmed(bool armed) async {
+    if (!stopWordAvailable) return false;
+    await _engine.setStopWordActive(armed);
+    return true;
+  }
+
   /// Page-driven resume/suspend (setWakeWordActive).
   void setActive(bool active) {
     _active = active;
-    log.info(name, active ? 'resumed by page' : 'suspended by page');
+    log.info(name, active ? 'resumed' : 'suspended');
     if (active) _resumeTimer?.cancel();
     _sync();
   }
@@ -1460,7 +1493,25 @@ class WakeWordManager extends Manager
   /// wake word detection is enabled. Suspending during a voice turn only
   /// pauses detection: tearing the engine down per wake would re-download and
   /// recompile every model, and would drop the mic the page is streaming from.
-  Future<void> _sync() async {
+  /// One sync at a time. The engine only counts as running once its isolate
+  /// is ready, so two syncs in a row (the native satellite reconfigures on
+  /// every setting a migration writes) both saw it stopped and both started
+  /// it: the second start took over the first one's fields, and the first,
+  /// never hearing ready, timed out 20 seconds later and marked the engine
+  /// failed under a turn that had just worked.
+  Future<void> _syncChain = Future.value();
+
+  Future<void> _sync() {
+    _syncChain = _syncChain.then((_) => _syncNow()).catchError((Object e) {
+      log.warn(name, 'engine sync failed: $e');
+    });
+    return _syncChain;
+  }
+
+  /// The config the running engine was started with.
+  WakeWordConfig? _startedConfig;
+
+  Future<void> _syncNow() async {
     // Lockdown Mode mutes the microphone too: a locked tablet should not
     // answer voice any more than touch. The engine stops (mic closed) and
     // comes back through this same sync when the mode lifts, exactly as if
@@ -1481,7 +1532,14 @@ class WakeWordManager extends Manager
       previous.recordAudio = false;
       _runningEngine = null;
     }
+    // A config that changed while a start was still loading: the engine came
+    // up with the one before.
+    if (shouldRun && _engine.running && _startedConfig != _config) {
+      log.info(name, 'config changed; restarting engine');
+      await _engine.stop();
+    }
     if (shouldRun && !_engine.running) {
+      _startedConfig = _config;
       await _engine.start(
         config: _config!,
         onDetection: _onDetection,
@@ -1658,9 +1716,16 @@ class WakeWordManager extends Manager
   /// has no floor) made that happen on every wake. The check lands within one
   /// period of the stream closing, so a page lost after its turn is still
   /// caught, and [_turnCeilingSeconds] bounds the wait for one lost mid-turn.
+  ///
+  /// The native satellite ends its own turns and hands the wake word back
+  /// when it goes idle, past its own watchdogs, and a spoken answer can run
+  /// long after the microphone closed. It keeps only the ceiling as a
+  /// backstop, never the page's timeout.
   void _armResumeTimer({int deferred = 0}) {
     _resumeTimer?.cancel();
-    final timeout = _settings.get(defs.wakeWordResumeTimeoutSeconds).toInt();
+    final timeout = _settings.get(defs.voiceRuntime) == 'native'
+        ? _turnCeilingSeconds
+        : _settings.get(defs.wakeWordResumeTimeoutSeconds).toInt();
     if (timeout <= 0) return;
     _resumeTimer = Timer(Duration(seconds: timeout), () async {
       if (_active) return;

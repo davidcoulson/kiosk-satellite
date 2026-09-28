@@ -350,6 +350,24 @@ class SettingsManager extends Manager {
       await setInternal(_unversionedTokens, '1');
       log.info(name, 'remote admin password is no longer kept as typed');
     }
+    // Native Voice Satellite: a kiosk that already runs Voice Satellite in
+    // the dashboard (a satellite assigned) keeps doing so until its owner
+    // migrates; every other install starts native. Written once, the first
+    // time this version starts, so a later assignment never flips it.
+    if (_prefs.get(_prefix + voiceRuntime.key) == null) {
+      final assigned =
+          (_prefs.get(_prefix + haSatelliteEntity.key) as String? ?? '')
+              .trim()
+              .isNotEmpty;
+      await _prefs.setString(
+        _prefix + voiceRuntime.key,
+        assigned ? 'dashboard' : 'native',
+      );
+      log.info(
+        name,
+        'Voice Satellite runtime set to ${assigned ? 'dashboard' : 'native'}',
+      );
+    }
     // The preview's automatic language choice is now explicit English.
     if (_prefs.get(_prefix + uiLanguage.key) == 'system') {
       await _prefs.setString(_prefix + uiLanguage.key, 'en');
@@ -423,9 +441,11 @@ class SettingsManager extends Manager {
       await _prefs.remove('${_prefix}sendspin.ma_player_name');
     }
     // The pick is filtered by a source now: a pick stored before the
-    // source existed names its own.
+    // source existed names its own. The Local Media Session is this
+    // device's own pick and belongs under the empty source.
     final picked = _prefs.getString('${_prefix}sendspin.player') ?? '';
     if (picked.trim().isNotEmpty &&
+        !picked.startsWith('session:') &&
         (_prefs.getString('${_prefix}sendspin.player_source') ?? '').isEmpty) {
       final source = picked.startsWith('ha:')
           ? 'ha'

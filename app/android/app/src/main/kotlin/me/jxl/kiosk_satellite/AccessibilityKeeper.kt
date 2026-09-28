@@ -161,7 +161,15 @@ object AccessibilityKeeper {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val resolver = context.contentResolver
         val me = MediaSessions.listener(context)
-        val current = Settings.Secure.getString(resolver, LISTENERS)
+        var current = Settings.Secure.getString(resolver, LISTENERS)
+        // Builds before 2026.9.87 granted a listener of their own; the app
+        // now has one, shared with the Media Session player, and the old
+        // name would sit in the list pointing at nothing.
+        val legacy = ComponentName(context.packageName, "${context.packageName}.KioskNotificationListener")
+        withoutService(current, legacy)?.let {
+            Settings.Secure.putString(resolver, LISTENERS, it)
+            current = it
+        }
         if (prefs.getBoolean(NOW_PLAYING_KEY, false)) {
             val merged = withService(current, me) ?: return
             Settings.Secure.putString(resolver, LISTENERS, merged)

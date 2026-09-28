@@ -1,5 +1,5 @@
 import { confirmRemoteProtocol } from './tls.js';
-import { esphomeText, launcherText, messageLanguage } from './localization.js';
+import { esphomeText, launcherText, messageLanguage, voiceText } from './localization.js';
 import { intercomError, mediaText, cameraText, cameraError, deviceText, haText, screensaverText, screensaverError, t } from './localization.js';
 import { watchUpdates } from './live.js';
 import {
@@ -22,6 +22,7 @@ import {
   openMediaBrowser,
 } from './pickers.js';
 import { loadSettings, refreshRealMacNote, updatePersonSensorRows, updateRtspRows } from './settings.js';
+import { dashboardViewEntries, pickDashboardView } from './views.js';
 import {
   attachSlider,
   dateBox,
@@ -368,6 +369,45 @@ export function settingRow(s) {
       }
     };
     load();
+    return row;
+  }
+  // The Home Assistant Dashboard screensaver's view is picked from the
+  // instance's dashboards, the same modal the Go to a dashboard view
+  // gesture uses, mirroring the device's row.
+  if (s.key === 'screensaver.dashboard_view') {
+    // The live value: save() writes the confirmed pick into the cache.
+    const current = () => (state.settings || []).find((o) => o.key === s.key)?.value ?? s.value ?? '';
+    const val = document.createElement('span');
+    val.className = 'device';
+    val.style.cssText =
+      'flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap';
+    const paint = () => { val.textContent = current() || screensaverText('Not set'); };
+    paint();
+    const btn = document.createElement('button');
+    btn.className = 'btn-ghost'; btn.textContent = screensaverText('Select dashboard');
+    btn.style.flex = 'none';
+    btn.addEventListener('click', async () => {
+      const entries = await dashboardViewEntries();
+      if (!entries.length) {
+        await messageBox({
+          title: screensaverText('Could not list dashboards'),
+          message: screensaverText('Is Home Assistant connected?'),
+        });
+        return;
+      }
+      const picked = await pickDashboardView(screensaverText('Select dashboard'),
+        entries, current());
+      if (!picked) return;
+      await save(picked);
+      paint();
+    });
+    bindUpdate(val, paint);
+    // One wrapper so the value + button occupy a single grid cell on mobile.
+    const controls = document.createElement('div');
+    controls.style.cssText =
+      'display:flex; gap:10px; align-items:center; min-width:0; max-width:60%; flex:0 1 auto';
+    controls.append(val, btn);
+    row.appendChild(controls);
     return row;
   }
   // The screensaver's media is browsed from Home Assistant, not typed, the
@@ -1484,6 +1524,8 @@ export function settingRow(s) {
         if (h === 0) return t('haMinutes', {minutes: String(m)});
         return m === 0 ? t('haHours', {hours: String(h)}) : t('haHoursMinutes', {hours: String(h), minutes: String(m)});
       }
+      // The overlay's backdrop: the far left keeps the skin's own.
+      if (s.key === 'voice.background_opacity' && Number(v) < 0) return voiceText('Skin default');
       return s.unit === '%'
         ? `${Math.round(s.max <= 1 ? v * 100 : v)}%`
         : `${v}${s.unit || ''}`;
@@ -1562,7 +1604,7 @@ export function settingRow(s) {
       sel.disabled = true;
     }
     if (s.key === 'screensaver.mode' && !state.haConfigured)
-      opts = opts.filter((o) => o !== 'media' && o !== 'weather_mood');
+      opts = opts.filter((o) => o !== 'media' && o !== 'weather_mood' && o !== 'dashboard');
     opts.forEach((o) => {
       const opt = document.createElement('option');
       opt.value = o;

@@ -253,6 +253,30 @@ class EspEntitySurface {
           'mdi:phone-in-talk-outline',
           defs.intercomEnabled,
         ),
+        // Native Voice Satellite. Every one starts with vs_, the name too,
+        // since Home Assistant builds the entity id from the name. Listed
+        // only on the native runtime with Voice Satellite on.
+        'vs_mute': ('VS Mute', 'mdi:microphone-off', defs.voiceMute),
+        'vs_wake_sound': (
+          'VS Chimes',
+          'mdi:bell-ring-outline',
+          defs.voiceWakeSound,
+        ),
+        'vs_stop_word': (
+          'VS Stop word',
+          'mdi:hand-back-left-outline',
+          defs.voiceStopWord,
+        ),
+        'vs_noise_gate': (
+          'VS Noise gate',
+          'mdi:volume-off',
+          defs.voiceNoiseGate,
+        ),
+        'vs_mute_timers': (
+          'VS Mute timers',
+          'mdi:timer-off-outline',
+          defs.voiceMuteTimers,
+        ),
       };
 
   /// Settings-backed selects: objectId -> (name, icon, definition). The
@@ -287,6 +311,16 @@ class EspEntitySurface {
           'Intercom answer mode',
           'mdi:phone-ring-outline',
           defs.intercomAnswerMode,
+        ),
+        'vs_wake_word_engine': (
+          'VS Wake word engine',
+          'mdi:account-voice',
+          defs.voiceWakeWordEngine,
+        ),
+        'vs_wake_word_sensitivity': (
+          'VS Wake word sensitivity',
+          'mdi:ear-hearing',
+          defs.voiceWakeWordSensitivity,
         ),
       };
 
@@ -353,6 +387,30 @@ class EspEntitySurface {
       'Media volume',
       'mdi:music-note',
       defs.mediaVolume,
+    ),
+    'vs_answer_linger': (
+      name: 'VS Answer linger',
+      icon: 'mdi:timer-outline',
+      def: defs.voiceAnswerLinger,
+      fraction: false,
+      min: 0,
+      max: 15,
+      step: 1,
+      unit: 's',
+      deviceClass: 'duration',
+      mode: 2,
+    ),
+    'vs_announcement_linger': (
+      name: 'VS Announcement linger',
+      icon: 'mdi:timer-outline',
+      def: defs.voiceAnnouncementLinger,
+      fraction: false,
+      min: 1,
+      max: 60,
+      step: 1,
+      unit: 's',
+      deviceClass: 'duration',
+      mode: 2,
     ),
   };
 
@@ -472,7 +530,9 @@ class EspEntitySurface {
     // a kiosk with none has no engine to start (issue #288). Reading the
     // page instead would make the catalog depend on what was on screen the
     // moment the server started.
-    _voiceSatellite = _settings.get(defs.haSatelliteEntity).trim().isNotEmpty;
+    _voiceSatellite =
+        _settings.get(defs.haSatelliteEntity).trim().isNotEmpty &&
+        _settings.get(defs.voiceRuntime) == 'dashboard';
     // The Restart device button exists only where a restart can land
     // (issue #528): device owner, or a granted Shizuku connection. Asked at
     // build like the hardware probes; the manager restarts the server when
@@ -882,19 +942,20 @@ class EspEntitySurface {
       },
       // ── Config ───────────────────────────────────────────────────────
       for (final e in _settingNumbers.entries)
-        {
-          'type': 'number',
-          'objectId': e.key,
-          'name': e.value.name,
-          'icon': e.value.icon,
-          if (e.value.deviceClass != null) 'deviceClass': e.value.deviceClass,
-          'min': e.value.min,
-          'max': e.value.max,
-          'step': e.value.step,
-          'unit': e.value.unit,
-          'mode': e.value.mode,
-          'category': 1,
-        },
+        if (!e.key.startsWith('vs_') || _voiceNative)
+          {
+            'type': 'number',
+            'objectId': e.key,
+            'name': e.value.name,
+            'icon': e.value.icon,
+            if (e.value.deviceClass != null) 'deviceClass': e.value.deviceClass,
+            'min': e.value.min,
+            'max': e.value.max,
+            'step': e.value.step,
+            'unit': e.value.unit,
+            'mode': e.value.mode,
+            'category': 1,
+          },
       {
         'type': 'text',
         'objectId': 'clock_background',
@@ -911,7 +972,8 @@ class EspEntitySurface {
             (proximityPresent || e.key != 'screensaver_proximity') &&
             (lightSensorPresent || e.key != 'adaptive_brightness') &&
             // An agent never starts the intercom: its switch would do nothing.
-            (!agent || e.key != 'intercom_enabled'))
+            (!agent || e.key != 'intercom_enabled') &&
+            (!e.key.startsWith('vs_') || _voiceNative))
           {
             'type': 'switch',
             'objectId': e.key,
@@ -954,7 +1016,8 @@ class EspEntitySurface {
       ],
       for (final e in _settingSelects.entries)
         if ((e.key != 'camera_device' || (cameraPresent && bothFacings)) &&
-            (e.key != 'intercom_answer_mode' || intercomOn))
+            (e.key != 'intercom_answer_mode' || intercomOn) &&
+            (!e.key.startsWith('vs_') || _voiceNative))
           {
             'type': 'select',
             'objectId': e.key,
@@ -1416,7 +1479,59 @@ class EspEntitySurface {
   /// Argument names and order are permanent API, like entity object ids:
   /// values arrive positionally on the wire and land in users'
   /// automations by name.
-  List<Map<String, Object?>> buildServices() => const [
+  /// Whether the kiosk serves native Voice Satellite: its vs_ entities
+  /// and actions exist only then.
+  bool get _voiceNative =>
+      _settings.get(defs.voiceRuntime) == 'native' &&
+      _settings.get(defs.voiceEnabled) &&
+      // An agent runs no voice, whatever the settings say.
+      !_settings.get(defs.agentMode);
+
+  List<Map<String, Object?>> buildServices() => [
+    ..._services,
+    if (_voiceNative) ..._voiceServices,
+  ];
+
+  /// Native Voice Satellite's actions: `esphome.<kiosk>_vs_wake` and friends.
+  static const _voiceServices = <Map<String, Object?>>[
+    // Start listening as if the wake word in that slot fired: slot 2 runs
+    // Assistant 2. 0 counts as slot 1 (an action cannot leave it out).
+    {
+      'name': 'vs_wake',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'slot', 'type': 'int'},
+      ],
+    },
+    // Sends a prompt to the assistant and shows the answer and results on
+    // this kiosk. Actions cannot leave a field out, so speaking is opt in
+    // (false is the silent show), pipeline 0 counts as 1 and duration 0
+    // keeps the answer up until it is dismissed.
+    {
+      'name': 'vs_show',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'prompt', 'type': 'string'},
+        {'name': 'speak', 'type': 'bool'},
+        {'name': 'pipeline', 'type': 'int'},
+        {'name': 'duration', 'type': 'int'},
+      ],
+    },
+    // Starts a voice timer on this kiosk through Home Assistant's timer
+    // intent, so it lives in Home Assistant like a spoken one.
+    {
+      'name': 'vs_start_timer',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'name', 'type': 'string'},
+        {'name': 'hours', 'type': 'int'},
+        {'name': 'minutes', 'type': 'int'},
+        {'name': 'seconds', 'type': 'int'},
+      ],
+    },
+  ];
+
+  static const _services = <Map<String, Object?>>[
     // Theater mode with its levels for this activation. An action cannot
     // leave an argument out, so -1 means "the setting" for both levels.
     {
@@ -1600,6 +1715,31 @@ class EspEntitySurface {
         });
         if (!r.ok) log.warn('esphome', 'navigate refused: ${r.error}');
         return null;
+      case 'vs_wake':
+        final slot = (args['slot'] as num?)?.toInt() ?? 1;
+        final result = await commands.execute('voiceWake', {
+          'slot': slot < 1 ? 1 : slot,
+        });
+        if (!result.ok) throw StateError(result.error ?? 'not started');
+        return const {};
+      case 'vs_show':
+        final result = await commands.execute('voiceShow', {
+          'prompt': args['prompt'] ?? '',
+          'speak': args['speak'] == true,
+          'pipeline': args['pipeline'] ?? 1,
+          'duration': args['duration'] ?? 0,
+        });
+        if (!result.ok) throw StateError(result.error ?? 'not shown');
+        return const {};
+      case 'vs_start_timer':
+        final result = await commands.execute('voiceStartTimer', {
+          'name': args['name'] ?? '',
+          'hours': args['hours'] ?? 0,
+          'minutes': args['minutes'] ?? 0,
+          'seconds': args['seconds'] ?? 0,
+        });
+        if (!result.ok) throw StateError(result.error ?? 'timer not started');
+        return const {};
       case 'set_brightness':
       case 'set_screensaver_brightness':
         final brightness = args['brightness'];

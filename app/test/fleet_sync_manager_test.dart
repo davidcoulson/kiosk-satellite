@@ -889,7 +889,7 @@ void main() {
             'categories': [],
             'credentials': ['ha.token', 'bogus'],
           })!.describe(),
-          'Categories: 0 of 17. Credentials: 1 of 4. Excluded: 32.',
+          'Categories: 0 of 17. Credentials: 1 of 4. Excluded: 34.',
         );
         expect(
           withCreds['browser.start_url'],
@@ -1748,6 +1748,113 @@ void main() {
       );
     });
 
+    test('followers mirror the leader\'s custom wake word models', () async {
+      await build(
+        prefs: {
+          'ks.fleet.leader': true,
+          'ks.fleet.followers': jsonEncode([
+            {
+              'id': 'bed',
+              'name': 'Bedroom',
+              'address': '192.168.1.71',
+              'port': 2324,
+              'token': 't',
+            },
+          ]),
+        },
+      );
+      // The first tick runs on its own before the stubs below exist: a
+      // leader that cannot read its models must not touch the followers'.
+      await settle();
+      expect(
+        sent.where((q) => q.url.path == '/api/fleet/wake-models'),
+        isEmpty,
+      );
+      sent.clear();
+      final dir = await Directory.systemTemp.createTemp('ks_wake_models');
+      addTearDown(() => dir.delete(recursive: true));
+      final onnx = await File('${dir.path}/my_word.onnx').writeAsBytes([1, 2]);
+      final json = await File('${dir.path}/luna.json').writeAsString('{}');
+      final mine = {
+        'openwakeword/my_word.onnx': 'aaa',
+        'microwakeword/luna.json': 'bbb',
+      };
+      commands
+        ..register(
+          Command(
+            name: 'customWakeModelsManifest',
+            description: 'stub',
+            handler: (_) async => CommandResult.ok({'files': mine}),
+          ),
+        )
+        ..register(
+          Command(
+            name: 'customWakeModelPath',
+            description: 'stub',
+            handler: (p) async => CommandResult.ok({
+              'path': p['path'] == 'openwakeword/my_word.onnx'
+                  ? onnx.path
+                  : json.path,
+            }),
+          ),
+        );
+      answers['GET /api/fleet/status'] = (_) => {
+        'id': 'bed',
+        'version': '2026.9.19',
+        'leaderId': 'me',
+      };
+      answers['POST /api/fleet/apply'] = (_) => {
+        'ok': true,
+        'data': {'applied': 0},
+      };
+      // The follower has an old copy of one file and one the leader dropped.
+      answers['GET /api/fleet/wake-models'] = (_) => {
+        'ok': true,
+        'data': {
+          'files': {
+            'openwakeword/my_word.onnx': 'old',
+            'vswakeword/gone.onnx': 'ccc',
+          },
+        },
+      };
+      answers['PUT /api/fleet/wake-models'] = (_) => {'ok': true};
+      answers['DELETE /api/fleet/wake-models'] = (_) => {'ok': true};
+      await commands.execute('fleetSyncNow', const {});
+      await settle();
+      final puts = sent.where((q) => q.method == 'PUT').toList();
+      expect(
+        [for (final q in puts) q.url.queryParameters['path']],
+        unorderedEquals([
+          'openwakeword/my_word.onnx',
+          'microwakeword/luna.json',
+        ]),
+      );
+      expect(
+        puts
+            .firstWhere(
+              (q) =>
+                  q.url.queryParameters['path'] == 'openwakeword/my_word.onnx',
+            )
+            .bodyBytes,
+        [1, 2],
+      );
+      expect(
+        [
+          for (final q in sent)
+            if (q.method == 'DELETE') q.url.queryParameters['path'],
+        ],
+        ['vswakeword/gone.onnx'],
+      );
+      // In step: the next sync compares nothing until the leader's change.
+      sent.clear();
+      await commands.execute('fleetSyncNow', const {});
+      await settle();
+      expect(
+        sent.where((q) => q.url.path == '/api/fleet/wake-models'),
+        isEmpty,
+      );
+    });
+
     test('with nothing uploaded the fleet install says so', () async {
       await build(prefs: {'ks.fleet.leader': true});
       final r = await commands.execute('fleetInstallUploaded', const {});
@@ -1855,11 +1962,11 @@ void main() {
       expect(former.containsAll(previous), isTrue);
       previous = former;
     }
-    // The intercom answer mode joined last: the newest former list is the
-    // current one without it.
+    // Voice Satellite's mute and speaker joined last: the newest former
+    // list is the current one without them.
     expect(
       defs.fleetFormerDefaultExcluded.last,
-      defs.fleetDefaultExcluded.difference({'intercom.answer_mode'}),
+      defs.fleetDefaultExcluded.difference({'voice.mute', 'voice.tts_output'}),
     );
   });
 

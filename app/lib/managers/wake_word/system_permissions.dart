@@ -32,6 +32,7 @@ class SystemPermissions {
     required this.writeSettings,
     required this.allFiles,
     required this.usageAccess,
+    this.notificationAccess = false,
     this.overlayRequestable = true,
     this.batteryRequestable = true,
   });
@@ -99,6 +100,11 @@ class SystemPermissions {
   /// when Kiosk Satellite itself is frontmost, just never who else is.
   final bool usageAccess;
 
+  /// "Notification access": reading other apps' media sessions, for the
+  /// Media Session player source. The grant names a listener service that
+  /// reads no notifications; Android simply lists sessions to no one else.
+  final bool notificationAccess;
+
   /// Whether the device has a settings screen for the overlay grant and
   /// the battery exemption at all. Some ROMs ship without one (a LineageOS
   /// build on an Echo Show was reported with no "Display over other apps"
@@ -109,6 +115,9 @@ class SystemPermissions {
 
   static const _brightnessChannel = MethodChannel('kiosk_satellite/brightness');
   static const _backgroundChannel = MethodChannel('kiosk_satellite/background');
+  static const _mediaSessionsChannel = MethodChannel(
+    'kiosk_satellite/media_sessions',
+  );
 
   static Future<bool> _hasAllFilesAccess() async {
     try {
@@ -122,6 +131,15 @@ class SystemPermissions {
   static Future<bool> _hasUsageAccess() async {
     try {
       return await _backgroundChannel.invokeMethod<bool>('hasUsageAccess') ??
+          false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> _hasNotificationAccess() async {
+    try {
+      return await _mediaSessionsChannel.invokeMethod<bool>('hasAccess') ??
           false;
     } catch (_) {
       return false;
@@ -259,6 +277,7 @@ class SystemPermissions {
     final writeSettings = _canWriteSettings();
     final allFiles = _hasAllFilesAccess();
     final usageAccess = _hasUsageAccess();
+    final notificationAccess = _hasNotificationAccess();
     final overlayRequestable = BackgroundListening.canRequestBringToFront();
     final batteryRequestable =
         BackgroundListening.canRequestBatteryUnrestricted();
@@ -279,6 +298,7 @@ class SystemPermissions {
       writeSettings,
       allFiles,
       usageAccess,
+      notificationAccess,
       overlayRequestable,
       batteryRequestable,
     ]);
@@ -299,6 +319,7 @@ class SystemPermissions {
       writeSettings: await writeSettings,
       allFiles: await allFiles,
       usageAccess: await usageAccess,
+      notificationAccess: await notificationAccess,
       overlayRequestable: await overlayRequestable,
       batteryRequestable: await batteryRequestable,
     );
@@ -341,6 +362,7 @@ class SystemPermissions {
     'writeSettings': writeSettings,
     'allFiles': allFiles,
     'usageAccess': usageAccess,
+    'notificationAccess': notificationAccess,
     'overlayRequestable': overlayRequestable,
     'batteryRequestable': batteryRequestable,
   };

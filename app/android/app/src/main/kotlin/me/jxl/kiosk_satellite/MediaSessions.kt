@@ -9,26 +9,9 @@ import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import android.service.notification.NotificationListenerService
 import android.util.Log
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
-
-/**
- * Exists only so Android lets Kiosk Satellite see other apps' media
- * sessions: MediaSessionManager.getActiveSessions answers an app whose
- * notification listener is enabled, and nobody else. It reads no
- * notifications - every callback is left at the platform's no-op - and it
- * is enabled by the owner (Settings, Notification access) or, with
- * WRITE_SECURE_SETTINGS granted, by [AccessibilityKeeper] while
- * agent.now_playing is on.
- */
-class KioskNotificationListener : NotificationListenerService() {
-    override fun onListenerConnected() {
-        super.onListenerConnected()
-        MediaSessions.refresh(applicationContext)
-    }
-}
 
 /**
  * What is playing on the device, whatever app plays it: Plezy, Kodi,
@@ -48,7 +31,12 @@ object MediaSessions {
     private var current: MediaController? = null
     private var lastSent: Map<String, Any?>? = null
 
-    fun listener(context: Context) = ComponentName(context, KioskNotificationListener::class.java)
+    /** The one Notification access grant the app asks for, shared with the
+     *  Media Session player source: [MediaSessionListener]. It is enabled by
+     *  the owner (Settings, Notification access) or, with
+     *  WRITE_SECURE_SETTINGS granted, by [AccessibilityKeeper] while
+     *  device.now_playing is on. */
+    fun listener(context: Context) = ComponentName(context, MediaSessionListener::class.java)
 
     /** Whether the owner (or the keeper) has enabled the listener. */
     fun hasAccess(context: Context): Boolean {

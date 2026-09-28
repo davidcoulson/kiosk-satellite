@@ -1900,6 +1900,9 @@ void main() {
 
   group('the Voice Satellite switches (issue #288)', () {
     setUp(() async {
+      // The integration's engine in the dashboard: the kiosk runs no
+      // satellite of its own.
+      await settings.set(defs.voiceRuntime, 'dashboard');
       await settings.set(
         defs.haSatelliteEntity,
         'assist_satellite.office_tablet',
@@ -2381,6 +2384,20 @@ void main() {
           'next_alarm',
           'media_volume',
         ]),
+      );
+    });
+
+    test('an agent lists no Voice Satellite entities or actions', () async {
+      await settings.set(defs.voiceRuntime, 'native');
+      await settings.set(defs.voiceEnabled, true);
+      final native = (await surface.build()).map((e) => '${e['objectId']}');
+      expect(native.where((id) => id.startsWith('vs_')), isNotEmpty);
+      await settings.set(defs.agentMode, true);
+      final ids = (await surface.build()).map((e) => '${e['objectId']}');
+      expect(ids.where((id) => id.startsWith('vs_')), isEmpty);
+      expect(
+        surface.buildServices().map((s) => '${s['name']}'),
+        isNot(contains(startsWith('vs_'))),
       );
     });
 
