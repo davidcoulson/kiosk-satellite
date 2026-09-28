@@ -71,6 +71,7 @@ class KioskApplication : Application(), CameraXConfig.Provider {
     private lateinit var fleet: FleetBridge
     private lateinit var intercomAudio: IntercomAudio
     private lateinit var mediaSessions: MediaSessionBridge
+    private lateinit var voiceIntents: VoiceIntentBridge
 
     override fun onCreate() {
         super.onCreate()
@@ -139,6 +140,7 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         apkInstaller = ApkInstaller(applicationContext, messenger)
         lightSensor = LightSensor(applicationContext, messenger)
         proximitySensor = ProximitySensor(applicationContext, messenger)
+        LogTail(messenger)
         locationSensor = LocationSensor(applicationContext, messenger)
         haptics = HapticsBridge(applicationContext, messenger)
         tapSound = TapSoundBridge(applicationContext, messenger)
@@ -147,6 +149,7 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         fleet = FleetBridge(applicationContext, messenger)
         intercomAudio = IntercomAudio(applicationContext, messenger)
         mediaSessions = MediaSessionBridge(applicationContext, messenger)
+        voiceIntents = VoiceIntentBridge(applicationContext, messenger)
         plugins = me.jxl.kiosk_satellite.plugins.PluginBridge(applicationContext, messenger)
         // Engine-scoped, not Activity-scoped: remote keys must work on an
         // agent, which never opens an Activity, and from boot.

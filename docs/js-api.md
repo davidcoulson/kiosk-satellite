@@ -145,7 +145,7 @@ The API dispatches `CustomEvent`s directly on the `window` object:
 | `kiosksatellite:motion` | `{}` | Camera motion was detected (rate-limited to 1 per second). |
 | `kiosksatellite:face` | `{}` | Someone is looking directly at the kiosk. Triggers when a camera facing face reaches the configured Face sensitivity threshold while Dismiss on face is actively watching (rate-limited to 1 per second). |
 | `kiosksatellite:proximity` | `{held}` | An object came close to the proximity sensor while Dismiss on proximity had it watching. Repeats every 5 seconds while the object remains close. `held` is `true` on repeat events and `false` on the initial approach. |
-| `kiosksatellite:person` | `{held}` | Someone is visible to the device's own person sensor (currently supported on Meta Portals) while Dismiss on person is active. Repeats every 2 seconds while they remain in view. `held` is `true` on repeat events and `false` upon arrival. |
+| `kiosksatellite:person` | `{held}` | Someone is visible to the device's own person sensor (currently supported on Meta Portals) while Enable person sensor or Dismiss on person is on. Repeats every 2 seconds while they remain in view. `held` is `true` on repeat events and `false` upon arrival. |
 | `kiosksatellite:screenon` / `:screenoff` | `{}` | The screen power state changed. |
 | `kiosksatellite:screensaverstart` / `:screensaverstop` | `{}` | The screensaver state changed. |
 | `kiosksatellite:theatermode` | `{active, phase, source}` | [Theater mode](theater.md) changed phase, and once more after every page load while it is on. |

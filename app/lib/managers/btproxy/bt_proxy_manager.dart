@@ -324,9 +324,9 @@ class BtProxyManager extends Manager {
       // setup-time choice, made knowing it re-registers the device
       // (issue #363).
       'location.enabled',
-      // The Person sensor exists only while Dismiss on person is on, the
-      // same way (discussion #353).
-      'screensaver.dismiss_on_person',
+      // The Person sensor exists only while the Person Sensor switch is
+      // on, the same way (issue #734).
+      'person.sensor',
       // The intercom entities exist only while the intercom is on.
       'intercom.enabled',
       // The Remote key event and the media entities exist only while
@@ -371,6 +371,14 @@ class BtProxyManager extends Manager {
       }
     });
     _settingsSub = bus.on<SettingChanged>().listen((e) {
+      // Real MAC turned off: forget the adopted address, so turning it
+      // back on reads the hardware again (issue #736). Falls through to
+      // the restart below, which runs after the debounce and so after
+      // the adoption is gone.
+      if (e.key == defs.esphomeRealMac.key &&
+          !_settings.get(defs.esphomeRealMac)) {
+        unawaited(forgetAdoptedWifiMac(_settings));
+      }
       // The switch turned on where scanning cannot work (the settings
       // page never offers it, but the remote API and a settings import
       // can): back off, and the write lands here again as false.

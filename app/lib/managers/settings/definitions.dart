@@ -242,6 +242,8 @@ const Map<String, String> subpageHints = {
   'At a Glance': 'Entities shown over the screensaver',
   'RTSP & ONVIF Streaming': 'Share the device camera via RTSP or ONVIF',
   'Motion Sensor': 'Home Assistant motion sensor and shared detection settings',
+  'Person Sensor':
+      "Home Assistant occupancy sensor from the device's person sensor",
   'Motion Detection': 'Dismiss or postpone the screensaver on motion',
   'Face Detection': 'Dismiss the screensaver when someone looks at it',
   'Proximity Detection':
@@ -4595,6 +4597,26 @@ const motionSensitivity = SettingDef<num>(
   step: 1,
 );
 
+// Camera: Person Sensor
+// The device's own person sensor (today the Meta Portal's, see Person
+// Detection under Screensaver) exposed as a Home Assistant occupancy
+// sensor on its own, with no screensaver behavior attached (issue #734).
+// It needs no camera session of the app's, so it does not gate on the
+// Camera switch. Hidden where the device has no such sensor
+// (deviceHiddenKeys, filled at boot by the person sensor manager).
+const personSensorEnabled = SettingDef<bool>(
+  key: 'person.sensor',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Enable person sensor',
+  description:
+      "Expose the device's person sensor to Home Assistant as an occupancy "
+      'sensor. Needs the Log access grant below.',
+  category: 'Camera',
+  section: 'Person Sensor',
+  subpage: 'Person Sensor',
+);
+
 const cameraRtspEnabled = SettingDef<bool>(
   key: 'camera.rtsp.enabled',
   type: SettingType.boolean,
@@ -7606,7 +7628,8 @@ const esphomeNodeName = SettingDef<String>(
 /// keys the ESPHome device entry on: existing installs have a device built
 /// on the generated address, and adopting the real one creates a new entry.
 /// The first successful read is stored (see adoptedWifiMac), so the identity
-/// holds even if the address later becomes unreadable.
+/// holds even if the address later becomes unreadable. Turning it off drops
+/// the stored address, and turning it back on reads the hardware again.
 const esphomeRealMac = SettingDef<bool>(
   key: 'esphome.real_mac',
   type: SettingType.boolean,
@@ -9832,6 +9855,8 @@ const List<SettingDef<Object>> allSettings = [
   motionFps,
   motionSensitivity,
   motionStartDelay,
+  // The Person Sensor page (Meta Portal only) sits under Motion Sensor.
+  personSensorEnabled,
   cameraRtspEnabled,
   cameraStreamingProtocol,
   cameraRtspPort,

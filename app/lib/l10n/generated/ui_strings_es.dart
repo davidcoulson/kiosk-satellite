@@ -3806,6 +3806,20 @@ class UiStringsEs extends UiStrings {
   String get cameraAppSettings => 'Configuración de la aplicación';
 
   @override
+  String get settingPersonSensorTitle => 'Activar sensor de personas';
+
+  @override
+  String get settingPersonSensorDescription =>
+      'Publica el sensor de personas del dispositivo en Home Assistant como un sensor de presencia. Requiere el permiso de acceso a los registros que aparece abajo.';
+
+  @override
+  String get cameraPersonPage => 'Sensor de personas';
+
+  @override
+  String get cameraPersonHint =>
+      'Sensor de presencia de Home Assistant a partir del sensor de personas del dispositivo';
+
+  @override
   String get cameraLatest => 'Última captura';
 
   @override
@@ -11538,6 +11552,13 @@ class UiStringsEs extends UiStrings {
   @override
   String get voiceHaEsphomeOff =>
       'Activa el servidor ESPHome para que Home Assistant pueda añadir este kiosko como satélite.';
+
+  @override
+  String get voiceWordReloadNeeded => 'Recarga necesaria';
+
+  @override
+  String get voiceHaSelectsReloadHint =>
+      'Home Assistant no ha cargado los selectores de Asistente y Palabra de activación. Recarga la entrada ESPHome de este kiosko en Ajustes, Dispositivos y servicios. Reiniciar Home Assistant también funciona.';
 
   @override
   String get voiceTurnOn => 'Activar';

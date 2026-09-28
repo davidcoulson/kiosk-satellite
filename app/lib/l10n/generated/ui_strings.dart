@@ -6567,6 +6567,30 @@ abstract class UiStrings {
   /// **'App settings'**
   String get cameraAppSettings;
 
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable person sensor'**
+  String get settingPersonSensorTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Expose the device\'s person sensor to Home Assistant as an occupancy sensor. Needs the Log access grant below.'**
+  String get settingPersonSensorDescription;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Person Sensor'**
+  String get cameraPersonPage;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant occupancy sensor from the device\'s person sensor'**
+  String get cameraPersonHint;
+
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
@@ -19665,6 +19689,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Turn on the ESPHome server so Home Assistant can add this kiosk as a satellite.'**
   String get voiceHaEsphomeOff;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload needed'**
+  String get voiceWordReloadNeeded;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant has not loaded the Assistant and Wake word selects. Reload this kiosk\'s ESPHome entry under Settings, Devices & services. Restarting Home Assistant also works.'**
+  String get voiceHaSelectsReloadHint;
 
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///

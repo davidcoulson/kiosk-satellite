@@ -3746,6 +3746,20 @@ class UiStringsEn extends UiStrings {
   String get cameraAppSettings => 'App settings';
 
   @override
+  String get settingPersonSensorTitle => 'Enable person sensor';
+
+  @override
+  String get settingPersonSensorDescription =>
+      'Expose the device\'s person sensor to Home Assistant as an occupancy sensor. Needs the Log access grant below.';
+
+  @override
+  String get cameraPersonPage => 'Person Sensor';
+
+  @override
+  String get cameraPersonHint =>
+      'Home Assistant occupancy sensor from the device\'s person sensor';
+
+  @override
   String get cameraLatest => 'Latest snapshot';
 
   @override
@@ -11304,6 +11318,13 @@ class UiStringsEn extends UiStrings {
   @override
   String get voiceHaEsphomeOff =>
       'Turn on the ESPHome server so Home Assistant can add this kiosk as a satellite.';
+
+  @override
+  String get voiceWordReloadNeeded => 'Reload needed';
+
+  @override
+  String get voiceHaSelectsReloadHint =>
+      'Home Assistant has not loaded the Assistant and Wake word selects. Reload this kiosk\'s ESPHome entry under Settings, Devices & services. Restarting Home Assistant also works.';
 
   @override
   String get voiceTurnOn => 'Turn on';

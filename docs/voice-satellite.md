@@ -132,7 +132,7 @@ With **Expose kiosk entities** on under **Settings > ESPHome**, the kiosk adds i
 | VS Answer linger | number | Keep the answer on screen |
 | VS Announcement linger | number | Announcement time |
 
-And three actions, named after the kiosk's [node name](esphome.md#node-name):
+And four actions, named after the kiosk's [node name](esphome.md#node-name):
 
 ```yaml
 # Listen as if the wake word fired. Slot 2 runs Assistant 2.
@@ -140,6 +140,13 @@ action: esphome.kitchen_tablet_vs_wake
 data:
   slot: 1
 ```
+
+```yaml
+# End the turn on screen, as a double tap does.
+action: esphome.kitchen_tablet_vs_cancel
+```
+
+`vs_cancel` stops listening or speaking, takes down a lingering answer and silences a ringing timer.
 
 ```yaml
 # Ask the assistant and show the answer and results on the kiosk.
@@ -165,6 +172,20 @@ data:
 
 The entities and actions appear only while Voice Satellite runs natively and is on.
 
+## Android broadcasts
+
+Apps on the device can start and end a turn with a broadcast, without going through Home Assistant. This suits a remote's button mapper, Tasker, Automate or ADB:
+
+```sh
+# Listen as if the wake word fired. Slot 2 runs Assistant 2.
+adb shell am broadcast -a me.jxl.kiosk_satellite.action.VOICE_WAKE --ei slot 1
+
+# End the turn on screen, as a double tap does.
+adb shell am broadcast -a me.jxl.kiosk_satellite.action.VOICE_CANCEL
+```
+
+`slot` is optional and defaults to 1. The broadcasts work while Kiosk Satellite is running, even with another app in front, and do nothing while Voice Satellite is off.
+
 ## Fleets
 
 A fleet leader passes its Voice Satellite settings to followers whose profile syncs **Voice Satellite**, along with its custom wake word models and its Assistant, Wake word and Finished speaking detection picks. Each follower sets those picks on its own device in Home Assistant. Mute and Play sounds on stay per kiosk by default. See [Fleet Management](fleet.md).
@@ -176,5 +197,6 @@ A fleet leader passes its Voice Satellite settings to followers whose profile sy
 | Status says Not added | Turn on ESPHome, then add the kiosk under **Settings > Devices & services** in Home Assistant. |
 | The wake word never triggers | Check the level on the [Wake Word Tester](microphone.md) and the permissions group. Try another sensitivity. |
 | No tool lines or result panels | The Home Assistant token is a regular user's. Use an administrator's. |
+| Assistant and Wake word say Reload needed | Home Assistant added the satellite but not its selects, and the kiosk's token is not an administrator's, so it cannot reload the ESPHome entry itself. Reload the kiosk's entry under **Settings > Devices & services > ESPHome** or restart Home Assistant. |
 | Chimes silent on a media player | The speaker cannot reach the kiosk on port 2329. |
 | The overlay shows a notice | It names what failed: the microphone, the wake word, the connection, text to speech or the pipeline. Each turn's steps are in the app log. |

@@ -3837,6 +3837,20 @@ class UiStringsDe extends UiStrings {
   String get cameraAppSettings => 'App-Einstellungen';
 
   @override
+  String get settingPersonSensorTitle => 'Personensensor aktivieren';
+
+  @override
+  String get settingPersonSensorDescription =>
+      'Stellt den Personensensor des Geräts in Home Assistant als Anwesenheitssensor bereit. Erfordert die unten aufgeführte Berechtigung „Zugriff auf Protokolle“.';
+
+  @override
+  String get cameraPersonPage => 'Personensensor';
+
+  @override
+  String get cameraPersonHint =>
+      'Home-Assistant-Anwesenheitssensor auf Basis des Personensensors des Geräts';
+
+  @override
   String get cameraLatest => 'Letzte Aufnahme';
 
   @override
@@ -11579,6 +11593,13 @@ class UiStringsDe extends UiStrings {
   @override
   String get voiceHaEsphomeOff =>
       'Schalte den ESPHome-Server ein, damit Home Assistant diesen Kiosk als Satellit hinzufügen kann.';
+
+  @override
+  String get voiceWordReloadNeeded => 'Neu laden nötig';
+
+  @override
+  String get voiceHaSelectsReloadHint =>
+      'Home Assistant hat die Auswahlen für Assistent und Aktivierungswort nicht geladen. Lade den ESPHome-Eintrag dieses Kiosks unter Einstellungen, Geräte & Dienste neu. Ein Neustart von Home Assistant hilft ebenfalls.';
 
   @override
   String get voiceTurnOn => 'Einschalten';

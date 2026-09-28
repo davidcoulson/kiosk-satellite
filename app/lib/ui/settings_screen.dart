@@ -512,6 +512,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         intercomTextFor: (text) => intercomText(context, text),
         mediaTextFor: (text) => mediaText(context, text),
         cameraStreamsTextFor: (text) => cameraStreamsText(context, text),
+        cameraTextFor: (text) => cameraText(context, text),
         titleFor: (def) => def.localizedTitle(context),
         descriptionFor: (def) => def.localizedDescription(context),
       );
@@ -1583,7 +1584,8 @@ class SubpageSettingsScreen extends StatelessWidget {
                         category == 'Device' ||
                         category == 'Home Assistant' ||
                         category == 'Screen & Audio' ||
-                        category == 'Screensaver')
+                        category == 'Screensaver' ||
+                        category == 'Camera')
                     ? _subpageDisplayTitle(
                         context,
                         container,
@@ -1730,6 +1732,11 @@ class _CategoryContentState extends State<_CategoryContent> {
     }
     if (widget.category == 'Camera') {
       unawaited(widget.container.deviceCamera.refreshStreamResolutions());
+      // The Person Sensor page is hidden where the device has no person
+      // sensor of its own (issue #734).
+      widget.container.personSensor.sensorSupport().then((_) {
+        if (mounted) setState(() {});
+      });
     }
     // The face rows read the vision runtime's answer the same way
     // (issue #331: Android 7 cannot load it).
@@ -3187,6 +3194,9 @@ class _CategoryContentState extends State<_CategoryContent> {
       screensaverDismissOnPerson.key: _PersonSensorStatusRow(
         container: container,
       ),
+    // The same reading under the Person Sensor switch (issue #734).
+    if (widget.category == 'Camera' && !container.personSensor.knownUnsupported)
+      personSensorEnabled.key: _PersonSensorStatusRow(container: container),
     // The sensor's reading, live, under the switch: the curve's two light
     // levels are typed against it, and what a sensor calls a lit room is
     // anyone's guess until it is on screen. Mirrored on the remote
@@ -3506,6 +3516,26 @@ class _CategoryContentState extends State<_CategoryContent> {
           for (final def in _defsFor(widget.category))
             if (def.subpage == subpage) def,
         ]),
+      ];
+    }
+
+    if (widget.category == 'Camera' && subpage == 'Person Sensor') {
+      // The device's own person sensor as a Home Assistant occupancy
+      // sensor (issue #734): the switch with the live Occupancy row, then
+      // the Log access grant, as on the Person Detection page. Mirrored on
+      // the remote (settings.js, updatePersonSensorRows).
+      return [
+        ...sectioned([
+          for (final def in _defsFor(widget.category))
+            if (def.subpage == subpage) def,
+        ]),
+        SectionHeading(cameraText(context, 'Required system permissions')),
+        SearchLandingTarget(
+          id: 'x:person_sensor_log_access',
+          child: SettingsCard(
+            children: [_PersonSensorLogAccessTile(container: container)],
+          ),
+        ),
       ];
     }
 

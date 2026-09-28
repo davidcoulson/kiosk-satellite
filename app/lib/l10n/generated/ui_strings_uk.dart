@@ -3778,6 +3778,20 @@ class UiStringsUk extends UiStrings {
   String get cameraAppSettings => 'Налаштування застосунку';
 
   @override
+  String get settingPersonSensorTitle => 'Увімкнути датчик людей';
+
+  @override
+  String get settingPersonSensorDescription =>
+      'Надавати датчик присутності пристрою в Home Assistant як датчик зайнятості. Потрібен дозвіл на доступ до журналів нижче.';
+
+  @override
+  String get cameraPersonPage => 'Датчик людей';
+
+  @override
+  String get cameraPersonHint =>
+      'Датчик зайнятості Home Assistant на основі датчика присутності пристрою';
+
+  @override
   String get cameraLatest => 'Останній знімок';
 
   @override
@@ -11425,6 +11439,13 @@ class UiStringsUk extends UiStrings {
   @override
   String get voiceHaEsphomeOff =>
       'Увімкніть сервер ESPHome, щоб Home Assistant міг додати цей кіоск як сателіт.';
+
+  @override
+  String get voiceWordReloadNeeded => 'Потрібне перезавантаження';
+
+  @override
+  String get voiceHaSelectsReloadHint =>
+      'Home Assistant не завантажив вибори Асистент і Слово активації. Перезавантажте запис ESPHome цього кіоску в розділі Налаштування, Пристрої та служби. Перезапуск Home Assistant теж допоможе.';
 
   @override
   String get voiceTurnOn => 'Увімкнути';

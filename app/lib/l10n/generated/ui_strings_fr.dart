@@ -3806,6 +3806,20 @@ class UiStringsFr extends UiStrings {
   String get cameraAppSettings => 'Paramètres de l\'application';
 
   @override
+  String get settingPersonSensorTitle => 'Activer le capteur de personnes';
+
+  @override
+  String get settingPersonSensorDescription =>
+      'Exposer le capteur de présence de l\'appareil à Home Assistant comme capteur d\'occupation. Nécessite l\'autorisation d\'accès aux journaux ci-dessous.';
+
+  @override
+  String get cameraPersonPage => 'Capteur de personnes';
+
+  @override
+  String get cameraPersonHint =>
+      'Capteur d\'occupation Home Assistant basé sur le capteur de présence de l\'appareil';
+
+  @override
   String get cameraLatest => 'Dernier instantané';
 
   @override
@@ -11532,6 +11546,13 @@ class UiStringsFr extends UiStrings {
   @override
   String get voiceHaEsphomeOff =>
       'Activez le serveur ESPHome pour que Home Assistant puisse ajouter ce kiosque comme satellite.';
+
+  @override
+  String get voiceWordReloadNeeded => 'Rechargement requis';
+
+  @override
+  String get voiceHaSelectsReloadHint =>
+      'Home Assistant n\'a pas chargé les sélecteurs Assistant et Mot de réveil. Rechargez l\'entrée ESPHome de ce kiosque dans Paramètres, Appareils et services. Redémarrer Home Assistant fonctionne aussi.';
 
   @override
   String get voiceTurnOn => 'Activer';

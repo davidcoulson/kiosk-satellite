@@ -465,11 +465,11 @@ class EspEntitySurface {
         loc.ok &&
         loc.data is Map &&
         (loc.data as Map)['supported'] != false;
-    // The Person sensor exists only while Dismiss on person is on, on a
-    // device whose probe has said it has a person sensor of its own
-    // (discussion #353); the switch re-registers the device, a
+    // The Person sensor exists only while the Person Sensor switch is on,
+    // on a device whose probe has said it has a person sensor of its own
+    // (discussion #353, issue #734); the switch re-registers the device, a
     // setup-time choice like Report location.
-    final person = _settings.get(defs.screensaverDismissOnPerson)
+    final person = _settings.get(defs.personSensorEnabled)
         ? await commands.execute('getPersonSensorSupport', const {})
         : null;
     final personPresent =
@@ -1503,6 +1503,9 @@ class EspEntitySurface {
         {'name': 'slot', 'type': 'int'},
       ],
     },
+    // Ends the turn on screen as a double tap does: listening, thinking or
+    // speaking, a lingering answer or a ringing timer.
+    {'name': 'vs_cancel', 'supportsResponse': true, 'args': []},
     // Sends a prompt to the assistant and shows the answer and results on
     // this kiosk. Actions cannot leave a field out, so speaking is opt in
     // (false is the silent show), pipeline 0 counts as 1 and duration 0
@@ -1721,6 +1724,10 @@ class EspEntitySurface {
           'slot': slot < 1 ? 1 : slot,
         });
         if (!result.ok) throw StateError(result.error ?? 'not started');
+        return const {};
+      case 'vs_cancel':
+        final result = await commands.execute('voiceCancel', const {});
+        if (!result.ok) throw StateError(result.error ?? 'not cancelled');
         return const {};
       case 'vs_show':
         final result = await commands.execute('voiceShow', {
@@ -2762,7 +2769,7 @@ class EspEntitySurface {
 
   /// The person sensor's state onto the Person binary sensor.
   Future<void> _sendPerson(bool present) async {
-    if (!_settings.get(defs.screensaverDismissOnPerson)) return;
+    if (!_settings.get(defs.personSensorEnabled)) return;
     await _send('person', present);
   }
 
@@ -2771,7 +2778,7 @@ class EspEntitySurface {
   /// is being read and nobody is there, unknown while it cannot be read
   /// (the grant missing, say).
   Future<void> _sendPersonState() async {
-    if (!_settings.get(defs.screensaverDismissOnPerson)) return;
+    if (!_settings.get(defs.personSensorEnabled)) return;
     final result = await commands.execute('getPersonSensor', const {});
     if (!result.ok || result.data is! Map) return;
     final status = result.data as Map;
