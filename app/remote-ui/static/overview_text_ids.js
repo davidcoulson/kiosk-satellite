@@ -114,5 +114,6 @@ export const overviewTextMessageIds = {
   "Theater mode, black": "overviewTheaterBlack",
   "CPU": "overviewCpu",
   "RAM": "overviewMemory",
-  "Temp": "overviewTemperature"
+  "Temp": "overviewTemperature",
+  "Add to Home Assistant": "overviewEsphomeAdd"
 };

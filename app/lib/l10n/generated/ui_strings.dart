@@ -5652,6 +5652,18 @@ abstract class UiStrings {
   /// Translate the interface text. Keep external names, versions and technical details unchanged.
   ///
   /// In en, this message translates to:
+  /// **'Add to Home Assistant'**
+  String get overviewEsphomeAdd;
+
+  /// Translate the interface text. Keep external names, versions and technical details unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant has not connected to this kiosk. In Home Assistant, open Settings > Devices & services > Add integration > ESPHome, enter host {host} and port {port}, then paste this encryption key.'**
+  String overviewEsphomeAddHelp(String host, String port);
+
+  /// Translate the interface text. Keep external names, versions and technical details unchanged.
+  ///
+  /// In en, this message translates to:
   /// **'Quick controls'**
   String get overviewQuick;
 

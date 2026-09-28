@@ -11843,6 +11843,36 @@
       }
     }
   },
+  "overviewEsphomeAdd": "Add to Home Assistant",
+  "@overviewEsphomeAdd": {
+    "context": "Remote admin > Overview > Needs attention",
+    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Needs attention"
+      ]
+    }
+  },
+  "overviewEsphomeAddHelp": "Home Assistant has not connected to this kiosk. In Home Assistant, open Settings > Devices & services > Add integration > ESPHome, enter host {host} and port {port}, then paste this encryption key.",
+  "@overviewEsphomeAddHelp": {
+    "context": "Remote admin > Overview > Needs attention",
+    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Needs attention"
+      ]
+    },
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "port": {
+        "type": "String"
+      }
+    }
+  },
   "overviewQuick": "Controles rápidos",
   "@overviewQuick": {
     "context": "Remote admin > Overview > Quick controls",

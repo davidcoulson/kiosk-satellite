@@ -9,7 +9,7 @@ import { loadScreenshot, quick, renderQuickControls } from './panels.js';
 import { permissionSpecs } from './permissions.js';
 import { loadPlugins } from './plugins.js';
 import { showTab } from './tabs.js';
-import { attachSlider, showToast } from './widgets.js';
+import { attachSlider, copyBox, showToast } from './widgets.js';
 import { openVsMigrationWizard } from './vs_native.js';
 
 /* ---- Overview ----
@@ -312,12 +312,19 @@ function renderAttention(items) {
     info.innerHTML = '<div class="name"></div><div class="desc"></div>';
     info.querySelector('.name').textContent = it.name;
     info.querySelector('.desc').textContent = it.desc;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn-ghost';
-    btn.style.flexShrink = '0';
-    it.action(btn);
-    row.append(info, btn);
+    // An item that hands the person a value (the ESPHome key) carries
+    // its own control instead of a button.
+    let control;
+    if (it.control) {
+      control = it.control();
+    } else {
+      control = document.createElement('button');
+      control.type = 'button';
+      control.className = 'btn-ghost';
+      it.action(control);
+    }
+    control.style.flexShrink = '0';
+    row.append(info, control);
     card.appendChild(row);
   }
 }
@@ -537,6 +544,21 @@ function paintHealth({ filter = true } = {}) {
           refreshHealth();
         };
       },
+    });
+  }
+  // ESPHome is serving but Home Assistant has not connected: what its
+  // Add integration dialog asks for, where the person setting this kiosk
+  // up already is, instead of three pages away on the ESPHome page.
+  const espConnected = esp && (esp.clients || (esp.connections || []).length || esp.subscribers);
+  if (esp?.running && !espConnected) {
+    items.push({
+      key: 'esphome-add',
+      name: overviewText('Add to Home Assistant'),
+      desc: t('overviewEsphomeAddHelp', {
+        host: location.hostname,
+        port: String(settingVal('btproxy.port') || 6053),
+      }),
+      control: () => copyBox(`${settingVal('btproxy.key') || ''}`).el,
     });
   }
   if (upd?.availableVersion) {

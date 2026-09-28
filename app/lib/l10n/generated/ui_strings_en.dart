@@ -3208,6 +3208,14 @@ class UiStringsEn extends UiStrings {
   }
 
   @override
+  String get overviewEsphomeAdd => 'Add to Home Assistant';
+
+  @override
+  String overviewEsphomeAddHelp(String host, String port) {
+    return 'Home Assistant has not connected to this kiosk. In Home Assistant, open Settings > Devices & services > Add integration > ESPHome, enter host $host and port $port, then paste this encryption key.';
+  }
+
+  @override
   String get overviewQuick => 'Quick controls';
 
   @override

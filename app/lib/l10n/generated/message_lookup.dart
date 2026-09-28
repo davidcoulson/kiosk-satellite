@@ -866,6 +866,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'overviewWakeReleased' => strings.overviewWakeReleased,
       'overviewOpenVoice' => strings.overviewOpenVoice,
       'overviewOpenService' => strings.overviewOpenService,
+      'overviewEsphomeAdd' => strings.overviewEsphomeAdd,
       'overviewQuick' => strings.overviewQuick,
       'overviewReload' => strings.overviewReload,
       'overviewScreenOn' => strings.overviewScreenOn,
