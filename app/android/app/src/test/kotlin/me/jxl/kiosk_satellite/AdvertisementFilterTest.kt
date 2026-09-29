@@ -40,6 +40,89 @@ class AdvertisementFilterTest {
     }
 
     @Test
+    fun `an unresolved RPA carrying an allowlisted service UUID is forwarded`() {
+        // Filter v1.7.0: a device in pairing mode may advertise from an RPA,
+        // and dropping it at the IRK test left the service UUID allowlist
+        // unable to rescue the case it exists for.
+        val f = filter(
+            """{"irks":["$specIrk"],"serviceUuids":["0xFFF6"],"manufacturers":["0x004C"]}"""
+        )
+        val stranger = 0x7081940dfbabL
+        val matter = serviceUuid16(0xFFF6)
+        assertTrue(f.allows(stranger, 1, -55, matter))
+        assertEquals(0L, f.counters()["droppedRpa"])
+        assertEquals(1L, f.counters()["allowedServiceUuid"])
+    }
+
+    @Test
+    fun `an unresolved RPA carrying FindMy data is forwarded when FindMy is allowed`() {
+        val airtag = appleFrame(0x12, ByteArray(22))
+        val f = filter(
+            """{"irks":["$specIrk"],"allowFindmy":true,"manufacturers":["0x004C"]}"""
+        )
+        assertTrue(f.allows(0x7081940dfbabL, 1, -55, airtag))
+        assertEquals(0L, f.counters()["droppedRpa"])
+        // Without the rule, the same advertisement is a stranger's RPA.
+        val strict = filter("""{"irks":["$specIrk"],"manufacturers":["0x004C"]}""")
+        assertFalse(strict.allows(0x7081940dfbabL, 1, -55, airtag))
+        assertEquals(1L, strict.counters()["droppedRpa"])
+    }
+
+    @Test
+    fun `a plain unresolved RPA is still dropped, ahead of the RSSI limits`() {
+        val f = filter("""{"irks":["$specIrk"],"serviceUuids":["0xFFF6"],"rssiThreshold":-70}""")
+        // Strong enough for any limit: proximity does not make an
+        // unidentifiable device identifiable.
+        assertFalse(f.allows(0x7081940dfbabL, 1, -30, serviceUuid16(0x180F)))
+        assertEquals(1L, f.counters()["droppedRpa"])
+        assertEquals(1L, f.counters()["dropped"])
+        assertEquals(0L, f.counters()["allowedServiceUuid"])
+    }
+
+    @Test
+    fun `a filter waiting on Home Assistant for its keys is still a filter`() {
+        // Blocklist plus an entity and no keys yet: parse must not decide
+        // there is nothing to do, or the entity would never be asked.
+        val f = filter("""{"manufacturers":["0x004C"],"irksEntity":"sensor.ble_proxy_irks"}""")
+        assertEquals("sensor.ble_proxy_irks", f.irksEntity)
+        assertEquals("", f.irksAttribute)
+        assertEquals(0, f.counters()["irks"])
+        assertEquals("none", f.counters()["irksSource"])
+        assertTrue(AdvertisementFilter.parse("""{"irksEntity":"sensor.x"}""") != null)
+    }
+
+    @Test
+    fun `keys from Home Assistant win over the setting's, and fall back when emptied`() {
+        val f = filter("""{"irks":["00112233445566778899aabbccddeeff"],"irksEntity":"sensor.k"}""")
+        assertEquals("setting", f.counters()["irksSource"])
+        // The setting's key is not the spec vector's, so its RPA is a stranger.
+        assertFalse(f.allows(specRpa, 1, -55, ByteArray(0)))
+
+        f.useHomeAssistantIrks(listOf(AdvertisementFilter.hexToBytes(specIrk, 16)!!))
+        assertEquals("home_assistant", f.counters()["irksSource"])
+        assertEquals(1, f.counters()["irks"])
+        // A fresh key set brings a fresh memo: the earlier "no" is not reused.
+        assertTrue(f.allows(specRpa, 1, -55, ByteArray(0)))
+
+        f.useHomeAssistantIrks(emptyList())
+        assertEquals("setting", f.counters()["irksSource"])
+        assertFalse(f.allows(specRpa, 1, -55, ByteArray(0)))
+        // One filter throughout, so the counters ran on across both swaps.
+        assertEquals(1L, f.counters()["forwarded"])
+        assertEquals(2L, f.counters()["droppedRpa"])
+    }
+
+    @Test
+    fun `the pre-gate follows the keys as they arrive`() {
+        // The IRK category's limit is looser than the threshold, so it must
+        // open the gate once keys exist -- and only then.
+        val f = filter("""{"irksEntity":"sensor.k","rssiThreshold":-60,"rssiIrk":-90}""")
+        assertFalse(f.allows(specRpa, 1, -80, ByteArray(0)))
+        f.useHomeAssistantIrks(listOf(AdvertisementFilter.hexToBytes(specIrk, 16)!!))
+        assertTrue(f.allows(specRpa, 1, -80, ByteArray(0)))
+    }
+
+    @Test
     fun `a remembered answer survives more strangers than the memo holds`() {
         val f = filter("""{"irks":["$specIrk"]}""")
         assertTrue(f.allows(specRpa, 1, -55, ByteArray(0)))

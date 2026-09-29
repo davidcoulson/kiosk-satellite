@@ -31,6 +31,20 @@ void main() {
     });
   });
 
+  test('a Home Assistant key source travels with the filter, keys or not', () {
+    // Blocklists plus an entity and no keys in the setting is still a
+    // filter: the keys arrive from Home Assistant, and the diagnostics must
+    // be published meanwhile.
+    final out = jsonDecode(mergedAdvertisementFilter(
+      '{"manufacturers":["0x004C"],"irksEntity":"sensor.ble_proxy_irks",'
+          '"irksAttribute":"irks"}',
+      '',
+    ));
+    expect(out['irksEntity'], 'sensor.ble_proxy_irks');
+    expect(out['irksAttribute'], 'irks');
+    expect(out.containsKey('irks'), isFalse);
+  });
+
   test('both empty means no filter at all, not an empty one', () {
     // The difference matters: an empty object still counts as configured
     // downstream, and a panel that filters nothing should not pay for a

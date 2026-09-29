@@ -8238,6 +8238,8 @@ const btproxyPort = SettingDef<String>(
 /// ```json
 /// {
 ///   "irks": ["ec0234a357c8ad05341010a60a397d9b"],
+///   "irksEntity": "sensor.ble_proxy_irks",
+///   "irksAttribute": "irks",
 ///   "macs": ["AA:BB:CC:DD:EE:FF"],
 ///   "macBlocklist": ["11:22:33:44:55:66"],
 ///   "manufacturers": ["0x004C"],
@@ -8272,7 +8274,20 @@ const btproxyPort = SettingDef<String>(
 /// Apple would otherwise discard exactly the devices the IRK list exists to
 /// keep, along with every HomeKit accessory (`allowHomekit`) and AirTag
 /// (`allowFindmy`). An RPA matching none of the IRKs belongs to someone
-/// else, rotates, and can never be tracked, so it is dropped.
+/// else, rotates, and can never be tracked, so it is dropped -- unless an
+/// iBeacon, FindMy or service UUID rule claims it first, which is how a
+/// device pairing from a rotating address still gets through (filter
+/// v1.7.0).
+///
+/// `irksEntity` takes the keys from Home Assistant instead, the way the ESP
+/// proxies' irks-from-ha.yaml does: the panel asks for that entity's
+/// `irksAttribute` (empty for its state) over the native API and uses every
+/// 32-digit hex key in it, names beside them allowed. A value with no key
+/// (unavailable, a restart) is ignored; `clear` empties the list. Home
+/// Assistant's list wins while it has one, falling back to `irks` (the
+/// [btproxyFilterIrks] setting) when it is empty, and the last list it sent
+/// is kept on the device, outside the settings, for use from boot. Without
+/// `irksEntity` nothing is asked for.
 ///
 /// A per-category limit of `0` inherits: `rssiMacAllowlist` leaves the
 /// allowlist bounded only by `rssiFloor`, and the rest fall back to
@@ -8318,7 +8333,9 @@ const btproxyFilter = SettingDef<String>(
 ///
 /// Empty means no IRK test runs and every resolvable private address is
 /// relayed, which is a reasonable choice for a panel: Home Assistant holds
-/// the keys centrally and resolves identity there.
+/// the keys centrally and resolves identity there. With `irksEntity` in
+/// [btproxyFilter], the keys Home Assistant delivers take precedence and
+/// these are the fallback while it has none.
 const btproxyFilterIrks = SettingDef<String>(
   key: 'btproxy.filter_irks',
   type: SettingType.string,

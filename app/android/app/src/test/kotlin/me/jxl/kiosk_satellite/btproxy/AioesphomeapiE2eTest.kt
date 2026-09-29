@@ -61,6 +61,36 @@ class AioesphomeapiE2eTest {
         asyncio.run(main())
     """.trimIndent()
 
+    private val statesScript = """
+        import asyncio, sys
+
+        async def main():
+            from aioesphomeapi import APIClient
+            port = int(sys.argv[1]); psk = sys.argv[2]; key = sys.argv[3]
+            cli = APIClient("127.0.0.1", port, None, noise_psk=psk)
+            await cli.connect(login=True)
+
+            loop = asyncio.get_running_loop()
+            asked = loop.create_future()
+
+            def on_state_sub(entity_id, attribute):
+                if not asked.done():
+                    asked.set_result((entity_id, attribute))
+
+            # What Home Assistant's ESPHome integration does on connect: ask,
+            # then answer every entity the device names with its value.
+            cli.subscribe_home_assistant_states(on_state_sub)
+            entity_id, attribute = await asyncio.wait_for(asked, 15)
+            assert entity_id == "sensor.ble_proxy_irks", entity_id
+            assert attribute == "irks", attribute
+            print("SUBSCRIBE_OK", flush=True)
+            cli.send_home_assistant_state(entity_id, attribute, "['phone: " + key + "']")
+            await asyncio.sleep(1)
+            await cli.disconnect()
+
+        asyncio.run(main())
+    """.trimIndent()
+
     private val gattScript = """
         import asyncio, sys
 
@@ -528,6 +558,64 @@ class AioesphomeapiE2eTest {
             if (!finished) process.destroyForcibly()
             assertEquals(0, if (finished) process.exitValue() else -1,
                 "aioesphomeapi GATT round trip failed:\n$output")
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
+    fun realClientDeliversIrksFromHomeAssistantStates() {
+        val python = System.getenv("KS_AIOESPHOME_PYTHON") ?: "python3"
+        val available = runCatching {
+            ProcessBuilder(python, "-c", "import aioesphomeapi")
+                .redirectErrorStream(true).start()
+                .let { it.waitFor(30, TimeUnit.SECONDS) && it.exitValue() == 0 }
+        }.getOrDefault(false)
+        assumeTrue("aioesphomeapi not available for $python; skipping", available)
+
+        val psk = ByteArray(32) { (it * 11 + 2).toByte() }
+        val identity = ProxyIdentity(
+            name = "kiosk-satellite-test",
+            friendlyName = "Test Kiosk",
+            macAddress = "02:11:22:33:44:55",
+            esphomeVersion = "2026.8.0",
+            model = "Test",
+            manufacturer = "KS",
+            projectName = "kiosk_satellite.bluetooth_proxy",
+            projectVersion = "1.0",
+        )
+        val scanner = object : ScannerBackend {
+            override fun onScanDemand(mode: ScannerMode) {}
+            override fun onScanRelease() {}
+        }
+        val filter = AdvertisementFilter.parse(
+            """{"irksEntity":"sensor.ble_proxy_irks","irksAttribute":"irks"}"""
+        )!!
+        val irks = HomeAssistantIrks(filter, object : HomeAssistantIrks.Store {
+            override fun load() = ""
+            override fun save(keys: String) {}
+        }, log = {})
+        val server = ApiServer(identity, "02:AA:BB:CC:DD:EE", 0, psk, scanner,
+            log = {}, homeAssistantStates = irks)
+        server.start()
+        try {
+            val scriptFile = File.createTempFile("btproxy_states_e2e", ".py").apply {
+                writeText(statesScript)
+                deleteOnExit()
+            }
+            val process = ProcessBuilder(
+                python, scriptFile.absolutePath,
+                server.boundPort.toString(),
+                Base64.getEncoder().encodeToString(psk),
+                "ec0234a357c8ad05341010a60a397d9b",
+            ).redirectErrorStream(true).start()
+            val finished = process.waitFor(60, TimeUnit.SECONDS)
+            val output = process.inputStream.bufferedReader().readText()
+            if (!finished) process.destroyForcibly()
+            assertEquals(0, if (finished) process.exitValue() else -1,
+                "aioesphomeapi Home Assistant states round trip failed:\n$output")
+            assertEquals("home_assistant", filter.counters()["irksSource"])
+            assertEquals(1, filter.counters()["irks"])
         } finally {
             server.stop()
         }

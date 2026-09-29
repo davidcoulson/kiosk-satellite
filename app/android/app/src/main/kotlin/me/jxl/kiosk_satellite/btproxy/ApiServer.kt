@@ -54,6 +54,20 @@ internal interface ScannerBackend {
     fun onScanRelease()
 }
 
+/**
+ * Home Assistant entity states the device imports, the way an ESPHome
+ * node's `homeassistant` sensors do: named once per session when Home
+ * Assistant asks, then delivered now and on every change.
+ */
+internal interface HomeAssistantStateBackend {
+    /** (entity_id, attribute) pairs to ask for; an empty attribute is the
+     *  entity's state itself. */
+    val subscriptions: List<Pair<String, String>>
+
+    /** A value for one of [subscriptions]. Any session's reader thread. */
+    fun onState(entityId: String, attribute: String, state: String)
+}
+
 internal class ApiServer(
     private val identity: ProxyIdentity,
     private val bluetoothMac: String,
@@ -88,6 +102,11 @@ internal class ApiServer(
      * no Assist satellite in Home Assistant.
      */
     private val voice: VoiceBackend? = null,
+    /**
+     * Home Assistant states to import (the filter's IRK entity); null asks
+     * for none, which is every device without one.
+     */
+    private val homeAssistantStates: HomeAssistantStateBackend? = null,
 ) {
     private val voiceFlags: Int = if (voice != null) VoiceFeature.KIOSK else 0
 
@@ -974,13 +993,27 @@ internal class ApiServer(
                     Msg.VOICE_ASSISTANT_SET_CONFIGURATION ->
                         voice?.onSetConfiguration(
                             VoiceCodec.parseSetConfiguration(frame.payload))
+                    Msg.SUBSCRIBE_HOME_ASSISTANT_STATES_REQUEST -> {
+                        // Home Assistant asks every session what to send;
+                        // naming nothing is the plain ack it always was.
+                        homeAssistantStates?.subscriptions?.forEach { (entityId, attribute) ->
+                            enqueue(Msg.SUBSCRIBE_HOME_ASSISTANT_STATE_RESPONSE,
+                                ApiCodec.subscribeHomeAssistantState(entityId, attribute))
+                        }
+                    }
+                    Msg.HOME_ASSISTANT_STATE_RESPONSE -> {
+                        val backend = homeAssistantStates
+                        if (backend != null) {
+                            val value = ApiCodec.parseHomeAssistantState(frame.payload)
+                            backend.onState(value.entityId, value.attribute, value.state)
+                        }
+                    }
                     // Required-ack subscriptions with nothing behind them:
                     // this device streams no logs and calls nothing back on
                     // Home Assistant (its own actions are served above, in
                     // the entity listing).
                     Msg.SUBSCRIBE_LOGS_REQUEST,
-                    Msg.SUBSCRIBE_HOMEASSISTANT_SERVICES_REQUEST,
-                    Msg.SUBSCRIBE_HOME_ASSISTANT_STATES_REQUEST -> Unit
+                    Msg.SUBSCRIBE_HOMEASSISTANT_SERVICES_REQUEST -> Unit
                     else -> Unit // unknown type: HA is newer than us; skip
                 }
             } catch (e: ProtoException) {

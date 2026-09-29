@@ -333,6 +333,42 @@ class ApiServerTest {
         assertEquals(Msg.DISCONNECT_RESPONSE, c.read().type)
     }
 
+    @Test
+    fun homeAssistantStatesAreAskedForAndDelivered() {
+        val received = CopyOnWriteArrayList<Triple<String, String, String>>()
+        val states = object : HomeAssistantStateBackend {
+            override val subscriptions = listOf("sensor.ble_proxy_irks" to "irks")
+            override fun onState(entityId: String, attribute: String, state: String) {
+                received.add(Triple(entityId, attribute, state))
+            }
+        }
+        val s = ApiServer(identity, "02:AA:BB:CC:DD:EE", 0, null, RecordingBackend(),
+            log = {}, homeAssistantStates = states).also {
+            it.start()
+            server = it
+        }
+        val c = connect(s)
+        c.send(Msg.HELLO_REQUEST); c.read()
+        c.send(Msg.SUBSCRIBE_HOME_ASSISTANT_STATES_REQUEST)
+        val ask = c.readUntil(Msg.SUBSCRIBE_HOME_ASSISTANT_STATE_RESPONSE)
+        var entity = ""; var attribute = ""
+        ProtoReader(ask.payload).let { r ->
+            while (r.next()) when (r.field) {
+                1 -> entity = r.asString()
+                2 -> attribute = r.asString()
+            }
+        }
+        assertEquals("sensor.ble_proxy_irks", entity)
+        assertEquals("irks", attribute)
+
+        c.send(Msg.HOME_ASSISTANT_STATE_RESPONSE, ProtoWriter().run {
+            string(1, "sensor.ble_proxy_irks"); string(2, "keys"); string(3, "irks")
+            toByteArray()
+        })
+        waitFor { received.isNotEmpty() }
+        assertEquals(Triple("sensor.ble_proxy_irks", "irks", "keys"), received.single())
+    }
+
     private fun waitFor(deadlineMs: Long = 3_000, condition: () -> Boolean) {
         val end = System.currentTimeMillis() + deadlineMs
         while (System.currentTimeMillis() < end) {

@@ -103,6 +103,17 @@ internal object BluetoothProxyRuntime {
         // With the Bluetooth proxy off, no radio machinery exists at all:
         // the server is a pure entity device and never touches Bluetooth
         // (or its permissions).
+        val filter = if (config.bluetoothProxy) {
+            AdvertisementFilter.parse(config.advertisementFilter)
+        } else {
+            null
+        }
+        // Keys from Home Assistant, only when the filter names an entity;
+        // restored from the last list here, before the scanner hears
+        // anything, so a reboot filters with the keys it had.
+        val irksFromHa = filter?.takeIf { it.irksEntity.isNotEmpty() }?.let {
+            HomeAssistantIrks(it, haIrkStore(appContext), log = ::log)
+        }
         val scanEngine = if (config.bluetoothProxy) {
             BleScanEngine(
                 appContext,
@@ -114,7 +125,7 @@ internal object BluetoothProxyRuntime {
                     server?.reportScannerState(state, mode)
                 },
                 minAdvertiseRssi = config.minAdvertiseRssi,
-                filter = AdvertisementFilter.parse(config.advertisementFilter),
+                filter = filter,
                 onLog = { line -> log("scan: $line") },
                 scanDuty = ScanDuty.fromKey(config.scanDuty),
             )
@@ -153,6 +164,7 @@ internal object BluetoothProxyRuntime {
             rssiOf = nearby::lastRssi,
             entities = hub,
             voice = if (config.voice) voiceBackend(config) else null,
+            homeAssistantStates = irksFromHa,
         )
 
         try {
@@ -179,6 +191,20 @@ internal object BluetoothProxyRuntime {
                 " (connections enabled, ${connections.connectionLimit} slots)" else "") +
             (if (hub != null) " (${config.entities.size} entities)" else "") +
             (if (config.voice) " (voice assistant)" else ""))
+    }
+
+    /**
+     * The last IRK list Home Assistant delivered, in preferences of its own:
+     * not FlutterSharedPreferences, so no settings export or backup carries
+     * the keys (the setting holding the others is secret for that reason),
+     * and Android's own backup excludes every preference file already.
+     */
+    private fun haIrkStore(context: Context) = object : HomeAssistantIrks.Store {
+        private val prefs = context.getSharedPreferences("btproxy_ha_irks", Context.MODE_PRIVATE)
+        override fun load(): String = prefs.getString("keys", "") ?: ""
+        override fun save(keys: String) {
+            prefs.edit().putString("keys", keys).apply()
+        }
     }
 
     /** The voice backend: every Home Assistant message handed to the Dart side. */

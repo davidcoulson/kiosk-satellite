@@ -73,7 +73,13 @@ internal object Msg {
     const val SUBSCRIBE_HOMEASSISTANT_SERVICES_REQUEST = 34
     const val GET_TIME_REQUEST = 36
     const val GET_TIME_RESPONSE = 37
+    // Home Assistant states the device imports (ESPHome's `homeassistant`
+    // platform): HA asks what the device wants (38), the device names one
+    // entity and attribute per 39, and HA answers each with its value (40)
+    // now and on every change.
     const val SUBSCRIBE_HOME_ASSISTANT_STATES_REQUEST = 38
+    const val SUBSCRIBE_HOME_ASSISTANT_STATE_RESPONSE = 39
+    const val HOME_ASSISTANT_STATE_RESPONSE = 40
     const val SUBSCRIBE_BLE_ADVERTISEMENTS_REQUEST = 66
     const val BT_DEVICE_REQUEST = 68
     const val BT_DEVICE_CONNECTION_RESPONSE = 69
@@ -271,6 +277,38 @@ internal object ApiCodec {
     fun getTimeResponse(epochSeconds: Long): ByteArray = ProtoWriter().run {
         fixed32(1, epochSeconds.toInt())
         toByteArray()
+    }
+
+    /**
+     * SubscribeHomeAssistantStateResponse: 1=entity_id, 2=attribute,
+     * 3=once. An empty attribute asks for the state itself; once=false keeps
+     * the values coming on every change, which is the point here.
+     */
+    fun subscribeHomeAssistantState(
+        entityId: String,
+        attribute: String,
+        once: Boolean = false,
+    ): ByteArray = ProtoWriter().run {
+        string(1, entityId)
+        string(2, attribute)
+        bool(3, once)
+        toByteArray()
+    }
+
+    /** HomeAssistantStateResponse: 1=entity_id, 2=state, 3=attribute. */
+    class HomeAssistantState(val entityId: String, val state: String, val attribute: String)
+
+    fun parseHomeAssistantState(payload: ByteArray): HomeAssistantState {
+        var entityId = ""
+        var state = ""
+        var attribute = ""
+        val r = ProtoReader(payload)
+        while (r.next()) when (r.field) {
+            1 -> entityId = r.asString()
+            2 -> state = r.asString()
+            3 -> attribute = r.asString()
+        }
+        return HomeAssistantState(entityId, state, attribute)
     }
 
     /** SubscribeBluetoothLEAdvertisementsRequest: 1=flags. */

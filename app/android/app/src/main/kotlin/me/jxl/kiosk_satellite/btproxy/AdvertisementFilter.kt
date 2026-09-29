@@ -30,16 +30,21 @@ import org.json.JSONObject
  *    computed once at parse. Cheapest test there is, so the bulk of distant
  *    noise never reaches the categoriser.
  * 3. Categorise, cheapest test first, first hit wins: allowlisted address ->
- *    MAC; a resolvable private address resolving to one of [irks] -> IRK (an
- *    RPA resolving to none is dropped outright); a matching iBeacon rule ->
- *    IBEACON; Apple FindMy manufacturer data -> FINDMY; an allowlisted
+ *    MAC; a resolvable private address resolving to one of the IRKs -> IRK
+ *    (one resolving to none is only flagged here); a matching iBeacon rule
+ *    -> IBEACON; Apple FindMy manufacturer data -> FINDMY; an allowlisted
  *    service UUID in the payload -> UUID; anything else -> DEFAULT.
- * 4. Below that category's own RSSI limit -> drop.
- * 5. [allowlistExclusive] and DEFAULT -> drop.
- * 6. Non-resolvable private address, with [dropNonResolvable], unprotected
+ * 4. Still DEFAULT and flagged as an unresolved RPA -> drop, whatever its
+ *    RSSI. Deferred to here (filter v1.7.0) so the payload rules can claim
+ *    one first: a device in pairing mode may well advertise from an RPA,
+ *    and dropping it at the IRK test left the service UUID allowlist unable
+ *    to rescue the very case it exists for.
+ * 5. Below that category's own RSSI limit -> drop.
+ * 6. [allowlistExclusive] and DEFAULT -> drop.
+ * 7. Non-resolvable private address, with [dropNonResolvable], unprotected
  *    -> drop.
- * 7. Blocklisted manufacturer id or local name, unprotected -> drop.
- * 8. Otherwise forward.
+ * 8. Blocklisted manufacturer id or local name, unprotected -> drop.
+ * 9. Otherwise forward.
  *
  * Every category except DEFAULT marks the advertisement *protected*, which
  * is what makes a `manufacturers` list containing Apple usable at all: your
@@ -62,6 +67,18 @@ import org.json.JSONObject
  *    that carries its own `rssi` overrides both, which is what lets a
  *    house's own calibration beacons through at any strength while tracked
  *    tags stay bounded.
+ *
+ * <h2>Where the IRKs come from</h2>
+ *
+ * `irks` in the JSON is what the btproxy.filter_irks setting holds. With
+ * `irksEntity` set as well, the keys can instead come from Home Assistant,
+ * the way the ESP proxies' irks-from-ha.yaml takes them: the device asks
+ * for that entity's state (or its `irksAttribute`, "" meaning the state
+ * itself) over the native API, and [HomeAssistantIrks] swaps whatever list
+ * arrives into this filter with [useHomeAssistantIrks] -- in place, so the
+ * scanner never restarts and the counters run on. A non-empty list from
+ * Home Assistant wins; an empty one (nothing delivered yet, or a `clear`)
+ * falls back to `irks`. With no `irksEntity`, nothing is asked for.
  *
  * <h2>What is deliberately not here</h2>
  *
@@ -92,7 +109,12 @@ internal data class IBeaconRule(
 }
 
 internal class AdvertisementFilter private constructor(
-    private val irks: List<ByteArray>,
+    /** The keys from the setting; see [useHomeAssistantIrks] for the others. */
+    private val configuredIrks: List<ByteArray>,
+    /** The Home Assistant entity the keys may come from; "" = none. */
+    val irksEntity: String,
+    /** Which attribute of [irksEntity] holds them; "" = its state. */
+    val irksAttribute: String,
     private val ibeacons: List<IBeaconRule>,
     private val macAllowlist: Set<Long>,
     private val macBlocklist: Set<Long>,
@@ -128,12 +150,14 @@ internal class AdvertisementFilter private constructor(
      * The loosest limit any category could apply, so an advertisement below
      * it cannot be kept by anything and need not be categorised. Nothing but
      * an optimisation, which is why it is computed from the same rules
-     * [decide] applies rather than asserted alongside them.
+     * [decide] applies rather than asserted alongside them. The IRK category
+     * is reachable only while there are keys, and those can now change, so
+     * the gate is worked out for both cases once and picked per key set.
      */
-    private val preGate: Int = run {
+    private fun preGate(hasIrks: Boolean): Int {
         val limits = mutableListOf(bound(rssiThreshold))
         if (macAllowlist.isNotEmpty()) limits.add(bound(rssiMacAllowlist))
-        if (irks.isNotEmpty()) limits.add(bound(if (rssiIrk != 0) rssiIrk else rssiThreshold))
+        if (hasIrks) limits.add(bound(if (rssiIrk != 0) rssiIrk else rssiThreshold))
         if (hasServiceUuids) {
             limits.add(bound(if (rssiServiceUuid != 0) rssiServiceUuid else rssiThreshold))
         }
@@ -142,28 +166,102 @@ internal class AdvertisementFilter private constructor(
         }
         if (allowFindmy) limits.add(if (findmyRssi != 0) findmyRssi else bound(rssiThreshold))
         // 0 is unbounded, so one unbounded category disables the gate.
-        if (limits.any { it == 0 }) 0 else limits.min()
+        return if (limits.any { it == 0 }) 0 else limits.min()
     }
 
     /** The floor bounds a category that brought no limit of its own. */
     private fun bound(limit: Int): Int =
         if (rssiFloor != 0 && (limit == 0 || rssiFloor > limit)) rssiFloor else limit
 
+    /**
+     * The identity keys in force, with the ciphers, memo and pre-gate that
+     * belong to them, swapped whole by [useHomeAssistantIrks]. A scan
+     * callback reads it once per advertisement, so a swap from the API
+     * session's thread lands between two advertisements, never inside one.
+     */
+    private class IrkSet(val keys: List<ByteArray>, val source: String, val gate: Int) {
+        /**
+         * One initialised cipher per identity key, built on first use.
+         * Cipher.getInstance() walks the provider list and init() expands the
+         * key schedule; doing both for every key on every resolvable
+         * advertisement was most of what resolution cost. Null when the
+         * platform refuses AES, which resolves nothing -- the same answer the
+         * per-call version gave. Only touched under [resolved]'s lock.
+         */
+        val ciphers: List<Cipher>? by lazy(LazyThreadSafetyMode.NONE) {
+            try {
+                keys.map { key ->
+                    Cipher.getInstance("AES/ECB/NoPadding").apply {
+                        init(Cipher.ENCRYPT_MODE, SecretKeySpec(key, "AES"))
+                    }
+                }
+            } catch (_: Throwable) {
+                null
+            }
+        }
+
+        /**
+         * Addresses already tested against the keys. A private address holds
+         * for about fifteen minutes and advertises several times a second
+         * throughout, and whether it resolves depends only on the address and
+         * the keys, which are fixed for the life of this set -- so an answer
+         * never goes stale and the memo only needs a bound. Least recently
+         * seen goes first.
+         */
+        val resolved = object : LinkedHashMap<Long, Boolean>(64, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, Boolean>?) =
+                size > RESOLVED_CACHE_SIZE
+        }
+    }
+
+    @Volatile private var irkSet: IrkSet = settingIrks()
+
+    /** The setting's keys, which is also what an empty Home Assistant list
+     *  falls back to. */
+    private fun settingIrks() = IrkSet(
+        configuredIrks,
+        if (configuredIrks.isEmpty()) "none" else "setting",
+        preGate(configuredIrks.isNotEmpty()),
+    )
+
+    /**
+     * The keys Home Assistant delivered, replacing whatever it delivered
+     * before. Empty falls back to the setting's keys: Home Assistant's list
+     * wins whenever it has one, and a `clear` there hands the choice back to
+     * the panel. Callable from any thread.
+     */
+    fun useHomeAssistantIrks(keys: List<ByteArray>) {
+        irkSet = if (keys.isEmpty()) {
+            settingIrks()
+        } else {
+            IrkSet(keys.toList(), "home_assistant", preGate(true))
+        }
+    }
+
     val active: Boolean
-        get() = irks.isNotEmpty() || macAllowlist.isNotEmpty() ||
-            macBlocklist.isNotEmpty() || manufacturerBlocklist.isNotEmpty() ||
+        // An entity counts before it has delivered a key: the keys are on
+        // their way, and a filter dropped as inactive would never ask.
+        get() = configuredIrks.isNotEmpty() || irksEntity.isNotEmpty() ||
+            macAllowlist.isNotEmpty() || macBlocklist.isNotEmpty() ||
+            manufacturerBlocklist.isNotEmpty() ||
             nameBlocklist.isNotEmpty() || hasServiceUuids || dropNonResolvable ||
             allowlistExclusive || rssiFloor != 0 || rssiThreshold != 0 ||
             ibeacons.isNotEmpty() || allowFindmy
 
-    fun counters(): Map<String, Any> = mapOf(
-        "forwarded" to forwarded,
-        "dropped" to dropped,
-        "droppedRpa" to droppedRpa,
-        "allowedServiceUuid" to allowedServiceUuid,
-        "irks" to irks.size,
-        "macAllowlist" to macAllowlist.size,
-    )
+    fun counters(): Map<String, Any> {
+        val keys = irkSet
+        return mapOf(
+            "forwarded" to forwarded,
+            "dropped" to dropped,
+            "droppedRpa" to droppedRpa,
+            "allowedServiceUuid" to allowedServiceUuid,
+            "irks" to keys.keys.size,
+            // "home_assistant", "setting" or "none": which list [irks]
+            // counts, so a panel still on the setting's keys is visible.
+            "irksSource" to keys.source,
+            "macAllowlist" to macAllowlist.size,
+        )
+    }
 
     /**
      * [address] is the six address bytes as a long, big-endian, the same
@@ -183,23 +281,27 @@ internal class AdvertisementFilter private constructor(
         // "this panel does not handle this device", which a broader entry
         // must not be able to override.
         if (macBlocklist.contains(address)) return false
-        if (preGate != 0 && rssi < preGate) return false
+        // Read once: the keys may be swapped from another thread mid-call.
+        val keys = irkSet
+        if (keys.gate != 0 && rssi < keys.gate) return false
 
         var category = Category.DEFAULT
         // Cheapest first: a set lookup, then AES only for actual RPAs, then
         // payload walks last and only when something is configured to need one.
         if (macAllowlist.contains(address)) category = Category.MAC
-        if (category == Category.DEFAULT && irks.isNotEmpty() &&
+        var unresolvedRpa = false
+        if (category == Category.DEFAULT && keys.keys.isNotEmpty() &&
             isResolvable(address, addressType)
         ) {
-            if (!irkMatches(address)) {
-                // Somebody else's phone or watch: it rotates, so it can never
-                // be tracked here. Dropped regardless of RSSI -- proximity
-                // does not make an unidentifiable device identifiable.
-                droppedRpa++
-                return false
+            if (irkMatches(keys, address)) {
+                category = Category.IRK
+            } else {
+                // Probably somebody else's phone or watch -- but not dropped
+                // yet. The payload rules below exist for devices whose
+                // address cannot be known in advance, and one in pairing
+                // mode may well advertise from an RPA. Decided after them.
+                unresolvedRpa = true
             }
-            category = Category.IRK
         }
         // An iBeacon the owner named is protected like an allowlisted
         // address, and for the same reason: a tracked tag heard weakly here
@@ -222,12 +324,20 @@ internal class AdvertisementFilter private constructor(
         // Last, and skipped entirely when unconfigured. Exists for devices
         // whose address cannot be known ahead of time: a device in pairing
         // mode advertises from a rotating private address, which the
-        // non-resolvable test below would otherwise discard.
+        // unresolved-RPA drop and the non-resolvable test below would
+        // otherwise discard.
         if (category == Category.DEFAULT && hasServiceUuids &&
             payloadHasAllowedServiceUuid(payload)
         ) {
             category = Category.UUID
             allowedServiceUuid++
+        }
+        // An RPA no key resolved and no other rule claimed: it rotates, so it
+        // can never be tracked here. Dropped regardless of RSSI -- proximity
+        // does not make an unidentifiable device identifiable.
+        if (category == Category.DEFAULT && unresolvedRpa) {
+            droppedRpa++
+            return false
         }
         val protectedAdv = category != Category.DEFAULT
 
@@ -405,37 +515,6 @@ internal class AdvertisementFilter private constructor(
     }
 
     /**
-     * One initialised cipher per identity key, built on first use.
-     * Cipher.getInstance() walks the provider list and init() expands the key
-     * schedule; doing both for every key on every resolvable advertisement
-     * was most of what resolution cost. Null when the platform refuses AES,
-     * which resolves nothing -- the same answer the per-call version gave.
-     */
-    private val irkCiphers: List<Cipher>? by lazy(LazyThreadSafetyMode.NONE) {
-        try {
-            irks.map { key ->
-                Cipher.getInstance("AES/ECB/NoPadding").apply {
-                    init(Cipher.ENCRYPT_MODE, SecretKeySpec(key, "AES"))
-                }
-            }
-        } catch (_: Throwable) {
-            null
-        }
-    }
-
-    /**
-     * Addresses already tested against the keys. A private address holds for
-     * about fifteen minutes and advertises several times a second throughout,
-     * and whether it resolves depends only on the address and the keys, which
-     * are fixed for the life of this filter -- so an answer never goes stale
-     * and the memo only needs a bound. Least recently seen goes first.
-     */
-    private val resolved = object : LinkedHashMap<Long, Boolean>(64, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, Boolean>?) =
-            size > RESOLVED_CACHE_SIZE
-    }
-
-    /**
      * Bluetooth Core "ah": hash = e(IRK, 0-padding | prand) truncated to 24
      * bits, where an RPA is prand (top three bytes) followed by hash (bottom
      * three).
@@ -443,15 +522,15 @@ internal class AdvertisementFilter private constructor(
      * Locked because a Cipher is not safe to share between threads and
      * nothing here promises which thread a scan result arrives on.
      */
-    private fun irkMatches(address: Long): Boolean = synchronized(resolved) {
-        resolved[address]?.let { return it }
-        val matched = resolves(address)
-        resolved[address] = matched
+    private fun irkMatches(keys: IrkSet, address: Long): Boolean = synchronized(keys.resolved) {
+        keys.resolved[address]?.let { return it }
+        val matched = resolves(keys, address)
+        keys.resolved[address] = matched
         matched
     }
 
-    private fun resolves(address: Long): Boolean {
-        val ciphers = irkCiphers ?: return false
+    private fun resolves(keys: IrkSet, address: Long): Boolean {
+        val ciphers = keys.ciphers ?: return false
         val plaintext = ByteArray(16)
         plaintext[13] = ((address shr 40) and 0xFF).toByte()
         plaintext[14] = ((address shr 32) and 0xFF).toByte()
@@ -572,7 +651,11 @@ internal class AdvertisementFilter private constructor(
             val allowFindmy = findmy == true || findmy is JSONObject
             val findmyRssi = (findmy as? JSONObject)?.optInt("rssi", 0) ?: 0
             val filter = AdvertisementFilter(
-                irks = irks,
+                configuredIrks = irks,
+                // Opt-in: without an entity nothing is asked of Home
+                // Assistant and the setting's keys are all there is.
+                irksEntity = (root.opt("irksEntity") as? String)?.trim().orEmpty(),
+                irksAttribute = (root.opt("irksAttribute") as? String)?.trim().orEmpty(),
                 ibeacons = ibeacons,
                 macAllowlist = macSet(root.optJSONArray("macs")),
                 macBlocklist = macSet(root.optJSONArray("macBlocklist")),
