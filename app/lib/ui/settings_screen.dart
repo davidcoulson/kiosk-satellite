@@ -38,6 +38,7 @@ import '../managers/service/service_manager.dart'
     show batteryAdbHint, overlayAdbHint;
 import '../managers/settings/export_filename.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'brightness_curve_editor.dart';
 
 import '../core/permissions.dart';
 import '../managers/wake_word/background_listening.dart';
@@ -207,7 +208,7 @@ const _updateDocsUrl =
 const _categories = <(String, String, Object, String)>[
   (
     'Home Assistant',
-    'Home Assistant Setup',
+    'Home Assistant',
     'assets/svg/home-assistant.svg',
     'Connection, dashboard, kiosk mode',
   ),
@@ -3727,12 +3728,30 @@ class _CategoryContentState extends State<_CategoryContent> {
       ];
     }
 
+    // The curve's four settings draw as one editor (issue #742), in the
+    // place of the first of them; the search lands on it for any of the
+    // four. Mirrored on the remote (brightness_curve.js).
     if (widget.category == 'Screen & Audio' &&
         subpage == 'Adaptive brightness') {
-      return sectioned([
-        for (final def in _defsFor(widget.category))
-          if (def.subpage == subpage) def,
-      ]);
+      const folded = {
+        'screen.adaptive_max_brightness',
+        'screen.adaptive_dark_lux',
+        'screen.adaptive_bright_lux',
+      };
+      Widget editor = BrightnessCurveEditor(container: container);
+      for (final key in [adaptiveMinBrightness.key, ...folded]) {
+        editor = SearchLandingTarget(id: key, child: editor);
+      }
+      return sectioned(
+        [
+          for (final def in _defsFor(widget.category))
+            if (def.subpage == subpage && !folded.contains(def.key)) def,
+        ],
+        replace: {
+          ..._rowReplacements(container),
+          adaptiveMinBrightness.key: editor,
+        },
+      );
     }
 
     if (widget.category == 'Screen & Audio') {
@@ -3824,7 +3843,6 @@ class _CategoryContentState extends State<_CategoryContent> {
                 ],
               ),
             ),
-            const SizedBox(height: Ks.cardGap),
             _vsDetectionCard(container),
             CustomWakeModelsGroup(container: container),
           ];
@@ -4235,7 +4253,6 @@ extension on _CategoryContentState {
         ),
       ),
       if (enabled) ...[
-        const SizedBox(height: Ks.cardGap),
         for (final page in const [
           'Assistant',
           'Wake Word',
@@ -4243,10 +4260,8 @@ extension on _CategoryContentState {
           'Conversation',
           'Timers',
           'Chimes',
-        ]) ...[
+        ])
           _subpageEntryCard(container, 'Voice Satellite', page),
-          const SizedBox(height: Ks.cardGap),
-        ],
         SectionHeading(voiceText(context, 'Wake Word Tester')),
         SearchLandingTarget(
           id: 'x:wake_word_tester',
@@ -4273,12 +4288,9 @@ extension on _CategoryContentState {
       FutureBuilder<bool>(
         future: _vsDetected,
         builder: (context, snapshot) => snapshot.data == true
-            ? Padding(
-                padding: const EdgeInsets.only(top: Ks.cardGap),
-                child: SearchLandingTarget(
-                  id: 'x:vs_rollback',
-                  child: VoiceRollbackCard(container: container),
-                ),
+            ? SearchLandingTarget(
+                id: 'x:vs_rollback',
+                child: VoiceRollbackCard(container: container),
               )
             : const SizedBox.shrink(),
       ),

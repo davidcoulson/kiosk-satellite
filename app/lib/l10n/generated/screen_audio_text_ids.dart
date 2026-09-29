@@ -91,5 +91,9 @@ const screenAudioTextMessageIds = <String, String>{
   "Grant": "commonGrant",
   "Grant on device": "deviceGrantOnDevice",
   "The device volume the media and assistant faders scale under.": "searchMasterVolume",
-  "Theater mode": "screenAudioTheaterMode"
+  "Theater mode": "screenAudioTheaterMode",
+  "Brightness curve": "screenAudioBrightnessCurve",
+  "Drag a point, or tap it to type exact values. The Screen light in Home Assistant moves the top point and the curve follows.": "screenAudioCurveHint",
+  "Light level (lx)": "screenAudioCurveLightLevel",
+  "Brightness (%)": "screenAudioCurveBrightness"
 };

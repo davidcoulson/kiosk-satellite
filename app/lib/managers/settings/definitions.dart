@@ -1414,11 +1414,12 @@ const defaultBrightness = SettingDef<num>(
 
 // Adaptive brightness (issue #343): the room's light sets the screen
 // brightness on the device itself, so the mapping keeps working with Home
-// Assistant unreachable. Its own page: the switch, the live sensor reading,
-// the two brightness ends and the two light-level ends of the curve. The
-// screensaver and Dim sliders keep their meaning as the level in a bright
-// room and scale with the curve; Default brightness stands down while the
-// switch is on.
+// Assistant unreachable. Its own page: the switch, the live sensor reading
+// and the curve (issue #742), four points both UIs draw as one editor. The
+// ends are the four settings below; the middle two points are hidden
+// settings of their own. The screensaver and Dim sliders keep their
+// meaning as the level in a bright room and scale with the curve; Default
+// brightness stands down while the switch is on.
 const adaptiveBrightness = SettingDef<bool>(
   key: 'screen.adaptive_brightness',
   type: SettingType.boolean,
@@ -1440,7 +1441,7 @@ const adaptiveMinBrightness = SettingDef<num>(
   description: 'Screen brightness in a dark room.',
   category: 'Screen & Audio',
   subpage: 'Adaptive brightness',
-  section: 'Adaptive brightness',
+  section: 'Brightness curve',
   min: 0,
   max: 1,
   step: 0.05,
@@ -1457,7 +1458,7 @@ const adaptiveMaxBrightness = SettingDef<num>(
   description: 'Screen brightness in a bright room.',
   category: 'Screen & Audio',
   subpage: 'Adaptive brightness',
-  section: 'Adaptive brightness',
+  section: 'Brightness curve',
   min: 0,
   max: 1,
   step: 0.05,
@@ -1466,10 +1467,10 @@ const adaptiveMaxBrightness = SettingDef<num>(
   crossValidator: validateMaxAboveMin,
 );
 
-// Typed, not slid: light sensors disagree wildly about what a lit room
-// reads (an Echo Show 8 reports about 50 lx with every light on, a tablet
-// by a window thousands), so the ends are set against the live reading
-// shown above them rather than against a fixed scale.
+// Light sensors disagree wildly about what a lit room reads (an Echo Show 8
+// reports about 50 lx with every light on, a tablet by a window
+// thousands), so the curve editor marks the live reading on the chart and
+// takes typed values as well as drags.
 const adaptiveDarkLux = SettingDef<num>(
   key: 'screen.adaptive_dark_lux',
   type: SettingType.number,
@@ -1479,7 +1480,7 @@ const adaptiveDarkLux = SettingDef<num>(
       'Light level at or below which the screen sits at Minimum brightness.',
   category: 'Screen & Audio',
   subpage: 'Adaptive brightness',
-  section: 'Adaptive brightness',
+  section: 'Brightness curve',
   dependsOn: 'screen.adaptive_brightness',
   validator: validateLux,
   crossValidator: validateDarkBelowBright,
@@ -1494,11 +1495,133 @@ const adaptiveBrightLux = SettingDef<num>(
       'Light level at or above which the screen sits at Maximum brightness.',
   category: 'Screen & Audio',
   subpage: 'Adaptive brightness',
-  section: 'Adaptive brightness',
+  section: 'Brightness curve',
   dependsOn: 'screen.adaptive_brightness',
   validator: validateLux,
   crossValidator: validateBrightAboveDark,
 );
+
+// The curve's middle two points (issue #742), hidden: the editor on both
+// UIs draws and writes them. Stored as shares of the span between the
+// ends, not as absolute values: a position is the point's light level
+// along the log scale from Dark room to Bright room, a level its
+// brightness between Minimum and Maximum. That way Home Assistant's
+// Screen light, which turns Maximum brightness, stretches the curve
+// rather than pushing its top under the middle. A third and two thirds
+// on both axes is the straight line the curve was before these existed.
+const adaptivePoint2Position = SettingDef<num>(
+  key: 'screen.adaptive_point2_position',
+  type: SettingType.number,
+  defaultValue: 1 / 3,
+  title: 'Curve point 2 light level',
+  description:
+      'Share of the way from Dark room to Bright room, on a log '
+      'scale.',
+  category: 'Screen & Audio',
+  subpage: 'Adaptive brightness',
+  section: 'Brightness curve',
+  hidden: true,
+  validator: validateCurvePosition,
+  crossValidator: validatePoint2Position,
+);
+
+const adaptivePoint2Level = SettingDef<num>(
+  key: 'screen.adaptive_point2_level',
+  type: SettingType.number,
+  defaultValue: 1 / 3,
+  title: 'Curve point 2 brightness',
+  description: 'Share of the way from Minimum to Maximum brightness.',
+  category: 'Screen & Audio',
+  subpage: 'Adaptive brightness',
+  section: 'Brightness curve',
+  hidden: true,
+  validator: validateCurveShare,
+  crossValidator: validatePoint2Level,
+);
+
+const adaptivePoint3Position = SettingDef<num>(
+  key: 'screen.adaptive_point3_position',
+  type: SettingType.number,
+  defaultValue: 2 / 3,
+  title: 'Curve point 3 light level',
+  description:
+      'Share of the way from Dark room to Bright room, on a log '
+      'scale.',
+  category: 'Screen & Audio',
+  subpage: 'Adaptive brightness',
+  section: 'Brightness curve',
+  hidden: true,
+  validator: validateCurvePosition,
+  crossValidator: validatePoint3Position,
+);
+
+const adaptivePoint3Level = SettingDef<num>(
+  key: 'screen.adaptive_point3_level',
+  type: SettingType.number,
+  defaultValue: 2 / 3,
+  title: 'Curve point 3 brightness',
+  description: 'Share of the way from Minimum to Maximum brightness.',
+  category: 'Screen & Audio',
+  subpage: 'Adaptive brightness',
+  section: 'Brightness curve',
+  hidden: true,
+  validator: validateCurveShare,
+  crossValidator: validatePoint3Level,
+);
+
+/// A middle point sits strictly between the ends: at either one it would
+/// share a light level with it.
+String? validateCurvePosition(Object? value) {
+  final share = _asNum(value);
+  if (share == null || share <= 0 || share >= 1) {
+    return 'Enter a share between 0 and 1';
+  }
+  return null;
+}
+
+String? validateCurveShare(Object? value) {
+  final share = _asNum(value);
+  if (share == null || share < 0 || share > 1) {
+    return 'Enter a share from 0 to 1';
+  }
+  return null;
+}
+
+/// The middle points keep their order: point 2 below point 3 in light,
+/// and never brighter than it.
+String? validatePoint2Position(
+  Object? value,
+  Object? Function(String key) read,
+) {
+  final own = _asNum(value);
+  final other = _asNum(read(adaptivePoint3Position.key));
+  if (own == null || other == null || own < other) return null;
+  return 'Point 2 must be below point 3';
+}
+
+String? validatePoint3Position(
+  Object? value,
+  Object? Function(String key) read,
+) {
+  final own = _asNum(value);
+  final other = _asNum(read(adaptivePoint2Position.key));
+  if (own == null || other == null || own > other) return null;
+  return 'Point 3 must be above point 2';
+}
+
+String? validatePoint2Level(Object? value, Object? Function(String key) read) {
+  final own = _asNum(value);
+  final other = _asNum(read(adaptivePoint3Level.key));
+  if (own == null || other == null || own <= other) return null;
+  return 'Point 2 must not be brighter than point 3';
+}
+
+String? validatePoint3Level(Object? value, Object? Function(String key) read) {
+  final own = _asNum(value);
+  final other = _asNum(read(adaptivePoint2Level.key));
+  if (own == null || other == null || own >= other) return null;
+  return 'Point 3 must not be dimmer than point 2';
+}
 
 /// A light level the curve can take a log of: a positive number.
 String? validateLux(Object? value) {
@@ -5871,8 +5994,9 @@ const haToken = SettingDef<String>(
 /// `hassTokens`, see ha_session_script.dart) at document start, so a fresh
 /// kiosk never shows the Home Assistant login form. A login someone did by
 /// hand always wins over the seed; a session the seed wrote for an earlier
-/// token is replaced when the token changes. Turning this off stops future
-/// seeding without logging anything out.
+/// token is replaced when the token changes. Turning this off removes the
+/// seeded session, so the dashboard shows the login form; a login done by
+/// hand stays.
 const haAutoLogin = SettingDef<bool>(
   key: 'ha.auto_login',
   type: SettingType.boolean,
@@ -6659,6 +6783,24 @@ const sendspinDuckPercent = SettingDef<num>(
   max: 25,
   step: 5,
   unit: '%',
+);
+
+/// The followed player as ESPHome entities (issue #741): transport
+/// buttons and what is playing, for whichever player the surfaces follow.
+/// Not a media_player entity: ESPHome's carries no title or artist and
+/// no skip, and Music Assistant already lists the Sendspin player as one.
+/// Off by default, since it re-registers the device like the other
+/// catalog-shaping switches.
+const sendspinEsphomeEntities = SettingDef<bool>(
+  key: 'sendspin.esphome_entities',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Expose ESPHome entities',
+  description:
+      'Play, pause, next and previous buttons for the followed player in '
+      'Home Assistant, with its state, title, artist and source as '
+      'sensors.',
+  category: 'Sendspin',
 );
 
 /// The device's hardware volume keys steer the followed player instead
@@ -8583,7 +8725,7 @@ const intercomVolume = SettingDef<num>(
 const fleetSyncCategories = <(String, String, String)>[
   // ha.satellite_entity stays per kiosk; its row (Assigned satellite) is
   // on the Voice Satellite page, so the note goes there.
-  ('Home Assistant', 'Home Assistant Setup', ''),
+  ('Home Assistant', 'Home Assistant', ''),
   ('Voice Satellite', 'Voice Satellite', 'the assigned satellite'),
   (
     'Screen & Audio',
@@ -8872,6 +9014,18 @@ const fleetFormerDefaultExcluded = <Set<String>>[
     'intercom.answer_mode',
   },
 ];
+
+/// Hidden settings that travel in a fleet exactly when another one does:
+/// the adaptive brightness curve's middle points are shares of the span
+/// between its ends and mean nothing apart from them, so they go where
+/// Minimum brightness goes and never need a row of their own in a
+/// profile's exclusions.
+const fleetFollowsKey = {
+  'screen.adaptive_point2_position': 'screen.adaptive_min_brightness',
+  'screen.adaptive_point2_level': 'screen.adaptive_min_brightness',
+  'screen.adaptive_point3_position': 'screen.adaptive_min_brightness',
+  'screen.adaptive_point3_level': 'screen.adaptive_min_brightness',
+};
 
 /// What a new follower gets unless the leader says otherwise.
 const fleetDefaultCategories = {
@@ -9653,6 +9807,10 @@ const List<SettingDef<Object>> allSettings = [
   adaptiveMaxBrightness,
   adaptiveDarkLux,
   adaptiveBrightLux,
+  adaptivePoint2Position,
+  adaptivePoint2Level,
+  adaptivePoint3Position,
+  adaptivePoint3Level,
   mediaVolume,
   intercomVolume,
   assistantVolume,
@@ -9972,6 +10130,7 @@ const List<SettingDef<Object>> allSettings = [
   sendspinPlayerSource,
   sendspinPlayer,
   sendspinDuckPercent,
+  sendspinEsphomeEntities,
   sendspinVolumeKeys,
   sendspinVolumeKeyStep,
   sendspinPlayerName,

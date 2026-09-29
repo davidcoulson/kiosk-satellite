@@ -1261,14 +1261,25 @@ class VoiceManager extends Manager {
           ((status.data as Map)['clients'] as num? ?? 0) > 0;
     }
     checks.add({'id': 'esphome', 'ok': added, 'esphomeOn': esphomeOn});
+    // Unknown when Home Assistant did not answer: that says nothing about
+    // the token's user.
     var admin = false;
+    var known = false;
     if (connected) {
       try {
         final user = await _ha.request({'type': 'auth/current_user'});
         admin = user is Map && user['is_admin'] == true;
-      } catch (_) {}
+        known = user is Map;
+      } catch (e) {
+        log.warn(name, 'token user not checked: $e');
+      }
     }
-    checks.add({'id': 'admin', 'ok': admin, 'warnOnly': true});
+    checks.add({
+      'id': 'admin',
+      'ok': admin,
+      'warnOnly': true,
+      'unknown': !known,
+    });
     final perms = await commands.execute('getSystemPermissions', const {});
     final mic =
         perms.ok &&
@@ -1374,8 +1385,12 @@ class VoiceManager extends Manager {
       _step('start', 'run');
       await _settings.set(defs.voiceEnabled, true, source: 'migration');
       await _settings.set(defs.voiceRuntime, 'native', source: 'migration');
+      // A muted satellite (the old one's mute carries over) is up without
+      // listening for the wake word.
       final up = await _waitFor(
-        () => homeAssistant.value.subscribed && _wakeWord.listening,
+        () =>
+            homeAssistant.value.subscribed &&
+            (_wakeWord.listening || _settings.get(defs.voiceMute)),
         const Duration(seconds: 30),
       );
       if (!up) throw StateError('The satellite did not come up in time.');

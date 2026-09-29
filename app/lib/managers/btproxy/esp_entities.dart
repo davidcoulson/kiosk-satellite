@@ -86,6 +86,22 @@ class EspEntitySurface {
 
   static const _pollInterval = Duration(seconds: 60);
 
+  /// The media text sensors: object id, name and icon, keyed into the
+  /// media summary by the id's tail.
+  static const _mediaSensors = [
+    ('media_state', 'Media state', 'mdi:play-pause'),
+    ('media_title', 'Media title', 'mdi:music-note'),
+    ('media_artist', 'Media artist', 'mdi:account-music'),
+    ('media_source', 'Media source', 'mdi:speaker'),
+  ];
+
+  /// The followed player's entities, unless this fork's Now playing is on:
+  /// the two share media_state, media_title, media_artist, media_next and
+  /// media_previous, and Now playing is what an agent reports.
+  bool get _followedPlayerEntities =>
+      _settings.get(defs.sendspinEsphomeEntities) &&
+      !_settings.get(defs.nowPlaying);
+
   /// The group used on Home Assistant's device page, before the entity type.
   static String categoryLabel(Map<String, Object?> entity) {
     if (entity['category'] == 1) return 'Configuration';
@@ -726,6 +742,19 @@ class EspEntitySurface {
           'Show Music Assistant',
           'mdi:music-box-multiple',
         ),
+      // The followed player, opt-in from the Media Player page (issue
+      // #741): whichever player the surfaces follow, the local Sendspin
+      // player, one elsewhere or another app's media session. Buttons
+      // and sensors rather than a media_player, which in ESPHome carries
+      // no track and no skip.
+      if (_followedPlayerEntities) ...[
+        button('media_play', 'Media play', 'mdi:play'),
+        button('media_pause', 'Media pause', 'mdi:pause'),
+        button('media_next', 'Media next', 'mdi:skip-next'),
+        button('media_previous', 'Media previous', 'mdi:skip-previous'),
+        for (final (id, name, icon) in _mediaSensors)
+          {'type': 'text_sensor', 'objectId': id, 'name': name, 'icon': icon},
+      ],
       if (_cameraViews.isNotEmpty) ...[
         {
           'type': 'select',
@@ -2029,6 +2058,9 @@ class EspEntitySurface {
         _send('now_playing', _nowPlayingShown);
       }),
     );
+    _subs.add(
+      bus.on<MediaSummaryChanged>().listen((e) => _sendMedia(e.summary)),
+    );
     _subs.add(bus.on<ScreenStateChanged>().listen((_) => _sendScreen()));
     // Addresses change exactly at these transitions, and the minute poll
     // would leave the IP sensors stale until it comes round. Deferred a
@@ -2324,6 +2356,11 @@ class EspEntitySurface {
         await commands.execute('previousScreensaverSlide', const {});
       case 'notifications_dismiss_all':
         await commands.execute('dismissNotification', const {});
+      case 'media_play' || 'media_pause' || 'media_next' || 'media_previous'
+          when _followedPlayerEntities:
+        await commands.execute('sendspinControl', {
+          'command': objectId.substring('media_'.length),
+        });
       case 'reload':
         await commands.execute('reload', const {});
       case 'load_start_url':
@@ -2534,6 +2571,13 @@ class EspEntitySurface {
     }
   }
 
+  Future<void> _sendMedia(Map<String, String> summary) async {
+    if (!_followedPlayerEntities) return;
+    for (final (id, _, _) in _mediaSensors) {
+      await _send(id, summary[id.substring('media_'.length)] ?? '');
+    }
+  }
+
   Future<void> _send(String objectId, Object? value) async {
     if (_isExcluded(objectId)) return;
     try {
@@ -2609,6 +2653,13 @@ class EspEntitySurface {
       await _send('proximity', _proximityNear);
     }
     await _send('now_playing', _nowPlayingShown);
+    final media = await commands.execute('mediaPlayerState', const {});
+    if (media.ok && media.data is Map) {
+      await _sendMedia({
+        for (final e in (media.data as Map).entries)
+          '${e.key}': '${e.value ?? ''}',
+      });
+    }
     await _sendDeviceInfo();
     // Settings-backed entities all report their stored values.
     for (final entry in _settingSwitches.entries) {

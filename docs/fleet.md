@@ -64,11 +64,11 @@ Settings that scale the UI, control screen brightness, or manage volume often de
 | `face.preview_scale` Preview scaling | Face Detection |
 | `sendspin.player_size` Player size | Floating Player |
 | `screen.default_brightness` Default brightness | Screen & Audio |
-| `screen.adaptive_min_brightness`, `screen.adaptive_max_brightness`, `screen.adaptive_dark_lux`, `screen.adaptive_bright_lux` | Adaptive brightness |
+| `screen.adaptive_min_brightness`, `screen.adaptive_max_brightness`, `screen.adaptive_dark_lux`, `screen.adaptive_bright_lux` (the curve's two middle points travel whenever Minimum brightness does) | Adaptive brightness |
 | `screensaver.brightness_level`, `screensaver.dim_level` | Screensaver |
 | `audio.media_volume` Media volume, `audio.assistant_volume` Assistant volume | Screen & Audio |
 | `notifications.volume` Notification volume | Notifications |
-| `ha.tap_sound_volume` Tap sound volume | Home Assistant Setup, User Interface |
+| `ha.tap_sound_volume` Tap sound volume | Home Assistant, User Interface |
 | `screensaver.gallery_items` Photo Gallery selection | Photo Gallery screensaver |
 | `screensaver.local_folder` Local media folder | Local Media screensaver |
 | `screensaver.clock_background` Clock background photo | Clock screensaver |

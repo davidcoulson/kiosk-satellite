@@ -7785,6 +7785,13 @@ class UiStringsEs extends UiStrings {
       'La música baja a este porcentaje de su volumen durante las interacciones de voz y las llamadas del intercomunicador. Después vuelve al volumen anterior.';
 
   @override
+  String get settingSendspinEsphomeEntitiesTitle => 'Exponer entidades ESPHome';
+
+  @override
+  String get settingSendspinEsphomeEntitiesDescription =>
+      'Botones de reproducir, pausar, siguiente y anterior para el reproductor controlado en Home Assistant, con su estado, título, artista y origen como sensores.';
+
+  @override
   String get settingSendspinVolumeKeysTitle =>
       'Controlar el reproductor con los botones de volumen';
 
@@ -8265,7 +8272,7 @@ class UiStringsEs extends UiStrings {
   }
 
   @override
-  String get settingsMenuHomeAssistant => 'Configuración de Home Assistant';
+  String get settingsMenuHomeAssistant => 'Home Assistant';
 
   @override
   String get settingsMenuHomeAssistantSummary =>
@@ -8528,6 +8535,34 @@ class UiStringsEs extends UiStrings {
 
   @override
   String get screenAudioSetsDefault => 'Ajusta el brillo predeterminado.';
+
+  @override
+  String get screenAudioBrightnessCurve => 'Curva de brillo';
+
+  @override
+  String get screenAudioCurveHint =>
+      'Arrastra un punto o tócalo para escribir valores exactos. La luz Screen de Home Assistant mueve el punto superior y la curva lo sigue.';
+
+  @override
+  String screenAudioCurvePoint(String number) {
+    return 'Punto $number';
+  }
+
+  @override
+  String get screenAudioCurveLightLevel => 'Nivel de luz (lx)';
+
+  @override
+  String get screenAudioCurveBrightness => 'Brillo (%)';
+
+  @override
+  String screenAudioCurveLuxRange(String low, String high) {
+    return 'Introduce un nivel de luz entre $low y $high lx';
+  }
+
+  @override
+  String screenAudioCurveLevelRange(String low, String high) {
+    return 'Introduce un brillo entre $low% y $high%';
+  }
 
   @override
   String get settingAudioMicDeviceTitle => 'Micrófono';
@@ -11179,9 +11214,6 @@ class UiStringsEs extends UiStrings {
       'Ahora mismo está soleado y hace 22°, con una brisa ligera.';
 
   @override
-  String get voicePreviewThumbAnswer => 'Ahora mismo está soleado y hace 22°.';
-
-  @override
   String get voiceAssistant1 => 'Asistente 1';
 
   @override
@@ -11647,6 +11679,10 @@ class UiStringsEs extends UiStrings {
   @override
   String get voiceCheckAdminBad =>
       'El token es de un usuario normal. Voice Satellite funciona, pero no se mostrarán el uso de herramientas ni los resultados.';
+
+  @override
+  String get voiceCheckAdminUnknown =>
+      'No se pudo comprobar el token. El uso de herramientas y los resultados necesitan el de un administrador.';
 
   @override
   String get voiceCheckMicOk => 'Permitido.';

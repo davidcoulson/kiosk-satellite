@@ -2271,6 +2271,10 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingSendspinDuckPercentTitle,
       'settingSendspinDuckPercentDescription' =>
         strings.settingSendspinDuckPercentDescription,
+      'settingSendspinEsphomeEntitiesTitle' =>
+        strings.settingSendspinEsphomeEntitiesTitle,
+      'settingSendspinEsphomeEntitiesDescription' =>
+        strings.settingSendspinEsphomeEntitiesDescription,
       'settingSendspinVolumeKeysTitle' =>
         strings.settingSendspinVolumeKeysTitle,
       'settingSendspinVolumeKeysDescription' =>
@@ -2549,6 +2553,10 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'screenAudioNoReading' => strings.screenAudioNoReading,
       'screenAudioSetsMaximum' => strings.screenAudioSetsMaximum,
       'screenAudioSetsDefault' => strings.screenAudioSetsDefault,
+      'screenAudioBrightnessCurve' => strings.screenAudioBrightnessCurve,
+      'screenAudioCurveHint' => strings.screenAudioCurveHint,
+      'screenAudioCurveLightLevel' => strings.screenAudioCurveLightLevel,
+      'screenAudioCurveBrightness' => strings.screenAudioCurveBrightness,
       'settingAudioMicDeviceTitle' => strings.settingAudioMicDeviceTitle,
       'settingAudioMicDeviceDescription' =>
         strings.settingAudioMicDeviceDescription,
@@ -3656,7 +3664,6 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingVoiceReactiveBarDescription,
       'voicePreviewCommand' => strings.voicePreviewCommand,
       'voicePreviewAnswer' => strings.voicePreviewAnswer,
-      'voicePreviewThumbAnswer' => strings.voicePreviewThumbAnswer,
       'voiceAssistant1' => strings.voiceAssistant1,
       'voiceAssistant1Help' => strings.voiceAssistant1Help,
       'voiceAssistant2' => strings.voiceAssistant2,
@@ -3818,6 +3825,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'voiceCheckAdmin' => strings.voiceCheckAdmin,
       'voiceCheckAdminOk' => strings.voiceCheckAdminOk,
       'voiceCheckAdminBad' => strings.voiceCheckAdminBad,
+      'voiceCheckAdminUnknown' => strings.voiceCheckAdminUnknown,
       'voiceCheckMicOk' => strings.voiceCheckMicOk,
       'voiceCheckMicBad' => strings.voiceCheckMicBad,
       'voiceTurnOnEsphome' => strings.voiceTurnOnEsphome,

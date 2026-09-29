@@ -335,6 +335,9 @@ class BtProxyManager extends Manager {
       'device.now_playing',
       // No battery takes the Battery and Charging sensors away.
       'device.no_battery',
+      // The followed player's buttons and sensors, opt-in from the Media
+      // Player page (issue #741).
+      'sendspin.esphome_entities',
       // The voice assistant, and its vs_ entities and actions, exist only
       // on the native runtime with Voice Satellite on; the engine decides
       // which wake words Home Assistant's selects offer, which it asks for

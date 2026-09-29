@@ -13180,10 +13180,15 @@
     "provenance": "50a40b9b0f2cc752c88ccaa455255d187c5d5a9594152fadced57a7289592afd"
   },
   "settingsMenuHomeAssistant": {
-    "source": "a96d7876f71689c560da8c3d47b89cac0964647f538d186ad00b69d841c740df",
-    "translation": "d315cf59e3e555566ae9c761d734d883a9f76dfe88053a65111eb1862fd56000",
+    "source": "88c1c4394e52ae8d49da175e42a7a1c75c14fdeb4202cc65eecd35f79aed1008",
+    "translation": "2a366abb0cd47f51f3725bf0fb7ebcb4fefa6e20f4971e25fe2bb8da8145ce2b",
     "author": "Limoniak",
-    "provenance": "50a40b9b0f2cc752c88ccaa455255d187c5d5a9594152fadced57a7289592afd"
+    "provenance": "50a40b9b0f2cc752c88ccaa455255d187c5d5a9594152fadced57a7289592afd",
+    "maintainerCorrection": {
+      "reviewer": "Xavier Larrea",
+      "originalTranslation": "d315cf59e3e555566ae9c761d734d883a9f76dfe88053a65111eb1862fd56000",
+      "reason": "The settings entry is named Home Assistant, without Setup."
+    }
   },
   "settingsMenuHomeAssistantSummary": {
     "source": "39a92d9371c9489766574239639da2dc9526944853e3b3d22b2e1d1d59db5be9",
@@ -21490,6 +21495,66 @@
   "voiceHaSelectsReloadHint": {
     "source": "70511fcef7e80ecf69d845eff560849a6f02fd2ea614242bb5c342920eb6ac1c",
     "translation": "dd18b15a79af97e81cd698f6a59cd949825946087d63dafa9f4d0c4bfec75cd4",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "voiceCheckAdminUnknown": {
+    "source": "657e492474fd4a7d6c465e26f4a8c7a1a0ca63137220f2f6cc7e8465bd589585",
+    "translation": "616c5507016c9766406e6b2ee0829e1190d091bb99b894bcdbd90d6783be769a",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "settingSendspinEsphomeEntitiesDescription": {
+    "source": "1fa19ec4fb88fe1dce35c5b68b4fa0c990df2d1f20a0ce7e571abb7d43236173",
+    "translation": "28286983c4cfa784780d534214b145499cda264c15a78befbf8de3efa33a1929",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "settingSendspinEsphomeEntitiesTitle": {
+    "source": "7f2acdcfa62fceb4a53bd371446fe9bc2a0f7859015bdeaa0e06d986cc8d07b1",
+    "translation": "216720762e6acaf3e3c2dc4974a89a5a0bc1b6474fc983461dd26562e6246fa0",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "screenAudioCurveLuxRange": {
+    "source": "82770ec18590560c0dd168676ddc85885654608a630438577241bfadaf2a5177",
+    "translation": "91f4e983cf793f8aa49ebac3ef135eac916b2996e47444ff7e3b6beb4af822a1",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "screenAudioCurveBrightness": {
+    "source": "f53a98d55a7749205daeefc09d67651b6861a3faded17f17373157beb0567ad6",
+    "translation": "a26dadc171f47004627852715ab00859db3f607e43312718e327685a1cd00ab1",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "screenAudioCurvePoint": {
+    "source": "6adafeccf33e584cc909c0574f051e0a045af0aa2b18d55c60bf8198d3b76576",
+    "translation": "1d5425511d5190a69098621bcb7573d17e77edc76726442dfce8bd9475e48c7b",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "screenAudioCurveLevelRange": {
+    "source": "46c611989bf2be28bde2fe6762612f4bf590acb2b237acca58c5ed3cba8757e5",
+    "translation": "909f3bb1ab69c38d74aa13548741ad0988c125aa3303db20202c26a74e6bca99",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "screenAudioCurveHint": {
+    "source": "9fdea570f771108c66ac37929ea41579071078d55c3868249e78e28e391c41ca",
+    "translation": "8cf4cc3c5527c9df38a5e077978ebbaa604da75f6e274a0bb5a5252544052455",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "screenAudioCurveLightLevel": {
+    "source": "7f05f9615bd5c8931cf0615efb5a2ed02794438a08fe8c8122e0f2c6dc9e9a0c",
+    "translation": "02516c80b500742e6ee561b08033af7fcfc9d906b3540dc0233c7ae2dcf4e253",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "screenAudioBrightnessCurve": {
+    "source": "90203bf33efba47292f390dce60d2a9095de31cd9c30d877fdf2ff292b636349",
+    "translation": "fa1a6e0564cd6fa63fec57a867d869dec7b823311311af0b6e6e080b67ab07fc",
     "author": "Xavier Larrea",
     "ownerAuthored": true
   }

@@ -25,6 +25,35 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 - **An agent's remote admin no longer shows a Home Assistant tile.** It read "Not set up" on every agent, which never sets Home Assistant up; the Voice Satellite and Media Player tiles were already left out for the same reason.
 - **IPv6 address and the two by-interface address sensors start disabled** in a newly added Home Assistant device. IPv4 address covers the usual need; existing devices keep them as they are.
 
+## v2026.9.91 - 2026-09-28
+
+### Added
+- **The followed player in Home Assistant.** A new **Expose ESPHome entities** switch on the Media Player page, off by default, adds Media play, Media pause, Media next and Media previous buttons and Media state, Media title, Media artist and Media source sensors to the kiosk's ESPHome device (#741). They act on whichever player the page follows, including the Local Media Session, whose source reads as the app that plays. They are buttons and sensors rather than a media player, since an ESPHome media player carries no track or skip and Music Assistant already lists the Sendspin player as one. The new `mediaPlayerState` remote API command returns the same state. Translated into Spanish, German, French and Ukrainian.
+- **An adjustable adaptive brightness curve.** The Adaptive brightness page replaces its Minimum brightness, Maximum brightness, Dark room and Bright room rows with a Brightness curve: a chart of screen brightness against the room's light with four points to drag, the live reading marked on it, and each point's values under the chart to tap for exact numbers (#742). The two middle points shape how the screen climbs between the ends, so a sensor that reads low in the evening can get its climb where its readings actually land. A smooth curve runs through all four and never dims the screen as the room gets brighter. Existing setups keep the straight line they had. The Screen light in Home Assistant still sets the top point and the middle points scale with it. The remote admin has the same editor, with arrow keys to nudge a focused point. Translated into Spanish, German, French and Ukrainian.
+
+### Changed
+- **Home Assistant Setup is now Home Assistant.** The settings entry on the device and in the remote admin drops the word Setup, in every language.
+- **A photorealistic Weather Mood moon.** The moon now shows the real near side of the Moon, from NASA Lunar Reconnaissance Orbiter imagery, about 40% larger and with a fainter glow. Stars no longer shine in front of it.
+
+### Fixed
+- **Weather Mood no longer judders in windy scenes on fast devices.** The soft text shadows on the clock, the weather chips and At a Glance were redrawn with offscreen blurs on every frame, which on a Galaxy Tab S8 cost about 80% of a core and made frames miss their slot while the clouds moved. The shadowed text is now drawn once and reused until it changes, so the scenes run as smoothly as without shadows.
+
+## v2026.9.90 - 2026-09-28
+
+### Changed
+- **The Voice Satellite skin picker shows real screenshots.** The thumbnails were drawn from each skin's parts and looked little like the overlay itself. They are now screenshots of every skin answering on a tablet, in its light palette where it has one. The Skin row shows only the skin's name, and the remote admin's Skin row now opens the same picker instead of a dropdown.
+
+### Fixed
+- **Turning off Log in automatically signs the dashboard out.** The switch only stopped seeding new sessions, so the dashboard reloaded still signed in as the token's user. Home Assistant's own Log out could not end that session either and showed Log out failed, because it revokes a refresh token the seeded session does not have. With the switch off, the kiosk now removes the session it seeded and the dashboard shows the Home Assistant login page. A login done by hand stays. Turning the switch back on reloads the start page signed in as the token's user instead of staying on the login page, and replaces a login done by hand in the meantime, signing that session out in Home Assistant.
+- **Voice Satellite pages space their cards like the rest of the app.** The main Voice Satellite page, the Wake Word page and the Custom Models group put an extra gap after each card on top of the card's own, so their groups sat twice as far apart as on any other page. The Intercom page had the same doubled gap under its remote admin notice.
+
+## v2026.9.89 - 2026-09-28
+
+### Fixed
+- **Migrating a muted Voice Satellite no longer fails.** The migration carries the old satellite's mute over, and its Start listening here step waited for the wake word to listen, which a muted satellite never does. It gave up after 30 seconds with "The satellite did not come up in time" until mute was turned off. The step now counts a muted satellite as up once Home Assistant holds it.
+- **The migration check no longer calls an administrator's token a regular user's when it cannot tell.** The Administrator token check reported a regular user's token whenever Home Assistant did not answer the question. It now says it could not check the token, and the app log records why. Translated into Spanish, German, French and Ukrainian.
+- **Slideshows move on when a video fails mid-playback.** A video decoder that failed partway through a clip left the Immich, Local and Gallery slideshows stuck on a black or grey screen until the screensaver restarted (#739). The failed video now counts as finished and the next slide shows.
+
 ## v2026.9.88 - 2026-09-28
 
 ### Added

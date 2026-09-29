@@ -7710,6 +7710,14 @@ class UiStringsUk extends UiStrings {
       'Музика знижується до цієї частки своєї гучності під час голосових взаємодій і викликів інтеркому, а потім повертається.';
 
   @override
+  String get settingSendspinEsphomeEntitiesTitle =>
+      'Експортувати сутності ESPHome';
+
+  @override
+  String get settingSendspinEsphomeEntitiesDescription =>
+      'Кнопки відтворення, паузи, наступного й попереднього треку для плеєра, за яким слідують, у Home Assistant, а також його стан, назва, виконавець і джерело як датчики.';
+
+  @override
   String get settingSendspinVolumeKeysTitle =>
       'Кнопки гучності керують плеєром';
 
@@ -8450,6 +8458,34 @@ class UiStringsUk extends UiStrings {
   @override
   String get screenAudioSetsDefault =>
       'Встановлює яскравість за замовчуванням.';
+
+  @override
+  String get screenAudioBrightnessCurve => 'Крива яскравості';
+
+  @override
+  String get screenAudioCurveHint =>
+      'Перетягніть точку або торкніться її, щоб ввести точні значення. Світло Screen у Home Assistant переміщує верхню точку, і крива слідує за нею.';
+
+  @override
+  String screenAudioCurvePoint(String number) {
+    return 'Точка $number';
+  }
+
+  @override
+  String get screenAudioCurveLightLevel => 'Рівень освітлення (лк)';
+
+  @override
+  String get screenAudioCurveBrightness => 'Яскравість (%)';
+
+  @override
+  String screenAudioCurveLuxRange(String low, String high) {
+    return 'Введіть рівень освітлення від $low до $high лк';
+  }
+
+  @override
+  String screenAudioCurveLevelRange(String low, String high) {
+    return 'Введіть яскравість від $low% до $high%';
+  }
 
   @override
   String get settingAudioMicDeviceTitle => 'Мікрофон';
@@ -11071,9 +11107,6 @@ class UiStringsUk extends UiStrings {
   String get voicePreviewAnswer => 'Зараз сонячно і 22°, легкий вітерець.';
 
   @override
-  String get voicePreviewThumbAnswer => 'Зараз сонячно і 22°.';
-
-  @override
   String get voiceAssistant1 => 'Асистент 1';
 
   @override
@@ -11534,6 +11567,10 @@ class UiStringsUk extends UiStrings {
   @override
   String get voiceCheckAdminBad =>
       'Це токен звичайного користувача. Voice Satellite працює, але використання інструментів і результати не відображатимуться.';
+
+  @override
+  String get voiceCheckAdminUnknown =>
+      'Не вдалося перевірити токен. Для використання інструментів і результатів потрібен токен адміністратора.';
 
   @override
   String get voiceCheckMicOk => 'Дозволено.';
