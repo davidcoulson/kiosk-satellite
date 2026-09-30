@@ -10,6 +10,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'alarm_ring_overlay.dart';
+import 'alarms_overlay.dart';
 import '../core/permissions.dart';
 
 import '../app_container.dart';
@@ -170,15 +172,31 @@ class _KioskScreenState extends State<KioskScreen>
   DateTime? _backArmedUntil;
 
   static const _backAgainWindow = Duration(seconds: 3);
+  static const _backEcho = Duration(milliseconds: 200);
+
+  /// When the last back press ran the ladder, to drop its echo.
+  DateTime? _lastBackAt;
 
   /// One ladder for every back press — the predictive pop (the PopScope in
   /// build) and the KeyEvent path KioskLock routes here as KioskBackPressed
   /// land in the same place, so the two can never drift apart.
   void _handleBack() {
+    // Android 16 with targetSdk 36 hands a key-driven back to both paths
+    // at once when KioskLock swallows it (kiosk mode or the home role):
+    // the predictive callback Flutter registers for the PopScope, and the
+    // KeyEvent. The two land a few milliseconds apart, and ran the ladder
+    // twice: the first opened the menu, the second closed it again and
+    // stepped back, so a remote's back could never open the menu (issue
+    // #745). No hand presses back twice this fast.
+    final now = DateTime.now();
+    final last = _lastBackAt;
+    _lastBackAt = now;
+    if (last != null && now.difference(last) < _backEcho) return;
     if (_drawer.value == 0 &&
         !c.screensaver.isActive &&
         !c.launcher.visible.value &&
         !c.intercom.rosterVisible.value &&
+        !c.alarms.visible.value &&
         c.camera.activeViewId.value == null &&
         !c.kiosk.lockdownActive &&
         c.plugins.windows.value.isNotEmpty) {
@@ -194,7 +212,9 @@ class _KioskScreenState extends State<KioskScreen>
       drawerOpen: _drawer.value > 0,
       armed: armed,
       launcherVisible:
-          c.launcher.visible.value || c.intercom.rosterVisible.value,
+          c.launcher.visible.value ||
+          c.intercom.rosterVisible.value ||
+          c.alarms.visible.value,
       overlayUp: c.browser.overlayUrl.value != null,
       cameraViewUp: c.camera.activeViewId.value != null,
       cameraFocused: c.camera.focusedCameraId.value != null,
@@ -220,6 +240,7 @@ class _KioskScreenState extends State<KioskScreen>
       case BackAction.hideLauncher:
         c.launcher.visible.value = false;
         c.intercom.rosterVisible.value = false;
+        c.alarms.visible.value = false;
       case BackAction.dismissOverlay:
         // A link or rotation page covers the dashboard: back uncovers it.
         c.browser.dismissOverlay();
@@ -232,6 +253,11 @@ class _KioskScreenState extends State<KioskScreen>
         // restricted quick menu, never the full one.
         setState(() => _drawerRestricted = c.kiosk.locked);
         _drawer.fling(velocity: 1);
+        // Back is the remote's menu key (issue #745), so the arrows start
+        // on the first entry the way they did when left opened the menu.
+        // A touch-driven back leaves Flutter in touch highlight mode and
+        // the focus draws nothing.
+        _focusDrawer();
         _backArmedUntil = DateTime.now().add(_backAgainWindow);
         // No toast while the home role is held: a home screen's back has
         // no app to close and usually no history to step, so there is
@@ -313,7 +339,9 @@ class _KioskScreenState extends State<KioskScreen>
         (c.settings.get(defs.kioskAllowHold) && hasHold) ||
         (c.settings.get(defs.kioskAllowLockdown) &&
             c.settings.get(defs.lockdownMenu)) ||
-        (c.settings.get(defs.kioskAllowApps) && hasApps);
+        (c.settings.get(defs.kioskAllowApps) && hasApps) ||
+        (c.settings.get(defs.kioskAllowAlarms) &&
+            c.settings.get(defs.alarmsMenu));
   }
 
   /// Pull-to-refresh as the user experiences it: the Web Browsing toggle,
@@ -554,6 +582,7 @@ class _KioskScreenState extends State<KioskScreen>
         if (_settingsOpen) Navigator.of(context).popUntil((r) => r.isFirst);
         c.launcher.visible.value = false;
         c.intercom.rosterVisible.value = false;
+        c.alarms.visible.value = false;
       }
       return;
     }
@@ -583,6 +612,8 @@ class _KioskScreenState extends State<KioskScreen>
         e.key == defs.intercomEnabled.key ||
         e.key == defs.intercomMenu.key ||
         e.key == defs.kioskAllowIntercom.key ||
+        e.key == defs.kioskAllowAlarms.key ||
+        e.key == defs.alarmsMenu.key ||
         e.key == defs.remoteEnabled.key ||
         e.key == defs.remoteFleetDiscovery.key) {
       setState(() {});
@@ -727,6 +758,7 @@ class _KioskScreenState extends State<KioskScreen>
       if (_settingsOpen) Navigator.of(context).popUntil((r) => r.isFirst);
       c.launcher.visible.value = false;
       c.intercom.rosterVisible.value = false;
+      c.alarms.visible.value = false;
       if (c.browser.overlayUrl.value != null) c.browser.dismissOverlay();
       if (c.camera.activeViewId.value != null) c.camera.hideView();
       unawaited(c.commands.execute('stopScreensaver', const {}));
@@ -739,6 +771,7 @@ class _KioskScreenState extends State<KioskScreen>
     c.browser.overlayUrl.addListener(_onOverlayChanged);
     c.launcher.visible.addListener(_onOverlayChanged);
     c.intercom.rosterVisible.addListener(_onOverlayChanged);
+    c.alarms.visible.addListener(_onOverlayChanged);
     c.plugins.windows.addListener(_onOverlayChanged);
     c.plugins.installed.addListener(_onOverlayChanged);
     c.homeLauncher.roleHeld.addListener(_onOverlayChanged);
@@ -1131,6 +1164,7 @@ class _KioskScreenState extends State<KioskScreen>
         c.kiosk.lockdownActive ||
         c.launcher.visible.value ||
         c.intercom.rosterVisible.value ||
+        c.alarms.visible.value ||
         c.camera.activeViewId.value != null ||
         c.plugins.windows.value.isNotEmpty;
     if (capture == _lastNavCapture) return;
@@ -1242,6 +1276,7 @@ class _KioskScreenState extends State<KioskScreen>
       overlayUp:
           c.launcher.visible.value ||
           c.intercom.rosterVisible.value ||
+          c.alarms.visible.value ||
           c.browser.overlayUrl.value != null ||
           c.camera.activeViewId.value != null,
       // Any route above this one: settings, and every dialog — the exit
@@ -1250,19 +1285,10 @@ class _KioskScreenState extends State<KioskScreen>
           _settingsOpen || !(ModalRoute.of(context)?.isCurrent ?? true),
       drawerOpen: _drawer.value > 0,
       drawerFocused: _drawerFocus.hasFocus,
-      openAllowed: !c.kiosk.locked || _quickMenuAvailable,
-      isLeft: key == LogicalKeyboardKey.arrowLeft,
     )) {
       case KeyNavAction.pass:
         return false;
       case KeyNavAction.swallow:
-        return true;
-      case KeyNavAction.openDrawer:
-        // Mirrors the edge swipe: opening while locked earns only the
-        // restricted quick menu, never the full one.
-        setState(() => _drawerRestricted = c.kiosk.locked);
-        _drawer.fling(velocity: 1);
-        _focusDrawer();
         return true;
       case KeyNavAction.focusDrawer:
         _focusDrawer();
@@ -1402,6 +1428,7 @@ class _KioskScreenState extends State<KioskScreen>
     c.browser.overlayUrl.removeListener(_onOverlayChanged);
     c.launcher.visible.removeListener(_onOverlayChanged);
     c.intercom.rosterVisible.removeListener(_onOverlayChanged);
+    c.alarms.visible.removeListener(_onOverlayChanged);
     c.plugins.windows.removeListener(_onOverlayChanged);
     c.plugins.installed.removeListener(_onOverlayChanged);
     c.homeLauncher.roleHeld.removeListener(_onOverlayChanged);
@@ -1619,6 +1646,9 @@ class _KioskScreenState extends State<KioskScreen>
                   // twin: full screen, below the screensaver, closed by
                   // the manager when a call starts.
                   IntercomRosterOverlay(container: c),
+                  // The alarm list, the launcher's twin again: full
+                  // screen, below the screensaver.
+                  AlarmsOverlay(container: c),
                   // The screensaver covers both planes — it owns the whole
                   // display, drawer open or not.
                   // Paused under the native voice overlay, which
@@ -1647,6 +1677,10 @@ class _KioskScreenState extends State<KioskScreen>
                   // An announcement from Home Assistant: its own card, with
                   // the spoken text, in the same slot.
                   AnnouncementOverlay(container: c),
+                  // The black timeout cover while a voice turn shows: the
+                  // turn draws over it (issue #746). Outside a turn it
+                  // sits above everything below.
+                  ScreensaverBlankOverlay(container: c, underVoice: true),
                   // Native Voice Satellite: the assist overlay, in the same
                   // slot, over the screensaver and the camera views.
                   AssistOverlay(container: c),
@@ -1669,6 +1703,10 @@ class _KioskScreenState extends State<KioskScreen>
                     LockdownShield(
                       blackout: c.settings.get(defs.lockdownBlackout),
                     ),
+                  // An alarm on its own view: over everything, the lockdown
+                  // shield included, since Stop has to answer. Its sunrise
+                  // covers the screensaver and the dark panel too.
+                  AlarmRingOverlay(container: c),
                   // A fleet invitation: above the shield, since answering
                   // it is an admin act the shield must not swallow.
                   FleetInviteOverlay(container: c),

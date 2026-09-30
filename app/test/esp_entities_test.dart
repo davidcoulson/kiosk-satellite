@@ -2730,6 +2730,14 @@ void main() {
       expect(await entity('last_self_repair'), isNotNull);
     });
 
+    test('an agent lists no alarm entities', () async {
+      final kiosk = (await surface.build()).map((e) => '${e['objectId']}');
+      expect(kiosk.where((id) => id.startsWith('alarm_')), isNotEmpty);
+      await settings.set(defs.agentMode, true);
+      final agent = (await surface.build()).map((e) => '${e['objectId']}');
+      expect(agent.where((id) => id.startsWith('alarm_')), isEmpty);
+    });
+
     test(
       'an agent lists no intercom entities, even with the setting on',
       () async {

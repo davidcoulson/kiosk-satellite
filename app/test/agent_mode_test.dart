@@ -56,6 +56,7 @@ void main() {
       c.sendspin,
       c.dlna,
       c.intercom,
+      c.alarms,
     ]) {
       expect(c.managersForTest, isNot(contains(skipped)));
     }

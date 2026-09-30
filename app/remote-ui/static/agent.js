@@ -27,7 +27,7 @@ export function isAgent() {
 const HIDDEN_TABS = [
   'homeassistant', 'voicesatellite', 'screensaver', 'browser',
   'sendspin', 'dlna', 'intercom', 'camera', 'cameras',
-  'kiosk', 'lockdown', 'home',
+  'kiosk', 'lockdown', 'home', 'alarms',
 ];
 
 // Quick controls. A tile is named by its id where it has one, and by the

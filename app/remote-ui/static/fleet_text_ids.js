@@ -163,5 +163,6 @@ export const fleetTextMessageIds = {
   "This kiosk already belongs to this fleet.": "fleetErrorAlreadyMember",
   "That kiosk leads a fleet.": "fleetErrorIsLeader",
   "That kiosk already follows another leader.": "fleetErrorOtherLeader",
-  "Agent": "fleetAgentTag"
+  "Agent": "fleetAgentTag",
+  "the alarms themselves": "fleetTheAlarmsThemselves"
 };

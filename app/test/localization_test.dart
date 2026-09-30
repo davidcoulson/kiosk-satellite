@@ -61,9 +61,11 @@ void main() {
       // The MAC override is rendered by both interfaces after a failed
       // hardware read, although it is hidden from the generic settings list.
       // Keep accessibility service on is too: both Gestures pages show it
-      // in their Remote keys card, beside the warning it answers.
+      // in their Remote keys card, beside the warning it answers. Home
+      // Assistant's mirrored selects show in the fleet exclusion list.
       if (def.key != esphomeMacOverride.key &&
-          def.key != keepAccessibility.key) {
+          def.key != keepAccessibility.key &&
+          !voiceHaSelectSettings.values.contains(def)) {
         expect(
           def.hidden,
           isFalse,

@@ -59,7 +59,7 @@ test('an agent loses the pages whose managers never start', () => {
   const { hidden } = shell({ agent: true });
   for (const tab of ['homeassistant', 'voicesatellite', 'screensaver', 'browser',
     'sendspin', 'dlna', 'intercom', 'camera', 'cameras', 'kiosk', 'lockdown',
-    'home']) {
+    'home', 'alarms']) {
     assert.ok(hidden.has(`tab:${tab}:hidden`), `${tab} should be hidden`);
   }
 });
@@ -99,7 +99,7 @@ test('every tab and tile the trim names exists in the shell', () => {
   const names = [...source.matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
   for (const tab of ['homeassistant', 'voicesatellite', 'screensaver', 'browser',
     'sendspin', 'dlna', 'intercom', 'camera', 'cameras', 'kiosk', 'lockdown',
-    'home']) {
+    'home', 'alarms']) {
     assert.ok(names.includes(tab), `${tab} is named by the trim`);
     assert.ok(html.includes(`data-tab="${tab}"`), `${tab} exists in index.html`);
   }
