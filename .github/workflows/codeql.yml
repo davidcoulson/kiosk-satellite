@@ -1,15 +1,16 @@
-# CodeQL for the fork's working branch. GitHub's default setup only scans
-# the default branch, and this fork's work lives on ks-local, so it gets an
-# advanced setup of its own. Dart has no CodeQL extractor; the Android
+# CodeQL for the fork's working branch and its default branch, which is
+# kept at the same commit. GitHub's default setup only scans the default
+# branch, and this fork's work lives on ks-local, so it gets an advanced
+# setup of its own. Dart has no CodeQL extractor; the Android
 # Kotlin and Java, the remote admin's JavaScript, the Python tooling and the
 # workflows themselves are what can be scanned.
 name: CodeQL
 
 on:
   push:
-    branches: [ks-local]
+    branches: [ks-local, main]
   pull_request:
-    branches: [ks-local]
+    branches: [ks-local, main]
   schedule:
     - cron: '23 6 * * 1'
   workflow_dispatch:

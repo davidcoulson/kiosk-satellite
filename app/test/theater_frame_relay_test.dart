@@ -192,7 +192,7 @@ void main() {
             ': { accepted: false });',
         '} };',
         "globalThis.document = { addEventListener() {}, readyState: 'complete' };",
-        'globalThis.navigator = {};',
+        "Object.defineProperty(globalThis, 'navigator', {value: {}, configurable: true, writable: true});",
         script,
         'function frame(parent) {',
         '  const f = { parent, got: [], closed: false };',

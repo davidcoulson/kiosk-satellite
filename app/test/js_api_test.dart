@@ -187,6 +187,14 @@ void main() {
       },
     );
 
+    test('a call with no origin and no page to ask is refused', () async {
+      // A missing origin must not be a way around the gate: with no
+      // WebView attached there is no page to fall back on either.
+      await withMicrophone();
+      await api.handleCall(['startAudioStream', <String, Object?>{}]);
+      expect(ran, isEmpty);
+    });
+
     test('any dashboard may still drive the panel it is drawn on', () async {
       // The API is documented for every page; only the microphone is
       // reserved for the configured one.

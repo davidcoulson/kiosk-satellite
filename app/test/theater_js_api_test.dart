@@ -159,7 +159,7 @@ void main() {
         '};',
         'globalThis.document = { addEventListener() {}, '
             "readyState: 'complete' };",
-        'globalThis.navigator = {};',
+        "Object.defineProperty(globalThis, 'navigator', {value: {}, configurable: true, writable: true});",
         'try {',
         script,
         '} catch (e) { console.error(String(e)); }',

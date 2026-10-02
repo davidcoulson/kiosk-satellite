@@ -58,21 +58,29 @@ device_ip() {
   adbt shell ip route 2>/dev/null | awk '/src/ {for(i=1;i<=NF;i++) if($i=="src") {print $(i+1); exit}}' | tr -d '\r'
 }
 
+# The bearer token goes to curl in a config read from stdin, not as an
+# argument: arguments show in the process list for every user on this Mac.
+auth_config() { # auth_config <token> -> curl config on stdout
+  printf 'header = "authorization: Bearer %s"\n' "$1"
+}
+
 api() { # api <ip> <token> <method> <path> [body]
   local ip=$1 token=$2 method=$3 path=$4 body=${5:-}
   if [[ -n "$body" ]]; then
-    curl -sS -m 30 -X "$method" "http://$ip:$ADMIN_PORT$path" \
-      -H "authorization: Bearer $token" -H 'content-type: application/json' -d "$body"
+    auth_config "$token" | curl -sS -m 30 -K - -X "$method" "http://$ip:$ADMIN_PORT$path" \
+      -H 'content-type: application/json' -d "$body"
   else
-    curl -sS -m 30 -X "$method" "http://$ip:$ADMIN_PORT$path" -H "authorization: Bearer $token"
+    auth_config "$token" | curl -sS -m 30 -K - -X "$method" "http://$ip:$ADMIN_PORT$path"
   fi
 }
 
 login() { # login <ip> -> token on stdout
   local ip=$1 pw; pw=$(password)
-  curl -sS -m 20 -X POST "http://$ip:$ADMIN_PORT/api/login" \
-    -H 'content-type: application/json' \
-    --data-binary "$(python3 -c 'import json,sys;print(json.dumps({"password":sys.argv[1]}))' "$pw")" |
+  # The password reaches python in its environment and curl on stdin, never
+  # as an argument (see auth_config).
+  KS_PW="$pw" python3 -c 'import json,os;print(json.dumps({"password":os.environ["KS_PW"]}))' |
+    curl -sS -m 20 -X POST "http://$ip:$ADMIN_PORT/api/login" \
+      -H 'content-type: application/json' --data-binary @- |
     python3 -c 'import sys,json;print(json.load(sys.stdin).get("token",""))'
 }
 
@@ -236,9 +244,13 @@ phase_provision() {
   # door is an Activity behind android.permission.DUMP, which only the adb
   # shell holds. `am start` reports success either way, so a stale component
   # here would look like a panel that simply did not take its settings.
-  adbt shell "$(python3 -c 'import json,shlex,sys
-payload = json.dumps({"remote.enabled": True, "remote.password": sys.argv[2]})
-print("am start -n " + sys.argv[1] + "/.ProvisionActivity --es ks.provision " + shlex.quote(payload))' "$PKG" "$pw")" >/dev/null
+  # The command goes to the device's shell on stdin for the same reason the
+  # token goes to curl that way: the password stays out of this machine's
+  # process list.
+  KS_PW="$pw" python3 -c 'import json,os,shlex,sys
+payload = json.dumps({"remote.enabled": True, "remote.password": os.environ["KS_PW"]})
+print("am start -n " + sys.argv[1] + "/.ProvisionActivity --es ks.provision " + shlex.quote(payload))' "$PKG" |
+    adbt shell >/dev/null
   wait_for_admin "$ip"
   local token; token=$(login "$ip")
   [[ -n "$token" ]] || die "could not log in to the new panel"
@@ -258,9 +270,9 @@ print("am start -n " + sys.argv[1] + "/.ProvisionActivity --es ks.provision " + 
   # Sendspin player id, fleet membership and Voice Satellite entity, which
   # are the things two panels must not share.
   local applied
-  applied=$(curl -sS -m 60 -X POST "http://$ip:$ADMIN_PORT/api/settings/import?adoptIdentity=0" \
-    -H "authorization: Bearer $token" -H 'content-type: application/json' \
-    --data-binary "@$profile")
+  applied=$(auth_config "$token" |
+    curl -sS -m 60 -K - -X POST "http://$ip:$ADMIN_PORT/api/settings/import?adoptIdentity=0" \
+      -H 'content-type: application/json' --data-binary "@$profile")
   note "imported: $applied"
   # The profile carries the admin password in its stored (hashed) form, and
   # storing a password signs out every token issued before it, ours too.

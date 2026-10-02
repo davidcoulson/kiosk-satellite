@@ -1918,10 +1918,19 @@ class _KioskScreenState extends State<KioskScreen>
       // socket is fine (see vs_watch_script). Only a reload re-runs it.
       controller.addJavaScriptHandler(
         handlerName: 'ksVoiceSatelliteDown',
-        callback: (args) => c.browser.onVoiceSatelliteDown(
-          args.isNotEmpty ? '${args.first}' : '',
-          args.length > 1 ? int.tryParse('${args[1]}') ?? 0 : 0,
-        ),
+        // Only a configured page may ask for the reload: the watcher runs
+        // on the dashboard, and no other site has a satellite to report.
+        callback: (JavaScriptHandlerFunctionData data) async {
+          if (!data.isMainFrame ||
+              !await c.jsApi.isConfiguredPage(data.origin)) {
+            return;
+          }
+          final args = data.args;
+          await c.browser.onVoiceSatelliteDown(
+            args.isNotEmpty ? '${args.first}' : '',
+            args.length > 1 ? int.tryParse('${args[1]}') ?? 0 : 0,
+          );
+        },
       );
       // The dashboard set may have moved (see dashboards_watch_script).
       controller.addJavaScriptHandler(

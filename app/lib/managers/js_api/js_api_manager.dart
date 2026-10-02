@@ -157,6 +157,23 @@ class JsApiManager extends Manager {
   /// which is what a test with no settings behind it wants.
   bool Function(Uri origin)? isTrustedOrigin;
 
+  /// Whether a main-frame call from [origin] comes from a configured page.
+  /// A WebView that does not say where a call came from is asked for the
+  /// page it is showing instead: only the main frame has a bridge, so that
+  /// page is the caller. With neither to go on the call is refused, so a
+  /// missing origin is never a way around the gate.
+  Future<bool> isConfiguredPage(Uri? origin) async {
+    final trusted = isTrustedOrigin;
+    if (trusted == null) return true;
+    Uri? page = origin;
+    if (page == null) {
+      try {
+        page = await _controller?.getUrl();
+      } catch (_) {}
+    }
+    return page != null && trusted(page);
+  }
+
   /// Whether a frame at [origin] may use theater mode through the
   /// dashboard's relay (theater_relay_script.dart): the "Page allowed from a
   /// frame" setting. Null refuses every frame, unlike [isTrustedOrigin]: a
@@ -273,8 +290,7 @@ class JsApiManager extends Manager {
     if ((_microphoneMethods.contains(method) ||
             _theaterMethods.contains(method) ||
             method == 'theaterRelay') &&
-        origin != null &&
-        isTrustedOrigin?.call(origin) == false) {
+        !await isConfiguredPage(origin)) {
       log.warn(name, 'refused $method from $origin: not a configured page');
       return null;
     }
