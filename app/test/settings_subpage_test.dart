@@ -158,6 +158,8 @@ void main() {
       defs.voiceWakeWordSensitivity.key,
       defs.voiceNoiseGate.key,
       defs.voiceStopWord.key,
+      defs.voiceWakeArbitration.key,
+      defs.voiceWakeArbitrationWindowMs.key,
     ]);
     // Diagnostics is a page of its own, opened from the tester's group.
     expect(defs.wakeWordDiagnostics.subpage, 'Wake word diagnostics');
@@ -172,9 +174,7 @@ void main() {
         if (d.subpage == 'Microphone settings') d.key,
     ];
     expect(moved, [
-      defs.micAudioSource.key,
-      defs.micEchoCancellation.key,
-      defs.micAgc.key,
+      defs.micSoftwareEchoCancellation.key,
       defs.micNoiseSuppression.key,
       defs.micGainDb.key,
       defs.micCaptureFormat.key,

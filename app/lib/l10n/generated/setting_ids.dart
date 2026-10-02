@@ -252,25 +252,13 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingAssistantVolumeTitle",
     "description": "settingAssistantVolumeDescription",
   },
-  "audio.assistant_full_volume_range": {
-    "title": "settingAssistantFullVolumeRangeTitle",
-    "description": "settingAssistantFullVolumeRangeDescription",
-  },
   "intercom.volume": {
     "title": "settingIntercomVolumeTitle",
     "description": "settingIntercomVolumeDescription",
   },
-  "audio.mic_source": {
-    "title": "settingMicAudioSourceTitle",
-    "description": "settingMicAudioSourceDescription",
-  },
-  "audio.mic_echo_cancellation": {
-    "title": "settingMicEchoCancellationTitle",
-    "description": "settingMicEchoCancellationDescription",
-  },
-  "audio.mic_agc": {
-    "title": "settingMicAgcTitle",
-    "description": "settingMicAgcDescription",
+  "audio.software_echo_cancellation": {
+    "title": "settingMicSoftwareEchoCancellationTitle",
+    "description": "settingMicSoftwareEchoCancellationDescription",
   },
   "audio.mic_noise_suppression": {
     "title": "settingMicNoiseSuppressionTitle",
@@ -307,6 +295,10 @@ const settingMessageIds = <String, Map<String, String>>{
   "screensaver.clock_style": {
     "title": "settingScreensaverClockStyleTitle",
     "description": "settingScreensaverClockStyleDescription",
+  },
+  "screensaver.clock_vertical": {
+    "title": "settingScreensaverClockVerticalTitle",
+    "description": "settingScreensaverClockVerticalDescription",
   },
   "screensaver.clock_font": {
     "title": "settingScreensaverClockFontTitle",
@@ -387,6 +379,10 @@ const settingMessageIds = <String, Map<String, String>>{
   "screensaver.clock_night_hide_background": {
     "title": "settingScreensaverClockNightHideBackgroundTitle",
     "description": "settingScreensaverClockNightHideBackgroundDescription",
+  },
+  "screensaver.clock_night_hide_widgets": {
+    "title": "settingScreensaverClockNightHideWidgetsTitle",
+    "description": "settingScreensaverClockNightHideWidgetsDescription",
   },
   "screensaver.clock_night_card_color": {
     "title": "settingScreensaverClockNightCardColorTitle",
@@ -1536,6 +1532,10 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingScreensaverWeatherClockTitle",
     "description": "settingScreensaverWeatherClockDescription",
   },
+  "screensaver.weather_clock_vertical": {
+    "title": "settingScreensaverClockVerticalTitle",
+    "description": "settingScreensaverClockVerticalDescription",
+  },
   "screensaver.weather_clock_font": {
     "title": "settingScreensaverClockFontTitle",
     "description": "settingScreensaverClockFontDescription",
@@ -1744,6 +1744,14 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingVoiceStopWordTitle",
     "description": "settingVoiceStopWordDescription",
   },
+  "voice.wake_arbitration": {
+    "title": "settingVoiceWakeArbitrationTitle",
+    "description": "settingVoiceWakeArbitrationDescription",
+  },
+  "voice.wake_arbitration_window_ms": {
+    "title": "settingVoiceWakeArbitrationWindowTitle",
+    "description": "settingVoiceWakeArbitrationWindowDescription",
+  },
   "voice.skin": {
     "title": "voiceSkin",
     "description": "voiceSkinHelp",
@@ -1879,5 +1887,65 @@ const settingMessageIds = <String, Map<String, String>>{
   "alarms.menu": {
     "title": "settingAlarmsMenuTitle",
     "description": "settingAlarmsMenuDescription",
+  },
+  "voice.realtime_instructions": {
+    "title": "settingVoiceRealtimeInstructionsTitle",
+    "description": "settingVoiceRealtimeInstructionsDescription",
+  },
+  "voice.realtime_idle_seconds": {
+    "title": "settingVoiceRealtimeIdleSecondsTitle",
+    "description": "settingVoiceRealtimeIdleSecondsDescription",
+  },
+  "voice.realtime_talk_over": {
+    "title": "settingVoiceRealtimeTalkOverTitle",
+    "description": "settingVoiceRealtimeTalkOverDescription",
+  },
+  "voice.realtime_tools": {
+    "title": "settingVoiceRealtimeToolsTitle",
+    "description": "settingVoiceRealtimeToolsDescription",
+  },
+  "voice.realtime_mcp_url": {
+    "title": "settingVoiceRealtimeMcpUrlTitle",
+    "description": "settingVoiceRealtimeMcpUrlDescription",
+  },
+  "voice.realtime_mcp_token": {
+    "title": "settingVoiceRealtimeMcpTokenTitle",
+    "description": "settingVoiceRealtimeMcpTokenDescription",
+  },
+  "voice.overlay_mode": {
+    "title": "settingVoiceOverlayModeTitle",
+    "description": "settingVoiceOverlayModeDescription",
+  },
+  "voice.realtime_openai_api_key": {
+    "title": "settingVoiceRealtimeApiKeyTitle",
+    "description": "settingVoiceRealtimeApiKeyDescription",
+  },
+  "voice.realtime_openai_endpoint": {
+    "title": "settingVoiceRealtimeEndpointTitle",
+    "description": "settingVoiceRealtimeEndpointDescription",
+  },
+  "voice.realtime_openai_model": {
+    "title": "settingVoiceRealtimeModelTitle",
+    "description": "settingVoiceRealtimeModelDescription",
+  },
+  "voice.realtime_openai_voice": {
+    "title": "settingVoiceRealtimeVoiceTitle",
+    "description": "settingVoiceRealtimeVoiceDescription",
+  },
+  "voice.realtime_xai_api_key": {
+    "title": "settingVoiceRealtimeApiKeyTitle",
+    "description": "settingVoiceRealtimeApiKeyDescription",
+  },
+  "voice.realtime_xai_endpoint": {
+    "title": "settingVoiceRealtimeEndpointTitle",
+    "description": "settingVoiceRealtimeEndpointDescription",
+  },
+  "voice.realtime_xai_model": {
+    "title": "settingVoiceRealtimeModelTitle",
+    "description": "settingVoiceRealtimeModelDescription",
+  },
+  "voice.realtime_xai_voice": {
+    "title": "settingVoiceRealtimeVoiceTitle",
+    "description": "settingVoiceRealtimeVoiceDescription",
   },
 };

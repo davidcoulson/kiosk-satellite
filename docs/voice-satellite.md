@@ -50,7 +50,7 @@ A kiosk that ran the integration keeps running it on the dashboard until you mig
 5. Review the automations and scripts that still point at the old satellite. The wizard lists them and never changes them.
 6. Tap **Switch now**. The kiosk takes over the Assistant, wake words and Finished speaking detection picks of the old satellite.
 
-Not carried over: custom CSS, the browser's microphone processing and the conversation memory length. The old satellite stays in Home Assistant, unused. Once no other device uses the integration, uninstall it from HACS.
+Not carried over: custom CSS, the browser's microphone processing and the conversation memory length. Automations that trigger on the integration's `voice_satellite_timer` event move to [`esphome.kiosk_satellite_timer`](#timer-events), which carries the same `event_type`, `timer_id`, `name`, `total_seconds`, `seconds_left` and `is_active` fields. The old satellite stays in Home Assistant, unused. Once no other device uses the integration, uninstall it from HACS.
 
 **Run from the dashboard again**, at the bottom of the page while the integration is still installed, switches back. The settings made here stay for next time.
 
@@ -62,14 +62,18 @@ When Home Assistant runs the integration, onboarding offers the same migration i
 | --- | --- | --- |
 | Voice Satellite | Mute microphone | Stops listening for the wake word. |
 | | Keep listening in the background | Hears the wake word while another app is in front and comes back on a detection. **Return to the previous app** goes back when the turn ends. |
-| Assistant | Assistant 1 and 2, Finished speaking detection | Home Assistant's selects: the pipeline that answers each wake word and how long a pause ends a command. |
+| Assistant | Assistant 1 and 2, Finished speaking detection | Home Assistant's selects: the pipeline that answers each wake word and how long a pause ends a command. Every validated realtime provider is one more choice. See [Realtime conversations](#realtime-conversations). |
 | | Talk right after the wake word | Skips the wake sound and keeps what you say right after the wake word. |
 | | Follow-up delay, Chime before a follow-up | A pause and a chime before listening for the answer to a question. |
 | | Play sounds on, Play as | Where answers and chimes play. See [below](#play-sounds-on-a-media-player). |
+| Realtime | Providers | A row per provider with its status. **Configure** opens its API key, model, voice and endpoint, and **Save & Validate** stores them once the provider connects. |
+| | Instructions, End after silence, Talk over answers | How the conversation behaves and ends, for both providers. |
+| | Tools | What the model can control. See [Realtime conversations](#realtime-conversations). |
 | Wake Word | Wake word engine | vsWakeWord (default), microWakeWord or openWakeWord. All models ship with the app. |
 | | Wake word 1 and 2 | Home Assistant's selects. Wake word 2 is answered by Assistant 2. |
 | | Wake word sensitivity, Wake word noise gate | How easily the wake word triggers. The noise gate skips inference while the room is quiet to save CPU. |
 | | Stop word interruption | Say "stop" to cut off an answer, a timer alert or an announcement. It also closes a result panel. |
+| | Wake Word Arbitration | When several kiosks hear the wake word, only the closest one answers. See [Wake word arbitration](#wake-word-arbitration). |
 | | Custom Models | Your own wake word models. See [Custom wake word models](custom-wake-words.md). |
 | Appearance | Skin | Kiosk Satellite, Default, Google Home, Home Assistant, Alexa, Siri, Retro Terminal, Waveform, Lens Flares or Ink Blobs. **Preview** shows it for five seconds. |
 | | Theme, Background, Text size, Reactive activity bar | Light or dark, how much of the dashboard shows through, the text size and the bar that follows your voice and the answer. |
@@ -80,6 +84,41 @@ When Home Assistant runs the integration, onboarding offers the same migration i
 | Chimes | Play chimes, per-event sounds | The wake, done, error, timer and announcement sounds, built in or from the sounds folder. |
 
 The **Wake Word Tester** and **Wake word diagnostics** are covered in [Microphone settings](microphone.md).
+
+## Wake word arbitration
+
+Kiosks in the same room or in open spaces often hear the same wake word. Without arbitration, Home Assistant answers whichever kiosk reaches it first, which is the fastest one and not always the one you spoke to. Turn on **Enable wake word arbitration** on every kiosk that should take part, under **Wake Word > Wake Word Arbitration**.
+
+Home Assistant only settles duplicates for Assist pipelines. A wake word that starts a [realtime conversation](#realtime-conversations) goes straight to the provider, so without arbitration every kiosk that heard it opens its own conversation.
+
+When a kiosk hears the wake word, it broadcasts how loud the wake word reached it over its own background noise and waits for the **Arbitration window**. If another kiosk heard the same wake word louder, it goes back to listening without a chime or anything on screen. The loudest one answers. Each kiosk compares against its own noise floor, so a hot microphone does not win just for being loud, but very different microphones can still favor one model over another.
+
+| Setting | What it does |
+| --- | --- |
+| Enable wake word arbitration | Takes part in arbitration with the other kiosks on the network. |
+| Arbitration window | How long a kiosk waits to hear from the others, 100 to 500 ms (400 by default). It has to cover how much later a slow device detects the wake word plus the trip over Wi-Fi, where access points can hold broadcast traffic for a few hundred milliseconds. Raise it if a closer kiosk sometimes loses or both answer. Every wake waits this long, and nothing you say during the wait is lost. |
+
+The kiosks talk over UDP broadcast on port 2330 and need nothing else turned on: no fleet, intercom or remote admin. They have to be on the same network segment, and an access point that blocks broadcast traffic between wireless clients stops arbitration. When a claim does not arrive, each kiosk answers as it would without arbitration. A muted kiosk does not take part.
+
+## Realtime conversations
+
+A wake word answered by a realtime provider starts a conversation with a speech to speech model instead of a Home Assistant pipeline. The model listens while it talks, so you can interrupt it, and the answers start as soon as you stop speaking. OpenAI and xAI Grok are supported.
+
+1. Under **Realtime**, tap **Configure** on the provider you use and paste its **API key**. You can set up both.
+2. Tap **Save & Validate**. The kiosk connects once with those settings and saves them only if the provider accepts the connection. Otherwise the dialog stays open and shows the error. The provider's row then reads **Connection validated**, or shows what went wrong with the connection or the Home Assistant tools.
+3. Under **Assistant**, pick the provider (for example **OpenAI Realtime**) for **Assistant 1** or **Assistant 2**. Each wake word can use a different provider or keep its pipeline.
+
+**Model** and **Voice** list what each provider offers. With your key, the kiosk asks the provider for them (OpenAI's realtime models, xAI's voices). Through a relay it shows the ones built in. A provider whose key or endpoint changed outside its dialog, for example through a settings import, reads **Not validated** until you save it again. Until then its wake word answers with its Home Assistant pipeline.
+
+**Controlling your home.** With **Tools** on **Home Assistant**, the model uses Home Assistant's **Model Context Protocol Server** integration. Add it under **Settings > Devices & services** in Home Assistant. The model can use the entities exposed to Assist, and the scripts exposed to Assist become tools too. **Custom MCP server** points at another server that speaks Streamable HTTP. **None** leaves the tools to a relay that adds its own.
+
+**Kiosks without internet access.** Set a provider's **Endpoint** to a relay on your network that speaks its realtime protocol. The kiosk only talks to the relay, and the API key can live there instead of on the kiosk.
+
+**On screen.** A conversation docks at the bottom of the screen in a bubble with the current exchange and the skin's bar along its bottom edge. It stays up until the conversation ends, and the dashboard stays visible and usable underneath. The bar drains in the last seconds before **End after silence** ends the conversation. Saying goodbye ends it too, and so does the close button. "Stop" cuts off an answer and keeps the conversation going.
+
+**Talk over answers** keeps the microphone open while the model speaks, so you can interrupt it. It relies on the kiosk's echo canceller. If the model keeps interrupting itself, turn it off: the microphone then closes while the model speaks and "stop" interrupts it when **Stop word interruption** is on.
+
+> **Note:** The model's voice always plays on the kiosk, even with **Play sounds on** set to a media player. Only the chimes follow that setting. Providers bill realtime models by the minute of audio, and a conversation ends after nine minutes at most.
 
 ## Play sounds on a media player
 
@@ -171,6 +210,59 @@ data:
 ```
 
 The entities and actions appear only while Voice Satellite runs natively and is on.
+
+## Timer events
+
+Every timer on the kiosk fires an `esphome.kiosk_satellite_timer` event on the Home Assistant bus when it starts, changes, is cancelled, finishes or its alert is dismissed. That covers spoken timers, timers from a realtime conversation and timers from `vs_start_timer`. Use it to flash a light or announce a kitchen timer in another room. Home Assistant only fires device events under `esphome.`, hence the prefix.
+
+```yaml
+event_type: esphome.kiosk_satellite_timer
+data:
+  device_id: 5f1c...
+  event_type: finished
+  timer_id: 01K6...
+  name: pasta
+  total_seconds: 600
+  seconds_left: 0
+  is_active: false
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `device_id` | string | The kiosk's ESPHome device, added by Home Assistant. |
+| `event_type` | string | `started`, `updated`, `cancelled`, `finished` or `dismissed`. |
+| `timer_id` | string | Home Assistant's timer ID, the same across a timer's events. |
+| `name` | string | The timer's name, empty when it has none. |
+| `total_seconds` | integer | The duration it was started with. Added time does not change it. |
+| `seconds_left` | integer | Seconds left when the event fired. |
+| `is_active` | boolean | False while paused. `updated` covers added time, pause and resume, so this tells them apart. |
+
+`dismissed` fires when the ringing alert is silenced on the kiosk, by a tap, the stop word or `vs_cancel`.
+
+```yaml
+# Flash the living room lamps when any kiosk's timer ends.
+triggers:
+  - trigger: event
+    event_type: esphome.kiosk_satellite_timer
+    event_data:
+      event_type: finished
+actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.living_room
+    data:
+      flash: long
+  - action: tts.speak
+    target:
+      entity_id: tts.home_assistant_cloud
+    data:
+      media_player_entity_id: media_player.living_room_sonos
+      message: >
+        The {{ trigger.event.data.name or 'timer' }} on the
+        {{ device_attr(trigger.event.data.device_id, 'name') }} is done.
+```
+
+Events need the kiosk connected to Home Assistant through ESPHome.
 
 ## Android broadcasts
 

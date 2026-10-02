@@ -4208,6 +4208,18 @@ abstract class UiStrings {
   /// **'This device has no WebView provider, so Home Assistant cannot be shown. Install Android System WebView or Chrome, then restart Kiosk Satellite.'**
   String get kioskWebViewMissingHelp;
 
+  /// Title of the dashboard notice when MediaTek DuraSpeed refuses the WebView renderer.
+  ///
+  /// In en, this message translates to:
+  /// **'DuraSpeed is blocking the dashboard'**
+  String get kioskDuraSpeedBlocking;
+
+  /// Help under the DuraSpeed notice, followed by the adb command and a link to the guide.
+  ///
+  /// In en, this message translates to:
+  /// **'This tablet\'s DuraSpeed keeps the dashboard\'s renderer from starting, and some tablets give it no settings page. Turn it off once over adb, then restart Kiosk Satellite:'**
+  String get kioskDuraSpeedBlockingHelp;
+
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
@@ -6962,6 +6974,12 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Back'**
   String get cameraBack;
+
+  /// Names a USB or monitor webcam when it is the only camera the device has.
+  ///
+  /// In en, this message translates to:
+  /// **'External'**
+  String get cameraExternal;
 
   /// Label or guidance in this section.
   ///
@@ -15187,7 +15205,7 @@ abstract class UiStrings {
   /// Help below the setting.
   ///
   /// In en, this message translates to:
-  /// **'Output for Voice Satellite sounds; media playback follows the system route. Echo cancellation only works with the microphone and speaker on the same device.'**
+  /// **'Output for Voice Satellite sounds; media playback follows the system route.'**
   String get settingAudioSpeakerDeviceDescription;
 
   /// Heading, choice, status or guidance shown in this group.
@@ -15211,26 +15229,26 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
-  /// **'Capture mode'**
-  String get settingMicAudioSourceTitle;
+  /// **'Echo cancellation'**
+  String get settingMicSoftwareEchoCancellationTitle;
 
   /// Help below the setting.
   ///
   /// In en, this message translates to:
-  /// **'Voice communication is the only mode with echo cancellation, so leave it unless the microphone reads far quieter here than in a recorder app.'**
-  String get settingMicAudioSourceDescription;
+  /// **'Removes the kiosk\'s own sounds from the microphone so the wake word and the assistant do not hear them. Leave it on unless a microphone that cancels its own echo sounds worse with it.'**
+  String get settingMicSoftwareEchoCancellationDescription;
 
   /// Setting label.
   ///
   /// In en, this message translates to:
-  /// **'Echo cancellation'**
-  String get settingMicEchoCancellationTitle;
+  /// **'Noise suppression'**
+  String get settingMicNoiseSuppressionTitle;
 
   /// Help below the setting.
   ///
   /// In en, this message translates to:
-  /// **'Keeps the kiosk\'s own speaker out of the microphone so the stop word works during playback. Turn it off only if the microphone reads far quieter here than in a recorder app.'**
-  String get settingMicEchoCancellationDescription;
+  /// **'Takes the hiss out of the microphone. It changes what the wake word hears, so turn it on for a microphone that hisses.'**
+  String get settingMicNoiseSuppressionDescription;
 
   /// Setting label.
   ///
@@ -15243,30 +15261,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Multichannel microphones often reserve one channel for speech recognition; picking it can improve detection.'**
   String get settingMicChannelDescription;
-
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatic gain control'**
-  String get settingMicAgcTitle;
-
-  /// Help below the setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Let Android level the microphone instead of a fixed gain. It also lifts room noise, and on some devices it does nothing at all.'**
-  String get settingMicAgcDescription;
-
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
-  /// **'Noise suppression'**
-  String get settingMicNoiseSuppressionTitle;
-
-  /// Help below the setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Reduce microphone background noise using Android processing. It may help or hurt wake word detection depending on the device.'**
-  String get settingMicNoiseSuppressionDescription;
 
   /// Setting label.
   ///
@@ -15301,7 +15295,7 @@ abstract class UiStrings {
   /// Heading, choice, status or guidance shown in this group.
   ///
   /// In en, this message translates to:
-  /// **'Capture mode, channel, gain, live level'**
+  /// **'Echo cancellation, noise, gain, format, live level'**
   String get screenAudioMicrophoneHint;
 
   /// Heading, choice, status or guidance shown in this group.
@@ -15309,24 +15303,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Adjust capture for your microphone and room. Test wake words and voice interactions after changing these settings.'**
   String get screenAudioMicrophoneNote;
-
-  /// Heading, choice, status or guidance shown in this group.
-  ///
-  /// In en, this message translates to:
-  /// **'Voice communication (default)'**
-  String get screenAudioVoiceCommunication;
-
-  /// Heading, choice, status or guidance shown in this group.
-  ///
-  /// In en, this message translates to:
-  /// **'Voice recognition'**
-  String get screenAudioVoiceRecognition;
-
-  /// Heading, choice, status or guidance shown in this group.
-  ///
-  /// In en, this message translates to:
-  /// **'Raw microphone'**
-  String get screenAudioRawMicrophone;
 
   /// Heading, choice, status or guidance shown in this group.
   ///
@@ -15697,18 +15673,6 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
-  /// **'Full assistant volume range'**
-  String get settingAssistantFullVolumeRangeTitle;
-
-  /// Help below the setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Initialize the built-in speaker\'s call volume at 100% when assistant audio first starts. Master and assistant volume still apply. Other apps share this call volume, which is not restored afterward.'**
-  String get settingAssistantFullVolumeRangeDescription;
-
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
   /// **'Intercom volume'**
   String get settingIntercomVolumeTitle;
 
@@ -15765,6 +15729,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'How the clock is drawn.'**
   String get settingScreensaverClockStyleDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical mode'**
+  String get settingScreensaverClockVerticalTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Stack the hours above the minutes, for portrait screens.'**
+  String get settingScreensaverClockVerticalDescription;
 
   /// Setting label.
   ///
@@ -16005,6 +15981,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Use the night background color instead of the photo while Night mode is active.'**
   String get settingScreensaverClockNightHideBackgroundDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide widgets and At a Glance'**
+  String get settingScreensaverClockNightHideWidgetsTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Show only the clock while Night mode is active.'**
+  String get settingScreensaverClockNightHideWidgetsDescription;
 
   /// Setting label.
   ///
@@ -19642,6 +19630,36 @@ abstract class UiStrings {
   /// **'Sunny and 72° right now, with a light breeze.'**
   String get voicePreviewAnswer;
 
+  /// Translate the visible label or help. Keep model names and technical identifiers unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay mode'**
+  String get settingVoiceOverlayModeTitle;
+
+  /// Translate the visible label or help. Keep model names and technical identifiers unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Docked shows a small bubble over the dashboard. It does not show rich results such as images, weather or videos.'**
+  String get settingVoiceOverlayModeDescription;
+
+  /// Translate the visible label or help. Keep model names and technical identifiers unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Full screen'**
+  String get voiceOverlayFullScreen;
+
+  /// Translate the visible label or help. Keep model names and technical identifiers unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Docked'**
+  String get voiceOverlayDocked;
+
+  /// Translate the visible label or help. Keep model names and technical identifiers unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening…'**
+  String get voiceListeningEllipsis;
+
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
   /// In en, this message translates to:
@@ -20746,6 +20764,216 @@ abstract class UiStrings {
   /// **'Microphone and the other grants wake word detection needs.'**
   String get voicePermissionsSearch;
 
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime'**
+  String get voiceRealtime;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenAI, xAI Grok, tools, talk over answers'**
+  String get voiceRealtimeHint;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant tools'**
+  String get voiceRealtimeToolsSection;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider default'**
+  String get voiceRealtimeProviderDefault;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom MCP server'**
+  String get voiceRealtimeToolsCustom;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint'**
+  String get settingVoiceRealtimeEndpointTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to use the provider. Use a relay on your network to keep this kiosk offline.'**
+  String get settingVoiceRealtimeEndpointDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get settingVoiceRealtimeApiKeyTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty when a relay adds it.'**
+  String get settingVoiceRealtimeApiKeyDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get settingVoiceRealtimeModelTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get settingVoiceRealtimeVoiceTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get settingVoiceRealtimeInstructionsTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'How the assistant behaves. Leave empty for a short default.'**
+  String get settingVoiceRealtimeInstructionsDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'End after silence'**
+  String get settingVoiceRealtimeIdleSecondsTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The conversation ends after this long with nobody talking.'**
+  String get settingVoiceRealtimeIdleSecondsDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk over answers'**
+  String get settingVoiceRealtimeTalkOverTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Interrupt an answer by speaking. Turn off if it interrupts itself.'**
+  String get settingVoiceRealtimeTalkOverDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get settingVoiceRealtimeToolsTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'What the assistant can control. Home Assistant uses its MCP Server integration and the entities exposed to Assist.'**
+  String get settingVoiceRealtimeToolsDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP server URL'**
+  String get settingVoiceRealtimeMcpUrlTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The server\'s Streamable HTTP address.'**
+  String get settingVoiceRealtimeMcpUrlDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP token'**
+  String get settingVoiceRealtimeMcpTokenTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent as a bearer token. Leave empty when the server needs none.'**
+  String get settingVoiceRealtimeMcpTokenDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the MCP Server integration in Home Assistant to control your home.'**
+  String get voiceRealtimeMcpMissing;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Not validated'**
+  String get voiceRealtimeNotValidated;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} Realtime'**
+  String voiceRealtimeOption(String provider);
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect: {error}'**
+  String voiceRealtimeConnectFailed(String error);
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected, but the Home Assistant tools are unavailable: {problem}'**
+  String voiceRealtimeToolsUnavailable(String problem);
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The speech to speech model that answers.'**
+  String get settingVoiceRealtimeModelDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'How the assistant sounds.'**
+  String get settingVoiceRealtimeVoiceDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get voiceRealtimeProviders;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure'**
+  String get voiceRealtimeConfigure;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & Validate'**
+  String get voiceRealtimeSaveValidate;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Not configured'**
+  String get voiceRealtimeNotConfigured;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection validated'**
+  String get voiceRealtimeValidated;
+
   /// Label or help shown on the Voice Satellite main page.
   ///
   /// In en, this message translates to:
@@ -21399,6 +21627,36 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Say \"stop\" to cut off an answer, a timer alert or an announcement.'**
   String get settingVoiceStopWordDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable wake word arbitration'**
+  String get settingVoiceWakeArbitrationTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'When several kiosks hear the wake word, the closest one answers. Increases detection latency.'**
+  String get settingVoiceWakeArbitrationDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Arbitration window'**
+  String get settingVoiceWakeArbitrationWindowTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'How long to wait for the other kiosks. Raise it if a slower kiosk loses when it is closer.'**
+  String get settingVoiceWakeArbitrationWindowDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake Word Arbitration'**
+  String get voiceSectionWakeArbitration;
 
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///

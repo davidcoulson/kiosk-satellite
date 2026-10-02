@@ -8,11 +8,13 @@ import 'package:flutter/services.dart';
 import 'app_container.dart';
 import 'core/app_identity.dart';
 import 'core/app_locales.dart';
+import 'core/certificate_log.dart';
 import 'core/error_log.dart';
 import 'core/events.dart';
 import 'core/frame_watchdog.dart';
 import 'core/ha_http_overrides.dart';
 import 'core/locale_dates.dart';
+import 'core/user_authorities.dart';
 import 'managers/settings/definitions.dart' as defs;
 import 'ui/key_nav.dart';
 import 'ui/agent_screen.dart';
@@ -37,6 +39,26 @@ Future<void> main() async {
   await initLocaleDates();
 
   final container = AppContainer();
+  // Self-signed certificates are the norm for LAN Home Assistant servers;
+  // accept them for the configured HA host (and only that host) across
+  // every HTTP and websocket client in the app. This has to come before
+  // init: managers open Home Assistant sockets while they start, and
+  // dart:io builds its one shared WebSocket client on the first connect.
+  // A client born before the overrides keeps strict verification for the
+  // whole run (issue #775). The policy reads settings only at handshake
+  // time, after settings.init.
+  CertificateLog.attach(container.log);
+  HttpOverrides.global = HaHttpOverrides(container.settings)
+    ..onRefused = (host, fingerprint) => container.log.warn(
+      'tls',
+      '$host presented a certificate other than the one remembered '
+          '(sha256 $fingerprint) and was refused. If it was renewed, switch '
+          '"Ignore SSL errors" on, reconnect and switch it off, or run the '
+          'forgetCertificates command.',
+    );
+  // Private CAs the user installed on the device, for the same reason
+  // before init: every connection from here on should trust them.
+  await trustUserAuthorities();
   await container.init();
   // Framework and uncaught Dart errors into the app log, where reports
   // and the watchdog's restart note can see them.
@@ -51,12 +73,14 @@ Future<void> main() async {
   );
 
   // The app names itself on the wire from here on: the device manager has
-  // resolved the version and the OS by now, and the overrides below hand
-  // the string to every client the process creates.
+  // resolved the version and the OS by now, and the overrides hand the
+  // string to every client the process creates. The shared WebSocket
+  // client may already exist from init, so it is told directly.
   AppIdentity.configure(
     version: container.device.appVersion,
     osVersion: container.device.osVersion,
   );
+  WebSocket.userAgent = AppIdentity.userAgent;
 
   // Chrome DevTools over ADB, when the panel has been asked for it.
   //
@@ -78,18 +102,6 @@ Future<void> main() async {
       container.log.warn('app', 'could not enable WebView debugging: $e');
     }
   }
-
-  // Self-signed certificates are the norm for LAN Home Assistant servers;
-  // accept them for the configured HA host (and only that host) across
-  // every HTTP and websocket client in the app.
-  HttpOverrides.global = HaHttpOverrides(container.settings)
-    ..onRefused = (host, fingerprint) => container.log.warn(
-      'tls',
-      '$host presented a certificate other than the one remembered '
-          '(sha256 $fingerprint) and was refused. If it was renewed, switch '
-          '"Ignore SSL errors" on, reconnect and switch it off, or run the '
-          'forgetCertificates command.',
-    );
 
   // Media permissions are NOT requested here. They are gated by the Web
   // Content toggles and the OS grant is requested lazily (see KioskScreen),

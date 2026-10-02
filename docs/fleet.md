@@ -114,13 +114,13 @@ Certain settings remain unique to each kiosk regardless of the profile configura
 | Accessibility self-repair (needs a per-device adb grant) | `device.keep_accessibility` |
 | Headless management (each box's remote, player and home app) | `gestures.remote_keys.report`, `device.now_playing`, `device.home_app`, `device.home_app_at_boot`, `device.home_app_idle_minutes`, `device.reboot_time`, `device.hot_threshold` |
 | Alarms | `alarms.list`, `alarms.runtime` |
-| Hardware picks | `camera.device`, `camera.rtsp.tls`, `camera.rtsp.resolution`, `camera.rtsp.analysis`, `motion.camera`, `audio.mic_device`, `audio.speaker_device`, `audio.mic_channel`, `audio.mic_source`, `audio.mic_echo_cancellation`, `audio.mic_gain_db`, `audio.mic_agc`, `audio.mic_noise_suppression`, `audio.mic_capture_format`, `render.disable_impeller`, `render.legacy_webview`, `ui.scale`, `device.agent_mode`, `screen.ambient_display`, `device.no_battery` |
+| Hardware picks | `camera.device`, `camera.rtsp.tls`, `camera.rtsp.resolution`, `camera.rtsp.analysis`, `motion.camera`, `audio.mic_device`, `audio.speaker_device`, `audio.mic_channel`, `audio.software_echo_cancellation`, `audio.mic_noise_suppression`, `audio.mic_gain_db`, `audio.mic_capture_format`, `render.disable_impeller`, `render.legacy_webview`, `ui.scale`, `screen.ambient_display`, `device.agent_mode`, `device.no_battery` |
 | Followed player | `sendspin.player`, `sendspin.player_source`, `sendspin.player_name` |
 | Weather preview | `screensaver.weather_preview`, `screensaver.weather_preview_condition`, `screensaver.weather_preview_period` |
 | Voice Satellite chimes | `voice_chimes.wake`, `voice_chimes.done`, `voice_chimes.error`, `voice_chimes.alert`, `voice_chimes.announce` |
 | Diagnostics | `wake_word.diagnostics` |
 | Wake words this kiosk listens for | `voice.wake_words`, `voice.pending_selects` |
-| Local state | `voice.runtime`, `voice.timer_position`, `screensaver.saved_brightness`, `screensaver.immich_validated`, `sendspin.player_active`, `sendspin.player_pos`, `sendspin.sonos_hosts` |
+| Local state | `voice.runtime`, `voice.timer_position`, `voice.dock_position`, `voice.realtime_openai_validated`, `voice.realtime_xai_validated`, `screensaver.saved_brightness`, `screensaver.immich_validated`, `sendspin.player_active`, `sendspin.player_pos`, `sendspin.sonos_hosts` |
 
 Plugin Manager stays entirely local. Runtime chart data, history and plugin entity declarations and readings are never synchronized. Plugin entity exclusions stay local even when ordinary ESPHome exclusions are synced. Fleet sync does not copy installed plugins, packages, plugin settings, per-plugin enabled states, drawer or Home Assistant action placements or the **Enable Plugins** master switch. A fleet token cannot call plugin management commands.
 

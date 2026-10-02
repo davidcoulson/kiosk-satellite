@@ -32,11 +32,6 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "portrait": "screenAudioPortrait",
     "reverse_portrait": "screenAudioReversePortrait"
   },
-  "audio.mic_source": {
-    "voice_communication": "screenAudioVoiceCommunication",
-    "voice_recognition": "screenAudioVoiceRecognition",
-    "mic": "screenAudioRawMicrophone"
-  },
   "audio.mic_capture_format": {
     "auto": "screenAudioAutomaticDefault",
     "hardware": "screenAudioStereo"
@@ -319,6 +314,26 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "20": "alarmsOption20Minutes",
     "25": "alarmsOption25Minutes",
     "30": "alarmsOption30Minutes"
+  },
+  "voice.realtime_tools": {
+    "custom": "voiceRealtimeToolsCustom",
+    "none": "voiceNone"
+  },
+  "voice.overlay_mode": {
+    "full": "voiceOverlayFullScreen",
+    "docked": "voiceOverlayDocked"
+  },
+  "voice.realtime_openai_model": {
+    "": "voiceRealtimeProviderDefault"
+  },
+  "voice.realtime_openai_voice": {
+    "": "voiceRealtimeProviderDefault"
+  },
+  "voice.realtime_xai_model": {
+    "": "voiceRealtimeProviderDefault"
+  },
+  "voice.realtime_xai_voice": {
+    "": "voiceRealtimeProviderDefault"
   }
 };
 const settingPlaceholderMessageIds = <String, String>{
@@ -337,5 +352,7 @@ const settingPlaceholderMessageIds = <String, String>{
   "announcements.tts_voice": "esphomeTtsDefault",
   "alarms.tts_engine": "esphomeTtsFirst",
   "alarms.tts_language": "esphomeTtsDefault",
-  "alarms.tts_voice": "esphomeTtsDefault"
+  "alarms.tts_voice": "esphomeTtsDefault",
+  "voice.realtime_openai_endpoint": "voiceRealtimeProviderDefault",
+  "voice.realtime_xai_endpoint": "voiceRealtimeProviderDefault"
 };

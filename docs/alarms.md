@@ -95,9 +95,11 @@ Then ask the kiosk: "wake me up at 6:30 on weekdays", "set an alarm called Gym f
 
 It works in any language your agent speaks, with no sentences to set up per language. Ask in Spanish, German, French, Ukrainian or anything else the same way, like "despiértame a las seis y media de lunes a viernes", and the agent answers in that language.
 
+[Realtime conversations](voice-satellite.md#realtime-conversations) set alarms the same way: with **Tools** on **Home Assistant**, the model sees the exposed script and calls it while the conversation runs.
+
 The alarm goes to the kiosk you are talking to. A request typed into Home Assistant's own chat reaches no kiosk until it names one, as in "set an alarm on the bedroom kiosk", which matches the kiosk's device name or ESPHome name.
 
-The kiosk listens for the script over its own Home Assistant connection, so it needs the Home Assistant address and token under **Settings, Home Assistant**, and the token has to belong to an administrator. With any other token the kiosk leaves voice alarms off and asks Home Assistant nothing. Nothing new appears in ESPHome.
+The kiosk listens for the script over its own Home Assistant connection, so it needs the Home Assistant long lived token under **Settings, Home Assistant** to belong to an administrator user. With any other token the kiosk leaves voice alarms off and asks Home Assistant nothing. [Calling another kiosk by voice](intercom.md#calling-by-voice) works the same way and needs the same token. Nothing new appears in ESPHome.
 
 ### Good to know
 
@@ -139,3 +141,47 @@ The kiosk's alarms reach Home Assistant through [ESPHome](esphome.md):
 | **Stop alarm**, **Snooze alarm** | button | The same as the buttons on screen. |
 
 A morning routine is an automation that triggers when **Alarm ringing** turns off.
+
+### Alarm events
+
+Every alarm also fires an `esphome.kiosk_satellite_alarm` event on the Home Assistant bus, one per alarm, whenever it changes or rings. Home Assistant only fires device events under `esphome.`, hence the prefix.
+
+```yaml
+event_type: esphome.kiosk_satellite_alarm
+data:
+  device_id: 5f1c...
+  event_type: ringing
+  alarm_id: k3v9x2qa
+  label: Wake up
+  time: "07:00"
+  days: [mon, tue, wed, thu, fri]
+  enabled: true
+```
+
+| `event_type` | When |
+| --- | --- |
+| `created` | An alarm was added, on the kiosk, by voice, in the remote admin or by a settings import. |
+| `updated` | An alarm changed or was switched on or off. A one time alarm switches itself off once it rings. |
+| `deleted` | An alarm was removed. |
+| `sunrise` | Its sunrise started. |
+| `ringing` | It rings, again after each snooze. |
+| `snoozed` | It was snoozed. `snoozed_until` holds when it rings again, in UTC. |
+| `stopped` | It was stopped during a ring, a snooze or a sunrise. |
+| `silenced` | Nobody stopped it before **Silence after** ran out. |
+
+`time` is the alarm's local time and `days` lists the days it repeats on, empty for a one time alarm. `device_id` is the kiosk's ESPHome device, added by Home Assistant.
+
+```yaml
+# Turn on the bedroom lights when the bedroom kiosk's alarm is stopped.
+triggers:
+  - trigger: event
+    event_type: esphome.kiosk_satellite_alarm
+    event_data:
+      event_type: stopped
+      # The bedroom kiosk's device ID, from its device page URL.
+      device_id: 5f1c...
+actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.bedroom
+```

@@ -2376,6 +2376,13 @@ class UiStringsUk extends UiStrings {
       'На цьому пристрої немає провайдера WebView, тому неможливо відобразити Home Assistant. Встановіть Android System WebView або Chrome, а потім перезапустіть Kiosk Satellite.';
 
   @override
+  String get kioskDuraSpeedBlocking => 'DuraSpeed блокує панель';
+
+  @override
+  String get kioskDuraSpeedBlockingHelp =>
+      'DuraSpeed на цьому планшеті не дає запуститися рендереру панелі, а на деяких планшетах для нього немає сторінки налаштувань. Вимкніть його один раз через adb, а потім перезапустіть Kiosk Satellite:';
+
+  @override
   String get kioskPinTitle => 'PIN-код кіоска';
 
   @override
@@ -4004,6 +4011,9 @@ class UiStringsUk extends UiStrings {
 
   @override
   String get cameraBack => 'Задня';
+
+  @override
+  String get cameraExternal => 'Зовнішня';
 
   @override
   String get cameraOnlyCamera => 'Єдина камера на цьому пристрої.';
@@ -8823,7 +8833,7 @@ class UiStringsUk extends UiStrings {
 
   @override
   String get settingAudioSpeakerDeviceDescription =>
-      'Вихід для звуків Voice Satellite; відтворення медіа слідує системному маршруту. Ехопоглинання працює лише тоді, коли мікрофон і динамік на одному пристрої.';
+      'Вихід для звуків Voice Satellite; відтворення медіа слідує системному маршруту.';
 
   @override
   String get screenAudioDevices => 'Аудіопристрої';
@@ -8837,18 +8847,18 @@ class UiStringsUk extends UiStrings {
   }
 
   @override
-  String get settingMicAudioSourceTitle => 'Режим захоплення';
+  String get settingMicSoftwareEchoCancellationTitle => 'Ехопоглинання';
 
   @override
-  String get settingMicAudioSourceDescription =>
-      'Голосовий зв\'язок - єдиний режим із придушенням ехо, тому залиште його, якщо тільки мікрофон не звучить значно тихіше, ніж у диктофоні.';
+  String get settingMicSoftwareEchoCancellationDescription =>
+      'Прибирає з мікрофона власні звуки кіоска, щоб їх не чули ні слово активації, ні асистент. Залишайте увімкненим, якщо тільки мікрофон із власним ехопоглинанням не звучить гірше з ним.';
 
   @override
-  String get settingMicEchoCancellationTitle => 'Ехопоглинання';
+  String get settingMicNoiseSuppressionTitle => 'Шумозаглушення';
 
   @override
-  String get settingMicEchoCancellationDescription =>
-      'Запобігає потраплянню звуку власного динаміка кіоска в мікрофон, щоб команда зупинки працювала під час відтворення. Вимикайте лише якщо мікрофон тут звучить набагато тихіше, ніж у диктофоні.';
+  String get settingMicNoiseSuppressionDescription =>
+      'Прибирає шипіння з мікрофона. Воно змінює те, що чує слово активації, тож вмикайте його для мікрофона, який шипить.';
 
   @override
   String get settingMicChannelTitle => 'Канал мікрофона';
@@ -8856,20 +8866,6 @@ class UiStringsUk extends UiStrings {
   @override
   String get settingMicChannelDescription =>
       'Багатоканальні мікрофони часто резервують один канал для розпізнавання мови; вибір цього каналу може покращити розпізнавання.';
-
-  @override
-  String get settingMicAgcTitle => 'Автоматичне регулювання підсилення';
-
-  @override
-  String get settingMicAgcDescription =>
-      'Дозволити Android вирівнювати рівень мікрофона замість фіксованого підсилення. Це також підсилює шум кімнати, а на деяких пристроях не діє взагалі.';
-
-  @override
-  String get settingMicNoiseSuppressionTitle => 'Шумозаглушення';
-
-  @override
-  String get settingMicNoiseSuppressionDescription =>
-      'Зменшує фоновий шум мікрофона за допомогою обробки Android. Це може як допомогти, так і завадити розпізнаванню слова активації залежно від пристрою.';
 
   @override
   String get settingMicGainDbTitle => 'Підсилення мікрофона';
@@ -8890,21 +8886,11 @@ class UiStringsUk extends UiStrings {
 
   @override
   String get screenAudioMicrophoneHint =>
-      'Режим захоплення, канал, підсилення, поточний рівень';
+      'Ехопоглинання, шум, підсилення, формат, поточний рівень';
 
   @override
   String get screenAudioMicrophoneNote =>
       'Налаштуйте запис звуку для вашого мікрофона та кімнати. Перевірте роботу слова активації та голосової взаємодії після зміни цих налаштувань.';
-
-  @override
-  String get screenAudioVoiceCommunication =>
-      'Голосовий зв\'язок (за замовчуванням)';
-
-  @override
-  String get screenAudioVoiceRecognition => 'Розпізнавання голосу';
-
-  @override
-  String get screenAudioRawMicrophone => 'Необроблений сигнал мікрофона';
 
   @override
   String get screenAudioAutomaticDefault => 'Автоматично (за замовчуванням)';
@@ -9120,14 +9106,6 @@ class UiStringsUk extends UiStrings {
       'Голосові відповіді та сигнали відтворюються на цій частці головної гучності, незалежно від гучності медіа.';
 
   @override
-  String get settingAssistantFullVolumeRangeTitle =>
-      'Повний діапазон гучності асистента';
-
-  @override
-  String get settingAssistantFullVolumeRangeDescription =>
-      'Ініціалізувати гучність виклику вбудованого динаміка на 100%, коли аудіо асистента запускається вперше. Головна гучність та гучність асистента все одно застосовуються. Інші програми спільно використовують цю гучність виклику, і вона не відновлюється згодом.';
-
-  @override
   String get settingIntercomVolumeTitle => 'Гучність домофона';
 
   @override
@@ -9161,6 +9139,13 @@ class UiStringsUk extends UiStrings {
   @override
   String get settingScreensaverClockStyleDescription =>
       'Спосіб відображення годинника.';
+
+  @override
+  String get settingScreensaverClockVerticalTitle => 'Вертикальний режим';
+
+  @override
+  String get settingScreensaverClockVerticalDescription =>
+      'Розміщувати години над хвилинами, для вертикальних екранів.';
 
   @override
   String get settingScreensaverClockFontTitle => 'Шрифт';
@@ -9303,6 +9288,14 @@ class UiStringsUk extends UiStrings {
   @override
   String get settingScreensaverClockNightHideBackgroundDescription =>
       'Використовувати нічний колір фону замість фотографії під час дії нічного режиму.';
+
+  @override
+  String get settingScreensaverClockNightHideWidgetsTitle =>
+      'Приховати віджети та короткий огляд';
+
+  @override
+  String get settingScreensaverClockNightHideWidgetsDescription =>
+      'Показувати лише годинник під час дії нічного режиму.';
 
   @override
   String get settingScreensaverClockNightCardColorTitle =>
@@ -11431,6 +11424,22 @@ class UiStringsUk extends UiStrings {
   String get voicePreviewAnswer => 'Зараз сонячно і 22°, легкий вітерець.';
 
   @override
+  String get settingVoiceOverlayModeTitle => 'Режим оверлею';
+
+  @override
+  String get settingVoiceOverlayModeDescription =>
+      'Закріплений показує невелику бульбашку поверх панелі керування. Розширені результати, як-от зображення, погода чи відео, не показуються.';
+
+  @override
+  String get voiceOverlayFullScreen => 'На весь екран';
+
+  @override
+  String get voiceOverlayDocked => 'Закріплений';
+
+  @override
+  String get voiceListeningEllipsis => 'Слухає…';
+
+  @override
   String get voiceAssistant1 => 'Асистент 1';
 
   @override
@@ -12061,6 +12070,128 @@ class UiStringsUk extends UiStrings {
       'Мікрофон та інші дозволи, необхідні для виявлення слова активації.';
 
   @override
+  String get voiceRealtime => 'Реальний час';
+
+  @override
+  String get voiceRealtimeHint =>
+      'OpenAI, xAI Grok, інструменти, перебивання відповідей';
+
+  @override
+  String get voiceRealtimeToolsSection => 'Інструменти Home Assistant';
+
+  @override
+  String get voiceRealtimeProviderDefault => 'Типовий від постачальника';
+
+  @override
+  String get voiceRealtimeToolsCustom => 'Власний сервер MCP';
+
+  @override
+  String get settingVoiceRealtimeEndpointTitle => 'Кінцева точка';
+
+  @override
+  String get settingVoiceRealtimeEndpointDescription =>
+      'Залиште порожнім, щоб використовувати постачальника. Використайте ретранслятор у своїй мережі, щоб цей кіоск лишався без інтернету.';
+
+  @override
+  String get settingVoiceRealtimeApiKeyTitle => 'Ключ API';
+
+  @override
+  String get settingVoiceRealtimeApiKeyDescription =>
+      'Залиште порожнім, якщо його додає ретранслятор.';
+
+  @override
+  String get settingVoiceRealtimeModelTitle => 'Модель';
+
+  @override
+  String get settingVoiceRealtimeVoiceTitle => 'Голос';
+
+  @override
+  String get settingVoiceRealtimeInstructionsTitle => 'Інструкції';
+
+  @override
+  String get settingVoiceRealtimeInstructionsDescription =>
+      'Як поводиться асистент. Залиште порожнім для короткого типового тексту.';
+
+  @override
+  String get settingVoiceRealtimeIdleSecondsTitle => 'Завершувати після тиші';
+
+  @override
+  String get settingVoiceRealtimeIdleSecondsDescription =>
+      'Розмова завершується, якщо стільки часу ніхто не говорить.';
+
+  @override
+  String get settingVoiceRealtimeTalkOverTitle => 'Перебивати відповіді';
+
+  @override
+  String get settingVoiceRealtimeTalkOverDescription =>
+      'Перебивайте відповідь голосом. Вимкніть, якщо асистент перебиває сам себе.';
+
+  @override
+  String get settingVoiceRealtimeToolsTitle => 'Інструменти';
+
+  @override
+  String get settingVoiceRealtimeToolsDescription =>
+      'Чим асистент може керувати. Home Assistant використовує свою інтеграцію MCP Server і сутності, відкриті для Assist.';
+
+  @override
+  String get settingVoiceRealtimeMcpUrlTitle => 'URL сервера MCP';
+
+  @override
+  String get settingVoiceRealtimeMcpUrlDescription =>
+      'Адреса Streamable HTTP сервера.';
+
+  @override
+  String get settingVoiceRealtimeMcpTokenTitle => 'Токен MCP';
+
+  @override
+  String get settingVoiceRealtimeMcpTokenDescription =>
+      'Надсилається як bearer-токен. Залиште порожнім, якщо сервер його не потребує.';
+
+  @override
+  String get voiceRealtimeMcpMissing =>
+      'Додайте інтеграцію MCP Server у Home Assistant, щоб керувати домом.';
+
+  @override
+  String get voiceRealtimeNotValidated => 'Не перевірено';
+
+  @override
+  String voiceRealtimeOption(String provider) {
+    return '$provider у реальному часі';
+  }
+
+  @override
+  String voiceRealtimeConnectFailed(String error) {
+    return 'Не вдалося підключитися: $error';
+  }
+
+  @override
+  String voiceRealtimeToolsUnavailable(String problem) {
+    return 'Підключено, але інструменти Home Assistant недоступні: $problem';
+  }
+
+  @override
+  String get settingVoiceRealtimeModelDescription =>
+      'Модель «мовлення в мовлення», яка відповідає.';
+
+  @override
+  String get settingVoiceRealtimeVoiceDescription => 'Як звучить асистент.';
+
+  @override
+  String get voiceRealtimeProviders => 'Постачальники';
+
+  @override
+  String get voiceRealtimeConfigure => 'Налаштувати';
+
+  @override
+  String get voiceRealtimeSaveValidate => 'Зберегти й перевірити';
+
+  @override
+  String get voiceRealtimeNotConfigured => 'Не налаштовано';
+
+  @override
+  String get voiceRealtimeValidated => 'З\'єднання перевірено';
+
+  @override
   String get voiceDisconnected => 'Home Assistant не підключено';
 
   @override
@@ -12436,6 +12567,24 @@ class UiStringsUk extends UiStrings {
   @override
   String get settingVoiceStopWordDescription =>
       'Скажіть «stop», щоб перервати відповідь, сповіщення таймера або оголошення.';
+
+  @override
+  String get settingVoiceWakeArbitrationTitle =>
+      'Увімкнути арбітраж слова активації';
+
+  @override
+  String get settingVoiceWakeArbitrationDescription =>
+      'Коли кілька кіосків чують слово активації, відповідає найближчий. Збільшує затримку виявлення.';
+
+  @override
+  String get settingVoiceWakeArbitrationWindowTitle => 'Вікно арбітражу';
+
+  @override
+  String get settingVoiceWakeArbitrationWindowDescription =>
+      'Як довго чекати на інші кіоски. Збільште, якщо повільніший кіоск програє, хоча він ближче.';
+
+  @override
+  String get voiceSectionWakeArbitration => 'Арбітраж слова активації';
 
   @override
   String get voiceOptionSlightly => 'Низька чутливість';

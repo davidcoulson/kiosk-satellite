@@ -826,8 +826,19 @@ class CameraConfigurationChanged extends AppEvent {
 /// holds its idle countdown while the overlay shows an answer or results,
 /// which linger after the turn itself has ended.
 class AssistOverlayVisibility extends AppEvent {
-  const AssistOverlayVisibility(this.visible);
+  const AssistOverlayVisibility(this.visible, {bool? covers, bool? pauses})
+    : covers = covers ?? visible,
+      pauses = pauses ?? visible;
   final bool visible;
+
+  /// It covers the screen (full screen). Docked, it is a bubble over the
+  /// screen, which shows around it.
+  final bool covers;
+
+  /// What is under it stops rendering: the dashboard, a camera view and an
+  /// expensive screensaver hold their last frame. Under both modes, until
+  /// a touch outside the docked bubble wakes them for the rest of it.
+  final bool pauses;
 }
 
 class CameraViewStateChanged extends AppEvent {
@@ -1071,6 +1082,17 @@ class RemoteObserversChanged extends AppEvent {
 /// The dashboard document was replaced or detached.
 class VoiceTimersCleared extends AppEvent {
   const VoiceTimersCleared();
+}
+
+/// An event for Home Assistant to fire on its bus, sent over the ESPHome
+/// API while that server runs. [name] goes out under `esphome.`, the only
+/// namespace Home Assistant fires device events in. Strings stay strings;
+/// numbers, booleans, lists and nulls arrive in Home Assistant as their
+/// own types.
+class HaEventRequested extends AppEvent {
+  const HaEventRequested(this.name, this.data);
+  final String name;
+  final Map<String, Object?> data;
 }
 
 /// A gesture on a native timer pill, routed to its owning integration.

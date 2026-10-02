@@ -220,13 +220,14 @@ const Map<String, String> subpageHints = {
   'Appearance': 'Overlay skin, theme, activity bar, text size',
   // Native Voice Satellite's own pages.
   'Assistant': 'Pipelines, follow-ups',
+  'Realtime': 'OpenAI, xAI Grok, tools, talk over answers',
   'Conversation': 'What the overlay shows and for how long',
   'Timers': 'Pills, alerts, spoken reminders',
   // Its entry row sits under the tester, not with the three pages above.
   'Wake word diagnostics':
       'Recent activations and near misses with audio clips',
   // Screen & Audio.
-  'Microphone settings': 'Capture mode, channel, gain, live level',
+  'Microphone settings': 'Echo cancellation, noise, gain, format, live level',
   'Adaptive brightness': 'Follow the room light with the ambient light sensor',
   // Screensaver. The six mode pages only exist while that mode is the
   // one selected, since every setting on them gates on it.
@@ -1726,19 +1727,6 @@ const assistantVolume = SettingDef<num>(
   section: 'Audio Volume',
 );
 
-const assistantFullVolumeRange = SettingDef<bool>(
-  key: 'audio.assistant_full_volume_range',
-  type: SettingType.boolean,
-  defaultValue: true,
-  title: 'Full assistant volume range',
-  description:
-      "Initialize the built-in speaker's call volume at 100% when assistant "
-      'audio first starts. Master and assistant volume still apply. Other '
-      'apps share this call volume, which is not restored afterward.',
-  category: 'Screen & Audio',
-  section: 'Audio Volume',
-);
-
 // ── Screensaver ────────────────────────────────────────────────────────
 
 const screensaverEnabled = SettingDef<bool>(
@@ -2057,6 +2045,19 @@ const screensaverWeatherClock = SettingDef<bool>(
   subpage: 'Weather Mood screensaver',
   dependsOn: 'screensaver.mode',
   dependsOnValue: 'weather_mood',
+);
+
+/// The Weather Mood twin of [screensaverClockVertical].
+const screensaverWeatherClockVertical = SettingDef<bool>(
+  key: 'screensaver.weather_clock_vertical',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Vertical mode',
+  description: 'Stack the hours above the minutes, for portrait screens.',
+  category: 'Screensaver',
+  section: 'Clock',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_clock',
 );
 
 const screensaverWeatherClockFont = SettingDef<String>(
@@ -2461,6 +2462,23 @@ const screensaverClockStyle = SettingDef<String>(
   },
   dependsOn: 'screensaver.mode',
   dependsOnValue: 'clock',
+);
+
+// Hours above minutes for a portrait panel (issue #767), so the digits
+// can grow into the height instead of being capped by the width. Digital
+// and Flip only: the roller's digits are cropped to the screen's width on
+// purpose and have nothing to stack.
+const screensaverClockVertical = SettingDef<bool>(
+  key: 'screensaver.clock_vertical',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Vertical mode',
+  description: 'Stack the hours above the minutes, for portrait screens.',
+  category: 'Screensaver',
+  section: 'Clock screensaver',
+  subpage: 'Clock screensaver',
+  dependsOn: 'screensaver.clock_style',
+  dependsOnValue: ['digital', 'flip'],
 );
 
 // The typeface, any face (issue #391): the app's own Rubik plus Android's
@@ -2875,6 +2893,20 @@ const screensaverClockNightHideBackground = SettingDef<bool>(
   title: 'Hide background photo',
   description:
       'Use the night background color instead of the photo while Night mode is active.',
+  category: 'Screensaver',
+  section: 'Night mode',
+  subpage: 'Clock screensaver',
+  dependsOn: 'screensaver.clock_night',
+);
+
+// A bare face at night (issue #784): the corner widgets and the At a Glance
+// row stand down while Night mode holds, and come back with the light.
+const screensaverClockNightHideWidgets = SettingDef<bool>(
+  key: 'screensaver.clock_night_hide_widgets',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Hide widgets and At a Glance',
+  description: 'Show only the clock while Night mode is active.',
   category: 'Screensaver',
   section: 'Night mode',
   subpage: 'Clock screensaver',
@@ -5058,47 +5090,47 @@ const screensaverSchedule = SettingDef<String>(
 
 // ── Microphone ─────────────────────────────────────────────────────────
 //
-// Escape hatches for devices whose audio stack does not behave: custom ROMs
-// and cheap tablets where the mic reads far quieter through the app than it
-// does through a recorder app. Every default here is what the app has always
-// done, so an untouched install is bit-for-bit the old behaviour.
+// The capture is the raw microphone, the path a recorder app uses, with
+// the app's own echo cancellation over it. Gain, format and channel are
+// escape hatches for devices whose audio stack does not behave: cheap
+// tablets and custom ROMs where the microphone reads far quieter through
+// the app than through a recorder app, or in a format the app has to ask
+// for by name.
 
-const micAudioSource = SettingDef<String>(
-  key: 'audio.mic_source',
-  type: SettingType.select,
-  defaultValue: 'voice_communication',
-  options: ['voice_communication', 'voice_recognition', 'mic'],
-  optionLabels: {
-    'voice_communication': 'Voice communication (default)',
-    'voice_recognition': 'Voice recognition',
-    'mic': 'Raw microphone',
-  },
-  title: 'Capture mode',
+/// WebRTC's echo canceller (AEC3) over the microphone, fed everything the
+/// kiosk plays itself (SoftwareEcho.kt, EchoReference.kt). The platform's
+/// own canceller is gone: it needed the call capture path, which came in
+/// 20 dB quieter on some ROMs, and on most devices it let the assistant
+/// hear itself anyway. Off is the escape hatch for a microphone that does
+/// its own cancellation and sounds worse with a second one over it.
+const micSoftwareEchoCancellation = SettingDef<bool>(
+  key: 'audio.software_echo_cancellation',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Echo cancellation',
   description:
-      'Voice communication is the only mode with echo cancellation, so '
-      'leave it unless the microphone reads far quieter here than in a '
-      'recorder app.',
+      'Removes the kiosk\'s own sounds from the microphone so the wake '
+      'word and the assistant do not hear them. Leave it on unless a '
+      'microphone that cancels its own echo sounds worse with it.',
   category: 'Screen & Audio',
   section: 'Microphone settings',
   subpage: 'Microphone settings',
   perDevice: true,
 );
 
-// On for every capture session the app has ever opened: the stop word
-// listens while TTS plays out of this same device, and without the
-// canceller the microphone hears that speech and scores it. Off exists for
-// devices where the effect does harm: a canceller attached to a
-// non-communication source on some MediaTek tablets attenuates the whole
-// capture to a whisper.
-const micEchoCancellation = SettingDef<bool>(
-  key: 'audio.mic_echo_cancellation',
+/// WebRTC's noise suppressor over the capture (SoftwareEcho.kt), on any
+/// source: the raw microphone's hiss carried straight into intercom calls
+/// on an Echo Show 8. Off by default, since it changes what the wake word
+/// hears. The key is the old platform suppressor's, so a kiosk that had it
+/// on keeps it on.
+const micNoiseSuppression = SettingDef<bool>(
+  key: 'audio.mic_noise_suppression',
   type: SettingType.boolean,
-  defaultValue: true,
-  title: 'Echo cancellation',
+  defaultValue: false,
+  title: 'Noise suppression',
   description:
-      'Keeps the kiosk\'s own speaker out of the microphone so the stop '
-      'word works during playback. Turn it off only if the microphone '
-      'reads far quieter here than in a recorder app.',
+      'Takes the hiss out of the microphone. It changes what the wake '
+      'word hears, so turn it on for a microphone that hisses.',
   category: 'Screen & Audio',
   section: 'Microphone settings',
   subpage: 'Microphone settings',
@@ -5129,35 +5161,6 @@ const micChannel = SettingDef<num>(
   perDevice: true,
 );
 
-const micAgc = SettingDef<bool>(
-  key: 'audio.mic_agc',
-  type: SettingType.boolean,
-  defaultValue: false,
-  title: 'Automatic gain control',
-  description:
-      'Let Android level the microphone instead of a fixed gain. It '
-      'also lifts room noise, and on some devices it does nothing at '
-      'all.',
-  category: 'Screen & Audio',
-  section: 'Microphone settings',
-  subpage: 'Microphone settings',
-  perDevice: true,
-);
-
-const micNoiseSuppression = SettingDef<bool>(
-  key: 'audio.mic_noise_suppression',
-  type: SettingType.boolean,
-  defaultValue: false,
-  title: 'Noise suppression',
-  description:
-      'Reduce microphone background noise using Android processing. '
-      'It may help or hurt wake word detection depending on the device.',
-  category: 'Screen & Audio',
-  section: 'Microphone settings',
-  subpage: 'Microphone settings',
-  perDevice: true,
-);
-
 const micGainDb = SettingDef<num>(
   key: 'audio.mic_gain_db',
   type: SettingType.number,
@@ -5174,10 +5177,6 @@ const micGainDb = SettingDef<num>(
   category: 'Screen & Audio',
   section: 'Microphone settings',
   subpage: 'Microphone settings',
-  // Hidden while Android is doing the levelling: a fixed gain under an
-  // adaptive one is two controls fighting over the same number.
-  dependsOn: 'audio.mic_agc',
-  dependsOnValue: false,
   perDevice: true,
 );
 
@@ -5545,6 +5544,294 @@ const voicePendingSelects = SettingDef<String>(
   perDevice: true,
 );
 
+/// What answers each wake word: Home Assistant's Assist pipeline
+/// ('assist'), or a realtime conversation with a provider ('openai',
+/// 'xai'). Hidden: the Assistant selects offer every validated provider as
+/// one more choice and set these.
+const voiceEngine1 = SettingDef<String>(
+  key: 'voice.engine_1',
+  type: SettingType.select,
+  defaultValue: 'assist',
+  title: 'Wake word 1',
+  description: 'What answers wake word 1.',
+  category: 'Voice Satellite',
+  options: ['assist', 'openai', 'xai'],
+  hidden: true,
+);
+
+const voiceEngine2 = SettingDef<String>(
+  key: 'voice.engine_2',
+  type: SettingType.select,
+  defaultValue: 'assist',
+  title: 'Wake word 2',
+  description: 'What answers wake word 2.',
+  category: 'Voice Satellite',
+  options: ['assist', 'openai', 'xai'],
+  hidden: true,
+);
+
+// Realtime: wake words answered by a speech to speech model, full duplex.
+// OpenAI and xAI Grok side by side, each with its own connection, and the
+// conversation and the tools shared. A provider's settings are edited in
+// its Configure dialog, which saves them only once they connect: the
+// Providers group shows one row per provider in their place
+// (realtimeProviderSettings), in both UIs.
+
+const voiceRealtimeOpenAiApiKey = SettingDef<String>(
+  key: 'voice.realtime_openai_api_key',
+  type: SettingType.password,
+  defaultValue: '',
+  title: 'API key',
+  description: 'Leave empty when a relay adds it.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  secret: true,
+  dependsOn: 'voice.enabled',
+);
+
+/// OpenAI's models (SettingsManager's realtime catalog); '' is its default.
+const voiceRealtimeOpenAiModel = SettingDef<String>(
+  key: 'voice.realtime_openai_model',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Model',
+  description: 'The speech to speech model that answers.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  options: [''],
+  optionLabels: {'': 'Provider default'},
+  dependsOn: 'voice.enabled',
+);
+
+/// OpenAI's voices; '' is its default.
+const voiceRealtimeOpenAiVoice = SettingDef<String>(
+  key: 'voice.realtime_openai_voice',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Voice',
+  description: 'How the assistant sounds.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  options: [''],
+  optionLabels: {'': 'Provider default'},
+  dependsOn: 'voice.enabled',
+);
+
+const voiceRealtimeOpenAiEndpoint = SettingDef<String>(
+  key: 'voice.realtime_openai_endpoint',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Endpoint',
+  description:
+      'Leave empty to use the provider. Use a relay on your network to keep '
+      'this kiosk offline.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  placeholder: 'Provider default',
+  dependsOn: 'voice.enabled',
+);
+
+/// What OpenAI's last successful Save & Validate checked: a hash of
+/// its endpoint and key. The Assistant selects offer it only while that
+/// still matches. Per device: each kiosk reaches the provider on its own.
+const voiceRealtimeOpenAiValidated = SettingDef<String>(
+  key: 'voice.realtime_openai_validated',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Realtime connection validated',
+  description: '',
+  category: 'Voice Satellite',
+  hidden: true,
+  perDevice: true,
+);
+
+const voiceRealtimeXaiApiKey = SettingDef<String>(
+  key: 'voice.realtime_xai_api_key',
+  type: SettingType.password,
+  defaultValue: '',
+  title: 'API key',
+  description: 'Leave empty when a relay adds it.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  secret: true,
+  dependsOn: 'voice.enabled',
+);
+
+/// xAI's models (SettingsManager's realtime catalog); '' is its default.
+const voiceRealtimeXaiModel = SettingDef<String>(
+  key: 'voice.realtime_xai_model',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Model',
+  description: 'The speech to speech model that answers.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  options: [''],
+  optionLabels: {'': 'Provider default'},
+  dependsOn: 'voice.enabled',
+);
+
+/// xAI's voices; '' is its default.
+const voiceRealtimeXaiVoice = SettingDef<String>(
+  key: 'voice.realtime_xai_voice',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Voice',
+  description: 'How the assistant sounds.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  options: [''],
+  optionLabels: {'': 'Provider default'},
+  dependsOn: 'voice.enabled',
+);
+
+const voiceRealtimeXaiEndpoint = SettingDef<String>(
+  key: 'voice.realtime_xai_endpoint',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Endpoint',
+  description:
+      'Leave empty to use the provider. Use a relay on your network to keep '
+      'this kiosk offline.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  placeholder: 'Provider default',
+  dependsOn: 'voice.enabled',
+);
+
+/// What xAI's last successful Save & Validate checked: a hash of
+/// its endpoint and key. The Assistant selects offer it only while that
+/// still matches. Per device: each kiosk reaches the provider on its own.
+const voiceRealtimeXaiValidated = SettingDef<String>(
+  key: 'voice.realtime_xai_validated',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Realtime connection validated',
+  description: '',
+  category: 'Voice Satellite',
+  hidden: true,
+  perDevice: true,
+);
+
+/// The settings each provider's Configure dialog holds, by provider id.
+/// Neither UI draws them as rows: the first one's place in the Providers
+/// group takes the provider's row, the others add nothing.
+const realtimeProviderSettings = <String, List<SettingDef<String>>>{
+  'openai': [
+    voiceRealtimeOpenAiApiKey,
+    voiceRealtimeOpenAiModel,
+    voiceRealtimeOpenAiVoice,
+    voiceRealtimeOpenAiEndpoint,
+  ],
+  'xai': [
+    voiceRealtimeXaiApiKey,
+    voiceRealtimeXaiModel,
+    voiceRealtimeXaiVoice,
+    voiceRealtimeXaiEndpoint,
+  ],
+};
+
+const voiceRealtimeInstructions = SettingDef<String>(
+  key: 'voice.realtime_instructions',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Instructions',
+  description: 'How the assistant behaves. Leave empty for a short default.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Conversation',
+  multiline: true,
+  dependsOn: 'voice.enabled',
+);
+
+const voiceRealtimeIdleSeconds = SettingDef<num>(
+  key: 'voice.realtime_idle_seconds',
+  type: SettingType.number,
+  defaultValue: 10,
+  title: 'End after silence',
+  description: 'The conversation ends after this long with nobody talking.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Conversation',
+  min: 5,
+  max: 60,
+  step: 1,
+  unit: 's',
+  dependsOn: 'voice.enabled',
+);
+
+/// Needs the echo canceller: off, the microphone is shut while the answer
+/// plays and the stop word interrupts it.
+const voiceRealtimeTalkOver = SettingDef<bool>(
+  key: 'voice.realtime_talk_over',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Talk over answers',
+  description:
+      'Interrupt an answer by speaking. Turn off if it interrupts itself.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Conversation',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceRealtimeTools = SettingDef<String>(
+  key: 'voice.realtime_tools',
+  type: SettingType.select,
+  defaultValue: 'home_assistant',
+  title: 'Tools',
+  description:
+      'What the assistant can control. Home Assistant uses its MCP Server '
+      'integration and the entities exposed to Assist.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Home Assistant tools',
+  options: ['home_assistant', 'custom', 'none'],
+  optionLabels: {
+    'home_assistant': 'Home Assistant',
+    'custom': 'Custom MCP server',
+    'none': 'None',
+  },
+  dependsOn: 'voice.enabled',
+);
+
+const voiceRealtimeMcpUrl = SettingDef<String>(
+  key: 'voice.realtime_mcp_url',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'MCP server URL',
+  description: 'The server\'s Streamable HTTP address.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Home Assistant tools',
+  placeholder: 'http://homeassistant.local:8123/api/mcp',
+  dependsOn: 'voice.realtime_tools',
+  dependsOnValue: 'custom',
+);
+
+const voiceRealtimeMcpToken = SettingDef<String>(
+  key: 'voice.realtime_mcp_token',
+  type: SettingType.password,
+  defaultValue: '',
+  title: 'MCP token',
+  description:
+      'Sent as a bearer token. Leave empty when the server needs none.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Home Assistant tools',
+  secret: true,
+  dependsOn: 'voice.realtime_tools',
+  dependsOnValue: 'custom',
+);
+
 /// The mirrored selects by the key the kiosk's device gives each one.
 const voiceHaSelectSettings = <String, SettingDef<String>>{
   'pipeline': voiceHaPipeline,
@@ -5594,6 +5881,47 @@ const voiceStopWord = SettingDef<bool>(
   dependsOn: 'voice.enabled',
 );
 
+/// Kiosks that hear the same wake word settle which one answers: each
+/// broadcasts how loud the wake word reached it and the loudest one goes on
+/// while the others go back to listening. Off by default: a single kiosk
+/// gains nothing and every wake would wait out the window.
+const voiceWakeArbitration = SettingDef<bool>(
+  key: 'voice.wake_arbitration',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Enable wake word arbitration',
+  description:
+      'When several kiosks hear the wake word, the closest one answers. '
+      'Increases detection latency.',
+  category: 'Voice Satellite',
+  subpage: 'Wake Word',
+  section: 'Wake Word Arbitration',
+  dependsOn: 'voice.enabled',
+);
+
+/// How long a kiosk listens for the others' claims before it decides. It
+/// has to cover the gap between the fastest and the slowest kiosk to detect
+/// the same wake word plus the claim's trip over Wi-Fi, where access points
+/// hold broadcast frames for sleeping clients: claims landed up to 325 ms
+/// after detection between a Tab S8 and an Echo Show 8.
+const voiceWakeArbitrationWindowMs = SettingDef<num>(
+  key: 'voice.wake_arbitration_window_ms',
+  type: SettingType.number,
+  defaultValue: 400,
+  title: 'Arbitration window',
+  description:
+      'How long to wait for the other kiosks. Raise it if a slower kiosk '
+      'loses when it is closer.',
+  category: 'Voice Satellite',
+  subpage: 'Wake Word',
+  section: 'Wake Word Arbitration',
+  min: 100,
+  max: 500,
+  step: 50,
+  unit: 'ms',
+  dependsOn: 'voice.wake_arbitration',
+);
+
 const voiceSkin = SettingDef<String>(
   key: 'voice.skin',
   type: SettingType.select,
@@ -5640,6 +5968,37 @@ const voiceTheme = SettingDef<String>(
   options: ['auto', 'light', 'dark'],
   optionLabels: {'auto': 'Auto', 'light': 'Light', 'dark': 'Dark'},
   dependsOn: 'voice.enabled',
+);
+
+/// Where the assistant shows: the full screen overlay, or a bubble docked
+/// over the dashboard, which leaves it visible and usable. Assist turns and
+/// realtime conversations alike.
+const voiceOverlayMode = SettingDef<String>(
+  key: 'voice.overlay_mode',
+  type: SettingType.select,
+  defaultValue: 'full',
+  title: 'Overlay mode',
+  description:
+      'Docked shows a small bubble over the dashboard. It does not show '
+      'rich results such as images, weather or videos.',
+  category: 'Voice Satellite',
+  subpage: 'Appearance',
+  options: ['full', 'docked'],
+  optionLabels: {'full': 'Full screen', 'docked': 'Docked'},
+  dependsOn: 'voice.enabled',
+);
+
+/// The docked bubble's position as "x,y" fractions of the free area.
+/// Saved by dragging it and kept local to this device.
+const voiceDockPosition = SettingDef<String>(
+  key: 'voice.dock_position',
+  type: SettingType.string,
+  defaultValue: '0.5,1',
+  title: 'Docked bubble position',
+  description: 'Saved position of the docked bubble.',
+  category: 'Voice Satellite',
+  hidden: true,
+  perDevice: true,
 );
 
 /// The overlay's backdrop opacity in percent; -1 keeps the skin's own.
@@ -5987,8 +6346,7 @@ const audioSpeakerDevice = SettingDef<String>(
   title: 'Speaker',
   description:
       'Output for Voice Satellite sounds; media playback follows the system '
-      'route. Echo cancellation only works with the microphone and speaker '
-      'on the same device.',
+      'route.',
   category: 'Screen & Audio',
   hidden: true,
   perDevice: true,
@@ -6817,6 +7175,9 @@ const sendspinPlayer = SettingDef<String>(
   perDevice: true,
 );
 
+/// Music under a voice interaction. Past 10% the software echo canceller
+/// cannot keep it out of the microphone, so the range stops there, and a
+/// value from an older backup or leader is brought down to it.
 const sendspinDuckPercent = SettingDef<num>(
   key: 'sendspin.duck_percent',
   type: SettingType.number,
@@ -6827,10 +7188,16 @@ const sendspinDuckPercent = SettingDef<num>(
       'and intercom calls, then comes back.',
   category: 'Sendspin',
   min: 0,
-  max: 25,
+  max: sendspinDuckMax,
   step: 5,
   unit: '%',
+  normalizer: normalizeSendspinDuck,
 );
+
+const sendspinDuckMax = 10;
+
+Object normalizeSendspinDuck(Object value) =>
+    value is num && value.isFinite ? value.clamp(0, sendspinDuckMax) : 10;
 
 /// The followed player as ESPHome entities (issue #741): transport
 /// buttons and what is playing, for whichever player the surfaces follow.
@@ -8798,11 +9165,14 @@ const intercomTalkMode = SettingDef<String>(
 );
 
 /// Beside the media and assistant faders: the intercom's own share of the
-/// master volume, the third voice the kiosk plays.
+/// master volume, the third voice the kiosk plays. 60 on the squared taper
+/// is 9 dB under the master: clearly heard, and every dB off the far voice
+/// is a dB less echo for the canceller and less of the distortion it cannot
+/// remove, which at 100 left a Galaxy Tab S8 half duplex.
 const intercomVolume = SettingDef<num>(
   key: 'intercom.volume',
   type: SettingType.number,
-  defaultValue: 80,
+  defaultValue: 60,
   title: 'Intercom volume',
   description:
       "The other kiosk's voice and announcements play at this share of "
@@ -10149,12 +10519,9 @@ const List<SettingDef<Object>> allSettings = [
   mediaVolume,
   intercomVolume,
   assistantVolume,
-  assistantFullVolumeRange,
   audioMicDevice,
   audioSpeakerDevice,
-  micAudioSource,
-  micEchoCancellation,
-  micAgc,
+  micSoftwareEchoCancellation,
   micNoiseSuppression,
   micGainDb,
   micCaptureFormat,
@@ -10187,6 +10554,7 @@ const List<SettingDef<Object>> allSettings = [
   screensaverWeatherBlur,
   screensaverWeatherAlarmTakeover,
   screensaverWeatherClock,
+  screensaverWeatherClockVertical,
   screensaverWeatherClockFont,
   screensaverWeatherClockFontWeight,
   screensaverWeatherClock24h,
@@ -10217,6 +10585,7 @@ const List<SettingDef<Object>> allSettings = [
   screensaverSavedBrightness,
   screensaverBlackHideExtras,
   screensaverClockStyle,
+  screensaverClockVertical,
   screensaverClockFont,
   screensaverClockFontWeight,
   screensaverClock24h,
@@ -10238,6 +10607,7 @@ const List<SettingDef<Object>> allSettings = [
   screensaverClockNightColor,
   screensaverClockNightBgColor,
   screensaverClockNightHideBackground,
+  screensaverClockNightHideWidgets,
   screensaverClockNightCardColor,
   screensaverMediaId,
   screensaverMediaIsFolder,
@@ -10392,11 +10762,33 @@ const List<SettingDef<Object>> allSettings = [
   voiceHaWakeWord,
   voiceHaWakeWord2,
   voicePendingSelects,
+  voiceEngine1,
+  voiceEngine2,
+  voiceRealtimeOpenAiApiKey,
+  voiceRealtimeOpenAiModel,
+  voiceRealtimeOpenAiVoice,
+  voiceRealtimeOpenAiEndpoint,
+  voiceRealtimeOpenAiValidated,
+  voiceRealtimeXaiApiKey,
+  voiceRealtimeXaiModel,
+  voiceRealtimeXaiVoice,
+  voiceRealtimeXaiEndpoint,
+  voiceRealtimeXaiValidated,
+  voiceRealtimeInstructions,
+  voiceRealtimeIdleSeconds,
+  voiceRealtimeTalkOver,
+  voiceRealtimeTools,
+  voiceRealtimeMcpUrl,
+  voiceRealtimeMcpToken,
   voiceWakeWordSensitivity,
   voiceNoiseGate,
   voiceStopWord,
+  voiceWakeArbitration,
+  voiceWakeArbitrationWindowMs,
   voiceSkin,
   voiceTheme,
+  voiceOverlayMode,
+  voiceDockPosition,
   voiceBackgroundOpacity,
   voiceTextScale,
   voiceReactiveBar,

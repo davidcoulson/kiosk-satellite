@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart' show sha256;
 import '../managers/settings/definitions.dart' as defs;
 import '../managers/settings/settings_manager.dart';
 import 'app_identity.dart';
+import 'certificate_log.dart';
 
 /// Most Home Assistant installs on a LAN run self-signed certificates, so
 /// the app must not fail TLS verification against its own configured
@@ -36,6 +37,8 @@ import 'app_identity.dart';
 /// is on, whatever is presented becomes the one remembered, so switching it
 /// on, reconnecting and switching it off adopts a renewed certificate from
 /// the device's own settings screen.
+///
+/// Every verdict goes to the app log through [CertificateLog].
 class HaHttpOverrides extends HttpOverrides {
   HaHttpOverrides(this._settings);
 
@@ -53,7 +56,7 @@ class HaHttpOverrides extends HttpOverrides {
     // forwarding the browser's own string.
     client.userAgent = AppIdentity.userAgent;
     client.badCertificateCallback = (cert, host, port) =>
-        allowBadCertificate(host, fingerprint: fingerprintOf(cert));
+        allowBadCertificate(host, cert: cert, fingerprint: fingerprintOf(cert));
     return client;
   }
 
@@ -69,8 +72,17 @@ class HaHttpOverrides extends HttpOverrides {
   void Function(String host, String fingerprint)? onRefused;
 
   /// The policy behind badCertificateCallback, separate so tests can
-  /// exercise it without staging a TLS handshake.
-  bool allowBadCertificate(String host, {required String fingerprint}) {
+  /// exercise it without staging a TLS handshake. Every verdict goes to the
+  /// app log. Without a [fingerprint] nothing is remembered or compared,
+  /// which only a test does.
+  bool allowBadCertificate(
+    String host, {
+    X509Certificate? cert,
+    String? fingerprint,
+  }) =>
+      CertificateLog.dart('app', host, cert, _acceptReason(host, fingerprint));
+
+  String? _acceptReason(String host, String? fingerprint) {
     // "Ignore SSL errors" is the browser's blanket opt-in, and these
     // clients must agree with the WebView about what connects. Wake-word
     // manifest URLs come from the dashboard page's own origin, which can
@@ -87,19 +99,24 @@ class HaHttpOverrides extends HttpOverrides {
     )?.host;
     final isHa = ha != null && ha.isNotEmpty && host == ha;
     final isImmich = immich != null && immich.isNotEmpty && host == immich;
-    if (!isHa && !isImmich) return ignoring;
+    if (!isHa && !isImmich) return ignoring ? 'Ignore SSL errors is on' : null;
 
-    final pinned = _settings.pinnedCertificate(host);
-    if (pinned == null || ignoring) {
-      // First sight, or the owner has said to trust what is there now.
-      if (pinned != fingerprint) _settings.pinCertificate(host, fingerprint);
-    } else if (pinned != fingerprint) {
-      if (_refused.add('$host $fingerprint')) {
-        onRefused?.call(host, fingerprint);
+    if (fingerprint != null) {
+      final pinned = _settings.pinnedCertificate(host);
+      if (pinned == null || ignoring) {
+        // First sight, or the owner has said to trust what is there now.
+        if (pinned != fingerprint) _settings.pinCertificate(host, fingerprint);
+      } else if (pinned != fingerprint) {
+        if (_refused.add('$host $fingerprint')) {
+          onRefused?.call(host, fingerprint);
+        }
+        return null;
       }
-      return false;
     }
-    if (isHa) sawSelfSigned = true;
-    return true;
+    if (isHa) {
+      sawSelfSigned = true;
+      return 'it is the Home Assistant host';
+    }
+    return 'it is the Immich host';
   }
 }

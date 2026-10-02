@@ -251,6 +251,11 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
   /// The screensaver's animations are paused under the voice overlay.
   final renderPaused = ValueNotifier<bool>(false);
 
+  /// Views that cost next to nothing to draw, left live around the docked
+  /// overlay. The Home Assistant Dashboard view is a clear layer over the
+  /// dashboard, which pauses on its own.
+  static const _cheapUnderDock = {null, 'black', 'clock', 'dashboard'};
+
   bool get _nativeVoice =>
       _settings.get(defs.voiceRuntime) == 'native' &&
       _settings.get(defs.voiceEnabled);
@@ -377,7 +382,8 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
       // still observe its playback interaction.
       if (e.source == InteractionSource.sendspin && e.reason == 'media') return;
       _paused = _interactions.update(e);
-      // The native satellite's overlay draws over the screensaver.
+      // The native satellite's overlay draws over the screensaver, full
+      // screen or docked.
       if (_paused && e.source != InteractionSource.native) {
         _stopForInteraction();
       }
@@ -394,9 +400,15 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
       _resetIdleTimer();
     });
     bus.on<AssistOverlayVisibility>().listen((event) {
+      // Paused under the full screen overlay, and docked when it is one
+      // that costs: a still of Weather Mood or a slideshow shows around
+      // the bubble as well as the live one, and a clock keeps ticking.
+      renderPaused.value =
+          _active &&
+          (event.covers ||
+              (event.pauses && !_cheapUnderDock.contains(activeView.value)));
       if (event.visible == _assistOverlay) return;
       _assistOverlay = event.visible;
-      renderPaused.value = event.visible && _active;
       if (event.visible) {
         _cancelIdleTimer();
         if (_active) {

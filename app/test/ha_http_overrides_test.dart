@@ -1,8 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:kiosk_satellite/core/command_registry.dart';
 import 'package:kiosk_satellite/core/event_bus.dart';
 import 'package:kiosk_satellite/core/ha_http_overrides.dart';
 import 'package:kiosk_satellite/core/logging.dart';
+import 'package:kiosk_satellite/managers/home_assistant/home_assistant_manager.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
 import 'package:kiosk_satellite/managers/settings/settings_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -189,5 +192,28 @@ void main() {
         isTrue,
       );
     });
+  });
+
+  // Issue #776: the flag is process-wide, so a certificate refused earlier in
+  // the run (an older HA URL behind a private CA) kept switching "Ignore SSL
+  // errors" back on whenever a host that verifies fine was validated.
+  test('validation ignores a self-signed flag left from earlier', () async {
+    SharedPreferences.setMockInitialValues({
+      'ks.ha.url': 'https://ha.example.com',
+      'ks.ha.token': 'token',
+    });
+    final bus = EventBus();
+    final log = Logger();
+    final commands = CommandRegistry(log);
+    final settings = SettingsManager(bus, commands, log);
+    await settings.init();
+    final ha = HomeAssistantManager(bus, commands, log, settings);
+    HaHttpOverrides.sawSelfSigned = true;
+    final error = await http.runWithClient(
+      ha.validateConnection,
+      () => MockClient((_) async => http.Response('{}', 200)),
+    );
+    expect(error, isNull);
+    expect(settings.get(defs.ignoreSslErrors), isFalse);
   });
 }
