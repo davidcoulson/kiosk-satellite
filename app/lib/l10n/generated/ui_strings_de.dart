@@ -8969,6 +8969,13 @@ class UiStringsDe extends UiStrings {
   }
 
   @override
+  String get settingMicCaptureModeTitle => 'Aufnahmemodus';
+
+  @override
+  String get settingMicCaptureModeDescription =>
+      'Wähle Sprachkommunikation, wenn das Mikrofon hier stumm bleibt oder verstummt, nachdem der Kiosk einen Ton abgespielt hat. Manche Geräte nehmen nur über ihren Anruf-Audiopfad richtig auf.';
+
+  @override
   String get settingMicSoftwareEchoCancellationTitle => 'Echounterdrückung';
 
   @override
@@ -9019,6 +9026,12 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get screenAudioStereo => 'Stereo mit 48 kHz';
+
+  @override
+  String get screenAudioCaptureRawMicrophone => 'Rohes Mikrofon (Standard)';
+
+  @override
+  String get screenAudioCaptureVoiceCommunication => 'Sprachkommunikation';
 
   @override
   String get screenAudioDownmix => 'Kanäle mischen (Standard)';
@@ -12467,6 +12480,14 @@ class UiStringsDe extends UiStrings {
   @override
   String get settingVoiceTimerPillScaleDescription =>
       'Die Größe der Timer-Anzeigen.';
+
+  @override
+  String get settingVoiceTimerAlertPillTitle =>
+      'Anzeigen abgelaufener Timer einblenden';
+
+  @override
+  String get settingVoiceTimerAlertPillDescription =>
+      'Tipp auf die Anzeige, um den Alarm zu beenden.';
 
   @override
   String get settingVoiceMuteTimersTitle => 'Timer-Alarme stummschalten';

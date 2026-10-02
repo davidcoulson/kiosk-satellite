@@ -256,6 +256,10 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingIntercomVolumeTitle",
     "description": "settingIntercomVolumeDescription",
   },
+  "audio.mic_capture_mode": {
+    "title": "settingMicCaptureModeTitle",
+    "description": "settingMicCaptureModeDescription",
+  },
   "audio.software_echo_cancellation": {
     "title": "settingMicSoftwareEchoCancellationTitle",
     "description": "settingMicSoftwareEchoCancellationDescription",
@@ -1815,6 +1819,10 @@ const settingMessageIds = <String, Map<String, String>>{
   "voice.mute_timers": {
     "title": "settingVoiceMuteTimersTitle",
     "description": "settingVoiceMuteTimersDescription",
+  },
+  "voice.timer_alert_pill": {
+    "title": "settingVoiceTimerAlertPillTitle",
+    "description": "settingVoiceTimerAlertPillDescription",
   },
   "voice.timer_name_on_alert": {
     "title": "settingVoiceTimerNameOnAlertTitle",

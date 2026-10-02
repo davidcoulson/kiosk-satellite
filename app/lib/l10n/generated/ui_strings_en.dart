@@ -8753,6 +8753,13 @@ class UiStringsEn extends UiStrings {
   }
 
   @override
+  String get settingMicCaptureModeTitle => 'Capture mode';
+
+  @override
+  String get settingMicCaptureModeDescription =>
+      'Pick Voice communication when the microphone goes silent here, or stops after the kiosk plays a sound. Some devices only record properly on their call audio path.';
+
+  @override
   String get settingMicSoftwareEchoCancellationTitle => 'Echo cancellation';
 
   @override
@@ -8803,6 +8810,12 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get screenAudioStereo => '48 kHz stereo';
+
+  @override
+  String get screenAudioCaptureRawMicrophone => 'Raw microphone (default)';
+
+  @override
+  String get screenAudioCaptureVoiceCommunication => 'Voice communication';
 
   @override
   String get screenAudioDownmix => 'Downmix (default)';
@@ -12180,6 +12193,13 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingVoiceTimerPillScaleDescription =>
       'The size of the timer pills.';
+
+  @override
+  String get settingVoiceTimerAlertPillTitle => 'Show finished timer pills';
+
+  @override
+  String get settingVoiceTimerAlertPillDescription =>
+      'Tap the pill to stop the alert.';
 
   @override
   String get settingVoiceMuteTimersTitle => 'Mute timer alerts';

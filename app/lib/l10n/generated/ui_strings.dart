@@ -9,6 +9,7 @@ import 'ui_strings_de.dart';
 import 'ui_strings_en.dart';
 import 'ui_strings_es.dart';
 import 'ui_strings_fr.dart';
+import 'ui_strings_nl.dart';
 import 'ui_strings_uk.dart';
 
 // ignore_for_file: type=lint
@@ -100,6 +101,7 @@ abstract class UiStrings {
     Locale('en'),
     Locale('es'),
     Locale('fr'),
+    Locale('nl'),
     Locale('uk'),
   ];
 
@@ -15229,6 +15231,18 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
+  /// **'Capture mode'**
+  String get settingMicCaptureModeTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick Voice communication when the microphone goes silent here, or stops after the kiosk plays a sound. Some devices only record properly on their call audio path.'**
+  String get settingMicCaptureModeDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
   /// **'Echo cancellation'**
   String get settingMicSoftwareEchoCancellationTitle;
 
@@ -15315,6 +15329,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'48 kHz stereo'**
   String get screenAudioStereo;
+
+  /// Heading, choice, status or guidance shown in this group.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw microphone (default)'**
+  String get screenAudioCaptureRawMicrophone;
+
+  /// Heading, choice, status or guidance shown in this group.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice communication'**
+  String get screenAudioCaptureVoiceCommunication;
 
   /// Heading, choice, status or guidance shown in this group.
   ///
@@ -21193,6 +21219,18 @@ abstract class UiStrings {
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
   /// In en, this message translates to:
+  /// **'Show finished timer pills'**
+  String get settingVoiceTimerAlertPillTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the pill to stop the alert.'**
+  String get settingVoiceTimerAlertPillDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
   /// **'Mute timer alerts'**
   String get settingVoiceMuteTimersTitle;
 
@@ -22952,8 +22990,14 @@ class _UiStringsDelegate extends LocalizationsDelegate<UiStrings> {
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['de', 'en', 'es', 'fr', 'uk'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>[
+    'de',
+    'en',
+    'es',
+    'fr',
+    'nl',
+    'uk',
+  ].contains(locale.languageCode);
 
   @override
   bool shouldReload(_UiStringsDelegate old) => false;
@@ -22970,6 +23014,8 @@ UiStrings lookupUiStrings(Locale locale) {
       return UiStringsEs();
     case 'fr':
       return UiStringsFr();
+    case 'nl':
+      return UiStringsNl();
     case 'uk':
       return UiStringsUk();
   }
