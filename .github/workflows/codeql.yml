@@ -1,0 +1,50 @@
+# CodeQL for the fork's working branch. GitHub's default setup only scans
+# the default branch, and this fork's work lives on ks-local, so it gets an
+# advanced setup of its own. Dart has no CodeQL extractor; the Android
+# Kotlin and Java, the remote admin's JavaScript, the Python tooling and the
+# workflows themselves are what can be scanned.
+name: CodeQL
+
+on:
+  push:
+    branches: [ks-local]
+  pull_request:
+    branches: [ks-local]
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # build-mode none: no Gradle build, which would need the Flutter
+          # SDK and the generated plugin registrant first.
+          - language: java-kotlin
+            build-mode: none
+          - language: javascript-typescript
+            build-mode: none
+          - language: python
+            build-mode: none
+          - language: actions
+            build-mode: none
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
