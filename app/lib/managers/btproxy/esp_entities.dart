@@ -10,6 +10,7 @@ import '../../core/event_bus.dart';
 import '../../core/events.dart';
 import '../../core/logging.dart';
 import '../device/ip_addresses.dart';
+import '../gestures/remote_keys_manager.dart' show remoteKeyEventTypes;
 import 'dashboard_views.dart';
 import 'interaction_stamp.dart';
 import '../sendspin/music_assistant_api.dart';
@@ -18,7 +19,9 @@ import '../screensaver/screensaver_manager.dart'
 import '../settings/definitions.dart' as defs;
 import '../sendspin/sendspin_manager.dart' show SendspinManager;
 import '../settings/settings_manager.dart';
+import 'bt_proxy_manager.dart' show mergedAdvertisementFilter;
 import 'countdown_stamp.dart';
+import 'lux_limiter.dart';
 
 /// The kiosk entities served over the ESPHome native API. This is the
 /// Dart half of the pair with the native EntityHub: it owns WHAT exists,
@@ -38,6 +41,20 @@ import 'countdown_stamp.dart';
 /// no camera, so a fetch of either asks both and each answers on its own
 /// key; the frames are cheap enough that a screenshot fetch refreshing the
 /// camera preview alongside is no cost worth a second protocol.
+/// One settings-backed number entity: its range and the setting behind it.
+typedef _SettingNumber = ({
+  String name,
+  String icon,
+  defs.SettingDef<num> def,
+  bool fraction,
+  num min,
+  num max,
+  num step,
+  String unit,
+  String? deviceClass,
+  int mode,
+});
+
 class EspEntitySurface {
   EspEntitySurface(
     this.bus,
@@ -52,6 +69,15 @@ class EspEntitySurface {
   final Logger log;
   final SettingsManager _settings;
 
+  /// Mirrors the browser manager's hold, tracked from its event: this
+  /// surface reaches managers through [commands], never by holding one.
+  bool _camerasHeld = false;
+  bool _theaterActive = false;
+  String _theaterPhase = 'off';
+
+  /// Mirrors the proximity manager's entity state, tracked from its event.
+  bool _proximityNear = false;
+
   /// Called when the served catalog no longer matches what a fresh
   /// [build] would lay out (the dashboard view list moved). The ESPHome
   /// protocol lists entities once per connection, so only the manager's
@@ -59,6 +85,22 @@ class EspEntitySurface {
   final void Function()? onCatalogChanged;
 
   static const _pollInterval = Duration(seconds: 60);
+
+  /// The media text sensors: object id, name and icon, keyed into the
+  /// media summary by the id's tail.
+  static const _mediaSensors = [
+    ('media_state', 'Media state', 'mdi:play-pause'),
+    ('media_title', 'Media title', 'mdi:music-note'),
+    ('media_artist', 'Media artist', 'mdi:account-music'),
+    ('media_source', 'Media source', 'mdi:speaker'),
+  ];
+
+  /// The followed player's entities, unless this fork's Now playing is on:
+  /// the two share media_state, media_title, media_artist, media_next and
+  /// media_previous, and Now playing is what an agent reports.
+  bool get _followedPlayerEntities =>
+      _settings.get(defs.sendspinEsphomeEntities) &&
+      !_settings.get(defs.nowPlaying);
 
   /// The group used on Home Assistant's device page, before the entity type.
   static String categoryLabel(Map<String, Object?> entity) {
@@ -123,6 +165,11 @@ class EspEntitySurface {
   /// push never names an entity Home Assistant was never told about.
   bool _voiceSatellite = false;
 
+  /// Whether the catalog served lists the Restart device button (issue
+  /// #528); the manager compares later Shizuku reports against it.
+  bool get rebootButtonListed => _rebootListed;
+  bool _rebootListed = false;
+
   /// Coalesces the burst of wake-word state changes one voice turn makes
   /// into a single read of the page's engine state.
   Timer? _vsNudge;
@@ -148,6 +195,12 @@ class EspEntitySurface {
     (due) => _send('next_screensaver', due?.toUtc().toIso8601String()),
   );
   DateTime? _idleDue;
+
+  /// The Ambient light sensor (issue #521). The native damper already
+  /// holds readings to one every 2 seconds; this bucket lets a real
+  /// transition through untouched and collapses a driver flapping between
+  /// two values to one recorder row per half minute.
+  late final _lux = LuxLimiter((lux) => _send('illuminance', lux));
 
   /// Unknown while the screensaver shows: a clock still running under a
   /// commanded session is not a moment anyone wants to trigger on.
@@ -209,6 +262,37 @@ class EspEntitySurface {
           'mdi:radar',
           defs.screensaverDismissOnProximity,
         ),
+        // The intercom's master switch; its state sensors and the answer
+        // mode exist only while it is on.
+        'intercom_enabled': (
+          'Intercom enabled',
+          'mdi:phone-in-talk-outline',
+          defs.intercomEnabled,
+        ),
+        // Native Voice Satellite. Every one starts with vs_, the name too,
+        // since Home Assistant builds the entity id from the name. Listed
+        // only on the native runtime with Voice Satellite on.
+        'vs_mute': ('VS Mute', 'mdi:microphone-off', defs.voiceMute),
+        'vs_wake_sound': (
+          'VS Chimes',
+          'mdi:bell-ring-outline',
+          defs.voiceWakeSound,
+        ),
+        'vs_stop_word': (
+          'VS Stop word',
+          'mdi:hand-back-left-outline',
+          defs.voiceStopWord,
+        ),
+        'vs_noise_gate': (
+          'VS Noise gate',
+          'mdi:volume-off',
+          defs.voiceNoiseGate,
+        ),
+        'vs_mute_timers': (
+          'VS Mute timers',
+          'mdi:timer-off-outline',
+          defs.voiceMuteTimers,
+        ),
       };
 
   /// Settings-backed selects: objectId -> (name, icon, definition). The
@@ -238,31 +322,132 @@ class EspEntitySurface {
           'mdi:camera-flip-outline',
           defs.cameraDevice,
         ),
+        // Catalog-gated below on the intercom being on, like its sensors.
+        'intercom_answer_mode': (
+          'Intercom answer mode',
+          'mdi:phone-ring-outline',
+          defs.intercomAnswerMode,
+        ),
+        'vs_wake_word_engine': (
+          'VS Wake word engine',
+          'mdi:account-voice',
+          defs.voiceWakeWordEngine,
+        ),
+        'vs_wake_word_sensitivity': (
+          'VS Wake word sensitivity',
+          'mdi:ear-hearing',
+          defs.voiceWakeWordSensitivity,
+        ),
       };
 
-  /// Settings-backed numbers shown as 0-100 percent sliders:
-  /// objectId -> (name, icon, definition, stored 0..1 instead of 0..100).
-  static final _settingNumbers =
-      <String, (String, String, defs.SettingDef<num>, bool)>{
-        'screensaver_brightness_level': (
-          'Screensaver brightness level',
-          'mdi:brightness-6',
-          defs.screensaverBrightnessLevel,
-          true,
-        ),
-        'assistant_volume': (
-          'Assistant volume',
-          'mdi:account-voice',
-          defs.assistantVolume,
-          false,
-        ),
-        'media_volume': (
-          'Media volume',
-          'mdi:music-note',
-          defs.mediaVolume,
-          false,
-        ),
-      };
+  /// Settings-backed numbers: objectId -> the entity's range and the
+  /// setting behind it. `fraction` marks a setting stored 0..1 behind a
+  /// 0-100 slider.
+  static final _settingNumbers = <String, _SettingNumber>{
+    'screensaver_brightness_level': _percent(
+      'Screensaver brightness level',
+      'mdi:brightness-6',
+      defs.screensaverBrightnessLevel,
+      fraction: true,
+    ),
+    // The idle timeout in seconds (issue #516): an automation can cut it
+    // short at night and stretch it back by day. A box rather than a
+    // slider: the range is wide and a second matters at the low end. 0
+    // keeps the idle clock off, the same as on the settings page.
+    'screensaver_timeout': (
+      name: 'Screensaver timeout',
+      icon: 'mdi:timer-outline',
+      def: defs.screensaverTimeoutSeconds,
+      fraction: false,
+      min: 0,
+      max: 86400,
+      step: 1,
+      unit: 's',
+      deviceClass: 'duration',
+      mode: 1,
+    ),
+    // Theater mode's dimming and peek time (docs/theater.md), so an
+    // automation can make the room darker for a film than for a match.
+    // Dimming stops at 95%: a fully opaque wash is the black phase's, and
+    // at 100% a dimmed panel would look switched off.
+    'theater_overlay_opacity': (
+      name: 'Theater dimming',
+      icon: 'mdi:theater',
+      def: defs.theaterOverlayOpacity,
+      fraction: true,
+      min: 0,
+      max: 95,
+      step: 5,
+      unit: '%',
+      deviceClass: null,
+      mode: 0,
+    ),
+    'theater_peek_seconds': (
+      name: 'Theater peek time',
+      icon: 'mdi:timer-outline',
+      def: defs.theaterPeekSeconds,
+      fraction: false,
+      min: 3,
+      max: 60,
+      step: 1,
+      unit: 's',
+      deviceClass: 'duration',
+      mode: 0,
+    ),
+    'assistant_volume': _percent(
+      'Assistant volume',
+      'mdi:account-voice',
+      defs.assistantVolume,
+    ),
+    'media_volume': _percent(
+      'Media volume',
+      'mdi:music-note',
+      defs.mediaVolume,
+    ),
+    'vs_answer_linger': (
+      name: 'VS Answer linger',
+      icon: 'mdi:timer-outline',
+      def: defs.voiceAnswerLinger,
+      fraction: false,
+      min: 0,
+      max: 15,
+      step: 1,
+      unit: 's',
+      deviceClass: 'duration',
+      mode: 2,
+    ),
+    'vs_announcement_linger': (
+      name: 'VS Announcement linger',
+      icon: 'mdi:timer-outline',
+      def: defs.voiceAnnouncementLinger,
+      fraction: false,
+      min: 1,
+      max: 60,
+      step: 1,
+      unit: 's',
+      deviceClass: 'duration',
+      mode: 2,
+    ),
+  };
+
+  /// A 0-100 percent slider in 5% steps.
+  static _SettingNumber _percent(
+    String name,
+    String icon,
+    defs.SettingDef<num> def, {
+    bool fraction = false,
+  }) => (
+    name: name,
+    icon: icon,
+    def: def,
+    fraction: fraction,
+    min: 0,
+    max: 100,
+    step: 5,
+    unit: '%',
+    deviceClass: null,
+    mode: 2,
+  );
 
   /// Probes the hardware and Home Assistant, then lays out the catalog.
   /// The set is fixed for one server run; the manager restarts the server
@@ -275,6 +460,11 @@ class EspEntitySurface {
         light.ok && light.data is Map && (light.data as Map)['present'] == true;
     final cam = await commands.execute('hasDeviceCamera', const {});
     final cameraPresent = !(cam.ok && cam.data == false);
+    // An agent draws no dashboard, so its screen belongs to whatever that
+    // box is running. A Screenshot camera there hands Home Assistant a
+    // picture of someone else's UI, and every fetch makes the device read
+    // back and encode a frame for it.
+    final agent = _settings.get(defs.agentMode);
     // The proximity switch is the one pessimistic entity: rare hardware,
     // so it exists only once the probe has said there is a sensor.
     final prox = await commands.execute('getProximitySupport', const {});
@@ -291,11 +481,11 @@ class EspEntitySurface {
         loc.ok &&
         loc.data is Map &&
         (loc.data as Map)['supported'] != false;
-    // The Person sensor exists only while Dismiss on person is on, on a
-    // device whose probe has said it has a person sensor of its own
-    // (discussion #353); the switch re-registers the device, a
+    // The Person sensor exists only while the Person Sensor switch is on,
+    // on a device whose probe has said it has a person sensor of its own
+    // (discussion #353, issue #734); the switch re-registers the device, a
     // setup-time choice like Report location.
-    final person = _settings.get(defs.screensaverDismissOnPerson)
+    final person = _settings.get(defs.personSensorEnabled)
         ? await commands.execute('getPersonSensorSupport', const {})
         : null;
     final personPresent =
@@ -316,10 +506,20 @@ class EspEntitySurface {
     final stats = await commands.execute('getStats', const {});
     final cpuTempPresent =
         stats.ok && stats.data is Map && (stats.data as Map)['temp'] != null;
+    // A kernel without cpuidle answers only the clock's position between
+    // its slowest and fastest speed. That is not load, so such a device
+    // lists CPU clock instead of a CPU usage that would read 100% on a
+    // chip a fifth busy.
+    final cpuClockOnly =
+        stats.ok &&
+        stats.data is Map &&
+        (stats.data as Map)['cpu'] == null &&
+        (stats.data as Map)['cpuClock'] != null;
     // A device without a battery gets no Battery sensor (issue #367): the
     // one gate every consumer reads through answers null for a mains-
     // powered box, and an entity that could only ever show a sentinel is
-    // worse than none. Charging stays: the box still says it is plugged.
+    // worse than none. Charging stays unless No battery is on (see
+    // _unlisted): a board without a battery still says it is plugged.
     final batteryPresent =
         stats.ok && stats.data is Map && (stats.data as Map)['battery'] != null;
     // Bluetooth connections ride the proxy's master switch, and only exist
@@ -346,7 +546,18 @@ class EspEntitySurface {
     // a kiosk with none has no engine to start (issue #288). Reading the
     // page instead would make the catalog depend on what was on screen the
     // moment the server started.
-    _voiceSatellite = _settings.get(defs.haSatelliteEntity).trim().isNotEmpty;
+    _voiceSatellite =
+        _settings.get(defs.haSatelliteEntity).trim().isNotEmpty &&
+        _settings.get(defs.voiceRuntime) == 'dashboard';
+    // The Restart device button exists only where a restart can land
+    // (issue #528): device owner, or a granted Shizuku connection. Asked at
+    // build like the hardware probes; the manager restarts the server when
+    // a later Shizuku report changes the answer.
+    final reboot = await commands.execute('getDeviceRebootSupport', const {});
+    _rebootListed =
+        reboot.ok &&
+        reboot.data is Map &&
+        (reboot.data as Map)['supported'] == true;
     await _refreshCameraViews();
     await _refreshDashboardViews();
 
@@ -370,6 +581,7 @@ class EspEntitySurface {
       String unit = '',
       int stateClass = 0,
       String type = 'sensor',
+      bool disabled = false,
     }) => {
       'type': type,
       'objectId': id,
@@ -379,10 +591,55 @@ class EspEntitySurface {
       'unit': unit,
       'stateClass': stateClass,
       'category': 2,
+      if (disabled) 'disabled': true,
     };
 
+    // An agent never starts the intercom, whatever the setting says.
+    final intercomOn = _settings.get(defs.intercomEnabled) && !agent;
+    _listedStartPage = _hasCustomStartPage;
     final catalog = <Map<String, Object?>>[
       // ── Controls ─────────────────────────────────────────────────────
+      // Headless management (AgentToolsManager, RemoteKeys.kt): the remote
+      // as an event, and whatever another app is playing.
+      if (_settings.get(defs.remoteKeysReport))
+        {
+          'type': 'event',
+          'objectId': 'remote_key',
+          'name': 'Remote key',
+          'icon': 'mdi:remote',
+          'deviceClass': 'button',
+          'eventTypes': remoteKeyEventTypes.values.toList(),
+        },
+      if (_settings.get(defs.nowPlaying)) ...[
+        {
+          'type': 'text_sensor',
+          'objectId': 'media_state',
+          'name': 'Media state',
+          'icon': 'mdi:play-pause',
+        },
+        {
+          'type': 'text_sensor',
+          'objectId': 'media_app',
+          'name': 'Media app',
+          'icon': 'mdi:application-outline',
+        },
+        {
+          'type': 'text_sensor',
+          'objectId': 'media_title',
+          'name': 'Media title',
+          'icon': 'mdi:music-note',
+        },
+        {
+          'type': 'text_sensor',
+          'objectId': 'media_artist',
+          'name': 'Media artist',
+          'icon': 'mdi:account-music',
+        },
+        button('media_play_pause', 'Media play/pause', 'mdi:play-pause'),
+        button('media_next', 'Media next', 'mdi:skip-next'),
+        button('media_previous', 'Media previous', 'mdi:skip-previous'),
+        button('media_stop', 'Media stop', 'mdi:stop'),
+      ],
       {
         'type': 'light',
         'objectId': 'screen',
@@ -394,6 +651,25 @@ class EspEntitySurface {
         'objectId': 'screensaver_active',
         'name': 'Screensaver active',
         'icon': 'mdi:sleep',
+      },
+      // Off pauses the camera streams on the dashboard, for a panel with
+      // nobody in front of it. Driven from whatever knows the room is
+      // empty -- an mmWave sensor where the room has one, this panel's own
+      // motion sensor where it does not -- because presence is not
+      // something the panel can judge for itself.
+      {
+        'type': 'switch',
+        'objectId': 'dashboard_cameras',
+        'name': 'Dashboard cameras',
+        'icon': 'mdi:cctv',
+      },
+      // Theater mode (docs/theater.md): runtime state rather than a
+      // setting, so a switch of its own. Off whenever the app starts.
+      {
+        'type': 'switch',
+        'objectId': 'theater_mode',
+        'name': 'Theater mode',
+        'icon': 'mdi:theater',
       },
       // The full-screen Now Playing view: on while it is on screen, and a
       // turn-on brings it up the way the kiosk menu entry does (a paused
@@ -447,11 +723,16 @@ class EspEntitySurface {
         'Notifications dismiss all',
         'mdi:bell-off-outline',
       ),
+      button('theater_peek', 'Theater peek', 'mdi:gesture-tap'),
       button('reload', 'Reload page', 'mdi:refresh'),
       button('load_start_url', 'Go to dashboard', 'mdi:view-dashboard'),
       button('clear_cache', 'Clear cache', 'mdi:broom'),
       button('restart', 'Restart app', '', deviceClass: 'restart'),
+      if (_rebootListed)
+        button('restart_device', 'Restart device', 'mdi:power-cycle'),
       button('bring_to_front', 'Bring to front', 'mdi:flip-to-front'),
+      button('alarm_stop', 'Stop alarm', 'mdi:alarm-off'),
+      button('alarm_snooze', 'Snooze alarm', 'mdi:alarm-snooze'),
       if (_settings.get(defs.launcherEnabled))
         button('open_launcher', 'Open app launcher', 'mdi:apps'),
       // Only with a Music Assistant server address configured, exactly like
@@ -463,6 +744,19 @@ class EspEntitySurface {
           'Show Music Assistant',
           'mdi:music-box-multiple',
         ),
+      // The followed player, opt-in from the Media Player page (issue
+      // #741): whichever player the surfaces follow, the local Sendspin
+      // player, one elsewhere or another app's media session. Buttons
+      // and sensors rather than a media_player, which in ESPHome carries
+      // no track and no skip.
+      if (_followedPlayerEntities) ...[
+        button('media_play', 'Media play', 'mdi:play'),
+        button('media_pause', 'Media pause', 'mdi:pause'),
+        button('media_next', 'Media next', 'mdi:skip-next'),
+        button('media_previous', 'Media previous', 'mdi:skip-previous'),
+        for (final (id, name, icon) in _mediaSensors)
+          {'type': 'text_sensor', 'objectId': id, 'name': name, 'icon': icon},
+      ],
       if (_cameraViews.isNotEmpty) ...[
         {
           'type': 'select',
@@ -512,7 +806,13 @@ class EspEntitySurface {
           'objectId': 'default_dashboard',
           'name': 'Default dashboard',
           'icon': 'mdi:view-dashboard-edit-outline',
-          'options': _dashboardViews,
+          // Plus the custom start page, once one is set (URL-3), so an
+          // automation can switch between Home Assistant dashboards and
+          // it. Appended: the existing options keep their places.
+          'options': [
+            ..._dashboardViews,
+            if (_hasCustomStartPage) _startPageOption,
+          ],
           'category': 1,
         },
       ],
@@ -522,10 +822,11 @@ class EspEntitySurface {
         'name': 'Update',
         'deviceClass': 'firmware',
       },
-      // The display as a still camera, on every device: what the remote
+      // The display as a still camera, on every kiosk: what the remote
       // admin's preview shows, fed by the Take screenshot button and by a
-      // fetch from Home Assistant.
-      {'type': 'camera', 'objectId': 'screenshot', 'name': 'Screenshot'},
+      // fetch from Home Assistant. Not on an agent - see above.
+      if (!agent)
+        {'type': 'camera', 'objectId': 'screenshot', 'name': 'Screenshot'},
       if (cameraPresent) ...[
         {'type': 'camera', 'objectId': 'device_camera', 'name': 'Camera'},
         button('take_snapshot', 'Take camera snapshot', 'mdi:camera-iris'),
@@ -537,14 +838,16 @@ class EspEntitySurface {
           'deviceClass': 'timestamp',
         },
       ],
-      button('take_screenshot', 'Take screenshot', 'mdi:monitor-screenshot'),
-      {
-        'type': 'text_sensor',
-        'objectId': 'last_screenshot',
-        'name': 'Last screenshot',
-        'icon': 'mdi:monitor-screenshot',
-        'deviceClass': 'timestamp',
-      },
+      if (!agent) ...[
+        button('take_screenshot', 'Take screenshot', 'mdi:monitor-screenshot'),
+        {
+          'type': 'text_sensor',
+          'objectId': 'last_screenshot',
+          'name': 'Last screenshot',
+          'icon': 'mdi:monitor-screenshot',
+          'deviceClass': 'timestamp',
+        },
+      ],
       if (lightSensorPresent)
         {
           'type': 'sensor',
@@ -563,6 +866,17 @@ class EspEntitySurface {
           'objectId': 'motion',
           'name': 'Motion',
           'deviceClass': 'motion',
+        },
+      // The device's own proximity sensor, when the panel has been asked to
+      // publish it. Occupancy rather than motion: it answers "is someone
+      // there", and it keeps answering while they stand still, which a
+      // motion device class would read as stale.
+      if (_settings.get(defs.proximitySensor))
+        {
+          'type': 'binary_sensor',
+          'objectId': 'proximity',
+          'name': 'Proximity',
+          'deviceClass': 'occupancy',
         },
       // Someone in view of the device's own person sensor (discussion
       // #353): occupancy, since it reports people at any angle, not a
@@ -637,6 +951,22 @@ class EspEntitySurface {
         'icon': 'mdi:alarm',
         'deviceClass': 'timestamp',
       },
+      // The kiosk's own alarms: ringing, and until when a snooze holds one
+      // off. A morning routine is an automation on Alarm ringing turning
+      // off.
+      {
+        'type': 'binary_sensor',
+        'objectId': 'alarm_ringing',
+        'name': 'Alarm ringing',
+        'icon': 'mdi:alarm-bell',
+      },
+      {
+        'type': 'text_sensor',
+        'objectId': 'alarm_snoozed_until',
+        'name': 'Alarm snoozed until',
+        'icon': 'mdi:alarm-snooze',
+        'deviceClass': 'timestamp',
+      },
       // When the user last touched the screen or spoke to the device
       // (issue #241), so automations can tell an idle kiosk from one in
       // use with plain timestamp arithmetic.
@@ -659,18 +989,20 @@ class EspEntitySurface {
       },
       // ── Config ───────────────────────────────────────────────────────
       for (final e in _settingNumbers.entries)
-        {
-          'type': 'number',
-          'objectId': e.key,
-          'name': e.value.$1,
-          'icon': e.value.$2,
-          'min': 0,
-          'max': 100,
-          'step': 5,
-          'unit': '%',
-          'mode': 2,
-          'category': 1,
-        },
+        if (!e.key.startsWith('vs_') || _voiceNative)
+          {
+            'type': 'number',
+            'objectId': e.key,
+            'name': e.value.name,
+            'icon': e.value.icon,
+            if (e.value.deviceClass != null) 'deviceClass': e.value.deviceClass,
+            'min': e.value.min,
+            'max': e.value.max,
+            'step': e.value.step,
+            'unit': e.value.unit,
+            'mode': e.value.mode,
+            'category': 1,
+          },
       {
         'type': 'text',
         'objectId': 'clock_background',
@@ -685,7 +1017,10 @@ class EspEntitySurface {
                     e.key != 'screensaver_motion' &&
                     e.key != 'screensaver_face')) &&
             (proximityPresent || e.key != 'screensaver_proximity') &&
-            (lightSensorPresent || e.key != 'adaptive_brightness'))
+            (lightSensorPresent || e.key != 'adaptive_brightness') &&
+            // An agent never starts the intercom: its switch would do nothing.
+            (!agent || e.key != 'intercom_enabled') &&
+            (!e.key.startsWith('vs_') || _voiceNative))
           {
             'type': 'switch',
             'objectId': e.key,
@@ -701,8 +1036,35 @@ class EspEntitySurface {
           'icon': 'mdi:play-circle-outline',
           'category': 1,
         },
+      // The intercom: its state, the other kiosk's name, Do not disturb as
+      // a switch (the answer mode's third choice) and the answer mode as a
+      // select below. The emulation has no event entity, so the state
+      // sensor carries the story, missed included, for a minute.
+      if (intercomOn) ...[
+        {
+          'type': 'text_sensor',
+          'objectId': 'intercom',
+          'name': 'Intercom',
+          'icon': 'mdi:phone-in-talk-outline',
+        },
+        {
+          'type': 'text_sensor',
+          'objectId': 'intercom_kiosk',
+          'name': 'Intercom kiosk',
+          'icon': 'mdi:tablet',
+        },
+        {
+          'type': 'switch',
+          'objectId': 'intercom_do_not_disturb',
+          'name': 'Intercom do not disturb',
+          'icon': 'mdi:bell-off-outline',
+          'category': 1,
+        },
+      ],
       for (final e in _settingSelects.entries)
-        if (e.key != 'camera_device' || (cameraPresent && bothFacings))
+        if ((e.key != 'camera_device' || (cameraPresent && bothFacings)) &&
+            (e.key != 'intercom_answer_mode' || intercomOn) &&
+            (!e.key.startsWith('vs_') || _voiceNative))
           {
             'type': 'select',
             'objectId': e.key,
@@ -715,6 +1077,12 @@ class EspEntitySurface {
             'category': 1,
           },
       // ── Diagnostics ──────────────────────────────────────────────────
+      diagnostic(
+        'theater_phase',
+        'Theater phase',
+        icon: 'mdi:theater',
+        type: 'text_sensor',
+      ),
       if (batteryPresent)
         diagnostic(
           'battery',
@@ -729,13 +1097,22 @@ class EspEntitySurface {
         deviceClass: 'battery_charging',
         type: 'binary_sensor',
       ),
-      diagnostic(
-        'cpu',
-        'CPU usage',
-        icon: 'mdi:chip',
-        unit: '%',
-        stateClass: 1,
-      ),
+      if (!cpuClockOnly)
+        diagnostic(
+          'cpu',
+          'CPU usage',
+          icon: 'mdi:chip',
+          unit: '%',
+          stateClass: 1,
+        )
+      else
+        diagnostic(
+          'cpu_clock',
+          'CPU clock',
+          icon: 'mdi:speedometer',
+          unit: '%',
+          stateClass: 1,
+        ),
       if (cpuTempPresent)
         diagnostic(
           'cpu_temp',
@@ -744,6 +1121,32 @@ class EspEntitySurface {
           unit: '°C',
           stateClass: 1,
         ),
+      // On while the CPU is hotter than Running hot above: a projector in a
+      // cabinet is where this matters, and an automation can act on it.
+      if (cpuTempPresent)
+        diagnostic(
+          'running_hot',
+          'Running hot',
+          icon: 'mdi:thermometer-alert',
+          deviceClass: 'heat',
+          type: 'binary_sensor',
+        ),
+      // What the accessibility keeper put back after firmware took it
+      // away: a sensor, so a vendor that keeps doing it shows in history.
+      if (agent) ...[
+        diagnostic(
+          'self_repairs',
+          'Self repairs',
+          icon: 'mdi:wrench-check',
+          stateClass: 2,
+        ),
+        diagnostic(
+          'last_self_repair',
+          'Last self repair',
+          icon: 'mdi:wrench-clock',
+          type: 'text_sensor',
+        ),
+      ],
       diagnostic(
         'ram_free',
         'RAM available',
@@ -758,6 +1161,21 @@ class EspEntitySurface {
         icon: 'mdi:memory',
         deviceClass: 'data_size',
         unit: 'MB',
+      ),
+      diagnostic(
+        'storage_free',
+        'Internal storage free',
+        icon: 'mdi:harddisk',
+        deviceClass: 'data_size',
+        unit: 'MiB',
+        stateClass: 1,
+      ),
+      diagnostic(
+        'storage_total',
+        'Internal storage total',
+        icon: 'mdi:harddisk',
+        deviceClass: 'data_size',
+        unit: 'MiB',
       ),
       diagnostic('url', 'Current page', icon: 'mdi:web', type: 'text_sensor'),
       diagnostic(
@@ -777,6 +1195,59 @@ class EspEntitySurface {
           icon: 'mdi:bluetooth-audio',
           stateClass: 1,
         ),
+      // Advertisement accounting from the filter, so its effect is
+      // measurable per panel instead of guessed at -- the same five
+      // diagnostics the ESPHome proxies carry, so a panel and a proxy can
+      // be compared on one dashboard. Listed only when a filter is
+      // configured: with none, every one of them would sit at zero
+      // forever and say nothing.
+      if (_advertisementFilterConfigured) ...[
+        diagnostic(
+          'btproxy_adv_forwarded',
+          'BLE adverts forwarded',
+          icon: 'mdi:bluetooth-transfer',
+          unit: 'adv/min',
+          stateClass: 1,
+        ),
+        diagnostic(
+          'btproxy_adv_dropped',
+          'BLE adverts dropped',
+          icon: 'mdi:bluetooth-off',
+          unit: 'adv/min',
+          stateClass: 1,
+        ),
+        // A subset of "dropped" that answers a different question than the
+        // RSSI drops do: how much of what this panel hears is other
+        // people's phones and watches, which rotate and can never be
+        // tracked however close they come.
+        diagnostic(
+          'btproxy_adv_dropped_rpa',
+          'BLE RPAs dropped',
+          icon: 'mdi:cellphone-remove',
+          unit: 'adv/min',
+          stateClass: 1,
+        ),
+        // Adverts forwarded ONLY because a service UUID matched. It sits at
+        // zero while nothing is pairing, so any movement is direct evidence
+        // the passthrough fired -- which is what makes a failed
+        // commissioning attempt diagnosable instead of guesswork.
+        diagnostic(
+          'btproxy_adv_service_uuid',
+          'BLE service UUID allowed',
+          icon: 'mdi:key-wireless',
+          unit: 'adv/min',
+          stateClass: 1,
+        ),
+        // The tuning number: what fraction of what this panel hears is
+        // being suppressed.
+        diagnostic(
+          'btproxy_drop_rate',
+          'BLE advert drop rate',
+          icon: 'mdi:filter-variant',
+          unit: '%',
+          stateClass: 1,
+        ),
+      ],
       if (_settings.get(defs.btproxyEnabled) &&
           _settings.get(defs.btproxyConnections))
         // The ceiling the connected-devices count runs into, where the
@@ -852,23 +1323,29 @@ class EspEntitySurface {
         icon: 'mdi:ip-network',
         type: 'text_sensor',
       ),
+      // The address detail, off in a new Home Assistant device: IPv4
+      // address answers the usual question, and these are there to enable
+      // for an automation that tells wired from wireless.
       diagnostic(
         'ipv4_interfaces',
         'IPv4 addresses by interface',
         icon: 'mdi:lan',
         type: 'text_sensor',
+        disabled: true,
       ),
       diagnostic(
         'ipv6_address',
         'IPv6 address',
         icon: 'mdi:ip-network-outline',
         type: 'text_sensor',
+        disabled: true,
       ),
       diagnostic(
         'ipv6_interfaces',
         'IPv6 addresses by interface',
         icon: 'mdi:lan-connect',
         type: 'text_sensor',
+        disabled: true,
       ),
       // Timestamps, not counters: the recorder logs the moments
       // the anchors move (a restart, a reconnect) and Home Assistant
@@ -885,6 +1362,15 @@ class EspEntitySurface {
         'network_uptime',
         'Network uptime',
         icon: 'mdi:timer-sync-outline',
+        deviceClass: 'timestamp',
+        type: 'text_sensor',
+      ),
+      // The device's own start, not the app's: a crash-restarted app
+      // leaves this alone, a reboot (daily restart, power cut) moves it.
+      diagnostic(
+        'last_boot',
+        'Last boot',
+        icon: 'mdi:restart',
         deviceClass: 'timestamp',
         type: 'text_sensor',
       ),
@@ -912,6 +1398,8 @@ class EspEntitySurface {
         type: 'text_sensor',
       ),
     ];
+    // Before the plugins' entities join: their ids are their own.
+    catalog.removeWhere((entity) => _unlisted('${entity['objectId']}'));
     final pluginEntities = await commands.execute(
       'getPluginEntities',
       const {},
@@ -935,7 +1423,92 @@ class EspEntitySurface {
   String? _excludedValue;
   Set<String> _excludedIds = {};
 
+  /// What an agent does not list: everything that belongs to the dashboard,
+  /// the WebView, the screensaver and its clock, theater mode, the kiosk,
+  /// lockdown and hold modes, notifications, cameras, voice and the audio
+  /// faders - the managers behind them never start on an agent, so each
+  /// would sit on unknown or do nothing. The Screen light and Panel
+  /// brightness go too: they drive Android's backlight value, which on a
+  /// projector or a media box is not the picture. What stays is the
+  /// device: health, updates, restarts, volume, the foreground app and the
+  /// headless entities.
+  static const _agentUnlisted = {
+    'alarm_stop',
+    'alarm_snooze',
+    'alarm_ringing',
+    'alarm_snoozed_until',
+    'screen',
+    'panel_brightness',
+    'adaptive_brightness',
+    'keep_screen_on',
+    'screensaver',
+    'screensaver_active',
+    'postpone_screensaver',
+    'screensaver_next_slide',
+    'screensaver_previous_slide',
+    'screensaver_brightness',
+    'screensaver_brightness_level',
+    'screensaver_timeout',
+    'screensaver_mode',
+    'screensaver_clock_style',
+    'clock_background',
+    'screensaver_motion',
+    'screensaver_face',
+    'screensaver_proximity',
+    'next_screensaver',
+    'theater_mode',
+    'theater_peek',
+    'theater_overlay_opacity',
+    'theater_peek_seconds',
+    'theater_phase',
+    'reload',
+    'load_start_url',
+    'clear_cache',
+    'bring_to_front',
+    'url',
+    'theme',
+    'dashboard_view',
+    'default_dashboard',
+    'dashboard_cameras',
+    'kiosk',
+    'lockdown',
+    'ha_kiosk',
+    'hold_mode',
+    'notifications_dismiss_all',
+    'next_alarm',
+    'last_interaction',
+    'camera_view',
+    'close_camera_view',
+    'active_camera_view',
+    'device_camera',
+    'take_snapshot',
+    'last_snapshot',
+    'camera_enabled',
+    'camera_device',
+    'rtsp_streaming',
+    'motion',
+    'proximity',
+    'person',
+    'voice_satellite',
+    'voice_satellite_auto_start',
+    'assistant_volume',
+    'media_volume',
+    'now_playing',
+    'show_music_assistant',
+  };
+
+  /// Entities this device does not list at all, whatever the exclusion
+  /// setting says: an agent's kiosk-only set, and Charging on a panel set
+  /// to No battery (its level is already gone; a mains-only box has no
+  /// charging to report either).
+  bool _unlisted(String objectId) =>
+      (_settings.get(defs.agentMode) &&
+          (_agentUnlisted.contains(objectId) ||
+              objectId.startsWith('camera_view_'))) ||
+      (objectId == 'charging' && _settings.get(defs.noBattery));
+
   bool _isExcluded(String objectId) {
+    if (_unlisted(objectId)) return true;
     final value = _settings.get(defs.esphomeExcludedEntities);
     if (value != _excludedValue) {
       _excludedValue = value;
@@ -957,7 +1530,80 @@ class EspEntitySurface {
   /// Argument names and order are permanent API, like entity object ids:
   /// values arrive positionally on the wire and land in users'
   /// automations by name.
-  List<Map<String, Object?>> buildServices() => const [
+  /// Whether the kiosk serves native Voice Satellite: its vs_ entities
+  /// and actions exist only then.
+  bool get _voiceNative =>
+      _settings.get(defs.voiceRuntime) == 'native' &&
+      _settings.get(defs.voiceEnabled) &&
+      // An agent runs no voice, whatever the settings say.
+      !_settings.get(defs.agentMode);
+
+  List<Map<String, Object?>> buildServices() => [
+    ..._services,
+    if (_voiceNative) ..._voiceServices,
+  ];
+
+  /// Native Voice Satellite's actions: `esphome.<kiosk>_vs_wake` and friends.
+  static const _voiceServices = <Map<String, Object?>>[
+    // Start listening as if the wake word in that slot fired: slot 2 runs
+    // Assistant 2. 0 counts as slot 1 (an action cannot leave it out).
+    {
+      'name': 'vs_wake',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'slot', 'type': 'int'},
+      ],
+    },
+    // Ends the turn on screen as a double tap does: listening, thinking or
+    // speaking, a lingering answer or a ringing timer.
+    {'name': 'vs_cancel', 'supportsResponse': true, 'args': []},
+    // Sends a prompt to the assistant and shows the answer and results on
+    // this kiosk. Actions cannot leave a field out, so speaking is opt in
+    // (false is the silent show), pipeline 0 counts as 1 and duration 0
+    // keeps the answer up until it is dismissed.
+    {
+      'name': 'vs_show',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'prompt', 'type': 'string'},
+        {'name': 'speak', 'type': 'bool'},
+        {'name': 'pipeline', 'type': 'int'},
+        {'name': 'duration', 'type': 'int'},
+      ],
+    },
+    // Starts a voice timer on this kiosk through Home Assistant's timer
+    // intent, so it lives in Home Assistant like a spoken one.
+    {
+      'name': 'vs_start_timer',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'name', 'type': 'string'},
+        {'name': 'hours', 'type': 'int'},
+        {'name': 'minutes', 'type': 'int'},
+        {'name': 'seconds', 'type': 'int'},
+      ],
+    },
+  ];
+
+  static const _services = <Map<String, Object?>>[
+    // Theater mode with its levels for this activation. An action cannot
+    // leave an argument out, so -1 means "the setting" for both levels.
+    {
+      'name': 'set_theater_mode',
+      'args': [
+        {'name': 'active', 'type': 'bool'},
+        {'name': 'overlay_opacity', 'type': 'float'},
+        {'name': 'backlight', 'type': 'float'},
+      ],
+    },
+    // Move the main page: a hash on the page already showing changes in
+    // place with no reload, anything else loads (docs/theater.md).
+    {
+      'name': 'navigate',
+      'args': [
+        {'name': 'url', 'type': 'string'},
+      ],
+    },
     {
       'name': 'notification',
       // Answers with the kiosk's id for the card ({"id": 7}), which an
@@ -1012,6 +1658,93 @@ class EspEntitySurface {
         {'name': 'package_name', 'type': 'string'},
       ],
     },
+    // Presses a key on the device (KeySender.kt): back, home, recents,
+    // notifications, the media keys and volume; the D-pad and OK from
+    // Android 13. Answers the reason when a key cannot be sent.
+    {
+      'name': 'send_key',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'key', 'type': 'string'},
+      ],
+    },
+    // Controls whatever plays in another app (Report what is playing):
+    // play, pause, play_pause, next, previous or stop.
+    {
+      'name': 'media_control',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'action', 'type': 'string'},
+      ],
+    },
+    // An announcement on this kiosk: a message Home Assistant speaks or
+    // an audio URL, with a chime first (the Announcements page under
+    // ESPHome). Each kiosk is addressed through its own device.
+    {
+      'name': 'announce',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'message', 'type': 'string'},
+        {'name': 'url', 'type': 'string'},
+        // A share of the master volume for this one announcement; 0 keeps
+        // the media volume (the action cannot leave a number out).
+        {'name': 'volume', 'type': 'float'},
+        // Plays it that many times, a short pause between; 0 is once.
+        {'name': 'repeat', 'type': 'int'},
+        // Seconds between plays; 0 is the default 0.6.
+        {'name': 'repeat_pause', 'type': 'float'},
+        {'name': 'chime', 'type': 'bool'},
+        {'name': 'chime_file', 'type': 'string'},
+        {'name': 'tts_engine', 'type': 'string'},
+        {'name': 'tts_language', 'type': 'string'},
+        {'name': 'tts_voice', 'type': 'string'},
+        {'name': 'audio_only', 'type': 'bool'},
+      ],
+    },
+    // Rings another kiosk from this one, the way the kiosk menu's Call a
+    // kiosk sheet does, so a dashboard button or an automation can put a
+    // call through (issue #549). The kiosk goes by its name or address:
+    // its id is nothing Home Assistant sees.
+    {
+      'name': 'intercom_call',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'kiosk', 'type': 'string'},
+      ],
+    },
+    // Ends the call, cancels one still ringing or closes an announcement.
+    // Answers so "no call" reaches the automation as an error.
+    {'name': 'intercom_hangup', 'supportsResponse': true, 'args': []},
+    // A web page over the dashboard, the surface a tapped dashboard link
+    // or the Music Assistant entry gets: the dashboard stays alive under
+    // it and the wake word keeps listening. Answers so a bad URL reaches
+    // the automation as an error.
+    {
+      'name': 'open_url',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'url', 'type': 'string'},
+        // Hold mode for the page's stay: on with the page, off when it
+        // goes, whichever way it goes. A hold already on is left alone.
+        {'name': 'hold_mode', 'type': 'bool'},
+      ],
+    },
+    // Drops that page, whoever put it up; nothing up is not an error.
+    {'name': 'close_url', 'supportsResponse': true, 'args': []},
+    {
+      'name': 'set_brightness',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'brightness', 'type': 'float'},
+      ],
+    },
+    {
+      'name': 'set_screensaver_brightness',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'brightness', 'type': 'float'},
+      ],
+    },
   ];
 
   /// An action call from Home Assistant landed (via the native hub). The
@@ -1022,6 +1755,76 @@ class EspEntitySurface {
     Map<String, Object?> args,
   ) async {
     switch (name) {
+      case 'set_theater_mode':
+        final opacity = args['overlay_opacity'];
+        final backlight = args['backlight'];
+        await commands.execute('setTheaterMode', {
+          'active': args['active'] == true,
+          'source': 'ha',
+          if (opacity is num && opacity >= 0) 'overlayOpacity': opacity,
+          if (backlight is num && backlight >= 0) 'backlight': backlight,
+        });
+        return null;
+      case 'navigate':
+        final r = await commands.execute('navigate', {
+          'url': '${args['url'] ?? ''}',
+        });
+        if (!r.ok) log.warn('esphome', 'navigate refused: ${r.error}');
+        return null;
+      case 'vs_wake':
+        final slot = (args['slot'] as num?)?.toInt() ?? 1;
+        final result = await commands.execute('voiceWake', {
+          'slot': slot < 1 ? 1 : slot,
+        });
+        if (!result.ok) throw StateError(result.error ?? 'not started');
+        return const {};
+      case 'vs_cancel':
+        final result = await commands.execute('voiceCancel', const {});
+        if (!result.ok) throw StateError(result.error ?? 'not cancelled');
+        return const {};
+      case 'vs_show':
+        final result = await commands.execute('voiceShow', {
+          'prompt': args['prompt'] ?? '',
+          'speak': args['speak'] == true,
+          'pipeline': args['pipeline'] ?? 1,
+          'duration': args['duration'] ?? 0,
+        });
+        if (!result.ok) throw StateError(result.error ?? 'not shown');
+        return const {};
+      case 'vs_start_timer':
+        final result = await commands.execute('voiceStartTimer', {
+          'name': args['name'] ?? '',
+          'hours': args['hours'] ?? 0,
+          'minutes': args['minutes'] ?? 0,
+          'seconds': args['seconds'] ?? 0,
+        });
+        if (!result.ok) throw StateError(result.error ?? 'timer not started');
+        return const {};
+      case 'set_brightness':
+      case 'set_screensaver_brightness':
+        final brightness = args['brightness'];
+        if (brightness is! num ||
+            !brightness.isFinite ||
+            brightness < 0 ||
+            brightness > 100) {
+          throw StateError('brightness must be a percentage from 0 to 100');
+        }
+        if (_settings.get(defs.adaptiveBrightness)) {
+          throw StateError('Turn off adaptive brightness to set brightness');
+        }
+        if (name == 'set_screensaver_brightness') {
+          await _settings.set(
+            defs.screensaverBrightnessLevel,
+            brightness / 100.0,
+            source: 'esphome',
+          );
+          return const {};
+        }
+        final result = await commands.execute('setBrightness', {
+          'level': brightness / 100.0,
+        });
+        if (!result.ok) throw StateError(result.error ?? 'brightness not set');
+        return const {};
       case 'notification':
         final result = await commands.execute('showNotification', {
           'message': '${args['message'] ?? ''}',
@@ -1089,9 +1892,119 @@ class EspEntitySurface {
         });
         if (!result.ok) throw StateError(result.error ?? 'refused');
         return const {};
+      case 'send_key':
+        final result = await commands.execute('sendKey', {
+          'key': '${args['key'] ?? ''}',
+        });
+        if (!result.ok) throw StateError(result.error ?? 'refused');
+        return const {};
+      case 'media_control':
+        final result = await commands.execute('mediaControl', {
+          'action': '${args['action'] ?? ''}',
+        });
+        if (!result.ok) throw StateError(result.error ?? 'refused');
+        return const {};
+      case 'announce':
+        final result = await commands.execute('announce', {
+          'message': '${args['message'] ?? ''}',
+          'url': '${args['url'] ?? ''}',
+          'volume': args['volume'] ?? 0,
+          'repeat': args['repeat'] ?? 0,
+          'repeat_pause': args['repeat_pause'] ?? 0,
+          if (args['chime'] != null) 'chime': args['chime'],
+          'chime_file': '${args['chime_file'] ?? ''}',
+          'tts_engine': '${args['tts_engine'] ?? ''}',
+          'tts_language': '${args['tts_language'] ?? ''}',
+          'tts_voice': '${args['tts_voice'] ?? ''}',
+          'audio_only': args['audio_only'] ?? false,
+        });
+        if (!result.ok) throw StateError(result.error ?? 'refused');
+        final data = result.data;
+        return data is Map ? data.cast<String, Object?>() : const {};
+      case 'intercom_call':
+        final result = await commands.execute('intercomCall', {
+          'kiosk': '${args['kiosk'] ?? ''}',
+        });
+        if (!result.ok) throw StateError(result.error ?? 'refused');
+        final data = result.data;
+        return data is Map ? data.cast<String, Object?>() : const {};
+      case 'intercom_hangup':
+        final result = await commands.execute('intercomHangup', const {});
+        if (!result.ok) throw StateError(result.error ?? 'refused');
+        return const {};
+      case 'open_url':
+        final url = '${args['url'] ?? ''}'.trim();
+        final uri = Uri.tryParse(url);
+        if (url.isEmpty ||
+            uri == null ||
+            !(uri.scheme == 'http' || uri.scheme == 'https') ||
+            uri.host.isEmpty) {
+          throw StateError('url must be an http or https address');
+        }
+        // The page is meant to be seen: a kiosk asleep or on its
+        // screensaver would load it behind a black screen. Both are
+        // best effort, since a panel that refuses to wake still shows
+        // the page the moment it does.
+        await commands.execute('stopScreensaver', const {});
+        await commands.execute('screenOn', const {});
+        final result = await commands.execute('showLinkPage', {
+          'url': url,
+          'hold': args['hold_mode'] == true,
+        });
+        if (!result.ok) throw StateError(result.error ?? 'refused');
+        return const {};
+      case 'close_url':
+        final result = await commands.execute('hideOverlayPage', const {});
+        if (!result.ok) throw StateError(result.error ?? 'refused');
+        return const {};
       default:
         log.warn('esphome', 'unknown action $name');
         return null;
+    }
+  }
+
+  /// The media entities, from another app's session. Empty fields read as
+  /// unknown rather than as a blank string.
+  Future<void> _sendNowPlaying(Map<String, Object?> s) async {
+    if (!_settings.get(defs.nowPlaying)) return;
+    String? text(Object? v) => '${v ?? ''}'.isEmpty ? null : '$v';
+    await _send('media_state', '${s['state'] ?? 'idle'}');
+    await _send('media_app', text(s['app']));
+    await _send('media_title', text(s['title']));
+    await _send('media_artist', text(s['artist']));
+  }
+
+  Future<void> _sendRepairs(Map<String, Object?> r) async {
+    if (!_settings.get(defs.agentMode)) return;
+    await _send('self_repairs', (r['count'] as num?)?.toInt() ?? 0);
+    final last = (r['last'] as num?)?.toInt() ?? 0;
+    if (last == 0) {
+      await _send('last_self_repair', 'Never');
+      return;
+    }
+    final t = DateTime.fromMillisecondsSinceEpoch(last);
+    String two(int n) => n.toString().padLeft(2, '0');
+    await _send(
+      'last_self_repair',
+      '${r['what']} (${t.year}-${two(t.month)}-${two(t.day)} '
+          '${two(t.hour)}:${two(t.minute)})',
+    );
+  }
+
+  /// First values for the headless entities, which otherwise wait for
+  /// the next change.
+  Future<void> _seedHeadless() async {
+    if (_settings.get(defs.nowPlaying)) {
+      final s = await commands.execute('nowPlayingStatus', const {});
+      if (s.ok && s.data is Map) {
+        await _sendNowPlaying((s.data as Map).cast<String, Object?>());
+      }
+    }
+    if (_settings.get(defs.agentMode)) {
+      final r = await commands.execute('selfRepairs', const {});
+      if (r.ok && r.data is Map) {
+        await _sendRepairs((r.data as Map).cast<String, Object?>());
+      }
     }
   }
 
@@ -1112,6 +2025,16 @@ class EspEntitySurface {
         (e) => _send(e.objectId, e.value),
       ),
     );
+    _subs.add(
+      bus.on<RemoteKeyReported>().listen((e) {
+        if (_settings.get(defs.remoteKeysReport)) _send('remote_key', e.type);
+      }),
+    );
+    _subs.add(
+      bus.on<NowPlayingChanged>().listen((e) => _sendNowPlaying(e.snapshot)),
+    );
+    _subs.add(bus.on<SelfRepaired>().listen((e) => _sendRepairs(e.record)));
+    unawaited(_seedHeadless());
     // Every attach faces a fresh native hub with no values: the anchors
     // must go out again even when they did not move, or the uptime
     // sensors sit on "unknown" until the app itself restarts.
@@ -1122,6 +2045,26 @@ class EspEntitySurface {
         _send('screensaver_active', e.active);
         _send('now_playing', _nowPlayingShown);
         _sendCountdown();
+      }),
+    );
+    _subs.add(
+      bus.on<ProximityStateChanged>().listen((e) {
+        _proximityNear = e.near;
+        _send('proximity', e.near);
+      }),
+    );
+    _subs.add(
+      bus.on<TheaterModeChanged>().listen((e) {
+        _theaterActive = e.active;
+        _theaterPhase = e.phase;
+        _send('theater_mode', e.active);
+        _send('theater_phase', e.phase);
+      }),
+    );
+    _subs.add(
+      bus.on<DashboardCamerasHoldChanged>().listen((e) {
+        _camerasHeld = e.held;
+        _send('dashboard_cameras', !e.held);
       }),
     );
     _subs.add(
@@ -1140,6 +2083,9 @@ class EspEntitySurface {
         _nowPlayingActive = e.active;
         _send('now_playing', _nowPlayingShown);
       }),
+    );
+    _subs.add(
+      bus.on<MediaSummaryChanged>().listen((e) => _sendMedia(e.summary)),
     );
     _subs.add(bus.on<ScreenStateChanged>().listen((_) => _sendScreen()));
     // Addresses change exactly at these transitions, and the minute poll
@@ -1192,6 +2138,7 @@ class EspEntitySurface {
     );
     _subs.add(bus.on<UpdateStateChanged>().listen((_) => _sendUpdateState()));
     _subs.add(bus.on<NextAlarmChanged>().listen((_) => _sendNextAlarm()));
+    _subs.add(bus.on<AlarmStateChanged>().listen((e) => _sendAlarm(e.status)));
     _subs.add(
       bus.on<PowerChanged>().listen((e) => _send('charging', e.charging)),
     );
@@ -1200,9 +2147,7 @@ class EspEntitySurface {
       // seeds getLightLevel from it after a restart, so a driver that
       // emits nothing at registration (the Echo Show's) leaves the entity
       // on the last known value rather than unknown.
-      bus.on<LightLevelChanged>().listen((e) {
-        _send('illuminance', e.lux.round());
-      }),
+      bus.on<LightLevelChanged>().listen((e) => _lux.offer(e.lux.round())),
     );
     _subs.add(bus.on<LocationChanged>().listen(_sendLocation));
     _subs.add(
@@ -1278,9 +2223,25 @@ class EspEntitySurface {
         if (e.on && e.source == 'system') _interaction.mark();
       }),
     );
+    _subs.add(
+      bus.on<IntercomStateChanged>().listen((e) => _sendIntercom(e.status)),
+    );
     _subs.add(bus.on<SettingChanged>().listen(_onSettingChanged));
     _poll = Timer.periodic(_pollInterval, (_) => _refresh());
     _sendInitial();
+  }
+
+  /// The intercom's three sensors from one status shape: the state word,
+  /// the other kiosk (the caller after a missed call, else nobody) and
+  /// whether Do not disturb holds.
+  Future<void> _sendIntercom(Map<String, Object?> status) async {
+    if (!_settings.get(defs.intercomEnabled)) return;
+    final call = status['call'];
+    final peer = call is Map ? call['peer'] : null;
+    final peerName = peer is Map ? '${peer['name'] ?? ''}' : '';
+    await _send('intercom', '${status['state'] ?? 'idle'}');
+    await _send('intercom_kiosk', peerName);
+    await _send('intercom_do_not_disturb', status['dnd'] == true);
   }
 
   void detach() {
@@ -1302,6 +2263,7 @@ class EspEntitySurface {
     _viewsNudge = null;
     _interaction.dispose();
     _countdown.dispose();
+    _lux.reset();
   }
 
   /// A command from Home Assistant landed (via the native hub). State
@@ -1343,10 +2305,13 @@ class EspEntitySurface {
     }
     final settingNumber = _settingNumbers[objectId];
     if (settingNumber != null) {
-      final percent = ((value as num?) ?? 0).clamp(0, 100);
+      final clamped = ((value as num?) ?? 0).clamp(
+        settingNumber.min,
+        settingNumber.max,
+      );
       await _settings.set(
-        settingNumber.$3,
-        settingNumber.$4 ? percent / 100.0 : percent,
+        settingNumber.def,
+        settingNumber.fraction ? clamped / 100.0 : clamped,
         source: 'esphome',
       );
       return;
@@ -1370,6 +2335,17 @@ class EspEntitySurface {
           value == true ? 'startScreensaver' : 'stopScreensaver',
           const {},
         );
+      case 'dashboard_cameras':
+        await commands.execute('setDashboardCameras', {
+          'playing': value == true,
+        });
+      case 'theater_mode':
+        await commands.execute('setTheaterMode', {
+          'active': value == true,
+          'source': 'ha',
+        });
+      case 'theater_peek':
+        await commands.execute('theaterPeek', const {'source': 'ha'});
       case 'now_playing':
         if (value == true) {
           await commands.execute('showNowPlaying', const {});
@@ -1395,6 +2371,8 @@ class EspEntitySurface {
           'settings': {'auto_start': value == true},
         });
         await _sendVoiceSatellite();
+      case 'intercom_do_not_disturb':
+        await commands.execute('intercomSetDnd', {'on': value == true});
       case 'postpone_screensaver':
         await commands.execute('postponeScreensaver', const {});
       // A slideshow mode steps its deck; every other mode, and no
@@ -1405,14 +2383,33 @@ class EspEntitySurface {
         await commands.execute('previousScreensaverSlide', const {});
       case 'notifications_dismiss_all':
         await commands.execute('dismissNotification', const {});
+      case 'media_play' || 'media_pause' || 'media_next' || 'media_previous'
+          when _followedPlayerEntities:
+        await commands.execute('sendspinControl', {
+          'command': objectId.substring('media_'.length),
+        });
       case 'reload':
         await commands.execute('reload', const {});
+      case 'alarm_stop':
+        await commands.execute('alarmStop', const {'source': 'esphome'});
+      case 'alarm_snooze':
+        await commands.execute('alarmSnooze', const {'source': 'esphome'});
       case 'load_start_url':
         await commands.execute('loadStartUrl', const {});
       case 'clear_cache':
         await commands.execute('clearWebCache', const {});
       case 'restart':
         await commands.execute('restartApp', const {});
+      case 'restart_device':
+        await commands.execute('rebootDevice', const {});
+      case 'media_play_pause':
+        await commands.execute('mediaControl', const {'action': 'play_pause'});
+      case 'media_next':
+        await commands.execute('mediaControl', const {'action': 'next'});
+      case 'media_previous':
+        await commands.execute('mediaControl', const {'action': 'previous'});
+      case 'media_stop':
+        await commands.execute('mediaControl', const {'action': 'stop'});
       case 'bring_to_front':
         await commands.execute('bringToFront', const {});
       case 'open_launcher':
@@ -1442,10 +2439,27 @@ class EspEntitySurface {
       case 'dashboard_view':
         await commands.execute('haNavigate', {'path': '$value'});
       case 'default_dashboard':
+        if ('$value' == _startPageOption) {
+          await _settings.set(defs.startPage, 'custom', source: 'esphome');
+          return;
+        }
+        // Start page back to Home Assistant first: written the other way
+        // round, the browser would take the dashboard for the custom URL
+        // and remember it in place of the real one.
+        if (_settings.get(defs.startPage) == 'custom') {
+          await _settings.set(defs.startPage, 'ha', source: 'esphome');
+        }
         await _setDefaultDashboard('$value');
       case 'update':
+        // Home Assistant sends "check" for homeassistant.update_entity
+        // and "install" for update.install. A check queries the release
+        // source right away, the same as tapping the version line in the
+        // remote admin (issue #635); a changed result republishes the
+        // entity through UpdateStateChanged.
         if ('$value' == 'install') {
           await commands.execute('installUpdate', const {});
+        } else if ('$value' == 'check') {
+          await commands.execute('checkUpdateNow', const {});
         }
       case 'clock_background':
         // Through the validator (issue #464): the 255 character cap and
@@ -1541,8 +2555,17 @@ class EspEntitySurface {
     if (e.key == defs.cameraEnabled.key || e.key == defs.motionSensor.key) {
       _sendMotionState();
     }
-    if (e.key == defs.startUrl.key) {
+    if (e.key == defs.startUrl.key || e.key == defs.startPage.key) {
       _sendDefaultDashboard();
+      return;
+    }
+    if (e.key == defs.customStartUrl.key) {
+      // The Start page option appears or goes; nothing else here changes.
+      final has = _hasCustomStartPage;
+      if (has != _listedStartPage) {
+        _listedStartPage = has;
+        onCatalogChanged?.call();
+      }
       return;
     }
     for (final entry in _settingSwitches.entries) {
@@ -1560,17 +2583,29 @@ class EspEntitySurface {
       }
     }
     for (final entry in _settingNumbers.entries) {
-      if (entry.value.$3.key == e.key) {
+      if (entry.value.def.key == e.key) {
         final raw = (e.value as num?) ?? 0;
-        _send(entry.key, (entry.value.$4 ? raw.toDouble() * 100 : raw).round());
+        _send(
+          entry.key,
+          (entry.value.fraction ? raw.toDouble() * 100 : raw).round(),
+        );
         return;
       }
     }
     if (e.key == defs.screensaverClockBackground.key) {
       _send('clock_background', '${e.value}');
     }
-    if (e.key == defs.remoteEnabled.key || e.key == defs.remotePort.key) {
+    if (e.key == defs.remoteEnabled.key ||
+        e.key == defs.remotePort.key ||
+        e.key == defs.remoteTls.key) {
       _sendAdminUrl();
+    }
+  }
+
+  Future<void> _sendMedia(Map<String, String> summary) async {
+    if (!_followedPlayerEntities) return;
+    for (final (id, _, _) in _mediaSensors) {
+      await _send(id, summary[id.substring('media_'.length)] ?? '');
     }
   }
 
@@ -1622,6 +2657,10 @@ class EspEntitySurface {
     await _sendVolume();
     await _sendUpdateState();
     await _sendNextAlarm();
+    final alarm = await commands.execute('alarmsStatus', const {});
+    if (alarm.ok && alarm.data is Map) {
+      await _sendAlarm((alarm.data as Map).cast<String, Object?>());
+    }
     await _sendAdminUrl();
     await _sendLastLocation();
     await _sendPersonState();
@@ -1642,7 +2681,20 @@ class EspEntitySurface {
       _nowPlayingActive = (player.data as Map)['fullscreenActive'] == true;
     }
     await _send('screensaver_active', _screensaverActive);
+    await _send('dashboard_cameras', !_camerasHeld);
+    await _send('theater_mode', _theaterActive);
+    await _send('theater_phase', _theaterPhase);
+    if (_settings.get(defs.proximitySensor)) {
+      await _send('proximity', _proximityNear);
+    }
     await _send('now_playing', _nowPlayingShown);
+    final media = await commands.execute('mediaPlayerState', const {});
+    if (media.ok && media.data is Map) {
+      await _sendMedia({
+        for (final e in (media.data as Map).entries)
+          '${e.key}': '${e.value ?? ''}',
+      });
+    }
     await _sendDeviceInfo();
     // Settings-backed entities all report their stored values.
     for (final entry in _settingSwitches.entries) {
@@ -1654,16 +2706,22 @@ class EspEntitySurface {
       await _send(entry.key, def.optionLabels?[stored] ?? stored);
     }
     for (final entry in _settingNumbers.entries) {
-      final raw = _settings.get(entry.value.$3);
+      final raw = _settings.get(entry.value.def);
       await _send(
         entry.key,
-        (entry.value.$4 ? raw.toDouble() * 100 : raw).round(),
+        (entry.value.fraction ? raw.toDouble() * 100 : raw).round(),
       );
     }
     await _send(
       'clock_background',
       _settings.get(defs.screensaverClockBackground),
     );
+    if (_settings.get(defs.intercomEnabled)) {
+      final intercom = await commands.execute('intercomStatus', const {});
+      if (intercom.ok && intercom.data is Map) {
+        await _sendIntercom((intercom.data as Map).cast<String, Object?>());
+      }
+    }
     // A broker would have retained these; here they need an
     // explicit first value or the selects sit on "unknown" until the
     // first change. No camera view is open at server start, and the
@@ -1797,7 +2855,7 @@ class EspEntitySurface {
 
   /// The person sensor's state onto the Person binary sensor.
   Future<void> _sendPerson(bool present) async {
-    if (!_settings.get(defs.screensaverDismissOnPerson)) return;
+    if (!_settings.get(defs.personSensorEnabled)) return;
     await _send('person', present);
   }
 
@@ -1806,7 +2864,7 @@ class EspEntitySurface {
   /// is being read and nobody is there, unknown while it cannot be read
   /// (the grant missing, say).
   Future<void> _sendPersonState() async {
-    if (!_settings.get(defs.screensaverDismissOnPerson)) return;
+    if (!_settings.get(defs.personSensorEnabled)) return;
     final result = await commands.execute('getPersonSensor', const {});
     if (!result.ok || result.data is! Map) return;
     final status = result.data as Map;
@@ -1861,6 +2919,11 @@ class EspEntitySurface {
     await _send('next_alarm', data is Map ? '${data['at']}' : null);
   }
 
+  Future<void> _sendAlarm(Map<String, Object?> status) async {
+    await _send('alarm_ringing', status['phase'] == 'ringing');
+    await _send('alarm_snoozed_until', status['snoozedUntil']);
+  }
+
   Future<void> _sendAdminUrl() async {
     if (!_settings.get(defs.remoteEnabled)) {
       await _send('admin_url', 'disabled');
@@ -1873,7 +2936,7 @@ class EspEntitySurface {
     if (ip == null || ip.isEmpty) return;
     await _send(
       'admin_url',
-      'http://$ip:${_settings.get(defs.remotePort).toInt()}',
+      '${_settings.get(defs.remoteTls) ? 'https' : 'http'}://$ip:${_settings.get(defs.remotePort).toInt()}',
     );
   }
 
@@ -1965,7 +3028,19 @@ class EspEntitySurface {
   /// select does. Nothing is sent for a start URL outside the list (a
   /// page on another host), which leaves the select on unknown rather
   /// than claiming a dashboard the kiosk does not open.
+  static const _startPageOption = 'Start page';
+
+  bool get _hasCustomStartPage =>
+      _settings.get(defs.customStartUrl).trim().isNotEmpty;
+
+  /// Whether the catalog last built carried the Start page option.
+  late bool _listedStartPage = _hasCustomStartPage;
+
   Future<void> _sendDefaultDashboard() async {
+    if (_settings.get(defs.startPage) == 'custom' && _hasCustomStartPage) {
+      await _send('default_dashboard', _startPageOption);
+      return;
+    }
     final match = matchDashboardView(
       _settings.get(defs.startUrl),
       _dashboardViews,
@@ -2078,8 +3153,13 @@ class EspEntitySurface {
       await _send('charging', data['charging'] == true);
       final cpu = (data['cpu'] as num?)?.round();
       if (cpu != null) await _send('cpu', cpu);
+      final clock = (data['cpuClock'] as num?)?.round();
+      if (clock != null) await _send('cpu_clock', clock);
       final temp = data['temp'] as num?;
       if (temp != null) await _send('cpu_temp', temp.round());
+      if (temp != null) {
+        await _send('running_hot', temp > _settings.get(defs.hotThreshold));
+      }
     }
     final details = await commands.execute('getDeviceDetails', const {});
     final ram = details.ok && details.data is Map
@@ -2091,6 +3171,23 @@ class EspEntitySurface {
       if (freeMb > 0) await _send('ram_free', freeMb);
       if (totalMb > 0) await _send('ram_total', totalMb);
     }
+    final storage = details.ok && details.data is Map
+        ? ((details.data as Map)['storage'] as Map?)
+        : null;
+    final storageFree = storage?['free'] as num?;
+    final storageTotal = storage?['total'] as num?;
+    await _send(
+      'storage_free',
+      storageFree != null && storageFree >= 0
+          ? storageFree ~/ (1024 * 1024)
+          : null,
+    );
+    await _send(
+      'storage_total',
+      storageTotal != null && storageTotal > 0
+          ? storageTotal ~/ (1024 * 1024)
+          : null,
+    );
     final up = await commands.execute('getUptime', const {});
     if (up.ok && up.data is Map) {
       final uptime = up.data as Map;
@@ -2104,6 +3201,10 @@ class EspEntitySurface {
         'network_uptime',
         network == null ? null : now.subtract(Duration(seconds: network)),
       );
+      final device = (uptime['device'] as num?)?.toInt();
+      if (device != null) {
+        await _sendAnchor('last_boot', now.subtract(Duration(seconds: device)));
+      }
     }
     final light = await commands.execute('getLightLevel', const {});
     var lux = light.ok && light.data is Map
@@ -2113,7 +3214,7 @@ class EspEntitySurface {
     // to send. The device manager already answers with the last known
     // value where there is one.
     lux ??= int.tryParse(_settings.internal('esphome_last_lux'));
-    if (lux != null) await _send('illuminance', lux.round());
+    if (lux != null) _lux.offer(lux.round());
     await _sendIpAddresses();
     final foreground = await commands.execute('foregroundApp', const {});
     if (foreground.ok && foreground.data is Map) {
@@ -2127,9 +3228,76 @@ class EspEntitySurface {
           ? (nearby.data as Map)['count']
           : null;
       if (count is num) await _send('btproxy_nearby', count.toInt());
+      await _sendFilterRates();
     }
     await _sendVoiceSatellite();
     // Every completed poll IS a sighting.
     await _send('last_seen', DateTime.now().toUtc().toIso8601String());
+  }
+
+  /// Whether an advertisement filter is configured at all, which is what
+  /// decides whether the filter's diagnostics are worth listing.
+  bool get _advertisementFilterConfigured =>
+      _settings.get(defs.btproxyEnabled) &&
+      mergedAdvertisementFilter(
+        _settings.get(defs.btproxyFilter),
+        _settings.get(defs.btproxyFilterIrks),
+      ).isNotEmpty;
+
+  /// The filter's totals as of the last poll, and when that was.
+  Map<String, num> _lastFilterCounters = const {};
+  DateTime? _lastFilterAt;
+
+  /// Publishes the filter's counters as rates, the way the ESPHome proxies
+  /// publish theirs.
+  ///
+  /// The native counters are free-running totals, so what goes out is the
+  /// delta since the last poll divided by the time it actually took --
+  /// normalised rather than assumed, because a panel that slept through
+  /// four polls would otherwise report one minute's worth of a four-minute
+  /// gap. A restart zeroes the totals, which shows up as a delta below
+  /// zero; the fresh total is the honest reading in that case.
+  Future<void> _sendFilterRates() async {
+    if (!_advertisementFilterConfigured) return;
+    final status = await commands.execute('esphomeStatus', const {});
+    if (!status.ok || status.data is! Map) return;
+    final filter = (status.data as Map)['filter'];
+    if (filter is! Map || filter.isEmpty) return;
+    final now = <String, num>{
+      for (final key in const [
+        'forwarded',
+        'dropped',
+        'droppedRpa',
+        'allowedServiceUuid',
+      ])
+        if (filter[key] is num) key: filter[key] as num,
+    };
+    final at = DateTime.now();
+    final since = _lastFilterAt;
+    _lastFilterAt = at;
+    final previous = _lastFilterCounters;
+    _lastFilterCounters = now;
+    // Nothing to compare the first reading against, and a rate needs two.
+    if (since == null || previous.isEmpty) return;
+    final minutes = at.difference(since).inMilliseconds / 60000.0;
+    if (minutes <= 0) return;
+    num delta(String key) {
+      final current = now[key] ?? 0;
+      final last = previous[key] ?? 0;
+      return current < last ? current : current - last;
+    }
+
+    double rate(String key) => delta(key) / minutes;
+    await _send('btproxy_adv_forwarded', rate('forwarded').round());
+    await _send('btproxy_adv_dropped', rate('dropped').round());
+    await _send('btproxy_adv_dropped_rpa', rate('droppedRpa').round());
+    await _send('btproxy_adv_service_uuid', rate('allowedServiceUuid').round());
+    final heard = delta('forwarded') + delta('dropped');
+    // Unknown rather than 0% when the panel heard nothing at all, so an
+    // idle radio is not misreported as a filter that dropped nothing.
+    await _send(
+      'btproxy_drop_rate',
+      heard == 0 ? null : (100 * delta('dropped') / heard),
+    );
   }
 }

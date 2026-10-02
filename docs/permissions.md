@@ -24,7 +24,7 @@ The only update-related permission that requires manual user intervention is **I
 
 | Grant | Purpose |
 | --- | --- |
-| Microphone | Powers wake word detection and speech to text capabilities, as well as any dashboard pages requesting microphone access. |
+| Microphone | Powers wake word detection, speech to text and intercom calls, as well as any dashboard pages requesting microphone access. |
 | Camera | Powers camera motion detection, image snapshots, and dashboard pages requesting camera access. |
 | Notifications | Displays the ongoing status notification for the Kiosk Satellite Service. This is a runtime prompt on Android 13 and newer; older versions allow it automatically. The background service functions fine without it, but its status notification will remain hidden. |
 | Unrestricted battery | Essential for every installation (voice enabled or not). It prevents Android from killing Home Assistant and ESPHome background connections when the screen is off. |
@@ -32,12 +32,13 @@ The only update-related permission that requires manual user intervention is **I
 | Modify system settings | Allows the app to adjust the panel's actual hardware brightness rather than simply dimming the application window. |
 | All files access | Grants access to the root directory in the built-in File Manager. Without it, the File Manager is restricted to the app's own internal storage folder. This applies to Android 11 and newer; older versions rely on standard storage permissions. |
 | Usage access | Enables the ESPHome **Foreground app** sensor to identify whichever application is currently visible on screen. Without it, the sensor will only report Kiosk Satellite while it is in front. |
+| Notification access | Lets the Media Player's **Local Media Session** follow other apps playing on the device. Android only lists other apps' media sessions to an app with this grant. Kiosk Satellite reads no notifications with it. See [Media Player](sendspin.md#local-media-session). |
 | Device admin | Enables true **Screen off** functionality, powering down the display panel rather than simply rendering a black overlay. |
 | Location | Required for ESPHome [location sensors](esphome.md#gps-sensor) (off by default), dashboard pages requesting location, and Bluetooth scanning across all Android versions (as required by the OS). |
 | Nearby devices | Controls the Bluetooth scan and connect operations for the [Bluetooth proxy](esphome.md). This is a runtime prompt on Android 12 and newer. On older versions, it is granted at installation, though Android still requires Location permissions and active location services to return scan results. |
 | System UI guard | An optional accessibility service that forcibly closes the notification shade and recent apps screen while kiosk protections are active. See [Kiosk and Lockdown](kiosk.md#required-system-permissions). |
 | Media library | Grants read access to local folders selected for the Local Media screensaver. |
-| Log access | Specifically for hardware with native person sensors (such as Meta Portals). It reads system logs for the screensaver's Person Detection feature. This can only be granted via `adb` and takes effect after an app restart. See [Meta Portal](portal.md). |
+| Log access | Specifically for hardware with native person sensors (such as Meta Portals). It reads system logs for the Person Sensor and the screensaver's Person Detection feature. This can only be granted via `adb` and takes effect after an app restart. See [Meta Portal](portal.md). |
 
 ## Granting Everything via ADB
 
@@ -78,9 +79,10 @@ adb shell appops set me.jxl.kiosk_satellite MANAGE_EXTERNAL_STORAGE allow
 adb shell appops set me.jxl.kiosk_satellite GET_USAGE_STATS allow
 adb shell dumpsys deviceidle whitelist +me.jxl.kiosk_satellite
 adb shell dpm set-active-admin me.jxl.kiosk_satellite/.KioskAdminReceiver
+adb shell cmd notification allow_listener me.jxl.kiosk_satellite/.MediaSessionListener
 ```
 
-For Meta Portal devices, enable **Person Detection** for the screensaver using:
+For Meta Portal devices, enable the **Person Sensor** and the screensaver's **Person Detection** using:
 
 ```
 adb shell pm grant me.jxl.kiosk_satellite android.permission.READ_LOGS
@@ -95,6 +97,14 @@ The System UI guard operates as an accessibility service, so it is enabled by wr
 adb shell settings put secure enabled_accessibility_services me.jxl.kiosk_satellite/me.jxl.kiosk_satellite.KioskAccessibilityService
 adb shell settings put secure accessibility_enabled 1
 ```
+
+To append instead, keeping whatever is already enabled (only when the list is not empty: an empty one reads back as `null`):
+
+```
+adb shell 'settings put secure enabled_accessibility_services "$(settings get secure enabled_accessibility_services):me.jxl.kiosk_satellite/me.jxl.kiosk_satellite.KioskAccessibilityService"'
+```
+
+The same service carries [remote key mappings](gestures.md#remote-keys).
 
 After running these command blocks, check **Settings > Device > Permissions Manager** (or open the page in the remote admin). Every row should now display as Granted.
 
@@ -155,3 +165,15 @@ Running `dpm set-active-admin` grants basic device administration, which powers 
 Device ownership has strict prerequisites and is intentionally difficult to reverse, so its setup is covered in detail in the [Kiosk and Lockdown](kiosk.md#going-further-device-ownership) documentation.
 
 Finally, keep in mind that certain hardware vendors layer aggressive, proprietary battery management software on top of standard Android. These vendor utilities cannot be queried by apps or configured via standard `adb` commands. If Kiosk Satellite continues to be killed in the background despite all permissions showing as Granted, inspect the manufacturer's custom power and battery management settings directly on the device.
+
+## MediaTek DuraSpeed
+
+Many MediaTek tablets (Lenovo, Alcatel and others) ship DuraSpeed, a background app control that goes further than killing apps: it can refuse to start an app's services. The dashboard WebView runs its page in a separate renderer process that Android starts as a service, and when DuraSpeed refuses it the dashboard stays black while everything else works, the clock screensaver included. The app log then repeats `WebView renderer unresponsive` and `rebuilding the WebView` without ever recovering, and `adb logcat` shows `bringUpServiceLocked, suppress to start service!` followed by `Unable to launch app ... SandboxedProcessService ... process is bad`.
+
+Some tablets show DuraSpeed in **Settings > Apps** or under Battery, with a master switch and a per-app allow list. Others, the Lenovo Tab M8 4th gen on Android 13 among them, ship it with no settings page at all, and it is then invisible until a service refuses to start. Either way, adb turns it off:
+
+```
+adb shell settings put global setting.duraspeed.enabled 0
+```
+
+Then restart Kiosk Satellite. The setting survives reboots. When the renderer keeps failing on a tablet with DuraSpeed installed, the dashboard itself shows this command and a link here. Lenovo's Battery Manager list is a different thing and does not cause this.

@@ -7,14 +7,39 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '../app_container.dart';
 import '../core/events.dart';
+import 'package:kiosk_satellite/core/lifecycle.dart';
 import '../managers/settings/definitions.dart' as defs;
 
 /// An isolated rendering document. All input and screensaver policy stays in KS.
-String pluginScreensaverDocument(String html) => '''<!doctype html>
+String pluginScreensaverDocument(String html) =>
+    '''<!doctype html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; frame-src about:; connect-src 'none'; form-action 'none'; base-uri 'none'">
-<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{border:0;width:100%;height:100%;pointer-events:none}</style></head>
-<body><iframe sandbox="allow-scripts" srcdoc="${const HtmlEscape(HtmlEscapeMode.attribute).convert(html)}"></iframe></body></html>''';
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{position:absolute;top:0;left:0;border:0;width:100%;height:100%;pointer-events:none}</style></head>
+<body><iframe sandbox="allow-scripts" srcdoc="${const HtmlEscape(HtmlEscapeMode.attribute).convert(html)}"></iframe>
+<script>
+// A new publication loads in a hidden frame and only replaces the shown one
+// once it has painted, so a slideshow never drops to black between photos.
+let current = document.querySelector('iframe'), pending;
+window.ksUpdateDocument = function(html) {
+  if (pending) pending.remove();
+  const next = document.createElement('iframe');
+  next.setAttribute('sandbox', 'allow-scripts');
+  next.style.opacity = '0';
+  pending = next;
+  next.onload = function() {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (pending !== next) return;
+      next.style.opacity = '1';
+      current.remove();
+      current = next;
+      pending = null;
+    }));
+  };
+  next.srcdoc = html;
+  document.body.appendChild(next);
+};
+</script></body></html>''';
 
 /// Configuration travels in the fragment, never in the local asset request path.
 Uri? pluginScreensaverAssetUrl(Map<String, Object?> renderer) {
@@ -43,7 +68,15 @@ class PluginScreensaver extends StatelessWidget {
           final renderer = renderers[mode];
           if (renderer == null) return const ColoredBox(color: Colors.black);
           return _Document(
-            key: ValueKey((mode, jsonEncode(renderer))),
+            // Inline HTML updates load into the live WebView. Anything else
+            // that changes the document's origin or options rebuilds it.
+            key: ValueKey((
+              mode,
+              renderer['entry'],
+              renderer['assetOrigin'],
+              renderer['assetDirectory'],
+              renderer['dataJson'],
+            )),
             container: container,
             renderer: renderer,
           );
@@ -68,14 +101,18 @@ class _DocumentState extends State<_Document> with WidgetsBindingObserver {
   bool _screenOn = true;
   bool _foreground = true;
   bool _failed = false;
+  bool _loaded = false;
+  String? _html;
 
   @override
   void initState() {
     super.initState();
+    _html = widget.renderer['html'] as String?;
     WidgetsBinding.instance.addObserver(this);
-    _foreground =
-        WidgetsBinding.instance.lifecycleState == null ||
-        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    _foreground = Lifecycle.onScreen;
+    // Paused under the native voice overlay too, which shows a still of the
+    // screensaver.
+    widget.container.screensaver.renderPaused.addListener(_renderPaused);
     _screen = widget.container.bus.on<ScreenStateChanged>().listen((e) {
       _screenOn = e.on;
       unawaited(_activity());
@@ -106,14 +143,50 @@ class _DocumentState extends State<_Document> with WidgetsBindingObserver {
   }
 
   @override
+  void didUpdateWidget(covariant _Document oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A new publication brings back a renderer that crashed, since the key no
+    // longer changes for inline updates.
+    if (_failed && widget.renderer['html'] != oldWidget.renderer['html']) {
+      _failed = false;
+      _loaded = false;
+      _controller = null;
+      _html = widget.renderer['html'] as String?;
+      return;
+    }
+    unawaited(_updateDocument());
+  }
+
+  /// Hands newer inline HTML to the loaded page. Anything that arrives before
+  /// the first load finishes is sent from onLoadStop.
+  Future<void> _updateDocument() async {
+    final html = widget.renderer['html'] as String?;
+    if (!_loaded || html == null || html == _html) return;
+    _html = html;
+    try {
+      await _controller?.evaluateJavascript(
+        source: 'window.ksUpdateDocument(${jsonEncode(html)});',
+      );
+    } catch (e) {
+      // Retry with the next publication.
+      _html = null;
+      widget.container.log.warn('plugins', 'Screensaver update failed: $e');
+    }
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    _foreground = state == AppLifecycleState.resumed;
+    _foreground = !Lifecycle.offScreen(state);
     unawaited(_activity());
   }
 
+  void _renderPaused() => unawaited(_activity());
+
   Future<void> _activity() async {
     try {
-      if (_foreground && _screenOn) {
+      if (_foreground &&
+          _screenOn &&
+          !widget.container.screensaver.renderPaused.value) {
         await _controller?.resume();
       } else {
         await _controller?.pause();
@@ -126,6 +199,7 @@ class _DocumentState extends State<_Document> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    widget.container.screensaver.renderPaused.removeListener(_renderPaused);
     _screen?.cancel();
     _settings?.cancel();
     _shift?.cancel();
@@ -202,6 +276,10 @@ class _DocumentState extends State<_Document> with WidgetsBindingObserver {
                     onWebViewCreated: (controller) {
                       _controller = controller;
                       unawaited(_activity());
+                    },
+                    onLoadStop: (_, _) {
+                      _loaded = true;
+                      unawaited(_updateDocument());
                     },
                     onRenderProcessGone: (_, detail) {
                       if (mounted) setState(() => _failed = true);

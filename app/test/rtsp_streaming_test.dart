@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:kiosk_satellite/managers/audio/mic_hub.dart';
@@ -107,6 +108,171 @@ void main() {
     await settings.dispose();
     await bus.dispose();
   });
+
+  test('certificate changes leave plaintext viewers alone', () async {
+    final before = configurations.length;
+    bus.publish(const TlsIdentityChanged());
+    await settle();
+    expect(configurations.length, before);
+  });
+
+  test(
+    'encrypted RTSP and ONVIF share the identity and renew together',
+    () async {
+      const tlsChannel = MethodChannel('kiosk_satellite/tls');
+      messenger.setMockMethodCallHandler(
+        tlsChannel,
+        (_) async => {
+          'certificate': File('test/fixtures/tls/cert.pem').readAsStringSync(),
+          'privateKey': File('test/fixtures/tls/key.pem').readAsStringSync(),
+          'notAfter': DateTime.utc(2036).millisecondsSinceEpoch,
+        },
+      );
+      addTearDown(() => messenger.setMockMethodCallHandler(tlsChannel, null));
+      await settings.set(defs.cameraRtspTls, true);
+      await settle();
+      expect(configurations.last['enabled'], true);
+      expect(configurations.last['tls'], true);
+      expect(configurations.last['privateKey'], contains('PRIVATE KEY'));
+      final before = configurations.length;
+      bus.publish(const TlsIdentityChanged());
+      await settle();
+      expect(configurations.length, before + 1);
+      await settings.set(defs.cameraStreamingProtocol, 'onvif');
+      await settle();
+      expect(configurations.last['tls'], true);
+      expect(configurations.last['privateKey'], contains('PRIVATE KEY'));
+      expect(settings.visible(defs.cameraRtspTls), true);
+      await settings.set(defs.cameraRtspTls, false);
+      await settle();
+      expect(configurations.last['tls'], false);
+      expect(configurations.last.containsKey('privateKey'), false);
+    },
+  );
+
+  test(
+    'damaged identity stops encrypted streaming without plaintext fallback',
+    () async {
+      const tlsChannel = MethodChannel('kiosk_satellite/tls');
+      messenger.setMockMethodCallHandler(
+        tlsChannel,
+        (_) async =>
+            throw PlatformException(code: 'tls', message: 'Damaged identity'),
+      );
+      addTearDown(() => messenger.setMockMethodCallHandler(tlsChannel, null));
+      // Simulate a persisted TLS preference whose native key cannot be loaded.
+      await (await SharedPreferences.getInstance()).setBool(
+        'ks.camera.rtsp.tls',
+        true,
+      );
+      bus.publish(const SettingChanged(key: 'camera.rtsp.tls', value: true));
+      await settle();
+      expect(configurations.last['enabled'], false);
+      expect(configurations.last['tls'], true);
+      final status = await commands.execute('getRtspStatus', {});
+      expect((status.data as Map)['error'], contains('Damaged identity'));
+    },
+  );
+
+  test(
+    'overlay toggles reach native without interrupting camera demand',
+    () async {
+      expect(configurations.last['dateTime'], false);
+      expect(configurations.last['dateTimeBackground'], false);
+      await demand(true);
+      final activeStream = stream;
+      expect(activeStream, isNotNull);
+      await settings.set(defs.cameraRtspDateTime, true);
+      await settle();
+      expect(configurations.last['dateTime'], true);
+      expect(identical(stream, activeStream), true);
+      await settings.set(defs.cameraRtspDateTimeBackground, true);
+      await settle();
+      expect(configurations.last['dateTimeBackground'], true);
+      expect(identical(stream, activeStream), true);
+      await settings.set(defs.cameraRtspDateTime, false);
+      await settle();
+      expect(configurations.last['dateTime'], false);
+      expect(identical(stream, activeStream), true);
+    },
+  );
+
+  test(
+    'exact camera dimensions and facing reach the native stream configuration',
+    () async {
+      await settings.setFromJson(defs.cameraRtspResolution.key, '1280x720');
+      await settle();
+      expect(configurations.last['width'], 1280);
+      expect(configurations.last['height'], 720);
+      await settings.set(defs.cameraDevice, 'back');
+      await settle();
+      expect(configurations.last['camera'], 'back');
+      await settings.setFromJson(defs.cameraRtspResolution.key, '720x1280');
+      await settle();
+      expect(configurations.last['width'], 720);
+      expect(configurations.last['height'], 1280);
+    },
+  );
+
+  test(
+    'analysis mode reaches native streaming without disabling detection settings',
+    () async {
+      await settings.set(defs.motionSensor, true);
+      await settle();
+      expect(configurations.last['analysis'], true);
+      await settings.set(defs.cameraRtspAnalysis, false);
+      await settle();
+      expect(configurations.last['analysis'], false);
+      expect(settings.get(defs.motionSensor), true);
+      await demand(true);
+      expect(stream?['rtsp'], true);
+      await demand(false);
+      expect(stream?['rtsp'], false);
+      expect(stream?['motion'], true);
+    },
+  );
+
+  test(
+    'protocols keep separate ports while sharing the other stream settings',
+    () async {
+      expect(configurations.last['protocol'], 'rtsp');
+      expect(configurations.last['port'], 8554);
+      expect(settings.visible(defs.cameraRtspPort), true);
+      expect(settings.visible(defs.cameraOnvifPort), false);
+      await settings.set(defs.cameraRtspPort, 9554);
+      await settings.set(defs.cameraRtspAudio, true);
+      await settings.set(defs.cameraStreamingProtocol, 'onvif');
+      await settle();
+      expect(configurations.last['protocol'], 'onvif');
+      expect(configurations.last['port'], 8080);
+      await settings.set(defs.deviceName, 'Kitchen tablet');
+      await settle();
+      expect(configurations.last['name'], 'Kitchen tablet');
+      expect(configurations.last['port'], 8080);
+      expect(settings.visible(defs.cameraRtspPort), false);
+      expect(settings.visible(defs.cameraOnvifPort), true);
+      await settings.set(defs.cameraOnvifPort, 9080);
+      await settle();
+      expect(configurations.last['port'], 9080);
+      expect(configurations.last['audio'], true);
+      await demand(true);
+      expect(stream?['rtsp'], true);
+      await settings.set(defs.cameraStreamingProtocol, 'rtsp');
+      await settle();
+      expect(configurations.last['protocol'], 'rtsp');
+      expect(configurations.last['port'], 9554);
+      expect(configurations.last['audio'], true);
+      await settings.set(defs.cameraStreamingProtocol, 'onvif');
+      await settle();
+      expect(configurations.last['port'], 9080);
+      await settings.set(defs.cameraRtspEnabled, false);
+      expect(settings.visible(defs.cameraStreamingProtocol), false);
+      expect(settings.visible(defs.cameraRtspPort), false);
+      expect(settings.visible(defs.cameraOnvifPort), false);
+      await settle();
+      expect(configurations.last['enabled'], false);
+    },
+  );
 
   Future<void> detectors(int mask) async {
     await settings.set(defs.screensaverEnabled, true);
@@ -433,8 +599,16 @@ void main() {
     await settings.set(defs.cameraRtspEnabled, false);
     expect(settings.visible(defs.cameraRtspEnabled), true);
     expect(settings.visible(defs.cameraRtspPort), false);
+    expect(settings.visible(defs.cameraRtspDateTime), false);
+    expect(settings.visible(defs.cameraRtspDateTimeBackground), false);
     await settings.set(defs.cameraRtspEnabled, true);
     expect(settings.visible(defs.cameraRtspPort), true);
+    expect(settings.visible(defs.cameraRtspDateTime), true);
+    expect(settings.visible(defs.cameraRtspDateTimeBackground), false);
+    await settings.set(defs.cameraRtspDateTime, true);
+    expect(settings.visible(defs.cameraRtspDateTimeBackground), true);
+    await settings.set(defs.cameraRtspDateTime, false);
+    expect(settings.visible(defs.cameraRtspDateTimeBackground), false);
     expect(settings.visible(defs.cameraRtspUsername), false);
     await settings.set(defs.cameraRtspAuth, true);
     expect(settings.visible(defs.cameraRtspUsername), true);

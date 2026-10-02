@@ -59,6 +59,10 @@ class BluetoothProxyBridge(private val context: Context, messenger: BinaryMessen
                                 connections = call.argument<Boolean>("connections") ?: false,
                                 minConnectRssi =
                                     call.argument<Int>("minConnectRssi") ?: 0,
+                                minAdvertiseRssi =
+                                    call.argument<Int>("minAdvertiseRssi") ?: 0,
+                                advertisementFilter =
+                                    call.argument<String>("advertisementFilter") ?: "",
                                 scanDuty = call.argument<String>("scanDuty")
                                     ?: "balanced",
                                 entities = entities,
@@ -67,6 +71,33 @@ class BluetoothProxyBridge(private val context: Context, messenger: BinaryMessen
                                 nodeName = call.argument<String>("nodeName") ?: "",
                                 webserverPort =
                                     call.argument<Int>("webserverPort") ?: 0,
+                                voice = call.argument<Boolean>("voice") ?: false,
+                                onVoice = { kind, fields ->
+                                    mainHandler.post {
+                                        channel.invokeMethod("voice",
+                                            mapOf("kind" to kind) + fields)
+                                    }
+                                },
+                                onVoiceConfiguration = { external, reply ->
+                                    mainHandler.post {
+                                        channel.invokeMethod("voiceConfiguration",
+                                            mapOf("external" to external),
+                                            object : MethodChannel.Result {
+                                                override fun success(result: Any?) {
+                                                    @Suppress("UNCHECKED_CAST")
+                                                    reply((result as? Map<String, Any?>)
+                                                        ?: emptyMap())
+                                                }
+                                                override fun error(
+                                                    code: String,
+                                                    message: String?,
+                                                    details: Any?,
+                                                ) = reply(emptyMap())
+                                                override fun notImplemented() =
+                                                    reply(emptyMap())
+                                            })
+                                    }
+                                },
                                 // Session reader threads land here; the Dart
                                 // side of the channel only exists on main.
                                 onEntityCommand = { objectId, value ->
@@ -116,6 +147,29 @@ class BluetoothProxyBridge(private val context: Context, messenger: BinaryMessen
                     result.success(null)
                 }
                 "status" -> result.success(BluetoothProxyRuntime.status())
+                "voiceSubscribed" ->
+                    result.success(BluetoothProxyRuntime.voiceSubscribed())
+                "voiceRequest" -> result.success(
+                    BluetoothProxyRuntime.sendVoiceRequest(
+                        call.argument<Boolean>("start") ?: false,
+                        call.argument<String>("conversationId") ?: "",
+                        call.argument<Int>("flags") ?: 0,
+                        call.argument<String>("wakeWordPhrase") ?: "",
+                    ))
+                "voiceAudio" -> result.success(
+                    BluetoothProxyRuntime.sendVoiceAudio(
+                        call.argument<ByteArray>("pcm") ?: ByteArray(0),
+                        call.argument<Boolean>("end") ?: false,
+                    ))
+                "voiceAnnounceFinished" -> result.success(
+                    BluetoothProxyRuntime.sendAnnounceFinished(
+                        call.argument<Boolean>("success") ?: true))
+                "fireEvent" -> result.success(
+                    BluetoothProxyRuntime.fireEvent(
+                        call.argument<String>("name") ?: "",
+                        call.argument<Map<String, String>>("data") ?: emptyMap(),
+                        call.argument<Map<String, String>>("typed") ?: emptyMap(),
+                    ))
                 "nearby" -> result.success(BluetoothProxyRuntime.nearbyDevices())
                 "entityState" -> {
                     BluetoothProxyRuntime.updateEntityState(

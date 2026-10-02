@@ -144,8 +144,9 @@ void main() {
   });
 
   test('the Voice Satellite Wake Word page holds the detection settings', () {
-    // The rest of that page (engine, wake words, sensitivity) is live rows
-    // from the integration, so these two are all the schema knows about it.
+    // On the dashboard runtime the rest of that page is live rows from the
+    // integration; native Voice Satellite adds its own engine, sensitivity,
+    // noise gate and stop word (the wake words are Home Assistant's selects).
     final moved = [
       for (final d in defs.allSettings)
         if (d.subpage == 'Wake Word') d.key,
@@ -153,7 +154,16 @@ void main() {
     expect(moved, [
       defs.wakeWordPreferFp32.key,
       defs.wakeWordResumeTimeoutSeconds.key,
+      defs.voiceWakeWordEngine.key,
+      defs.voiceWakeWordSensitivity.key,
+      defs.voiceNoiseGate.key,
+      defs.voiceStopWord.key,
+      defs.voiceWakeArbitration.key,
+      defs.voiceWakeArbitrationWindowMs.key,
     ]);
+    // Diagnostics is a page of its own, opened from the tester's group.
+    expect(defs.wakeWordDiagnostics.subpage, 'Wake word diagnostics');
+    expect(defs.subpageHints, contains('Wake word diagnostics'));
     // Keep listening in the background stays in General on the page above.
     expect(defs.wakeWordBackground.subpage, isNull);
   });
@@ -164,10 +174,10 @@ void main() {
         if (d.subpage == 'Microphone settings') d.key,
     ];
     expect(moved, [
-      defs.micAudioSource.key,
-      defs.micAgc.key,
+      defs.micSoftwareEchoCancellation.key,
       defs.micNoiseSuppression.key,
       defs.micGainDb.key,
+      defs.micCaptureFormat.key,
       // Hidden and hand-built (its options run to the mic's channel count),
       // but it belongs to that page too.
       defs.micChannel.key,
@@ -226,6 +236,30 @@ void main() {
     expect(defs.subpageHints, contains('Person Detection'));
   });
 
+  test('the Person Sensor page holds its switch, under Motion Sensor, '
+      'free of the Camera switch (issue #734)', () {
+    expect(
+      [
+        for (final d in defs.allSettings)
+          if (d.subpage == 'Person Sensor') d.key,
+      ],
+      [defs.personSensorEnabled.key],
+    );
+    expect(defs.personSensorEnabled.category, 'Camera');
+    expect(defs.personSensorEnabled.section, 'Person Sensor');
+    expect(defs.personSensorEnabled.dependsOn, isNull);
+    final keys = defs.allSettings.map((d) => d.key).toList();
+    expect(
+      keys.indexOf(defs.personSensorEnabled.key),
+      greaterThan(keys.indexOf(defs.motionStartDelay.key)),
+    );
+    expect(
+      keys.indexOf(defs.personSensorEnabled.key),
+      lessThan(keys.indexOf(defs.cameraRtspEnabled.key)),
+    );
+    expect(defs.subpageHints, contains('Person Sensor'));
+  });
+
   test('a device-hidden definition is hidden in describe() too', () async {
     await build();
     defs.deviceHiddenKeys.add(defs.screensaverDismissOnPerson.key);
@@ -269,6 +303,45 @@ void main() {
     expect(defs.subpageHints, contains('GPS Sensor'));
   });
 
+  test(
+    'the Device Kiosk Satellite Analytics page holds the three switches',
+    () {
+      final moved = [
+        for (final d in defs.allSettings)
+          if (d.subpage == 'Kiosk Satellite Analytics') d.key,
+      ];
+      expect(moved, [
+        defs.analyticsBasic.key,
+        defs.analyticsUsage.key,
+        defs.analyticsDiagnostics.key,
+      ]);
+      // On by default, and not per device: a fleet decides once.
+      for (final d in [
+        defs.analyticsBasic,
+        defs.analyticsUsage,
+        defs.analyticsDiagnostics,
+      ]) {
+        expect(d.defaultValue, isTrue, reason: d.key);
+        expect(d.perDevice, isFalse, reason: d.key);
+        expect(d.category, 'Device', reason: d.key);
+        // The one section is named after the page, so the page shows no
+        // heading above the card.
+        expect(d.section, 'Kiosk Satellite Analytics', reason: d.key);
+      }
+      // The last Device group: after the Shizuku page, before Fleet.
+      final keys = defs.allSettings.map((d) => d.key).toList();
+      expect(
+        keys.indexOf(defs.analyticsBasic.key),
+        greaterThan(keys.indexOf(defs.shizukuInstallUpdates.key)),
+      );
+      final lastDevice = defs.allSettings.lastWhere(
+        (d) => d.category == 'Device',
+      );
+      expect(lastDevice.key, defs.analyticsDiagnostics.key);
+      expect(defs.subpageHints, contains('Kiosk Satellite Analytics'));
+    },
+  );
+
   test('the ESPHome Bluetooth half is one page', () {
     final moved = [
       for (final d in defs.allSettings)
@@ -277,6 +350,11 @@ void main() {
     expect(moved, [
       defs.btproxyEnabled.key,
       defs.btproxyScanDuty.key,
+      // The advertisement floor sits with the scan settings it bounds;
+      // min_connect_rssi keeps its place beside the connections toggle.
+      defs.btproxyMinAdvertiseRssi.key,
+      defs.btproxyFilter.key,
+      defs.btproxyFilterIrks.key,
       defs.btproxyConnections.key,
       defs.btproxyMinConnectRssi.key,
       defs.btproxyMacLookup.key,
@@ -298,7 +376,7 @@ void main() {
     ];
     // The menu's own switch leads, then the action it gates, one per row.
     expect(moved.first, defs.kioskAllowDrawer.key);
-    expect(moved, hasLength(11));
+    expect(moved, hasLength(13));
     // The protections stay on the page above: they are what kiosk mode is.
     expect(defs.kioskExitGesture.subpage, isNull);
     expect(defs.kioskDisableStatusBar.subpage, isNull);

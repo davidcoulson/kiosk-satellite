@@ -3,9 +3,9 @@ import 'dart:convert';
 
 import 'dart:ui' show Brightness;
 
-import 'package:flutter/foundation.dart' show ValueNotifier;
+import 'package:flutter/foundation.dart' show ValueNotifier, visibleForTesting;
 import 'package:flutter/widgets.dart'
-    show AppLifecycleState, WidgetsBinding, WidgetsBindingObserver;
+    show WidgetsBinding, WidgetsBindingObserver;
 
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -19,6 +19,7 @@ import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 import 'dashboard_list.dart';
 import 'plugin_entities.dart';
+import 'package:kiosk_satellite/core/lifecycle.dart';
 
 /// Home Assistant connection: long-lived-token auth, connection validation,
 /// and the dashboard list used by the dashboard picker.
@@ -35,8 +36,11 @@ class HomeAssistantManager extends Manager {
   late final _pluginEntities = HaPluginEntities(
     baseUrl: () => baseUrl,
     token: () => _settings.get(defs.haToken),
-    emit: (owner, id, state) =>
-        bus.publish(PluginHaStateChanged(owner, id, state)),
+    emit: (owner, id, state) => bus.publish(
+      owner == '__remote_voice'
+          ? const RemoteStatusChanged('voice')
+          : PluginHaStateChanged(owner, id, state),
+    ),
   );
 
   /// One "minute" of the hold auto-release clock; injectable so tests can
@@ -76,6 +80,11 @@ class HomeAssistantManager extends Manager {
 
   /// Validate the connection and remember the verdict for the UIs.
   Future<String?> validateConnection() async {
+    // Only this check's own handshake counts. The flag is process-wide, so
+    // a certificate refused earlier in the run (an older HA URL behind a
+    // private CA) would otherwise flip the setting back on with every
+    // validation of a host that verifies fine (issue #776).
+    HaHttpOverrides.sawSelfSigned = false;
     final error = await checkConnection();
     connectionOk.value = error == null;
     // The API side tolerates the self-signed certificate by policy (see
@@ -95,8 +104,25 @@ class HomeAssistantManager extends Manager {
     return error;
   }
 
+  bool _remoteVoiceObserved = false;
+  Set<String> _remoteVoiceIds = {};
+  StreamSubscription<RemoteObserversChanged>? _remoteObservers;
+
   @override
   Future<void> init() async {
+    _remoteObservers = bus.on<RemoteObserversChanged>().listen((event) {
+      _remoteVoiceObserved = event.topics.contains('voice');
+      if (!_remoteVoiceObserved) {
+        _pluginEntities.unwatch('__remote_voice', null);
+        _remoteVoiceIds.clear();
+      } else {
+        _watchRemoteVoice();
+      }
+    });
+    connectionOk.addListener(() {
+      bus.publish(const RemoteStatusChanged('ha'));
+      if (connectionOk.value) unawaited(_leaveDashboardRuntime());
+    });
     commands.register(
       Command(
         name: 'haPluginReadEntity',
@@ -118,7 +144,8 @@ class HomeAssistantManager extends Manager {
         description: 'Observe a selected HA entity for a plugin session.',
         quiet: true,
         handler: (p) async {
-          if (p['owner'] is! String || !HaPluginEntities.validId(p['entityId'])) {
+          if (p['owner'] is! String ||
+              !HaPluginEntities.validId(p['entityId'])) {
             return const CommandResult.fail('Invalid entity subscription');
           }
           _pluginEntities.watch(p['owner'] as String, p['entityId'] as String);
@@ -347,6 +374,47 @@ class HomeAssistantManager extends Manager {
       )
       ..register(
         Command(
+          name: 'showScreensaverDashboard',
+          description:
+              'Move the dashboard to the Home Assistant Dashboard '
+              "screensaver's view, remembering where it was. Called by the "
+              'screensaver as the mode comes up.',
+          params: const {'path': 'the navigation path ("url_path/view-route")'},
+          handler: (p) async {
+            await showScreensaverDashboard(
+              '${p['path'] ?? ''}'.trim().replaceAll(RegExp(r'^/+|/+$'), ''),
+            );
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'leaveScreensaverDashboard',
+          description:
+              'Take the dashboard back to where it was before the Home '
+              'Assistant Dashboard screensaver moved it. Called by the '
+              'screensaver as it ends.',
+          handler: (_) async {
+            await leaveScreensaverDashboard();
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'haPauseRotation',
+          description:
+              'Hold dashboard view rotation on the current page for the '
+              'touch pause window, as a touch would.',
+          handler: (_) async {
+            _pauseRotationForTouch();
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
           name: 'haCallService',
           description:
               'Call a Home Assistant service (covers scripts, scenes and '
@@ -500,8 +568,8 @@ class HomeAssistantManager extends Manager {
           name: 'vsSetBrowserSettings',
           description:
               'Change the browser-local Voice Satellite settings (auto '
-              'start, debug logging, skin, theme mode, reactive bar, text '
-              'scale) through '
+              'start, muted microphone warning, debug logging, skin, theme '
+              'mode, reactive bar, text scale) through '
               'the page hook, which persists them to the Home Assistant '
               'panel profile and applies them live.',
           params: const {'settings': 'partial config object'},
@@ -727,7 +795,14 @@ class HomeAssistantManager extends Manager {
         // works with the dashboard WebView hidden.
         _returnHomeTimer?.cancel();
         _returnHomeTimer = null;
-        if (_returnHomeConfigured && !_holdActive) unawaited(_returnHome());
+        // The Home Assistant Dashboard screensaver has just moved the page
+        // to its own view, which is what must show now. The return lands
+        // on its way out instead (leaveScreensaverDashboard).
+        if (_returnHomeConfigured &&
+            !_holdActive &&
+            _saverDashboardPath == null) {
+          unawaited(_returnHome());
+        }
       } else {
         _configureReturnHome();
       }
@@ -780,6 +855,17 @@ class HomeAssistantManager extends Manager {
       }
       _configureReturnHome();
     });
+    bus.on<TheaterModeChanged>().listen((e) {
+      if (e.active == _theater) return;
+      _theater = e.active;
+      if (_theater) {
+        _rotationTimer?.cancel();
+        _rotationTimer = null;
+      } else {
+        _resumeRotationIfIdle();
+      }
+      _configureReturnHome();
+    });
     bus.on<CameraViewStateChanged>().listen((event) {
       _cameraViewActive = event.active;
       if (event.active) {
@@ -808,6 +894,10 @@ class HomeAssistantManager extends Manager {
   Timer? _touchPauseTimer;
   Timer? _voiceSafetyTimer;
   bool _voiceInteracting = false;
+
+  /// Theater mode is on (IX-9): view rotation and the return-to-home timer
+  /// wait, as they do for a voice turn, and resume when it ends.
+  bool _theater = false;
   bool _cameraViewActive = false;
   bool _screensaverActive = false;
 
@@ -830,8 +920,12 @@ class HomeAssistantManager extends Manager {
       return;
     }
     // A voice interaction in progress keeps rotation held until it ends.
-    if (_voiceInteracting) {
-      log.info(name, 'view rotation enabled (held by voice interaction)');
+    if (_voiceInteracting || _theater) {
+      log.info(
+        name,
+        'view rotation enabled (held by '
+        '${_theater ? 'theater mode' : 'voice interaction'})',
+      );
     } else {
       _armRotationTimer();
       log.info(name, 'view rotation armed');
@@ -874,7 +968,10 @@ class HomeAssistantManager extends Manager {
   /// interaction and no pending touch-pause window.
   void _resumeRotationIfIdle() {
     if (!_settings.get(defs.haRotationEnabled)) return;
-    if (_voiceInteracting || _cameraViewActive || _touchPauseTimer != null) {
+    if (_voiceInteracting ||
+        _cameraViewActive ||
+        _theater ||
+        _touchPauseTimer != null) {
       return;
     }
     log.info(name, 'rotation resumed');
@@ -925,14 +1022,10 @@ class HomeAssistantManager extends Manager {
     // Nobody is looking: the screensaver is up, or the app is not on
     // screen. Skip WITHOUT advancing, so the ring freezes in place (and a
     // strategy view's hard load never churns the page while it is hidden).
-    // lifecycleState is NULL until Android delivers the first transition
-    // (i.e. for the whole first foreground session) — null means resumed.
-    final lifecycle = WidgetsBinding.instance.lifecycleState;
-    if (_screensaverActive ||
-        _holdActive ||
-        (lifecycle != null && lifecycle != AppLifecycleState.resumed)) {
-      return;
-    }
+    // Off screen by the lifecycle, which is null for the whole first
+    // foreground session and inactive on a return without the input
+    // focus: both count as on screen (see Lifecycle).
+    if (_screensaverActive || _holdActive || !Lifecycle.onScreen) return;
     final slots = _rotationSlots();
     if (slots.isEmpty || baseUrl.isEmpty) return;
     // The crossfade needs the outgoing view visible: after an external
@@ -991,6 +1084,7 @@ class HomeAssistantManager extends Manager {
     if (_screensaverActive ||
         _voiceInteracting ||
         _cameraViewActive ||
+        _theater ||
         _holdActive) {
       return;
     }
@@ -1045,6 +1139,95 @@ class HomeAssistantManager extends Manager {
     await navigateToViewPath(path);
   }
 
+  // ── The Home Assistant Dashboard screensaver ──────────────────────
+  // The mode shows a chosen view in the dashboard's own WebView, so the
+  // page never reloads: a soft navigation there as it starts and back as
+  // it ends. The screensaver drives both edges over commands, awaiting
+  // each, so a dismissal and a navigation commanded right after it land
+  // in that order.
+
+  /// Whether the mode is up, from its start to its dismissal. A start
+  /// still reading the page when the dismissal lands stands down.
+  bool _saverDashboardUp = false;
+
+  /// The view the mode moved the page to, null while it moved nothing.
+  String? _saverDashboardPath;
+
+  /// Where the page was before the mode moved it.
+  String? _saverDashboardReturn;
+
+  /// The origin the page actually lives on: the loopback one when the
+  /// secure context proxy is on, [baseUrl] otherwise.
+  Future<String> _pageBase() async {
+    final mapped = await commands.execute('proxyMapUrl', {'url': baseUrl});
+    return mapped.ok && mapped.data is String ? mapped.data as String : baseUrl;
+  }
+
+  /// Move the page to [viewPath] for the screensaver. An empty path, or a
+  /// page that is not this Home Assistant, leaves the screen as it is.
+  /// A mode that comes back within one session (a schedule swapping it
+  /// out and in again) keeps the first return point.
+  Future<void> showScreensaverDashboard(String viewPath) async {
+    _saverDashboardUp = true;
+    if (!configured || baseUrl.isEmpty || viewPath.isEmpty) return;
+    final base = await _pageBase();
+    final where = await commands.execute('evalJs', {
+      'code':
+          '''
+(function () {
+  if (!location.href.startsWith(${jsonEncode(base)})) return 'off-origin';
+  return location.pathname;
+})();
+''',
+    });
+    if (!_saverDashboardUp) return;
+    final page = '${where.data}';
+    final current = where.ok && page.startsWith('/')
+        ? page.replaceAll(RegExp(r'^/+|/+$'), '')
+        : '';
+    if (_saverDashboardReturn == null) {
+      if (current.isEmpty) return;
+      _saverDashboardReturn = current;
+    }
+    _saverDashboardPath = viewPath;
+    log.info(name, 'screensaver shows "$viewPath"');
+    // Awaited up to the navigation itself, not the seconds-long self-heal
+    // after it, which the screensaver's start must not wait out.
+    await navigateToViewPath(viewPath, awaitSelfHeal: false);
+  }
+
+  /// Take the page back as the screensaver ends: to the dashboard's home
+  /// view when Return to the dashboard is on (its return was handed to
+  /// this moment), otherwise to where it was. Only while the page still
+  /// shows the screensaver's view: a navigation from Home Assistant in the
+  /// meantime (browser_mod, a card) is where the person should land.
+  Future<void> leaveScreensaverDashboard() async {
+    _saverDashboardUp = false;
+    final shown = _saverDashboardPath;
+    final previous = _saverDashboardReturn;
+    _saverDashboardPath = null;
+    _saverDashboardReturn = null;
+    if (shown == null || previous == null) return;
+    final back =
+        (_returnHomeConfigured && !_holdActive ? homeViewPath() : null) ??
+        previous;
+    final base = await _pageBase();
+    final still = await commands.execute('evalJs', {
+      'code':
+          '''
+(function () {
+  if (!location.href.startsWith(${jsonEncode(base)})) return false;
+  var shown = '/' + ${jsonEncode(shown)};
+  var path = location.pathname;
+  return path === shown || path.indexOf(shown + '/') === 0;
+})();
+''',
+    });
+    if (!still.ok || '${still.data}' != 'true') return;
+    log.info(name, 'screensaver ended; back to "$back"');
+    await navigateToViewPath(back, awaitSelfHeal: false);
+  }
+
   /// Monotonic navigation stamp: the delayed self-heal check in
   /// [navigateToViewPath] only acts while no newer navigation has started.
   int _navSeq = 0;
@@ -1060,10 +1243,12 @@ class HomeAssistantManager extends Manager {
   /// Returns what actually happened — 'navigated', 'already' (the page is
   /// on that view), 'off-origin' (a non-HA page is on screen, nothing
   /// moved) or 'failed' — so callers reporting state elsewhere (the ESPHome
-  /// select) do not have to guess.
+  /// select) do not have to guess. With [awaitSelfHeal] off the call
+  /// returns once the page has moved and the self-heal runs on its own.
   Future<String> navigateToViewPath(
     String viewPath, {
     bool crossfade = false,
+    bool awaitSelfHeal = true,
   }) async {
     if (baseUrl.isEmpty || viewPath.isEmpty) return 'failed';
     final seq = ++_navSeq;
@@ -1075,10 +1260,7 @@ class HomeAssistantManager extends Manager {
     }
     // With the secure context proxy on, the page lives on the loopback
     // origin, not baseUrl — guard against what is actually on screen.
-    final mappedBase = await commands.execute('proxyMapUrl', {'url': baseUrl});
-    final effectiveBase = mappedBase.ok && mappedBase.data is String
-        ? mappedBase.data as String
-        : baseUrl;
+    final effectiveBase = await _pageBase();
     if (crossfade) {
       final fade = await commands.execute('evalJs', {
         'code': rotationCrossfadeJs(
@@ -1121,14 +1303,23 @@ class HomeAssistantManager extends Manager {
           ? outcome
           : 'failed';
     }
-    // Self-heal, once per path: a soft navigation cannot resolve every
-    // dashboard — strategy dashboards (the auto "Overview") and redirect
-    // aliases leave the panel spinning forever. If it is still spinning
-    // shortly after the soft nav, remember the path as hard-load-only and
-    // do the full load now; every later pass goes straight to loadUrl with
-    // no spinner-then-reload double hit.
+    if (awaitSelfHeal) {
+      await _selfHeal(viewPath, seq);
+    } else {
+      unawaited(_selfHeal(viewPath, seq));
+    }
+    return 'navigated';
+  }
+
+  /// Self-heal, once per path: a soft navigation cannot resolve every
+  /// dashboard — strategy dashboards (the auto "Overview") and redirect
+  /// aliases leave the panel spinning forever. If it is still spinning
+  /// shortly after the soft nav, remember the path as hard-load-only and
+  /// do the full load now; every later pass goes straight to loadUrl with
+  /// no spinner-then-reload double hit.
+  Future<void> _selfHeal(String viewPath, int seq) async {
     await Future<void>.delayed(const Duration(milliseconds: 2500));
-    if (_navSeq != seq) return 'navigated';
+    if (_navSeq != seq) return;
     final check = await commands.execute('evalJs', {
       'code':
           '''
@@ -1163,7 +1354,6 @@ class HomeAssistantManager extends Manager {
       );
       await commands.execute('loadUrl', {'url': '$baseUrl/$viewPath'});
     }
-    return 'navigated';
   }
 
   Timer? _themeTimer;
@@ -1292,6 +1482,35 @@ class HomeAssistantManager extends Manager {
 
   /// Whether the Voice Satellite integration is installed on the connected
   /// HA instance (probes its static frontend path). Cached per app run.
+  /// A kiosk that had a satellite assigned when native Voice Satellite
+  /// arrived stayed on the dashboard runtime, and only the integration's
+  /// migration moves it on. Once the integration is uninstalled that way is
+  /// gone and the page only offers to install it again, so switch the kiosk
+  /// to native here. Only on Home Assistant's own 404 for the integration's
+  /// script: a network error says nothing. Voice stays off until its owner
+  /// turns it on.
+  Future<void> _leaveDashboardRuntime() async {
+    if (_settings.get(defs.voiceRuntime) != 'dashboard' || baseUrl.isEmpty) {
+      return;
+    }
+    try {
+      final response = await http
+          .head(Uri.parse('$baseUrl/voice_satellite/voice-satellite-card.js'))
+          .timeout(const Duration(seconds: 5));
+      if (response.statusCode != 404) return;
+    } catch (_) {
+      return;
+    }
+    if (_settings.get(defs.voiceRuntime) != 'dashboard') return;
+    _vsDetected = false;
+    await _settings.set(defs.voiceRuntime, 'native');
+    log.info(
+      name,
+      'the Voice Satellite integration is not installed; Voice Satellite '
+      'now runs natively',
+    );
+  }
+
   Future<bool> detectVoiceSatellite() async {
     if (_vsDetected != null) return _vsDetected!;
     if (baseUrl.isEmpty) return false;
@@ -1355,7 +1574,10 @@ class HomeAssistantManager extends Manager {
       final channel = WebSocketChannel.connect(
         Uri.parse('$wsBase/api/websocket'),
       );
-      final subscription = GlanceSubscription._(channel);
+      // A failed connect also fails `ready`. The stream below reports it,
+      // so the future must not surface it again as an uncaught error.
+      unawaited(channel.ready.catchError((_) {}));
+      final subscription = GlanceSubscription._(channel).._expectSubscribed();
       channel.stream.listen(
         (raw) {
           try {
@@ -1393,9 +1615,14 @@ class HomeAssistantManager extends Manager {
                 // registry lookup's reply carries anything to read. A failure
                 // (an old Home Assistant without get_entries) just leaves
                 // states unrounded, which is what the row always did.
+                if (msg['id'] == 1 && msg['success'] == true) {
+                  subscription._startHeartbeat();
+                }
                 if (msg['id'] == 2 && msg['success'] == true) {
                   onPrecision?.call(_displayPrecisions(msg['result']));
                 }
+              case 'pong':
+                subscription._pong();
               case 'event':
                 _handleEntityEvent(msg['event'], onState);
             }
@@ -1403,7 +1630,12 @@ class HomeAssistantManager extends Manager {
             log.warn(name, 'glance frame ignored: $e');
           }
         },
-        onError: (Object e) => log.warn(name, 'glance socket error: $e'),
+        // cancelOnError skips onDone after an error, so the error itself
+        // has to count as the close, or the owner never reopens.
+        onError: (Object e) {
+          log.warn(name, 'glance socket error: $e');
+          subscription._lost();
+        },
         onDone: subscription._markClosed,
         cancelOnError: true,
       );
@@ -1635,6 +1867,20 @@ class HomeAssistantManager extends Manager {
   })?
   _vsControlsCache;
 
+  void _watchRemoteVoice() {
+    if (!_remoteVoiceObserved) return;
+    final cache = _vsControlsCache;
+    if (cache == null) return;
+    final ids = {...cache.wanted.values};
+    for (final id in _remoteVoiceIds.difference(ids)) {
+      _pluginEntities.unwatch('__remote_voice', id);
+    }
+    for (final id in ids.difference(_remoteVoiceIds)) {
+      _pluginEntities.watch('__remote_voice', id);
+    }
+    _remoteVoiceIds = ids;
+  }
+
   Future<Map<String, Object?>> vsControlsSnapshot() async {
     // The page's own binding wins (localStorage, changeable in the Voice
     // Satellite panel); the wizard's stored pick is the fallback.
@@ -1733,6 +1979,8 @@ class HomeAssistantManager extends Manager {
         log.warn(name, 'vsControls sibling lookup failed: $e');
       }
     }
+
+    _watchRemoteVoice();
 
     // Fresh states for just the sibling entities plus the satellite itself
     // (its attributes carry the integration version): a dozen one-kilobyte
@@ -2300,6 +2548,7 @@ class HomeAssistantManager extends Manager {
 
   @override
   Future<void> dispose() async {
+    await _remoteObservers?.cancel();
     _pluginEntities.dispose();
     _themeTimer?.cancel();
     _revalidateTimer?.cancel();
@@ -2371,8 +2620,23 @@ class HaWebRtcSession {
 class GlanceSubscription {
   GlanceSubscription._(this._channel);
 
+  /// How often a live subscription pings Home Assistant, and how long it
+  /// waits for the pong.
+  @visibleForTesting
+  static Duration heartbeat = const Duration(seconds: 30);
+  @visibleForTesting
+  static Duration pongTimeout = const Duration(seconds: 10);
+
+  /// How long a new subscription may take to connect, sign in and
+  /// subscribe before it counts as lost.
+  @visibleForTesting
+  static Duration subscribeTimeout = const Duration(seconds: 20);
+
   final WebSocketChannel _channel;
   bool _closed = false;
+  Timer? _heartbeat, _deadline, _connecting;
+  // Ids 1 and 2 are the subscribe and registry commands.
+  int _pingId = 3;
 
   bool get isClosed => _closed;
 
@@ -2382,15 +2646,61 @@ class GlanceSubscription {
   /// screensaver cycled.
   void Function()? onClosed;
 
+  /// A connection that dies without closing, such as one a router drops
+  /// while the device sleeps, delivers nothing and never reports it. Home
+  /// Assistant answers every ping, so a missed pong counts as a close and
+  /// the owner reopens. Without it Weather Mood kept last night's sun and
+  /// weather at noon.
+  /// A connection attempt that neither fails nor finishes, or fails before
+  /// the heartbeat starts, would otherwise leave the owner waiting on a
+  /// subscription that never delivers. Weather Mood kept 02:20's weather
+  /// all morning after a reconnect ran into a Wi-Fi drop.
+  void _expectSubscribed() {
+    _connecting = Timer(subscribeTimeout, _lost);
+  }
+
+  void _startHeartbeat() {
+    _connecting?.cancel();
+    _connecting = null;
+    _heartbeat?.cancel();
+    _heartbeat = Timer.periodic(heartbeat, (_) {
+      if (_closed) return;
+      try {
+        _channel.sink.add(jsonEncode({'id': _pingId++, 'type': 'ping'}));
+      } catch (_) {}
+      _deadline ??= Timer(pongTimeout, _lost);
+    });
+  }
+
+  void _pong() {
+    _deadline?.cancel();
+    _deadline = null;
+  }
+
+  void _lost() {
+    if (_closed) return;
+    _markClosed();
+    unawaited(_channel.sink.close().catchError((_) {}));
+  }
+
+  void _stopHeartbeat() {
+    _heartbeat?.cancel();
+    _deadline?.cancel();
+    _connecting?.cancel();
+    _heartbeat = _deadline = _connecting = null;
+  }
+
   void _markClosed() {
     if (_closed) return;
     _closed = true;
+    _stopHeartbeat();
     onClosed?.call();
   }
 
   Future<void> close() async {
     if (_closed) return;
     _closed = true;
+    _stopHeartbeat();
     try {
       await _channel.sink.close();
     } catch (_) {}

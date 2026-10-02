@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:fake_async/fake_async.dart';
@@ -26,6 +27,8 @@ void main() {
   var cameraPresent = true;
   // Null for a device without a battery (issue #367).
   int? battery = 73;
+  num? cpuUsage = 12.4;
+  num? cpuClock;
   var cameraFacings = <String>['front', 'back'];
   var bluetooth = <String, Object?>{};
   var vsState = <String, Object?>{};
@@ -33,9 +36,14 @@ void main() {
   var dashboardsUnreachable = false;
   var catalogChanges = 0;
   var updateStatus = <String, Object?>{};
+  Map<String, Object?>? storage;
+  // The restart support ask (issue #528): null answers like a kiosk with
+  // no owner and no Shizuku, where the command exists but says no.
+  Map<String, Object?>? rebootSupport;
 
   setUp(() async {
     cameraPresent = true;
+    rebootSupport = null;
     updateStatus = {
       'currentVersion': '2026.8.52',
       'availableVersion': '2026.8.53',
@@ -43,6 +51,9 @@ void main() {
       'releaseUrl': 'https://example/r',
     };
     battery = 73;
+    cpuUsage = 12.4;
+    cpuClock = null;
+    storage = {'free': 16384 * 1024 * 1024, 'total': 32768 * 1024 * 1024};
     dashboardsUnreachable = false;
     catalogChanges = 0;
     cameraFacings = ['front', 'back'];
@@ -129,9 +140,19 @@ void main() {
         handler: (_) async => CommandResult.ok({
           'battery': battery,
           'charging': true,
-          'cpu': 12.4,
+          'cpu': cpuUsage,
+          'cpuClock': cpuClock,
           'temp': 41,
         }),
+      ),
+    );
+    commands.register(
+      Command(
+        name: 'getDeviceRebootSupport',
+        description: 'stub',
+        handler: (_) async => CommandResult.ok(
+          rebootSupport ?? const {'supported': false, 'route': null},
+        ),
       ),
     );
     stub('cameraGetConfig', {
@@ -162,11 +183,18 @@ void main() {
       {'route': 'home'},
       {'route': 'cameras'},
     ]);
-    stub('getDeviceDetails', {
-      'ram': {'free': 512 * 1024 * 1024, 'total': 4096 * 1024 * 1024},
-      'androidBuild': 'TP1A.220624.014',
-    });
-    stub('getUptime', {'app': 4200, 'network': 100});
+    commands.register(
+      Command(
+        name: 'getDeviceDetails',
+        description: 'stub',
+        handler: (_) async => CommandResult.ok({
+          'ram': {'free': 512 * 1024 * 1024, 'total': 4096 * 1024 * 1024},
+          'storage': storage,
+          'androidBuild': 'TP1A.220624.014',
+        }),
+      ),
+    );
+    stub('getUptime', {'app': 4200, 'network': 100, 'device': 90000});
     commands.register(
       Command(
         name: 'getIpAddresses',
@@ -232,6 +260,7 @@ void main() {
       'loadStartUrl',
       'clearWebCache',
       'restartApp',
+      'rebootDevice',
       'bringToFront',
       'showAppLauncher',
       'showMusicAssistant',
@@ -239,6 +268,7 @@ void main() {
       'showCameraView',
       'haNavigate',
       'installUpdate',
+      'checkUpdateNow',
       'takeCameraSnapshot',
       'vsEngine',
       'vsSetBrowserSettings',
@@ -249,6 +279,140 @@ void main() {
   });
 
   tearDown(() => surface.detach());
+
+  group('ESPHome set_brightness', () {
+    test('advertises a percentage argument and action responses', () {
+      final action = surface.buildServices().singleWhere(
+        (service) => service['name'] == 'set_brightness',
+      );
+      expect(action['supportsResponse'], isTrue);
+      expect(action['args'], [
+        {'name': 'brightness', 'type': 'float'},
+      ]);
+    });
+
+    test('accepts zero, fractional percentages and full brightness', () async {
+      for (final brightness in [0, 0.5, 42, 100]) {
+        executed.clear();
+        expect(
+          await surface.handleService('set_brightness', {
+            'brightness': brightness,
+          }),
+          isEmpty,
+        );
+        expect(executed.single.$1, 'setBrightness');
+        expect(executed.single.$2, {'level': brightness / 100.0});
+      }
+    });
+
+    test('refuses while adaptive brightness is on', () async {
+      await settings.set(defs.adaptiveBrightness, true);
+      final defaultLevel = settings.get(defs.defaultBrightness);
+      final maximum = settings.get(defs.adaptiveMaxBrightness);
+      for (final brightness in [0, 50, 100]) {
+        await expectLater(
+          surface.handleService('set_brightness', {'brightness': brightness}),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('Turn off adaptive brightness'),
+            ),
+          ),
+        );
+      }
+      expect(executed, isEmpty);
+      expect(settings.get(defs.adaptiveBrightness), isTrue);
+      expect(settings.get(defs.defaultBrightness), defaultLevel);
+      expect(settings.get(defs.adaptiveMaxBrightness), maximum);
+      await settings.set(defs.adaptiveBrightness, false);
+      await surface.handleService('set_brightness', {'brightness': 0});
+      expect(executed.single.$1, 'setBrightness');
+      expect(executed.single.$2, {'level': 0.0});
+    });
+
+    test('rejects missing, nonnumeric and out of range values', () async {
+      for (final args in <Map<String, Object?>>[
+        {},
+        for (final value in [
+          null,
+          '0',
+          false,
+          -1,
+          101,
+          double.nan,
+          double.infinity,
+          double.negativeInfinity,
+        ])
+          {'brightness': value},
+      ]) {
+        await expectLater(
+          surface.handleService('set_brightness', args),
+          throwsA(isA<StateError>()),
+        );
+      }
+      expect(executed, isEmpty);
+    });
+
+    test('reports command failures to the calling automation', () async {
+      final failingCommands = CommandRegistry(log);
+      final failingSurface = EspEntitySurface(
+        bus,
+        failingCommands,
+        log,
+        settings,
+      );
+      failingCommands.register(
+        Command(
+          name: 'setBrightness',
+          description: 'refused brightness write',
+          handler: (_) async => const CommandResult.fail('brightness refused'),
+        ),
+      );
+      await expectLater(
+        failingSurface.handleService('set_brightness', {'brightness': 0}),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            'brightness refused',
+          ),
+        ),
+      );
+    });
+  });
+
+  group('ESPHome vs_cancel', () {
+    test('is advertised only while Voice Satellite runs natively', () async {
+      bool advertised() =>
+          surface.buildServices().any((s) => s['name'] == 'vs_cancel');
+      await settings.set(defs.voiceRuntime, 'dashboard');
+      await settings.set(defs.voiceEnabled, true);
+      expect(advertised(), isFalse);
+      await settings.set(defs.voiceRuntime, 'native');
+      expect(advertised(), isTrue);
+      final action = surface.buildServices().singleWhere(
+        (service) => service['name'] == 'vs_cancel',
+      );
+      expect(action['supportsResponse'], isTrue);
+      expect(action['args'], isEmpty);
+    });
+
+    test('runs voiceCancel', () async {
+      commands.register(
+        Command(
+          name: 'voiceCancel',
+          description: 'voiceCancel',
+          handler: (p) async {
+            executed.add(('voiceCancel', Map<String, Object?>.from(p)));
+            return const CommandResult.ok();
+          },
+        ),
+      );
+      expect(await surface.handleService('vs_cancel', const {}), isEmpty);
+      expect(executed.single.$1, 'voiceCancel');
+    });
+  });
 
   test('picker groups honor categories before the entity type', () {
     expect(
@@ -283,6 +447,87 @@ void main() {
     );
     await Future<void>.delayed(const Duration(milliseconds: 80));
   }
+
+  group('ESPHome set_screensaver_brightness', () {
+    test('advertises a percentage argument and action responses', () {
+      final action = surface.buildServices().singleWhere(
+        (service) => service['name'] == 'set_screensaver_brightness',
+      );
+      expect(action['supportsResponse'], isTrue);
+      expect(action['args'], [
+        {'name': 'brightness', 'type': 'float'},
+      ]);
+    });
+
+    test('saves zero, fractional percentages and full brightness', () async {
+      final defaultLevel = settings.get(defs.defaultBrightness);
+      await surface.build();
+      await attach();
+      executed.clear();
+      for (final brightness in [0, 0.5, 42, 100]) {
+        pushed.clear();
+        expect(
+          await surface.handleService('set_screensaver_brightness', {
+            'brightness': brightness,
+          }),
+          isEmpty,
+        );
+        await pumpEventQueue();
+        expect(settings.get(defs.screensaverBrightnessLevel), brightness / 100);
+        expect(
+          pushed,
+          contains(('screensaver_brightness_level', brightness.round())),
+        );
+      }
+      expect(settings.get(defs.defaultBrightness), defaultLevel);
+      expect(settings.get(defs.screensaverBrightnessEnabled), isFalse);
+      expect(executed, isEmpty);
+    });
+
+    test('refuses while adaptive brightness is on', () async {
+      await settings.set(defs.adaptiveBrightness, true);
+      for (final brightness in [0, 50, 100]) {
+        await expectLater(
+          surface.handleService('set_screensaver_brightness', {
+            'brightness': brightness,
+          }),
+          throwsA(isA<StateError>()),
+        );
+      }
+      expect(settings.get(defs.screensaverBrightnessLevel), 0.4);
+      expect(settings.get(defs.adaptiveBrightness), isTrue);
+      expect(executed, isEmpty);
+      await settings.set(defs.adaptiveBrightness, false);
+      await surface.handleService('set_screensaver_brightness', {
+        'brightness': 0,
+      });
+      expect(settings.get(defs.screensaverBrightnessLevel), 0);
+    });
+
+    test('rejects missing, nonnumeric and out of range values', () async {
+      for (final args in <Map<String, Object?>>[
+        {},
+        for (final value in [
+          null,
+          '0',
+          false,
+          -1,
+          101,
+          double.nan,
+          double.infinity,
+          double.negativeInfinity,
+        ])
+          {'brightness': value},
+      ]) {
+        await expectLater(
+          surface.handleService('set_screensaver_brightness', args),
+          throwsA(isA<StateError>()),
+        );
+      }
+      expect(settings.get(defs.screensaverBrightnessLevel), 0.4);
+      expect(executed, isEmpty);
+    });
+  });
 
   test(
     'plugin scalar states replay on attach and honor exclusions and commands',
@@ -588,6 +833,7 @@ void main() {
         'last_interaction',
         'next_screensaver',
         'screensaver_brightness_level',
+        'screensaver_timeout',
         'assistant_volume',
         'media_volume',
         'clock_background',
@@ -613,6 +859,8 @@ void main() {
         'cpu_temp',
         'ram_free',
         'ram_total',
+        'storage_free',
+        'storage_total',
         'url',
         'foreground_app',
         'btproxy_nearby',
@@ -621,6 +869,7 @@ void main() {
         'ipv6_address',
         'app_uptime',
         'network_uptime',
+        'last_boot',
         'admin_url',
       ]),
     );
@@ -643,6 +892,14 @@ void main() {
     expect(ids, contains('bt_devices_connected'));
     expect(ids, contains('last_seen'));
     final byId = {for (final d in catalog) d['objectId']: d};
+    for (final id in ['storage_free', 'storage_total']) {
+      expect(byId[id]!['type'], 'sensor');
+      expect(byId[id]!['category'], 2);
+      expect(byId[id]!['deviceClass'], 'data_size');
+      expect(byId[id]!['unit'], 'MiB');
+    }
+    expect(byId['storage_free']!['stateClass'], 1);
+    expect(byId['storage_total']!['stateClass'], 0);
     // Only views with cameras become options; 'Closed' leads. The
     // per-view show buttons ride along.
     expect(byId['camera_view']!['options'], ['Closed', 'Front door']);
@@ -787,6 +1044,11 @@ void main() {
     ids = [for (final d in await surface.build()) '${d['objectId']}'];
     expect(ids, isNot(contains('camera_device')));
 
+    // A USB or monitor webcam as the only camera (Raspberry Pi).
+    cameraFacings = ['external'];
+    ids = [for (final d in await surface.build()) '${d['objectId']}'];
+    expect(ids, isNot(contains('camera_device')));
+
     // An empty answer means the probe could not look, not one camera:
     // stay optimistic like hasDeviceCamera.
     cameraFacings = [];
@@ -866,6 +1128,27 @@ void main() {
     expect(executed.map((e) => e.$1).toList(), ['showMusicAssistant']);
   });
 
+  test('the Restart device button follows the restart support ask', () async {
+    // No owner, no Shizuku: no button, the app restart stays.
+    var ids = [for (final d in await surface.build()) '${d['objectId']}'];
+    expect(ids, contains('restart'));
+    expect(ids, isNot(contains('restart_device')));
+    expect(surface.rebootButtonListed, false);
+
+    rebootSupport = {'supported': true, 'route': 'device_owner'};
+    final catalog = await surface.build();
+    ids = [for (final d in catalog) '${d['objectId']}'];
+    expect(ids, contains('restart_device'));
+    expect(surface.rebootButtonListed, true);
+    final entity = catalog.firstWhere((d) => d['objectId'] == 'restart_device');
+    expect(entity['type'], 'button');
+    expect(entity['name'], 'Restart device');
+
+    executed.clear();
+    await surface.handleCommand('restart_device', null);
+    expect(executed.map((e) => e.$1).toList(), ['rebootDevice']);
+  });
+
   test('IPv6 leads with the routable address, without its scope id', () async {
     ips = {
       'ipv4': {
@@ -913,6 +1196,8 @@ void main() {
     expect(byId['cpu_temp'], 41);
     expect(byId['ram_free'], 512);
     expect(byId['ram_total'], 4096);
+    expect(byId['storage_free'], 16384);
+    expect(byId['storage_total'], 32768);
     expect(byId['ipv4_address'], '192.168.1.5');
     expect(byId['ipv6_address'], 'fe80::1');
     // Uptimes are timestamp anchors: the moment the
@@ -920,6 +1205,11 @@ void main() {
     final appAnchor = DateTime.parse('${byId['app_uptime']}');
     final drift = DateTime.now().toUtc().difference(appAnchor).inSeconds - 4200;
     expect(drift.abs(), lessThan(30));
+    // Last boot is the device's start, a day before this one.
+    final bootAnchor = DateTime.parse('${byId['last_boot']}');
+    final bootDrift =
+        DateTime.now().toUtc().difference(bootAnchor).inSeconds - 90000;
+    expect(bootDrift.abs(), lessThan(30));
     expect(DateTime.parse('${byId['last_seen']}'), isA<DateTime>());
     expect(byId['foreground_app'], 'me.jxl.kiosk_satellite');
     expect(byId['btproxy_nearby'], 13);
@@ -952,6 +1242,39 @@ void main() {
     expect(byId['default_dashboard'], 'lovelace/home');
   });
 
+  test('storage poll reports full disks and clears missing readings', () {
+    fakeAsync((async) {
+      surface.build();
+      async.flushMicrotasks();
+      surface.attach(
+        (objectId, value) async => pushed.add((objectId, value)),
+        (objectId, jpeg) async => images.add((objectId, jpeg)),
+      );
+      async.flushMicrotasks();
+
+      void poll(Map<String, Object?>? reading, Object? free, Object? total) {
+        storage = reading;
+        pushed.clear();
+        async.elapse(const Duration(seconds: 60));
+        final byId = {for (final (id, value) in pushed) id: value};
+        expect(byId, containsPair('storage_free', free));
+        expect(byId, containsPair('storage_total', total));
+      }
+
+      poll({'free': 0, 'total': 32768 * 1024 * 1024}, 0, 32768);
+      poll(null, null, null);
+      poll({'free': null, 'total': null}, null, null);
+      poll({'free': -1, 'total': 0}, null, null);
+      poll({'free': 512 * 1024, 'total': 32768 * 1024 * 1024}, 0, 32768);
+      poll(
+        {'free': 8192 * 1024 * 1024, 'total': 32768 * 1024 * 1024},
+        8192,
+        32768,
+      );
+      surface.detach();
+    });
+  });
+
   test('a re-attach sends the uptime anchors again', () async {
     // A server restart hands the surface a fresh native hub with no
     // values, and the anchors have not moved: without a resend Home
@@ -970,6 +1293,7 @@ void main() {
     expect(again, hasLength(1));
     expect(DateTime.parse('${again.single}'), isA<DateTime>());
     expect(pushed.where((p) => p.$1 == 'network_uptime'), hasLength(1));
+    expect(pushed.where((p) => p.$1 == 'last_boot'), hasLength(1));
   });
 
   test(
@@ -1021,6 +1345,7 @@ void main() {
     await surface.handleCommand('camera_view', 'Closed');
     await surface.handleCommand('dashboard_view', 'lovelace/cameras');
     await surface.handleCommand('update', 'install');
+    await surface.handleCommand('update', 'check');
     expect(executed.map((e) => e.$1).toList(), [
       'screenOff',
       'setBrightness',
@@ -1030,6 +1355,7 @@ void main() {
       'hideCameraView',
       'haNavigate',
       'installUpdate',
+      'checkUpdateNow',
     ]);
     expect(executed[3].$2['viewId'], 'v1');
     expect(executed[4].$2['viewId'], 'v1');
@@ -1062,12 +1388,44 @@ void main() {
     expect(settings.get(defs.assistantVolume), 60);
     await surface.handleCommand('screensaver_brightness_level', 30.0);
     expect(settings.get(defs.screensaverBrightnessLevel), closeTo(0.3, 1e-9));
+    // The timeout is seconds, not a percentage: 600 lands as 600.
+    await surface.handleCommand('screensaver_timeout', 600.0);
+    expect(settings.get(defs.screensaverTimeoutSeconds), 600);
     await Future<void>.delayed(const Duration(milliseconds: 20));
     // The SettingChanged events echoed the new states back to HA.
     expect(pushed, contains(('kiosk', true)));
     expect(pushed, contains(('assistant_volume', 60)));
     expect(pushed, contains(('screensaver_brightness_level', 30)));
+    expect(pushed, contains(('screensaver_timeout', 600)));
   });
+
+  test(
+    'screensaver timeout is a seconds box clamped to its own range',
+    () async {
+      final catalog = await surface.build();
+      final timeout = catalog.firstWhere(
+        (e) => e['objectId'] == 'screensaver_timeout',
+      );
+      expect(timeout['type'], 'number');
+      expect(timeout['unit'], 's');
+      expect(timeout['deviceClass'], 'duration');
+      expect(timeout['mode'], 1);
+      expect(timeout['min'], 0);
+      expect(timeout['max'], 86400);
+      expect(timeout['step'], 1);
+      expect(timeout['category'], 1);
+      // The percent sliders keep their own range and no device class.
+      final volume = catalog.firstWhere((e) => e['objectId'] == 'media_volume');
+      expect(volume['max'], 100);
+      expect(volume['unit'], '%');
+      expect(volume.containsKey('deviceClass'), isFalse);
+      await attach();
+      await surface.handleCommand('screensaver_timeout', 90000.0);
+      expect(settings.get(defs.screensaverTimeoutSeconds), 86400);
+      await surface.handleCommand('screensaver_timeout', -5.0);
+      expect(settings.get(defs.screensaverTimeoutSeconds), 0);
+    },
+  );
 
   test(
     'RTSP configuration switch syncs both ways without changing the catalog',
@@ -1347,7 +1705,160 @@ void main() {
     });
   });
 
-  group('the Person sensor (discussion #353)', () {
+  group('the followed player entities (issue #741)', () {
+    const media = [
+      'media_play',
+      'media_pause',
+      'media_next',
+      'media_previous',
+      'media_state',
+      'media_title',
+      'media_artist',
+      'media_source',
+    ];
+    List<String> ids(List<Map<String, Object?>> catalog) => [
+      for (final d in catalog) '${d['objectId']}',
+    ];
+
+    test('the switch sits in the main group under Album art cache, off', () {
+      // The cache row hangs off the duck slider on both surfaces, so the
+      // def right after it renders directly below the cache.
+      final index = defs.allSettings.indexOf(defs.sendspinDuckPercent);
+      expect(defs.allSettings[index + 1], same(defs.sendspinEsphomeEntities));
+      expect(defs.sendspinEsphomeEntities.category, 'Sendspin');
+      expect(defs.sendspinEsphomeEntities.subpage, isNull);
+      expect(defs.sendspinEsphomeEntities.section, isNull);
+      expect(defs.sendspinEsphomeEntities.defaultValue, false);
+      expect(settings.visible(defs.sendspinEsphomeEntities), isTrue);
+    });
+
+    test('exist only with Expose ESPHome entities on', () async {
+      expect(ids(await surface.build()).where(media.contains), isEmpty);
+      await settings.set(defs.sendspinEsphomeEntities, true);
+      final catalog = await surface.build();
+      expect(ids(catalog), containsAll(media));
+      // Buttons and text sensors, never a media_player: ESPHome's has no
+      // track and no skip.
+      for (final d in catalog) {
+        if (media.contains(d['objectId'])) {
+          expect(d['type'], anyOf('button', 'text_sensor'));
+        }
+      }
+    });
+
+    test('the buttons send the transport to the followed player', () async {
+      commands.register(
+        Command(
+          name: 'sendspinControl',
+          description: 'stub',
+          handler: (p) async {
+            executed.add(('sendspinControl', Map<String, Object?>.from(p)));
+            return const CommandResult.ok();
+          },
+        ),
+      );
+      await settings.set(defs.sendspinEsphomeEntities, true);
+      executed.clear();
+      for (final id in [
+        'media_play',
+        'media_pause',
+        'media_next',
+        'media_previous',
+      ]) {
+        await surface.handleCommand(id, null);
+      }
+      expect(
+        [
+          for (final e in executed)
+            if (e.$1 == 'sendspinControl') e.$2['command'],
+        ],
+        ['play', 'pause', 'next', 'previous'],
+      );
+    });
+
+    test('Now playing keeps the ids the two share', () async {
+      for (final name in ['sendspinControl', 'mediaControl']) {
+        commands.register(
+          Command(
+            name: name,
+            description: 'stub',
+            handler: (p) async {
+              executed.add((name, Map<String, Object?>.from(p)));
+              return const CommandResult.ok();
+            },
+          ),
+        );
+      }
+      await settings.set(defs.sendspinEsphomeEntities, true);
+      await settings.set(defs.nowPlaying, true);
+      final listed = ids(await surface.build()).toList();
+      expect(listed.toSet().length, listed.length, reason: 'duplicate ids');
+      expect(listed, isNot(contains('media_play')));
+      expect(listed, contains('media_app'));
+      executed.clear();
+      await surface.handleCommand('media_next', null);
+      expect(executed.map((e) => e.$1), ['mediaControl']);
+      expect(executed.single.$2['action'], 'next');
+    });
+
+    test('the sensors are seeded at attach and follow the summary', () async {
+      commands.register(
+        Command(
+          name: 'mediaPlayerState',
+          description: 'stub',
+          handler: (_) async => const CommandResult.ok({
+            'state': 'playing',
+            'title': 'Song',
+            'artist': 'Band',
+            'source': 'YouTube',
+          }),
+        ),
+      );
+      await settings.set(defs.sendspinEsphomeEntities, true);
+      await attach();
+      expect(
+        pushed,
+        containsAll([
+          ('media_state', 'playing'),
+          ('media_title', 'Song'),
+          ('media_artist', 'Band'),
+          ('media_source', 'YouTube'),
+        ]),
+      );
+      pushed.clear();
+      bus.publish(
+        const MediaSummaryChanged({
+          'state': 'idle',
+          'title': '',
+          'artist': '',
+          'source': 'YouTube',
+        }),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(pushed, [
+        ('media_state', 'idle'),
+        ('media_title', ''),
+        ('media_artist', ''),
+        ('media_source', 'YouTube'),
+      ]);
+    });
+
+    test('nothing is pushed while the switch is off', () async {
+      await attach();
+      bus.publish(
+        const MediaSummaryChanged({
+          'state': 'playing',
+          'title': 'Song',
+          'artist': 'Band',
+          'source': 'YouTube',
+        }),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(pushed.where((p) => media.contains(p.$1)), isEmpty);
+    });
+  });
+
+  group('the Person sensor (discussion #353, issue #734)', () {
     List<String> ids(List<Map<String, Object?>> catalog) => [
       for (final d in catalog) '${d['objectId']}',
     ];
@@ -1359,28 +1870,39 @@ void main() {
       ),
     );
 
-    test('exists only with Dismiss on person on, on a device with a '
+    test('exists only with the Person Sensor switch on, on a device with a '
         'person sensor', () async {
       stub('getPersonSensorSupport', {'supported': true});
       stub('getPersonSensor', {'running': true, 'present': false});
       expect(ids(await surface.build()), isNot(contains('person')));
-      await settings.set(defs.screensaverDismissOnPerson, true);
+      await settings.set(defs.personSensorEnabled, true);
       final catalog = await surface.build();
       final person = catalog.singleWhere((d) => d['objectId'] == 'person');
       expect(person['type'], 'binary_sensor');
       expect(person['deviceClass'], 'occupancy');
     });
 
+    test('Dismiss on person alone does not list it', () async {
+      stub('getPersonSensorSupport', {'supported': true});
+      stub('getPersonSensor', {'running': true, 'present': true});
+      await settings.set(defs.screensaverDismissOnPerson, true);
+      expect(ids(await surface.build()), isNot(contains('person')));
+      await attach();
+      bus.publish(const PersonSensorChanged(present: true));
+      await Future<void>.delayed(Duration.zero);
+      expect(pushed.where((p) => p.$1 == 'person'), isEmpty);
+    });
+
     test('a device without one lists it never, switch or no switch', () async {
       stub('getPersonSensorSupport', {'supported': false, 'hint': 'none'});
-      await settings.set(defs.screensaverDismissOnPerson, true);
+      await settings.set(defs.personSensorEnabled, true);
       expect(ids(await surface.build()), isNot(contains('person')));
     });
 
     test('reads the sensor at attach and follows its changes', () async {
       stub('getPersonSensorSupport', {'supported': true});
       stub('getPersonSensor', {'running': true, 'present': true});
-      await settings.set(defs.screensaverDismissOnPerson, true);
+      await settings.set(defs.personSensorEnabled, true);
       await surface.build();
       await attach();
       expect(pushed, contains(('person', true)));
@@ -1397,7 +1919,7 @@ void main() {
         'present': false,
         'error': 'Log access not granted.',
       });
-      await settings.set(defs.screensaverDismissOnPerson, true);
+      await settings.set(defs.personSensorEnabled, true);
       await surface.build();
       await attach();
       expect(pushed, contains(('person', null)));
@@ -1579,6 +2101,9 @@ void main() {
 
   group('the Voice Satellite switches (issue #288)', () {
     setUp(() async {
+      // The integration's engine in the dashboard: the kiosk runs no
+      // satellite of its own.
+      await settings.set(defs.voiceRuntime, 'dashboard');
       await settings.set(
         defs.haSatelliteEntity,
         'assist_satellite.office_tablet',
@@ -1646,6 +2171,600 @@ void main() {
       bus.publish(const WakeWordStateChanged(active: false, listening: false));
       await Future<void>.delayed(const Duration(milliseconds: 900));
       expect(pushed.any((p) => p.$1 == 'voice_satellite'), isFalse);
+    });
+  });
+
+  group('the Ambient light limiter (issue #521)', () {
+    List<Object?> lux() => [
+      for (final p in pushed)
+        if (p.$1 == 'illuminance') p.$2,
+    ];
+
+    test('a real transition reaches the entity at once, a driver flapping '
+        'between two values is held to one row per half minute', () {
+      fakeAsync((async) {
+        surface.build();
+        async.flushMicrotasks();
+        surface.attach(
+          (objectId, value) async => pushed.add((objectId, value)),
+          (objectId, jpeg) async => images.add((objectId, jpeg)),
+        );
+        async.elapse(const Duration(minutes: 5));
+        pushed.clear();
+        // Lights go out: the damper's leading reading and its settled
+        // trailing value both land.
+        bus.publish(const LightLevelChanged(lux: 43));
+        async.elapse(const Duration(seconds: 2));
+        bus.publish(const LightLevelChanged(lux: 2.4));
+        async.flushMicrotasks();
+        expect(lux(), [43, 2]);
+
+        async.elapse(const Duration(minutes: 5));
+        pushed.clear();
+        // The Rockchip square wave: 10 and 160 every 2 seconds for 10
+        // minutes, 300 readings.
+        for (var i = 0; i < 300; i++) {
+          bus.publish(LightLevelChanged(lux: i.isEven ? 10 : 160));
+          async.elapse(const Duration(seconds: 2));
+        }
+        expect(lux().length, lessThanOrEqualTo(4 + 20));
+        expect(lux().toSet().difference({10, 160}), isEmpty);
+        surface.detach();
+      });
+    });
+
+    test('a detach forgets the wire so the next registration seeds the '
+        'entity at once', () {
+      fakeAsync((async) {
+        surface.build();
+        async.flushMicrotasks();
+        surface.attach(
+          (objectId, value) async => pushed.add((objectId, value)),
+          (objectId, jpeg) async => images.add((objectId, jpeg)),
+        );
+        async.elapse(const Duration(seconds: 1));
+        expect(lux(), [42]);
+        surface.detach();
+        pushed.clear();
+        surface.attach(
+          (objectId, value) async => pushed.add((objectId, value)),
+          (objectId, jpeg) async => images.add((objectId, jpeg)),
+        );
+        async.elapse(const Duration(seconds: 1));
+        expect(lux(), [42]);
+        surface.detach();
+      });
+    });
+  });
+
+  group('theater mode', () {
+    late List<(String, Map<String, Object?>)> theaterCalls;
+
+    setUp(() {
+      theaterCalls = [];
+      for (final name in ['setTheaterMode', 'theaterPeek', 'navigate']) {
+        commands.register(
+          Command(
+            name: name,
+            description: 'stub',
+            handler: (p) async {
+              theaterCalls.add((name, Map<String, Object?>.from(p)));
+              final url = p['url'];
+              if (name == 'navigate' &&
+                  url is String &&
+                  !RegExp(r'^(https?://|/|#)').hasMatch(url)) {
+                return const CommandResult.fail('scheme not allowed');
+              }
+              return const CommandResult.ok(true);
+            },
+          ),
+        );
+      }
+    });
+
+    test('T-30 the five entities are exactly as specified, and no entity '
+        'that existed before is gone or changed', () async {
+      final all = await surface.build(includeExcluded: true);
+      Map<String, Object?> find(String id) =>
+          all.singleWhere((e) => e['objectId'] == id);
+
+      Map<String, Object?> shape(Map<String, Object?> e) => {
+        for (final k in ['type', 'name', 'icon', 'category'])
+          if (e[k] != null) k: e[k],
+      };
+      expect(shape(find('theater_mode')), {
+        'type': 'switch',
+        'name': 'Theater mode',
+        'icon': 'mdi:theater',
+      });
+      expect(shape(find('theater_phase')), {
+        'type': 'text_sensor',
+        'name': 'Theater phase',
+        'icon': 'mdi:theater',
+        'category': 2,
+      });
+      expect(shape(find('theater_peek')), {
+        'type': 'button',
+        'name': 'Theater peek',
+        'icon': 'mdi:gesture-tap',
+      });
+      expect(find('theater_overlay_opacity'), {
+        ...find('theater_overlay_opacity'),
+        'type': 'number',
+        'name': 'Theater dimming',
+        'min': 0,
+        'max': 95,
+        'unit': '%',
+        'category': 1,
+      });
+      expect(find('theater_peek_seconds'), {
+        ...find('theater_peek_seconds'),
+        'type': 'number',
+        'name': 'Theater peek time',
+        'min': 3,
+        'max': 60,
+        'unit': 's',
+        'category': 1,
+      });
+
+      // Object ids are permanent API: Home Assistant entity ids hang off
+      // them. Every entity from before theater mode must still be here, the
+      // same. Additions are fine; that is how the catalog grows.
+      final before =
+          (jsonDecode(
+                    File(
+                      'test/fixtures/esp_catalog_permanent.json',
+                    ).readAsStringSync(),
+                  )
+                  as List)
+              .cast<Map<String, Object?>>();
+      for (final old in before) {
+        final now = all.where((e) => e['objectId'] == old['objectId']);
+        expect(now, hasLength(1), reason: '${old['objectId']} is gone');
+        expect(
+          {
+            for (final k in ['objectId', 'type', 'name', 'icon', 'category'])
+              if (now.single[k] != null) k: now.single[k],
+          },
+          old,
+          reason: '${old['objectId']} changed',
+        );
+      }
+    });
+
+    test('T-31 the switch and button drive theater mode as Home Assistant, '
+        'and the numbers write their settings', () async {
+      await surface.handleCommand('theater_mode', true);
+      await surface.handleCommand('theater_mode', false);
+      await surface.handleCommand('theater_peek', null);
+      expect(theaterCalls.map((c) => c.$1), [
+        'setTheaterMode',
+        'setTheaterMode',
+        'theaterPeek',
+      ]);
+      expect(theaterCalls.map((c) => c.$2), [
+        {'active': true, 'source': 'ha'},
+        {'active': false, 'source': 'ha'},
+        {'source': 'ha'},
+      ]);
+      await surface.handleCommand('theater_overlay_opacity', 40);
+      await surface.handleCommand('theater_peek_seconds', 20);
+      expect(settings.get(defs.theaterOverlayOpacity), closeTo(0.4, 0.0001));
+      expect(settings.get(defs.theaterPeekSeconds), 20);
+      // Clamped to the entity's own range, not the setting's.
+      await surface.handleCommand('theater_overlay_opacity', 100);
+      expect(settings.get(defs.theaterOverlayOpacity), closeTo(0.95, 0.0001));
+    });
+
+    test('T-31 every transition is pushed to Home Assistant, and off is '
+        'reported on connect', () async {
+      await attach();
+      expect(
+        pushed,
+        containsAll([('theater_mode', false), ('theater_phase', 'off')]),
+      );
+      pushed.clear();
+      bus.publish(
+        const TheaterModeChanged(active: true, phase: 'dim', source: 'ha'),
+      );
+      await Future<void>.delayed(Duration.zero);
+      bus.publish(
+        const TheaterModeChanged(active: true, phase: 'peek', source: 'ha'),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        pushed,
+        containsAllInOrder([
+          ('theater_mode', true),
+          ('theater_phase', 'dim'),
+          ('theater_mode', true),
+          ('theater_phase', 'peek'),
+        ]),
+      );
+    });
+
+    test('T-32 the two services are declared with their argument types', () {
+      final services = {
+        for (final s in surface.buildServices()) s['name']: s['args'],
+      };
+      expect(services['set_theater_mode'], [
+        {'name': 'active', 'type': 'bool'},
+        {'name': 'overlay_opacity', 'type': 'float'},
+        {'name': 'backlight', 'type': 'float'},
+      ]);
+      expect(services['navigate'], [
+        {'name': 'url', 'type': 'string'},
+      ]);
+    });
+
+    test('set_theater_mode treats -1 as "the setting"', () async {
+      await surface.handleService('set_theater_mode', {
+        'active': true,
+        'overlay_opacity': -1,
+        'backlight': 0.1,
+      });
+      expect(theaterCalls.single.$1, 'setTheaterMode');
+      expect(theaterCalls.single.$2, {
+        'active': true,
+        'source': 'ha',
+        'backlight': 0.1,
+      });
+    });
+
+    test('T-32 navigate hands the URL over and never loads a refused '
+        'scheme', () async {
+      for (final url in [
+        'javascript:alert(1)',
+        'file:///sdcard/x',
+        'data:text/html,hi',
+        'intent://x#Intent;end',
+      ]) {
+        await surface.handleService('navigate', {'url': url});
+      }
+      await surface.handleService('navigate', {'url': '#/showtime'});
+      expect(theaterCalls.map((c) => c.$2['url']), [
+        'javascript:alert(1)',
+        'file:///sdcard/x',
+        'data:text/html,hi',
+        'intent://x#Intent;end',
+        '#/showtime',
+      ]);
+    });
+  });
+
+  group('URL-3 the start page on Default dashboard', () {
+    List<Object?> options(List<Map<String, Object?>> all) =>
+        all.singleWhere((e) => e['objectId'] == 'default_dashboard')['options']
+            as List<Object?>;
+
+    test('appears once a custom start page exists, after the existing '
+        'options', () async {
+      final before = options(await surface.build());
+      expect(before, isNot(contains('Start page')));
+      await settings.set(defs.customStartUrl, 'http://10.2.3.20:8787');
+      final after = options(await surface.build());
+      expect(after, [...before, 'Start page']);
+    });
+
+    test('choosing it makes the start page custom; choosing a view puts '
+        'Home Assistant back first', () async {
+      await settings.set(defs.customStartUrl, 'http://10.2.3.20:8787');
+      await surface.handleCommand('default_dashboard', 'Start page');
+      expect(settings.get(defs.startPage), 'custom');
+      final views = options(
+        await surface.build(),
+      ).where((o) => o != 'Start page').toList();
+      if (views.isNotEmpty) {
+        await surface.handleCommand('default_dashboard', views.first);
+        expect(settings.get(defs.startPage), 'ha');
+        expect(
+          settings.get(defs.customStartUrl),
+          'http://10.2.3.20:8787',
+          reason: 'remembered, not overwritten by the dashboard',
+        );
+      }
+    });
+
+    test('reports Start page while the start page is custom', () async {
+      await settings.set(defs.customStartUrl, 'http://10.2.3.20:8787');
+      await settings.set(defs.startPage, 'custom');
+      await attach();
+      expect(pushed, contains(('default_dashboard', 'Start page')));
+    });
+  });
+  group('agent mode', () {
+    /// An agent draws no dashboard, so the Screenshot camera would hand Home
+    /// Assistant a picture of whatever else that box is running - and every
+    /// fetch makes the device encode a frame for it.
+    Future<List<Map<String, Object?>>> agentCatalog() async {
+      await settings.set(defs.agentMode, true);
+      return surface.build();
+    }
+
+    test('drops the screenshot camera, its button and its timestamp', () async {
+      final ids = (await agentCatalog()).map((e) => e['objectId']).toList();
+      expect(ids, isNot(contains('screenshot')));
+      expect(ids, isNot(contains('take_screenshot')));
+      expect(ids, isNot(contains('last_screenshot')));
+    });
+
+    test('a kiosk still has all three', () async {
+      final ids = (await surface.build()).map((e) => e['objectId']).toList();
+      expect(
+        ids,
+        containsAll(['screenshot', 'take_screenshot', 'last_screenshot']),
+      );
+    });
+
+    test(
+      'the device itself is untouched: sensors, update and restart stay',
+      () async {
+        final ids = (await agentCatalog()).map((e) => e['objectId']).toList();
+        expect(
+          ids,
+          containsAll([
+            'update',
+            'restart',
+            'volume',
+            'remote',
+            'cpu',
+            'ram_free',
+            'storage_free',
+            'foreground_app',
+            'app_uptime',
+            'network_uptime',
+            'last_boot',
+            'last_seen',
+            'connectivity',
+            'admin_url',
+            'charging',
+          ]),
+        );
+      },
+    );
+
+    test('lists nothing of the dashboard, screensaver, theater, kiosk modes, '
+        'cameras, voice or the backlight', () async {
+      final ids = (await agentCatalog()).map((e) => '${e['objectId']}').toSet();
+      for (final gone in [
+        'screen',
+        'panel_brightness',
+        'keep_screen_on',
+        'screensaver',
+        'screensaver_active',
+        'postpone_screensaver',
+        'screensaver_timeout',
+        'screensaver_mode',
+        'screensaver_clock_style',
+        'clock_background',
+        'next_screensaver',
+        'theater_mode',
+        'theater_peek',
+        'theater_overlay_opacity',
+        'theater_phase',
+        'reload',
+        'load_start_url',
+        'clear_cache',
+        'bring_to_front',
+        'url',
+        'theme',
+        'dashboard_cameras',
+        'kiosk',
+        'lockdown',
+        'ha_kiosk',
+        'hold_mode',
+        'notifications_dismiss_all',
+        'next_alarm',
+        'last_interaction',
+        'device_camera',
+        'take_snapshot',
+        'last_snapshot',
+        'camera_enabled',
+        'rtsp_streaming',
+        'motion',
+        'assistant_volume',
+        'media_volume',
+      ]) {
+        expect(ids, isNot(contains(gone)), reason: gone);
+      }
+      expect(ids.where((id) => id.startsWith('camera_view')), isEmpty);
+      expect(ids.where((id) => id.startsWith('dashboard_view')), isEmpty);
+    });
+
+    test('a kiosk keeps them', () async {
+      final ids = (await surface.build()).map((e) => e['objectId']).toSet();
+      expect(
+        ids,
+        containsAll([
+          'screen',
+          'panel_brightness',
+          'screensaver',
+          'theater_mode',
+          'kiosk',
+          'reload',
+          'next_alarm',
+          'media_volume',
+        ]),
+      );
+    });
+
+    test('an agent lists no Voice Satellite entities or actions', () async {
+      await settings.set(defs.voiceRuntime, 'native');
+      await settings.set(defs.voiceEnabled, true);
+      final native = (await surface.build()).map((e) => '${e['objectId']}');
+      expect(native.where((id) => id.startsWith('vs_')), isNotEmpty);
+      await settings.set(defs.agentMode, true);
+      final ids = (await surface.build()).map((e) => '${e['objectId']}');
+      expect(ids.where((id) => id.startsWith('vs_')), isEmpty);
+      expect(
+        surface.buildServices().map((s) => '${s['name']}'),
+        isNot(contains(startsWith('vs_'))),
+      );
+    });
+
+    test('values for unlisted entities are never sent', () async {
+      await settings.set(defs.agentMode, true);
+      await surface.build();
+      await attach();
+      final sent = pushed.map((p) => p.$1).toSet();
+      for (final id in ['panel_brightness', 'theater_phase', 'url', 'screen']) {
+        expect(sent, isNot(contains(id)), reason: id);
+      }
+      expect(sent, contains('cpu'));
+    });
+  });
+
+  group('CPU without cpuidle', () {
+    // The clock's place between its slowest and fastest speed is not load:
+    // an interactive governor reads 100% on a chip a fifth busy.
+    test(
+      'lists CPU clock in place of CPU usage, and sends the clock',
+      () async {
+        cpuUsage = null;
+        cpuClock = 66.7;
+        final ids = (await surface.build()).map((e) => e['objectId']).toList();
+        expect(ids, contains('cpu_clock'));
+        expect(ids, isNot(contains('cpu')));
+        await attach();
+        final byId = {for (final (id, value) in pushed) id: value};
+        expect(byId['cpu_clock'], 67);
+        expect(byId.containsKey('cpu'), isFalse);
+      },
+    );
+
+    test('a kernel with cpuidle keeps CPU usage and no clock', () async {
+      final ids = (await surface.build()).map((e) => e['objectId']).toList();
+      expect(ids, contains('cpu'));
+      expect(ids, isNot(contains('cpu_clock')));
+    });
+  });
+
+  group('no battery', () {
+    test('drops Charging with the level, and sends it no value', () async {
+      await settings.set(defs.noBattery, true);
+      final ids = (await surface.build()).map((e) => e['objectId']).toList();
+      expect(ids, isNot(contains('charging')));
+      await attach();
+      expect(pushed.map((p) => p.$1), isNot(contains('charging')));
+    });
+  });
+
+  test('the per-interface and IPv6 addresses start disabled in a new '
+      'Home Assistant device; IPv4 address does not', () async {
+    final all = {for (final e in await surface.build()) '${e['objectId']}': e};
+    for (final id in ['ipv4_interfaces', 'ipv6_address', 'ipv6_interfaces']) {
+      expect(all[id]?['disabled'], true, reason: id);
+    }
+    expect(all['ipv4_address']?['disabled'], isNull);
+  });
+
+  group('headless management', () {
+    Future<Map<String, Object?>?> entity(String id) async =>
+        (await surface.build()).where((e) => e['objectId'] == id).firstOrNull;
+
+    test('the Remote key event exists only while reporting is on', () async {
+      expect(await entity('remote_key'), isNull);
+      await settings.set(defs.remoteKeysReport, true);
+      final event = await entity('remote_key');
+      expect(event?['type'], 'event');
+      final types = (event?['eventTypes'] as List).cast<String>();
+      expect(
+        types,
+        containsAll(['home', 'back', 'dpad_up', 'media_play_pause', 'red']),
+      );
+      // Never text: no letters, digits or space among the event types.
+      expect(
+        types.where((t) => RegExp(r'^([a-z]|\d|space)$').hasMatch(t)),
+        isEmpty,
+      );
+    });
+
+    test('a reported key fires the event while reporting is on', () async {
+      await settings.set(defs.remoteKeysReport, true);
+      await attach();
+      bus.publish(const RemoteKeyReported(keyCode: 3, type: 'home'));
+      await pumpEventQueue();
+      expect(pushed, contains(('remote_key', 'home')));
+    });
+
+    test('the media entities follow Report what is playing', () async {
+      expect(await entity('media_title'), isNull);
+      await settings.set(defs.nowPlaying, true);
+      for (final id in [
+        'media_state',
+        'media_app',
+        'media_title',
+        'media_artist',
+        'media_play_pause',
+        'media_next',
+      ]) {
+        expect(await entity(id), isNotNull, reason: id);
+      }
+    });
+
+    test(
+      'now playing reaches Home Assistant, empty fields as unknown',
+      () async {
+        await settings.set(defs.nowPlaying, true);
+        await attach();
+        bus.publish(
+          const NowPlayingChanged({
+            'state': 'playing',
+            'app': 'Plezy',
+            'title': 'Alien',
+            'artist': '',
+          }),
+        );
+        await pumpEventQueue();
+        expect(
+          pushed,
+          containsAll([
+            ('media_state', 'playing'),
+            ('media_app', 'Plezy'),
+            ('media_title', 'Alien'),
+            ('media_artist', null),
+          ]),
+        );
+      },
+    );
+
+    test('an agent reports its self repairs', () async {
+      expect(await entity('self_repairs'), isNull);
+      await settings.set(defs.agentMode, true);
+      expect(await entity('self_repairs'), isNotNull);
+      expect(await entity('last_self_repair'), isNotNull);
+    });
+
+    test('an agent lists no alarm entities', () async {
+      final kiosk = (await surface.build()).map((e) => '${e['objectId']}');
+      expect(kiosk.where((id) => id.startsWith('alarm_')), isNotEmpty);
+      await settings.set(defs.agentMode, true);
+      final agent = (await surface.build()).map((e) => '${e['objectId']}');
+      expect(agent.where((id) => id.startsWith('alarm_')), isEmpty);
+    });
+
+    test(
+      'an agent lists no intercom entities, even with the setting on',
+      () async {
+        await settings.set(defs.intercomEnabled, true);
+        final kiosk = (await surface.build())
+            .map((e) => e['objectId'])
+            .toList();
+        await settings.set(defs.agentMode, true);
+        final agent = (await surface.build())
+            .map((e) => e['objectId'])
+            .toList();
+        final intercom = kiosk
+            .where((id) => '$id'.startsWith('intercom'))
+            .toList();
+        expect(intercom, isNotEmpty);
+        expect(agent.where((id) => '$id'.startsWith('intercom')), isEmpty);
+      },
+    );
+
+    test('send_key and media_control are Home Assistant actions', () {
+      final names = surface.buildServices().map((s) => s['name']).toList();
+      expect(names, containsAll(['send_key', 'media_control']));
     });
   });
 }

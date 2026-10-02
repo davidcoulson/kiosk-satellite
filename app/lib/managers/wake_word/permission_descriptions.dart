@@ -3,7 +3,7 @@ const devicePermissionDescriptions = <String, ({String title, String description
   'microphone': (
     title: 'Microphone',
     description:
-        'Allows microphone usage for wake word detection and speech to text.',
+        'Allows microphone usage for wake word detection, speech to text and intercom calls.',
   ),
   'batteryUnrestricted': (
     title: 'Unrestricted battery',
@@ -48,6 +48,11 @@ const devicePermissionDescriptions = <String, ({String title, String description
     title: 'Usage access',
     description:
         'The Foreground app sensor can name whichever app is on screen.',
+  ),
+  'notificationAccess': (
+    title: 'Notification access',
+    description:
+        'Now Playing can follow the apps playing on this device.',
   ),
   'location': (
     title: 'Location',

@@ -3,10 +3,11 @@ package me.jxl.kiosk_satellite
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 
 /**
  * Launches the kiosk when the device powers on, if the "Start on boot"
- * setting is on. The Flutter engine is not running at boot, so the setting
+ * setting is on - the service always, the Activity only for a kiosk. The Flutter engine is not running at boot, so the setting
  * is read straight from the shared_preferences store ("flutter." + the
  * app's "ks." prefix). On Android 10+ a background activity start is only
  * honored because the app holds the draw-over-apps grant — the setting's
@@ -24,8 +25,20 @@ class BootReceiver : BroadcastReceiver() {
         }
         val prefs = context.getSharedPreferences(
             "FlutterSharedPreferences", Context.MODE_PRIVATE)
+        // A reboot drops every AlarmManager entry. With an alarm on, the
+        // process comes up whatever Start on boot says, so Dart can put the
+        // next ring back; the Activity still waits for that setting.
+        val alarmsOn = (prefs.getString("flutter.ks.alarms.list", "") ?: "")
+            .contains("\"on\":true")
+        if (alarmsOn) KioskSatelliteService.ensureRunning(context)
         if (!prefs.getBoolean("flutter.ks.kiosk.start_on_boot", false)) return
         KioskSatelliteService.ensureRunning(context)
+        // Agent mode has no dashboard to start. Bringing the Activity up
+        // there would take a projector's screen away from whatever it was
+        // showing, at every boot, to display a status card nobody asked
+        // for. The keep-alive service above is the whole point on such a
+        // device: ESPHome, the remote admin and updates all live behind it.
+        if (AgentMode.isOn(context)) return
         // As the device's home app the system has already launched the
         // kiosk itself, before this broadcast arrives; a second start is
         // harmless but log-noisy (issue #219).
@@ -33,8 +46,16 @@ class BootReceiver : BroadcastReceiver() {
         // The launcher's own intent, not a bare component one: it carries
         // the flags that surface an existing task instead of rooting a
         // duplicate beside it.
-        val launch = context.packageManager
-            .getLaunchIntentForPackage(context.packageName) ?: return
-        context.startActivity(launch)
+        val launch = HomeRole.launchIntent(context) ?: return
+        try {
+            context.startActivity(launch)
+        } catch (e: Exception) {
+            // A Fire TV Stick's system server threw a NullPointerException
+            // of its own out of this call at every boot, which took the
+            // receiver and the app down with it. The service above is up
+            // and its heartbeat brings the kiosk back; the launch is not
+            // worth a crash.
+            Log.w("BootReceiver", "launch at boot refused: $e")
+        }
     }
 }

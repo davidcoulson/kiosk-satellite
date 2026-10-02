@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
+import '../l10n/messages.dart';
 import 'theme.dart';
 import 'toast.dart';
 
@@ -419,17 +421,17 @@ class OrderActions extends StatelessWidget {
     spacing: 2,
     children: [
       IconButton(
-        tooltip: 'Move up',
+        tooltip: l10n(context).commonMoveUp,
         icon: const Icon(Icons.arrow_upward),
         onPressed: first ? null : onUp,
       ),
       IconButton(
-        tooltip: 'Move down',
+        tooltip: l10n(context).commonMoveDown,
         icon: const Icon(Icons.arrow_downward),
         onPressed: last ? null : onDown,
       ),
       IconButton(
-        tooltip: 'Remove',
+        tooltip: l10n(context).commonRemove,
         icon: const Icon(Icons.delete_outline),
         onPressed: onRemove,
       ),
@@ -618,9 +620,15 @@ class DateBox extends StatelessWidget {
 /// generic error. 260 wide at the end of a row; stacked under the name on
 /// a tight pane it fills the row. The remote's .copy-box is the same.
 class CopyBox extends StatefulWidget {
-  const CopyBox({super.key, required this.value, this.placeholder = 'Not set'});
+  const CopyBox({
+    super.key,
+    required this.value,
+    this.placeholder = 'Not set',
+    this.multiline = false,
+  });
 
   final String value;
+  final bool multiline;
 
   /// Shown in muted text while [value] is empty. Nothing to copy then.
   final String placeholder;
@@ -650,7 +658,7 @@ class _CopyBoxState extends State<CopyBox> {
     });
     showToast(
       context,
-      title: 'Copied',
+      title: l10n(context).logsCopied,
       kind: ToastKind.success,
       duration: const Duration(seconds: 2),
     );
@@ -671,8 +679,10 @@ class _CopyBoxState extends State<CopyBox> {
             Expanded(
               child: Text(
                 empty ? widget.placeholder : widget.value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: widget.multiline ? null : 1,
+                overflow: widget.multiline
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
                 style: empty
                     ? theme.textTheme.bodyMedium?.copyWith(
                         color: scheme.onSurfaceVariant,
@@ -688,7 +698,7 @@ class _CopyBoxState extends State<CopyBox> {
               width: 36,
               height: 36,
               child: IconButton(
-                tooltip: 'Copy',
+                tooltip: l10n(context).commonCopy,
                 padding: EdgeInsets.zero,
                 iconSize: 22,
                 color: _copied ? scheme.primary : scheme.onSurfaceVariant,
@@ -1006,7 +1016,7 @@ Future<bool> showConfirmDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n(context).commonCancel),
         ),
         FilledButton(
           style: destructive
@@ -1066,3 +1076,52 @@ Future<T?> showRadioPicker<T>(
     ],
   ),
 );
+
+/// The mark and a screen's name in small caps, top left of a full screen
+/// overlay (the app launcher, the intercom), with an optional word after a
+/// dot (the intercom's talk mode). The caps sit a touch below the mark's
+/// center line so they read level with the house.
+class KsEyebrow extends StatelessWidget {
+  const KsEyebrow({
+    super.key,
+    required this.label,
+    this.trail,
+    this.compact = false,
+  });
+
+  final String label;
+  final String? trail;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final style = TextStyle(
+      fontSize: 12.5,
+      fontWeight: FontWeight.w600,
+      letterSpacing: .8,
+      color: scheme.onSurfaceVariant,
+    );
+    final size = compact ? 24.0 : 28.0;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SvgPicture.asset('assets/branding/mark.svg', width: size, height: size),
+        const SizedBox(width: 10),
+        Padding(
+          padding: const EdgeInsets.only(top: 3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(label.toUpperCase(), style: style),
+              if (trail != null) ...[
+                Text('  ·  ', style: style.copyWith(color: scheme.outline)),
+                Text(trail!.toUpperCase(), style: style),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}

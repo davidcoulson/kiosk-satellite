@@ -92,6 +92,9 @@ object CrashSelfHeal {
         // a dark panel whose Activity is alive and merely paused, and
         // must not start it again.
         if (ActivityState.resumed || ActivityState.attached) return
+        // An agent's process is back already (this runs in it), and its
+        // Activity is only ever opened by hand (see AgentMode).
+        if (AgentMode.isOn(context)) return
         val prefs = context.getSharedPreferences(
             "FlutterSharedPreferences", Context.MODE_PRIVATE)
         if (!prefs.getBoolean("flutter.ks.browser.auto_reload_on_error", true)) return
@@ -100,8 +103,7 @@ object CrashSelfHeal {
         val last = prefs.getLong("flutter.ks.crash.last_self_heal", 0L)
         if (now - last < 120_000) return
         prefs.edit().putLong("flutter.ks.crash.last_self_heal", now).apply()
-        val launch = context.packageManager
-            .getLaunchIntentForPackage(context.packageName) ?: return
+        val launch = HomeRole.launchIntent(context) ?: return
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         try {
             // Without the overlay grant Android discards this silently, so

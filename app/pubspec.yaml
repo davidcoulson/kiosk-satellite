@@ -2,13 +2,15 @@ name: kiosk_satellite
 description: "Modern kiosk browser for Home Assistant — companion app for Voice Satellite."
 publish_to: 'none'
 
-version: 2026.9.42+241
+version: 2026.10.1+299
 
 environment:
   sdk: ^3.12.2
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
   cupertino_icons: ^1.0.8
 
@@ -54,10 +56,17 @@ dependencies:
   ffi: ^2.1.0
   path_provider: ^2.1.5
   tflite_flutter: ^0.12.1
-  intl: ^0.20.3
+  # flutter_localizations pins intl, so this floor has to stay at or below its pin.
+  intl: ^0.20.2
   mobile_scanner: ^7.4.0
   flutter_markdown_plus: ^1.0.12
   url_launcher: ^6.3.2
+  qr_flutter: ^4.1.0
+
+dependency_overrides:
+  # Includes the failed-launch callback fix described in the package README.
+  image_picker_android:
+    path: packages/image_picker_android
 
 dev_dependencies:
   flutter_test:
@@ -83,24 +92,58 @@ flutter_launcher_icons:
   remove_alpha_ios: true
 
 flutter:
+  generate: true
   uses-material-design: true
+  shaders:
+    - shaders/weather_mood_sky.frag
+    - shaders/weather_mood_clouds.frag
+    - shaders/weather_mood_clouds_low.frag
+    - shaders/weather_mood_clouds_height.frag
+    - shaders/weather_mood_blend.frag
+    - shaders/weather_mood_glass.frag
+    - shaders/ink_splat_velocity.frag
+    - shaders/ink_curl.frag
+    - shaders/ink_vorticity.frag
+    - shaders/ink_divergence.frag
+    - shaders/ink_clear.frag
+    - shaders/ink_pressure4.frag
+    - shaders/ink_advect_velocity.frag
+    - shaders/ink_advect_dye.frag
   assets:
+    - assets/l10n/
     - assets/remote-ui/index.html
     # Includes the README renderers and their bundled license texts.
     - assets/remote-ui/static/
     - assets/screensaver/index.html
     - assets/screensaver/screensaver.js
+    # The Weather Mood moon, from NASA imagery (see moon-NASA.txt).
+    - assets/screensaver/moon.png
     - assets/camera-view/index.html
     - assets/camera-view/camera-view.js
+    - assets/camera-view/messages.js
     - assets/camera-view/hls.light.min.js
     - assets/branding/icon.png
     - assets/branding/mark.png
     - assets/svg/
+    - assets/voice_skins/
     - assets/branding/mark_light.png
     - assets/branding/hacs.svg
     - assets/branding/mark.svg
     - assets/sounds/notification.ogg
+    - assets/sounds/alarm.ogg
+    - assets/sounds/timer-alert.mp3
+    - assets/sounds/voice-wake.mp3
+    - assets/sounds/voice-done.mp3
+    - assets/sounds/voice-error.mp3
+    - assets/sounds/voice-announce.mp3
     - assets/camera/camera_off.jpg
+    # The wake word models native Voice Satellite listens with (see
+    # assets/wake_words/README.md). About 19 MB, bundled so a kiosk needs
+    # no integration in Home Assistant to serve them.
+    - assets/wake_words/microwakeword/
+    - assets/wake_words/openwakeword/
+    - assets/wake_words/vswakeword/
+    - assets/wake_words/vswakeword/int8/
     - assets/mdi/
   fonts:
     # Rubik (SIL Open Font License) — an open geometric sans that gives the
@@ -124,6 +167,11 @@ flutter:
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter.ttf
+    # The Retro Terminal voice skin's face (google/fonts ofl/vt323, SIL OFL,
+    # license beside the file), the same one Voice Satellite draws it in.
+    - family: VT323
+      fonts:
+        - asset: assets/fonts/VT323.ttf
     # The Clock screensaver's LCD font option (issue #391): DSEG14 Classic
     # (keshikan/DSEG, SIL OFL, license beside the file), the segmented
     # display face of an LED alarm clock. The fourteen-segment cut rather
@@ -131,6 +179,12 @@ flutter:
     # and punctuation exist too, so the date and AM/PM stay in character
     # instead of falling back to the platform font. Single weight; the
     # clock's light and heavy weights all land on it.
+    - family: Oswald
+      fonts:
+        - asset: assets/fonts/Oswald.ttf
+    - family: RobotoSlab
+      fonts:
+        - asset: assets/fonts/RobotoSlab.ttf
     - family: DSEG14
       fonts:
         - asset: assets/fonts/DSEG14.ttf

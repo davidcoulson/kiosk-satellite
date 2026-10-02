@@ -5,7 +5,7 @@ from pathlib import Path
 from threading import Thread
 from playwright.sync_api import sync_playwright, expect
 
-ROOT = Path(__file__).resolve().parents[1] / 'assets/remote-ui'
+ROOT = Path(__file__).resolve().parents[1] / 'remote-ui'
 class Handler(SimpleHTTPRequestHandler):
     def log_message(self, *_): pass
 server = ThreadingHTTPServer(('127.0.0.1', 0), partial(Handler, directory=str(ROOT)))
@@ -50,7 +50,7 @@ try:
         page.evaluate("""async () => {
           const core = await import('/static/core.js');
           core.showView('app');
-          core.state.settings = [{key:'shizuku.install_updates', type:'boolean', value:false, category:'Device', subpage:'Shizuku', section:'Updates', title:'Install updates through Shizuku', description:'Install Kiosk Satellite updates without on-device confirmation. Shizuku must be running and authorized.'}];
+          core.state.settings = [{key:'shizuku.install_updates', type:'boolean', value:false, category:'Device', subpage:'Shizuku', section:'Shizuku', title:'Install updates through Shizuku', description:'Install Kiosk Satellite updates without on-device confirmation. Shizuku must be running and authorized.'}];
           const panel = document.createElement('div');
           panel.className = 'subpage'; panel.dataset.subpage = 'Shizuku';
           document.querySelector('#tab-device').append(panel);
@@ -70,17 +70,19 @@ try:
         assert saves == [{'shizuku.install_updates': True}], saves
         page.evaluate("async () => (await import('/static/shizuku.js')).renderShizukuPage(document.querySelector('#tab-device [data-subpage=Shizuku]'))")
         expect(root.locator('[data-key="shizuku.install_updates"] input')).to_be_checked()
-        expect(root.locator('[data-shizuku-action]')).to_have_count(15)
+        expect(root.locator('[data-shizuku-action]')).to_have_count(16)
         expect(root.get_by_text('Grant all permissions', exact=True)).to_be_visible()
-        for name in ['Microphone', 'Camera', 'Nearby devices', 'Notifications', 'System UI guard', 'Device admin', 'Location']:
+        for name in ['Microphone', 'Camera', 'Nearby devices', 'Notifications', 'System UI guard', 'Device admin', 'Notification access', 'Location']:
             expect(root.get_by_text(name, exact=True)).to_have_count(1)
         state = dict(status='permission_required', available=True, granted=False)
+        page.evaluate("async () => (await import('/static/live.js')).receiveUpdate('shizuku')")
         grant = root.locator('[data-shizuku-action="permission"]')
         expect(grant).to_be_enabled()
         grant.click()
         expect(root.locator('[data-connection] .desc')).to_contain_text('Grant access')
         assert requests == [('requestShizukuPermission', {})]
         state = dict(status='ready', available=True, granted=True, uid=2000)
+        page.evaluate("async () => (await import('/static/live.js')).receiveUpdate('shizuku')")
         expect(root.locator('[data-connection] .desc')).to_have_text('Connected with shell access')
         expect(grant).to_be_hidden()
         root.get_by_role('button', name='Test', exact=True).click()
@@ -99,6 +101,7 @@ try:
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             page.screenshot(path=f'/tmp/kiosk-shizuku-device-{theme}.png', full_page=True)
         state = dict(status='unavailable', available=False, granted=False)
+        page.evaluate("async () => (await import('/static/live.js')).receiveUpdate('shizuku')")
         expect(root.get_by_role('button', name='Test', exact=True)).to_be_disabled()
         page.evaluate("async () => (await import('/static/tabs.js')).showTab('device', {refresh:false})")
         page.wait_for_timeout(300)
@@ -107,6 +110,6 @@ try:
         assert polls == before
         assert errors == [], errors
         browser.close()
-        print('Shizuku Device UI: connection, explicit actions, failures, layouts and polling passed')
+        print('Shizuku Device UI: connection, explicit actions, failures, layouts and subscriptions passed')
 finally:
     server.shutdown()

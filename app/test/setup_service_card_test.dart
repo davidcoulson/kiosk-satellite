@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_satellite/app_container.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart';
+import 'package:kiosk_satellite/managers/wake_word/system_permissions.dart';
 import 'package:kiosk_satellite/ui/kit.dart';
 import 'package:kiosk_satellite/ui/setup_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,6 +23,11 @@ void main() {
   var overlayRequestable = true;
 
   Future<void> boot() async {
+    // SystemPermissions caches its last read for a moment, so a burst of
+    // callers shares one pass over eighteen platform channels. That cache
+    // outlives a test: without this, a case that changes the mocked grants
+    // would be answered from the previous case's read.
+    SystemPermissions.invalidate();
     SharedPreferences.setMockInitialValues({});
     container = AppContainer();
     await container.settings.init();
@@ -62,6 +68,10 @@ void main() {
     const brightness = MethodChannel('kiosk_satellite/brightness');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(brightness, (call) async => true);
+    // The Notification access read (Media Session player source).
+    const sessions = MethodChannel('kiosk_satellite/media_sessions');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(sessions, (call) async => true);
     // device_info_plus (the Android version check behind the Bluetooth
     // rows): an unmocked channel hangs a widget test rather than throwing,
     // so answer with the failure the read already treats as "not Android".
@@ -77,6 +87,7 @@ void main() {
       messenger.setMockMethodCallHandler(channel, null);
       messenger.setMockMethodCallHandler(perms, null);
       messenger.setMockMethodCallHandler(brightness, null);
+      messenger.setMockMethodCallHandler(sessions, null);
       messenger.setMockMethodCallHandler(info, null);
     });
   }

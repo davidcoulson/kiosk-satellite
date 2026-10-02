@@ -50,6 +50,79 @@ class BleSupport {
   };
 }
 
+/// One filter for the scanner, out of the two settings the UI keeps apart.
+///
+/// The thresholds and allowlists are ordinary configuration and belong in a
+/// backup; the identity keys beside them must not, so they are stored
+/// separately and joined here rather than being edited as one blob the
+/// export would have to redact whole.
+///
+/// Either side may be empty or malformed -- these are text fields -- and
+/// the result of nonsense is no filter at all rather than a filter that
+/// silently drops everything.
+String mergedAdvertisementFilter(String filterJson, String irksJson) {
+  Map<String, Object?> filter;
+  try {
+    final decoded = jsonDecode(filterJson.trim().isEmpty ? '{}' : filterJson);
+    filter = decoded is Map
+        ? Map<String, Object?>.from(decoded)
+        : <String, Object?>{};
+  } catch (_) {
+    filter = <String, Object?>{};
+  }
+  final irks = <String>[];
+  if (irksJson.trim().isNotEmpty) {
+    try {
+      final decoded = jsonDecode(irksJson);
+      if (decoded is List) {
+        irks.addAll(
+          decoded.whereType<String>().where((k) => k.trim().isNotEmpty),
+        );
+      }
+    } catch (_) {
+      // A pasted key list that is not JSON still has one key per line often
+      // enough to be worth accepting rather than silently ignoring.
+      irks.addAll(
+        irksJson
+            .split(RegExp(r'[\s,]+'))
+            .map((k) => k.trim())
+            .where((k) => k.isNotEmpty),
+      );
+    }
+  }
+  if (irks.isNotEmpty) filter['irks'] = irks;
+  if (filter.isEmpty) return '';
+  return jsonEncode(filter);
+}
+
+/// [fields] as Home Assistant's event data takes them: strings as plain
+/// data, everything else as a data template, which Home Assistant renders
+/// into a number, a boolean, a list or None. Those values are literals
+/// with no template markup, so no text a user spoke can be run as one.
+({Map<String, String> data, Map<String, String> typed}) haEventFields(
+  Map<String, Object?> fields,
+) {
+  final data = <String, String>{};
+  final typed = <String, String>{};
+  fields.forEach((key, value) {
+    switch (value) {
+      case String():
+        data[key] = value;
+      case null:
+        typed[key] = 'None';
+      case bool():
+        typed[key] = value ? 'True' : 'False';
+      case num() when value.isFinite:
+        typed[key] = '$value';
+      case List() when value.every((v) => v is String || v is num):
+        typed[key] = jsonEncode(value);
+      default:
+        data[key] = '$value';
+    }
+  });
+  return (data: data, typed: typed);
+}
+
 class BtProxyManager extends Manager {
   BtProxyManager(super.bus, super.commands, super.log, this._settings);
 
@@ -58,6 +131,8 @@ class BtProxyManager extends Manager {
   static const _channel = MethodChannel('kiosk_satellite/bluetooth_proxy');
 
   StreamSubscription<SettingChanged>? _settingsSub;
+  StreamSubscription<ShizukuStateChanged>? _shizukuSub;
+  StreamSubscription<HaEventRequested>? _eventSub;
   Timer? _restartDebounce;
   Future<void> _transition = Future.value();
   String _appVersion = '0';
@@ -104,16 +179,106 @@ class BtProxyManager extends Manager {
   // ever; a home's radio horizon holds a few dozen prefixes at most.
   Map<String, String>? _ouiCacheOrNull;
 
-  /// Vendor lookups for nearby-device enrichment. Read from settings on
-  /// first use rather than at init: the nearby-device commands work whether
-  /// or not the proxy is running, so this cannot simply be skipped when the
-  /// feature is off — but nothing needs it until one of them is called.
+  /// Nearby-device commands also work while the proxy is off. Load their
+  /// saved vendor cache on first use, independently of server startup.
   Map<String, String> get _ouiCache => _ouiCacheOrNull ??= _loadOuiCache();
   final List<String> _ouiQueue = [];
   Timer? _ouiTimer;
 
   @override
   String get name => 'esphome';
+
+  /// Where the voice assistant's messages from Home Assistant land (the
+  /// native voice satellite): a kind ("subscribed", "response", "event",
+  /// "timer", "announce", "setConfiguration") and its fields.
+  void Function(String kind, Map<String, Object?> fields)? onVoice;
+
+  /// Answers Home Assistant's wake word configuration request: the
+  /// external wake words it offers in, `{available, active, maxActive}` out.
+  Future<Map<String, Object?>> Function(List<Map<Object?, Object?>> external)?
+  onVoiceConfiguration;
+
+  /// Whether the running server serves the voice assistant.
+  bool get voiceServing => _running && _voiceLive;
+  bool _voiceLive = false;
+
+  /// Ask Home Assistant to run a pipeline, or stop the running one. False
+  /// with no Home Assistant session subscribed.
+  Future<bool> voiceRequest({
+    required bool start,
+    String conversationId = '',
+    int flags = 0,
+    String wakeWordPhrase = '',
+  }) async {
+    if (!voiceServing) return false;
+    try {
+      return await _channel.invokeMethod<bool>('voiceRequest', {
+            'start': start,
+            'conversationId': conversationId,
+            'flags': flags,
+            'wakeWordPhrase': wakeWordPhrase,
+          }) ==
+          true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// One chunk of microphone audio for the running pipeline.
+  Future<bool> voiceAudio(Uint8List pcm, {bool end = false}) async {
+    if (!voiceServing) return false;
+    try {
+      return await _channel.invokeMethod<bool>('voiceAudio', {
+            'pcm': pcm,
+            'end': end,
+          }) ==
+          true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// An announcement or a spoken answer finished playing.
+  Future<bool> voiceAnnounceFinished({bool success = true}) async {
+    if (!voiceServing) return false;
+    try {
+      return await _channel.invokeMethod<bool>('voiceAnnounceFinished', {
+            'success': success,
+          }) ==
+          true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Whether a Home Assistant session is subscribed to the voice assistant.
+  Future<bool> voiceSubscribed() async {
+    if (!voiceServing) return false;
+    try {
+      return await _channel.invokeMethod<bool>('voiceSubscribed') == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// The MAC the running server reports, Home Assistant's key for this
+  /// device; empty while stopped.
+  Future<String> identityMac() async {
+    try {
+      final status = await _channel.invokeMethod<Map>('status');
+      return '${status?['mac'] ?? ''}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  /// Whether this start should serve the voice assistant: the native
+  /// runtime with Voice Satellite enabled, and never on an agent, which
+  /// runs no voice (its wake word and voice managers never start).
+  bool get _voiceWanted =>
+      _settings.get(defs.voiceRuntime) == 'native' &&
+      _settings.get(defs.voiceEnabled) &&
+      !_settings.get(defs.agentMode);
 
   @override
   Future<void> init() async {
@@ -146,6 +311,17 @@ class BtProxyManager extends Manager {
         final args = call.arguments as Map;
         await _entities.handleCommand('${args['objectId']}', args['value']);
       }
+      if (call.method == 'voice' && call.arguments is Map) {
+        final args = (call.arguments as Map).cast<String, Object?>();
+        onVoice?.call('${args['kind']}', args);
+        return null;
+      }
+      if (call.method == 'voiceConfiguration' && call.arguments is Map) {
+        final external = ((call.arguments as Map)['external'] as List?) ?? [];
+        final answer = onVoiceConfiguration;
+        if (answer == null) return const <String, Object?>{};
+        return answer([for (final e in external) e as Map<Object?, Object?>]);
+      }
       if (call.method == 'serviceCall' && call.arguments is Map) {
         final payload = call.arguments as Map;
         // The action's answer, as JSON, rides back as this call's result:
@@ -177,14 +353,79 @@ class BtProxyManager extends Manager {
       // setup-time choice, made knowing it re-registers the device
       // (issue #363).
       'location.enabled',
-      // The Person sensor exists only while Dismiss on person is on, the
-      // same way (discussion #353).
-      'screensaver.dismiss_on_person',
+      // The Person sensor exists only while the Person Sensor switch is
+      // on, the same way (issue #734).
+      'person.sensor',
+      // The intercom entities exist only while the intercom is on.
+      'intercom.enabled',
+      // The Remote key event and the media entities exist only while
+      // their headless switches are on.
+      'gestures.remote_keys.report',
+      'device.now_playing',
+      // No battery takes the Battery and Charging sensors away.
+      'device.no_battery',
+      // The followed player's buttons and sensors, opt-in from the Media
+      // Player page (issue #741).
+      'sendspin.esphome_entities',
+      // The voice assistant, and its vs_ entities and actions, exist only
+      // on the native runtime with Voice Satellite on; the engine decides
+      // which wake words Home Assistant's selects offer, which it asks for
+      // once per connection.
+      'voice.runtime',
+      'voice.enabled',
+      'voice.wake_word_engine',
     };
     // The remote admin server's settings, which decide the web page port
     // reported to Home Assistant (the device page's Visit link).
-    const remoteKeys = {'remote.enabled', 'remote.port', 'remote.password'};
+    const remoteKeys = {
+      'remote.enabled',
+      'remote.port',
+      'remote.password',
+      'remote.tls',
+    };
+    // The Restart device button follows the Shizuku connection on a kiosk
+    // that is not the device owner (issue #528): a grant made after the
+    // catalog was served, or a Shizuku that stopped, changes what exists,
+    // and only a restart re-lists it. Asked rather than assumed, so a
+    // device owner's catalog never restarts over Shizuku.
+    _shizukuSub = bus.on<ShizukuStateChanged>().listen((_) async {
+      if (!_running) return;
+      final support = await commands.execute(
+        'getDeviceRebootSupport',
+        const {},
+      );
+      final listed =
+          support.ok &&
+          support.data is Map &&
+          (support.data as Map)['supported'] == true;
+      if (_running && listed != _entities.rebootButtonListed) {
+        _scheduleRestart();
+      }
+    });
+    // Timer and alarm events for Home Assistant's bus (issue #765). With
+    // the server off there is no one to tell.
+    _eventSub = bus.on<HaEventRequested>().listen((e) async {
+      if (!_running) return;
+      final fields = haEventFields(e.data);
+      try {
+        await _channel.invokeMethod<bool>('fireEvent', {
+          'name': 'esphome.${e.name}',
+          'data': fields.data,
+          'typed': fields.typed,
+        });
+      } catch (err) {
+        log.warn(name, 'event ${e.name} not sent: $err');
+      }
+    });
     _settingsSub = bus.on<SettingChanged>().listen((e) {
+      // Real MAC turned off: forget the adopted address, so turning it
+      // back on reads the hardware again (issue #736). Falls through to
+      // the restart below, which runs after the debounce and so after
+      // the adoption is gone.
+      if (e.key == defs.esphomeRealMac.key &&
+          !_settings.get(defs.esphomeRealMac)) {
+        unawaited(forgetAdoptedWifiMac(_settings));
+      }
       // The switch turned on where scanning cannot work (the settings
       // page never offers it, but the remote API and a settings import
       // can): back off, and the write lands here again as false.
@@ -409,6 +650,10 @@ class BtProxyManager extends Manager {
     _ouiTimer = null;
     await _settingsSub?.cancel();
     _settingsSub = null;
+    await _shizukuSub?.cancel();
+    _shizukuSub = null;
+    await _eventSub?.cancel();
+    _eventSub = null;
     await _stop();
   }
 
@@ -481,18 +726,15 @@ class BtProxyManager extends Manager {
   /// no link at all.
   int _webserverPort() {
     if (!_settings.get(defs.remoteEnabled) ||
+        _settings.get(defs.remoteTls) ||
         _settings.get(defs.remotePassword).isEmpty) {
       return 0;
     }
     return _settings.get(defs.remotePort).toInt();
   }
 
-  /// Prerequisites for running the proxy, acquired on first start rather
-  /// than at init. The BLE support probe and `getDeviceInfo` are both
-  /// platform round trips, and on low-end hardware they cost more than
-  /// everything else this manager does at startup — for a feature that may
-  /// well be switched off. Idempotent; [_start] is the only caller, so the
-  /// support probe still runs before the first start exactly as before.
+  /// Check BLE support before the server first advertises its capabilities.
+  /// The app version is also needed only when the server starts.
   Future<void> _ensureStartPrereqs() async {
     await _guardBleSupport();
     if (_appVersion == '0') {
@@ -543,6 +785,12 @@ class BtProxyManager extends Manager {
         'scanDuty': _settings.get(defs.btproxyScanDuty),
         'minConnectRssi':
             int.tryParse(_settings.get(defs.btproxyMinConnectRssi)) ?? 0,
+        'minAdvertiseRssi':
+            int.tryParse(_settings.get(defs.btproxyMinAdvertiseRssi)) ?? 0,
+        'advertisementFilter': mergedAdvertisementFilter(
+          _settings.get(defs.btproxyFilter),
+          _settings.get(defs.btproxyFilterIrks),
+        ),
         'entities': _settings.get(defs.esphomeEntities)
             ? await _entities.build()
             : const <Map<String, Object?>>[],
@@ -558,7 +806,10 @@ class BtProxyManager extends Manager {
         // The remote admin page's port, for the Visit link on the device
         // page in Home Assistant; 0 keeps the field, and the link, off.
         'webserverPort': webserverPort,
+        // The Assist satellite: Home Assistant creates it on this device.
+        'voice': _voiceWanted,
       });
+      _voiceLive = _voiceWanted;
       _running = true;
       _startError = null;
       _liveWebserverPort = webserverPort;
@@ -606,6 +857,7 @@ class BtProxyManager extends Manager {
     _startError = null;
     if (!_running) return;
     _running = false;
+    _voiceLive = false;
     _entities.detach();
     try {
       await _channel.invokeMethod('stop');

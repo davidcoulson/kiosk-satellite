@@ -267,10 +267,17 @@ class ApiServerTest {
         assertEquals(Msg.BT_SCANNER_STATE_RESPONSE, c.read().type)
         assertEquals(listOf("demand:PASSIVE"), backend.calls)
 
-        // Different mode: one new demand with the new mode, no release.
+        // Different mode: one new demand with the new mode, no release, and
+        // a state reporting it (HA's Auto mode windows read the label from it).
         c.send(Msg.BT_SCANNER_SET_MODE_REQUEST, ProtoWriter().run {
             varint(1, ScannerMode.ACTIVE.wire); toByteArray()
         })
+        val changed = c.readUntil(Msg.BT_SCANNER_STATE_RESPONSE)
+        var reportedMode = -1
+        ProtoReader(changed.payload).let { r ->
+            while (r.next()) if (r.field == 2) reportedMode = r.asInt()
+        }
+        assertEquals(ScannerMode.ACTIVE.wire, reportedMode)
         waitFor { backend.calls == listOf("demand:PASSIVE", "demand:ACTIVE") }
 
         c.send(Msg.UNSUBSCRIBE_BLE_ADVERTISEMENTS_REQUEST)
@@ -289,10 +296,17 @@ class ApiServerTest {
         s.reportScannerState(ScannerState.RUNNING, ScannerMode.PASSIVE)
         val state = c.readUntil(Msg.BT_SCANNER_STATE_RESPONSE)
         var wireState = 0
+        var configuredMode = -1
         ProtoReader(state.payload).let { r ->
-            while (r.next()) if (r.field == 1) wireState = r.asInt()
+            while (r.next()) when (r.field) {
+                1 -> wireState = r.asInt()
+                3 -> configuredMode = r.asInt()
+            }
         }
         assertEquals(ScannerState.RUNNING.wire, wireState)
+        // Missing or PASSIVE makes Home Assistant pin the entry to passive
+        // scanning for good, so it must be ACTIVE even while mode is PASSIVE.
+        assertEquals(ScannerMode.ACTIVE.wire, configuredMode)
     }
 
     @Test
@@ -317,6 +331,42 @@ class ApiServerTest {
         c.send(Msg.HELLO_REQUEST); c.read()
         c.send(Msg.DISCONNECT_REQUEST)
         assertEquals(Msg.DISCONNECT_RESPONSE, c.read().type)
+    }
+
+    @Test
+    fun homeAssistantStatesAreAskedForAndDelivered() {
+        val received = CopyOnWriteArrayList<Triple<String, String, String>>()
+        val states = object : HomeAssistantStateBackend {
+            override val subscriptions = listOf("sensor.ble_proxy_irks" to "irks")
+            override fun onState(entityId: String, attribute: String, state: String) {
+                received.add(Triple(entityId, attribute, state))
+            }
+        }
+        val s = ApiServer(identity, "02:AA:BB:CC:DD:EE", 0, null, RecordingBackend(),
+            log = {}, homeAssistantStates = states).also {
+            it.start()
+            server = it
+        }
+        val c = connect(s)
+        c.send(Msg.HELLO_REQUEST); c.read()
+        c.send(Msg.SUBSCRIBE_HOME_ASSISTANT_STATES_REQUEST)
+        val ask = c.readUntil(Msg.SUBSCRIBE_HOME_ASSISTANT_STATE_RESPONSE)
+        var entity = ""; var attribute = ""
+        ProtoReader(ask.payload).let { r ->
+            while (r.next()) when (r.field) {
+                1 -> entity = r.asString()
+                2 -> attribute = r.asString()
+            }
+        }
+        assertEquals("sensor.ble_proxy_irks", entity)
+        assertEquals("irks", attribute)
+
+        c.send(Msg.HOME_ASSISTANT_STATE_RESPONSE, ProtoWriter().run {
+            string(1, "sensor.ble_proxy_irks"); string(2, "keys"); string(3, "irks")
+            toByteArray()
+        })
+        waitFor { received.isNotEmpty() }
+        assertEquals(Triple("sensor.ble_proxy_irks", "irks", "keys"), received.single())
     }
 
     private fun waitFor(deadlineMs: Long = 3_000, condition: () -> Boolean) {

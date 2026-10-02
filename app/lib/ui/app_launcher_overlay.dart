@@ -5,7 +5,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../app_container.dart';
+import '../l10n/messages.dart';
 import '../managers/launcher/app_launcher_manager.dart';
+import 'kit.dart';
 import 'theme.dart';
 import 'toast.dart';
 
@@ -71,10 +73,33 @@ class _LauncherScreen extends StatefulWidget {
 class _LauncherScreenState extends State<_LauncherScreen> {
   AppContainer get container => widget.container;
 
+  /// The wall's own focus scope: a directional search from a tile with
+  /// nothing beside it must stop at the wall's edge, not wander out to
+  /// the menu's rows or the dashboard's platform view underneath (which
+  /// would pull the WebView's native focus and close the wall).
+  final _scope = FocusScopeNode(debugLabel: 'app launcher');
+
+  /// The first tile, focused by request rather than autofocus: opening
+  /// the wall from the menu with the dpad leaves the menu row focused
+  /// through the wall's first frame, and autofocus yields to it. Once the
+  /// menu finishes closing that row goes unfocusable, focus falls back to
+  /// the route and no tile answers the arrows at all.
+  final _firstTile = FocusNode(debugLabel: 'app launcher first tile');
+
   @override
   void initState() {
     super.initState();
     _keysDriving.value = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _firstTile.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _firstTile.dispose();
+    _scope.dispose();
+    super.dispose();
   }
 
   void _close() => container.launcher.visible.value = false;
@@ -87,11 +112,11 @@ class _LauncherScreenState extends State<_LauncherScreen> {
     });
     // The one visible failure mode is an app uninstalled since it was
     // picked; silence would read as a dead button.
-    if (!result.ok) {
+    if (!result.ok && overlay.mounted) {
       showToastIn(
         overlay,
-        title: 'Could not open ${app.label}',
-        message: 'It may have been uninstalled.',
+        title: l10n(overlay.context).launcherOpenFailed(app.label),
+        message: launcherText(overlay.context, 'It may have been uninstalled.'),
         kind: ToastKind.error,
       );
     }
@@ -101,6 +126,8 @@ class _LauncherScreenState extends State<_LauncherScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final apps = container.launcher.apps;
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.height < 480 || size.width < 600;
     return Focus(
       canRequestFocus: false,
       skipTraversal: true,
@@ -108,72 +135,90 @@ class _LauncherScreenState extends State<_LauncherScreen> {
         _keysDriving.value = true;
         return KeyEventResult.ignored;
       },
-      child: Listener(
-        onPointerDown: (_) => _keysDriving.value = false,
-        child: GestureDetector(
-          // The empty ground dismisses, same as the old modal's scrim; the
-          // tiles swallow their own taps.
-          behavior: HitTestBehavior.opaque,
-          onTap: _close,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: _groundGradient(
-                theme.colorScheme.surface,
-                theme.brightness,
+      child: FocusScope(
+        node: _scope,
+        child: Listener(
+          onPointerDown: (_) => _keysDriving.value = false,
+          child: GestureDetector(
+            // The ground only shields the dashboard underneath: a tap on it
+            // does nothing. The wall closes with the X, back or a back
+            // swipe, never by a stray touch.
+            behavior: HitTestBehavior.opaque,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: ksGroundGradient(
+                  theme.colorScheme.surface,
+                  theme.brightness,
+                ),
               ),
-            ),
-            child: SafeArea(
-              child: Stack(
-                children: [
-                  // Centered both ways while the wall fits, an ordinary
-                  // vertical scroll once it does not.
-                  Positioned.fill(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) => SingleChildScrollView(
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: constraints.maxHeight,
-                          ),
-                          child: Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 48,
-                                vertical: 56,
-                              ),
-                              child: Wrap(
-                                alignment: WrapAlignment.center,
-                                runAlignment: WrapAlignment.center,
-                                spacing: 32,
-                                runSpacing: 36,
-                                children: [
-                                  for (var i = 0; i < apps.length; i++)
-                                    _AppTile(
-                                      container: container,
-                                      app: apps[i],
-                                      // Dpad and keyboard land somewhere useful
-                                      // the moment the wall opens (issue #377).
-                                      autofocus: i == 0,
-                                      onTap: () => _open(context, apps[i]),
-                                    ),
-                                ],
+              child: SafeArea(
+                child: Stack(
+                  children: [
+                    // Centered both ways while the wall fits, an ordinary
+                    // vertical scroll once it does not.
+                    Positioned.fill(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => SingleChildScrollView(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: Center(
+                              child: Padding(
+                                // More above than below: the wall centers
+                                // in the band under the eyebrow, not in
+                                // the whole screen.
+                                padding: EdgeInsets.fromLTRB(
+                                  48,
+                                  compact ? 64 : 96,
+                                  48,
+                                  compact ? 20 : 56,
+                                ),
+                                child: Wrap(
+                                  alignment: WrapAlignment.center,
+                                  runAlignment: WrapAlignment.center,
+                                  spacing: 32,
+                                  runSpacing: 36,
+                                  children: [
+                                    for (var i = 0; i < apps.length; i++)
+                                      _AppTile(
+                                        container: container,
+                                        app: apps[i],
+                                        // Dpad and keyboard land somewhere useful
+                                        // the moment the wall opens (issue #377).
+                                        focusNode: i == 0 ? _firstTile : null,
+                                        onTap: () => _open(context, apps[i]),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: IconButton(
-                      icon: const Icon(Icons.close),
-                      iconSize: 28,
-                      color: theme.colorScheme.onSurfaceVariant,
-                      onPressed: _close,
+                    // The mark and the screen's name, the intercom's twin.
+                    Positioned(
+                      top: compact ? 12 : 20,
+                      left: compact ? 16 : 28,
+                      child: KsEyebrow(
+                        label: l10n(context).settingsMenuAppLauncher,
+                        compact: compact,
+                      ),
                     ),
-                  ),
-                ],
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: IconButton(
+                        icon: const Icon(Icons.close),
+                        tooltip: l10n(context).commonClose,
+                        iconSize: 28,
+                        color: theme.colorScheme.onSurfaceVariant,
+                        onPressed: _close,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -188,13 +233,13 @@ class _AppTile extends StatefulWidget {
   const _AppTile({
     required this.container,
     required this.app,
-    required this.autofocus,
+    required this.focusNode,
     required this.onTap,
   });
 
   final AppContainer container;
   final LauncherApp app;
-  final bool autofocus;
+  final FocusNode? focusNode;
   final VoidCallback onTap;
 
   static const double side = 150;
@@ -310,7 +355,7 @@ class _AppTileState extends State<_AppTile> {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: widget.onTap,
-          autofocus: widget.autofocus,
+          focusNode: widget.focusNode,
           onFocusChange: (f) => setState(() => _focused = f),
           child: Center(
             child: loading
@@ -445,27 +490,5 @@ LinearGradient _tileGradient(Color tint, Brightness brightness) {
     colors: dark
         ? [tone(0.42).toColor(), tone(0.24).toColor()]
         : [tone(0.56).toColor(), tone(0.38).toColor()],
-  );
-}
-
-/// The wall's ground: the theme surface as an unmistakable vertical
-/// gradient, lit at the top and settling deeper below, in both themes.
-/// The light theme pins its own endpoints instead of offsetting the
-/// surface: the paper tone sits so close to white that a relative lift
-/// clamps flat and the wall read as a plain sheet.
-LinearGradient _groundGradient(Color surface, Brightness brightness) {
-  final hsl = HSLColor.fromColor(surface);
-  final dark = brightness == Brightness.dark;
-  HSLColor tone(double lightness) =>
-      hsl.withLightness(lightness.clamp(0.0, 1.0));
-  return LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: dark
-        ? [
-            tone(hsl.lightness + 0.08).toColor(),
-            tone(hsl.lightness - 0.06).toColor(),
-          ]
-        : [tone(0.99).toColor(), tone(0.78).toColor()],
   );
 }

@@ -13,6 +13,7 @@ import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 import '../wake_word/background_listening.dart';
 import 'adaptive_brightness.dart';
+import 'package:kiosk_satellite/core/lifecycle.dart';
 
 /// Brightness, keep-awake, and screen power.
 ///
@@ -86,6 +87,25 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
   /// The screensaver asks the screen to stay on while its overlay is up (see
   /// [_applyWakelock]).
   bool _screensaverHold = false;
+
+  /// The intercom's roster or call screen is up. A call takes over from the
+  /// screensaver, which lets go of the screen as it stands down, so without
+  /// this the OS timeout runs through the call (discussion #729: a Portal fell
+  /// into Meta's home screen dream during a call nobody touched).
+  bool _intercomHold = false;
+
+  /// A sunrise or a ringing alarm holds the screen on the same way.
+  bool _alarmHold = false;
+
+  /// The panel level from before a sunrise took it, for when no other
+  /// write came in meanwhile.
+  double? _lastWrittenBeforeAlarm;
+
+  /// The level an alarm's sunrise has put on the panel, or null. While
+  /// set, every other write is remembered in [_heldLevel] instead of
+  /// landing, and that level comes back when the alarm lets go.
+  double? _alarmLevel;
+  double? _heldLevel;
 
   @override
   Future<void> init() async {
@@ -187,6 +207,15 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
     await _probeLightSensor();
     bus.on<LightLevelChanged>().listen((e) => _onLux(e.lux));
     bus.on<ScreensaverStateChanged>().listen((e) => _onScreensaver(e.active));
+    bus.on<FullscreenViewChanged>().listen((e) async {
+      if (e.view == 'alarm' && e.shown != _alarmHold) {
+        _alarmHold = e.shown;
+        await _applyWakelock();
+      }
+      if (e.view != 'intercom' || e.shown == _intercomHold) return;
+      _intercomHold = e.shown;
+      await _applyWakelock();
+    });
 
     if (_adaptiveOn) {
       // A session starts at Maximum brightness dimmed for the room as it
@@ -221,14 +250,11 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
       if (e.key == defs.adaptiveBrightness.key) {
         await _onAdaptiveSwitch();
       } else if (e.key == defs.adaptiveMaxBrightness.key && _adaptiveOn) {
-        // The floor is Minimum over Maximum, so the factor moves too.
+        // The factor is the curve over Maximum, so it moves too.
         final lux = _lastLux;
         if (lux != null) _factor = _curve.factor(lux);
         await _applyKnob();
-      } else if ((e.key == defs.adaptiveMinBrightness.key ||
-              e.key == defs.adaptiveDarkLux.key ||
-              e.key == defs.adaptiveBrightLux.key) &&
-          _adaptiveOn) {
+      } else if (_curveKeys.contains(e.key) && _adaptiveOn) {
         final lux = _lastLux;
         if (lux != null) await _moveFactor(_curve.factor(lux), force: true);
       }
@@ -299,6 +325,37 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
       )
       ..register(
         Command(
+          name: 'holdBrightness',
+          description:
+              'Hold the panel at a level for this session without storing '
+              'it (theater mode). The knob and adaptive brightness keep '
+              'their values and land on release.',
+          params: const {'level': 'Brightness 0..1; 0 is the panel minimum'},
+          handler: (p) async {
+            final level = (p['level'] as num?)?.toDouble();
+            if (level == null || level < 0 || level > 1) {
+              return const CommandResult.fail('level must be 0..1');
+            }
+            return await holdBrightness(level)
+                ? const CommandResult.ok()
+                : const CommandResult.fail('brightness not set');
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'releaseBrightness',
+          description:
+              'End a holdBrightness: the level from before it returns, or '
+              'whatever was asked for while it held.',
+          handler: (_) async {
+            await releaseBrightness();
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
           name: 'screenOn',
           description: 'Wake the display (works on a sleeping panel)',
           params: const {
@@ -352,6 +409,33 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
       )
       ..register(
         Command(
+          name: 'alarmBrightness',
+          description:
+              "An alarm's sunrise takes the panel: a level 0..1 to show, "
+              'or null to hand it back to whatever set it last.',
+          params: const {'level': '0..1, or null to let go'},
+          handler: (p) async {
+            final level = (p['level'] as num?)?.toDouble();
+            if (level == null) {
+              if (_alarmLevel == null) return const CommandResult.ok();
+              _alarmLevel = null;
+              final back = _heldLevel ?? _lastWrittenBeforeAlarm;
+              _heldLevel = null;
+              _lastWrittenBeforeAlarm = null;
+              if (back != null) await _write(back);
+              return const CommandResult.ok();
+            }
+            if (_alarmLevel == null) {
+              _lastWrittenBeforeAlarm = _lastWritten ?? await _readPanel();
+            }
+            _alarmLevel = level.clamp(0.0, 1.0);
+            await _write(_alarmLevel!, alarm: true);
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
           name: 'keepScreenAwake',
           description:
               'Hold the panel on regardless of the keep-awake setting. '
@@ -372,9 +456,11 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
   /// foreground Activity, which is exactly what a failed or lost wakelock
   /// apply was missing. Enable and disable both just set or clear a window
   /// flag, so reapplying on every resume is harmless when nothing changed.
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) return;
+    if (!_returned.returned(state)) return;
     unawaited(_applyWakelock());
   }
 
@@ -385,8 +471,9 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
   }
 
   /// Keep the screen on when the user's setting asks for it, the
-  /// screensaver is holding it, or hold mode is pinning the current view
-  /// (issue #266: a held recipe that goes dark defeats the point).
+  /// screensaver or the intercom is holding it, or hold mode is pinning the
+  /// current view (issue #266: a held recipe that goes dark defeats the
+  /// point).
   /// `FLAG_KEEP_SCREEN_ON` (via wakelock_plus) stops
   /// the OS display timeout — the panel stays powered, brightness is ours to
   /// set (0 for black), and the app is never backgrounded into a freeze.
@@ -394,6 +481,8 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
     final want =
         _settings.get(defs.keepScreenOn) ||
         _screensaverHold ||
+        _intercomHold ||
+        _alarmHold ||
         _settings.get(defs.haHoldMode);
     try {
       want ? await WakelockPlus.enable() : await WakelockPlus.disable();
@@ -460,6 +549,22 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
   bool get _adaptiveOn =>
       _lightSensor && _settings.get(defs.adaptiveBrightness);
 
+  /// A level held on the panel by theater mode, or null. While one is held
+  /// nothing else reaches the panel: the knob, Home Assistant's light and
+  /// adaptive brightness go on computing and storing what they would show,
+  /// and it all lands at once on release. Nothing about a hold is stored --
+  /// it is a session layer above everything the settings describe, so a
+  /// crash mid-movie comes back at the brightness the settings say.
+  double? _held;
+
+  /// What the panel showed when the hold began, restored exactly on release
+  /// unless something asked for a different level in the meantime.
+  double? _heldFrom;
+
+  /// Something wrote the knob or the session ceiling during the hold, so
+  /// release must apply that rather than put the old panel level back.
+  bool _changedWhileHeld = false;
+
   /// The screensaver is showing, and whether it has taken the panel this
   /// session (a Dim or Black mode, its own brightness, a schedule entry's
   /// level: all of them arrive as ceiling writes while it shows). A knob
@@ -469,6 +574,16 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
   bool _screensaverActive = false;
   bool _screensaverOwnsPanel = false;
   bool _knobPending = false;
+
+  /// When a ceiling write last landed with no screensaver announced. The
+  /// screensaver dims before it says it is showing (start applies its
+  /// visuals, then publishes), so its first write reaches this manager a
+  /// beat ahead of the event; a write that recent is the session taking
+  /// the panel, not a stale one. Without it a knob turned under a black
+  /// screensaver went straight to the panel and the restore at dismissal
+  /// undid it, so the slider never seemed to work (issue #569).
+  DateTime? _ceilingWrittenAt;
+  static const _ownershipWindow = Duration(seconds: 3);
 
   /// Why the last knob write was refused (the range validation), for the
   /// command's answer.
@@ -504,8 +619,14 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
 
   Future<void> _onScreensaver(bool active) async {
     _screensaverActive = active;
+    if (active) {
+      final at = _ceilingWrittenAt;
+      _ceilingWrittenAt = null;
+      _screensaverOwnsPanel =
+          at != null && DateTime.now().difference(at) < _ownershipWindow;
+      return;
+    }
     _screensaverOwnsPanel = false;
-    if (active) return;
     // The screensaver restored the ceiling it saved when it started; a
     // knob turned meanwhile, or Maximum brightness as the dashboard's
     // level under adaptive brightness, lands now.
@@ -521,21 +642,34 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
   double get _maxBrightness =>
       _settings.get(defs.adaptiveMaxBrightness).toDouble().clamp(0.0, 1.0);
 
-  /// The curve in factor terms: Minimum over Maximum is the floor, since
-  /// the same factor scales the screensaver's own level and it should
-  /// reach the same share of it in the dark.
-  AdaptiveCurve get _curve {
-    final max = _maxBrightness;
-    final min = _settings
+  /// The curve's settings other than Maximum brightness, which is also
+  /// the knob and has its own handling.
+  static final _curveKeys = {
+    defs.adaptiveMinBrightness.key,
+    defs.adaptiveDarkLux.key,
+    defs.adaptiveBrightLux.key,
+    defs.adaptivePoint2Position.key,
+    defs.adaptivePoint2Level.key,
+    defs.adaptivePoint3Position.key,
+    defs.adaptivePoint3Level.key,
+  };
+
+  /// The four-point curve from its settings. Its factor is the level over
+  /// Maximum brightness, since the same factor scales the screensaver's
+  /// own level and it should reach the same share of it in the dark.
+  AdaptiveCurve get _curve => AdaptiveCurve.fromSettings(
+    minLevel: _settings
         .get(defs.adaptiveMinBrightness)
         .toDouble()
-        .clamp(0.0, 1.0);
-    return AdaptiveCurve(
-      floor: max <= 0 ? 1.0 : (min / max).clamp(0.0, 1.0),
-      darkLux: _settings.get(defs.adaptiveDarkLux).toDouble(),
-      brightLux: _settings.get(defs.adaptiveBrightLux).toDouble(),
-    );
-  }
+        .clamp(0.0, 1.0),
+    maxLevel: _maxBrightness,
+    darkLux: _settings.get(defs.adaptiveDarkLux).toDouble(),
+    brightLux: _settings.get(defs.adaptiveBrightLux).toDouble(),
+    point2Position: _settings.get(defs.adaptivePoint2Position).toDouble(),
+    point2Level: _settings.get(defs.adaptivePoint2Level).toDouble(),
+    point3Position: _settings.get(defs.adaptivePoint3Position).toDouble(),
+    point3Level: _settings.get(defs.adaptivePoint3Level).toDouble(),
+  );
 
   static String _formatLux(double lux) => lux == lux.roundToDouble()
       ? lux.toInt().toString()
@@ -621,6 +755,9 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
   /// step of it. [force] writes regardless: the curve moving is a change
   /// the user is watching for.
   Future<void> _applyFactor({bool force = false}) async {
+    // The factor still follows the room (and the lux sensor still reports);
+    // it is applied again when the hold ends.
+    if (_held != null) return;
     _adaptiveRetry?.cancel();
     _adaptiveRetry = null;
     final ceiling = await _seedCeiling();
@@ -719,8 +856,13 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
     final clamped = level.clamp(0.0, 1.0);
     if (ceiling) {
       // Only the screensaver asks for a ceiling from outside; while it
-      // shows, that is it taking the panel.
-      if (_screensaverActive) _screensaverOwnsPanel = true;
+      // shows, that is it taking the panel. Before it has said so, remember
+      // when: the announcement follows the write.
+      if (_screensaverActive) {
+        _screensaverOwnsPanel = true;
+      } else {
+        _ceilingWrittenAt = DateTime.now();
+      }
       return _setCeiling(clamped);
     }
     {
@@ -748,17 +890,65 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
     }
   }
 
+  /// Put [level] on the panel and keep it there until [releaseBrightness],
+  /// storing nothing. Called again while holding, it moves the held level:
+  /// theater mode's phases are one hold at different levels, not a stack.
+  Future<bool> holdBrightness(double level) async {
+    final clamped = level.clamp(0.0, 1.0);
+    if (_held == null) {
+      _heldFrom = _lastWritten ?? await _readPanel();
+      _changedWhileHeld = false;
+    }
+    _held = clamped;
+    if (!await _write(clamped)) return false;
+    bus.publish(BrightnessChanged(level: _levelFor(clamped), panel: clamped));
+    return true;
+  }
+
+  /// End the hold. The panel returns to what it showed before, unless the
+  /// knob, Home Assistant or the room asked for something else meanwhile,
+  /// in which case that is what lands.
+  Future<void> releaseBrightness() async {
+    if (_held == null) return;
+    _held = null;
+    final from = _heldFrom;
+    _heldFrom = null;
+    final changed = _changedWhileHeld;
+    _changedWhileHeld = false;
+    if (changed || _adaptiveOn || from == null) {
+      // The room may have moved under an adaptive panel, and a knob turned
+      // mid-movie is the level the owner now wants.
+      await _applyKnob();
+      return;
+    }
+    if (await _write(from)) {
+      bus.publish(BrightnessChanged(level: _levelFor(from), panel: from));
+    }
+  }
+
   /// Set the bright-room level for this session and put it on the panel,
   /// dimmed by the factor.
   Future<bool> _setCeiling(double level) async {
     _ceiling = level;
+    final held = _held;
+    if (held != null) {
+      // Stored for release; the panel stays where theater mode put it.
+      _changedWhileHeld = true;
+      bus.publish(BrightnessChanged(level: _levelFor(held), panel: held));
+      return true;
+    }
     final panel = (level * _factor).clamp(0.0, 1.0);
     if (!await _write(panel)) return false;
     bus.publish(BrightnessChanged(level: _levelFor(panel), panel: panel));
     return true;
   }
 
-  Future<bool> _write(double level) async {
+  Future<bool> _write(double level, {bool alarm = false}) async {
+    if (_alarmLevel != null && !alarm) {
+      // The sunrise owns the panel; this is what comes back after it.
+      _heldLevel = level.clamp(0.0, 1.0);
+      return true;
+    }
     final clamped = level.clamp(0.0, 1.0);
     _lastWritten = clamped;
     _lastWriteAt = DateTime.now();

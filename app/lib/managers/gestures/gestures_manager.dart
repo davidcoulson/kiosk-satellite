@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../core/command_registry.dart';
 import '../../core/events.dart';
 import '../../core/manager.dart';
 import '../../core/permissions.dart';
@@ -11,6 +12,7 @@ import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 import 'clap_detector.dart';
 import 'gesture_mappings.dart';
+import 'hand_gesture_hold.dart';
 
 /// Configurable gestures (issue #99): the action half.
 ///
@@ -37,8 +39,8 @@ import 'gesture_mappings.dart';
 /// elsewhere (the motion camera's palm detector and hand landmark model,
 /// run by [MotionManager] while a fingers mapping exists): every report
 /// says how many fingers the hand shows, and a mapping fires the first
-/// time its count is seen, then re-arms when the count changes or the
-/// hand goes. Like claps, a hand seen during a voice interaction fires
+/// time its count meets the configured hold. It re-arms when the count
+/// changes or the hand goes. Like claps, a hand seen during a voice interaction fires
 /// nothing: the camera is idled for the turn's span on the motion side,
 /// and a report still crossing at its start is ignored here.
 class GesturesManager extends Manager {
@@ -49,6 +51,7 @@ class GesturesManager extends Manager {
     this._settings, {
     Stream<Uint8List> Function()? micStream,
     Future<PermissionOutcome> Function()? micPermission,
+    this.handClock,
   }) : _micStream = micStream ?? (() => MicHub.instance.stream()),
        _micPermission =
            micPermission ?? (() => requestOsPermission(Permission.microphone));
@@ -56,10 +59,16 @@ class GesturesManager extends Manager {
   final SettingsManager _settings;
   final Stream<Uint8List> Function() _micStream;
   final Future<PermissionOutcome> Function() _micPermission;
+  final Duration Function()? handClock;
+  final _handStopwatch = Stopwatch()..start();
+  final _handHold = HandGestureHold();
 
   StreamSubscription<GestureDetected>? _sub;
   StreamSubscription<PalmDetected>? _palmSub;
   StreamSubscription<Uint8List>? _micSub;
+  StreamSubscription<SettingChanged>? _settingsSub;
+  StreamSubscription<WakeWordStateChanged>? _wakeStateSub;
+  StreamSubscription<ScreenStateChanged>? _screenSub;
 
   /// Finger mappings that fired for the count being shown.
   final _palmFired = <String>{};
@@ -104,7 +113,15 @@ class GesturesManager extends Manager {
     _sub = bus.on<GestureDetected>().listen(_onGesture);
     _palmSub = bus.on<PalmDetected>().listen(_onPalms);
 
-    bus.on<SettingChanged>().listen((e) {
+    _settingsSub = bus.on<SettingChanged>().listen((e) {
+      if (e.key == defs.gestureMappings.key ||
+          e.key == defs.handGestureHoldSeconds.key ||
+          e.key == defs.cameraEnabled.key ||
+          e.key == defs.lockdownEnabled.key ||
+          e.key == defs.kioskEnabled.key ||
+          e.key == defs.kioskDisableGestures.key) {
+        _resetHand();
+      }
       if (e.key == defs.gestureMappings.key ||
           e.key == defs.clapStrictness.key ||
           e.key == defs.lockdownEnabled.key ||
@@ -115,9 +132,10 @@ class GesturesManager extends Manager {
       }
     });
 
-    bus.on<WakeWordStateChanged>().listen((e) {
+    _wakeStateSub = bus.on<WakeWordStateChanged>().listen((e) {
       final startedTurn = !e.active && !_voiceTurn;
       _voiceTurn = !e.active;
+      if (startedTurn) _resetHand();
       // The turn's audio must not linger as half a clap sequence, and the
       // world after TTS played is acoustically new — start clean.
       if (startedTurn) _detector.reset();
@@ -127,12 +145,20 @@ class GesturesManager extends Manager {
       }
     });
 
+    _screenSub = bus.on<ScreenStateChanged>().listen((e) {
+      if (!e.on) _resetHand();
+    });
+
     await _syncClapper();
   }
 
   @override
   Future<void> dispose() async {
     _micRetry?.cancel();
+    await _settingsSub?.cancel();
+    await _wakeStateSub?.cancel();
+    await _screenSub?.cancel();
+    _resetHand();
     await _micSub?.cancel();
     await _palmSub?.cancel();
     await _sub?.cancel();
@@ -145,27 +171,37 @@ class GesturesManager extends Manager {
       !(_settings.get(defs.kioskEnabled) &&
           _settings.get(defs.kioskDisableGestures));
 
-  /// A hand report. Each fingers mapping fires the first time its count
-  /// is read, and re-arms when the count changes or the hand goes. A
-  /// hand seen during a voice interaction fires nothing, and the report
-  /// still re-arms (the motion side reports the hand gone at the pause).
+  void _resetHand() {
+    _handHold.reset();
+    _palmFired.clear();
+  }
+
+  /// A hold can finish only on a fresh matching camera report.
   void _onPalms(PalmDetected e) {
-    if (!_armed) return;
-    // One look: the count shown fires its mapping the first time it is
-    // read (the user's call, over agreement between looks).
-    bool steady(int count) => e.fingers == count;
+    if (!_armed || _voiceTurn) {
+      _resetHand();
+      return;
+    }
+    final previousCount = _handHold.count;
+    final ready = _handHold.update(
+      hands: e.hands,
+      fingers: e.fingers,
+      now: handClock?.call() ?? _handStopwatch.elapsed,
+      hold: Duration(
+        milliseconds: (_settings.get(defs.handGestureHoldSeconds) * 1000)
+            .round(),
+      ),
+    );
+    if (_handHold.count != previousCount) _palmFired.clear();
     final mappings = decodeGestureMappings(_settings.get(defs.gestureMappings));
     for (final m in mappings) {
       if (m.triggerType != 'fingers') continue;
       final wanted = (m.trigger['fingers'] as num?)?.toInt() ?? 5;
-      if (e.hands > 0 && steady(wanted)) {
-        if (_voiceTurn) continue;
+      if (ready && _handHold.count == wanted) {
         if (_palmFired.add(m.id)) {
           log.info(name, 'detected a hand showing $wanted finger(s)');
           bus.publish(GestureDetected(id: m.id));
         }
-      } else if (e.hands == 0 || e.fingers != wanted) {
-        _palmFired.remove(m.id);
       }
     }
   }
@@ -282,25 +318,25 @@ class GesturesManager extends Manager {
 
   /// Run one action object. Public so the editors' "Try it" affordances
   /// (device and remote) can exercise an action without a gesture.
-  Future<void> runGestureAction(Map<String, Object?> action) async {
+  Future<CommandResult> runGestureAction(Map<String, Object?> action) async {
     final a = action;
     switch ('${a['type']}') {
       case 'plugin_action':
-        await _runHa(a, 'runPluginCommand', {
+        return _runHa(a, 'runPluginCommand', {
           'id': a['pluginId'],
           'command': a['command'],
         });
       case 'navigate':
-        await _run('haNavigate', {'path': a['path']});
+        return _run('haNavigate', {'path': a['path']});
       case 'url':
-        await _run('showLinkPage', {'url': a['url']});
+        return _run('showLinkPage', {'url': a['url']});
       case 'camera_view':
         if (a['mode'] == 'hide') {
-          await _run('hideCameraView', const {});
+          return _run('hideCameraView', const {});
         } else {
           // toggle: the same gesture performed again closes the view it
           // opened, which is what a repeated clap sequence should mean.
-          await _run('showCameraView', {
+          return _run('showCameraView', {
             'viewId': a['viewId'] ?? '',
             'toggle': true,
           });
@@ -312,10 +348,11 @@ class GesturesManager extends Manager {
         // reveals the card while sendspin.show_player is off (the card
         // override), so the setting itself stays untouched.
         bus.publish(const SendspinShowPlayerRequested());
+        return const CommandResult.ok();
       case 'now_playing':
-        await _run('showNowPlaying', const {});
+        return _run('showNowPlaying', const {});
       case 'music_assistant':
-        await _run('showMusicAssistant', const {});
+        return _run('showMusicAssistant', const {});
       case 'app_launcher':
         // Open only: the overlay's close button and its scrim already close
         // it. The command carries the launcher's own gates (master switch
@@ -323,18 +360,46 @@ class GesturesManager extends Manager {
         // behind after the launcher is turned off logs instead of showing
         // an empty grid; the drawer entry's Allowed Action is deliberately
         // NOT consulted, which is what makes a secret gesture possible.
-        await _run('showAppLauncher', const {});
+        return _run('showAppLauncher', const {});
+      case 'intercom_call':
+        // Rings the kiosk picked when the gesture was set up. The command
+        // carries the intercom's gates, and a kiosk that is off or on
+        // Do not disturb ends the call with the reason on the card.
+        return _run('intercomCall', {'id': a['kioskId'] ?? ''});
+      case 'intercom_open':
+        // Open only: the sheet closes on its own. The command carries the
+        // intercom's gates (off, or no remote admin), so a mapping left
+        // behind logs instead of showing an empty sheet; the kiosk menu's
+        // Allowed Action is not consulted, which makes a secret gesture
+        // possible.
+        return _run('intercomOpen', const {});
       case 'screensaver':
-        await _run('startScreensaver', const {});
+        return _run('startScreensaver', const {});
       case 'screensaver_stop':
         // Redundant for touch (any tap dismisses), real for claps: hands
         // full across the room, the screen comes back without walking over.
-        await _run('stopScreensaver', const {});
+        return _run('stopScreensaver', const {});
+      case 'theater_on':
+        return _run('setTheaterMode', const {'active': true, 'source': 'link'});
+      case 'theater_off':
+        return _run('setTheaterMode', const {
+          'active': false,
+          'source': 'link',
+        });
+      case 'theater_toggle':
+        // The state lives in the theater manager, so ask it rather than keep
+        // a copy here that a Home Assistant switch would make stale.
+        final now = await commands.execute('getTheaterMode', const {});
+        final on = now.ok && (now.data as Map?)?['active'] == true;
+        return _run('setTheaterMode', {'active': !on, 'source': 'link'});
+      case 'theater_peek':
+        return _run('theaterPeek', const {'source': 'link'});
       case 'hold_mode':
         // Toggle, not set: the same gesture pins the recipe and, performed
         // again, releases it (issue #266). The setting IS the state, so
         // every other surface follows.
         await _settings.set(defs.haHoldMode, !_settings.get(defs.haHoldMode));
+        return const CommandResult.ok();
       case 'ha_kiosk':
         // The same toggle as the drawer row (issue #422): the setting is
         // the state, the kiosk screen restyles the page as it changes.
@@ -342,50 +407,56 @@ class GesturesManager extends Manager {
         // header can come back on a secret gesture while the menu row
         // stays hidden.
         await _settings.set(defs.haKioskMode, !_settings.get(defs.haKioskMode));
+        return const CommandResult.ok();
       case 'launch_app':
-        await _run('launchApp', {'package': a['package']});
+        return _run('launchApp', {'package': a['package']});
       case 'open_uri':
-        await _run('openUri', {'uri': a['uri']});
+        return _run('openUri', {'uri': a['uri']});
       case 'android_settings':
-        await _run('openSystemSettings', const {});
+        return _run('openSystemSettings', const {});
       case 'ha_script':
-        await _runHa(a, 'haCallService', {
+        return _runHa(a, 'haCallService', {
           'domain': 'script',
           'service': 'turn_on',
           'entity_id': a['entityId'],
         });
       case 'ha_automation':
-        await _runHa(a, 'haCallService', {
+        return _runHa(a, 'haCallService', {
           'domain': 'automation',
           'service': 'trigger',
           'entity_id': a['entityId'],
         });
       case 'ha_service':
-        await _runHa(a, 'haCallService', {
+        return _runHa(a, 'haCallService', {
           'domain': a['domain'],
           'service': a['service'],
           if ('${a['entityId'] ?? ''}'.isNotEmpty) 'entity_id': a['entityId'],
           if (a['data'] is Map) 'data': a['data'],
         });
       case 'ha_event':
-        await _runHa(a, 'haFireEvent', {
+        return _runHa(a, 'haFireEvent', {
           'event': a['event'],
           if (a['data'] is Map) 'data': a['data'],
         });
       default:
         log.warn(name, 'unknown gesture action: ${a['type']}');
+        return CommandResult.fail('unknown action ${a['type']}');
     }
   }
 
-  Future<void> _run(String command, Map<String, Object?> params) async {
+  Future<CommandResult> _run(
+    String command,
+    Map<String, Object?> params,
+  ) async {
     final result = await commands.execute(command, params);
     if (!result.ok) log.warn(name, '$command failed: ${result.error}');
+    return result;
   }
 
   /// [_run] for the Home Assistant actions, which show nothing on screen
   /// by themselves: the outcome goes out on the bus for the kiosk screen
   /// to confirm with a toast, or to say why the call failed.
-  Future<void> _runHa(
+  Future<CommandResult> _runHa(
     Map<String, Object?> action,
     String command,
     Map<String, Object?> params,
@@ -399,5 +470,6 @@ class GesturesManager extends Manager {
         error: result.error,
       ),
     );
+    return result;
   }
 }

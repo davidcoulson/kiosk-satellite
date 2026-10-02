@@ -1,0 +1,189 @@
+{
+  "@@locale": "en",
+  "settingUiLanguageTitle": "Language",
+  "@settingUiLanguageTitle": {
+    "context": "Settings:Device:User Interface",
+    "description": "Language selector label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface > Language",
+        "First-time setup > Welcome > Language"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface > Language",
+        "First-time setup > Welcome > Language"
+      ]
+    }
+  },
+  "settingUiLanguageDescription": "Language for Kiosk Satellite and remote administration. Home Assistant keeps its own language.",
+  "@settingUiLanguageDescription": {
+    "context": "Settings:Device:User Interface",
+    "description": "Help below the language selector.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface > Language",
+        "First-time setup > Welcome > Language"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface > Language",
+        "First-time setup > Welcome > Language"
+      ]
+    }
+  },
+  "settingUiThemeTitle": "App theme",
+  "@settingUiThemeTitle": {
+    "context": "Settings:Device:User Interface",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "settingUiThemeDescription": "Light or dark for the app's own screens: menu, settings, dialogs. System follows the Android setting.",
+  "@settingUiThemeDescription": {
+    "context": "Settings:Device:User Interface",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "settingUiScaleTitle": "Scale UI",
+  "@settingUiScaleTitle": {
+    "context": "Settings:Device:User Interface",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "settingUiScaleDescription": "Size of the app's own screens: menu, settings, dialogs. For high density displays. Web content keeps its size.",
+  "@settingUiScaleDescription": {
+    "context": "Settings:Device:User Interface",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "deviceUserInterface": "User Interface",
+  "@deviceUserInterface": {
+    "context": "Settings:Device:User Interface",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "deviceThemeDark": "Dark",
+  "@deviceThemeDark": {
+    "context": "Settings:Device:User Interface",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "deviceThemeLight": "Light",
+  "@deviceThemeLight": {
+    "context": "Settings:Device:User Interface",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "deviceThemeSystem": "System",
+  "@deviceThemeSystem": {
+    "context": "Settings:Device:User Interface",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "settingAgentModeTitle": "Agent mode",
+  "@settingAgentModeTitle": {
+    "context": "Settings:Device:User Interface",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "settingAgentModeDescription": "Run as a management agent instead of a kiosk: no dashboard, screensaver, voice or cameras, but still a Home Assistant device with its sensors, the remote admin, updates and fleet membership. For a projector, a media box or anything that is not a wall panel. Takes a restart.",
+  "@settingAgentModeDescription": {
+    "context": "Settings:Device:User Interface",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "settingKeepAccessibilityTitle": "Keep accessibility service on",
+  "@settingKeepAccessibilityTitle": {
+    "context": "Settings > Gestures",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
+    }
+  },
+  "settingKeepAccessibilityDescription": "Turn the Kiosk Satellite accessibility service back on whenever something turns it off. Needs android.permission.WRITE_SECURE_SETTINGS granted over adb; does nothing without it.",
+  "@settingKeepAccessibilityDescription": {
+    "context": "Settings > Gestures",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Remote keys"
+      ],
+      "remoteAdmin": [
+        "Gestures > Remote keys"
+      ]
+    }
+  }
+}

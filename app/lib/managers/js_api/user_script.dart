@@ -1,11 +1,16 @@
 import 'browser_microphone_script.dart';
+import 'remote_settings_script.dart';
+import 'theater_relay_script.dart';
 
 /// The `window.kioskSatellite` facade injected into every page at document
 /// start. Pages never touch the flutter_inappwebview transport directly.
 ///
 /// Contract: docs/js-api.md. All methods return promises; queries resolve
 /// null on failure, commands resolve false — never reject.
-String buildKioskSatelliteScript({required String version, required String os}) =>
+String buildKioskSatelliteScript({
+  required String version,
+  required String os,
+}) =>
     '''
 (function () {
   if (window.kioskSatellite) return;
@@ -21,15 +26,43 @@ String buildKioskSatelliteScript({required String version, required String os}) 
   }
 
   $browserMicrophoneScript
+  $remoteSettingsScript
+  $theaterRelayScript
 
   window.kioskSatellite = {
     platform: 'kiosksatellite',
     version: '$version',
     os: '$os',
 
+    getVoiceChimeDurations: function () { return call('getVoiceChimeDurations'); },
+    setVoiceTimerAlert: function (snapshot) { return call('setVoiceTimerAlert', snapshot); },
+    setVoiceTimers: function (snapshot) { return call('setVoiceTimers', snapshot); },
+    voiceTimerActionFailed: function (entityId) {
+      return call('voiceTimerActionFailed', { entityId: entityId });
+    },
+
     getDeviceInfo: function () { return call('getDeviceInfo'); },
     getBrightness: function () { return call('getBrightness'); },
     setBrightness: function (level) { return call('setBrightness', { level: level }); },
+
+    // Theater mode (docs/theater.md): a dim, touch-safe panel that puts itself
+    // back. `active` is passed as given, not coerced, so a non-boolean resolves
+    // false rather than silently turning it on. Options are for this
+    // activation only.
+    setTheaterMode: function (active, options) {
+      var p = {};
+      if (options && typeof options === 'object') {
+        for (var k in options) {
+          if (Object.prototype.hasOwnProperty.call(options, k)) p[k] = options[k];
+        }
+      }
+      p.active = active;
+      return call('setTheaterMode', p);
+    },
+    getTheaterMode: function () { return call('getTheaterMode'); },
+    theaterPeek: function (seconds) {
+      return call('theaterPeek', seconds == null ? {} : { seconds: seconds });
+    },
     screenOn: function () { return call('screenOn'); },
     screenOff: function () { return call('screenOff'); },
     isScreenOn: function () { return call('isScreenOn'); },

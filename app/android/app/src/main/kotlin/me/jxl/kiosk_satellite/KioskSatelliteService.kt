@@ -21,6 +21,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.IconCompat
 
 /**
  * The one foreground service that keeps the app alive, whatever it is
@@ -122,10 +123,30 @@ class KioskSatelliteService : Service() {
          * [status], not thrown.
          */
         fun ensureRunning(context: Context) {
+            // Already up and in the foreground: nothing to start, and no
+            // deadline to arm. Every resume of the Activity lands here.
+            if (instance != null && isForeground) return
+            val intent = Intent(context, KioskSatelliteService::class.java)
             try {
-                ContextCompat.startForegroundService(
-                    context, Intent(context, KioskSatelliteService::class.java),
-                )
+                // From a resumed Activity the app is in the foreground, so a
+                // plain start is allowed and startForeground still follows
+                // in onCreate. startForegroundService is only for the
+                // background, where it buys the start; its price is a ten
+                // second deadline for startForeground, and a resume that
+                // stalls the main thread (a slow tablet rebuilding the
+                // dashboard, the Dart UI thread being the main thread) made
+                // Android kill the app over the deadline from onResume.
+                // Without it, a stall simply delays the foreground call.
+                if (ActivityState.resumed) {
+                    context.startService(intent)
+                    return
+                }
+            } catch (e: Exception) {
+                // Not in the foreground after all: the exempted path below.
+                Log.w(TAG, "plain start refused, going foreground: $e")
+            }
+            try {
+                ContextCompat.startForegroundService(context, intent)
             } catch (e: Exception) {
                 Log.w(TAG, "start refused: $e")
                 context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
@@ -205,6 +226,7 @@ class KioskSatelliteService : Service() {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var cpuLock: PowerManager.WakeLock? = null
     private var screenReceiver: BroadcastReceiver? = null
+    private var channelLanguage: String? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -213,7 +235,6 @@ class KioskSatelliteService : Service() {
         instance = this
         isRunning = true
         startedAt = SystemClock.elapsedRealtime()
-        createChannel()
         // The Wi-Fi hold for the service's lifetime: the service exists
         // precisely while the app must stay reachable without a screen.
         WifiLockHolder.acquire(this)
@@ -231,14 +252,24 @@ class KioskSatelliteService : Service() {
      * is refused as a while-in-use violation, and that must not cost the
      * exemption itself. If even the base type is refused (a background
      * start without any of the grants that permit one), the service stops
-     * itself at once: a started service that never reaches the foreground
-     * is a crash on Android 8+ five seconds later, and the next resume of
-     * the Activity starts it again from a context that is always allowed.
+     * itself at once, and the next resume of the Activity starts it again
+     * from a context that is always allowed. A service started with
+     * startForegroundService owes Android a startForeground call either
+     * way: stopping it first is the same "did not then call
+     * startForeground" kill as the deadline, so a refusal there is a crash
+     * whatever the service does. A plain start (see [ensureRunning]) owes
+     * nothing and stops quietly.
      */
     private fun refresh() {
         val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val reasons = reasonsOf(prefs)
-        val notification = buildNotification(reasons)
+        val localized = NativeMessages.forKiosk(this)
+        val language = localized.resources.configuration.locales[0].toLanguageTag()
+        if (channelLanguage != language) {
+            createChannel(localized)
+            channelLanguage = language
+        }
+        val notification = buildNotification(reasons, localized)
         val wanted = typesFor(reasons)
         val base = typesFor(setOf(REASON_SESSIONS))
         if (!startForegroundWith(notification, wanted, prefs) &&
@@ -411,10 +442,10 @@ class KioskSatelliteService : Service() {
                 // died: a Meta Portal's bar can finish it through paths
                 // the back swallow never sees (issue #219).
                 HomeRole.isHeld(this)
-        if (!exiting && guarded &&
+        if (!exiting && guarded && !AgentMode.isOn(this) &&
             android.provider.Settings.canDrawOverlays(this)
         ) {
-            packageManager.getLaunchIntentForPackage(packageName)?.let {
+            HomeRole.launchIntent(this)?.let {
                 it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 try {
                     startActivity(it)
@@ -448,7 +479,7 @@ class KioskSatelliteService : Service() {
         }
     }
 
-    private fun createChannel() {
+    private fun createChannel(localized: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = getSystemService(NotificationManager::class.java) ?: return
         // The channels the three earlier services used: gone with them, so
@@ -462,51 +493,63 @@ class KioskSatelliteService : Service() {
         }
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Kiosk Satellite Service",
+            localized.getString(R.string.ks_service_title),
             // LOW: no sound, no heads-up. It is a permanent status, not news.
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "Shown while the Kiosk Satellite Service keeps the " +
-                "app running with the screen off or behind another app."
+            description = localized.getString(R.string.ks_service_channel_help)
             setShowBadge(false)
         }
         manager.createNotificationChannel(channel)
     }
 
     /** What the service is doing, as the notification's one line. */
-    private fun summary(reasons: Set<String>): String {
+    internal fun summary(reasons: Set<String>, localized: Context): String {
         val labels = mutableListOf<String>()
-        if (REASON_LISTENING in reasons) labels.add("listening for a wake word")
-        if (REASON_RTSP_AUDIO in reasons) labels.add("RTSP microphone audio enabled")
-        if (REASON_ESPHOME in reasons) labels.add("serving ESPHome")
-        if (REASON_BLUETOOTH in reasons) labels.add("relaying Bluetooth devices")
-        if (REASON_CAMERA in reasons) labels.add("watching the camera")
-        if (REASON_LOCATION in reasons) labels.add("reporting the location")
-        if (REASON_REMOTE in reasons) labels.add("serving the remote admin")
-        if (REASON_KIOSK in reasons) labels.add("guarding kiosk mode")
-        labels.add("keeping Home Assistant connected")
+        if (REASON_LISTENING in reasons) labels.add(localized.getString(R.string.ks_service_listening))
+        if (REASON_RTSP_AUDIO in reasons) labels.add(localized.getString(R.string.ks_service_rtsp_audio))
+        if (REASON_ESPHOME in reasons) labels.add(localized.getString(R.string.ks_service_esphome))
+        if (REASON_BLUETOOTH in reasons) labels.add(localized.getString(R.string.ks_service_bluetooth))
+        if (REASON_CAMERA in reasons) labels.add(localized.getString(R.string.ks_service_camera))
+        if (REASON_LOCATION in reasons) labels.add(localized.getString(R.string.ks_service_location))
+        if (REASON_REMOTE in reasons) labels.add(localized.getString(R.string.ks_service_remote))
+        if (REASON_KIOSK in reasons) labels.add(localized.getString(R.string.ks_service_kiosk))
+        labels.add(localized.getString(R.string.ks_service_sessions))
         val text = labels.joinToString(", ")
         return text.replaceFirstChar { it.uppercase() } + "."
     }
 
-    private fun buildNotification(reasons: Set<String>): Notification {
+    private fun buildNotification(reasons: Set<String>, localized: Context): Notification {
         val open = PendingIntent.getActivity(
             this,
             0,
-            Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            },
+            HomeRole.launchIntent(this)
+                ?: Intent(this, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                },
             PendingIntent.FLAG_IMMUTABLE,
         )
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Kiosk Satellite Service")
-            .setContentText(summary(reasons))
-            .setSmallIcon(R.drawable.ic_stat_service)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(localized.getString(R.string.ks_service_title))
+            .setContentText(summary(reasons, localized))
             .setContentIntent(open)
+        // The icon travels as pixels (see StatusBarIcon); the resource id
+        // is the fallback when the drawable cannot be rendered here.
+        val icon = smallIcon()
+        if (icon != null) builder.setSmallIcon(icon) else builder.setSmallIcon(R.drawable.ic_stat_service)
+        return builder
             .setOngoing(true)
             .setShowWhen(false)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
+    }
+
+    private var smallIconBitmap: IconCompat? = null
+
+    private fun smallIcon(): IconCompat? {
+        smallIconBitmap?.let { return it }
+        val bitmap = StatusBarIcon.bitmap(this) ?: return null
+        return IconCompat.createWithBitmap(bitmap).also { smallIconBitmap = it }
     }
 }

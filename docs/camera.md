@@ -17,7 +17,7 @@ For devices that were already using the **Dismiss on motion** feature before the
 | Setting | Default | Notes |
 | --- | --- | --- |
 | Enable camera | off | The master switch. All settings below depend on this being turned on. |
-| Camera | Front | Choose Front or Back. This single choice applies to every camera feature. On devices with only one camera, this picker acts as a plain label. |
+| Camera | Front | Choose Front or Back. This single choice applies to every camera feature. On devices with only one camera, this picker acts as a plain label. A USB or monitor webcam that is the only camera shows as External. |
 | Snapshot resolution | 480p | Choose 480p, 720p, or 1080p on the 4:3 ladder. This maps to the nearest resolution the hardware offers. A single 480p frame is approximately 30 KB. |
 | Disable snapshots on detection | off | Prevent automatic snapshots triggered by detection while keeping motion, face, presence and gesture detection working. Manual requests and continuous snapshots can still capture images. |
 | Continuous snapshots | off | Capture a new snapshot for Home Assistant at a fixed, recurring interval. |
@@ -88,32 +88,49 @@ Detection is engineered to be CPU efficient and to work effectively in the dark.
 
 Two related switches are located elsewhere: with **Allow screensaver** turned on under [Lockdown Mode](kiosk.md), Dismiss on motion remains deactivated until the lock lifts. Additionally, the Sendspin player's full screen view only reacts to motion if its own **Dismiss "Now Playing" on motion** setting is enabled.
 
-## RTSP Streaming
+## Person Sensor
 
-Open **Settings -> Camera -> RTSP Streaming**, after **Motion Sensor**, then turn on **Enable RTSP Streaming**. The page reveals the stream settings and its URL. The Camera master switch and Android camera permission must also be enabled.
+On a Meta Portal, **Camera > Person Sensor** exposes the Portal's built-in person detector to Home Assistant as a **Person** occupancy sensor. It does not use the app's camera or the Camera switch. See [Meta Portal](portal.md#person-sensor).
 
-Tap the **Stream URL** field below **Port** to copy it. **Stream Status** shows a green icon while streaming and a gray icon while idle. **Connected Clients** lists each viewer's IP address, player name when available, connection port, transport and connection duration. The status and client list refresh every two seconds.
+## RTSP & ONVIF Streaming
+
+Open **Settings -> Camera -> RTSP & ONVIF Streaming**, after **Motion Sensor**, then turn on **Enable camera streaming**. The page reveals the stream settings and its URL. The Camera master switch and Android camera permission must also be enabled.
+
+Tap the **Stream URL** or **ONVIF URL** field below **Port** to copy it. Only the URL for the selected protocol appears. **Stream Status** shows a green icon while streaming and a gray icon while idle. **Connected Clients** lists each viewer's IP address, player name when available, connection port, transport and connection duration. The status and client list refresh every two seconds.
 
 | Setting | Default | Notes |
 | --- | --- | --- |
-| Port | 8554 | Connect to `rtsp://DEVICE_IP:8554/camera`. Choose a free port from 1024 to 65535. |
-| Resolution | 480p | 480p, 720p or 1080p. Android picks the closest supported size. Video uses the camera sensor's orientation. |
+| Streaming protocol | RTSP | Choose RTSP or ONVIF. Each protocol remembers its own port. Video, audio and authentication settings are shared. |
+| Port | RTSP: 8554, ONVIF: 8080 | The port for the selected protocol. Choose a free port from 1024 to 65535. Switching protocols restores its saved port. |
+| Resolution | 640 × 480, or the closest available size | Sizes supported by the camera capture mode and H.264 encoder at the selected frame rate and bitrate. Video follows the device orientation. Stream Status reports the actual video size. |
+| Motion analysis while streaming | on | Turning this off pauses camera detection during streaming and takes snapshots from video frames. The notice under Resolution lists any additional sizes this allows. |
 | Frame rate | 10 fps | Target rate from 5 to 30 fps. Actual delivery depends on the hardware and lighting. |
 | Bitrate | 500 kbps | Target H.264 bitrate from 100 to 8000 kbps. |
+| Encrypt stream | off | Encrypt commands, video and audio with RTSPS and ONVIF HTTPS on the selected streaming port. Requires a compatible client. |
 | Include microphone audio | off | Add 16 kHz mono AAC audio at 32 kbps. Continues when Voice Satellite is muted or Lockdown Mode is on. |
 | Require authentication | off | Reveals Username and Password. Both must be set before an authenticated listener starts. |
 
+**Overlays** contains **Show date and time**, off by default. It adds the device date and time, including seconds, to the upper-left corner of the video using the device date format and 12/24-hour setting. Enabling it reveals **Black background**, also off by default, for a solid background that starts at the top-left corner with padding around the text. Both switches apply to a live stream without reconnecting viewers. Video-frame snapshots include the overlay. Separate camera snapshots and detection images do not.
+
+Resolution stays local to each device because cameras in a fleet can support different sizes. Existing preset values and imported sizes map to the closest supported streaming size.
+
 Use RTSP over TCP in your viewer. The stream contains H.264 video and optional AAC microphone audio. For go2rtc, add the URL as a stream source. Frigate can record the H.264 stream without transcoding it. Authentication uses RTSP Digest. Enter the credentials in your client or use `rtsp://USERNAME:PASSWORD@DEVICE_IP:8554/camera`, with URL encoding for special characters.
+
+Choose **ONVIF** to let compatible clients discover the camera on your local network. The page shows the **ONVIF URL**, `http://DEVICE_IP:8080/onvif/device_service`. Use the selected port if you changed it. ONVIF exposes device information and a read-only media profile that points to the same RTSP stream. Configure video and audio in Kiosk Satellite settings. ONVIF requests use WS-Security UsernameToken authentication with the same credentials when authentication is enabled. Discovery uses WS-Discovery on multicast UDP port 3702. The camera announces when streaming starts and withdraws when it stops. ONVIF device information, discovery and stream profiles use the configured **Device name**. In Home Assistant, add the ONVIF integration and enable its automatic device search. This search uses WS-Discovery while the kiosk's `.local` name uses mDNS. Automatic discovery requires the client and camera to share a subnet or a WS-Discovery relay between their VLANs. An mDNS relay does not forward WS-Discovery traffic. If multicast discovery is unavailable, connect with the ONVIF URL. PTZ, ONVIF events and ONVIF snapshots are not provided.
 
 One H.264 encoder serves up to four connected viewers. Hardware encoding is preferred. If no compatible hardware encoder can start, the app tries software encoding, which can use more CPU. It starts when the first authenticated viewer requests video and stops shortly after the last viewer disconnects. Enabling the listener alone does not open the camera or encode video. A recorder that stays connected keeps the encoder running. Slow viewers are disconnected instead of blocking the camera or growing an unlimited queue.
 
 The camera sends video to a SurfaceTexture. A dedicated graphics worker draws those frames upright and unmirrored, matching snapshots, and limits video to the requested frame rate while motion analysis keeps its own cadence. A stream started in portrait uses portrait dimensions. Rotating during a stream fits the image inside its existing dimensions without stretching or cropping. Detection and snapshots continue sharing the camera session. Encoder selection and graphics failures appear in App Logs.
 
-Microphone audio shares the capture used by native wake word detection and voice interactions, including the selected device, channel, gain and echo cancellation settings. The AAC encoder runs on a separate worker only while a viewer requests the audio track. Video-only viewers do not start it. Audio encoding and slow viewers cannot block microphone capture.
+Microphone audio shares the capture used by native wake word detection and voice interactions, including the selected device, channel, gain and echo cancellation. The AAC encoder runs on a separate worker only while a viewer requests the audio track. Video-only viewers do not start it. Audio encoding and slow viewers cannot block microphone capture.
 
 RTSP audio is independent of Voice Satellite mute and Lockdown Mode. Turn off **Include microphone audio** or RTSP Streaming to stop broadcasting the microphone. Android microphone permission still applies. While the dashboard captures audio through the browser, native capture yields and RTSP audio pauses. It resumes after the browser releases its last microphone track. Native voice interactions continue sharing capture without pausing RTSP audio. **Stream Status** reports audio activity, browser pauses and audio errors separately from video.
 
-Motion and face detection keep their own analysis rates. A voice interaction pauses that analysis while video continues. Snapshots share the same camera session. Hardware that cannot supply all three outputs reports a streaming error and preserves motion and snapshots. Changing the camera or video settings disconnects viewers so they can reconnect with the new configuration.
+Motion and face detection keep their own analysis rates. A voice interaction pauses that analysis while video continues. Snapshots share the same camera session. Capture recovery can reduce the video size or use analysis frames for snapshots if the camera fails to start. Changing the camera or video settings disconnects viewers so they can reconnect with the new configuration.
+
+The resolution list includes sizes the camera can supply in the selected capture mode and an H.264 encoder can handle at the current frame rate and bitrate. Checking these combinations does not open another camera session or interrupt a live stream. The notice below Resolution explains encoder exclusions and lists any additional sizes available with **Motion analysis while streaming** turned off. Camera sensor sizes alone do not guarantee that the device can encode video at those sizes.
+
+**Motion analysis while streaming** is on by default. Turning it off pauses motion detection, face detection and hand gestures while viewers are connected. KS uses a single video output and takes snapshots from those video frames at the streaming resolution. Detection resumes after the streaming session ends. This can unlock larger resolutions on devices whose encoders support them. It does not bypass encoder limits. Changing this mode refreshes the choices and maps an unavailable saved resolution to the closest supported size. Resolution and analysis mode are local to each device and excluded from fleet sync.
 
 The status row reports startup errors and the actual encoded resolution. Screen-off support follows the device's Android camera restrictions. A device that refuses camera access while dark may need to wake before a new viewer can connect.
 
@@ -148,7 +165,7 @@ A few extremely low end devices cannot run motion analysis and JPEG capture in t
 ## Hardware Notes
 
 * **No usable camera:** Some custom ROMs (such as LineageOS ports on Echo Show hardware) have no camera support at all, even if the physical hardware is present. The Camera page will state this up front, and no camera entities will be published. If a device has a physical privacy shutter, closing it disconnects the camera completely and looks identical to the app.
-* **Single camera:** The Front/Back picker turns into a simple label naming the one camera the device has. The app automatically handles devices whose ROM falsely advertises cameras they do not possess. It also handles camera HALs that pad their lists with a phantom camera whose lens facing cannot be read (common on cheap Unisoc tablets) by skipping the phantom and using the real camera. Failed captures will report a real error instead of simply hanging.
+* **Single camera:** The Front/Back picker turns into a simple label naming the one camera the device has. A USB or monitor webcam, like the one built into a monitor on a Raspberry Pi, is named External. The app checks for cameras when it starts, so restart it after connecting one. The app automatically handles devices whose ROM falsely advertises cameras they do not possess. It also handles camera HALs that pad their lists with a phantom camera whose lens facing cannot be read (common on cheap Unisoc tablets) by skipping the phantom and using the real camera. Failed captures will report a real error instead of simply hanging.
 
 ## The Remote Admin
 
@@ -157,5 +174,17 @@ The remote admin's Camera tab mirrors every setting available on the device and 
 ## Privacy
 
 * Motion analysis happens entirely locally on the device. Motion frames are never stored or transmitted; only the fact that motion occurred leaves the app.
-* Snapshots go to Home Assistant over ESPHome and to authorized remote admin clients. RTSP video is available only when enabled and requested by a viewer. RTSP traffic is not encrypted, even with authentication enabled.
+* Snapshots go to Home Assistant over ESPHome and to authorized remote admin clients. RTSP video is available only when enabled and requested by a viewer. Plain RTSP traffic is not encrypted, even with authentication enabled. Enable **Encrypt stream** to use RTSPS.
 * The **Enable webcam access** setting located under Web Content is completely unrelated. That setting governs whether the dashboard web page itself may use the camera, not this specific feature.
+
+## Encrypted streaming
+
+In RTSP mode, **Encrypt stream** under **Camera > RTSP & ONVIF Streaming** changes the stream URL to `rtsps://DEVICE_IP:8554/camera`, using your configured port. Commands and interleaved video and audio all travel through TLS. Keep the viewer configured for TCP. Authentication remains a separate setting. Without authentication, anyone who can connect can still request the encrypted stream.
+
+VLC 3.0.x supports the unencrypted RTSP stream but cannot open RTSPS URLs. See [TLS viewer compatibility](tls.md#camera-streaming) for an encrypted playback example with FFplay.
+
+HTTPS and RTSPS use the same certificate. Manage it under **Device > TLS**, even when remote administration is off. Clients must support RTSPS and trust the certificate or verify its fingerprint. Certificate renewal or replacement disconnects encrypted viewers so they can reconnect with the new certificate. A certificate failure stops encrypted streaming instead of falling back to RTSP.
+
+In ONVIF mode, the same switch enables HTTPS for the ONVIF service and RTSPS for its media stream. Both use the configured ONVIF port, 8080 by default. Discovery advertises the HTTPS service address. WS-Discovery metadata remains unencrypted on UDP port 3702. The viewer must support HTTPS ONVIF and RTSPS and accept the device certificate. RTSP tunneling over HTTP or HTTPS is not supported. The stream status and copied URL show the active protocol.
+
+See [TLS encryption](tls.md) for the feature switches and certificate lifecycle.

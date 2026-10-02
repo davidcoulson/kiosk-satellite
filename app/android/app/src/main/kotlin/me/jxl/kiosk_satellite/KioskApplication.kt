@@ -54,7 +54,10 @@ class KioskApplication : Application(), CameraXConfig.Provider {
 
     private lateinit var micRecorder: MicRecorder
     private lateinit var background: BackgroundBridge
+    private lateinit var alarms: AlarmBridge
+    private lateinit var dlnaAudio: DlnaAudio
     private lateinit var deviceDetails: DeviceDetails
+    private lateinit var secretVault: SecretVault
     private lateinit var brightness: BrightnessBridge
     private lateinit var sendspin: SendspinBridge
     private lateinit var audioRouting: AudioRoutingBridge
@@ -68,6 +71,10 @@ class KioskApplication : Application(), CameraXConfig.Provider {
     private lateinit var bluetoothProxy: BluetoothProxyBridge
     private lateinit var plugins: me.jxl.kiosk_satellite.plugins.PluginBridge
     private lateinit var fleet: FleetBridge
+    private lateinit var intercomAudio: IntercomAudio
+    private lateinit var realtimeAudio: RealtimeAudio
+    private lateinit var mediaSessions: MediaSessionBridge
+    private lateinit var voiceIntents: VoiceIntentBridge
 
     override fun onCreate() {
         super.onCreate()
@@ -112,6 +119,9 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         // reads shared_preferences immediately, so shared_preferences,
         // path_provider et al. must already be registered when it runs.
         GeneratedPluginRegistrant.registerWith(engine)
+        // The QR scanner's detach can throw on old camera HALs and would take
+        // the process down from Activity.onDestroy (ScannerPluginShield).
+        ScannerPluginShield.install(engine)
         engine.dartExecutor.executeDartEntrypoint(
             DartExecutor.DartEntrypoint.createDefault(),
         )
@@ -120,9 +130,14 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         val messenger = engine.dartExecutor.binaryMessenger
         // Before the mic: MicRecorder resolves its preferred device through
         // AudioRouting, which the bridge initializes.
+        // First: SettingsManager asks it for the secrets before any other
+        // manager has read a setting.
+        secretVault = SecretVault(messenger)
         audioRouting = AudioRoutingBridge(applicationContext, messenger)
         micRecorder = MicRecorder(applicationContext, messenger)
         background = BackgroundBridge(applicationContext, messenger)
+        alarms = AlarmBridge(applicationContext, messenger)
+        dlnaAudio = DlnaAudio(applicationContext, messenger)
         deviceDetails = DeviceDetails(applicationContext, messenger)
         brightness = BrightnessBridge(applicationContext, messenger)
         sendspin = SendspinBridge(applicationContext, messenger)
@@ -130,11 +145,25 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         apkInstaller = ApkInstaller(applicationContext, messenger)
         lightSensor = LightSensor(applicationContext, messenger)
         proximitySensor = ProximitySensor(applicationContext, messenger)
+        LogTail(messenger)
         locationSensor = LocationSensor(applicationContext, messenger)
         haptics = HapticsBridge(applicationContext, messenger)
         tapSound = TapSoundBridge(applicationContext, messenger)
         bluetoothProxy = BluetoothProxyBridge(applicationContext, messenger)
+        TlsBridge(applicationContext, messenger)
         fleet = FleetBridge(applicationContext, messenger)
+        intercomAudio = IntercomAudio(applicationContext, messenger)
+        realtimeAudio = RealtimeAudio(applicationContext, messenger)
+        mediaSessions = MediaSessionBridge(applicationContext, messenger)
+        voiceIntents = VoiceIntentBridge(applicationContext, messenger)
         plugins = me.jxl.kiosk_satellite.plugins.PluginBridge(applicationContext, messenger)
+        // Engine-scoped, not Activity-scoped: remote keys must work on an
+        // agent, which never opens an Activity, and from boot.
+        RemoteKeysBridge(applicationContext, messenger)
+        // Puts the accessibility service back when firmware turns it off;
+        // inert without WRITE_SECURE_SETTINGS granted over adb.
+        AccessibilityKeeper.install(applicationContext)
+        // Other apps' playback (now playing); idle without notification access.
+        MediaSessions.attach(applicationContext, messenger)
     }
 }

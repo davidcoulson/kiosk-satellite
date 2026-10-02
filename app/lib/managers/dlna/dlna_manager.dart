@@ -198,11 +198,8 @@ class DlnaManager extends Manager {
   };
   Future<void> _transition = Future.value();
 
-  /// The renderer's stable identity, acquired on first use rather than at
-  /// init. Both halves are surprisingly expensive on low-end hardware — the
-  /// secret is backed by the Android keystore, and `getDeviceInfo` is a
-  /// platform round trip — and neither is needed unless the renderer
-  /// actually starts. Idempotent: [_start] and [_restart] both call it.
+  /// Load the stable renderer identity before its first start. Disabled
+  /// renderers do not need the saved UUID or the full device-info query.
   Future<void> _ensureIdentity() async {
     if (_uuid.isEmpty) _uuid = await _settings.secret('dlna_uuid', _newUuid);
     if (_appVersion.isEmpty) {

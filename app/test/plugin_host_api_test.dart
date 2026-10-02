@@ -85,7 +85,32 @@ void main() {
       expect(result['ok'], true);
       expect((result['data'] as Map)['commands'], PluginHostApi.commandNames);
       expect((result['data'] as Map)['events'], PluginHostApi.eventNames);
+      expect((result['data'] as Map)['agent'], false);
       expect(executed, isEmpty);
+    },
+  );
+
+  test(
+    'an agent host says so, for plugins to leave out kiosk-only parts',
+    () async {
+      final agent = PluginHostApi(
+        commands,
+        bus,
+        (_) async {},
+        agent: () => true,
+      );
+      agent.open({
+        ...session,
+        'capabilities': ['host.read'],
+      });
+      final result = await agent.execute({
+        'id': 'example',
+        'session': 'one',
+        'command': 'getHostApi',
+        'arguments': const <String, Object?>{},
+      });
+      expect((result['data'] as Map)['agent'], true);
+      await agent.dispose();
     },
   );
 

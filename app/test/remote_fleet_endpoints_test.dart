@@ -48,9 +48,12 @@ void main() {
       'fleetFollowerStatus',
       'fleetApply',
       'fleetLeaderLeft',
+      'fleetRosterReceived',
+      'fleetExport',
       'fleetAccept',
       'fleetDecline',
       'getUpdateStatus',
+      'installUploadedApk',
       'getDeviceInfo',
       'getBrightness',
       'isScreenOn',
@@ -68,6 +71,26 @@ void main() {
         ),
       );
     }
+    // The upload endpoint hands the body over as a stream; the stub
+    // counts the bytes, which is what the JSON answer can carry.
+    commands.register(
+      Command(
+        name: 'receiveUploadedUpdate',
+        description: 'stub',
+        handler: (p) async {
+          final stream = p['stream'];
+          if (stream is! Stream<List<int>>) {
+            return CommandResult.fail('no stream');
+          }
+          var size = 0;
+          await for (final chunk in stream) {
+            size += chunk.length;
+          }
+          executed.add(('receiveUploadedUpdate', {'length': p['length']}));
+          return CommandResult.ok({'size': size, 'length': p['length']});
+        },
+      ),
+    );
     settings = SettingsManager(bus, commands, log);
     await settings.init();
     remote = RemoteManager(bus, commands, log, settings);
@@ -87,6 +110,7 @@ void main() {
     String method,
     String path, {
     Map<String, Object?>? body,
+    List<int>? raw,
     String? token,
   }) async {
     final client = HttpClient();
@@ -99,6 +123,10 @@ void main() {
       if (body != null) {
         req.headers.contentType = ContentType.json;
         req.write(jsonEncode(body));
+      }
+      if (raw != null) {
+        req.headers.contentLength = raw.length;
+        req.add(raw);
       }
       final res = await req.close();
       final text = await res.transform(utf8.decoder).join();
@@ -174,7 +202,40 @@ void main() {
     expect((await call('GET', '/api/fleet/status')).$1, 401);
     expect((await call('POST', '/api/fleet/apply', body: {})).$1, 401);
     expect((await call('POST', '/api/fleet/leave')).$1, 401);
+    expect((await call('POST', '/api/fleet/roster', body: {})).$1, 401);
   });
+
+  test(
+    'only the current leader fleet token can update the directory',
+    () async {
+      final token = await fleetToken('lead');
+      final other = await fleetToken('someone');
+      await settings.set(defs.fleetLeaderInfo, jsonEncode({'id': 'lead'}));
+      final body = {
+        'devices': [
+          {'id': 'bed', 'address': '192.168.1.71', 'port': 2324},
+        ],
+      };
+      expect(
+        (await call('POST', '/api/fleet/roster', body: body, token: other)).$1,
+        403,
+      );
+      final (status, result) = await call(
+        'POST',
+        '/api/fleet/roster',
+        body: body,
+        token: token,
+      );
+      expect(status, 200);
+      expect((result['data'] as Map)['from'], 'fleetRosterReceived');
+      expect((result['data'] as Map)['devices'], body['devices']);
+      await settings.set(defs.fleetLeaderInfo, '');
+      expect(
+        (await call('POST', '/api/fleet/roster', body: body, token: token)).$1,
+        403,
+      );
+    },
+  );
 
   test("a fleet token works only while it names this kiosk's leader", () async {
     final token = await fleetToken('lead');
@@ -270,6 +331,35 @@ void main() {
     },
   );
 
+  test(
+    "a fleet token reads this kiosk's configuration, never the fleet export",
+    () async {
+      await settings.set(
+        defs.fleetLeaderInfo,
+        jsonEncode({'id': 'lead', 'name': 'Living Room'}),
+      );
+      final token = await fleetToken('lead');
+      final (s1, b1) = await call('GET', '/api/config/export', token: token);
+      expect(s1, 200);
+      expect(b1['kind'], 'kiosk-satellite-config');
+      expect((await call('GET', '/api/fleet/export', token: token)).$1, 403);
+      expect(
+        (await call(
+          'POST',
+          '/api/commands/fleetExport',
+          body: {},
+          token: token,
+        )).$1,
+        403,
+      );
+      expect((await call('GET', '/api/fleet/export')).$1, 401);
+      final admin = await login();
+      final (s2, b2) = await call('GET', '/api/fleet/export', token: admin);
+      expect(s2, 200);
+      expect(b2['from'], 'fleetExport');
+    },
+  );
+
   test('an admin token still opens everything', () async {
     final token = await login();
     expect((await call('GET', '/api/settings', token: token)).$1, 200);
@@ -292,6 +382,47 @@ void main() {
         expect(b['error'], contains('kiosk'));
       }
       expect(executed.where((e) => e.$1 == 'fleetAccept'), isEmpty);
+    },
+  );
+
+  test(
+    'the APK upload streams the raw body and a fleet token opens it',
+    () async {
+      final admin = await login();
+      final apk = List<int>.generate(5000, (i) => i % 256);
+      final (s1, b1) = await call(
+        'POST',
+        '/api/update/upload',
+        raw: apk,
+        token: admin,
+      );
+      expect(s1, 200);
+      expect(b1['ok'], isTrue);
+      expect((b1['data'] as Map)['size'], 5000);
+      expect((b1['data'] as Map)['length'], 5000);
+      expect((await call('POST', '/api/update/upload', raw: apk)).$1, 401);
+
+      await settings.set(
+        defs.fleetLeaderInfo,
+        jsonEncode({'id': 'lead', 'name': 'Living Room'}),
+      );
+      final token = await fleetToken('lead');
+      final (s2, _) = await call(
+        'POST',
+        '/api/update/upload',
+        raw: apk,
+        token: token,
+      );
+      expect(s2, 200);
+      final (s3, b3) = await call(
+        'POST',
+        '/api/commands/installUploadedApk',
+        body: {},
+        token: token,
+      );
+      expect(s3, 200);
+      expect((b3['data'] as Map)['from'], 'installUploadedApk');
+      expect((await call('GET', '/api/settings', token: token)).$1, 403);
     },
   );
 }

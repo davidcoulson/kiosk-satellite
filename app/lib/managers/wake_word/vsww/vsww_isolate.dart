@@ -14,6 +14,7 @@ import 'ort_tensor_io.dart';
 import 'ort_float_runner.dart';
 import 'stream_matcher.dart';
 import '../wake_msg.dart';
+import '../near_miss.dart';
 import '../pcm16.dart';
 import '../chunk_telemetry.dart';
 
@@ -62,6 +63,7 @@ class _Kw {
   });
   final String id;
   final String wakeWord;
+  final nearMiss = NearMissTracker();
 
   /// Stop classifier rather than a wake word: armed only during interruptible
   /// states, and firing interrupts playback instead of starting a turn.
@@ -93,7 +95,6 @@ class _IsolateWorker {
   LogMelExtractor? _extractor;
   VswwFeatureConfig? _feature;
   Float32List? _ring;
-  Float32List? _scratch;
 
   // One input tensor and one run-options handle for the whole session: every
   // model scores the same feature window, so writing it once per chunk into a
@@ -199,8 +200,7 @@ class _IsolateWorker {
       }
       final f = _feature!;
       _extractor = LogMelExtractor(f);
-      _ring = Float32List(f.windowSamples);
-      _scratch = Float32List(f.windowSamples);
+      _ring = _extractor!.ringBuffer;
       _input = ReusableInputTensor.create([1, f.frames, f.nMels]);
       _runOptions = OrtRunOptions();
       _log(
@@ -322,25 +322,22 @@ class _IsolateWorker {
   }
 
   void _infer() {
-    final ring = _ring, scratch = _scratch, extractor = _extractor;
-    if (ring == null || scratch == null || extractor == null) return;
+    final ring = _ring, extractor = _extractor;
+    if (ring == null || extractor == null) return;
     final newSamples = _samplesSinceInfer;
     _samplesSinceInfer = 0;
     final nowMs = _epochMs;
-    final n = ring.length;
 
-    final tail = n - _head;
-    scratch.setRange(0, tail, ring, _head);
-    scratch.setRange(tail, n, ring, 0);
+    // The window RMS only matters for a match (the silence veto) or a
+    // watching tester, so it is computed on first use instead of walking the
+    // whole 1.3 s window on every chunk. The ring is full, so its oldest
+    // sample (the window's first) is at _head.
+    double? windowRms;
+    double rms() => windowRms ??=
+        math.sqrt(extractor.sumSquares(ring, _head) / ring.length);
 
-    var sumSq = 0.0;
-    for (var i = 0; i < n; i++) {
-      sumSq += scratch[i] * scratch[i];
-    }
-    final rms = math.sqrt(sumSq / n);
-    final silent = rms < _rmsVeto;
-
-    final features = extractor.extract(scratch, newSamples: newSamples);
+    final features =
+        extractor.extractRing(ring, _head, newSamples: newSamples);
     _input!.write(features);
 
     for (final k in _kws) {
@@ -376,13 +373,36 @@ class _IsolateWorker {
         combined = streamRes;
       }
 
-      final matched = combined.matched && !silent;
+      final matched = combined.matched && rms() >= _rmsVeto;
       final fired = k.gate.update(
         matched: matched,
         matchedConfidence: combined.matchedConfidence,
         targetIndex: combined.targetIndex,
         nowMs: nowMs,
       );
+      if (!k.isStop) {
+        final miss = k.nearMiss.update(
+          score: combined.matchedConfidence,
+          threshold: combined.gateThreshold.isFinite
+              ? combined.gateThreshold
+              : k.manifest.ctc.minMatchedConfidence,
+          fired: fired,
+          detail: () => {
+            'decoded': k.manifest.ctc.phonemesFor(decode.ids),
+            'editDistance': combined.editDistance < (1 << 20)
+                ? combined.editDistance
+                : -1,
+          },
+        );
+        if (miss != null) {
+          _main.send({
+            'type': WakeMsg.nearMiss,
+            'id': k.id,
+            'wakeWord': k.wakeWord,
+            ...miss,
+          });
+        }
+      }
       if (_telemetry) {
         // A CTC model has no continuous probability; the meaningful signal
         // is the matched confidence when the decoder aligns a target (a hit
@@ -411,7 +431,7 @@ class _IsolateWorker {
               : -1,
           'matchedConfidence': conf.isFinite ? conf : null,
           'decoded': decoded,
-          'rms': rms,
+          'rms': rms(),
           'latencyUs': sw?.elapsedMicroseconds ?? 0,
         });
       }
@@ -436,11 +456,22 @@ class _IsolateWorker {
         _log('info',
             'detected "${k.id}" (conf ${combined.matchedConfidence.toStringAsFixed(2)}, ed ${combined.editDistance}, wake ended ${_absSamples - wakeEnd} samples back)');
         _detected = true;
+        final conf = combined.matchedConfidence;
         _main.send({
           'type': WakeMsg.detection,
           'id': k.id,
           'wakeWord': k.wakeWord,
           'wakeEndSample': wakeEnd,
+          // For the diagnostics log: what the match scored against what it
+          // had to clear, and what the model actually heard.
+          'score': conf.isFinite ? conf : 0.0,
+          'threshold': combined.gateThreshold.isFinite
+              ? combined.gateThreshold
+              : 0.0,
+          'editDistance': combined.editDistance < (1 << 20)
+              ? combined.editDistance
+              : -1,
+          'decoded': k.manifest.ctc.phonemesFor(decode.ids),
         });
         return;
       }
@@ -502,6 +533,9 @@ class _IsolateWorker {
   void resumeDetection([int? absSample]) {
     if (_stopped) return;
     _detected = false;
+    for (final k in _kws) {
+      k.nearMiss.reset();
+    }
     _samplesSinceInfer = 0;
     // Main kept counting through the turn while we were not being fed; adopt
     // its count or every later detection names a sample it has long evicted.
@@ -544,6 +578,9 @@ class _IsolateWorker {
       if (!k.dead) k.session.release(); // dead models released at drop time
     }
     _kws.clear();
+    _ring = null; // may be the extractor's native memory
+    _extractor?.dispose();
+    _extractor = null;
     _input?.release();
     _input = null;
     _runOptions?.release();

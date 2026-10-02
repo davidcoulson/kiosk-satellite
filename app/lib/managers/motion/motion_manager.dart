@@ -9,6 +9,7 @@ import '../../core/events.dart';
 import '../../core/manager.dart';
 import '../../core/permissions.dart';
 import '../device_camera/native_camera.dart' show snapshotResolution;
+import '../device_camera/camera_resolutions.dart';
 import '../gestures/gesture_mappings.dart';
 import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
@@ -92,19 +93,34 @@ class MotionManager extends Manager {
   bool _disposed = false;
   Future<void> _rtspConfiguration = Future.value();
   Map<String, Object>? _lastRtspConfig;
+  String? _rtspTlsError;
+  StreamSubscription<TlsIdentityChanged>? _tlsSubscription;
 
   bool get _rtspEnabled =>
       _settings.get(defs.cameraEnabled) &&
       _settings.get(defs.cameraRtspEnabled);
 
   void _configureRtsp({bool force = false}) {
-    final (width, height) = snapshotResolution(
+    final (width, height) = cameraStreamResolution(
       _settings.get(defs.cameraRtspResolution),
     );
     final config = <String, Object>{
       'enabled': _rtspEnabled,
+      'camera': _settings.get(defs.cameraDevice),
+      'analysis': _settings.get(defs.cameraRtspAnalysis),
+      'protocol': _settings.get(defs.cameraStreamingProtocol),
+      'tls': _settings.get(defs.cameraRtspTls),
+      'name': _settings.get(defs.deviceName),
       'audio': _settings.get(defs.cameraRtspAudio),
-      'port': _settings.get(defs.cameraRtspPort).toInt(),
+      'dateTime': _settings.get(defs.cameraRtspDateTime),
+      'dateTimeBackground': _settings.get(defs.cameraRtspDateTimeBackground),
+      'port': _settings
+          .get(
+            _settings.get(defs.cameraStreamingProtocol) == 'onvif'
+                ? defs.cameraOnvifPort
+                : defs.cameraRtspPort,
+          )
+          .toInt(),
       'width': width,
       'height': height,
       'fps': _settings.get(defs.cameraRtspFps).toInt().clamp(5, 30),
@@ -115,10 +131,23 @@ class MotionManager extends Manager {
       'password': _settings.get(defs.cameraRtspPassword),
     };
     if (!force && mapEquals(config, _lastRtspConfig)) return;
+    final overlayOnly =
+        !force &&
+        _lastRtspConfig != null &&
+        mapEquals(
+          Map.of(config)
+            ..remove('dateTime')
+            ..remove('dateTimeBackground'),
+          Map.of(_lastRtspConfig!)
+            ..remove('dateTime')
+            ..remove('dateTimeBackground'),
+        );
     _lastRtspConfig = config;
-    _rtspDemand = false;
-    _rtspAudio.demand(false);
-    _sync();
+    if (!overlayOnly) {
+      _rtspDemand = false;
+      _rtspAudio.demand(false);
+      _sync();
+    }
     _rtspConfiguration = _rtspConfiguration.then((_) async {
       if (_disposed) return;
       try {
@@ -128,7 +157,24 @@ class MotionManager extends Manager {
             await ensureOsPermission(Permission.microphone);
           }
         }
-        final status = await NativeRtsp.configure(config);
+        Map<String, Object> native = config;
+        _rtspTlsError = null;
+        if (config['enabled'] == true && config['tls'] == true) {
+          try {
+            final material = await _settings.tls.load();
+            material.securityContext();
+            native = {
+              ...config,
+              'certificate': material.certificate,
+              'privateKey': material.privateKey,
+            };
+          } catch (e) {
+            _rtspTlsError = 'Encrypted stream unavailable: $e';
+            native = {...config, 'enabled': false};
+            _lastRtspConfig = null;
+          }
+        }
+        final status = await NativeRtsp.configure(native);
         if (status['error'] != null) log.warn(name, 'RTSP: ${status['error']}');
       } catch (e) {
         _lastRtspConfig = null;
@@ -260,7 +306,18 @@ class MotionManager extends Manager {
   /// the way the session's end would have.
   Timer? _previewHold;
   bool get _previewHolding => _previewHold != null;
-  bool get _wantPalms => palmEnabled && _screenOn;
+
+  /// The hand gesture tester (Settings > Gestures): while it is open the
+  /// hand leg runs whether or not a fingers mapping exists, behind the
+  /// same camera switch and runtime check, and every report lands on
+  /// [handTest] instead of the gestures manager, so trying counts fires
+  /// nothing. Null between hands and while the tester is closed.
+  final handTest = ValueNotifier<HandTestReading?>(null);
+  bool _handTesting = false;
+  bool get handTesting => _handTesting;
+  bool get _handTestWanted =>
+      _handTesting && _vision.hands && _settings.get(defs.cameraEnabled);
+  bool get _wantPalms => (palmEnabled || _handTestWanted) && _screenOn;
 
   StreamSubscription<void>? _camera;
   bool _screensaverActive = false;
@@ -369,6 +426,7 @@ class MotionManager extends Manager {
           try {
             return CommandResult.ok({
               ...await NativeRtsp.status(),
+              if (_rtspTlsError != null) 'error': _rtspTlsError,
               if (_rtspAudio.error != null) 'audioError': _rtspAudio.error,
               'audioSuspended': _rtspAudio.suspended,
             });
@@ -450,7 +508,12 @@ class MotionManager extends Manager {
         // Turning the camera on is what pays for the setup init skipped.
         unawaited(_ensureCameraSetup());
       }
-      if (e.key.startsWith('camera.rtsp.') || e.key == defs.cameraEnabled.key) {
+      if (e.key.startsWith('camera.rtsp.') ||
+          e.key == defs.cameraDevice.key ||
+          e.key == defs.cameraSnapshotResolution.key ||
+          e.key == defs.cameraOnvifPort.key ||
+          e.key == defs.deviceName.key ||
+          e.key == defs.cameraEnabled.key) {
         _configureRtsp();
       }
       final isGate =
@@ -548,6 +611,13 @@ class MotionManager extends Manager {
     if (_cameraSetupDone || !_settings.get(defs.cameraEnabled)) return;
     _cameraSetupDone = true;
     await _diagnostics.start();
+    _tlsSubscription = bus.on<TlsIdentityChanged>().listen((_) {
+      if (_rtspEnabled &&
+          _settings.get(defs.cameraRtspTls) &&
+          _settings.get(defs.cameraStreamingProtocol) == 'rtsp') {
+        _configureRtsp(force: true);
+      }
+    });
     NativeRtsp.onDemand(
       (wanted) {
         if (_disposed) return;
@@ -768,8 +838,22 @@ class MotionManager extends Manager {
                     '${tick.fingers ?? '?'} finger(s)',
                   );
                 }
+                if (_handTesting) {
+                  handTest.value = tick.palms! > 0
+                      ? HandTestReading(
+                          hands: tick.palms!,
+                          fingers: tick.fingers,
+                          fingersUp: tick.fingersUp,
+                        )
+                      : null;
+                  return;
+                }
                 bus.publish(
-                  PalmDetected(hands: tick.palms!, fingers: tick.fingers),
+                  PalmDetected(
+                    hands: tick.palms!,
+                    fingers: tick.fingers,
+                    fingersUp: tick.fingersUp,
+                  ),
                 );
                 return;
               }
@@ -836,9 +920,12 @@ class MotionManager extends Manager {
     _retryDelay = _retryFloor;
     _boundBlind = false;
     // A session torn down under a preview (the camera switched off, a
-    // tuning change) takes the preview with it: its frames are gone.
+    // tuning change) takes the preview with it: its frames are gone. So
+    // does the tester's reading: the hand it described is unseen now.
     _endPreview();
+    handTest.value = null;
     if (_camera == null) return;
+    bus.publish(const PalmDetected(hands: 0, fingers: null));
     _camera!.cancel();
     _camera = null;
     log.info(name, 'camera off');
@@ -879,6 +966,27 @@ class MotionManager extends Manager {
     facePreview.value = null;
   }
 
+  /// Open the hand gesture tester: see [handTest]. A session already up
+  /// without hands restarts with them, the way a first mapping does.
+  void startHandTest() {
+    if (_handTesting) return;
+    _handTesting = true;
+    bus.publish(const PalmDetected(hands: 0, fingers: null));
+    log.info(name, 'hand gesture tester open');
+    _sync();
+  }
+
+  /// Close it: reports go back to the gestures manager, and a session
+  /// that only the tester wanted ends.
+  void stopHandTest() {
+    if (!_handTesting) return;
+    _handTesting = false;
+    bus.publish(const PalmDetected(hands: 0, fingers: null));
+    handTest.value = null;
+    log.info(name, 'hand gesture tester closed');
+    _sync();
+  }
+
   Future<bool> _ensurePermission() async {
     if (await Permission.camera.isGranted) return true;
     return await ensureOsPermission(Permission.camera);
@@ -887,6 +995,7 @@ class MotionManager extends Manager {
   @override
   Future<void> dispose() async {
     _disposed = true;
+    await _tlsSubscription?.cancel();
     await _diagnostics.dispose();
     NativeRtsp.onDemand(null);
     await _rtspAudio.dispose();
@@ -897,5 +1006,16 @@ class MotionManager extends Manager {
     _pauseTimer?.cancel();
     _stop();
     facePreview.dispose();
+    handTest.dispose();
   }
+}
+
+/// One reading for the hand gesture tester: hands in view and, for the
+/// largest, the count and which digits are up (thumb, index, middle,
+/// ring, pinky; the thumb only when it counts, on an open hand).
+class HandTestReading {
+  const HandTestReading({required this.hands, this.fingers, this.fingersUp});
+  final int hands;
+  final int? fingers;
+  final List<bool>? fingersUp;
 }

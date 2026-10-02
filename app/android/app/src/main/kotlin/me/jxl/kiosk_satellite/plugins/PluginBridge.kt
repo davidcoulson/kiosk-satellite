@@ -21,6 +21,40 @@ import org.json.JSONObject
 
 /** Process-owned runtime for explicitly installed, trusted SDK 1 plugins. */
 class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
+    companion object {
+        /** How many incomplete starts in a row disable the enabled plugins. */
+        internal const val STARTUP_STRIKES = 2
+        private const val LEGACY_GUARD_ERROR = "Disabled after an incomplete plugin startup. Enable it to try again."
+
+        /**
+         * The app is ending on purpose (Restart app, Exit, a watchdog
+         * restart): whatever startup was underway did not fail. Without this
+         * a restart within 30 seconds of the last one read as a plugin that
+         * took the process down.
+         */
+        fun noteDeliberateExit(context: Context) {
+            context.getSharedPreferences("kiosk_plugins", Context.MODE_PRIVATE)
+                .edit().putBoolean("startupPending", false).commit()
+        }
+
+        /**
+         * The startup guard's verdict on one launch, kept apart from the
+         * bridge so it can be tested. [pending] says the last startup never
+         * reached its 30 seconds; [startedUnder] is the app's last update
+         * time when it began, [now] the current one; [strikes] counts the
+         * incomplete starts before this one.
+         *
+         * An update in between is not a failure: installing the app kills
+         * it wherever it was. Otherwise it takes [STARTUP_STRIKES]
+         * incomplete starts in a row, so one unlucky kill (a restart from
+         * adb, a power cut) never switches everything off.
+         */
+        internal fun startupVerdict(pending: Boolean, startedUnder: Long, now: Long, strikes: Int): Int = when {
+            !pending || startedUnder != now -> 0
+            else -> strikes + 1
+        }
+    }
+
     private val channel = MethodChannel(messenger, "kiosk_satellite/plugins")
     private val main = Handler(Looper.getMainLooper())
     private val worker = Executors.newSingleThreadExecutor { task -> Thread(task, "plugin-manager").apply { isDaemon = true } }
@@ -87,6 +121,16 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
             if (chartPending.compareAndSet(false, true)) main.postDelayed(chartUpdate, 1000)
         }
         fun closeCharts() { charts.close(); main.removeCallbacks(chartUpdate) }
+        val statusTiles = PluginStatusTiles()
+        private val statusTilePending = AtomicBoolean(false)
+        private val statusTileUpdate = Runnable {
+            statusTilePending.set(false)
+            if (alive.get()) emit("statusTiles", mapOf("id" to id, "session" to token, "statusTiles" to statusTiles.snapshot()), alive)
+        }
+        fun notifyStatusTiles() {
+            if (statusTilePending.compareAndSet(false, true)) main.postDelayed(statusTileUpdate, 250)
+        }
+        fun closeStatusTiles() { statusTiles.close(); main.removeCallbacks(statusTileUpdate) }
         var status = ""
         var statusError = false
         val lights = linkedMapOf<String, Map<String, Any?>>()
@@ -199,6 +243,14 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
             override fun removeSeries(key: String) {
                 charts.remove(key)
                 notifyCharts()
+            }
+            override fun publishStatusTile(key: String, title: String, level: String, text: String) {
+                statusTiles.publish(key, title, level, text)
+                notifyStatusTiles()
+            }
+            override fun removeStatusTile(key: String) {
+                statusTiles.remove(key)
+                notifyStatusTiles()
             }
             override fun showWindow(title: String, message: String, buttonLabel: String) {
                 require("overlay" in manifest.capabilities) { "Plugin did not declare overlay access" }
@@ -397,6 +449,7 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
                 .put("entities", org.json.JSONArray(sessions[id]?.entities?.snapshot() ?: emptyList<Any>()))
                 .put("screensavers", org.json.JSONArray(sessions[id]?.screensaverSnapshot() ?: emptyList<Any>()))
                 .put("charts", org.json.JSONArray(sessions[id]?.charts?.snapshot() ?: emptyList<Any>()))
+                .put("statusTiles", org.json.JSONArray(sessions[id]?.statusTiles?.snapshot() ?: emptyList<Any>()))
                 .put("lights", org.json.JSONArray(sessions[id]?.lights?.values?.toList() ?: emptyList<Any>()))
                 .put("values", record.optJSONObject("config") ?: JSONObject())
                 .put("actionOptions", record.optJSONObject("actionOptions") ?: JSONObject())
@@ -424,16 +477,43 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
             check(prefs.edit().putBoolean("startupPending", false).commit())
             return
         }
-        val enabled = enabledIds()
-        if (prefs.getBoolean("startupPending", false)) {
-            for (id in enabled) records.getJSONObject(id).put("enabled", false)
-                .put("error", "Disabled after an incomplete plugin startup. Enable it to try again.")
+        val updatedAt = appUpdatedAt()
+        // Plugins this guard switched off come back with the next update:
+        // the version that could not start them is gone. One switched off
+        // by hand carries no mark and stays off.
+        var restored = false
+        for (id in records.keys().asSequence().toList()) {
+            val record = records.getJSONObject(id)
+            // Builds before the mark left only their error text behind.
+            val legacy = record.optString("error") == LEGACY_GUARD_ERROR && !record.optBoolean("enabled")
+            if (legacy || record.has("guardDisabledUnder") && record.optLong("guardDisabledUnder") != updatedAt) {
+                record.remove("guardDisabledUnder")
+                record.put("enabled", true).put("error", "")
+                restored = true
+            }
+        }
+        if (restored) save()
+        val strikes = startupVerdict(
+            prefs.getBoolean("startupPending", false),
+            prefs.getLong("startupUnder", updatedAt),
+            updatedAt,
+            prefs.getInt("startupStrikes", 0),
+        )
+        if (strikes >= STARTUP_STRIKES) {
+            for (id in enabledIds()) records.getJSONObject(id).put("enabled", false)
+                .put("guardDisabledUnder", updatedAt)
+                .put("error", "Disabled after $STARTUP_STRIKES incomplete plugin startups in a row. Enable it to try again.")
             save()
-            prefs.edit().putBoolean("startupPending", false).commit()
+            prefs.edit().putBoolean("startupPending", false).putInt("startupStrikes", 0).commit()
             return
         }
+        prefs.edit().putInt("startupStrikes", strikes).commit()
         startEnabled()
     }
+
+    private fun appUpdatedAt(): Long = try {
+        context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
+    } catch (_: Exception) { 0L }
 
     private fun enabledIds(): List<String> = records.keys().asSequence()
         .filter { records.getJSONObject(it).optBoolean("enabled") }.toList()
@@ -442,12 +522,14 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
         val enabled = enabledIds()
         if (enabled.isEmpty()) return
         val generation = ++startupGeneration
-        check(prefs.edit().putBoolean("startupPending", true).commit())
+        check(prefs.edit().putBoolean("startupPending", true).putLong("startupUnder", appUpdatedAt()).commit())
         for (id in enabled) {
             try { enable(id) } catch (_: Throwable) { /* Failure is recorded by enable. */ }
         }
         main.postDelayed({ worker.execute {
-            if (startupGeneration == generation) prefs.edit().putBoolean("startupPending", false).commit()
+            if (startupGeneration == generation) {
+                prefs.edit().putBoolean("startupPending", false).putInt("startupStrikes", 0).commit()
+            }
         } }, 30_000)
     }
 
@@ -462,7 +544,7 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
             // Revoke every host before waiting for stop callbacks from individual plugins.
             sessions.forEach { (id, session) ->
                 session.alive.set(false)
-                session.closeShizuku(); session.closeCharts(); session.closeEntities(); session.closeScreensavers()
+                session.closeShizuku(); session.closeCharts(); session.closeStatusTiles(); session.closeEntities(); session.closeScreensavers()
                 emit("hideWindow", mapOf("id" to id))
             }
             for (id in sessions.keys.toList()) {
@@ -616,6 +698,7 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
                 plugin.start(current.host, Collections.unmodifiableMap(config))
             }
             record.put("enabled", true).put("error", "")
+            record.remove("guardDisabledUnder")
             save()
         } catch (error: Throwable) {
             session?.alive?.set(false)
@@ -627,7 +710,7 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
     private fun stopSession(id: String) {
         val session = sessions.remove(id) ?: return
         session.alive.set(false)
-        session.closeShizuku(); session.closeCharts(); session.closeEntities(); session.closeScreensavers()
+        session.closeShizuku(); session.closeCharts(); session.closeStatusTiles(); session.closeEntities(); session.closeScreensavers()
         session.subscriptions.clear()
         emit("hostSessionClosed", mapOf("id" to id, "session" to session.token))
         emit("hideWindow", mapOf("id" to id))

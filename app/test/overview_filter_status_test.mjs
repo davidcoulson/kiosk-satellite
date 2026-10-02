@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 
-const module = readFileSync(new URL('../assets/remote-ui/static/filter_status.js', import.meta.url), 'utf8')
+const module = readFileSync(new URL('../remote-ui/static/filter_status.js', import.meta.url), 'utf8')
   .replace(/^import .*;$/m, '').replace(/export /g, '');
-const overview = readFileSync(new URL('../assets/remote-ui/static/overview.js', import.meta.url), 'utf8');
-const paint = overview.slice(overview.indexOf('let haStatusRevision'), overview.indexOf('export function refreshHealth'));
+const overview = readFileSync(new URL('../remote-ui/static/overview.js', import.meta.url), 'utf8');
+const paint = overview.slice(overview.indexOf('let haStatusRevision'), overview.indexOf('function paintHealth('));
 
 function client(read) {
   let now = 0, visible = true, enabled = true;
@@ -17,6 +17,8 @@ function client(read) {
     onOverview: () => visible,
     settingOn: () => enabled,
     paintTile: (...args) => tiles.push(args),
+    overviewText: text => text,
+    overviewStatus: text => text,
   });
   vm.runInContext(module + '\n' + paint, context);
   return { context, calls, tiles, read: context.readFilterStatus, paint: context.paintHaStatus,
@@ -35,9 +37,11 @@ test('the Overview query reads the existing allowlist size without enumerating s
   const filter = { enabled: true, built: true, allow: new Set(['sensor.one', 'sensor.two']),
     shadow: forbidden, stats() { throw Error('full stats'); }, scanDiagnostic() { throw Error('trace'); } };
   const context = vm.createContext({ window: { __ksWs: filter } });
-  assert.deepEqual(JSON.parse(vm.runInContext(query, context)), { enabled: true, built: true, allow: 2 });
+  assert.deepEqual(JSON.parse(vm.runInContext(query, context)), { enabled: true, built: true, allow: 2, standDown: null });
   filter.allow = null;
-  assert.deepEqual(JSON.parse(vm.runInContext(query, context)), { enabled: true, built: true, allow: null });
+  filter.standDown = { reads: 3902, total: 3902 };
+  assert.deepEqual(JSON.parse(vm.runInContext(query, context)),
+    { enabled: true, built: true, allow: null, standDown: { reads: 3902, total: 3902 } });
 });
 
 test('shows filtered and unfiltered counts while preserving connection-only states', async () => {
@@ -45,6 +49,8 @@ test('shows filtered and unfiltered counts while preserving connection-only stat
     [{ enabled: true, built: true, allow: 42 }, 'Watching 42 entities', 'on'],
     [{ enabled: true, built: true, allow: 1 }, 'Watching 1 entity', 'on'],
     [{ enabled: true, built: true, allow: null }, 'Updates unfiltered', 'warn'],
+    [{ enabled: true, built: true, allow: null, standDown: { reads: 3902, total: 3902 } },
+      'Filtering disabled, view uses 3902 entities', 'warn'],
     [{ enabled: false, built: true, allow: 42 }, 'Filter status unavailable', 'on'],
     [{ enabled: true, built: false, allow: null }, 'Filter status unavailable', 'on'],
     [null, 'Filter status unavailable', 'on'],
@@ -60,14 +66,14 @@ test('disabled optimization, hidden Overview and disconnected HA make no dashboa
   const c = client(() => { throw Error('unexpected request'); });
   c.setEnabled(false);
   await c.paint(connected);
-  assert.equal(c.tiles.at(-1)[2], 'Connected');
+  assert.equal(c.tiles.at(-1)[2], 'Validated');
   assert.equal(c.tiles.at(-1)[1], 'on');
   c.setEnabled(true);
   c.setVisible(false);
   await c.paint(connected);
   c.setVisible(true);
   await c.paint({ configured: true, connected: false });
-  assert.equal(c.tiles.at(-1)[2], 'Disconnected');
+  assert.equal(c.tiles.at(-1)[2], 'Not validated');
   await c.paint({ configured: false, connected: false });
   assert.equal(c.tiles.at(-1)[2], 'Not set up');
   assert.equal(c.calls.length, 0);
@@ -104,7 +110,7 @@ test('a late response cannot restore the count after filtering is disabled or HA
     await c.paint(disable ? connected : { configured: true, connected: false });
     resolve(response({ enabled: true, built: true, allow: 9 }));
     await first;
-    assert.equal(c.tiles.at(-1)[2], disable ? 'Connected' : 'Disconnected');
+    assert.equal(c.tiles.at(-1)[2], disable ? 'Validated' : 'Not validated');
   }
 });
 
@@ -123,4 +129,18 @@ test('failed reads are cached and double-encoded responses are supported', async
   const c = client(async () => response(JSON.stringify({ enabled: true, built: true, allow: 3 })));
   await c.paint(connected);
   assert.equal(c.tiles.at(-1)[2], 'Watching 3 entities');
+});
+
+
+test('cached repaint keeps filter status and does not discard an in-flight answer', async () => {
+  let resolve;
+  const c = client(() => new Promise(r => { resolve = r; }));
+  const pending = c.paint(connected);
+  await c.paint(connected, {filter: false});
+  resolve(response({enabled: true, built: true, allow: 7}));
+  await pending;
+  assert.equal(c.tiles.at(-1)[2], 'Watching 7 entities');
+  await c.paint(connected, {filter: false});
+  assert.equal(c.tiles.at(-1)[2], 'Watching 7 entities');
+  assert.equal(c.calls.length, 1);
 });

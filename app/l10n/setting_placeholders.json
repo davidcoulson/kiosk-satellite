@@ -1,0 +1,20 @@
+{
+  "device.hostname": "deviceHostnamePlaceholder",
+  "screensaver.clock_background": "screensaverBackgroundHint",
+  "screensaver.immich_taken_from": "screensaverMediaAnyTime",
+  "screensaver.immich_taken_to": "screensaverMediaToday",
+  "browser.inject_js": "browserInjectJsPlaceholder",
+  "browser.inject_js_external": "browserInjectJsExternalPlaceholder",
+  "dlna.port": "settingDlnaPortPlaceholder",
+  "intercom.key": "settingIntercomKeyPlaceholder",
+  "esphome.node_name": "settingEsphomeNodeNamePlaceholder",
+  "btproxy.key": "settingBtproxyKeyPlaceholder",
+  "announcements.tts_engine": "esphomeTtsFirst",
+  "announcements.tts_language": "esphomeTtsDefault",
+  "announcements.tts_voice": "esphomeTtsDefault",
+  "alarms.tts_engine": "esphomeTtsFirst",
+  "alarms.tts_language": "esphomeTtsDefault",
+  "alarms.tts_voice": "esphomeTtsDefault",
+  "voice.realtime_openai_endpoint": "voiceRealtimeProviderDefault",
+  "voice.realtime_xai_endpoint": "voiceRealtimeProviderDefault"
+}

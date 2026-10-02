@@ -31,9 +31,13 @@ class PluginManager extends Manager {
     super.commands,
     super.log, {
     PluginRepository? repository,
+    this.agent,
   }) : repository = repository ?? PluginRepository();
 
   final PluginRepository repository;
+
+  /// Whether the host is an agent, for getHostApi to tell the plugins.
+  final bool Function()? agent;
   List<Map<String, Object?>> _entities = [];
   final _runtimeEntities = <String, List<Map<String, Object?>>>{};
   static const maxZipBytes = PluginRepository.maxPackageBytes;
@@ -42,6 +46,10 @@ class PluginManager extends Manager {
   final installed = ValueNotifier<List<Map<String, Object?>>>(const []);
   final readings = ValueNotifier<Map<String, List<Map<String, Object?>>>>({});
   final charts = ValueNotifier<Map<String, List<Map<String, Object?>>>>({});
+  // Overview status tiles, keyed by plugin id. Session scoped like charts.
+  final statusTiles = ValueNotifier<Map<String, List<Map<String, Object?>>>>(
+    {},
+  );
   final _runtimeSessions = <String, String>{};
   final screensavers = ValueNotifier<Map<String, Map<String, Object?>>>({});
   Map<String, String> get screensaverOptions => {
@@ -90,10 +98,42 @@ class PluginManager extends Manager {
 
   @override
   Future<void> init() async {
+    for (final listenable in [
+      installed,
+      readings,
+      charts,
+      statusTiles,
+      shizuku,
+    ]) {
+      listenable.addListener(() {
+        if (!_disposed) bus.publish(const RemoteStatusChanged('plugins'));
+      });
+    }
+    var remoteSettings = jsonEncode(_state);
+    void publishSettings() {
+      final next = jsonEncode(_state);
+      if (!_disposed && next != remoteSettings) {
+        remoteSettings = next;
+        bus.publish(const RemoteStatusChanged('plugin-settings'));
+      }
+    }
+
+    installed.addListener(publishSettings);
+    enabled.addListener(publishSettings);
+    // The Overview's plugin tiles, apart from the readings and charts a
+    // plugin page follows: those move often, the tiles rarely.
+    void publishTiles() {
+      if (!_disposed) bus.publish(const RemoteStatusChanged('plugin-tiles'));
+    }
+
+    statusTiles.addListener(publishTiles);
+    installed.addListener(publishTiles);
+    enabled.addListener(publishTiles);
     _hostReads = PluginHostApi(
       commands,
       bus,
       (event) => channel.invokeMethod<void>('hostEvent', event),
+      agent: agent,
     );
     channel.setMethodCallHandler((call) async {
       if (_disposed) return null;
@@ -103,6 +143,7 @@ class PluginManager extends Manager {
           _runtimeSessions[data['id'] as String] = data['session'] as String;
           _setScreensavers(data['id'] as String, const []);
           _setCharts(data['id'] as String, const []);
+          _setStatusTiles(data['id'] as String, const []);
           _setEntities(data['id'] as String, const []);
           _hostReads.open(call.arguments as Map);
         case 'hostSessionClosed':
@@ -111,6 +152,7 @@ class PluginManager extends Manager {
             _runtimeSessions.remove(data['id']);
             _setScreensavers(data['id'] as String, const []);
             _setCharts(data['id'] as String, const []);
+            _setStatusTiles(data['id'] as String, const []);
             _setEntities(data['id'] as String, const []);
           }
           _hostReads.close(call.arguments as Map);
@@ -129,6 +171,12 @@ class PluginManager extends Manager {
           if (_runtimeSessions[data['id']] == data['session'] &&
               data['session'] != null) {
             _setCharts(data['id'] as String, data['charts'] as List);
+          }
+        case 'statusTiles':
+          final data = call.arguments as Map;
+          if (_runtimeSessions[data['id']] == data['session'] &&
+              data['session'] != null) {
+            _setStatusTiles(data['id'] as String, data['statusTiles'] as List);
           }
         case 'screensavers':
           final data = call.arguments as Map;
@@ -215,6 +263,12 @@ class PluginManager extends Manager {
       'Read current plugin chart snapshots without refreshing settings.',
       (p) async => charts.value[p['id']] ?? const [],
       const {'id': 'Plugin ID'},
+    );
+    register(
+      'getPluginStatusTiles',
+      'Read the Overview status tiles published by running plugins.',
+      (_) async => statusTileList,
+      const {},
     );
     register(
       'getPluginActions',
@@ -507,6 +561,32 @@ class PluginManager extends Manager {
     }
   }
 
+  /// Every running plugin's tiles in one list, with the owning plugin named
+  /// so the Overview can show where each one comes from.
+  List<Map<String, Object?>> get statusTileList => [
+    for (final entry in statusTiles.value.entries)
+      for (final tile in entry.value)
+        {
+          ...tile,
+          'pluginId': entry.key,
+          'pluginName':
+              installed.value
+                  .where((p) => p['id'] == entry.key)
+                  .firstOrNull?['name'] ??
+              entry.key,
+        },
+  ];
+
+  void _setStatusTiles(String id, List value) {
+    final next = value.map((v) => Map<String, Object?>.from(v as Map)).toList();
+    if (jsonEncode(statusTiles.value[id] ?? const []) == jsonEncode(next)) {
+      return;
+    }
+    statusTiles.value = {...statusTiles.value}
+      ..remove(id)
+      ..addAll(next.isEmpty ? {} : {id: next});
+  }
+
   void _setCharts(String id, List value) {
     final next = value.map((v) => Map<String, Object?>.from(v as Map)).toList();
     if (jsonEncode(charts.value[id] ?? const []) == jsonEncode(next)) return;
@@ -546,6 +626,7 @@ class PluginManager extends Manager {
       );
       item.remove('screensavers');
       final data = item.remove('charts');
+      final tiles = item.remove('statusTiles');
       final entities = item.remove('entities') as List? ?? const [];
       _runtimeEntities[item['id']
           as String] = enabled.value && item['running'] == true
@@ -560,6 +641,15 @@ class PluginManager extends Manager {
             ? data as List? ?? const []
             : const [],
       );
+      _setStatusTiles(
+        item['id'] as String,
+        enabled.value && item['running'] == true
+            ? tiles as List? ?? const []
+            : const [],
+      );
+    }
+    for (final id in statusTiles.value.keys.toList()) {
+      if (!items.any((p) => p['id'] == id)) _setStatusTiles(id, const []);
     }
     for (final id
         in screensavers.value.values
@@ -720,6 +810,7 @@ class PluginManager extends Manager {
     } catch (_) {}
     readings.dispose();
     charts.dispose();
+    statusTiles.dispose();
     screensavers.dispose();
     installed.dispose();
     windows.dispose();

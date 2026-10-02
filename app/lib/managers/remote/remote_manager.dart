@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate' show Isolate;
 import 'dart:math' show Random;
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart' show md5;
-import 'package:flutter/foundation.dart' show ValueNotifier;
+import 'package:flutter/foundation.dart' show ValueNotifier, visibleForTesting;
 import 'package:flutter/services.dart'
     show AssetBundle, AssetManifest, rootBundle;
 import 'package:shelf/shelf.dart';
@@ -16,9 +17,12 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
 import '../../core/manager.dart';
+import '../intercom/intercom_routes.dart';
 import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 import 'auth.dart';
+import 'password_hash.dart';
+import 'observations.dart';
 
 /// Embedded remote-management server (docs/remote-api.md).
 ///
@@ -45,7 +49,51 @@ class RemoteManager extends Manager {
   @override
   String get commandSource => 'remote admin';
 
+  /// The full screen views up right now, from [FullscreenViewChanged].
+  final _fullscreenViews = <String>{};
+
+  late final _intercomRoutes = IntercomRoutes(
+    commands,
+    requiresTls: () => _settings.get(defs.intercomTls),
+  );
+
   HttpServer? _server;
+  bool _runningTls = false;
+  bool _renewed = false;
+  Timer? _tlsRestart;
+  Timer? _certificateCheck;
+  Future<void>? _syncQueue;
+  int _activeMutations = 0;
+
+  void _scheduleTlsRestart() {
+    _tlsRestart?.cancel();
+    _tlsRestart = Timer(const Duration(milliseconds: 750), () {
+      if (_activeMutations > 0) {
+        _scheduleTlsRestart();
+      } else {
+        unawaited(_sync());
+      }
+    });
+  }
+
+  Future<void> _checkCertificate() async {
+    if (!_settings.get(defs.remoteTls) &&
+        !_settings.get(defs.cameraRtspTls) &&
+        !_settings.get(defs.intercomTls)) {
+      return;
+    }
+    try {
+      final material = await _settings.tls.load();
+      if (!material.imported &&
+          material.expires.difference(DateTime.now()).inDays < 30) {
+        await _settings.tls.change('renew');
+      } else if (!material.expires.isAfter(DateTime.now())) {
+        bus.publish(const TlsIdentityChanged());
+      }
+    } catch (e) {
+      log.warn(name, 'TLS certificate check failed: $e');
+    }
+  }
 
   /// Why the server is not listening, or null when it is (or when it is off
   /// on purpose). "Remote management" being on is not the same as the server
@@ -59,13 +107,35 @@ class RemoteManager extends Manager {
 
   String _currentUrl = '';
   final _wsClients = <WebSocketChannel>{};
+  final _wsTopics = <WebSocketChannel, Set<String>>{};
+  final _subscribedClients = <WebSocketChannel>{};
+  final _pendingSettings = <String>{};
+  final _pendingTopics = <String>{};
+  Timer? _updatesTimer;
+  bool _statsReading = false;
+  Set<String> _observedTopics = {};
+  late final _observations = RemoteObservations(commands, (topic, results) {
+    _broadcast({
+      'type': 'update',
+      'topic': topic,
+      'results': results,
+    }, topic: topic);
+  });
+  final _subscriptions = <StreamSubscription<Object?>>[];
   String? _indexHtml;
+  Uint8List? _indexGzip;
   Future<void>? _adminBundle;
 
   /// The SPA's stylesheet and ES modules, keyed by file name under
   /// `assets/remote-ui/static/`, discovered from the asset manifest so a
   /// new module only needs to exist to be served.
   final _staticFiles = <String, Uint8List>{};
+
+  /// Gzip of each static file that shrinks by it, made once with the
+  /// bundle. The panel compresses a megabyte of source one time per app
+  /// life instead of on every cold load, and a client that sends
+  /// `Accept-Encoding: gzip` gets about a third of the bytes.
+  final _staticGzip = <String, Uint8List>{};
 
   /// The newest device-camera frame, for the admin's snapshot preview.
   /// Mirrored off the bus rather than fetched on request: serving a cached
@@ -75,6 +145,18 @@ class RemoteManager extends Manager {
 
   @override
   Future<void> init() async {
+    _settings.tls.registerCommands();
+    _subscriptions.add(
+      bus.on<TlsIdentityChanged>().listen((_) {
+        _renewed = true;
+        _scheduleTlsRestart();
+      }),
+    );
+    _certificateCheck = Timer.periodic(
+      const Duration(hours: 6),
+      (_) => unawaited(_checkCertificate()),
+    );
+    await _checkCertificate();
     // Persistent signing secret → tokens survive app restarts.
     final secret = await _settings.secret('remote_auth', () {
       final random = Random.secure();
@@ -82,7 +164,12 @@ class RemoteManager extends Manager {
         List<int>.generate(32, (_) => random.nextInt(256)),
       );
     });
-    _auth = AuthStore(secret);
+    _auth = AuthStore(
+      secret,
+      passwordVersion: () =>
+          PasswordHash.versionOf(_settings.get(defs.remotePassword)),
+      acceptsUnversioned: () => _settings.acceptsUnversionedTokens,
+    );
     // Minted for a fleet leader when this kiosk accepts its invitation:
     // the same signed token as a login, carrying the leader's id, which
     // the gate below reads to keep it off everything but the fleet
@@ -108,59 +195,100 @@ class RemoteManager extends Manager {
       ),
     );
 
-    bus.on<PageChanged>().listen((e) => _currentUrl = e.url);
-    bus.on<UrlChanged>().listen((e) => _currentUrl = e.url);
-    bus.on<CameraSnapshotTaken>().listen((e) {
-      _lastSnapshot = e.jpeg;
-      _lastSnapshotAt = DateTime.now();
-    });
+    _subscriptions.add(
+      bus.on<PageChanged>().listen((e) => _currentUrl = e.url),
+    );
+    _subscriptions.add(bus.on<UrlChanged>().listen((e) => _currentUrl = e.url));
+    _subscriptions.add(
+      bus.on<CameraSnapshotTaken>().listen((e) {
+        _lastSnapshot = e.jpeg;
+        _lastSnapshotAt = DateTime.now();
+      }),
+    );
 
     // Live event feed for connected WS clients. sound-level is excluded:
     // it fires at up to 20 Hz for the page's reactive bar and the admin
     // UI has no use for it.
-    bus.stream.listen((event) {
-      final wireName = event.wireName;
-      if (wireName == null || wireName == 'sound-level' || _wsClients.isEmpty) {
-        return;
-      }
-      _broadcast({'type': 'event', 'event': wireName, 'data': event.toJson()});
-    });
-    log.stream.listen((entry) {
-      if (_wsClients.isEmpty) return;
-      _broadcast({'type': 'log', 'entry': entry.toJson()});
-    });
+    _subscriptions.add(
+      bus.stream.listen((event) {
+        _queueTopics(event);
+        final wireName = event.wireName;
+        if (wireName == null ||
+            wireName == 'sound-level' ||
+            _wsClients.isEmpty) {
+          return;
+        }
+        _broadcast({
+          'type': 'event',
+          'event': wireName,
+          'data': event.toJson(),
+        });
+      }),
+    );
+    _subscriptions.add(
+      log.stream.listen((entry) {
+        if (_wsClients.isEmpty) return;
+        _broadcast({'type': 'log', 'entry': entry.toJson()});
+      }),
+    );
 
     // Relay the page's JS console to admin clients (ConsoleMessage has no
     // wireName, so it is not covered by the generic event feed above).
-    bus.on<ConsoleLine>().listen((event) {
-      if (_wsClients.isEmpty) return;
-      _broadcast({'type': 'console', ...event.toJson()});
-    });
+    _subscriptions.add(
+      bus.on<ConsoleLine>().listen((event) {
+        if (_wsClients.isEmpty) return;
+        _broadcast({'type': 'console', ...event.toJson()});
+      }),
+    );
 
-    // Brightness, which the screensaver and the Voice Satellite card both
-    // change behind the admin's back. No wireName either, so the generic feed
-    // skips it and the dashboard's slider sat at whatever it was born with.
-    bus.on<BrightnessChanged>().listen((e) {
-      if (_wsClients.isEmpty) return;
-      _broadcast({'type': 'brightness', 'level': e.panel});
-    });
+    // Match getBrightness: the slider controls Maximum brightness in adaptive
+    // mode, so ambient dimming must not replace it with the panel's level.
+    _subscriptions.add(
+      bus.on<BrightnessChanged>().listen((e) {
+        if (_wsClients.isEmpty) return;
+        _broadcast({'type': 'brightness', 'level': e.level});
+      }),
+    );
 
     // The ambient light reading, for the live row on the Adaptive
     // brightness page: the curve's ends are typed against it. No wireName
     // (the page has no use for it), and damped at the sensor to a few a
     // minute at most.
-    bus.on<LightLevelChanged>().listen((e) {
-      if (_wsClients.isEmpty) return;
-      _broadcast({'type': 'lightlevel', 'lux': e.lux});
-    });
+    _subscriptions.add(
+      bus.on<LightLevelChanged>().listen((e) {
+        if (_wsClients.isEmpty) return;
+        _broadcast({'type': 'lightlevel', 'lux': e.lux});
+      }),
+    );
 
     // Mic level samples for the admin settings meter. No wireName (the page
     // computes its own levels), and they only flow while a client holds a
     // mic-level watch, so this is not a standing 10 Hz feed.
-    bus.on<MicLevelSample>().listen((e) {
-      if (_wsClients.isEmpty) return;
-      _broadcast({'type': 'micLevel', 'rms': e.rms});
-    });
+    _subscriptions.add(
+      bus.on<MicLevelSample>().listen((e) {
+        if (_wsClients.isEmpty) return;
+        _broadcast({'type': 'micLevel', 'rms': e.rms});
+      }),
+    );
+
+    // Now Playing and the intercom screens, likewise internal: the
+    // Overview labels its screenshot by them and takes a fresh one.
+    _subscriptions.add(
+      bus.on<FullscreenViewChanged>().listen((e) {
+        if (e.shown) {
+          _fullscreenViews.add(e.view);
+        } else {
+          _fullscreenViews.remove(e.view);
+        }
+        if (_wsClients.isEmpty) return;
+        // With the screen events: the same clients redraw from both.
+        _broadcast({
+          'type': 'fullscreen-view',
+          'view': e.view,
+          'shown': e.shown,
+        }, topic: 'events');
+      }),
+    );
 
     // Wake-word state, likewise: no wireName, so the generic feed skips it.
     //
@@ -170,29 +298,37 @@ class RemoteManager extends Manager {
     // status, engine and wake words all kept describing the state before the
     // toggle until someone reloaded the page. Two views of one device that
     // disagree are worse than one view.
-    bus.on<WakeWordStateChanged>().listen((_) {
-      if (_wsClients.isEmpty) return;
-      _broadcast({'type': 'wakeword-state'});
-    });
+    _subscriptions.add(
+      bus.on<WakeWordStateChanged>().listen((_) {
+        if (_wsClients.isEmpty) return;
+        _broadcast({'type': 'wakeword-state'});
+      }),
+    );
 
-    bus.on<SettingChanged>().listen((e) {
-      // Losing remote access is the one settings change nobody can diagnose
-      // afterwards from here, because the log this writes to is served by
-      // the very server it just switched off. At warn so it also reaches
-      // the platform log, where `adb logcat` can still find it.
-      if (e.key == defs.remoteEnabled.key &&
-          !_settings.get(defs.remoteEnabled)) {
-        log.warn(name, 'remote management switched off');
-      }
-      if (e.key == defs.remoteEnabled.key ||
-          e.key == defs.remotePort.key ||
-          e.key == defs.remotePassword.key ||
-          // Setup completing (start URL set) may mean the server should
-          // stop — the wizard ran on the setup-mode allowance alone.
-          e.key == defs.startUrl.key) {
-        _sync();
-      }
-    });
+    _subscriptions.add(
+      bus.on<SettingChanged>().listen((e) {
+        if (e.key == defs.remoteTls.key) {
+          _scheduleTlsRestart();
+          return;
+        }
+        // Losing remote access is the one settings change nobody can diagnose
+        // afterwards from here, because the log this writes to is served by
+        // the very server it just switched off. At warn so it also reaches
+        // the platform log, where `adb logcat` can still find it.
+        if (e.key == defs.remoteEnabled.key &&
+            !_settings.get(defs.remoteEnabled)) {
+          log.warn(name, 'remote management switched off');
+        }
+        if (e.key == defs.remoteEnabled.key ||
+            e.key == defs.remotePort.key ||
+            e.key == defs.remotePassword.key ||
+            // Setup completing (start URL set) may mean the server should
+            // stop — the wizard ran on the setup-mode allowance alone.
+            e.key == defs.startUrl.key) {
+          _sync();
+        }
+      }),
+    );
 
     // Live header stats. Battery, CPU load and temperature change on their own,
     // so push them on a cadence rather than only at connect. Cheap while nobody
@@ -200,19 +336,26 @@ class RemoteManager extends Manager {
     // lean message, not a full state re-push, so it never disturbs the
     // brightness slider or url the admin might be interacting with.
     _statsTimer = Timer.periodic(const Duration(seconds: 4), (_) async {
-      if (_wsClients.isEmpty) return;
-      // getStats, not getDeviceInfo: the full read walks every network
-      // interface to answer questions this tick never asks.
-      final info = await commands.execute('getStats', const {});
-      final data = info.data;
-      if (data is! Map) return;
-      _broadcast({
-        'type': 'stats',
-        'battery': data['battery'],
-        'charging': data['charging'],
-        'cpu': data['cpu'],
-        'temp': data['temp'],
-      });
+      if (!_hasTopic('stats') || _statsReading) return;
+      _statsReading = true;
+      try {
+        // getStats, not getDeviceInfo: the full read walks every network
+        // interface to answer questions this tick never asks.
+        final info = await commands.execute('getStats', const {});
+        final data = info.data;
+        if (data is! Map) return;
+        _broadcast({
+          'type': 'stats',
+          'battery': data['battery'],
+          'charging': data['charging'],
+          'cpu': data['cpu'],
+          'temp': data['temp'],
+          'memFree': data['memFree'],
+          'memTotal': data['memTotal'],
+        });
+      } finally {
+        _statsReading = false;
+      }
     });
 
     await _sync();
@@ -222,9 +365,27 @@ class RemoteManager extends Manager {
 
   /// Unconfigured device: the remote onboarding wizard must be reachable,
   /// password or not — its own first step is to set one.
-  bool get _setupMode => _settings.get(defs.startUrl).isEmpty;
+  ///
+  /// An agent is never unconfigured, whatever the Start page says. It has no
+  /// page by definition, so the "no Start URL yet" test that means "nobody
+  /// has set this kiosk up" is simply wrong there: left alone it asks for a
+  /// Home Assistant URL and token forever, for a dashboard it will never
+  /// show, and holds the setup routes open on a device that is finished.
+  bool get _setupMode =>
+      !_settings.get(defs.agentMode) && _settings.get(defs.startUrl).isEmpty;
 
-  Future<void> _sync() async {
+  @visibleForTesting
+  bool get setupNeededForTest => _setupMode;
+
+  Future<void> _sync() {
+    final next = (_syncQueue ?? Future<void>.value()).then((_) => _syncNow());
+    _syncQueue = next.catchError((Object e) {
+      log.error(name, 'Server configuration failed: $e');
+    });
+    return next;
+  }
+
+  Future<void> _syncNow() async {
     final enabled = _settings.get(defs.remoteEnabled);
     final hasPassword = _settings.get(defs.remotePassword).isNotEmpty;
     final port = _settings.get(defs.remotePort).toInt();
@@ -233,13 +394,13 @@ class RemoteManager extends Manager {
       await _start();
     } else if (!wantRunning && _server != null) {
       await _stop();
-    } else if (wantRunning && _server != null && _server!.port != port) {
-      // The port changed; only that warrants a restart. A password set or
-      // changed while serving (the onboarding wizard's first step sets
-      // one, from this very server) used to restart it too, which cut the
-      // reply to the request that set it: the browser saw a failed fetch,
-      // stayed on the password step, and the next press was refused as
-      // "setup already done".
+    } else if (wantRunning &&
+        _server != null &&
+        (_server!.port != port ||
+            _runningTls != _settings.get(defs.remoteTls) ||
+            (_runningTls && _renewed))) {
+      // Only endpoint or certificate changes restart the listener. Password
+      // changes must finish without interrupting the onboarding response.
       await _stop();
       await _start();
     }
@@ -258,16 +419,50 @@ class RemoteManager extends Manager {
   Future<void> _start() async {
     final port = _settings.get(defs.remotePort).toInt();
     try {
-      _server = await shelf_io.serve(
-        const Pipeline().addHandler(_route),
-        InternetAddress.anyIPv4,
-        port,
+      final tls = _settings.get(defs.remoteTls);
+      final context = tls
+          ? (await _settings.tls.load()).securityContext()
+          : null;
+      _server = context == null
+          ? await HttpServer.bind(InternetAddress.anyIPv4, port)
+          : await HttpServer.bindSecure(InternetAddress.anyIPv4, port, context);
+      _server!.listen(
+        _handleHttpRequest,
+        onError: (Object error) {
+          log.debug(name, 'Connection refused: $error');
+        },
       );
+      _runningTls = tls;
+      _renewed = false;
       _startError = null;
       log.info(name, 'listening on :$port');
     } catch (e) {
       _startError = 'Could not listen on port $port: $e';
       log.error(name, 'failed to start on :$port: $e');
+    }
+  }
+
+  Future<void> _handleHttpRequest(HttpRequest request) async {
+    final authorization = request.headers.value(
+      HttpHeaders.authorizationHeader,
+    );
+    final token = authorization?.startsWith('Bearer ') == true
+        ? authorization!.substring(7)
+        : null;
+    // Unauthenticated slow uploads must not delay a listener change.
+    final mutating =
+        (request.method == 'POST' || request.method == 'PATCH') &&
+        (_setupMode || _auth.validate(token));
+    if (mutating) _activeMutations++;
+    try {
+      await shelf_io.handleRequest(
+        request,
+        const Pipeline().addMiddleware(_hardenResponses).addHandler(_route),
+      );
+    } catch (e) {
+      log.debug(name, 'Connection ended: $e');
+    } finally {
+      if (mutating) _activeMutations--;
     }
   }
 
@@ -278,6 +473,13 @@ class RemoteManager extends Manager {
       unawaited(client.sink.close());
     }
     _wsClients.clear();
+    _wsTopics.clear();
+    _subscribedClients.clear();
+    _syncObservers();
+    _updatesTimer?.cancel();
+    _updatesTimer = null;
+    _pendingSettings.clear();
+    _pendingTopics.clear();
     // Released before the close, and forced: turning remote management off
     // from the remote admin closes the very connection serving that request,
     // and a graceful close waits for it forever. That left _server non-null,
@@ -297,11 +499,14 @@ class RemoteManager extends Manager {
 
     if (path.isEmpty || path == 'index.html') {
       await _ensureAdminBundle();
-      return _index();
+      return _index(request);
     }
     if (path.startsWith('static/')) {
       await _ensureAdminBundle();
-      return _staticFile(path.substring('static/'.length));
+      return _staticFile(request, path.substring('static/'.length));
+    }
+    if (path.startsWith('voice_skins/')) {
+      return _voiceSkin(path.substring('voice_skins/'.length));
     }
     if (path == 'api/login') return _login(request);
     if (path == 'api/ws') return _ws(request);
@@ -321,6 +526,14 @@ class RemoteManager extends Manager {
         'setupNeeded': _setupMode,
         'passwordNeeded': _settings.get(defs.remotePassword).isEmpty,
         'deviceName': deviceName is String ? deviceName : '',
+        'language': _settings.get(defs.uiLanguage),
+        'languages': [
+          for (final language in defs.uiLanguage.options!)
+            {
+              'value': language,
+              'label': defs.uiLanguage.optionLabels?[language] ?? language,
+            },
+        ],
         // An import applied its settings but the OS permission prompts are
         // still being answered on the device; the start URL (what ends
         // setup) lands after them. The UI shows "finish on the device"
@@ -335,6 +548,22 @@ class RemoteManager extends Manager {
     // exists the page logs in and uses the gated commands like the rest.
     final passwordless =
         _setupMode && _settings.get(defs.remotePassword).isEmpty;
+    // Before the first password, setup may change only the bundled UI language.
+    // Once a password exists, the same choice requires its authenticated session.
+    if (path == 'api/setup/language' && request.method == 'POST') {
+      if (_crossOrigin(request)) return _json(403, {'error': 'cross-origin'});
+      if (!_setupMode ||
+          (!passwordless && !_auth.validate(_bearerToken(request)))) {
+        return _json(403, {'error': 'setup language change not allowed'});
+      }
+      final body = await _body(request, limit: _publicBodyLimit);
+      final language = body?['language'];
+      if (language is! String || !defs.uiLanguage.options!.contains(language)) {
+        return _json(400, {'error': 'unsupported language'});
+      }
+      await _settings.set(defs.uiLanguage, language);
+      return _json(200, {'language': _settings.get(defs.uiLanguage)});
+    }
     if (path == 'api/setup/grants' && request.method == 'GET') {
       if (!passwordless) return _json(403, {'error': 'setup already done'});
       final perms = await commands.execute('getSystemPermissions', const {});
@@ -345,8 +574,9 @@ class RemoteManager extends Manager {
       });
     }
     if (path == 'api/setup/grant' && request.method == 'POST') {
+      if (_crossOrigin(request)) return _json(403, {'error': 'cross-origin'});
       if (!passwordless) return _json(403, {'error': 'setup already done'});
-      final body = await _body(request);
+      final body = await _body(request, limit: _publicBodyLimit);
       final which = body?['which'];
       if (which is! List) return _json(400, {'error': 'which required'});
       final out = await commands.execute('requestOsPermissions', {
@@ -355,6 +585,7 @@ class RemoteManager extends Manager {
       return _json(out.ok ? 200 : 400, out.toJson());
     }
     if (path == 'api/setup/password' && request.method == 'POST') {
+      if (_crossOrigin(request)) return _json(403, {'error': 'cross-origin'});
       if (!_setupMode) return _json(403, {'error': 'setup already done'});
       // Setting one is public (there is nothing to authenticate with yet);
       // changing one, from the wizard's Welcome step after a Back, needs
@@ -364,7 +595,7 @@ class RemoteManager extends Manager {
           !_auth.validate(_bearerToken(request))) {
         return _json(403, {'error': 'setup already done'});
       }
-      final body = await _body(request);
+      final body = await _body(request, limit: _publicBodyLimit);
       final password = body?['password'];
       if (password is! String || password.length < 4) {
         return _json(400, {'error': 'password must be at least 4 characters'});
@@ -399,14 +630,15 @@ class RemoteManager extends Manager {
           : _json(503, {'error': r.error});
     }
     if (path == 'api/fleet/invite' && request.method == 'POST') {
+      if (_crossOrigin(request)) return _json(403, {'error': 'cross-origin'});
       final ip = _clientIp(request);
       final last = _inviteAt[ip];
       final now = DateTime.now();
       if (last != null && now.difference(last) < const Duration(seconds: 3)) {
         return _json(429, {'error': 'too many invitations'});
       }
-      _inviteAt[ip] = now;
-      final body = await _body(request);
+      _rememberProbe(_inviteAt, ip, now, const Duration(seconds: 3));
+      final body = await _body(request, limit: _publicBodyLimit);
       if (body == null) return _json(400, {'error': 'invalid JSON'});
       final r = await commands.execute('fleetInviteReceived', {
         ...body,
@@ -421,6 +653,8 @@ class RemoteManager extends Manager {
       });
       return _json(200, (r.data as Map?)?.cast<String, Object?>() ?? {});
     }
+
+    if (path.startsWith('api/intercom/')) return _intercomRoutes(request);
 
     if (!path.startsWith('api/')) return Response.notFound('not found');
 
@@ -447,12 +681,7 @@ class RemoteManager extends Manager {
       case ('GET', 'api/info'):
         return _info();
       case ('GET', 'api/settings'):
-        return _json(200, {
-          'settings': _settings.describe(),
-          // Named second-level pages, so the remote can label an entry
-          // row for a page that has no settings of its own.
-          'subpageHints': subpageHints,
-        });
+        return _json(200, _settingsPayload());
       case ('PATCH', 'api/settings'):
         return _patchSettings(request);
       case ('GET', 'api/settings/export'):
@@ -463,6 +692,13 @@ class RemoteManager extends Manager {
       // localStorage — strictly bearer-gated like everything else here.
       case ('GET', 'api/config/export'):
         final exported = await commands.execute('exportConfig', const {});
+        return exported.ok
+            ? _json(200, (exported.data as Map).cast<String, Object?>())
+            : _json(500, {'error': exported.error});
+      // The same backup for this kiosk and every follower it leads, in one
+      // file. An admin token only: a fleet token is not scoped to it.
+      case ('GET', 'api/fleet/export'):
+        final exported = await commands.execute('fleetExport', const {});
         return exported.ok
             ? _json(200, (exported.data as Map).cast<String, Object?>())
             : _json(500, {'error': exported.error});
@@ -493,12 +729,9 @@ class RemoteManager extends Manager {
           ],
         });
       case ('GET', 'api/logs'):
-        return _json(200, {
-          'logs': [for (final e in log.recent) e.toJson()],
-        });
+        return _json(200, (await _read('logs'))!);
       case ('GET', 'api/console'):
-        final console = await commands.execute('getConsole', const {});
-        return _json(200, {'console': console.data});
+        return _json(200, (await _read('console'))!);
       case ('GET', 'api/screenshot'):
         return _screenshot();
       case ('GET', 'api/media/artwork'):
@@ -527,10 +760,51 @@ class RemoteManager extends Manager {
       case ('POST', 'api/fleet/leave'):
         final r = await commands.execute('fleetLeaderLeft', const {});
         return _json(200, r.toJson());
+      case ('POST', 'api/fleet/roster'):
+        final body = await _body(request);
+        if (body == null) return _json(400, {'error': 'invalid JSON'});
+        final r = await commands.execute('fleetRosterReceived', body);
+        return _json(r.ok ? 200 : 400, r.toJson());
       case ('GET', 'api/files/download'):
         return _fileDownload(request);
       case ('POST', 'api/files/upload'):
         return _fileUpload(request);
+      // The APK is the raw body, streamed to the update manager, which
+      // keeps it only when it is a newer Kiosk Satellite build (#566).
+      // The install is a second call, installUploadedApk, so what was
+      // uploaded can be checked before anything happens on the device.
+      case ('POST', 'api/update/upload'):
+        final r = await commands.execute('receiveUploadedUpdate', {
+          'stream': request.read(),
+          'length': request.contentLength,
+        });
+        return _json(r.ok ? 200 : 400, r.toJson());
+      // A custom wake word file, the raw body, into the staging folder.
+      // commitCustomWakeModels then checks the upload's files together.
+      case ('POST', 'api/voice/wake-models/upload'):
+        final r = await commands.execute('stageCustomWakeModel', {
+          'name': request.url.queryParameters['name'] ?? '',
+          'stream': request.read(),
+          'length': request.contentLength,
+        });
+        return _json(r.ok ? 200 : 400, r.toJson());
+      // The fleet leader's side of the custom wake word models: what this
+      // kiosk has, a file to keep and a file to drop.
+      case ('GET', 'api/fleet/wake-models'):
+        final r = await commands.execute('customWakeModelsManifest', const {});
+        return _json(r.ok ? 200 : 400, r.toJson());
+      case ('PUT', 'api/fleet/wake-models'):
+        final r = await commands.execute('receiveCustomWakeModelFile', {
+          'path': request.url.queryParameters['path'] ?? '',
+          'stream': request.read(),
+          'length': request.contentLength,
+        });
+        return _json(r.ok ? 200 : 400, r.toJson());
+      case ('DELETE', 'api/fleet/wake-models'):
+        final r = await commands.execute('removeCustomWakeModelFile', {
+          'path': request.url.queryParameters['path'] ?? '',
+        });
+        return _json(r.ok ? 200 : 400, r.toJson());
     }
 
     // POST /api/commands/<name>
@@ -553,11 +827,15 @@ class RemoteManager extends Manager {
     if (_auth.isThrottled(ip)) {
       return _json(429, {'error': 'too many attempts'});
     }
-    final body = await _body(request);
+    final body = await _body(request, limit: _publicBodyLimit);
     final password = body?['password'];
     if (password is String &&
         password.isNotEmpty &&
-        password == _settings.get(defs.remotePassword)) {
+        password.length <= 1024 &&
+        await PasswordHash.verifyAsync(
+          _settings.get(defs.remotePassword),
+          password,
+        )) {
       _auth.clearFailures(ip);
       // ttl_days (issue #84): a Home Assistant rest_command cannot redo the
       // login dance every week, so an automation logs in once with a long
@@ -584,10 +862,20 @@ class RemoteManager extends Manager {
   /// external monitoring to poll, instead of the three command calls the
   /// admin UI assembles the same rows from.
   Future<Response> _health() async {
-    final device = await commands.execute('getDeviceInfo', const {});
-    final details = await commands.execute('getDeviceDetails', const {});
-    final screenOn = await commands.execute('isScreenOn', const {});
-    final brightness = await commands.execute('getBrightness', const {});
+    // Independent reads, run together: this endpoint exists for external
+    // monitoring to poll, so its latency is paid over and over.
+    final results = await Future.wait([
+      commands.execute('getDeviceInfo', const {}),
+      commands.execute('getDeviceDetails', const {}),
+      commands.execute('isScreenOn', const {}),
+      commands.execute('getBrightness', const {}),
+      commands.execute('getNetworkLink', const {}),
+    ]);
+    final device = results[0];
+    final details = results[1];
+    final screenOn = results[2];
+    final brightness = results[3];
+    final link = results[4];
     final info = (device.data as Map?)?.cast<String, Object?>() ?? const {};
     final det = (details.data as Map?)?.cast<String, Object?>() ?? const {};
     return _json(200, {
@@ -608,6 +896,11 @@ class RemoteManager extends Manager {
       'ram': det['ram'],
       'storage': det['storage'],
       'cpu': {'usage': info['cpu'], 'temp': info['temp']},
+      // The system WebView updates itself out from under the app, so it is
+      // the first suspect when one panel renders unlike its neighbors.
+      'webview': det['webview'],
+      // Null while offline. Wi-Fi adds signal, link speed and frequency.
+      'link': link.ok ? link.data : null,
       // Seconds. `network` is null while offline; its clock starts at app
       // start at the earliest (see DeviceDetails.uptime).
       'uptime': info['uptime'],
@@ -626,27 +919,111 @@ class RemoteManager extends Manager {
   /// "Screen off" or "Screen on" by what the panel is doing, and a tile
   /// born saying one of them before anyone asked would be guessing. Live
   /// changes reach the client through the event feed (screenon/screenoff,
-  /// screensaverstart/screensaverstop, cameraview); this is the snapshot
-  /// they diff against.
+  /// screensaverstart/screensaverstop, cameraview, and fullscreen-view
+  /// messages for Now Playing and the intercom screens); this is the
+  /// snapshot they diff against.
+  /// The six reads are independent, so they run together rather than one
+  /// after another: awaited in sequence this cost the sum of five platform
+  /// round trips on every `/api/info`, and Remote Admin's boot waits on it.
   Future<Map<String, Object?>> _deviceState() async {
-    final device = await commands.execute('getDeviceInfo', const {});
-    final brightness = await commands.execute('getBrightness', const {});
-    final screenOn = await commands.execute('isScreenOn', const {});
-    final screensaver = await commands.execute('isScreensaverActive', const {});
-    final cameraView = await commands.execute('getCameraViewState', const {});
+    final results = await Future.wait([
+      commands.execute('getDeviceInfo', const {}),
+      commands.execute('getBrightness', const {}),
+      commands.execute('isScreenOn', const {}),
+      commands.execute('isScreensaverActive', const {}),
+      commands.execute('getCameraViewState', const {}),
+      commands.execute('getTheaterMode', const {}),
+    ]);
+    final device = results[0];
+    final brightness = results[1];
+    final screenOn = results[2];
+    final screensaver = results[3];
+    final cameraView = results[4];
+    final theater = results[5];
     return {
       ...?(device.data as Map<String, Object?>?),
       'brightness': (brightness.data as num?)?.toDouble(),
       'screenOn': screenOn.ok ? screenOn.data as bool? : null,
       'screensaverActive': screensaver.ok ? screensaver.data as bool? : null,
       'cameraView': cameraView.ok ? cameraView.data : null,
+      'theater': theater.ok && theater.data is Map
+          ? (theater.data as Map)['phase']
+          : null,
+      'nowPlayingShown': _fullscreenViews.contains('nowPlaying'),
+      'intercomShown': _fullscreenViews.contains('intercom'),
       'currentUrl': _currentUrl,
     };
+  }
+
+  /// Settings for machinery an agent does not run. The definitions still
+  /// exist - they are compiled in, and turning agent mode off brings the
+  /// features back - but a projector's admin listing Screensaver, Voice
+  /// Satellite or Kiosk pages invites someone to configure a dashboard that
+  /// will never be drawn, and then to wonder why nothing happened.
+  ///
+  /// Screen & Audio, Device, ESPHome, Fleet and Launcher are deliberately not
+  /// here: the screen, the ESPHome device, fleet membership and opening
+  /// another app are exactly what an agent is for.
+  static const _agentHiddenCategories = {
+    'Browser',
+    'Camera',
+    'Cameras',
+    'DLNA',
+    'Gestures',
+    'Home',
+    'Home Assistant',
+    'Intercom',
+    'Kiosk',
+    'Lockdown',
+    'Screensaver',
+    'Sendspin',
+    'Voice Satellite',
+    'Web Content',
+  };
+
+  Map<String, Object?> _settingsPayload() {
+    final all = _settings.describe();
+    final settings = _settings.get(defs.agentMode)
+        ? [
+            for (final row in all)
+              if (!_agentHiddenCategories.contains(row['category'])) row,
+          ]
+        : all;
+    return {
+      'settings': settings,
+      // Named second-level pages, so the remote can label an entry
+      // row for a page that has no settings of its own.
+      'subpageHints': subpageHints,
+    };
+  }
+
+  /// The reads the admin page makes at boot, one shape whether they come
+  /// over HTTP or as a `get` request on the socket, so a connected page
+  /// never has to fall back to polling HTTP for them.
+  Future<Map<String, Object?>?> _read(String name) async {
+    switch (name) {
+      case 'info':
+        return _deviceState();
+      case 'settings':
+        return _settingsPayload();
+      case 'logs':
+        return {
+          'logs': [for (final e in log.recent) e.toJson()],
+        };
+      case 'console':
+        final console = await commands.execute('getConsole', const {});
+        return {'console': console.data};
+    }
+    return null;
   }
 
   Future<Response> _patchSettings(Request request) async {
     final body = await _body(request);
     if (body == null) return _json(400, {'error': 'invalid JSON'});
+    return _json(200, await _applySettings(body));
+  }
+
+  Future<Map<String, Object?>> _applySettings(Map<String, dynamic> body) async {
     final rejected = <String>[];
     // The validator's own words per rejected key, where a definition has
     // one, so the page can say what was wrong with the value instead of
@@ -667,11 +1044,7 @@ class RemoteManager extends Manager {
         if (message != null) errors[entry.key] = message;
       }
     }
-    return _json(200, {
-      'ok': rejected.isEmpty,
-      'rejected': rejected,
-      'errors': errors,
-    });
+    return {'ok': rejected.isEmpty, 'rejected': rejected, 'errors': errors};
   }
 
   Future<Response> _import(Request request) async {
@@ -696,6 +1069,12 @@ class RemoteManager extends Manager {
   }
 
   Future<Response> _command(Request request, String commandName) async {
+    if (commandName == 'importTlsCertificate' && !_runningTls) {
+      return _json(400, {
+        'ok': false,
+        'error': 'Enable HTTPS before importing a private key remotely.',
+      });
+    }
     if (_deviceOnly.contains(commandName)) {
       return _json(403, {'error': 'answered on the kiosk itself'});
     }
@@ -705,8 +1084,14 @@ class RemoteManager extends Manager {
   }
 
   /// Commands that only the kiosk's own screen may run: accepting a fleet
-  /// invitation is the one confirmation the remote admin must not give.
-  static const _deviceOnly = {'fleetAccept', 'fleetDecline'};
+  /// invitation and answering an intercom call are confirmations the
+  /// remote admin must not give.
+  static const _deviceOnly = {
+    'fleetAccept',
+    'fleetDecline',
+    'intercomAnswer',
+    'intercomDecline',
+  };
 
   /// What a fleet token opens: the follower's side of the fleet wire and
   /// the update commands the leader drives.
@@ -714,9 +1099,15 @@ class RemoteManager extends Manager {
     'api/fleet/status',
     'api/fleet/apply',
     'api/fleet/leave',
+    'api/fleet/roster',
+    'api/fleet/wake-models',
+    // The leader's fleet backup reads each follower's full configuration.
+    'api/config/export',
     'api/commands/getUpdateStatus',
     'api/commands/checkUpdateNow',
     'api/commands/installUpdate',
+    'api/update/upload',
+    'api/commands/installUploadedApk',
   };
 
   /// One invitation per client every few seconds: the endpoint is public.
@@ -835,65 +1226,268 @@ class RemoteManager extends Manager {
   }
 
   FutureOr<Response> _ws(Request request) {
-    if (!_auth.validate(request.url.queryParameters['token'])) {
+    final token = request.url.queryParameters['token'];
+    final claims = _auth.claimsOf(token);
+    if (claims == null || claims.containsKey('fleet')) {
       return _json(401, {'error': 'unauthorized'});
     }
-    return webSocketHandler(
-      // Pings reap silently-vanished peers (phone left wifi, laptop lid
-      // closed). Without them the channel never errors, the client stays
-      // in _wsClients, and every broadcast queues into a socket nobody
-      // reads — an unbounded buffer on exactly the feed that carries the
-      // page's whole console output.
-      pingInterval: const Duration(seconds: 30),
-      (WebSocketChannel channel, String? protocol) {
-        _wsClients.add(channel);
-        _sendState(channel);
-        channel.stream.listen(
-          (raw) async {
-            try {
-              final msg = jsonDecode(raw as String) as Map<String, dynamic>;
-              if (msg['type'] == 'command' &&
-                  msg['name'] is String &&
-                  !_deviceOnly.contains(msg['name'])) {
-                final result = await commands.execute(
-                  msg['name'] as String,
-                  (msg['params'] as Map?)?.cast<String, Object?>() ?? const {},
-                );
-                channel.sink.add(
-                  jsonEncode({
-                    'type': 'result',
-                    'name': msg['name'],
-                    ...result.toJson(),
-                  }),
-                );
-              }
-            } catch (e) {
-              log.debug(name, 'bad ws message: $e');
+    return webSocketHandler(pingInterval: const Duration(seconds: 30), (
+      WebSocketChannel channel,
+      String? protocol,
+    ) {
+      _wsClients.add(channel);
+      // Preserve the original feed for API clients until they subscribe.
+      _wsTopics[channel] = {
+        'state',
+        'events',
+        'stats',
+        'console',
+        'logs',
+        'brightness',
+        'lightlevel',
+        'micLevel',
+        'wakeword-state',
+      };
+      _sendState(channel);
+      void remove() {
+        _wsClients.remove(channel);
+        _wsTopics.remove(channel);
+        _subscribedClients.remove(channel);
+        _syncObservers();
+      }
+
+      channel.stream.listen(
+        (raw) async {
+          Object? id;
+          var mutating = false;
+          try {
+            if (!_auth.validate(token)) {
+              await channel.sink.close(1008, 'Session expired');
+              return;
             }
-          },
-          onDone: () => _wsClients.remove(channel),
-          onError: (_) => _wsClients.remove(channel),
-        );
-      },
-    )(request);
+            final msg = jsonDecode(raw as String) as Map<String, dynamic>;
+            id = msg['id'];
+            mutating = msg['type'] == 'command' || msg['type'] == 'settings';
+            if (mutating) _activeMutations++;
+            if (msg['type'] == 'ping') {
+              _send(channel, {'type': 'pong'});
+              return;
+            }
+            if (msg['type'] == 'subscribe') {
+              final topics = (msg['topics'] as List).cast<String>().toSet();
+              final previous = _wsTopics[channel] ?? const <String>{};
+              _wsTopics[channel] = topics;
+              _subscribedClients.add(channel);
+              _syncObservers();
+              if (topics.contains('settings') &&
+                  !previous.contains('settings')) {
+                _send(channel, {
+                  'type': 'settings',
+                  'snapshot': true,
+                  ..._settingsPayload(),
+                });
+              }
+              _send(channel, {'type': 'result', 'id': id, 'ok': true});
+              return;
+            }
+            if (msg['type'] == 'settings') {
+              final result = await _applySettings(
+                (msg['values'] as Map).cast<String, dynamic>(),
+              );
+              _send(channel, {'type': 'result', 'id': id, ...result});
+              return;
+            }
+            if (msg['type'] == 'get') {
+              final data = await _read('${msg['name']}');
+              _send(channel, {
+                'type': 'result',
+                'id': id,
+                'ok': data != null,
+                'data': ?data,
+                if (data == null) 'error': 'Unsupported request',
+              });
+              return;
+            }
+            if (msg['type'] != 'command' ||
+                msg['name'] is! String ||
+                _deviceOnly.contains(msg['name']) ||
+                (msg['name'] == 'importTlsCertificate' && !_runningTls)) {
+              _send(channel, {
+                'type': 'result',
+                'id': id,
+                'ok': false,
+                'error': 'Unsupported request',
+              });
+              return;
+            }
+            final result = await commands.execute(
+              msg['name'] as String,
+              (msg['params'] as Map?)?.cast<String, Object?>() ?? const {},
+            );
+            _send(channel, {
+              'type': 'result',
+              'id': id,
+              'name': msg['name'],
+              ...result.toJson(),
+            });
+          } catch (e) {
+            _send(channel, {
+              'type': 'result',
+              'id': id,
+              'ok': false,
+              'error': 'Invalid request',
+            });
+            log.debug(name, 'bad ws message: $e');
+          } finally {
+            if (mutating) _activeMutations--;
+          }
+        },
+        onDone: remove,
+        onError: (_) => remove(),
+      );
+    })(request);
   }
 
   Future<void> _sendState(WebSocketChannel channel) async {
     final state = await _deviceState();
-    channel.sink.add(
-      jsonEncode({
-        'type': 'state',
-        'device': state,
-        'currentUrl': state['currentUrl'],
-      }),
-    );
+    _send(channel, {
+      'type': 'state',
+      'device': state,
+      'currentUrl': state['currentUrl'],
+    });
   }
 
-  void _broadcast(Map<String, Object?> message) {
-    final encoded = jsonEncode(message);
-    for (final client in _wsClients) {
-      client.sink.add(encoded);
+  void _send(WebSocketChannel channel, Map<String, Object?> message) {
+    if (_wsClients.contains(channel)) channel.sink.add(jsonEncode(message));
+  }
+
+  bool _hasTopic(String topic) =>
+      _wsTopics.values.any((topics) => topics.contains(topic));
+
+  void _broadcast(Map<String, Object?> message, {String? topic}) {
+    topic ??= switch (message['type']) {
+      'event' => 'events',
+      'log' => 'logs',
+      _ => message['type'] as String,
+    };
+    String? encoded;
+    for (final client in _wsClients.toList()) {
+      if (_wsTopics[client]?.contains(topic) != true) continue;
+      // A peer that closed underneath us is removed when its stream ends;
+      // until then its sink refuses writes, which must not cut the other
+      // clients out of this message.
+      try {
+        client.sink.add(encoded ??= jsonEncode(message));
+      } catch (_) {}
     }
+  }
+
+  void _syncObservers() {
+    final topics = _subscribedClients
+        .expand((client) => _wsTopics[client] ?? const <String>{})
+        .toSet();
+    if (topics.length == _observedTopics.length &&
+        topics.containsAll(_observedTopics)) {
+      return;
+    }
+    _observedTopics = topics;
+    _observations.observe(topics);
+    bus.publish(RemoteObserversChanged(Set.unmodifiable(topics)));
+  }
+
+  // Collapse event bursts once for all viewers. Binary audio and camera
+  // frames never enter this feed, and unused topics do no serialization.
+  void _queueTopics(AppEvent event) {
+    if (_wsClients.isEmpty) return;
+    // A settings change is not a status change. The Overview's tiles read
+    // status commands whose answers a manager owns, and each manager says
+    // so itself (RemoteStatusChanged) when its status moves: the service
+    // when its reasons change, Home Assistant when the connection does,
+    // the player when it starts or stops. The few settings a status
+    // command reads straight from the store are named here.
+    final topics = switch (event) {
+      SettingOptionsChanged() => {'settings'},
+      SettingChanged(:final key) => {
+        'settings',
+        // The Voice Satellite cards re-read the controlled entities on
+        // this, a full snapshot on the device, so only the settings that
+        // feed that snapshot (the HA link, the wake word, the microphone)
+        // ask for it, not a screensaver color.
+        if (key.startsWith('ha.') ||
+            key.startsWith('wake_word.') ||
+            key.startsWith('audio.') ||
+            key.startsWith('web.') ||
+            key.startsWith('vs.'))
+          'voice',
+        // haStatus reports whether a URL and token are configured.
+        if (key == 'ha.url' || key == 'ha.token') 'ha',
+        // sendspinStatus reports the enabled switch and the followed
+        // player's name.
+        if (key.startsWith('sendspin.')) 'media',
+        if (key == 'camera.config') 'cameras',
+        if (key == 'gestures.mappings') 'gestures',
+        if (key == 'sendspin.sonos_hosts') 'sonos',
+        if (key == 'sendspin.sonos_hosts' ||
+            key == 'sendspin.player_source' ||
+            key == 'sendspin.ma_url' ||
+            key == 'sendspin.ma_token' ||
+            key == 'ha.url' ||
+            key == 'ha.token')
+          'media-players',
+        if (key == 'audio.mic_device' ||
+            key == 'audio.speaker_device' ||
+            key == 'audio.mic_channel')
+          'audio',
+      },
+      RemoteStatusChanged(:final topic) => {topic},
+      ShizukuStateChanged() => {'shizuku', 'service', 'plugins'},
+      LocationChanged() => {'location'},
+      VolumeChanged() => {'volume'},
+      CameraSnapshotTaken() => {'camera-snapshot'},
+      PersonSensorChanged() => {'person'},
+      SendspinNowPlayingChanged() => {'media'},
+      PluginEntityStateChanged() || PluginEntityCatalogChanged() => {'plugins'},
+      PluginHaStateChanged() => {'plugins'},
+      WakeWordStateChanged() => const <String>{},
+      FleetChanged() => {'fleet'},
+      FleetSyncChanged() => {'fleetsync'},
+      IntercomStateChanged() => {'intercom'},
+      UpdateStateChanged() => {'update'},
+      BluetoothLinksChanged() => {'bluetooth'},
+      AudioDevicesChanged() => {'audio'},
+      ActivityAttached() || AmbientDisplayChanged() => {'service'},
+      PageChanged() || UrlChanged() => {'filter'},
+      _ => const <String>{},
+    };
+    _pendingTopics.addAll(topics.where(_hasTopic));
+    if (event is SettingChanged && _hasTopic('settings')) {
+      _pendingSettings.add(event.key);
+    }
+    if (event is SettingOptionsChanged && _hasTopic('settings')) {
+      _pendingSettings.add(event.key);
+    }
+    if (_pendingTopics.isEmpty || _updatesTimer != null) return;
+    _updatesTimer = Timer(const Duration(milliseconds: 100), () {
+      _updatesTimer = null;
+      if (_pendingSettings.isNotEmpty) {
+        _broadcast({
+          'type': 'settings',
+          'settings': _settings.describe(keys: _pendingSettings),
+        });
+        _pendingSettings.clear();
+      }
+      for (final topic in _pendingTopics) {
+        if (topic == 'settings') continue;
+        // A sampled diagnostic answers with its results, and only when
+        // they moved: viewers paint from the push instead of re-reading.
+        if (RemoteObservations.covers(topic)) {
+          _observations.poke(topic);
+        } else {
+          _broadcast({'type': 'update', 'topic': topic}, topic: topic);
+        }
+      }
+      _pendingTopics.clear();
+    });
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────
@@ -931,8 +1525,12 @@ class RemoteManager extends Manager {
       // The page pins main.js by hash, but the imports inside the modules
       // would fetch bare './x.js' URLs that the immutable cache header
       // then keeps forever. Stamp the hash into every import specifier so
-      // one changed file re-fetches the whole graph.
-      final import$ = RegExp(r"(from\s+'\./[A-Za-z0-9._-]+\.js)(')");
+      // one changed file re-fetches the whole graph. Include side-effect
+      // imports, which minification can leave after removing unused names,
+      // and literal dynamic imports.
+      final import$ = RegExp(
+        r"""((?:from\s*|import\s*(?:\(\s*)?)['"]\./[A-Za-z0-9._-]+\.js)(['"])""",
+      );
       for (final entry in files.entries.toList()) {
         if (!entry.key.endsWith('.js')) continue;
         files[entry.key] = utf8.encode(
@@ -941,32 +1539,95 @@ class RemoteManager extends Manager {
               .replaceAllMapped(import$, (m) => "${m[1]}?v=$version${m[2]}"),
         );
       }
+      final page = index.replaceAll('__KSV__', version);
+      // Off the UI isolate: deflating the bundle takes a noticeable slice
+      // of a low-end panel's core, and the kiosk keeps drawing meanwhile.
+      final gzipped = await Isolate.run(
+        () => _gzipAll({...files, _indexKey: utf8.encode(page)}),
+      );
       // Publish only the complete bundle so a failed load exposes no partial files.
       _staticFiles.addAll(files);
-      _indexHtml = index.replaceAll('__KSV__', version);
+      _indexHtml = page;
+      _indexGzip = gzipped.remove(_indexKey);
+      _staticGzip.addAll(gzipped);
       log.debug(
         name,
-        'remote-ui bundle loaded (${files.length} files, ${watch.elapsedMilliseconds}ms)',
+        'remote-ui bundle loaded (${files.length} files, '
+        '${gzipped.length} gzipped, ${watch.elapsedMilliseconds}ms)',
       );
     } catch (e) {
       log.warn(name, 'remote-ui asset missing: $e');
     }
   }
 
-  Response _index() => Response.ok(
-    _indexHtml ?? _placeholderHtml,
-    headers: {
-      'content-type': 'text/html; charset=utf-8',
-      // The page pins its static files by content hash (?v=), so it must
-      // never be cached itself: a stale page would pin stale modules.
-      'cache-control': 'no-store',
-    },
-  );
+  /// Key the page travels under through the one-shot gzip pass. A slash
+  /// keeps it clear of any static file name.
+  static const _indexKey = '/index.html';
+
+  /// Gzips every file, keeping only the results that pay for the header:
+  /// fonts and images are already compressed and would only grow.
+  static Map<String, Uint8List> _gzipAll(Map<String, Uint8List> files) {
+    final codec = GZipCodec(level: 9);
+    final out = <String, Uint8List>{};
+    for (final entry in files.entries) {
+      final packed = codec.encode(entry.value);
+      if (packed.length * 10 < entry.value.length * 9) {
+        out[entry.key] = Uint8List.fromList(packed);
+      }
+    }
+    return out;
+  }
+
+  /// Whether the client lists gzip in Accept-Encoding with a nonzero
+  /// weight. Every browser does; the check exists for curl -H '' and
+  /// clients that name only br or zstd.
+  static bool _acceptsGzip(Request request) {
+    final header = request.headers['accept-encoding'];
+    if (header == null) return false;
+    for (final part in header.split(',')) {
+      final params = part.split(';').map((s) => s.trim().toLowerCase());
+      final coding = params.first;
+      if (coding != 'gzip' && coding != '*') continue;
+      final q = params
+          .skip(1)
+          .firstWhere((p) => p.startsWith('q='), orElse: () => 'q=1');
+      if ((double.tryParse(q.substring(2)) ?? 0) > 0) return true;
+    }
+    return false;
+  }
+
+  /// One response body for [request]: the gzip when it exists and the
+  /// client takes it, the raw bytes otherwise. Both carry `Vary` so a
+  /// shared cache keeps the two apart.
+  static Response _encoded(
+    Request request,
+    Object identity,
+    Uint8List? gzipped,
+    Map<String, String> headers,
+  ) {
+    final packed = gzipped != null && _acceptsGzip(request);
+    return Response.ok(
+      packed ? gzipped : identity,
+      headers: {
+        ...headers,
+        'vary': 'accept-encoding',
+        if (packed) 'content-encoding': 'gzip',
+      },
+    );
+  }
+
+  Response _index(Request request) =>
+      _encoded(request, _indexHtml ?? _placeholderHtml, _indexGzip, const {
+        'content-type': 'text/html; charset=utf-8',
+        // The page pins its static files by content hash (?v=), so it must
+        // never be cached itself: a stale page would pin stale modules.
+        'cache-control': 'no-store',
+      });
 
   /// Static files are public like the page itself (the login gate lives in
   /// the page, not around it) and content-addressed via the ?v= hash, so
   /// far-future caching is safe: any change serves under a new URL.
-  Response _staticFile(String name) {
+  Response _staticFile(Request request, String name) {
     final bytes = _staticFiles[name];
     if (bytes == null) return Response.notFound('not found');
     const types = {
@@ -977,13 +1638,66 @@ class RemoteManager extends Manager {
       'woff2': 'font/woff2',
     };
     final ext = name.split('.').last;
-    return Response.ok(
-      bytes,
-      headers: {
-        'content-type': types[ext] ?? 'application/octet-stream',
-        'cache-control': 'public, max-age=31536000, immutable',
+    return _encoded(request, bytes, _staticGzip[name], {
+      'content-type': types[ext] ?? 'application/octet-stream',
+      'cache-control': 'public, max-age=31536000, immutable',
+    });
+  }
+
+  /// Headers every response carries. nosniff stops a browser second-guessing
+  /// a content type, which matters on a server that returns uploaded files
+  /// and proxied artwork; no-referrer keeps this origin's URLs out of other
+  /// sites' logs.
+  ///
+  /// Deliberately not X-Frame-Options or frame-ancestors: embedding the
+  /// admin in a Home Assistant webpage card is a legitimate use, and the
+  /// session token lives in localStorage, which browsers partition inside a
+  /// third-party frame, so a hostile frame gets a logged-out page.
+  static Handler _hardenResponses(Handler inner) => (request) async {
+    final response = await inner(request);
+    return response.change(
+      headers: const {
+        'x-content-type-options': 'nosniff',
+        'referrer-policy': 'no-referrer',
       },
     );
+  };
+
+  /// Records [ip]'s probe and keeps [seen] from growing without bound: an
+  /// entry older than [window] no longer throttles anything, and IPv6 hands
+  /// one machine as many source addresses as it cares to use.
+  static void _rememberProbe(
+    Map<String, DateTime> seen,
+    String ip,
+    DateTime now,
+    Duration window,
+  ) {
+    if (seen.length >= 256) {
+      seen.removeWhere((_, at) => now.difference(at) >= window);
+      if (seen.length >= 256) seen.clear();
+    }
+    seen[ip] = now;
+  }
+
+  /// The Voice Satellite skin screenshots the device's picker shows, for
+  /// the admin's picker. Public like the static files: they are the app's
+  /// own pictures.
+  Future<Response> _voiceSkin(String file) async {
+    if (!RegExp(r'^[a-z-]+\.webp$').hasMatch(file)) {
+      return Response.notFound('not found');
+    }
+    try {
+      final data = await _assetBundle.load('assets/voice_skins/$file');
+      return Response.ok(
+        data.buffer.asUint8List(),
+        headers: {
+          'content-type': 'image/webp',
+          'cache-control': 'public, max-age=86400',
+        },
+      );
+    } catch (_) {
+      return Response.notFound('not found');
+    }
   }
 
   static String? _bearerToken(Request request) {
@@ -992,14 +1706,59 @@ class RemoteManager extends Manager {
     return header.substring(7);
   }
 
-  static Future<Map<String, Object?>?> _body(Request request) async {
+  /// What a request may send before it has proved anything: a password, an
+  /// invitation, a call offer. None of them is more than a few hundred bytes.
+  static const _publicBodyLimit = 64 * 1024;
+
+  /// The ceiling for an authenticated body. The largest legitimate one is a
+  /// base64 plugin ZIP (4 MB of package, a third more on the wire) or a
+  /// config import carrying the page's localStorage.
+  static const _bodyLimit = 16 * 1024 * 1024;
+
+  /// The JSON object in [request]'s body, or null when it is not one or runs
+  /// past [limit]. Counted as it streams rather than after: readAsString()
+  /// buffers whatever arrives, so an unauthenticated POST of a few gigabytes
+  /// to /api/login was enough to run a panel out of memory.
+  static Future<Map<String, Object?>?> _body(
+    Request request, {
+    int limit = _bodyLimit,
+  }) async {
     try {
-      final text = await request.readAsString();
-      final decoded = jsonDecode(text);
+      final declared = request.contentLength;
+      if (declared != null && declared > limit) return null;
+      final bytes = BytesBuilder(copy: false);
+      await for (final chunk in request.read()) {
+        if (bytes.length + chunk.length > limit) return null;
+        bytes.add(chunk);
+      }
+      final decoded = jsonDecode(utf8.decode(bytes.takeBytes()));
       return decoded is Map ? decoded.cast<String, Object?>() : null;
     } catch (_) {
       return null;
     }
+  }
+
+  /// Whether a browser sent [request] from a page on another origin. Every
+  /// browser names the page's origin on a cross-origin POST, and nothing
+  /// that is not a browser sends the header at all, so an automation or
+  /// another kiosk is never refused by this.
+  ///
+  /// It guards the endpoints that answer without a token. Those cannot be
+  /// protected by one, and a page open on any computer on the network could
+  /// otherwise POST to a panel still in setup and choose its admin password:
+  /// the browser would hide the reply from that page, but the page already
+  /// knows the password it sent.
+  static bool _crossOrigin(Request request) {
+    final origin = request.headers['origin'];
+    if (origin == null || origin.isEmpty) return false;
+    final host = request.headers['host'];
+    final page = Uri.tryParse(origin);
+    // Parsed the same way as the origin, so an IPv6 literal's brackets and
+    // an implied port compare equal on both sides.
+    final self = host == null ? null : Uri.tryParse('http://$host');
+    if (page == null || self == null) return true;
+    return page.host.toLowerCase() != self.host.toLowerCase() ||
+        page.port != self.port;
   }
 
   static Response _json(int status, Map<String, Object?> body) => Response(
@@ -1009,8 +1768,16 @@ class RemoteManager extends Manager {
   );
 
   @override
-  Future<void> dispose() {
+  Future<void> dispose() async {
+    _tlsRestart?.cancel();
+    _certificateCheck?.cancel();
+    await _syncQueue;
     _statsTimer?.cancel();
+    _observations.dispose();
+    for (final subscription in _subscriptions) {
+      unawaited(subscription.cancel());
+    }
+    _subscriptions.clear();
     return _stop();
   }
 }

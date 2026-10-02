@@ -1,0 +1,18 @@
+{
+  "@@locale": "de",
+  "mediaPickPlayer": "Player auswählen",
+  "mediaMaPlayer": "Music-Assistant-Player",
+  "mediaHaPlayer": "Home-Assistant-Medienplayer",
+  "mediaSonosRoom": "Sonos-Raum",
+  "mediaSearchPlayers": "Player suchen",
+  "mediaOffline": "Offline",
+  "mediaOfflineName": "{name} (offline)",
+  "mediaSetUpMa": "Richte Music Assistant ein, um dessen Player anzuzeigen.",
+  "mediaSetUpHa": "Verbinde Home Assistant, um dessen Medienplayer anzuzeigen.",
+  "mediaSetUpSonos": "Es sind noch keine Sonos-Lautsprecher registriert. Suche oder füge einen auf der Sonos-Seite hinzu.",
+  "mediaHaFailed": "Home Assistant hat nicht geantwortet: {error}",
+  "mediaSaveFailed": "Der Player konnte nicht gespeichert werden.",
+  "mediaSelectFailed": "Der Player konnte nicht ausgewählt werden",
+  "mediaNotificationAccessRemote": "Ohne diese Berechtigung listet Android keine Mediensitzungen auf, daher kann „Jetzt läuft“ den Apps, die auf diesem Gerät wiedergeben, nicht folgen. Die Seite zum Erteilen der Berechtigung wird auf dem Tablet angezeigt.",
+  "mediaLocalMediaSession": "Lokale Mediensitzung"
+}

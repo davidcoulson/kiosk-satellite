@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_satellite/core/command_registry.dart';
 import 'package:kiosk_satellite/core/event_bus.dart';
 import 'package:kiosk_satellite/core/logging.dart';
+import 'package:kiosk_satellite/managers/remote/password_hash.dart';
 import 'package:kiosk_satellite/managers/remote/remote_manager.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
 import 'package:kiosk_satellite/managers/settings/settings_manager.dart';
@@ -105,19 +106,25 @@ void main() {
     // and turning it back on did nothing. That only happens if the password
     // went with it, so this pins the password across the whole round trip.
     expect(await listening(), isTrue);
-    expect(settings.get(defs.remotePassword), 'secret');
+    expect(
+      PasswordHash.verify(settings.get(defs.remotePassword), 'secret'),
+      isTrue,
+    );
 
     await settings.set(defs.remoteEnabled, false);
     await settle();
     expect(
-      settings.get(defs.remotePassword),
-      'secret',
+      PasswordHash.verify(settings.get(defs.remotePassword), 'secret'),
+      isTrue,
       reason: 'disabling must not clear the password',
     );
 
     await settings.set(defs.remoteEnabled, true);
     await settle();
-    expect(settings.get(defs.remotePassword), 'secret');
+    expect(
+      PasswordHash.verify(settings.get(defs.remotePassword), 'secret'),
+      isTrue,
+    );
     expect(await listening(), isTrue, reason: 'and it serves again');
   });
 
@@ -134,6 +141,69 @@ void main() {
     expect(await listening(), isTrue);
     expect(remote.stoppedReason.value, isNull);
   });
+
+  test(
+    'onboarding language is validated, persisted and limited to setup access',
+    () async {
+      Future<(int, Map<String, dynamic>)> post(
+        String path,
+        Map<String, Object?> data, [
+        String? token,
+      ]) async {
+        final client = HttpClient();
+        final request = await client.postUrl(
+          Uri.parse('http://127.0.0.1:$port/api/$path'),
+        );
+        request.headers.contentType = ContentType.json;
+        if (token != null) {
+          request.headers.set('Authorization', 'Bearer $token');
+        }
+        request.write(jsonEncode(data));
+        final response = await request.close();
+        final body =
+            jsonDecode(await response.transform(utf8.decoder).join())
+                as Map<String, dynamic>;
+        client.close();
+        return (response.statusCode, body);
+      }
+
+      expect((await post('setup/language', {'language': 'es'})).$1, 403);
+      await settings.set(defs.startUrl, '');
+      await settle();
+      expect((await post('setup/language', {'language': 'es'})).$1, 403);
+      final login = await post('login', {'password': 'secret'});
+      final token = login.$2['token'] as String;
+      expect((await post('setup/language', {'language': 'es'}, token)).$1, 200);
+      expect(settings.get(defs.uiLanguage), 'es');
+      expect(
+        (await SharedPreferences.getInstance()).getString('ks.ui.language'),
+        'es',
+      );
+      for (final value in <Object?>['system', 'unknown', null, 4]) {
+        expect(
+          (await post('setup/language', {'language': value}, token)).$1,
+          400,
+        );
+        expect(settings.get(defs.uiLanguage), 'es');
+      }
+      await settings.set(defs.remotePassword, '');
+      await settle();
+      expect(
+        (await post('setup/language', {
+          'language': 'en',
+          'remote.password': 'injected',
+        })).$1,
+        200,
+      );
+      expect(settings.get(defs.remotePassword), isEmpty);
+      expect(settings.get(defs.uiLanguage), 'en');
+      await settings.set(defs.remotePassword, 'secret');
+      await settings.set(defs.startUrl, 'http://ha.local/');
+      await settle();
+      expect((await post('setup/language', {'language': 'es'}, token)).$1, 403);
+      expect(settings.get(defs.uiLanguage), 'en');
+    },
+  );
 
   test('setting the onboarding password answers, and keeps serving', () async {
     // Setup mode: no start URL, no password, the server up for the wizard.
@@ -180,7 +250,10 @@ void main() {
     client.close();
     expect(res.statusCode, 200);
     expect(body, contains('token'));
-    expect(settings.get(defs.remotePassword), 'letmein');
+    expect(
+      PasswordHash.verify(settings.get(defs.remotePassword), 'letmein'),
+      isTrue,
+    );
     expect(settings.get(defs.deviceName), 'Kitchen Tablet');
     await settle();
     expect(await listening(), isTrue);
@@ -203,11 +276,17 @@ void main() {
     }
 
     expect(await change(null), 403);
-    expect(settings.get(defs.remotePassword), 'letmein');
+    expect(
+      PasswordHash.verify(settings.get(defs.remotePassword), 'letmein'),
+      isTrue,
+    );
     // With a password in place the window is closed: the page logs in and
     // uses the gated commands like everything else.
     expect(await get('api/setup/grants'), 403);
     expect(await change(token), 200);
-    expect(settings.get(defs.remotePassword), 'changed1');
+    expect(
+      PasswordHash.verify(settings.get(defs.remotePassword), 'changed1'),
+      isTrue,
+    );
   });
 }

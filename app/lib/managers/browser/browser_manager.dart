@@ -10,16 +10,21 @@ import 'no_cache_script.dart';
 import 'dashboard_camera_script.dart';
 import 'dashboard_state.dart';
 import 'visibility_mask_script.dart';
+import 'webview_snapshot_width.dart';
 
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
 import '../../core/manager.dart';
+import '../analytics/usage_counters.dart';
+import '../device/device_details.dart';
 import '../device/screen_capture.dart';
 import '../device/webview_freeze.dart';
 import '../device/webview_recovery.dart';
 import '../sendspin/music_assistant_api.dart';
 import '../settings/definitions.dart' as defs;
+import 'navigation.dart';
 import '../settings/settings_manager.dart';
+import 'package:kiosk_satellite/core/lifecycle.dart';
 
 /// One line of the page's JavaScript console.
 class ConsoleEntry {
@@ -55,6 +60,65 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// the wedged-renderer signal.
   bool get hasWebView => _controller != null;
 
+  /// Whether this device has no WebView provider at all. A ROM without
+  /// Android System WebView (a repurposed smart display, a stripped
+  /// tablet) can never show a dashboard, and the frame watchdog's answer
+  /// to "no WebView while in front" is a process restart: one such device
+  /// restarted every 37 seconds for hours, straight through an update.
+  /// Learned from the platform where it can say (API 26+), or from the
+  /// MissingWebViewPackageException the platform view creation throws.
+  bool get webViewMissing => _webViewMissing;
+  bool _webViewMissing = false;
+
+  void markWebViewMissing(String why) {
+    if (_webViewMissing) return;
+    _webViewMissing = true;
+    log.error(
+      name,
+      'no WebView provider is installed ($why): the dashboard cannot be '
+      'shown and restarts would not help',
+    );
+    bus.publish(const WebViewMissing());
+  }
+
+  /// A provider that is installed but failed to start: the creation threw
+  /// AndroidRuntimeException around an InvocationTargetException. Seen
+  /// while Android System WebView updates itself (over in a minute) and
+  /// on a board whose WebView build does not run at all. The watchdog's
+  /// restart every minute changes nothing either way, so the dashboard
+  /// slot shows the WebView notice and the build is tried again after
+  /// [retryAfter]; a provider that came good takes over on that retry, a
+  /// broken one lands here again for another wait.
+  Timer? _webViewRetry;
+
+  void markWebViewBroken(
+    String why, {
+    Duration retryAfter = const Duration(minutes: 5),
+  }) {
+    if (_webViewMissing) return;
+    _webViewMissing = true;
+    log.error(
+      name,
+      'the WebView provider failed to start ($why): the dashboard cannot '
+      'be shown; trying again in ${retryAfter.inMinutes} minutes',
+    );
+    bus.publish(const WebViewMissing());
+    _webViewRetry?.cancel();
+    _webViewRetry = Timer(retryAfter, () {
+      _webViewRetry = null;
+      _webViewMissing = false;
+      log.info(name, 'retrying the WebView after the provider failure');
+      bus.publish(const WebViewMissing());
+    });
+  }
+
+  Future<void> _probeWebView() async {
+    final details = await DeviceDetails.read();
+    if (details.webviewAvailable == false) {
+      markWebViewMissing('Android reports no WebView package');
+    }
+  }
+
   /// JavaScript console ring buffer for the Web Console panel. Bumping
   /// [consoleRevision] notifies listeners of new entries.
   static const _consoleCapacity = 300;
@@ -80,16 +144,78 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// session tears down, the wake word dies with it, and the entities drop
   /// unavailable. The overlay gives the tap the same fullscreen page while
   /// the dashboard — and everything living in it — stays loaded underneath.
-  void showLinkOverlay(String url) {
+  void showLinkOverlay(String url, {bool hold = false}) {
     log.info(name, 'link opens over the dashboard: $url');
+    // Hold mode for the page's stay (the open_url action's hold_mode):
+    // engaged here, released when the page goes, whichever way it goes.
+    // A hold the user already had on is theirs and stays.
+    if (hold && !_settings.get(defs.haHoldMode)) {
+      _overlayHold = true;
+      unawaited(_settings.set(defs.haHoldMode, true));
+    }
     overlayDismissible.value = true;
     overlayUrl.value = url;
   }
+
+  /// Whether the overlay up now turned hold mode on for its stay.
+  bool _overlayHold = false;
 
   /// Drop the overlay, whoever put it up.
   void dismissOverlay() {
     overlayDismissible.value = false;
     overlayUrl.value = null;
+  }
+
+  /// Keeps browser.start_url in step with the start page choice, whichever
+  /// surface changed which of them.
+  ///
+  /// * A custom URL typed while the start page is custom is remembered, so
+  ///   picking a Home Assistant dashboard later does not lose it.
+  /// * Choosing custom puts the remembered URL back.
+  /// * Choosing Home Assistant with a start URL that is not Home Assistant's
+  ///   resets it to the HA base URL. Left alone, the custom page would be
+  ///   trusted as Home Assistant -- and handed its session -- until someone
+  ///   picked a dashboard.
+  Future<void> _syncStartPage(SettingChanged e) async {
+    final custom = _settings.get(defs.startPage) == 'custom';
+    if (e.key == defs.customStartUrl.key && custom) {
+      final url = _settings.get(defs.customStartUrl).trim();
+      if (url.isNotEmpty && url != startUrl) {
+        await _settings.set(defs.startUrl, url, source: 'start page');
+      }
+      return;
+    }
+    // The start URL written directly while custom (the remote API's PATCH,
+    // which is how a custom page was set before this choice existed) is the
+    // custom URL too.
+    if (e.key == defs.startUrl.key && custom) {
+      final url = startUrl.trim();
+      if (url != _settings.get(defs.customStartUrl) &&
+          defs.validateCustomStartUrl(url) == null) {
+        await _settings.set(defs.customStartUrl, url, source: 'start page');
+      }
+      return;
+    }
+    if (e.key != defs.startPage.key) return;
+    if (custom) {
+      final url = _settings.get(defs.customStartUrl).trim();
+      if (url.isNotEmpty && url != startUrl) {
+        await _settings.set(defs.startUrl, url, source: 'start page');
+      }
+      return;
+    }
+    final base = _settings.get(defs.haUrl).trim();
+    final start = Uri.tryParse(startUrl);
+    final ha = Uri.tryParse(base);
+    final onHa =
+        start != null &&
+        ha != null &&
+        start.scheme == ha.scheme &&
+        start.host == ha.host &&
+        start.port == ha.port;
+    if (!onHa && base.isNotEmpty) {
+      await _settings.set(defs.startUrl, base, source: 'start page');
+    }
   }
 
   /// Whether [url] belongs to the dashboard's own web origin — the page
@@ -114,7 +240,17 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// origin is not when the secure context proxy is on: the page runs on
   /// loopback, while a screensaver or link URL names the real host.
   bool isHomeAssistantOrigin(Uri url) {
-    if (isDashboardOrigin(url)) return true;
+    // The dashboard's own origin stands for Home Assistant only while the
+    // start page is a Home Assistant dashboard. A custom start page (URL-2)
+    // is some other site, and treating its origin as Home Assistant's would
+    // hand it the session: this check gates injecting hassTokens into
+    // WebViews. The HA base URL's origin below still counts either way.
+    // An explicit choice rather than comparing hosts, because a dashboard
+    // loading from an old IP while the HA URL names a domain (issue #216) is
+    // a real setup that a host comparison would quietly break.
+    if (_settings.get(defs.startPage) != 'custom' && isDashboardOrigin(url)) {
+      return true;
+    }
     final base = Uri.tryParse(_settings.get(defs.haUrl).trim());
     return base != null &&
         base.hasScheme &&
@@ -148,6 +284,7 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
 
   @override
   Future<void> init() async {
+    unawaited(_probeWebView());
     // The freeze state rides the Activity: see _reassertFreeze.
     WidgetsBinding.instance.addObserver(this);
     // Rendering freeze (browser.freeze_on_screensaver): while the screensaver
@@ -184,9 +321,23 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
       }
       _scheduleFreezeSync();
     });
+    // The native voice overlay draws over the dashboard, which shows
+    // through its backdrop: the page is paused (its own onPause, which
+    // stops its scripts, animations and video) and keeps its last frame on
+    // screen, instead of repainting under every overlay frame.
+    // Docked, it is a bubble and the page stays live under it.
+    bus.on<AssistOverlayVisibility>().listen((e) {
+      if (e.covers == _underAssist) return;
+      _underAssist = e.covers;
+      unawaited(_syncAssistPause());
+    });
     bus.on<ScreensaverViewChanged>().listen((e) {
-      _screensaverHasOverlay = e.view != null;
-      _dashboardCovered = e.view != null && !_screensaverIsOwnOrigin(e.view);
+      // The Home Assistant Dashboard screensaver's layer is clear: like
+      // Dim, the page IS the display, so it is neither frozen nor stripped
+      // of its camera streams.
+      final covers = e.view != null && e.view != 'dashboard';
+      _screensaverHasOverlay = covers;
+      _dashboardCovered = covers && !_screensaverIsOwnOrigin(e.view);
       _scheduleFreezeSync();
     });
     // When the panel last woke, for the screenshot command: a capture
@@ -217,6 +368,22 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
         'overlay page',
         covered: uri != null && uri.hasScheme && !isDashboardOrigin(uri),
       );
+      // The page that engaged hold mode is gone: let the hold go with it,
+      // unless something released it in the meantime.
+      if (url == null && _overlayHold) {
+        _overlayHold = false;
+        if (_settings.get(defs.haHoldMode)) {
+          log.info(name, 'the page is gone; hold mode released with it');
+          unawaited(_settings.set(defs.haHoldMode, false));
+        }
+      }
+    });
+    // A hold released by anyone else (the switch, the drawer notice, the
+    // auto-release timer) is no longer the page's to release.
+    bus.on<SettingChanged>().listen((e) {
+      if (e.key == defs.haHoldMode.key && e.value == false) {
+        _overlayHold = false;
+      }
     });
     // The network came back from an outage: check what the page actually is
     // and repair it now, instead of leaving it to timers that may sit for
@@ -228,6 +395,8 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
     bus.on<SettingChanged>().listen((e) {
       if (e.key == defs.haUrl.key) unawaited(_migrateStartUrlOrigin(e));
     });
+    // The start page choice and the start URL, kept in step (URL-1, URL-3).
+    bus.on<SettingChanged>().listen((e) => unawaited(_syncStartPage(e)));
     bus.on<SettingChanged>().listen((e) {
       if (e.key == defs.pauseDashboardCameras.key) {
         _scheduleDashboardCameraSync();
@@ -297,13 +466,18 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
               'Show an external page in the overlay WebView with its close '
               'button, the same surface a tapped dashboard link gets (used '
               'by gesture actions, issue #99)',
-          params: const {'url': 'Absolute URL to show'},
+          params: const {
+            'url': 'Absolute URL to show',
+            'hold':
+                'true turns hold mode on for the page and off again when '
+                'the page goes; a hold already on is left alone',
+          },
           handler: (p) async {
             final url = p['url'] as String?;
             if (url == null || url.isEmpty) {
               return const CommandResult.fail('url required');
             }
-            showLinkOverlay(url);
+            showLinkOverlay(url, hold: p['hold'] == true);
             return const CommandResult.ok();
           },
         ),
@@ -339,6 +513,23 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
             await commands.execute('bringToFront', const {});
             await commands.execute('stopScreensaver', const {});
             showLinkOverlay(url);
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'setDashboardCameras',
+          description:
+              'Play or pause the camera streams on the Home Assistant '
+              'dashboard, for a panel nobody is standing at',
+          params: const {'playing': 'true to play, false to pause'},
+          handler: (p) async {
+            final playing = p['playing'];
+            if (playing is! bool) {
+              return const CommandResult.fail('playing must be true or false');
+            }
+            setDashboardCamerasHeldPaused(!playing);
             return const CommandResult.ok();
           },
         ),
@@ -389,6 +580,41 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
       )
       ..register(
         Command(
+          name: 'navigate',
+          description:
+              'Move the main view: an http(s) URL, or a path or #fragment '
+              'resolved against the page showing. A fragment on the same '
+              'page changes in place with no reload. Other schemes are '
+              'refused.',
+          params: const {'url': 'http(s) URL, /path or #fragment'},
+          handler: (p) async {
+            final decision = decideNavigation(
+              '${p['url'] ?? ''}',
+              _currentUrl.isNotEmpty ? _currentUrl : startUrl,
+              mapUrl: urlMapper,
+            );
+            switch (decision) {
+              case NavigationRefused(:final reason):
+                log.error(name, 'navigate refused: $reason');
+                return CommandResult.fail(reason);
+              case NavigationHash(:final fragment):
+                // Written through the page's own location, so it routes the
+                // way a click on an in-page link would.
+                await runJs('location.hash = ${jsonEncode('#$fragment')};');
+                log.info(name, 'navigate: #$fragment in place');
+              case NavigationLoad(:final url):
+                dismissOverlay();
+                await _controller?.loadUrl(
+                  urlRequest: URLRequest(url: WebUri(url)),
+                );
+                log.info(name, 'navigate: $url');
+            }
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
           name: 'loadStartUrl',
           description:
               "Navigate back to the configured Start URL, the device's own "
@@ -399,6 +625,9 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
             if (target.isEmpty) {
               return const CommandResult.fail('no Start URL configured');
             }
+            // Nobody touched the screen, so without this the next rotation
+            // tick navigates straight back off the page (issue #719).
+            await commands.execute('haPauseRotation', const {});
             await loadUrl(target);
             return const CommandResult.ok();
           },
@@ -624,11 +853,17 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
               // works.
               controller = _controller;
               if (controller != null) {
+                final view =
+                    WidgetsBinding.instance.platformDispatcher.implicitView;
                 final bytes = await controller.takeScreenshot(
                   screenshotConfiguration: ScreenshotConfiguration(
                     compressFormat: CompressFormat.JPEG,
                     quality: quality,
-                    snapshotWidth: width > 0 ? width.toDouble() : null,
+                    snapshotWidth: webViewSnapshotWidth(
+                      width: width,
+                      physicalWidth: view?.physicalSize.width ?? 0,
+                      devicePixelRatio: view?.devicePixelRatio ?? 0,
+                    ),
                   ),
                 );
                 if (bytes != null) {
@@ -672,6 +907,29 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
     // onPageLoaded retries once the page — and its URL — exist.
     _frozen = false;
     unawaited(_syncFreeze());
+    if (_underAssist) unawaited(_syncAssistPause());
+  }
+
+  /// Whether the native voice overlay is up over the dashboard.
+  bool _underAssist = false;
+
+  Future<void> _syncAssistPause() async {
+    final controller = _controller;
+    if (controller == null) return;
+    try {
+      if (_underAssist) {
+        await controller.pause();
+      } else {
+        await controller.resume();
+      }
+      log.debug(
+        name,
+        'dashboard ${_underAssist ? 'paused under' : 'resumed after'} the '
+        'voice overlay',
+      );
+    } catch (e) {
+      log.debug(name, 'dashboard pause for the voice overlay failed: $e');
+    }
   }
 
   bool isAttached(InAppWebViewController controller) =>
@@ -714,7 +972,32 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
     _rendererRecovery = null;
     _unresponsiveStrikes = 0;
     _rendererDeadChecks = 0;
+    if (duraSpeedBlocking.value) {
+      duraSpeedBlocking.value = false;
+      log.info(name, 'the dashboard renderer answers again');
+    }
   }
+
+  /// MediaTek's DuraSpeed is refusing the dashboard's renderer, as far as
+  /// the kiosk can tell: a renderer that never answered, now being
+  /// rebuilt, on a device with DuraSpeed installed and on. Android logs the
+  /// refusal ("Unable to launch app ... SandboxedProcessService ... process
+  /// is bad") but the app is never told, and some tablets ship DuraSpeed
+  /// with no settings page, so the dashboard shows what to do instead. One
+  /// rebuild is enough there: it means the page never answered the health
+  /// probe twice over, and the first renderer that answers clears it.
+  final duraSpeedBlocking = ValueNotifier<bool>(false);
+
+  /// Whether DuraSpeed is installed and on; the device details, unless a
+  /// test says otherwise.
+  @visibleForTesting
+  Future<bool> Function() duraSpeedInstalled = () async =>
+      (await DeviceDetails.read()).duraSpeed;
+
+  /// The command the notice shows: the only way to turn DuraSpeed off on a
+  /// tablet that hides it.
+  static const duraSpeedCommand =
+      'adb shell settings put global setting.duraspeed.enabled 0';
 
   Future<void> rebuildFailedRenderer(String reason) async {
     if (_rendererRebuildPending) return;
@@ -727,6 +1010,16 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
     _rendererDeadChecks = 0;
     _unresponsiveStrikes = 0;
     log.warn(name, '$reason; rebuilding the WebView');
+    if (!duraSpeedBlocking.value && await duraSpeedInstalled()) {
+      duraSpeedBlocking.value = true;
+      unawaited(UsageCounters.bump(_settings, 'duraspeed_blocked'));
+      log.error(
+        name,
+        'the dashboard renderer never answers and this device runs '
+        "MediaTek's DuraSpeed, which refuses to start it: turn DuraSpeed "
+        'off with `$duraSpeedCommand` and restart Kiosk Satellite',
+      );
+    }
     final generation = _webViewGeneration;
     if (viewId is int) await WebViewRecovery.prepare(viewId);
     if (generation != _webViewGeneration) return;
@@ -738,13 +1031,43 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   bool _screensaverHasOverlay = false;
   Timer? _cameraPauseDelay;
 
+  /// Held paused from outside, by whoever knows the room is empty.
+  ///
+  /// The screensaver rule below only helps a panel that runs one. A wall
+  /// panel that never sleeps decodes every camera on its dashboard around
+  /// the clock for nobody -- measured at 31 Mpx/s on an eight-core panel,
+  /// most of a day's worth of that with nothing in front of it. Presence
+  /// is not something this app can judge: the room may have an mmWave
+  /// sensor, or the panel's own motion sensor, or neither. So the decision
+  /// is left to Home Assistant and only the mechanism lives here.
+  bool _camerasHeldPaused = false;
+
   /// Camera suspension belongs to the main dashboard document. It also works
   /// with rendering pause disabled and with a website screensaver on HA's
   /// origin. A visible Dim dashboard keeps its streams playing.
   bool get dashboardCameraStreamsPaused =>
-      _settings.get(defs.pauseDashboardCameras) &&
-      _screensaverActive &&
-      (_screensaverHasOverlay || !_screenIsOn);
+      _camerasHeldPaused ||
+      (_settings.get(defs.pauseDashboardCameras) &&
+          _screensaverActive &&
+          (_screensaverHasOverlay || !_screenIsOn));
+
+  /// Whether the streams are being held paused from outside, as opposed to
+  /// paused by the screensaver, which owns its own rule.
+  bool get dashboardCamerasHeldPaused => _camerasHeldPaused;
+
+  /// Hold the dashboard's camera streams paused, or release them.
+  ///
+  /// Resuming is not instant -- a WebRTC stream takes a few seconds to come
+  /// back -- so this is worth driving from something that fires before
+  /// someone is actually reading the screen, which is what a presence
+  /// sensor does and what a touch does not.
+  void setDashboardCamerasHeldPaused(bool held) {
+    if (_camerasHeldPaused == held) return;
+    _camerasHeldPaused = held;
+    log.info(name, 'dashboard cameras ${held ? 'held paused' : 'released'}');
+    _scheduleDashboardCameraSync();
+    bus.publish(DashboardCamerasHoldChanged(held: held));
+  }
 
   void _scheduleDashboardCameraSync() {
     _cameraPauseDelay?.cancel();
@@ -780,7 +1103,9 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// Whether the panel is lit, for the freeze gate in [_wantFrozen].
   bool _screenIsOn = true;
   final _coveredBy = <String>{};
-  bool _frozen = false;
+  final _renderingFrozenState = ValueNotifier<bool>(false);
+  bool get _frozen => _renderingFrozenState.value;
+  set _frozen(bool value) => _renderingFrozenState.value = value;
 
   /// What the last sync wanted, so the next one can tell a thaw edge from
   /// a steady "not frozen" (see _syncFreeze).
@@ -858,9 +1183,15 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// screensaver.
   bool get renderingFrozen => _frozen;
 
+  /// Lets native overlays skip the covered platform view's paint work while
+  /// preserving the existing screen-off, connection and user preference rules.
+  ValueListenable<bool> get renderingFrozenState => _renderingFrozenState;
+
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) unawaited(_reassertFreeze());
+    if (_returned.returned(state)) unawaited(_reassertFreeze());
   }
 
   /// Re-applies the wanted freeze state after every resume, retrying until
@@ -1502,6 +1833,35 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
       log.warn(name, 'the dashboard socket closed and has not come back');
       await reconnectHaSocket();
     });
+  }
+
+  /// How long between reloads prompted by a dead Voice Satellite session.
+  /// Long, because a reload costs the dashboard and its camera streams, and
+  /// the condition it repairs arrives with a Home Assistant restart rather
+  /// than repeatedly.
+  static const _vsReloadCooldown = Duration(minutes: 10);
+  DateTime _lastVsReload = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// The page reported a Voice Satellite session that died and stayed dead
+  /// (see vs_watch_script).
+  ///
+  /// Everything else about the page is healthy here — the socket is up and
+  /// entity state is flowing — so none of the socket repairs apply and only
+  /// a reload re-runs the engine. Gated on the same setting as every other
+  /// reload this app does on its own.
+  Future<void> onVoiceSatelliteDown(String entityId, int downSeconds) async {
+    if (!_settings.get(defs.autoReloadOnError)) {
+      log.warn(
+        name,
+        'voice satellite $entityId down ${downSeconds}s; '
+        'auto-reload is off, leaving it',
+      );
+      return;
+    }
+    if (DateTime.now().difference(_lastVsReload) < _vsReloadCooldown) return;
+    _lastVsReload = DateTime.now();
+    log.warn(name, 'voice satellite $entityId down ${downSeconds}s; reloading');
+    await _renavigate(reason: 'a dead Voice Satellite session');
   }
 
   /// The page reported that the dashboard set may have moved (see

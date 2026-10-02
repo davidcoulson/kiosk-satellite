@@ -276,6 +276,118 @@ void main() {
     });
   });
 
+  group('per-widget scale', () {
+    test('every type defaults to 0, the slider spanning -50 to 50', () {
+      for (final type in screensaverWidgetTypes) {
+        expect(screensaverWidgetDefaults(type)['scale'], 0, reason: type);
+      }
+      expect(screensaverWidgetScaleMin, -50);
+      expect(screensaverWidgetScaleMax, 50);
+      expect(screensaverWidgetScaleDefault, 0);
+    });
+
+    test('reads as a factor around 1', () {
+      expect(screensaverWidgetScaleFactor({'scale': 0}), 1.0);
+      expect(screensaverWidgetScaleFactor({'scale': 50}), 1.5);
+      expect(screensaverWidgetScaleFactor({'scale': -50}), 0.5);
+      expect(screensaverWidgetScaleFactor({'scale': 25}), 1.25);
+      // A backup written by hand, or an entry saved before the key
+      // existed, reads as the default rather than failing the widget.
+      expect(screensaverWidgetScaleFactor({}), 1.0);
+      expect(screensaverWidgetScaleFactor({'scale': null}), 1.0);
+      expect(screensaverWidgetScaleFactor({'scale': 'huge'}), 1.0);
+      expect(screensaverWidgetScaleFactor({'scale': '20'}), 1.2);
+    });
+
+    test('clamps to the slider range', () {
+      expect(screensaverWidgetScaleFactor({'scale': 400}), 1.5);
+      expect(screensaverWidgetScaleFactor({'scale': -90}), 0.5);
+    });
+
+    test('survives the round trip through storage', () {
+      final json = encodeScreensaverWidgets([
+        const ScreensaverWidget(
+          position: 'top_left',
+          type: 'clock',
+          config: {'color': '250,250,250', 'scale': -20},
+        ),
+      ]);
+      final back = decodeScreensaverWidgets(json);
+      expect(back.single.config['scale'], -20);
+      expect(screensaverWidgetScaleFactor(back.single.config), 0.8);
+    });
+
+    test('the global slider scales all widgets together', () {
+      final def = defs.screensaverWidgetScale;
+      expect(def.title, 'Global widget scaling');
+      expect(def.defaultValue, 100);
+      expect(def.min, 50);
+      expect(def.max, 200);
+    });
+  });
+
+  group('per-widget font', () {
+    test('every type defaults both keys to Default', () {
+      for (final type in screensaverWidgetTypes) {
+        final d = screensaverWidgetDefaults(type);
+        expect(d['font'], screensaverWidgetFontDefault, reason: type);
+        expect(d['font_weight'], screensaverWidgetFontDefault, reason: type);
+      }
+    });
+
+    test('the pickers offer Default plus the clock vocabulary', () {
+      expect(screensaverWidgetFontOptions.first, 'default');
+      expect(
+        screensaverWidgetFontOptions.skip(1),
+        defs.screensaverClockFont.options,
+      );
+      expect(
+        screensaverWidgetFontWeightOptions,
+        defs.screensaverClockFontWeight.options,
+      );
+      expect(screensaverWidgetFontWeightOptions.first, 'default');
+    });
+
+    test('Default follows the global, a pick of its own wins', () {
+      expect(screensaverWidgetFontValue({}, 'rubik'), 'rubik');
+      expect(screensaverWidgetFontValue({'font': 'default'}, 'inter'), 'inter');
+      expect(screensaverWidgetFontValue({'font': 'lcd'}, 'inter'), 'lcd');
+      // A family nobody mapped falls to the global rather than to the
+      // platform default.
+      expect(screensaverWidgetFontValue({'font': 'comic'}, 'nunito'), 'nunito');
+      expect(screensaverWidgetFontWeightValue({}, 'bold'), 'bold');
+      expect(
+        screensaverWidgetFontWeightValue({'font_weight': 'default'}, 'light'),
+        'light',
+      );
+      expect(
+        screensaverWidgetFontWeightValue({'font_weight': 'black'}, 'light'),
+        'black',
+      );
+      expect(
+        screensaverWidgetFontWeightValue({'font_weight': 'heavy'}, 'default'),
+        'default',
+      );
+    });
+
+    test('the global rows share the clock vocabulary and sit with Widgets', () {
+      final font = defs.screensaverWidgetFont;
+      final weight = defs.screensaverWidgetFontWeight;
+      expect(defs.allSettings, containsAll([font, weight]));
+      expect(font.defaultValue, 'rubik');
+      expect(font.options, defs.screensaverClockFont.options);
+      expect(font.optionLabels, defs.screensaverClockFont.optionLabels);
+      expect(weight.defaultValue, 'default');
+      expect(weight.options, defs.screensaverClockFontWeight.options);
+      expect(weight.optionLabels, defs.screensaverClockFontWeight.optionLabels);
+      for (final def in [font, weight]) {
+        expect(def.subpage, defs.screensaverWidgetScale.subpage);
+        expect(def.section, defs.screensaverWidgetScale.section);
+        expect(def.dependsOn, isNull);
+      }
+    });
+  });
+
   group('vignette strength', () {
     test('is a Widgets group slider defaulting to 40 percent', () {
       final def = defs.screensaverVignetteStrength;
@@ -285,6 +397,34 @@ void main() {
       expect(def.max, 100);
       expect(def.subpage, defs.screensaverWidgetScale.subpage);
       expect(def.section, defs.screensaverWidgetScale.section);
+    });
+
+    test('the Immich metadata overlay has a text scaling slider of its '
+        'own, the global widget scaling twin', () {
+      final def = defs.screensaverImmichMetadataScale;
+      expect(defs.allSettings, contains(def));
+      expect(def.defaultValue, 100);
+      expect(def.min, defs.screensaverWidgetScale.min);
+      expect(def.max, defs.screensaverWidgetScale.max);
+      expect(def.step, defs.screensaverWidgetScale.step);
+      expect(def.subpage, defs.screensaverImmichMetadataPosition.subpage);
+      expect(def.section, defs.screensaverImmichMetadataPosition.section);
+      expect(def.dependsOn, defs.screensaverImmichMetadata.key);
+      // A panel correction, so it stays out of new profiles like the
+      // other scales, and the profiles created before it get migrated.
+      expect(defs.fleetDefaultExcluded, contains(def.key));
+      // One recorded former default lacks it and the next one has it:
+      // the migration step it joined by.
+      final joinedAt = defs.fleetFormerDefaultExcluded.indexWhere(
+        (former) => former.contains(def.key),
+      );
+      expect(joinedAt, greaterThan(0));
+      expect(
+        defs.fleetFormerDefaultExcluded[joinedAt].difference(
+          defs.fleetFormerDefaultExcluded[joinedAt - 1],
+        ),
+        {def.key},
+      );
     });
 
     test('the Immich metadata overlay has a twin slider of its own', () {

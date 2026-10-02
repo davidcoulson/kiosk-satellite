@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../app_container.dart';
 import '../core/events.dart';
+import '../l10n/messages.dart';
 import '../core/permissions.dart';
 import '../managers/service/service_manager.dart'
     show batteryAdbHint, overlayAdbHint;
@@ -19,7 +20,9 @@ import 'kiosk_screen.dart';
 import 'kit.dart' show LabeledField, NoticeBanner, NoticeKind, SectionHeading;
 import 'theme.dart';
 import 'toast.dart';
+import 'voice_settings.dart' show showVoiceMigrationWizard;
 import 'token_qr_scanner.dart';
+import 'package:kiosk_satellite/core/lifecycle.dart';
 
 /// First-run onboarding: a five-step wizard, Home Assistant-oriented from
 /// the first screen, in the app's One UI split layout — the step list on a
@@ -30,8 +33,9 @@ import 'token_qr_scanner.dart';
 ///      instead of a chore.
 ///   2. Connect — base URL + token; Next *is* the validation.
 ///   3. Dashboard — pick which one the kiosk shows.
-///   4. Voice Satellite — when the card is found on the instance, offer the
-///      recommended kiosk settings for it. Skipped silently otherwise.
+///   4. Voice Satellite — turn on the native voice satellite (and the
+///      ESPHome server it joins Home Assistant through), plus the
+///      recommended kiosk settings.
 ///   5. Permissions — request what the chosen setup actually needs.
 ///
 /// The same flow exists in the remote admin (an unconfigured device serves
@@ -50,16 +54,37 @@ class SetupScreen extends StatefulWidget {
 class _SetupScreenState extends State<SetupScreen> {
   AppContainer get c => widget.container;
 
-  static const _steps = <(IconData, String, String)>[
-    (Icons.waving_hand_outlined, 'Welcome', 'Remote administration'),
-    (Icons.link_outlined, 'Connect', 'Home Assistant URL & token'),
-    (Icons.dashboard_outlined, 'Dashboard', 'What the kiosk shows'),
-    (Icons.graphic_eq_outlined, 'Voice Satellite', 'Recommended settings'),
-    (Icons.verified_user_outlined, 'Permissions', 'What the setup needs'),
+  List<(IconData, String, String)> get _steps => [
+    (
+      Icons.waving_hand_outlined,
+      l10n(context).setupWelcome,
+      l10n(context).setupRemoteHeading,
+    ),
+    (
+      Icons.link_outlined,
+      l10n(context).setupConnect,
+      l10n(context).setupConnectSummary,
+    ),
+    (
+      Icons.dashboard_outlined,
+      l10n(context).setupDashboard,
+      l10n(context).setupDashboardSummary,
+    ),
+    (
+      Icons.graphic_eq_outlined,
+      'Voice Satellite',
+      l10n(context).setupRecommendedSummary,
+    ),
+    (
+      Icons.verified_user_outlined,
+      l10n(context).setupPermissions,
+      l10n(context).setupPermissionsSummary,
+    ),
   ];
 
   int _step = 0;
   bool _busy = false;
+  bool _changingLanguage = false;
   String? _error;
   String? _errorHint;
 
@@ -73,27 +98,18 @@ class _SetupScreenState extends State<SetupScreen> {
   void _connectFail(String error) {
     if (error.contains('invalid token')) {
       _fail(
-        'Invalid access token',
-        'Home Assistant rejected this token. In Home Assistant, open your '
-            'profile → Security → Long-lived access tokens, create a new '
-            'token, and copy the complete value.',
+        l10n(context).setupInvalidToken,
+        l10n(context).setupInvalidTokenHelp,
       );
     } else if (error.startsWith('unreachable')) {
-      _fail(
-        "Can't reach Home Assistant",
-        'No response from this address. Check that the URL is correct and '
-            'that this device is on the same network as your Home Assistant '
-            'server.',
-      );
+      _fail(l10n(context).setupUnreachable, l10n(context).setupUnreachableHelp);
     } else if (error.startsWith('HTTP')) {
       _fail(
-        'Unexpected response ($error)',
-        "A server responded, but it doesn't appear to be Home Assistant. "
-            'Check that the URL is your Home Assistant base address, for '
-            'example https://homeassistant.local:8123.',
+        l10n(context).setupUnexpectedResponse(error),
+        l10n(context).setupUnexpectedResponseHelp,
       );
     } else {
-      _fail("Can't connect", error);
+      _fail(l10n(context).setupCannotConnect, error);
     }
   }
 
@@ -108,6 +124,7 @@ class _SetupScreenState extends State<SetupScreen> {
   // token gets pasted and where the kiosk is managed afterwards.
   bool _remoteWanted = true;
   final _remotePassword = TextEditingController();
+  var _hasRemotePassword = false;
   String? _deviceIp;
 
   // Step 2 — connection.
@@ -122,11 +139,10 @@ class _SetupScreenState extends State<SetupScreen> {
     if (outcome != PermissionOutcome.granted) {
       showToast(
         context,
-        title: 'Camera permission needed',
+        title: l10n(context).setupCameraPermission,
         message: outcome == PermissionOutcome.blocked
-            ? 'Allow the camera for Kiosk Satellite in the Android '
-                  'settings to scan the QR code.'
-            : 'Allow the camera to scan the QR code.',
+            ? l10n(context).setupCameraBlocked
+            : l10n(context).setupCameraAllow,
         kind: ToastKind.warning,
       );
       return;
@@ -148,17 +164,70 @@ class _SetupScreenState extends State<SetupScreen> {
   String? _dashboardView;
   List<Map<String, Object?>>? _dashboardViews;
 
-  // Step 4 — Voice Satellite. Each recommended setting is its own choice;
-  // the master switch just sets them all. Microphone and native wake word
-  // detection are not choices — Voice Satellite does not work without
-  // them, so they render locked-on.
-  bool? _vsDetected;
-  List<Map<String, Object?>>? _satellites;
-  String? _satellite;
-  static const _lockedRecommended = <(String, String)>[
-    ('web.microphone', 'Microphone access'),
-    ('wake_word.enabled', 'Native wake word detection'),
-  ];
+  // Step 4 — Voice Satellite. The kiosk is its own satellite: the switch
+  // turns it on with the ESPHome server Home Assistant adds it through.
+  // Each recommended setting is its own choice; the master switch just
+  // sets them all.
+  bool _voiceOn = true;
+
+  /// Whether Home Assistant runs the Voice Satellite integration, null
+  /// until checked: with it the step offers the migration.
+  bool? _vsInstalled;
+  bool _migrated = false;
+
+  /// The basics of a new satellite, set once Home Assistant adds the kiosk
+  /// ('preferred' is Home Assistant's own preferred pipeline).
+  List<String> _pipelines = const [];
+  String? _preferredPipeline;
+  String _pipeline = 'preferred';
+  late String _engine = c.settings.get(defs.voiceWakeWordEngine);
+  List<(String, String)> _wakeWords = const [];
+  String _wakeWord = 'ok_nabu';
+
+  Future<void> _loadVoiceStep() async {
+    final detected = await c.commands.execute(
+      'haDetectVoiceSatellite',
+      const {},
+    );
+    final pipelines = await c.commands.execute('voicePipelines', const {});
+    if (!mounted) return;
+    final data = pipelines.data;
+    setState(() {
+      _vsInstalled = detected.ok && detected.data == true;
+      if (pipelines.ok && data is Map) {
+        _pipelines = [for (final p in (data['pipelines'] as List)) '$p'];
+        _preferredPipeline = data['preferred'] as String?;
+      }
+    });
+    await _loadWakeWords();
+  }
+
+  Future<void> _loadWakeWords() async {
+    final result = await c.commands.execute('voiceWakeWordChoices', {
+      'engine': _engine,
+    });
+    if (!mounted) return;
+    final words = [
+      for (final w in (result.data as List? ?? const []))
+        if (w is Map) ('${w['id']}', '${w['phrase']}'),
+    ];
+    setState(() {
+      _wakeWords = words;
+      if (words.isNotEmpty && !words.any((w) => w.$1 == _wakeWord)) {
+        _wakeWord = words.first.$1;
+      }
+    });
+  }
+
+  Future<void> _migrate() async {
+    final migrated = await showVoiceMigrationWizard(
+      context,
+      c,
+      onboarding: true,
+    );
+    if (mounted && migrated) setState(() => _migrated = true);
+  }
+
   static const _optionalRecommended = <(String, String)>[
     ('browser.auto_reload_on_error', 'Auto-reload on error'),
     ('browser.pull_to_refresh', 'Pull to refresh'),
@@ -198,7 +267,9 @@ class _SetupScreenState extends State<SetupScreen> {
     // A password already set (the remote wizard's first step, or an
     // earlier pass through this page) is the field's starting value, so
     // Next keeps it rather than refusing an empty box.
-    _remotePassword.text = c.settings.get(defs.remotePassword);
+    // No longer possible: what is kept is not the password (password_hash
+    // .dart). An empty box with one already set means keep it, below.
+    _hasRemotePassword = c.settings.get(defs.remotePassword).isNotEmpty;
     // A name already set (the remote wizard, or an earlier pass) stands;
     // otherwise the model, which is what the device would call itself
     // anyway, offered as a starting point rather than an empty box.
@@ -215,6 +286,7 @@ class _SetupScreenState extends State<SetupScreen> {
     // The remote wizard may configure this device while this screen is up;
     // the moment a start URL exists, onboarding is done wherever it happened.
     _sub = c.bus.on<SettingChanged>().listen((e) {
+      if (e.key == defs.uiLanguage.key && mounted) setState(() {});
       if (e.key == defs.startUrl.key &&
           e.value is String &&
           (e.value as String).isNotEmpty) {
@@ -242,9 +314,9 @@ class _SetupScreenState extends State<SetupScreen> {
     );
   }
 
-  /// Whether the Voice Satellite step (index 3) is part of this run. Unknown
-  /// until step 3's detection completes; the rail dims it meanwhile.
-  bool get _vsStepActive => _vsDetected == true;
+  /// Whether the kiosk listens for a wake word once set up, which the
+  /// permissions step asks for.
+  bool get _vsStepActive => _voiceOn;
 
   /// Restore a full backup from the welcome step. A backup from a configured
   /// device carries the start URL, and applying it fires this screen's
@@ -264,18 +336,14 @@ class _SetupScreenState extends State<SetupScreen> {
       allowedExtensions: const ['json'],
       withData: true,
     );
+    if (!mounted) return;
     final bytes = picked?.files.single.bytes;
     if (bytes == null) return;
     Object? config;
     try {
       config = jsonDecode(utf8.decode(bytes));
     } catch (_) {
-      _fail(
-        'Not a backup file',
-        'That file is not valid JSON. Export a configuration from '
-            'Settings on a set-up Kiosk Satellite, or from its remote '
-            'admin.',
-      );
+      _fail(l10n(context).setupNotBackup, l10n(context).setupInvalidBackupHelp);
       return;
     }
     if (!mounted) return;
@@ -298,7 +366,12 @@ class _SetupScreenState extends State<SetupScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (!result.ok) {
-      _fail('Import failed', result.error ?? 'The file could not be applied.');
+      _fail(
+        l10n(context).deviceImportFailed,
+        result.error == null
+            ? l10n(context).setupImportFailedHelp
+            : setupImportError(context, result.error!),
+      );
       return;
     }
     // pendingSetup: the permission prompts are running and the start URL
@@ -307,10 +380,8 @@ class _SetupScreenState extends State<SetupScreen> {
     if ((result.data as Map?)?['pendingSetup'] == true) return;
     if (c.settings.get(defs.startUrl).isEmpty) {
       _fail(
-        'Backup has no dashboard',
-        'The settings were applied, but this backup was taken before its '
-            'device was set up, so there is no dashboard to show. Continue '
-            'the wizard to pick one.',
+        l10n(context).setupBackupNoDashboard,
+        l10n(context).setupBackupNoDashboardHelp,
       );
     }
   }
@@ -318,6 +389,7 @@ class _SetupScreenState extends State<SetupScreen> {
   // ── Step transitions ───────────────────────────────────────────────────
 
   Future<void> _next() async {
+    final strings = l10n(context);
     setState(() {
       _error = null;
       _errorHint = null;
@@ -331,11 +403,16 @@ class _SetupScreenState extends State<SetupScreen> {
         await c.settings.set(defs.deviceName, _deviceName.text);
         if (_remoteWanted) {
           final password = _remotePassword.text;
-          if (password.length < 4) {
-            _fail('Password too short', 'Use at least 4 characters.');
+          // Left empty with a password already set: keep that one.
+          final keep = password.isEmpty && _hasRemotePassword;
+          if (!keep && password.length < 4) {
+            _fail(strings.setupPasswordShort, strings.setupPasswordMinimum);
             return;
           }
-          await c.settings.set(defs.remotePassword, password);
+          if (!keep) {
+            await c.settings.set(defs.remotePassword, password);
+            _hasRemotePassword = true;
+          }
           await c.settings.set(defs.remoteEnabled, true);
         } else {
           // The toggle is authoritative each time Next is pressed: coming
@@ -343,6 +420,7 @@ class _SetupScreenState extends State<SetupScreen> {
           // the password quietly survives and the switch lies.
           await c.settings.set(defs.remoteEnabled, false);
           await c.settings.set(defs.remotePassword, '');
+          _hasRemotePassword = false;
         }
         setState(() => _step = 1);
       case 1:
@@ -350,20 +428,14 @@ class _SetupScreenState extends State<SetupScreen> {
         if (_haUrl.text.trim().isEmpty || urlError != null) {
           _fail(
             urlError == null
-                ? 'Enter your Home Assistant base URL'
-                : 'Invalid base URL',
-            urlError ??
-                'This is the address you use to open Home Assistant, for '
-                    'example https://homeassistant.local:8123.',
+                ? strings.setupEnterBaseUrl
+                : strings.setupInvalidBaseUrl,
+            localizeBaseUrlError(strings, urlError) ?? strings.setupBaseUrlHelp,
           );
           return;
         }
         if (_haToken.text.trim().isEmpty) {
-          _fail(
-            'Enter a long-lived access token',
-            'In Home Assistant, open your profile → Security → Long-lived '
-                'access tokens to create one.',
-          );
+          _fail(strings.setupEnterToken, strings.setupEnterTokenHelp);
           return;
         }
         setState(() => _busy = true);
@@ -406,44 +478,42 @@ class _SetupScreenState extends State<SetupScreen> {
       case 2:
         if (_dashboard == null) {
           _fail(
-            'Select a dashboard',
-            'Choose the dashboard the kiosk will display. You can change '
-                'it later in Settings.',
+            l10n(context).setupSelectDashboard,
+            l10n(context).setupSelectDashboardHelp,
           );
           return;
         }
-        setState(() => _busy = true);
-        final vs = await c.homeAssistant.detectVoiceSatellite();
-        final satellites = vs
-            ? await c.homeAssistant.listVoiceSatellites()
-            : null;
-        if (!mounted) return;
-        setState(() {
-          _busy = false;
-          _vsDetected = vs;
-          _satellites = satellites;
-          _satellite ??= satellites?.firstOrNull?['entity_id'] as String?;
-          // No Voice Satellite: nothing to recommend, straight on to the
-          // permissions the minimal setup needs.
-          _step = vs ? 3 : 4;
-        });
+        setState(() => _step = 3);
+        if (_vsInstalled == null) unawaited(_loadVoiceStep());
       case 3:
         setState(() => _step = 4);
       case 4:
         setState(() => _busy = true);
-        if (_vsStepActive) {
-          if (_satellite != null) {
-            await c.settings.setFromJson(
-              defs.haSatelliteEntity.key,
-              _satellite,
+        if (_voiceOn) {
+          await c.settings.set(defs.esphomeEnabled, true);
+          if (!_migrated) {
+            // The wake word goes to Home Assistant with the kiosk's first
+            // configuration, the Assistant once its selects are there.
+            await c.settings.set(defs.voiceWakeWordEngine, _engine);
+            await c.settings.set(defs.voiceWakeWords, jsonEncode([_wakeWord]));
+            final phrase = [
+              for (final (id, phrase) in _wakeWords)
+                if (id == _wakeWord) phrase,
+            ].firstOrNull;
+            await c.settings.set(
+              defs.voicePendingSelects,
+              jsonEncode({'pipeline': _pipeline, 'wake_word': ?phrase}),
             );
           }
-          for (final (key, _) in _lockedRecommended) {
-            await c.settings.setFromJson(key, true);
-          }
-          for (final entry in _recommended.entries) {
-            await c.settings.setFromJson(entry.key, entry.value);
-          }
+          await c.settings.set(defs.voiceEnabled, true);
+        } else if (_migrated) {
+          // Migrated, then switched off again: the migration turned it on.
+          await c.settings.set(defs.voiceEnabled, false);
+        }
+        for (final entry in _recommended.entries) {
+          // Background listening means nothing without the voice satellite.
+          if (!_voiceOn && entry.key == 'wake_word.background') continue;
+          await c.settings.setFromJson(entry.key, entry.value);
         }
         await c.commands.execute('requestOsPermissions', {
           'which': [
@@ -461,7 +531,7 @@ class _SetupScreenState extends State<SetupScreen> {
             // Auto-reload on error (default on) needs it to bring the app
             // back after a crash; start-on-boot needs it for the boot launch.
             if (c.settings.get(defs.autoReloadOnError) ||
-                (_vsStepActive && _recommended['kiosk.start_on_boot']!))
+                _recommended['kiosk.start_on_boot']!)
               'overlay',
             // Real brightness writes; a settings screen like the admin one.
             'writeSettings',
@@ -486,8 +556,7 @@ class _SetupScreenState extends State<SetupScreen> {
   void _back() => setState(() {
     _error = null;
     _errorHint = null;
-    // Step 5 backs up to the dashboard step when Voice Satellite was skipped.
-    _step = (_step == 4 && !_vsStepActive) ? 2 : _step - 1;
+    _step = _step - 1;
   });
 
   String _viewPath(String urlPath, String route) =>
@@ -517,7 +586,7 @@ class _SetupScreenState extends State<SetupScreen> {
       builder: (ctx) {
         final theme = Theme.of(ctx);
         return SimpleDialog(
-          title: const Text('Choose a view'),
+          title: Text(l10n(ctx).haChooseView),
           children: [
             for (final v in views)
               ListTile(
@@ -576,7 +645,7 @@ class _SetupScreenState extends State<SetupScreen> {
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text(
-                        'Set up\nKiosk Satellite',
+                        l10n(context).setupTitle,
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           height: 1.15,
@@ -676,8 +745,7 @@ class _SetupScreenState extends State<SetupScreen> {
   ) {
     final theme = Theme.of(context);
     final current = index == _step;
-    final done = index < _step && !(index == 3 && !_vsStepActive);
-    final skipped = index == 3 && !_vsStepActive && _step > 3;
+    final done = index < _step;
     final reachable = current || done;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -690,12 +758,7 @@ class _SetupScreenState extends State<SetupScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              _StepDisc(
-                number: index + 1,
-                done: done,
-                current: current,
-                skipped: skipped,
-              ),
+              _StepDisc(number: index + 1, done: done, current: current),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -712,7 +775,7 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      skipped ? 'Not installed, skipped' : subtitle,
+                      subtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -789,21 +852,62 @@ class _SetupScreenState extends State<SetupScreen> {
     switch (_step) {
       case 0:
         return withError([
-          heading('Welcome'),
-          lead(
-            'Turn this tablet into a Home Assistant kiosk. Setup takes a '
-            'couple of minutes and this wizard walks you through it.',
-          ),
+          heading(l10n(context).setupWelcome),
+          lead(l10n(context).setupWelcomeLead),
+          _Card([
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              child: LabeledField(
+                label: l10n(context).settingUiLanguageTitle,
+                helper: l10n(context).settingUiLanguageDescription,
+                child: DropdownButtonFormField<String>(
+                  key: ValueKey((
+                    c.settings.get(defs.uiLanguage),
+                    _changingLanguage,
+                  )),
+                  initialValue: c.settings.get(defs.uiLanguage),
+                  isExpanded: true,
+                  items: [
+                    for (final language in defs.uiLanguage.options!)
+                      DropdownMenuItem(
+                        value: language,
+                        child: Text(
+                          defs.uiLanguage.optionLabels?[language] ?? language,
+                        ),
+                      ),
+                  ],
+                  onChanged: _busy || _changingLanguage
+                      ? null
+                      : (value) async {
+                          if (value == null) return;
+                          setState(() => _changingLanguage = true);
+                          try {
+                            await c.settings.set(defs.uiLanguage, value);
+                          } catch (_) {
+                            if (mounted) {
+                              showToast(
+                                context,
+                                title: l10n(context).commonSaveFailed,
+                                kind: ToastKind.error,
+                              );
+                            }
+                          } finally {
+                            if (mounted) {
+                              setState(() => _changingLanguage = false);
+                            }
+                          }
+                        },
+                ),
+              ),
+            ),
+          ]),
           // No group heading: the field's own label says all there is.
           _Card([
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
               child: LabeledField(
-                label: 'Device name',
-                helper:
-                    'How this kiosk is called in Home Assistant, in the '
-                    'remote admin and on the network. Change it any time '
-                    'under Settings, Device.',
+                label: l10n(context).setupDeviceName,
+                helper: l10n(context).setupDeviceNameHelp,
                 child: TextField(
                   controller: _deviceName,
                   textCapitalization: TextCapitalization.words,
@@ -812,15 +916,11 @@ class _SetupScreenState extends State<SetupScreen> {
               ),
             ),
           ]),
-          const SectionHeading('Remote administration'),
+          SectionHeading(l10n(context).setupRemoteHeading),
           _Card([
             SwitchListTile(
-              title: const Text('Enable remote administration'),
-              subtitle: const Text(
-                'Keep managing this kiosk from a web browser after setup, '
-                'where pasting the Home Assistant access token is much '
-                'easier.',
-              ),
+              title: Text(l10n(context).setupEnableRemote),
+              subtitle: Text(l10n(context).setupEnableRemoteHelp),
               value: _remoteWanted,
               onChanged: (v) => setState(() => _remoteWanted = v),
             ),
@@ -828,7 +928,7 @@ class _SetupScreenState extends State<SetupScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
                 child: LabeledField(
-                  label: 'Remote admin password',
+                  label: l10n(context).setupRemotePassword,
                   child: TextField(
                     controller: _remotePassword,
                     obscureText: true,
@@ -845,9 +945,9 @@ class _SetupScreenState extends State<SetupScreen> {
                 color: theme.colorScheme.tertiary,
               ),
               title: Text(
-                'You can continue this setup remotely from a web browser '
-                'at http://${_deviceIp ?? '<device-ip>'}:2324, whether the '
-                'switch above is on or not.',
+                l10n(context).setupRemoteAddress(
+                  'http://${_deviceIp ?? '<device-ip>'}:2324',
+                ),
                 // The tile-title style recolored and a step smaller: the
                 // ochre already carries the emphasis, so full title size
                 // on a near-full-width line reads louder than intended.
@@ -858,40 +958,32 @@ class _SetupScreenState extends State<SetupScreen> {
               ),
             ),
           ]),
-          const SectionHeading('Restore backup'),
+          SectionHeading(l10n(context).setupRestoreHeading),
           _Card([
             ListTile(
               leading: const Icon(Icons.settings_backup_restore_outlined),
-              title: const Text('Restore from configuration file'),
-              subtitle: const Text(
-                'Import a configuration exported from Kiosk Satellite and '
-                'skip the rest of this wizard. Settings, dashboard and '
-                'login all come along.',
-              ),
+              title: Text(l10n(context).setupRestore),
+              subtitle: Text(l10n(context).setupRestoreHelp),
               trailing: TextButton(
                 onPressed: _busy ? null : _importBackup,
-                child: const Text('Import'),
+                child: Text(l10n(context).commonImport),
               ),
             ),
           ]),
           // The service the whole kiosk rides on, introduced where the
           // kiosk is born rather than discovered later as a notification.
-          const SectionHeading('Recommended Service Permissions'),
+          SectionHeading(l10n(context).setupServicePermissions),
           _ServiceSetupCard(container: c),
         ]);
       case 1:
         return withError([
-          heading('Connect to Home Assistant'),
-          lead(
-            'The base URL of your instance and a long-lived access token, '
-            'created under your HA profile → Security → Long-lived access '
-            'tokens.',
-          ),
+          heading(l10n(context).setupConnectHeading),
+          lead(l10n(context).setupConnectLead),
           _Card([
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
               child: LabeledField(
-                label: 'Home Assistant base URL',
+                label: l10n(context).setupBaseUrl,
                 child: TextField(
                   controller: _haUrl,
                   keyboardType: TextInputType.url,
@@ -905,7 +997,7 @@ class _SetupScreenState extends State<SetupScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: LabeledField(
-                label: 'Long-lived access token',
+                label: l10n(context).setupToken,
                 child: TextField(
                   controller: _haToken,
                   obscureText: true,
@@ -918,7 +1010,7 @@ class _SetupScreenState extends State<SetupScreen> {
                         ? null
                         : IconButton(
                             icon: const Icon(Icons.qr_code_scanner),
-                            tooltip: 'Scan the QR code',
+                            tooltip: l10n(context).setupScanQr,
                             onPressed: _busy ? null : _scanToken,
                           ),
                   ),
@@ -929,11 +1021,11 @@ class _SetupScreenState extends State<SetupScreen> {
         ]);
       case 2:
         return withError([
-          heading('Choose a dashboard'),
-          lead('This is what the kiosk will show when it starts.'),
+          heading(l10n(context).setupChooseDashboard),
+          lead(l10n(context).setupDashboardHelp),
           _Card([
             if (_dashboards == null || _dashboards!.isEmpty)
-              const ListTile(title: Text('No dashboards found'))
+              ListTile(title: Text(l10n(context).haNoDashboards))
             else
               for (final d in _dashboards!)
                 for (final urlPath in ['${d['url_path']}'])
@@ -959,7 +1051,7 @@ class _SetupScreenState extends State<SetupScreen> {
                               _dashboardViews!.isNotEmpty
                           ? TextButton(
                               onPressed: _changeView,
-                              child: const Text('Change view'),
+                              child: Text(l10n(context).haChangeView),
                             )
                           : null,
                       onTap: isSel ? null : () => _pickDashboard(urlPath),
@@ -968,54 +1060,155 @@ class _SetupScreenState extends State<SetupScreen> {
         ]);
       case 3:
         return withError([
-          heading('Voice Satellite detected'),
+          heading('Voice Satellite'),
           lead(
-            'This Home Assistant instance runs the Voice Satellite '
-            'integration. Choose which satellite this kiosk is, then '
-            'review its settings. Everything can be changed later.',
-          ),
-          if (_satellites == null || _satellites!.isEmpty)
-            _Card(const [
-              ListTile(
-                title: Text('No satellites found'),
-                subtitle: Text(
-                  'Add an assist satellite in the Voice Satellite '
-                  'integration, or continue without one and pick it on '
-                  'the dashboard later.',
-                ),
-              ),
-            ])
-          else ...[
-            _Card([
-              for (final s in _satellites!)
-                ListTile(
-                  leading: Icon(
-                    _satellite == s['entity_id']
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_off,
-                    color: _satellite == s['entity_id']
-                        ? theme.colorScheme.primary
-                        : null,
-                  ),
-                  title: Text('${s['name']}'),
-                  subtitle: Text('${s['entity_id']}'),
-                  onTap: () =>
-                      setState(() => _satellite = s['entity_id'] as String?),
-                ),
-            ]),
-            hint(
-              'If this is a new device, create a new satellite entity in '
-              'Home Assistant first. Settings → Devices & Services → '
-              'Voice Satellite → Add Entry. IMPORTANT: Two devices cannot '
-              'share the same entity.',
+            setupText(
+              context,
+              'Turn this kiosk into a voice assistant for Home Assistant. '
+              'Everything can be changed later.',
             ),
-          ],
+          ),
           _Card([
             SwitchListTile(
-              title: const Text('Apply all recommended settings'),
-              subtitle: const Text(
-                'The optimal settings for full Voice Satellite integration '
-                'and functionality.',
+              title: Text(defs.voiceEnabled.localizedTitle(context)),
+              subtitle: Text(defs.voiceEnabled.localizedDescription(context)),
+              value: _voiceOn,
+              onChanged: (v) => setState(() => _voiceOn = v),
+            ),
+          ]),
+          if (_voiceOn && _vsInstalled == true)
+            _Card([
+              ListTile(
+                title: Text(
+                  setupText(
+                    context,
+                    _migrated
+                        ? 'Migrated from the Voice Satellite integration'
+                        : 'Voice Satellite integration found',
+                  ),
+                ),
+                subtitle: Text(
+                  setupText(
+                    context,
+                    _migrated
+                        ? 'This kiosk takes over its satellite\'s settings.'
+                        : 'Voice Satellite now runs inside Kiosk Satellite. '
+                              'Migrate to keep the wake words, assistant and '
+                              'look of one of the integration\'s satellites '
+                              'instead of starting fresh.',
+                  ),
+                ),
+                trailing: _migrated
+                    ? null
+                    : FilledButton.tonal(
+                        onPressed: _busy ? null : _migrate,
+                        child: Text(setupText(context, 'Migrate')),
+                      ),
+              ),
+            ]),
+          if (_voiceOn && !_migrated)
+            _Card([
+              if (_vsInstalled == null)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else
+                for (final field in [
+                  LabeledField(
+                    label: setupText(context, 'Assistant'),
+                    helper: setupText(
+                      context,
+                      'The Assist pipeline that answers the wake word.',
+                    ),
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _pipeline,
+                      isExpanded: true,
+                      items: [
+                        DropdownMenuItem(
+                          value: 'preferred',
+                          child: Text(
+                            _preferredPipeline == null
+                                ? setupText(context, 'Preferred')
+                                : '${setupText(context, 'Preferred')} '
+                                      '($_preferredPipeline)',
+                          ),
+                        ),
+                        for (final name in _pipelines)
+                          DropdownMenuItem(value: name, child: Text(name)),
+                      ],
+                      onChanged: (v) =>
+                          setState(() => _pipeline = v ?? _pipeline),
+                    ),
+                  ),
+                  LabeledField(
+                    label: defs.voiceWakeWordEngine.localizedTitle(context),
+                    helper: defs.voiceWakeWordEngine.localizedDescription(
+                      context,
+                    ),
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _engine,
+                      isExpanded: true,
+                      items: [
+                        for (final engine in defs.voiceWakeWordEngine.options!)
+                          DropdownMenuItem(
+                            value: engine,
+                            child: Text(
+                              defs.voiceWakeWordEngine.optionLabels?[engine] ??
+                                  engine,
+                            ),
+                          ),
+                      ],
+                      onChanged: (v) {
+                        if (v == null || v == _engine) return;
+                        setState(() => _engine = v);
+                        unawaited(_loadWakeWords());
+                      },
+                    ),
+                  ),
+                  LabeledField(
+                    label: setupText(context, 'Wake word'),
+                    helper: setupText(
+                      context,
+                      'The word that starts a voice command.',
+                    ),
+                    child: DropdownButtonFormField<String>(
+                      key: ValueKey(_engine),
+                      initialValue: _wakeWords.any((w) => w.$1 == _wakeWord)
+                          ? _wakeWord
+                          : null,
+                      isExpanded: true,
+                      items: [
+                        for (final (id, phrase) in _wakeWords)
+                          DropdownMenuItem(value: id, child: Text(phrase)),
+                      ],
+                      onChanged: (v) =>
+                          setState(() => _wakeWord = v ?? _wakeWord),
+                    ),
+                  ),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                    child: field,
+                  ),
+            ]),
+          if (_voiceOn)
+            hint(
+              setupText(
+                context,
+                'After setup, add this kiosk in Home Assistant under '
+                'Settings, Devices & services, where it shows up as '
+                'discovered.',
+              ),
+            ),
+          _Card([
+            SwitchListTile(
+              title: Text(l10n(context).setupApplyRecommended),
+              subtitle: Text(
+                setupText(
+                  context,
+                  'The settings that suit a kiosk on the wall.',
+                ),
               ),
               value: _allRecommended,
               onChanged: (v) => setState(() {
@@ -1026,87 +1219,63 @@ class _SetupScreenState extends State<SetupScreen> {
             ),
           ]),
           _Card([
-            for (final (_, label) in _lockedRecommended)
-              SwitchListTile(
-                title: Text(label),
-                subtitle: const Text('Required by Voice Satellite'),
-                value: true,
-                onChanged: null,
-              ),
             for (final (key, label) in _optionalRecommended)
-              SwitchListTile(
-                title: Text(label),
-                value: _recommended[key]!,
-                onChanged: (v) => setState(() => _recommended[key] = v),
-              ),
+              if (_voiceOn || key != 'wake_word.background')
+                SwitchListTile(
+                  title: Text(setupText(context, label)),
+                  value: _recommended[key]!,
+                  onChanged: (v) => setState(() => _recommended[key] = v),
+                ),
           ]),
         ]);
       case 4:
         final background =
             _vsStepActive && _recommended['wake_word.background']!;
-        final bootStart = _vsStepActive && _recommended['kiosk.start_on_boot']!;
+        final bootStart = _recommended['kiosk.start_on_boot']!;
         return withError([
-          heading('Permissions'),
-          lead(
-            'Android will ask for these permissions. Everything is '
-            'requested up front so the kiosk never interrupts you later.',
-          ),
+          heading(l10n(context).setupPermissions),
+          lead(l10n(context).setupPermissionLead),
           _Card([
-            const ListTile(
+            ListTile(
               leading: Icon(Icons.mic_none),
-              title: Text('Microphone'),
-              subtitle: Text('Voice Satellite requires microphone access'),
+              title: Text(l10n(context).deviceMicrophone),
+              subtitle: Text(l10n(context).setupMicrophoneHelp),
             ),
             // The Kiosk Satellite Service's two, on every install: its
             // notification, and the exemption that keeps it running.
             ListTile(
               leading: const Icon(Icons.notifications_none),
-              title: const Text('Notifications'),
+              title: Text(l10n(context).deviceNotifications),
               subtitle: Text(
                 background
-                    ? "Allows the Kiosk Satellite Service's ongoing "
-                          'notification, which says what it is keeping '
-                          'alive and when the kiosk is listening.'
-                    : "Allows the Kiosk Satellite Service's ongoing "
-                          'notification, which says what it is keeping '
-                          'alive.',
+                    ? l10n(context).setupNotificationListening
+                    : l10n(context).deviceNotificationsHeld,
               ),
             ),
-            const ListTile(
+            ListTile(
               leading: Icon(Icons.battery_saver),
-              title: Text('Unrestricted battery'),
-              subtitle: Text(
-                'Allows the Kiosk Satellite Service to run in the '
-                'background without being paused or killed.',
-              ),
+              title: Text(l10n(context).deviceBattery),
+              subtitle: Text(l10n(context).setupBatteryService),
             ),
             if (bootStart || c.settings.get(defs.autoReloadOnError))
               ListTile(
                 leading: const Icon(Icons.layers_outlined),
-                title: const Text('Display over other apps'),
+                title: Text(l10n(context).deviceOverlay),
                 subtitle: Text(
                   bootStart
-                      ? 'Lets Kiosk Satellite come back after a crash and '
-                            'start when your device boots.'
-                      : 'Lets Kiosk Satellite come back on screen after a '
-                            'crash.',
+                      ? l10n(context).setupOverlayBoot
+                      : l10n(context).setupOverlayCrash,
                 ),
               ),
-            const ListTile(
+            ListTile(
               leading: Icon(Icons.brightness_6_outlined),
-              title: Text('Screen brightness'),
-              subtitle: Text(
-                "Allows Kiosk Satellite to set the panel's actual "
-                'brightness (modify system settings).',
-              ),
+              title: Text(l10n(context).deviceScreenBrightness),
+              subtitle: Text(l10n(context).setupBrightnessHelp),
             ),
-            const ListTile(
+            ListTile(
               leading: Icon(Icons.power_settings_new_outlined),
-              title: Text('Screen control'),
-              subtitle: Text(
-                'Allows Kiosk Satellite to turn the screen off on request '
-                '(device admin).',
-              ),
+              title: Text(l10n(context).setupScreenControl),
+              subtitle: Text(l10n(context).setupScreenControlHelp),
             ),
           ]),
         ]);
@@ -1125,22 +1294,22 @@ class _SetupScreenState extends State<SetupScreen> {
             // Beside Next and dressed like it — the pair reads as one
             // control group, tonal vs filled carrying the hierarchy.
             FilledButton.tonal(
-              onPressed: _busy ? null : _back,
+              onPressed: _busy || _changingLanguage ? null : _back,
               style: FilledButton.styleFrom(padding: buttonPadding),
-              child: const Text('Back'),
+              child: Text(l10n(context).commonBack),
             ),
             const SizedBox(width: 12),
           ],
           FilledButton(
-            onPressed: _busy ? null : _next,
+            onPressed: _busy || _changingLanguage ? null : _next,
             style: FilledButton.styleFrom(padding: buttonPadding),
             child: Text(
               _busy
-                  ? 'Working…'
+                  ? l10n(context).commonWorking
                   : switch (_step) {
-                      1 => 'Validate & continue',
-                      4 => 'Finish',
-                      _ => 'Next',
+                      1 => l10n(context).setupValidateContinue,
+                      4 => l10n(context).commonFinish,
+                      _ => l10n(context).commonNext,
                     },
             ),
           ),
@@ -1166,20 +1335,17 @@ class _ErrorCard extends StatelessWidget {
 }
 
 /// The step's numbered badge: a filled disc with the number, a check once
-/// the step is done, or a dash when it was skipped; muted before it is
-/// reached. Mirrors the color-disc language of the settings rail.
+/// the step is done; muted before it is reached. Mirrors the color-disc language of the settings rail.
 class _StepDisc extends StatelessWidget {
   const _StepDisc({
     required this.number,
     required this.done,
     required this.current,
-    required this.skipped,
   });
 
   final int number;
   final bool done;
   final bool current;
-  final bool skipped;
 
   @override
   Widget build(BuildContext context) {
@@ -1195,8 +1361,6 @@ class _StepDisc extends StatelessWidget {
       alignment: Alignment.center,
       child: done
           ? Icon(Icons.check, size: 18, color: scheme.onPrimary)
-          : skipped
-          ? Icon(Icons.remove, size: 18, color: scheme.onSurfaceVariant)
           : Text(
               '$number',
               style: TextStyle(
@@ -1239,10 +1403,12 @@ class _ServiceSetupCardState extends State<_ServiceSetupCard>
     super.dispose();
   }
 
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // The grants are given on OS screens that report nothing back.
-    if (state == AppLifecycleState.resumed) _refresh();
+    if (_returned.returned(state)) _refresh();
   }
 
   Future<void> _refresh() async {
@@ -1280,9 +1446,9 @@ class _ServiceSetupCardState extends State<_ServiceSetupCard>
             ? theme.colorScheme.error
             : muted,
       ),
-      title: Text(title),
+      title: Text(setupText(context, title)),
       subtitle: Text(
-        ok ? held : adbHint ?? (needed ? missing : idle),
+        setupText(context, ok ? held : adbHint ?? (needed ? missing : idle)),
         style: ok || (needed && adbHint == null)
             ? null
             : TextStyle(color: muted),
@@ -1292,9 +1458,12 @@ class _ServiceSetupCardState extends State<_ServiceSetupCard>
           : TextButton(
               onPressed: () async {
                 await onGrant();
+                // The grant just changed, so the next read must see it
+                // rather than the cached pass this screen's own boot took.
+                SystemPermissions.invalidate();
                 await _refresh();
               },
-              child: const Text('Grant'),
+              child: Text(l10n(context).commonGrant),
             ),
     );
   }
@@ -1305,16 +1474,10 @@ class _ServiceSetupCardState extends State<_ServiceSetupCard>
     final perms = _perms;
     final needed = c.service.neededGrants();
     return _Card([
-      const ListTile(
+      ListTile(
         leading: Icon(Icons.security_outlined),
-        title: Text('Kiosk Satellite Service'),
-        subtitle: Text(
-          'Keeps the app alive while the screen is off or another app is '
-          'in front, so the Home Assistant connection and other features '
-          'like motion detection and the Bluetooth proxy stay alive. The '
-          'permissions below are optional but recommended: each one helps '
-          'it survive the screen being off.',
-        ),
+        title: Text(l10n(context).deviceServicePage),
+        subtitle: Text(l10n(context).setupServiceHelp),
       ),
       _row(
         granted: perms?.batteryUnrestricted,

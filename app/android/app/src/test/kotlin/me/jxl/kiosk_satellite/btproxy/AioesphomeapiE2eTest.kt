@@ -61,6 +61,36 @@ class AioesphomeapiE2eTest {
         asyncio.run(main())
     """.trimIndent()
 
+    private val statesScript = """
+        import asyncio, sys
+
+        async def main():
+            from aioesphomeapi import APIClient
+            port = int(sys.argv[1]); psk = sys.argv[2]; key = sys.argv[3]
+            cli = APIClient("127.0.0.1", port, None, noise_psk=psk)
+            await cli.connect(login=True)
+
+            loop = asyncio.get_running_loop()
+            asked = loop.create_future()
+
+            def on_state_sub(entity_id, attribute):
+                if not asked.done():
+                    asked.set_result((entity_id, attribute))
+
+            # What Home Assistant's ESPHome integration does on connect: ask,
+            # then answer every entity the device names with its value.
+            cli.subscribe_home_assistant_states(on_state_sub)
+            entity_id, attribute = await asyncio.wait_for(asked, 15)
+            assert entity_id == "sensor.ble_proxy_irks", entity_id
+            assert attribute == "irks", attribute
+            print("SUBSCRIBE_OK", flush=True)
+            cli.send_home_assistant_state(entity_id, attribute, "['phone: " + key + "']")
+            await asyncio.sleep(1)
+            await cli.disconnect()
+
+        asyncio.run(main())
+    """.trimIndent()
+
     private val gattScript = """
         import asyncio, sys
 
@@ -252,9 +282,10 @@ class AioesphomeapiE2eTest {
             # own key, so both entities get their frame from one request.
             cli.request_single_image()
             data = await asyncio.wait_for(images[by_obj["snap"].key], 10)
-            assert len(data) == 40_000 and data[0] == 0x7A, (len(data), data[:2])
+            assert data == b"\x7a" * (6 * 1024 * 1024), (len(data), data[:2])
             shot = await asyncio.wait_for(images[by_obj["shot"].key], 10)
-            assert shot == b"\x53\x48\x4f\x54", shot
+            import base64
+            assert shot == base64.b64decode(sys.argv[3]), len(shot)
             print("CAMERA_OK", flush=True)
 
             # Arguments travel positionally and untyped-by-name; the ints
@@ -317,8 +348,11 @@ class AioesphomeapiE2eTest {
         val commands = java.util.concurrent.CopyOnWriteArrayList<Pair<String, Any?>>()
         val actions =
             java.util.concurrent.CopyOnWriteArrayList<Pair<String, Map<String, Any?>>>()
-        // A 40KB "jpeg" exercises the 16KB chunking (3 chunks, done last).
-        val jpeg = ByteArray(40_000) { 0x7A }
+        // A large capture must stream through Noise without overflowing
+        // the 256-frame control queue or breaking either camera's image.
+        // Stay below aioesphomeapi's 8 MiB image assembly limit.
+        val jpeg = ByteArray(6 * 1024 * 1024) { 0x7A }
+        val shot = javaClass.getResourceAsStream("/camera/baseline.jpg")!!.use { it.readBytes() }
         lateinit var server: ApiServer
         val hub = EntityHub(listOf(
             EspEntity.Light("screen", "Screen"),
@@ -333,7 +367,10 @@ class AioesphomeapiE2eTest {
                 server.publishCameraImage("snap", jpeg)
             }
             if (objectId == "shot" && value == "capture") {
-                server.publishCameraImage("shot", "SHOT".toByteArray())
+                // Match the Portal Go capture buffer, including the padding
+                // that exceeds Home Assistant's image assembly limit.
+                val padded = java.nio.ByteBuffer.wrap(shot.copyOf(12_174_771))
+                server.publishCameraImage("shot", me.jxl.kiosk_satellite.JpegData.read(padded))
             }
         }, services = listOf(
             EspService(
@@ -371,6 +408,7 @@ class AioesphomeapiE2eTest {
                 python, scriptFile.absolutePath,
                 server.boundPort.toString(),
                 Base64.getEncoder().encodeToString(psk),
+                Base64.getEncoder().encodeToString(shot),
             ).redirectErrorStream(true).start()
             val finished = process.waitFor(60, TimeUnit.SECONDS)
             val output = process.inputStream.bufferedReader().readText()
@@ -526,6 +564,64 @@ class AioesphomeapiE2eTest {
     }
 
     @Test
+    fun realClientDeliversIrksFromHomeAssistantStates() {
+        val python = System.getenv("KS_AIOESPHOME_PYTHON") ?: "python3"
+        val available = runCatching {
+            ProcessBuilder(python, "-c", "import aioesphomeapi")
+                .redirectErrorStream(true).start()
+                .let { it.waitFor(30, TimeUnit.SECONDS) && it.exitValue() == 0 }
+        }.getOrDefault(false)
+        assumeTrue("aioesphomeapi not available for $python; skipping", available)
+
+        val psk = ByteArray(32) { (it * 11 + 2).toByte() }
+        val identity = ProxyIdentity(
+            name = "kiosk-satellite-test",
+            friendlyName = "Test Kiosk",
+            macAddress = "02:11:22:33:44:55",
+            esphomeVersion = "2026.8.0",
+            model = "Test",
+            manufacturer = "KS",
+            projectName = "kiosk_satellite.bluetooth_proxy",
+            projectVersion = "1.0",
+        )
+        val scanner = object : ScannerBackend {
+            override fun onScanDemand(mode: ScannerMode) {}
+            override fun onScanRelease() {}
+        }
+        val filter = AdvertisementFilter.parse(
+            """{"irksEntity":"sensor.ble_proxy_irks","irksAttribute":"irks"}"""
+        )!!
+        val irks = HomeAssistantIrks(filter, object : HomeAssistantIrks.Store {
+            override fun load() = ""
+            override fun save(keys: String) {}
+        }, log = {})
+        val server = ApiServer(identity, "02:AA:BB:CC:DD:EE", 0, psk, scanner,
+            log = {}, homeAssistantStates = irks)
+        server.start()
+        try {
+            val scriptFile = File.createTempFile("btproxy_states_e2e", ".py").apply {
+                writeText(statesScript)
+                deleteOnExit()
+            }
+            val process = ProcessBuilder(
+                python, scriptFile.absolutePath,
+                server.boundPort.toString(),
+                Base64.getEncoder().encodeToString(psk),
+                "ec0234a357c8ad05341010a60a397d9b",
+            ).redirectErrorStream(true).start()
+            val finished = process.waitFor(60, TimeUnit.SECONDS)
+            val output = process.inputStream.bufferedReader().readText()
+            if (!finished) process.destroyForcibly()
+            assertEquals(0, if (finished) process.exitValue() else -1,
+                "aioesphomeapi Home Assistant states round trip failed:\n$output")
+            assertEquals("home_assistant", filter.counters()["irksSource"])
+            assertEquals(1, filter.counters()["irks"])
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
     fun realHomeAssistantClientRoundTrip() {
         val python = System.getenv("KS_AIOESPHOME_PYTHON") ?: "python3"
         val available = runCatching {
@@ -583,6 +679,102 @@ class AioesphomeapiE2eTest {
         } finally {
             stop.set(true)
             feeder.join(1_000)
+            server.stop()
+        }
+    }
+
+    private val eventScript = """
+        import asyncio, sys
+
+        async def main():
+            from aioesphomeapi import APIClient
+            port = int(sys.argv[1]); psk = sys.argv[2]
+            cli = APIClient("127.0.0.1", port, None, noise_psk=psk)
+            await cli.connect(login=True)
+            loop = asyncio.get_running_loop()
+            got = loop.create_future()
+
+            def on_call(call):
+                if not got.done():
+                    got.set_result(call)
+
+            # What Home Assistant's ESPHome integration subscribes with.
+            cli.subscribe_home_assistant_states_and_services(
+                on_state=lambda state: None,
+                on_service_call=on_call,
+                on_state_sub=lambda entity, attribute: None,
+            )
+            call = await asyncio.wait_for(got, 15)
+            assert call.is_event, call
+            assert call.service == "esphome.kiosk_satellite_timer", call.service
+            assert dict(call.data) == {"event_type": "finished", "name": "pizza"}, call.data
+            assert dict(call.data_template) == {
+                "total_seconds": "300", "is_active": "False",
+            }, call.data_template
+            print("EVENT_OK", flush=True)
+            await cli.disconnect()
+
+        asyncio.run(main())
+    """.trimIndent()
+
+    /** A timer event reaches Home Assistant's client as an esphome. event,
+     *  and only once it subscribed to actions (issue #765). */
+    @Test
+    fun realClientReceivesEvents() {
+        val python = System.getenv("KS_AIOESPHOME_PYTHON") ?: "python3"
+        val available = runCatching {
+            ProcessBuilder(python, "-c", "import aioesphomeapi")
+                .redirectErrorStream(true).start()
+                .let { it.waitFor(30, TimeUnit.SECONDS) && it.exitValue() == 0 }
+        }.getOrDefault(false)
+        assumeTrue("aioesphomeapi not available for $python; skipping", available)
+
+        val psk = ByteArray(32) { (it * 3 + 9).toByte() }
+        val identity = ProxyIdentity(
+            name = "kiosk-satellite-test",
+            friendlyName = "Test Kiosk",
+            macAddress = "02:11:22:33:44:55",
+            esphomeVersion = "2026.8.0",
+            model = "Test",
+            manufacturer = "KS",
+            projectName = "kiosk_satellite.bluetooth_proxy",
+            projectVersion = "1.0",
+        )
+        val backend = object : ScannerBackend {
+            override fun onScanDemand(mode: ScannerMode) {}
+            override fun onScanRelease() {}
+        }
+        val server = ApiServer(identity, "02:AA:BB:CC:DD:EE", 0, psk, backend, log = {})
+        server.start()
+        val fire = {
+            server.fireEvent(
+                "esphome.kiosk_satellite_timer",
+                mapOf("event_type" to "finished", "name" to "pizza"),
+                mapOf("total_seconds" to "300", "is_active" to "False"),
+            )
+        }
+        assertEquals(false, fire(), "an event with nobody subscribed")
+        try {
+            val scriptFile = File.createTempFile("btproxy_event_e2e", ".py").apply {
+                writeText(eventScript)
+                deleteOnExit()
+            }
+            val process = ProcessBuilder(
+                python, scriptFile.absolutePath,
+                server.boundPort.toString(),
+                Base64.getEncoder().encodeToString(psk),
+            ).redirectErrorStream(true).start()
+            // Fired once the client subscribes, as a timer would be.
+            val deadline = System.currentTimeMillis() + 15_000
+            while (process.isAlive && System.currentTimeMillis() < deadline && !fire()) {
+                Thread.sleep(50)
+            }
+            val finished = process.waitFor(60, TimeUnit.SECONDS)
+            val output = process.inputStream.bufferedReader().readText()
+            if (!finished) process.destroyForcibly()
+            assertEquals(0, if (finished) process.exitValue() else -1,
+                "aioesphomeapi event round trip failed:\n$output")
+        } finally {
             server.stop()
         }
     }

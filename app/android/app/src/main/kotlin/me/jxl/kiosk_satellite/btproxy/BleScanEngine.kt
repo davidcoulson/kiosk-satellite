@@ -74,9 +74,35 @@ internal class BleScanEngine(
     private val onStateChange: (ScannerState, ScannerMode) -> Unit,
     private val onLog: (String) -> Unit = {},
     scanDuty: ScanDuty = ScanDuty.BALANCED,
+    /**
+     * Advertisements heard weaker than this are dropped instead of
+     * relayed. 0 keeps everything, which is the stock behaviour.
+     *
+     * A panel on a wall hears the whole building: one here sees 131
+     * devices while holding zero connections, and every one of those
+     * advertisements crosses the platform channel, the API server and the
+     * network to Home Assistant. Where dedicated proxies already cover the
+     * house, the advertisements worth relaying from a panel are the ones
+     * close enough to mean "someone is standing at it" -- presence no
+     * distant proxy can report.
+     *
+     * Honest about what it does not save: the radio scans at the same duty
+     * cycle either way. This cuts everything after the scan callback.
+     */
+    private val minAdvertiseRssi: Int = 0,
+    /**
+     * Identity-level filtering: IRKs, address allowlists, manufacturer
+     * blocklists. Null relays everything the RSSI gate above admits, which
+     * is the stock behaviour. See [AdvertisementFilter].
+     */
+    private val filter: AdvertisementFilter? = null,
 ) {
     private companion object {
         const val TAG = "KsBtProxy"
+        /** Android's sentinel for "the adapter did not report a signal
+         *  strength", which is a value a device can genuinely advertise
+         *  with, not a reading of 127 dBm. */
+        const val RSSI_UNAVAILABLE = 127
         /** Stay under Android's 5-per-30s undocumented scan-start throttle. */
         const val MAX_STARTS = 4
         const val START_WINDOW_MS = 30_000L
@@ -128,6 +154,11 @@ internal class BleScanEngine(
     private var adapterBounced = false
 
     val isScanning: Boolean get() = scanning
+
+    /** What the advertisement filter kept and dropped, or null when none is
+     *  configured. Surfaced so a panel's filtering is measurable from Home
+     *  Assistant rather than guessed at. See [AdvertisementFilter]. */
+    val filterCounters: Map<String, Any>? get() = filter?.counters()
     val lastAdvertisementAt: Long get() = lastCallbackAt
     val scanDuty: ScanDuty get() = duty
 
@@ -228,7 +259,35 @@ internal class BleScanEngine(
                         if (minimalSettings) " (minimal scan settings)" else "")
                 }
             }
+            // Cheapest possible check, before parsing the payload.
+            //
+            // 127 is Android's "RSSI not available", not a very strong
+            // signal, and it is not rare: on a panel here half the relayed
+            // devices reported it. Comparing it numerically lets exactly
+            // the devices whose distance cannot be established sail past a
+            // floor that exists to establish distance, so an unknown
+            // reading is dropped with the weak ones whenever a floor is
+            // set. With no floor, nothing is dropped and 127 relays as
+            // before.
+            if (minAdvertiseRssi != 0 &&
+                (result.rssi == RSSI_UNAVAILABLE || result.rssi < minAdvertiseRssi)
+            ) {
+                return
+            }
             val advertisement = toAdvertisement(result) ?: return
+            // After parsing, because identity lives in the address and the
+            // payload: the cheap signal gate above is what keeps that
+            // parsing off the majority of packets.
+            val active = filter
+            if (active != null && !active.allows(
+                    advertisement.address,
+                    advertisement.addressType,
+                    result.rssi,
+                    advertisement.data,
+                )
+            ) {
+                return
+            }
             onAdvertisement(advertisement)
         }
 

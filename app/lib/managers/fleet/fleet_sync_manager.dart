@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:io' show File, InternetAddress;
 import 'dart:math' show Random;
 
 import 'package:crypto/crypto.dart' show md5;
@@ -9,10 +10,12 @@ import 'package:http/http.dart' as http;
 
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
+import '../../core/kiosk_http_client.dart';
 import '../../core/manager.dart';
 import '../gestures/gesture_mappings.dart';
 import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
+import 'fleet_manager.dart';
 
 /// A profile: what a follower assigned to it gets from its leader. The
 /// categories, which of the credentials, whether the dashboard and the
@@ -35,6 +38,18 @@ class SyncProfile {
   static const initial = SyncProfile(
     categories: defs.fleetDefaultCategories,
     credentials: defs.fleetDefaultCredentials,
+  );
+
+  /// The built-in Updates only: no category, no credential, no dashboard,
+  /// so a kiosk on it keeps every setting of its own and the leader only
+  /// pushes updates to it. Never stored, never edited, never deleted.
+  static const updatesOnlyId = 'updates-only';
+  static const updatesOnly = SyncProfile(
+    id: updatesOnlyId,
+    name: 'Updates only',
+    categories: {},
+    credentials: {},
+    excluded: {},
   );
 
   final String id;
@@ -112,13 +127,19 @@ class SyncProfile {
   );
 
   bool get isDefault => id == defaultId;
+  bool get isUpdatesOnly => id == updatesOnlyId;
+
+  /// The two that ship with the app: neither can be deleted, and Updates
+  /// only cannot be changed either.
+  bool get isBuiltIn => isDefault || isUpdatesOnly;
 
   /// One line for a row: "Categories: 9 of 16. Credentials: 2 of 3.
   /// Excluded: 14."
-  String describe() =>
-      'Categories: ${categories.length} of ${defs.fleetSyncCategories.length}. '
-      'Credentials: ${credentials.length} of ${defs.fleetCredentialKeys.length}. '
-      'Excluded: ${excluded.length}.';
+  String describe() => isUpdatesOnly
+      ? 'Nothing syncs. Only updates are pushed.'
+      : 'Categories: ${categories.length} of ${defs.fleetSyncCategories.length}. '
+            'Credentials: ${credentials.length} of ${defs.fleetCredentialKeys.length}. '
+            'Excluded: ${excluded.length}.';
 
   @override
   bool operator ==(Object other) =>
@@ -156,6 +177,7 @@ class Follower {
     int? addedAt,
     this.lastSyncAt = 0,
     this.version = '',
+    this.tls = false,
   }) : addedAt = addedAt ?? DateTime.now().millisecondsSinceEpoch;
 
   final String id;
@@ -177,9 +199,14 @@ class Follower {
   /// removed or invited again.
   bool declined;
 
+  /// The leader's custom wake word models this kiosk last matched, by their
+  /// hash. Not saved: after a restart one comparison sets it again.
+  String? wakeModelsRevision;
+
   final int addedAt;
   int lastSyncAt;
   String version;
+  bool tls;
 
   // What the last poll learned. Not persisted.
   bool online = false;
@@ -188,7 +215,16 @@ class Follower {
   Map<String, Object?>? update;
   String? error;
 
-  String get url => 'http://$address:$port';
+  /// Null on older kiosks that do not support the member directory.
+  String? rosterRevision;
+
+  /// How much of the uploaded APK the leader has streamed to this kiosk,
+  /// 0 to 1 while a fleet install sends it, null otherwise. The leader's
+  /// own count, so the poll never overwrites it.
+  double? sending;
+
+  String get url =>
+      Uri(scheme: tls ? 'https' : 'http', host: address, port: port).toString();
 
   static Follower? fromJson(Object? raw) {
     if (raw is! Map) return null;
@@ -207,6 +243,7 @@ class Follower {
       addedAt: (raw['addedAt'] as num?)?.toInt(),
       lastSyncAt: (raw['lastSyncAt'] as num?)?.toInt() ?? 0,
       version: '${raw['version'] ?? ''}',
+      tls: raw['tls'] == true,
     );
   }
 
@@ -215,6 +252,7 @@ class Follower {
     'name': name,
     'address': address,
     'port': port,
+    if (tls) 'tls': true,
     if (token != null) 'token': token,
     if (invite != null) 'invite': invite,
     if (profile != null) 'profile': profile,
@@ -248,7 +286,7 @@ class FleetSyncManager extends Manager {
   String get name => 'fleetsync';
 
   /// Swapped for a fake in tests.
-  http.Client Function() clientFactory = http.Client.new;
+  http.Client Function() clientFactory = kioskPeerClient;
 
   /// How long one call to another kiosk may take. A kiosk on the list is on
   /// the same network, so anything past this is a kiosk that is not there.
@@ -270,17 +308,24 @@ class FleetSyncManager extends Manager {
   String _selfId = '';
   String _selfName = '';
   String _selfVersion = '';
+  FleetDevice? _self;
 
   Timer? _timer;
   Timer? _bump;
   int _ticks = 0;
   bool _ticking = false;
+  bool _remoteObserved = false;
   DateTime _watchedUntil = DateTime.fromMillisecondsSinceEpoch(0);
   final _subs = <StreamSubscription<Object?>>[];
 
   /// Followers already told to install a release, by the version asked,
   /// so Keep followers on this version asks once per release.
   final _autoUpdated = <String, String>{};
+
+  /// The fleet install of an uploaded APK under way or the last one done,
+  /// as `install` in [status]: which kiosk the APK is going to and how far,
+  /// who is installing, who was skipped and why. Both UIs ride it.
+  Map<String, Object?>? _install;
 
   /// Followers, for the device UI (the remote reads `fleetStatus`).
   List<Follower> get followers => List.unmodifiable(_followers);
@@ -358,11 +403,25 @@ class FleetSyncManager extends Manager {
 
   @override
   Future<void> init() async {
+    _subs.add(
+      bus.on<RemoteObserversChanged>().listen((event) {
+        _remoteObserved = event.topics.contains('fleetsync');
+      }),
+    );
     _loadFollowers();
     await _loadProfiles();
     _register();
 
     _subs.add(bus.on<SettingChanged>().listen(_onSettingChanged));
+    // The leader's custom wake word models changed: pass them on soon, as
+    // a setting change is.
+    _subs.add(
+      bus.on<RemoteStatusChanged>().listen((e) {
+        if (e.topic != 'wake-models' || !leading) return;
+        _bump?.cancel();
+        _bump = Timer(const Duration(seconds: 2), _scheduleTick);
+      }),
+    );
     // A kiosk coming back on the network is the moment to look again.
     _subs.add(
       bus.on<FleetChanged>().listen((_) {
@@ -428,7 +487,7 @@ class FleetSyncManager extends Manager {
         if (list is List) {
           for (final item in list) {
             var p = SyncProfile.parse(item);
-            if (p == null || p.id.isEmpty) continue;
+            if (p == null || p.id.isEmpty || p.isUpdatesOnly) continue;
             // An exclusion list nobody touched follows the default as it
             // grows (the volumes joined it after the first profiles).
             final excluded = p.excluded;
@@ -449,12 +508,19 @@ class FleetSyncManager extends Manager {
       _profiles.insert(0, SyncProfile.initial);
       changed = true;
     }
+    // Right after the Default, in code only: the setting never carries it,
+    // so an edit cannot stick and an older version that reads the setting
+    // does not meet a profile it would let the leader change.
+    _profiles.insert(1, SyncProfile.updatesOnly);
     if (changed) await _saveProfiles();
   }
 
   Future<void> _saveProfiles() => _settings.set(
     defs.fleetProfiles,
-    jsonEncode([for (final p in _profiles) p.toJson()]),
+    jsonEncode([
+      for (final p in _profiles)
+        if (!p.isUpdatesOnly) p.toJson(),
+    ]),
   );
 
   Future<void> _saveFollowers() => _settings.set(
@@ -474,6 +540,7 @@ class FleetSyncManager extends Manager {
     if (data is! Map) return;
     for (final d in (data['devices'] as List? ?? const [])) {
       if (d is Map && d['self'] == true) {
+        _self = FleetDevice.directoryEntry(d);
         _selfId = '${d['id'] ?? ''}';
         _selfName = '${d['name'] ?? ''}';
         _selfVersion = '${d['version'] ?? ''}';
@@ -572,7 +639,7 @@ class FleetSyncManager extends Manager {
   void _onTimer() {
     _ticks++;
     if (!leading) return;
-    final watched = DateTime.now().isBefore(_watchedUntil);
+    final watched = _remoteObserved || DateTime.now().isBefore(_watchedUntil);
     if (watched || _ticks % 10 == 0) unawaited(_tick());
   }
 
@@ -586,36 +653,40 @@ class FleetSyncManager extends Manager {
     if (!leading || !enabled || _ticking) return;
     _ticking = true;
     try {
-      if (_selfId.isEmpty) await _readSelf();
+      await _readSelf();
       final peers = await _peers();
-      final listening = peers.isNotEmpty || await _discoveryListening();
+      final before = jsonEncode([for (final f in _followers) f.toJson()]);
       var changed = false;
+      // The leader's custom wake word models, read once per tick. Null when
+      // they could not be read: a failed read must never look like an empty
+      // set, which would clear every follower's models.
+      Map<String, String>? models;
+      var modelsRead = false;
       for (final f in _followers) {
         if (only != null && f.id != only) continue;
         final peer = peers[f.id];
         if (peer != null) {
-          f.online = true;
           final address = '${peer['address'] ?? f.address}';
           final port = (peer['port'] as num?)?.toInt() ?? f.port;
           final version = '${peer['version'] ?? f.version}';
           final peerName = '${peer['name'] ?? f.name}';
-          if (address != f.address ||
+          final tls = peer['tls'] == true;
+          if (tls != f.tls ||
+              address != f.address ||
               port != f.port ||
               version != f.version ||
               peerName != f.name) {
             f
+              ..tls = tls
               ..address = address
               ..port = port
               ..version = version
               ..name = peerName;
             changed = true;
           }
-        } else if (listening) {
-          // Heard nothing from it: not there. Where this kiosk cannot
-          // hear (the mDNS port is taken), every follower is tried.
-          f.online = false;
-          continue;
         }
+        // Membership survives missing multicast. Try the saved endpoint
+        // and let its answer determine whether this follower is online.
         if (f.invite != null) {
           changed = await _pollInvite(f) || changed;
           continue;
@@ -633,27 +704,35 @@ class FleetSyncManager extends Manager {
         if (force || f.dirty || f.appliedRevision != fingerprintFor(f)) {
           changed = await _push(f) || changed;
         }
+        if (f.error == null && f.token != null) {
+          if (!modelsRead) {
+            models = await _wakeModels();
+            modelsRead = true;
+          }
+          if (models != null) {
+            changed = await _syncWakeModels(f, models) || changed;
+          }
+        }
       }
-      if (changed) await _saveFollowers();
+      if (changed ||
+          before != jsonEncode([for (final f in _followers) f.toJson()])) {
+        await _saveFollowers();
+      }
+      await _shareRoster();
     } finally {
       _ticking = false;
       _publish();
     }
   }
 
-  /// Whether this kiosk hears the others at all (the mDNS port could be
-  /// taken); a deaf kiosk polls every follower instead of trusting an
-  /// empty list.
-  Future<bool> _discoveryListening() async {
-    final r = await commands.execute('fleet', const {});
-    final data = r.data;
-    return data is Map && data['enabled'] == true && data['listening'] != false;
-  }
-
   Future<bool> _pollInvite(Follower f) async {
     final res = await _get('${f.url}/api/fleet/invite/${f.invite}');
     final body = _jsonOf(res);
-    if (body == null) return false;
+    if (res?.statusCode != 200 || body == null) {
+      f.online = false;
+      return false;
+    }
+    f.online = true;
     switch (body['status']) {
       case 'accepted':
         final token = body['token'];
@@ -689,6 +768,8 @@ class FleetSyncManager extends Manager {
   }
 
   Future<void> _pollStatus(Follower f) async {
+    f.online = false;
+    f.rosterRevision = null;
     final res = await _get('${f.url}/api/fleet/status', token: f.token);
     if (res == null) {
       f.error = 'Unreachable';
@@ -704,19 +785,99 @@ class FleetSyncManager extends Manager {
       return;
     }
     final body = _jsonOf(res);
-    if (body == null) {
+    if (res.statusCode != 200 || body == null) {
       f.error = 'Bad answer';
+      return;
+    }
+    // A saved address can be reassigned to another kiosk by DHCP.
+    if (body['id'] != f.id || body['leaderId'] != _selfId) {
+      f.error = 'The address belongs to a different kiosk or fleet';
       return;
     }
     f
       ..error = null
       ..online = true
+      ..rosterRevision = body['rosterRevision'] is String
+          ? body['rosterRevision'] as String
+          : null
       ..version = '${body['version'] ?? f.version}'
       ..appliedRevision = body['appliedRevision'] as String?
       ..dirty = body['dirty'] == true
       ..update = (body['update'] as Map?)?.cast<String, Object?>();
     final peerName = body['name'];
     if (peerName is String && peerName.isNotEmpty) f.name = peerName;
+  }
+
+  /// Send membership independently of settings and version compatibility.
+  /// A status response advertises support and acknowledges the stored list.
+  Future<void> _shareRoster() async {
+    if (!leading || _self == null) return;
+    final members = [
+      _self!,
+      for (final f in _followers)
+        if (f.token != null && f.invite == null && !f.declined)
+          FleetDevice(
+            id: f.id,
+            name: f.name,
+            version: f.version,
+            address: f.address,
+            port: f.port,
+            tls: f.tls,
+          ),
+    ]..sort((a, b) => a.id.compareTo(b.id));
+    final devices = [for (final member in members) member.toDirectory()];
+    final revision = _rosterRevision(jsonEncode(devices));
+    for (final f in _followers.toList()) {
+      if (!leading) return;
+      if (f.token == null ||
+          !f.online ||
+          f.rosterRevision == null ||
+          f.rosterRevision == revision) {
+        continue;
+      }
+      final response = await _post('${f.url}/api/fleet/roster', {
+        'devices': devices,
+      }, token: f.token);
+      final body = _jsonOf(response);
+      if (response?.statusCode == 200 && body?['ok'] == true) {
+        f.rosterRevision = revision;
+      }
+    }
+  }
+
+  static String _rosterRevision(String roster) =>
+      roster.isEmpty ? '' : md5.convert(utf8.encode(roster)).toString();
+
+  Future<String?> receiveRoster(Map<String, Object?> p) async {
+    if (!following) return 'This kiosk follows nobody';
+    final raw = p['devices'];
+    if (raw is! List) return 'devices must be a list';
+    final members = <String, FleetDevice>{};
+    for (final item in raw) {
+      final member = FleetDevice.directoryEntry(item);
+      if (member == null || members.containsKey(member.id)) {
+        return 'Invalid fleet member';
+      }
+      members[member.id] = member;
+    }
+    final currentLeader = leader!;
+    final updatedLeader = members[currentLeader['id']];
+    if (updatedLeader == null) {
+      return 'The roster must include this kiosk\'s leader';
+    }
+    final sorted = members.values.toList()
+      ..sort((a, b) => a.id.compareTo(b.id));
+    final roster = jsonEncode([
+      for (final member in sorted) member.toDirectory(),
+    ]);
+    final leaderInfo = jsonEncode(updatedLeader.toDirectory());
+    if (_settings.get(defs.fleetLeaderInfo) != leaderInfo) {
+      await _settings.set(defs.fleetLeaderInfo, leaderInfo);
+    }
+    if (_settings.get(defs.fleetRoster) != roster) {
+      await _settings.set(defs.fleetRoster, roster);
+    }
+    return null;
   }
 
   /// Push a follower everything its list allows. The full set every time,
@@ -763,6 +924,89 @@ class FleetSyncManager extends Manager {
     return true;
   }
 
+  /// The leader's custom wake word files with their SHA-256, by
+  /// `folder/name`.
+  Future<Map<String, String>?> _wakeModels() async {
+    final r = await commands.execute('customWakeModelsManifest', const {});
+    final files = r.ok && r.data is Map ? (r.data as Map)['files'] : null;
+    return files is Map
+        ? {for (final e in files.entries) '${e.key}': '${e.value}'}
+        : null;
+  }
+
+  /// Followers mirror the leader's custom wake word models while their
+  /// profile syncs Voice Satellite: what is missing or different is sent,
+  /// what the leader does not have is removed. Compared by hash, so an
+  /// unchanged set costs one request per follower until the leader's
+  /// changes, and a follower that was away catches up on its next tick.
+  Future<bool> _syncWakeModels(Follower f, Map<String, String> mine) async {
+    if (!profileFor(f).categories.contains('Voice Satellite')) return false;
+    final revision = fingerprintOf(mine);
+    if (f.wakeModelsRevision == revision) return false;
+    final res = await _get('${f.url}/api/fleet/wake-models', token: f.token);
+    final body = _jsonOf(res);
+    final data = body?['data'];
+    // A follower without the route runs an older build: its version check
+    // holds it anyway until it updates.
+    if (res?.statusCode != 200 || data is! Map || data['files'] is! Map) {
+      return false;
+    }
+    final theirs = {
+      for (final e in (data['files'] as Map).entries) '${e.key}': '${e.value}',
+    };
+    for (final e in mine.entries) {
+      if (theirs[e.key] == e.value) continue;
+      final path = await commands.execute('customWakeModelPath', {
+        'path': e.key,
+      });
+      final local = path.ok && path.data is Map
+          ? (path.data as Map)['path']
+          : null;
+      if (local is! String) continue;
+      final sent = await _upload(
+        '${f.url}/api/fleet/wake-models?path=${Uri.encodeQueryComponent(e.key)}',
+        File(local),
+        token: f.token,
+        method: 'PUT',
+        contentType: 'application/octet-stream',
+      );
+      if (sent?.statusCode != 200) {
+        f.error = 'Could not send the wake word model ${e.key.split('/').last}';
+        log.warn(name, '${f.name}: ${f.error} (${sent?.statusCode})');
+        return true;
+      }
+    }
+    for (final path in theirs.keys) {
+      if (mine.containsKey(path)) continue;
+      await _delete(
+        '${f.url}/api/fleet/wake-models?path=${Uri.encodeQueryComponent(path)}',
+        token: f.token,
+      );
+    }
+    f.wakeModelsRevision = revision;
+    log.info(
+      name,
+      'wake word models in step on ${f.name} (${mine.length} files)',
+    );
+    return false;
+  }
+
+  Future<void> _delete(String url, {String? token}) async {
+    final client = clientFactory();
+    try {
+      await client
+          .delete(
+            Uri.parse(url),
+            headers: {if (token != null) 'Authorization': 'Bearer $token'},
+          )
+          .timeout(requestTimeout);
+    } catch (e) {
+      log.debug(name, 'DELETE $url: $e');
+    } finally {
+      client.close();
+    }
+  }
+
   /// Keep followers on this version: a follower behind this kiosk that is
   /// offered exactly this release installs it, once per release.
   Future<void> _maybeAutoUpdate(Follower f) async {
@@ -800,6 +1044,11 @@ class FleetSyncManager extends Manager {
   /// Whether one setting travels under [profile].
   static bool syncs(defs.SettingDef<Object> def, SyncProfile profile) {
     if (def.perDevice) return false;
+    final lead = defs.fleetFollowsKey[def.key];
+    if (lead != null) {
+      final leadDef = defs.allSettings.where((d) => d.key == lead).first;
+      return syncs(leadDef, profile);
+    }
     if (profile.excluded.contains(def.key)) return false;
     if (defs.fleetCredentialKeys.contains(def.key)) {
       return profile.credentials.contains(def.key);
@@ -902,7 +1151,7 @@ class FleetSyncManager extends Manager {
           quiet: true,
           handler: (_) async {
             _watchedUntil = DateTime.now().add(const Duration(seconds: 90));
-            if (_selfId.isEmpty) await _readSelf();
+            await _readSelf();
             return CommandResult.ok(status());
           },
         ),
@@ -920,19 +1169,40 @@ class FleetSyncManager extends Manager {
       )
       ..register(
         Command(
+          name: 'fleetLookup',
+          description: 'Find a kiosk by IP address before inviting it.',
+          params: const {
+            'address': 'The kiosk IP address',
+            'port': 'Its remote admin port, default 2324',
+          },
+          handler: (p) async {
+            final (error, kiosk) = await lookupKiosk(p['address'], p['port']);
+            return error == null
+                ? CommandResult.ok(kiosk)
+                : CommandResult.fail(error);
+          },
+        ),
+      )
+      ..register(
+        Command(
           name: 'fleetInvite',
           description:
-              'Invite a kiosk heard on the network to follow this one. The '
+              'Invite a discovered kiosk or one found by IP address. The '
               'invitation waits on that kiosk\'s screen; nothing is synced '
               'until it is accepted there.',
           params: const {
-            'id': 'The kiosk id, from fleetCandidates',
+            'id': 'The kiosk id, from fleetCandidates or fleetLookup',
+            'address':
+                'The IP address returned by fleetLookup, if entered manually',
+            'port': 'Its remote admin port, default 2324',
             'profile': 'The profile id it gets or omitted for the Default',
           },
           handler: (p) async {
             final r = await inviteKiosk(
               '${p['id'] ?? ''}',
               p['profile'] as String?,
+              address: p['address'],
+              port: p['port'],
             );
             return r == null
                 ? const CommandResult.ok(true)
@@ -1045,6 +1315,33 @@ class FleetSyncManager extends Manager {
       )
       ..register(
         Command(
+          name: 'fleetExport',
+          description:
+              'The full configuration of this kiosk and each follower, '
+              'secrets included, as one backup. A follower that does not '
+              'answer is listed with the reason.',
+          handler: (_) async => CommandResult.ok(await exportFleet()),
+        ),
+      )
+      ..register(
+        Command(
+          name: 'fleetInstallUploaded',
+          description:
+              'Push the APK uploaded to this kiosk (POST /api/update/upload) '
+              'to each follower and install it there, then install it here. '
+              'Followers first so this one stays up to drive it',
+          params: const {'id': 'One follower or omitted for the fleet'},
+          handler: (p) async {
+            final out = await installUploadedOnFleet('${p['id'] ?? ''}');
+            final error = out['error'];
+            return error is String
+                ? CommandResult.fail(error)
+                : CommandResult.ok(out);
+          },
+        ),
+      )
+      ..register(
+        Command(
           name: 'fleetAccept',
           description:
               'Accept the invitation waiting on this kiosk. Answered on '
@@ -1091,7 +1388,7 @@ class FleetSyncManager extends Manager {
               'whether it leads and whom it follows.',
           quiet: true,
           handler: (_) async {
-            if (_selfId.isEmpty) await _readSelf();
+            await _readSelf();
             return CommandResult.ok({
               'id': _selfId,
               'name': _selfName,
@@ -1167,6 +1464,20 @@ class FleetSyncManager extends Manager {
       )
       ..register(
         Command(
+          name: 'fleetRosterReceived',
+          description:
+              'Store the member directory sent by this kiosk\'s leader.',
+          params: const {'devices': 'Fleet members and their admin addresses'},
+          handler: (p) async {
+            final error = await receiveRoster(p);
+            return error == null
+                ? const CommandResult.ok(true)
+                : CommandResult.fail(error);
+          },
+        ),
+      )
+      ..register(
+        Command(
           name: 'fleetLeaderLeft',
           description: 'The leader removed this kiosk: forget it.',
           handler: (_) async {
@@ -1194,7 +1505,11 @@ class FleetSyncManager extends Manager {
         if (!taken.contains(e.key))
           () async {
             final p = e.value;
-            final url = 'http://${p['address']}:${p['port']}';
+            final url = Uri(
+              scheme: p['tls'] == true ? 'https' : 'http',
+              host: '${p['address']}',
+              port: (p['port'] as num).toInt(),
+            ).toString();
             // The status matters: a build without the endpoint answers
             // its login gate with a JSON body of its own.
             final probe = await _get('$url/api/fleet/identity');
@@ -1206,6 +1521,7 @@ class FleetSyncManager extends Manager {
               'name': p['name'],
               'address': p['address'],
               'port': p['port'],
+              if (p['tls'] == true) 'tls': true,
               'version': p['version'],
               'follows': identity?['follows'],
               'leader': identity?['leader'] == true,
@@ -1222,32 +1538,141 @@ class FleetSyncManager extends Manager {
     return out;
   }
 
-  /// Send the invitation. Null on success, else why not.
-  Future<String?> inviteKiosk(String id, String? profile) async {
+  /// Resolve a manual address without sending an invitation or saving a member.
+  Future<(String?, Map<String, Object?>?)> lookupKiosk(
+    Object? address,
+    Object? port, {
+    String? expectedId,
+    bool allowExisting = false,
+  }) async {
+    if (!leading) return ('Lead this fleet is off', null);
+    if (!enabled) {
+      return ('The remote admin and Find other kiosks must be on', null);
+    }
+    final ip = address is String
+        ? InternetAddress.tryParse(address.trim())
+        : null;
+    if (ip == null) return ('Enter a valid IP address.', null);
+    final number = port == null
+        ? 2324
+        : port is int
+        ? port
+        : port is String
+        ? int.tryParse(port.trim())
+        : null;
+    if (number == null || number < 1 || number > 65535) {
+      return ('Enter a port from 1 to 65535.', null);
+    }
+    await _readSelf();
+    if (_selfId.isEmpty) {
+      return ('This kiosk identity is not ready yet. Try again.', null);
+    }
+    final discovered = (await _peers()).values
+        .where((p) => p['address'] == ip.address && p['port'] == number)
+        .firstOrNull;
+    var secure = discovered?['tls'] == true;
+    final url = Uri(
+      scheme: secure ? 'https' : 'http',
+      host: ip.address,
+      port: number,
+    );
+    var probe = await _get('$url/api/fleet/identity');
+    // Manual lookup can reach an encrypted kiosk before discovery sees it.
+    // Only this public identity probe retries with a different protocol.
+    if (probe == null && !secure) {
+      probe = await _get('${url.replace(scheme: 'https')}/api/fleet/identity');
+      secure = probe != null;
+    }
+    if (probe == null) return ('That kiosk did not answer', null);
+    if (probe.statusCode != 200) {
+      return (
+        'That kiosk runs a build without Fleet Management. It joins once it runs one.',
+        null,
+      );
+    }
+    final identity = _jsonOf(probe);
+    final id = identity?['id'];
+    if (id is! String ||
+        id.isEmpty ||
+        identity?['name'] is! String ||
+        identity?['version'] is! String ||
+        identity?['leader'] is! bool) {
+      return ('That address did not return a valid kiosk identity.', null);
+    }
+    if (id == _selfId) return ('Pick another kiosk', null);
+    if (expectedId != null && id != expectedId) {
+      return ('The address belongs to a different kiosk or fleet', null);
+    }
+    final existing = _follower(id);
+    if (!allowExisting &&
+        existing != null &&
+        (existing.token != null || existing.invite != null)) {
+      return ('This kiosk already belongs to this fleet.', null);
+    }
+    if (identity!['leader'] == true) return ('That kiosk leads a fleet.', null);
+    if (identity['follows'] != null && !(allowExisting && existing != null)) {
+      return ('That kiosk already follows another leader.', null);
+    }
+    return (
+      null,
+      {
+        'id': id,
+        'name': identity['name'],
+        'version': identity['version'],
+        'address': ip.address,
+        'port': number,
+        'supported': true,
+        'manual': true,
+        if (secure) 'tls': true,
+      },
+    );
+  }
+
+  /// Recheck identity before sending the invitation to the selected endpoint.
+  Future<String?> inviteKiosk(
+    String id,
+    String? profile, {
+    Object? address,
+    Object? port,
+  }) async {
     if (!leading) return 'Lead this fleet is off';
     if (!enabled) return 'The remote admin and Find other kiosks must be on';
     if (id.isEmpty || id == _selfId) return 'Pick another kiosk';
-    final peer = (await _peers())[id];
-    if (peer == null) return 'That kiosk is not on the network right now';
-    if (_selfId.isEmpty) await _readSelf();
-    final nonce = _nonce();
-    final address = '${peer['address']}';
-    final port = (peer['port'] as num?)?.toInt() ?? 2324;
-    // Asked first: a kiosk on a build without Fleet Management answers
-    // the invitation with its login gate, and "unauthorized" says nothing.
-    final probe = await _get('http://$address:$port/api/fleet/identity');
-    if (probe == null) return 'That kiosk did not answer';
-    if (probe.statusCode != 200) {
-      return 'That kiosk runs a build without Fleet Management. It joins '
-          'once it runs one.';
+    if (profile != null && !_profiles.any((p) => p.id == profile)) {
+      return 'No such profile';
     }
-    final res = await _post('http://$address:$port/api/fleet/invite', {
+    final manual = address != null;
+    if (!manual) {
+      final peer = (await _peers())[id];
+      final saved = _follower(id);
+      address = peer?['address'] ?? saved?.address;
+      port = peer?['port'] ?? saved?.port;
+      if (address == null) return 'That kiosk is not on the network right now';
+    }
+    final (error, found) = await lookupKiosk(
+      address,
+      port,
+      expectedId: id,
+      allowExisting: !manual,
+    );
+    if (error != null) return error;
+    final peer = found!;
+    final host = peer['address'] as String;
+    final adminPort = peer['port'] as int;
+    final url = Uri(
+      scheme: peer['tls'] == true ? 'https' : 'http',
+      host: host,
+      port: adminPort,
+    );
+    final nonce = _nonce();
+    final res = await _post('$url/api/fleet/invite', {
       'invite': nonce,
       'leader': {
         'id': _selfId,
         'name': _selfName,
         'version': _selfVersion,
         'port': _settings.get(defs.remotePort).toInt(),
+        if (_settings.get(defs.remoteTls)) 'tls': true,
       },
     });
     final body = _jsonOf(res);
@@ -1260,14 +1685,15 @@ class FleetSyncManager extends Manager {
         existing ??
         Follower(
           id: id,
-          name: '${peer['name'] ?? address}',
-          address: address,
-          port: port,
+          name: '${peer['name'] ?? host}',
+          address: host,
+          port: adminPort,
         );
     f
+      ..tls = peer['tls'] == true
       ..name = '${peer['name'] ?? f.name}'
-      ..address = address
-      ..port = port
+      ..address = host
+      ..port = adminPort
       ..version = '${peer['version'] ?? ''}'
       ..profile = profile == null || profile == SyncProfile.defaultId
           ? null
@@ -1290,7 +1716,7 @@ class FleetSyncManager extends Manager {
     }
     if (existing == null) _followers.add(f);
     await _saveFollowers();
-    log.info(name, 'invited ${f.name} at $address');
+    log.info(name, 'invited ${f.name} at $host');
     _publish();
     _scheduleTick();
     return null;
@@ -1304,6 +1730,9 @@ class FleetSyncManager extends Manager {
     if (profile.id.isEmpty) {
       if (trimmedName.isEmpty) return ('A profile needs a name', null);
       profile = profile.copyWith(id: _nonce().substring(0, 12));
+    }
+    if (profile.isUpdatesOnly) {
+      return ('The Updates only profile cannot be changed', null);
     }
     if (profile.isDefault) {
       profile = profile.copyWith(name: 'Default');
@@ -1333,6 +1762,9 @@ class FleetSyncManager extends Manager {
 
   Future<String?> deleteProfile(String id) async {
     if (id == SyncProfile.defaultId) return 'The Default profile stays';
+    if (id == SyncProfile.updatesOnlyId) {
+      return 'The Updates only profile stays';
+    }
     final at = _profiles.indexWhere((p) => p.id == id);
     if (at < 0) return 'No such profile';
     _profiles.removeAt(at);
@@ -1365,9 +1797,15 @@ class FleetSyncManager extends Manager {
 
   /// Every setting a profile can take out: what travels with a category
   /// (the credentials and the dashboard have switches of their own), with
-  /// the page it lives on so a picker can say where it is.
+  /// the page it lives on so a picker can say where it is. Home Assistant's
+  /// mirrored selects are hidden settings but travel like any other, so the
+  /// pickers list them on the Voice Satellite page that draws them.
   List<Map<String, Object?>> syncable() {
     final titles = {for (final c in defs.fleetSyncCategories) c.$1: c.$2};
+    final selects = {
+      for (final e in defs.voiceHaSelectSettings.entries)
+        e.value.key: e.key.startsWith('wake_word') ? 'Wake Word' : 'Assistant',
+    };
     return [
       for (final d in defs.allSettings)
         if (!d.perDevice &&
@@ -1379,8 +1817,9 @@ class FleetSyncManager extends Manager {
             'title': d.title,
             'description': d.description,
             'category': titles[defs.fleetCategoryOf(d)],
-            if (d.subpage != null) 'subpage': d.subpage,
-            'hidden': d.hidden,
+            if ((d.subpage ?? selects[d.key]) != null)
+              'subpage': d.subpage ?? selects[d.key],
+            'hidden': d.hidden && !selects.containsKey(d.key),
           },
     ];
   }
@@ -1394,6 +1833,7 @@ class FleetSyncManager extends Manager {
       unawaited(_post('${f.url}/api/fleet/leave', {}, token: f.token));
     }
     log.info(name, 'removed ${f.name} from the fleet');
+    _scheduleTick();
     _publish();
     return null;
   }
@@ -1456,6 +1896,203 @@ class FleetSyncManager extends Manager {
     return {'started': started, 'skipped': skipped, 'self': self};
   }
 
+  /// The full configuration of this kiosk and every follower, for a backup
+  /// of the whole fleet in one call. Each follower answers its own
+  /// `exportConfig` over the fleet token, secrets included, like the
+  /// admin's own export. A follower that cannot be reached is listed with
+  /// the reason instead, so one tablet that is off never fails the rest.
+  Future<Map<String, Object?>> exportFleet() async {
+    await _readSelf();
+    final own = await commands.execute('exportConfig', const {});
+    final ownConfig = (own.data as Map?)?.cast<String, Object?>();
+    Future<Map<String, Object?>> follower(Follower f) async {
+      final entry = <String, Object?>{'id': f.id, 'name': f.name};
+      final res = await _get('${f.url}/api/config/export', token: f.token);
+      final body = _jsonOf(res);
+      if (res == null) {
+        entry['error'] = 'Unreachable';
+      } else if (res.statusCode == 200 &&
+          body?['kind'] == 'kiosk-satellite-config') {
+        entry['config'] = body;
+      } else if (body?['error'] == 'fleet token') {
+        // Older kiosks keep their configuration away from a fleet token.
+        entry['error'] = 'Update this kiosk to export it from the fleet';
+      } else if (res.statusCode == 401 || res.statusCode == 403) {
+        entry['error'] = 'No longer follows this kiosk';
+      } else {
+        entry['error'] = '${body?['error'] ?? 'Bad answer'}';
+      }
+      return entry;
+    }
+
+    final followers = leading
+        ? await Future.wait([
+            for (final f in _followers)
+              if (f.token != null) follower(f),
+          ])
+        : const <Map<String, Object?>>[];
+    final exported = followers.where((d) => d['config'] != null).length;
+    log.info(
+      name,
+      'exported the configuration of this kiosk and $exported of '
+      '${followers.length} follower(s)',
+    );
+    return {
+      'kind': 'kiosk-satellite-fleet-config',
+      'version': 1,
+      'exportedAt': DateTime.now().toIso8601String(),
+      'devices': [
+        {
+          'id': _selfId,
+          'name': _selfName.isNotEmpty
+              ? _selfName
+              : '${ownConfig?['deviceName'] ?? ''}',
+          'self': true,
+          if (own.ok) 'config': ownConfig else 'error': own.error,
+        },
+        ...followers,
+      ],
+    };
+  }
+
+  /// How long one APK upload to a follower may take. A release APK is
+  /// under 200 MB and a wall tablet's Wi-Fi moves that in a minute or two;
+  /// the ceiling is for one that stalls.
+  @visibleForTesting
+  Duration uploadTimeout = const Duration(minutes: 15);
+
+  /// Install the APK uploaded to this kiosk on the fleet (issue #566): the
+  /// file is streamed to each follower's own upload endpoint, which
+  /// inspects it under the same rules (a newer Kiosk Satellite build) and
+  /// installs it, then this kiosk installs its own copy. Followers first
+  /// so this one stays up to drive it. Answers who was told and who was
+  /// skipped, with the reason, or `error` when nothing is uploaded here.
+  Future<Map<String, Object?>> installUploadedOnFleet(String id) async {
+    if (_install?['done'] == false) {
+      return {'error': 'A fleet install is already under way.'};
+    }
+    final status = await commands.execute('getUpdateStatus', const {});
+    final data = status.data;
+    final up = data is Map ? data['uploaded'] : null;
+    if (up is! Map) return {'error': 'No uploaded APK is waiting.'};
+    final file = File('${up['path']}');
+    if (!await file.exists()) {
+      return {'error': 'The uploaded APK is gone. Upload it again.'};
+    }
+    final version = '${up['version']}';
+    final build = (up['buildNumber'] as num?)?.toInt() ?? 0;
+    final started = <String>[];
+    final skipped = <String, String>{};
+    final install = _install = {
+      'version': version,
+      'buildNumber': build,
+      'startedAt': DateTime.now().millisecondsSinceEpoch,
+      'done': false,
+      'sendingTo': null,
+      'progress': null,
+      'started': started,
+      'skipped': skipped,
+      'self': null,
+    };
+    _publish();
+    try {
+      for (final f in _followers) {
+        if (id.isNotEmpty && f.id != id) continue;
+        if (f.token == null) {
+          skipped[f.name] = 'not a follower yet';
+          continue;
+        }
+        if (!f.online) {
+          skipped[f.name] = 'offline';
+          continue;
+        }
+        log.info(name, 'sending v$version to ${f.name}');
+        install
+          ..['sendingTo'] = f.name
+          ..['progress'] = 0.0;
+        f.sending = 0;
+        _publish();
+        var last = DateTime.now();
+        final sent = _jsonOf(
+          await _upload(
+            '${f.url}/api/update/upload',
+            file,
+            token: f.token,
+            onProgress: (fraction) {
+              f.sending = fraction;
+              install['progress'] = fraction;
+              // Every half second, not every chunk: each publish is a
+              // status read on every admin page open.
+              final now = DateTime.now();
+              if (now.difference(last) < const Duration(milliseconds: 500)) {
+                return;
+              }
+              last = now;
+              _publish();
+            },
+          ),
+        );
+        f.sending = null;
+        install
+          ..['sendingTo'] = null
+          ..['progress'] = null;
+        if (sent?['ok'] != true) {
+          skipped[f.name] = '${sent?['error'] ?? 'did not take the upload'}';
+          _publish();
+          continue;
+        }
+        final accepted = sent!['data'];
+        if (accepted is Map && accepted['currentBuild'] == build) {
+          skipped[f.name] = 'already on $version';
+          _publish();
+          continue;
+        }
+        final res = _jsonOf(
+          await _post(
+            '${f.url}/api/commands/installUploadedApk',
+            {},
+            token: f.token,
+          ),
+        );
+        if (res?['ok'] == true) {
+          started.add(f.name);
+          // It just answered: whatever the last poll held against it is
+          // stale, and the row says Installing until the poll says more.
+          f
+            ..error = null
+            ..update = {...?f.update, 'installing': true};
+        } else {
+          skipped[f.name] = '${res?['error'] ?? 'did not answer'}';
+        }
+        _publish();
+      }
+      var self = false;
+      if (id.isEmpty) {
+        final r = await commands.execute('installUploadedApk', const {});
+        self = r.ok;
+        if (!r.ok) {
+          skipped[_selfName.isEmpty ? 'this kiosk' : _selfName] = '${r.error}';
+        }
+      }
+      install['self'] = self;
+      log.info(
+        name,
+        'install the uploaded v$version on the fleet: ${started.length} '
+        'follower(s) installing${self ? ', then this kiosk' : ''}',
+      );
+      return {'started': started, 'skipped': skipped, 'self': self};
+    } finally {
+      for (final f in _followers) {
+        f.sending = null;
+      }
+      install
+        ..['done'] = true
+        ..['sendingTo'] = null
+        ..['progress'] = null;
+      _publish();
+    }
+  }
+
   // ── The follower's actions ──────────────────────────────────────────
 
   Future<(String?, Map<String, Object?>?)> receiveInvite(
@@ -1475,7 +2112,14 @@ class FleetSyncManager extends Manager {
     // The kiosk at the address the invitation came from must be the one
     // it claims to be and must lead.
     final identity = _jsonOf(
-      await _get('http://$address:$port/api/fleet/identity'),
+      await _get(
+        Uri(
+          scheme: leaderRaw['tls'] == true ? 'https' : 'http',
+          host: address,
+          port: port,
+          path: '/api/fleet/identity',
+        ).toString(),
+      ),
     );
     if (identity == null || '${identity['id']}' != leaderId) {
       return ('The invitation does not match the kiosk it came from', null);
@@ -1488,6 +2132,7 @@ class FleetSyncManager extends Manager {
       'id': leaderId,
       'name': '${leaderRaw['name'] ?? identity['name'] ?? address}',
       'version': '${leaderRaw['version'] ?? identity['version'] ?? ''}',
+      if (leaderRaw['tls'] == true) 'tls': true,
       'address': address,
       'port': port,
     };
@@ -1550,6 +2195,7 @@ class FleetSyncManager extends Manager {
     final token = await _mintToken('${leaderInfo['id']}');
     if (token == null) return 'Could not mint a token';
     await _settings.set(defs.fleetLeaderInfo, jsonEncode(leaderInfo));
+    await _settings.set(defs.fleetRoster, '');
     await _settings.set(defs.fleetAppliedRevision, '');
     await _settings.set(defs.fleetSyncedKeys, '');
     await _settings.set(defs.fleetLastSyncAt, 0);
@@ -1581,6 +2227,7 @@ class FleetSyncManager extends Manager {
 
   Future<void> _forgetLeader() async {
     await _settings.set(defs.fleetLeaderInfo, '');
+    await _settings.set(defs.fleetRoster, '');
     await _settings.set(defs.fleetSyncedKeys, '');
     await _settings.set(defs.fleetAppliedRevision, '');
     await _settings.set(defs.fleetLastSyncAt, 0);
@@ -1597,6 +2244,7 @@ class FleetSyncManager extends Manager {
       'name': _selfName,
       'version': _selfVersion,
       'leaderId': leader?['id'],
+      'rosterRevision': _rosterRevision(_settings.get(defs.fleetRoster)),
       'appliedRevision': applied.isEmpty ? null : applied,
       'dirty': applied.isEmpty && syncedKeys.isNotEmpty,
       'update': u is Map
@@ -1604,6 +2252,7 @@ class FleetSyncManager extends Manager {
               'currentVersion': u['currentVersion'],
               'availableVersion': u['availableVersion'],
               'progress': u['progress'],
+              'installing': u['installing'],
               'lastOutcome': u['lastOutcome'],
             }
           : null,
@@ -1719,6 +2368,7 @@ class FleetSyncManager extends Manager {
       ],
       'followers': rows(),
       'outdated': outdated,
+      'install': _install,
       'following': led == null
           ? null
           : {
@@ -1790,8 +2440,21 @@ class FleetSyncManager extends Manager {
     if (!f.online) {
       return {'phase': 'offline', 'status': 'Offline', 'tone': 'muted'};
     }
+    // The APK on its way is the freshest fact there is: it outranks the
+    // last poll's error and the version gap it is there to close.
+    final sending = f.sending;
+    if (sending != null) {
+      return {
+        'phase': 'updating',
+        'status': 'Sending ${(sending * 100).round()}%',
+        'tone': 'muted',
+      };
+    }
     if (f.error != null) {
       return {'phase': 'error', 'status': f.error, 'tone': 'warn'};
+    }
+    if (f.update?['installing'] == true) {
+      return {'phase': 'updating', 'status': 'Installing', 'tone': 'muted'};
     }
     if (f.version.isNotEmpty && mine.isNotEmpty) {
       final theirs = _versionName(f.version);
@@ -1891,6 +2554,49 @@ class FleetSyncManager extends Manager {
             body: jsonEncode(body),
           )
           .timeout(requestTimeout);
+    } catch (e) {
+      log.debug(name, 'POST $url: $e');
+      return null;
+    } finally {
+      client.close();
+    }
+  }
+
+  /// Streams [file] as the raw body of a POST, the way the update upload
+  /// endpoint takes an APK. The response comes once the whole file is
+  /// across, so this waits [uploadTimeout], not [requestTimeout].
+  Future<http.Response?> _upload(
+    String url,
+    File file, {
+    String? token,
+    void Function(double fraction)? onProgress,
+    String method = 'POST',
+    String contentType = 'application/vnd.android.package-archive',
+  }) async {
+    final client = clientFactory();
+    try {
+      final length = await file.length();
+      final request = http.StreamedRequest(method, Uri.parse(url))
+        ..contentLength = length
+        ..headers['Content-Type'] = contentType;
+      if (token != null) request.headers['Authorization'] = 'Bearer $token';
+      var done = 0;
+      final counted = onProgress == null || length == 0
+          ? file.openRead()
+          : file.openRead().map((chunk) {
+              done += chunk.length;
+              onProgress(done / length);
+              return chunk;
+            });
+      // pipe closes the sink after the last chunk, which is what ends the
+      // request; a read error ends it too and surfaces from send.
+      unawaited(
+        counted.pipe(request.sink).catchError((Object e) {
+          log.debug(name, 'upload $url: $e');
+        }),
+      );
+      final streamed = await client.send(request).timeout(uploadTimeout);
+      return await http.Response.fromStream(streamed).timeout(requestTimeout);
     } catch (e) {
       log.debug(name, 'POST $url: $e');
       return null;

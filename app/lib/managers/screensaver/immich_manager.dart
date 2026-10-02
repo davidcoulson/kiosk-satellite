@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' show Random;
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -10,16 +12,27 @@ import '../../core/command_registry.dart';
 import '../../core/events.dart';
 import '../../core/locale_dates.dart';
 import '../../core/manager.dart';
+import '../device/device_details.dart';
 import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 import 'screensaver_widgets.dart';
 
 /// One entry of the Immich screensaver playlist.
 class ImmichAsset {
-  const ImmichAsset({required this.id, required this.isVideo, this.aspect});
+  const ImmichAsset({
+    required this.id,
+    required this.isVideo,
+    this.aspect,
+    this.durationSeconds,
+  });
 
   final String id;
   final bool isVideo;
+
+  /// A video's length from the listing, or null for a photo or when the
+  /// server did not say. With the stream's size it says how much of the
+  /// video the player would buffer at once.
+  final double? durationSeconds;
 
   /// Width over height as the photo will appear, from the server's EXIF,
   /// or null when the server did not say. Known up front, it lets the
@@ -64,6 +77,9 @@ bool immichFiltersActive(SettingsManager settings) =>
       settings.get(defs.screensaverImmichExcludePeople),
     ).isNotEmpty ||
     decodeImmichNamed(settings.get(defs.screensaverImmichTags)).isNotEmpty ||
+    decodeImmichNamed(
+      settings.get(defs.screensaverImmichExcludeTags),
+    ).isNotEmpty ||
     settings.get(defs.screensaverImmichFavoritesOnly) ||
     immichTakenAfter(settings) != null ||
     immichTakenBefore(settings) != null;
@@ -162,14 +178,59 @@ const _portraitAspect = 0.95;
 /// pairing exists to avoid.
 const _pairableScreenAspect = 1.2;
 
+/// The mirror image for a portrait panel: a photo counts as landscape
+/// above this (the square band excluded for the same reason), and a screen
+/// this tall (or taller) has room for two landscape photos one above the
+/// other (issue #644).
+const _landscapeAspect = 1 / _portraitAspect;
+const _stackableScreenAspect = 1 / _pairableScreenAspect;
+
 /// Whether a photo of this shape (width over height, null when the decoder
 /// could not say) is portrait. An unmeasurable photo never pairs.
 bool immichPortraitPhoto(double? aspect) =>
     aspect != null && aspect < _portraitAspect;
 
+/// Whether a photo of this shape is landscape, square excluded.
+bool immichLandscapePhoto(double? aspect) =>
+    aspect != null && aspect > _landscapeAspect;
+
 /// Whether a panel of this shape has room for a pair.
 bool immichPairableScreen(double screenAspect) =>
     screenAspect >= _pairableScreenAspect;
+
+/// Whether a panel of this shape has room for two landscape photos stacked.
+bool immichStackableScreen(double screenAspect) =>
+    screenAspect > 0 && screenAspect <= _stackableScreenAspect;
+
+/// How two photos share a screen: side by side (two portrait photos on a
+/// landscape panel) or one above the other (two landscape photos on a
+/// portrait panel).
+enum ImmichPairing { sideBySide, stacked }
+
+/// The pairing a panel of this shape gets, with "Pair portrait photos" and
+/// "Pair landscape photos" as given, or null when neither applies: the
+/// panel decides which of the two can fill it, and a squarish one takes
+/// neither, since two halves of it would be slivers either way.
+ImmichPairing? immichPairingFor(
+  double screenAspect, {
+  required bool portrait,
+  required bool landscape,
+}) {
+  if (portrait && immichPairableScreen(screenAspect)) {
+    return ImmichPairing.sideBySide;
+  }
+  if (landscape && immichStackableScreen(screenAspect)) {
+    return ImmichPairing.stacked;
+  }
+  return null;
+}
+
+/// Whether a photo of this shape takes part in [pairing].
+bool immichPairPhoto(ImmichPairing pairing, double? aspect) =>
+    switch (pairing) {
+      ImmichPairing.sideBySide => immichPortraitPhoto(aspect),
+      ImmichPairing.stacked => immichLandscapePhoto(aspect),
+    };
 
 /// Whether two consecutive photos should share the screen: both portrait,
 /// on a landscape panel.
@@ -181,6 +242,17 @@ bool immichPairsPortrait({
     immichPairableScreen(screenAspect) &&
     immichPortraitPhoto(first) &&
     immichPortraitPhoto(second);
+
+/// Whether two consecutive photos should share the screen one above the
+/// other: both landscape, on a portrait panel.
+bool immichPairsLandscape({
+  required double screenAspect,
+  required double? first,
+  required double? second,
+}) =>
+    immichStackableScreen(screenAspect) &&
+    immichLandscapePhoto(first) &&
+    immichLandscapePhoto(second);
 
 /// The shape a photo will appear in, from an Immich `exifInfo` block:
 /// width over height, with the axes swapped when the orientation tag says
@@ -201,8 +273,10 @@ double? exifAspect(Object? exifInfo) {
   return turned ? height / width : width / height;
 }
 
-/// [assets] reordered so every portrait photo is followed by the portrait
-/// photo that will share the screen with it.
+/// [assets] reordered so every photo that pairs on this panel is followed
+/// by the photo that will share the screen with it: portrait photos on a
+/// landscape panel, landscape photos on a portrait one when [landscape]
+/// asks for it.
 ///
 /// Pairing at display time can only look at the next entry, so a portrait
 /// photo between two landscape ones would never find a partner however many
@@ -217,20 +291,26 @@ double? exifAspect(Object? exifInfo) {
 List<ImmichAsset> arrangeImmichPairs(
   List<ImmichAsset> assets, {
   required double screenAspect,
+  bool portrait = true,
+  bool landscape = false,
 }) {
-  if (!immichPairableScreen(screenAspect)) return assets;
+  final pairing = immichPairingFor(
+    screenAspect,
+    portrait: portrait,
+    landscape: landscape,
+  );
+  if (pairing == null) return assets;
+  bool pairs(ImmichAsset a) => !a.isVideo && immichPairPhoto(pairing, a.aspect);
   final remaining = [...assets];
   final out = <ImmichAsset>[];
   while (remaining.isNotEmpty) {
     final asset = remaining.removeAt(0);
     out.add(asset);
-    if (asset.isVideo || !immichPortraitPhoto(asset.aspect)) continue;
-    // The next portrait photo anywhere ahead, pulled back to sit beside
+    if (!pairs(asset)) continue;
+    // The next pairable photo anywhere ahead, pulled back to sit beside
     // this one. None left means this photo shows on its own, which is the
     // honest answer at the tail of the playlist.
-    final partner = remaining.indexWhere(
-      (a) => !a.isVideo && immichPortraitPhoto(a.aspect),
-    );
+    final partner = remaining.indexWhere(pairs);
     if (partner >= 0) out.add(remaining.removeAt(partner));
   }
   return out;
@@ -275,9 +355,82 @@ class ImmichManager extends Manager {
       _base.isNotEmpty &&
       _settings.get(defs.screensaverImmichApiKey).isNotEmpty;
 
+  /// Wall clock for the playlist's age and the warm-up lead.
+  DateTime Function() clock = DateTime.now;
+
+  /// The playlist as the server last answered it, kept between sessions so
+  /// a start does not wait on the listing: on a large library that is
+  /// seconds of paged searches behind a black screen. Ids only, and capped
+  /// by [_maxPlaylist]. An empty answer is never kept, so an album that
+  /// gets its first photos is seen on the next start.
+  List<ImmichAsset>? _playlist;
+  DateTime? _playlistAt;
+  Future<List<ImmichAsset>>? _playlistRefresh;
+
+  /// How old the kept playlist may get before a start refreshes it in the
+  /// background for the one after: the session in hand still starts on the
+  /// kept list. New uploads show within this plus one session.
+  static const playlistTtl = Duration(minutes: 10);
+
+  /// The next session, readied ahead of the idle clock (issue #659): the
+  /// order it will run in and the bytes of its first photo, so the start
+  /// pays only the decode. One photo, a preview of a few hundred KB, which
+  /// a 1 GB device can afford to hold between sessions.
+  List<ImmichAsset>? _warmOrder;
+  (String, Uint8List)? _warmImage;
+  Future<void>? _warming;
+  Timer? _warmTimer;
+
+  /// How long before the idle clock fires the warm-up starts. Long enough
+  /// for a listing and a preview fetch on a slow link; a shorter idle
+  /// timeout warms as soon as the clock arms.
+  @visibleForTesting
+  Duration warmLead = const Duration(seconds: 15);
+
+  /// The order sessions walk the playlist in, and the entries that had
+  /// their turn in this lap of it (issue #699). Every session used to
+  /// shuffle the whole playlist again and start at the top, so a frame that
+  /// goes in and out of the screensaver all day drew from the pool with
+  /// replacement and brought photos back long before the rest had shown.
+  /// A start now leads with the entries this lap has not reached, and the
+  /// next lap, shuffled again, begins once every entry had its turn.
+  List<ImmichAsset>? _deck;
+  List<ImmichAsset>? _deckSource;
+  Set<String> _deckIds = const {};
+  final _shown = <String>{};
+  final _random = Random();
+
+  /// The settings whose change makes the kept playlist and the warm start
+  /// wrong. The rest (transition, fill, metadata, cache size) leave the
+  /// listing and its order alone.
+  static final _playlistKeys = {
+    defs.screensaverImmichUrl.key,
+    defs.screensaverImmichApiKey.key,
+    defs.screensaverImmichValidated.key,
+    defs.screensaverImmichAlbum.key,
+    defs.screensaverImmichAlbumName.key,
+    defs.screensaverImmichPhotosOnly.key,
+    defs.screensaverImmichShuffle.key,
+    defs.screensaverImmichPairPortrait.key,
+    defs.screensaverImmichPairLandscape.key,
+    defs.screensaverImmichPeople.key,
+    defs.screensaverImmichExcludePeople.key,
+    defs.screensaverImmichTags.key,
+    defs.screensaverImmichExcludeTags.key,
+    defs.screensaverImmichFavoritesOnly.key,
+    defs.screensaverImmichTakenWithin.key,
+    defs.screensaverImmichTakenFrom.key,
+    defs.screensaverImmichTakenTo.key,
+  };
+
   @override
   Future<void> init() async {
+    bus.on<ScreensaverCountdownChanged>().listen(_onCountdown);
     bus.on<SettingChanged>().listen((e) {
+      if (_playlistKeys.contains(e.key)) {
+        _forgetPlaylist();
+        _forgetDeck();
+      }
       // A changed server or key invalidates the validation — and with it
       // every dependent row, until the user validates again. NOT during an
       // import: the backup's validated flag arrives together with the very
@@ -393,6 +546,187 @@ class ImmichManager extends Manager {
     );
   }
 
+  @override
+  Future<void> dispose() async {
+    _warmTimer?.cancel();
+    _warmTimer = null;
+  }
+
+  void _forgetPlaylist() {
+    _playlist = null;
+    _playlistAt = null;
+    _warmOrder = null;
+    _warmImage = null;
+  }
+
+  /// A different pool or order: the lap starts over on the next listing.
+  /// A fresh listing of the same settings keeps it, so a retry after an
+  /// outage does not bring back what already showed.
+  void _forgetDeck() {
+    _deck = null;
+    _deckSource = null;
+    _deckIds = const {};
+    _shown.clear();
+  }
+
+  /// The idle clock moved. With the Immich slideshow due, get the next
+  /// session ready [warmLead] ahead of it; a clock that is closer than that
+  /// or already past warms right away. Any other mode due drops what was
+  /// readied, so a device switched to the clock does not keep a photo in
+  /// memory for nothing.
+  void _onCountdown(ScreensaverCountdownChanged e) {
+    _warmTimer?.cancel();
+    _warmTimer = null;
+    final due = e.due;
+    if (due == null) return;
+    if (e.mode != 'immich') {
+      _warmOrder = null;
+      _warmImage = null;
+      return;
+    }
+    final wait = due.difference(clock()) - warmLead;
+    if (wait <= Duration.zero) {
+      unawaited(warmUp());
+    } else {
+      _warmTimer = Timer(wait, () {
+        _warmTimer = null;
+        unawaited(warmUp());
+      });
+    }
+  }
+
+  /// Ready the next session: the playlist (listed if not kept), its start
+  /// order and the first photo's bytes. Idempotent while a readied start is
+  /// waiting. Never throws: a warm-up that fails leaves the start to the
+  /// slideshow's own path, which reports the failure.
+  Future<void> warmUp() {
+    if (!configured || !_settings.get(defs.screensaverImmichValidated)) {
+      return Future.value();
+    }
+    return _warming ??= _warm().whenComplete(() => _warming = null);
+  }
+
+  Future<void> _warm() async {
+    try {
+      final order = _warmOrder ?? await _startOrder();
+      if (order.isEmpty) return;
+      _warmOrder = order;
+      final first = order.first;
+      if (first.isVideo || _warmImage?.$1 == first.id) return;
+      final bytes = await imageBytes(first);
+      // The settings may have moved while the fetch ran; a start readied
+      // for the old ones was dropped, and this photo goes with it.
+      if (!identical(_warmOrder, order)) return;
+      _warmImage = (first.id, bytes);
+      log.debug(
+        name,
+        'warm-up ready: ${order.length} assets, first ${first.id}',
+      );
+    } catch (e) {
+      log.debug(name, 'warm-up skipped: $e');
+    }
+  }
+
+  /// The playlist in the order the next session runs it: the readied start
+  /// when one is waiting, else the kept playlist (listed when there is
+  /// none), shuffled when the setting says so, with the entries this lap
+  /// has not shown yet first. The readied start is consumed: the session
+  /// after this one gets its own. [fresh] drops the kept playlist and the
+  /// readied start first and lists again.
+  Future<List<ImmichAsset>> startOrder({bool fresh = false}) {
+    if (fresh) _forgetPlaylist();
+    final warm = _warmOrder;
+    _warmOrder = null;
+    if (warm != null) return Future.value(warm);
+    return _startOrder();
+  }
+
+  Future<List<ImmichAsset>> _startOrder() async {
+    final deck = _dealt(await playlist());
+    return [
+      for (final a in deck)
+        if (!_shown.contains(a.id)) a,
+      for (final a in deck)
+        if (_shown.contains(a.id)) a,
+    ];
+  }
+
+  /// The deck for [assets], kept while the listing is the same one. A new
+  /// listing keeps the lap's order and progress: entries the server no
+  /// longer lists leave, and new uploads land at random places in it when
+  /// shuffling, so they do not wait for the end of the lap.
+  List<ImmichAsset> _dealt(List<ImmichAsset> assets) {
+    final deck = _deck;
+    if (deck != null && identical(_deckSource, assets)) return deck;
+    final shuffle = _settings.get(defs.screensaverImmichShuffle);
+    final List<ImmichAsset> next;
+    if (!shuffle) {
+      next = assets;
+    } else if (deck == null) {
+      next = [...assets]..shuffle(_random);
+    } else {
+      final listed = {for (final a in assets) a.id: a};
+      next = [for (final a in deck) ?listed[a.id]];
+      for (final a in assets) {
+        if (_deckIds.contains(a.id)) continue;
+        next.insert(_random.nextInt(next.length + 1), a);
+      }
+    }
+    _deck = next;
+    _deckSource = assets;
+    _deckIds = {for (final a in next) a.id};
+    _shown.retainAll(_deckIds);
+    return next;
+  }
+
+  /// [asset] had its turn in this lap: shown, or passed over because it
+  /// could not be. Once every entry had one the next lap starts, shuffled
+  /// again when the setting says so.
+  void markShown(ImmichAsset asset) {
+    final deck = _deck;
+    if (deck == null || !_deckIds.contains(asset.id)) return;
+    if (!_shown.add(asset.id)) return;
+    // A start readied before this showed would lead with it again.
+    if (_warmOrder != null) {
+      _warmOrder = null;
+      _warmImage = null;
+    }
+    if (_shown.length < _deckIds.length) return;
+    _shown.clear();
+    if (_settings.get(defs.screensaverImmichShuffle)) {
+      _deck = [...deck]..shuffle(_random);
+    }
+  }
+
+  /// The kept playlist, listed from the server when there is none. A kept
+  /// list older than [playlistTtl] is answered as it is and refreshed in
+  /// the background for the next start.
+  Future<List<ImmichAsset>> playlist() {
+    final kept = _playlist;
+    final at = _playlistAt;
+    if (kept != null && at != null) {
+      if (clock().difference(at) > playlistTtl) {
+        unawaited(_refreshPlaylist().catchError((_) => const <ImmichAsset>[]));
+      }
+      return Future.value(kept);
+    }
+    return _refreshPlaylist();
+  }
+
+  Future<List<ImmichAsset>> _refreshPlaylist() =>
+      _playlistRefresh ??= () async {
+        try {
+          final assets = await listAssets();
+          if (assets.isNotEmpty) {
+            _playlist = List.unmodifiable(assets);
+            _playlistAt = clock();
+          }
+          return assets;
+        } finally {
+          _playlistRefresh = null;
+        }
+      }();
+
   /// The chosen albums, none meaning the whole library.
   List<ImmichNamed> get _albumPicks =>
       decodeImmichNamed(_settings.get(defs.screensaverImmichAlbum));
@@ -433,11 +767,11 @@ class ImmichManager extends Manager {
       // albums but not read assets, or search them but not fetch their
       // previews (Immich's asset.view is a separate permission from
       // asset.download, issue #222), fails here at the button, not at 2am.
-      await _albums();
+      final picks = await _dropMissingAlbums(await _albums());
       final found = await _search(
         page: 1,
         size: _probeAssets,
-        albumId: _albumPicks.firstOrNull?.id,
+        albumId: picks.firstOrNull?.id,
       );
       final items = ((found['items'] as List?) ?? const []).cast<Map>();
       // Several assets, not one: the search answers newest first, and the
@@ -488,6 +822,38 @@ class ImmichManager extends Manager {
   /// How many assets the validation preview probe may try before giving up
   /// on finding one with a preview.
   static const _probeAssets = 5;
+
+  /// The album picks the server still lists, with the rest removed from
+  /// the setting. The search answers 400 for an album id the server does
+  /// not know (issue #514), and a server rebuilt from scratch knows none
+  /// of the old ids, so probing with a stale pick failed the Validate
+  /// button forever, and the button is what unlocks the row where the
+  /// pick could have been changed.
+  Future<List<ImmichNamed>> _dropMissingAlbums(
+    List<Map<String, Object?>> albums,
+  ) async {
+    final known = {for (final album in albums) '${album['id']}'};
+    final picks = _albumPicks;
+    final kept = [
+      for (final pick in picks)
+        if (known.contains(pick.id)) pick,
+    ];
+    if (kept.length == picks.length) return picks;
+    final gone = [
+      for (final pick in picks)
+        if (!known.contains(pick.id)) pick.name.isEmpty ? pick.id : pick.name,
+    ];
+    log.warn(
+      name,
+      'validate: dropped albums the server no longer lists: '
+      '${gone.join(', ')}',
+    );
+    await _settings.set(
+      defs.screensaverImmichAlbum,
+      jsonEncode([for (final pick in kept) pick.toJson()]),
+    );
+    return kept;
+  }
 
   /// [e] as a message a settings page or the screensaver can show. An HTTP
   /// rejection and an unreachable host are different problems (issue #222):
@@ -610,6 +976,11 @@ class ImmichManager extends Manager {
   /// several as "all of them in the same photo", and a frame set to show
   /// the kids wants either of them. [withPeople] asks for each asset's
   /// people, which the exclusion filter reads.
+  ///
+  /// Archived media never shows (issue #681): Immich keeps it out of the
+  /// timeline, and a frame should respect that. `visibility` is how
+  /// Immich asks for it today and `isArchived` is how older servers did.
+  /// Each generation drops the field it does not know, so both go along.
   Future<Map<String, dynamic>> _search({
     required int page,
     required int size,
@@ -630,6 +1001,8 @@ class ImmichManager extends Manager {
             'page': page,
             'size': size,
             'withExif': withExif,
+            'visibility': 'timeline',
+            'isArchived': false,
             if (withPeople) 'withPeople': true,
             if (albumId != null && albumId.isNotEmpty) 'albumIds': [albumId],
             if (personId != null) 'personIds': [personId],
@@ -676,14 +1049,19 @@ class ImmichManager extends Manager {
   /// by id, then put back in newest-first order since each run was sorted
   /// on its own. Excluded people cannot be asked of the server on this API,
   /// so every asset comes back with its people and the ones carrying an
-  /// excluded person are dropped here (issue #345).
+  /// excluded person are dropped here (issue #345). Excluded tags cannot be
+  /// asked of it either, and an asset's tags do not come back with a
+  /// search, so the assets carrying each excluded tag are listed first and
+  /// dropped by id (issue #645). Exclusion wins over every other filter.
   Future<List<ImmichAsset>> listAssets() async {
     final albums = _albumPicks;
     final photosOnly = _settings.get(defs.screensaverImmichPhotosOnly);
-    // The EXIF comes along only when something wants it: pairing portrait
-    // photos needs every photo's shape up front to arrange the playlist,
-    // and it is the one feature that does.
-    final withExif = _settings.get(defs.screensaverImmichPairPortrait);
+    // The EXIF comes along only when something wants it: pairing photos
+    // needs every photo's shape up front to arrange the playlist, and it
+    // is the one feature that does.
+    final withExif =
+        _settings.get(defs.screensaverImmichPairPortrait) ||
+        _settings.get(defs.screensaverImmichPairLandscape);
     final people = decodeImmichNamed(
       _settings.get(defs.screensaverImmichPeople),
     );
@@ -694,9 +1072,18 @@ class ImmichManager extends Manager {
         p.id,
     };
     final tags = decodeImmichNamed(_settings.get(defs.screensaverImmichTags));
+    final excludedTags = decodeImmichNamed(
+      _settings.get(defs.screensaverImmichExcludeTags),
+    );
     final favorite = _settings.get(defs.screensaverImmichFavoritesOnly);
     final takenAfter = immichTakenAfter(_settings);
     final takenBefore = immichTakenBefore(_settings);
+    final hiddenByTag = await _assetsTagged(
+      excludedTags,
+      favorite: favorite,
+      takenAfter: takenAfter,
+      takenBefore: takenBefore,
+    );
     final albumIds = albums.isEmpty
         ? <String?>[null]
         : <String?>[for (final a in albums) a.id];
@@ -729,6 +1116,8 @@ class ImmichManager extends Manager {
             for (final item in (result['items'] as List).cast<Map>()) {
               final id = item['id'] as String;
               if (created.containsKey(id)) continue;
+              if (hiddenByTag.contains(id)) continue;
+              if (_isArchived(item)) continue;
               final isVideo = item['type'] == 'VIDEO';
               if (photosOnly && isVideo) continue;
               if (excluded.isNotEmpty &&
@@ -741,6 +1130,9 @@ class ImmichManager extends Manager {
                   id: id,
                   isVideo: isVideo,
                   aspect: isVideo ? null : exifAspect(item['exifInfo']),
+                  durationSeconds: isVideo
+                      ? immichDurationSeconds(item['duration'])
+                      : null,
                 ),
               );
             }
@@ -761,6 +1153,60 @@ class ImmichManager extends Manager {
     return assets;
   }
 
+  /// The ids of every asset carrying any of [tags]: one search per tag,
+  /// which Immich answers for the tag and its children alike, so excluding
+  /// a parent tag covers the whole branch. The searches take the same
+  /// favorite and date window as the playlist's own, since an asset outside
+  /// it is never shown anyway. The album, people and tag picks are OR-ed
+  /// combinations that cannot narrow a single search, and exclusion has to
+  /// win over all of them regardless.
+  Future<Set<String>> _assetsTagged(
+    List<ImmichNamed> tags, {
+    required bool favorite,
+    DateTime? takenAfter,
+    DateTime? takenBefore,
+  }) async {
+    final ids = <String>{};
+    for (final tag in tags) {
+      var page = 1;
+      for (var pages = 0; pages < _maxExcludedPages; pages++) {
+        final result = await _search(
+          page: page,
+          size: 500,
+          tagId: tag.id,
+          favorite: favorite,
+          takenAfter: takenAfter,
+          takenBefore: takenBefore,
+        );
+        for (final item in (result['items'] as List).cast<Map>()) {
+          ids.add(item['id'] as String);
+        }
+        final next = result['nextPage'];
+        if (next == null) break;
+        page = next is num ? next.toInt() : int.tryParse('$next') ?? page + 1;
+        if (pages == _maxExcludedPages - 1) {
+          log.warn(
+            name,
+            'excluded tag "${tag.name}" has more assets than the '
+            '${_maxExcludedPages * 500} the exclusion reads, so the rest '
+            'may still show',
+          );
+        }
+      }
+    }
+    return ids;
+  }
+
+  /// Pages of five hundred an excluded tag's listing stops after. That is
+  /// the playlist's own ceiling, and a tag meant to hide a few unsuitable
+  /// photos never comes close.
+  static const _maxExcludedPages = 20;
+
+  /// Whether a search answer marks the asset as archived, in either
+  /// generation's field, for a server that ignored the search's own ask.
+  static bool _isArchived(Map item) =>
+      item['visibility'] == 'archive' || item['isArchived'] == true;
+
   /// Whether an asset's `people` list (present with `withPeople`) names
   /// anyone in [ids].
   static bool _carriesAnyOf(Object? people, Set<String> ids) {
@@ -776,6 +1222,62 @@ class ImmichManager extends Manager {
   Uri videoUri(ImmichAsset asset) =>
       Uri.parse('$_base/api/assets/${asset.id}/video/playback');
 
+  /// The Java heap ceiling to judge videos against; a test sets it.
+  @visibleForTesting
+  int? javaHeapMaxOverride;
+  Future<int?>? _javaHeapMax;
+
+  final _videoFits = <String, bool>{};
+
+  /// Whether this device can afford to play [asset]. The video player
+  /// buffers up to fifty seconds of the stream into Java byte arrays, and
+  /// on an Echo Show the whole Java heap is 80 MB: one long phone video
+  /// ran the heap into the wall and killed the app, for every Immich user
+  /// who ever hit one (the crash landed on whatever thread allocated
+  /// next, the microphone reader most often). A HEAD on the playback
+  /// stream gives its exact size, the listing gave its length, and a
+  /// video whose first fifty seconds would not fit the budget is skipped
+  /// rather than played. Answered once per video per session; a server
+  /// that states no size, or a platform with no heap figure, gets the
+  /// benefit of the doubt.
+  Future<int?> _videoBytes(ImmichAsset asset) async {
+    try {
+      return await _videoBytesOf(videoUri(asset), _headers);
+    } catch (e) {
+      log.warn(name, 'video size unknown for ${asset.id}: $e');
+      return null;
+    }
+  }
+
+  Future<bool> videoFits(ImmichAsset asset) async {
+    final known = _videoFits[asset.id];
+    if (known != null) return known;
+    final heapMax =
+        javaHeapMaxOverride ??
+        await (_javaHeapMax ??= DeviceDetails.javaHeapMax());
+    if (heapMax == null || heapMax <= 0) return true;
+    final bytes = await _videoBytes(asset);
+    if (bytes == null) return true;
+    final fits = immichVideoFits(
+      bytes: bytes,
+      durationSeconds: asset.durationSeconds,
+      heapMax: heapMax,
+    );
+    _videoFits[asset.id] = fits;
+    final mb =
+        (immichVideoBufferBytes(bytes, asset.durationSeconds) / (1024 * 1024))
+            .round();
+    final budgetMb = (immichVideoBudget(heapMax) / (1024 * 1024)).round();
+    log.info(
+      name,
+      fits
+          ? 'video ${asset.id}: ~$mb MB buffered of a $budgetMb MB budget'
+          : 'video ${asset.id} skipped: ~$mb MB of buffering would not fit '
+                'the $budgetMb MB budget this device\'s Java heap allows',
+    );
+    return fits;
+  }
+
   Map<String, String> get videoHeaders => _headers;
 
   Uri _imageUri(ImmichAsset asset) =>
@@ -787,6 +1289,11 @@ class ImmichManager extends Manager {
   final _imageRequests = <(String, String, String), Future<Uint8List>>{};
 
   Future<Uint8List> imageBytes(ImmichAsset asset) {
+    final warm = _warmImage;
+    if (warm != null && warm.$1 == asset.id) {
+      _warmImage = null;
+      return Future.value(warm.$2);
+    }
     final key = (_base, _settings.get(defs.screensaverImmichApiKey), asset.id);
     return _imageRequests.putIfAbsent(key, () async {
       try {
@@ -1025,3 +1532,100 @@ class _ApiException implements Exception {
   String toString() =>
       'HTTP $status${path == null ? '' : ' on $path'}: $message';
 }
+
+/// The stream's total size in bytes. Asked with a one byte range: the
+/// 206 answer's Content-Range carries the total and costs one byte,
+/// where a HEAD comes back through the Dart HTTP client with its length
+/// zeroed. A server that ignores the range answers 200 with the length
+/// in Content-Length, and the body is dropped unread either way. Null
+/// when the server did not say.
+Future<int?> _videoBytesOf(Uri uri, Map<String, String> headers) async {
+  final client = http.Client();
+  try {
+    final request = http.Request('GET', uri)
+      ..headers.addAll(headers)
+      ..headers['range'] = 'bytes=0-0';
+    final response = await client
+        .send(request)
+        .timeout(const Duration(seconds: 10));
+    final total = immichContentRangeTotal(response.headers['content-range']);
+    if (total != null) return total;
+    if (response.statusCode == 200) {
+      final length = int.tryParse(response.headers['content-length'] ?? '');
+      if (length != null && length > 0) return length;
+    }
+    return null;
+  } finally {
+    client.close();
+  }
+}
+
+/// The total behind a Content-Range header ("bytes 0-0/7567107"), or null
+/// when absent, unknown ("*") or not a positive number.
+int? immichContentRangeTotal(String? header) {
+  if (header == null) return null;
+  final slash = header.lastIndexOf('/');
+  if (slash < 0) return null;
+  final total = int.tryParse(header.substring(slash + 1).trim());
+  return total != null && total > 0 ? total : null;
+}
+
+/// The window the video player buffers ahead: ExoPlayer's default of fifty
+/// seconds, which it fills as fast as the network delivers.
+const immichVideoBufferWindowSeconds = 50;
+
+/// The share of the Java heap a video's buffering may take. The rest is
+/// the app's own Java side, and the headroom the crash reports showed it
+/// needs.
+const immichVideoHeapShare = 0.4;
+
+/// A video's length in seconds from Immich's listing: a count of
+/// milliseconds from Immich 3, hours:minutes:seconds.fraction from the
+/// releases before it; null when absent or unreadable.
+double? immichDurationSeconds(Object? raw) {
+  if (raw is num) return raw > 0 ? raw / 1000 : null;
+  if (raw is! String || raw.isEmpty) return null;
+  final parts = raw.split(':');
+  if (parts.length < 2 || parts.length > 3) return null;
+  var seconds = 0.0;
+  for (final part in parts) {
+    final value = double.tryParse(part.trim());
+    if (value == null) return null;
+    seconds = seconds * 60 + value;
+  }
+  return seconds > 0 ? seconds : null;
+}
+
+/// How many bytes of a [bytes]-long stream the player buffers at once: the
+/// whole stream when it is shorter than the window, else the window's
+/// share of it, assuming a steady bitrate. No length known means the
+/// whole stream, the cautious reading.
+double immichVideoBufferBytes(int bytes, double? durationSeconds) {
+  if (durationSeconds == null ||
+      durationSeconds <= immichVideoBufferWindowSeconds) {
+    return bytes.toDouble();
+  }
+  return bytes * immichVideoBufferWindowSeconds / durationSeconds;
+}
+
+/// Heaps this small (an Echo Show's 80 MB) carry the whole app in the
+/// other sixty percent already; with the camera, the Bluetooth proxy and
+/// the wake word on, a forty percent video ran them into GC thrash and
+/// finalizer timeouts. They get a quarter instead.
+const immichSmallHeapBytes = 96 * 1024 * 1024;
+const immichSmallHeapShare = 0.25;
+
+double immichVideoBudget(int heapMax) =>
+    heapMax *
+    (heapMax <= immichSmallHeapBytes
+        ? immichSmallHeapShare
+        : immichVideoHeapShare);
+
+/// Whether a video's buffering fits the heap budget.
+bool immichVideoFits({
+  required int bytes,
+  required double? durationSeconds,
+  required int heapMax,
+}) =>
+    immichVideoBufferBytes(bytes, durationSeconds) <=
+    immichVideoBudget(heapMax);

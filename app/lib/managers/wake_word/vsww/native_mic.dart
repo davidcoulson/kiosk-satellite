@@ -17,23 +17,44 @@ class NativeMic {
   /// The capture tuning from Microphone settings, set alongside
   /// [deviceSelector] and read at the same moment: the platform applies all
   /// of it when the session opens, so changing any of them needs a restart.
-  static String source = 'voice_communication';
   static num gainDb = 0;
-  static bool agc = false;
+
+  /// WebRTC's echo canceller over the capture, fed what the kiosk plays.
+  static bool softwareEchoCancellation = true;
+
+  /// WebRTC's noise suppressor over the capture.
   static bool noiseSuppression = false;
 
   /// 1-based channel of a multichannel microphone to capture; 0 lets the
   /// platform downmix (which averages every channel together).
   static num channel = 0;
 
+  /// 'auto' asks for 16 kHz mono and lets the platform convert; 'hardware'
+  /// opens 48 kHz stereo, the only format some sound cards record in, and
+  /// the native side converts. Either way this stream is 16 kHz mono.
+  static String captureFormat = 'auto';
+
+  /// Where the capture's warnings go (a format that failed, a read that
+  /// stalled), so they reach the app log and not only logcat. Set by
+  /// AudioRoutingManager with the other capture settings.
+  static void Function(String warning)? onWarning;
+
   Stream<Uint8List> stream() => _channel
       .receiveBroadcastStream({
         if (deviceSelector.isNotEmpty) 'device': deviceSelector,
-        'source': source,
         'gainDb': gainDb,
-        'agc': agc,
+        'softwareAec': softwareEchoCancellation,
         'noiseSuppression': noiseSuppression,
         'channel': channel,
+        'format': captureFormat,
+      })
+      // Besides PCM the platform sends the capture's warnings (a format
+      // that failed, a read that stalled), so they reach the app log.
+      .where((e) {
+        if (e is! Map) return true;
+        final warning = e['warning'];
+        if (warning is String) onWarning?.call(warning);
+        return false;
       })
       .map((e) => e as Uint8List);
 }

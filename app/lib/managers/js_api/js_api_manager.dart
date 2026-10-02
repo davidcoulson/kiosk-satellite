@@ -35,9 +35,16 @@ class JsApiManager extends Manager {
   /// listed here is not reachable from page JS regardless of registry
   /// contents (pages are less trusted than the authenticated remote API).
   static const _exposedMethods = <String, String>{
+    'setVoiceTimers': 'setVoiceTimers',
+    'getVoiceChimeDurations': 'getVoiceChimeDurations',
+    'setVoiceTimerAlert': 'setVoiceTimerAlert',
+    'voiceTimerActionFailed': 'voiceTimerActionFailed',
     'getDeviceInfo': 'getDeviceInfo',
     'getBrightness': 'getBrightness',
     'setBrightness': 'setBrightness',
+    'setTheaterMode': 'setTheaterMode',
+    'getTheaterMode': 'getTheaterMode',
+    'theaterPeek': 'theaterPeek',
     'screenOn': 'screenOn',
     'screenOff': 'screenOff',
     'isScreenOn': 'isScreenOn',
@@ -136,11 +143,71 @@ class JsApiManager extends Manager {
     _controller = controller;
     controller.addJavaScriptHandler(
       handlerName: 'ksApi',
-      callback: (args) => identical(_controller?.platform, controller.platform)
-          ? _onCall(args)
+      // The form that says who is calling, not only what they sent.
+      callback: (JavaScriptHandlerFunctionData data) =>
+          identical(_controller?.platform, controller.platform)
+          ? _onCall(data.args, origin: data.origin, mainFrame: data.isMainFrame)
           : null,
     );
   }
+
+  /// Whether the page at an origin is one the kiosk was pointed at: Home
+  /// Assistant, the start URL or the loopback proxy standing in for them.
+  /// Set by the container, which knows those; null trusts every origin,
+  /// which is what a test with no settings behind it wants.
+  bool Function(Uri origin)? isTrustedOrigin;
+
+  /// Whether a main-frame call from [origin] comes from a configured page.
+  /// A WebView that does not say where a call came from is asked for the
+  /// page it is showing instead: only the main frame has a bridge, so that
+  /// page is the caller. With neither to go on the call is refused, so a
+  /// missing origin is never a way around the gate.
+  Future<bool> isConfiguredPage(Uri? origin) async {
+    final trusted = isTrustedOrigin;
+    if (trusted == null) return true;
+    Uri? page = origin;
+    if (page == null) {
+      try {
+        page = await _controller?.getUrl();
+      } catch (_) {}
+    }
+    return page != null && trusted(page);
+  }
+
+  /// Whether a frame at [origin] may use theater mode through the
+  /// dashboard's relay (theater_relay_script.dart): the "Page allowed from a
+  /// frame" setting. Null refuses every frame, unlike [isTrustedOrigin]: a
+  /// frame is never trusted by default.
+  bool Function(Uri origin)? isTheaterFrameOrigin;
+
+  /// The methods that open the microphone or send its audio somewhere.
+  /// Everything else a page may call is about the panel it is drawn on --
+  /// its brightness, its screensaver -- and the API is documented for any
+  /// dashboard, so those stay open. These are different in kind: Android
+  /// asks nobody before the app's own recorder starts, so the only thing
+  /// standing between a page and a live microphone is this list. A kiosk
+  /// that follows a link off Home Assistant, or is pointed at the wrong
+  /// page, must not hand that page a room to listen to.
+  /// Theater mode's methods, held to the same rule as the microphone's: the
+  /// start page or Home Assistant may dim this panel and hold its touches,
+  /// and nothing else may (JS-1). A page that followed a link off the
+  /// dashboard has no business turning the display dark under the person
+  /// using it.
+  static const _theaterMethods = {
+    'setTheaterMode',
+    'getTheaterMode',
+    'theaterPeek',
+  };
+
+  static const _microphoneMethods = {
+    'startAudioStream',
+    'pipelineRun',
+    'pipelineOpenMic',
+    'pipelineStartBuffering',
+    'pipelineStartSending',
+    'setWakeWordConfig',
+    'setWakeWordActive',
+  };
 
   void _setPageInteraction(bool active, String reason) {
     if (!active && reason.isEmpty && _pageInteractions.isNotEmpty) {
@@ -167,6 +234,7 @@ class JsApiManager extends Manager {
 
   /// A full navigation replaces the document. SPA view switches do not.
   void onPageStarted() {
+    bus.publish(const VoiceTimersCleared());
     _browserMicrophones.clear();
     unawaited(MicHub.instance.setBrowserCapturing(false));
     if (_pageInteractions.isEmpty) return;
@@ -200,14 +268,45 @@ class JsApiManager extends Manager {
   /// The ksApi handler body, reachable for tests (attach needs a live
   /// WebView controller).
   @visibleForTesting
-  Future<Object?> handleCall(List<dynamic> args) => _onCall(args);
+  Future<Object?> handleCall(
+    List<dynamic> args, {
+    Uri? origin,
+    bool mainFrame = true,
+  }) => _onCall(args, origin: origin, mainFrame: mainFrame);
 
-  Future<Object?> _onCall(List<dynamic> args) async {
+  Future<Object?> _onCall(
+    List<dynamic> args, {
+    Uri? origin,
+    bool mainFrame = true,
+  }) async {
     if (args.isEmpty || args.first is! String) return null;
     final method = args.first as String;
+    // The WebView is told not to give sub-frames a bridge at all; this is
+    // the same rule for a platform or plugin version that does not honour it.
+    if (!mainFrame) {
+      log.warn(name, 'refused $method from a sub-frame ($origin)');
+      return null;
+    }
+    if ((_microphoneMethods.contains(method) ||
+            _theaterMethods.contains(method) ||
+            method == 'theaterRelay') &&
+        !await isConfiguredPage(origin)) {
+      log.warn(name, 'refused $method from $origin: not a configured page');
+      return null;
+    }
+    // A copy, not cast()'s view: the bridge rewrites params below (the
+    // legacy pauseScreensaver, theater mode's source), and a view writes
+    // through to the caller's map, which throws when that map is typed.
     final params = args.length > 1 && args[1] is Map
-        ? (args[1] as Map).cast<String, Object?>()
+        ? Map<String, Object?>.from(args[1] as Map)
         : <String, Object?>{};
+
+    if (method == 'theaterRelay') return _relayTheater(params);
+
+    if (method == 'remoteSettingsChanged') {
+      bus.publish(const RemoteStatusChanged('voice'));
+      return true;
+    }
 
     if (method == 'browserMicrophone') {
       final id = params['id'];
@@ -242,14 +341,58 @@ class JsApiManager extends Manager {
     if (method == 'playSound' || method == 'setSoundVolume') {
       params.remove('volume');
     }
-    final result = await commands.execute(commandName, params);
+    // Who turned theater mode on is the bridge's to say, not the page's:
+    // a page claiming 'ha' would read in the logs and on the event as Home
+    // Assistant having done it.
+    if (_theaterMethods.contains(method)) params['source'] = 'page';
+    final result = await commands.execute(
+      commandName,
+      method == 'bringToFront' ? {...params, 'voiceInteraction': true} : params,
+    );
     // Queries resolve to their data; commands resolve to true/false. Never
     // reject — matching the defensive style of the VS kiosk wrapper.
     if (!result.ok) return result.data == null ? false : null;
     return result.data ?? true;
   }
 
+  /// Sees every event dispatched to the page, for tests: the real dispatch
+  /// needs a live WebView controller.
+  @visibleForTesting
+  void Function(String wireName, Map<String, Object?> detail)? debugDispatch;
+
+  /// A theater call a framed page made through the dashboard's relay. The
+  /// dashboard is trusted (the caller checked); the frame is trusted only at
+  /// the configured origin, and only for theater mode. The answer says
+  /// whether it was accepted, so the relay knows which frames to send the
+  /// theatermode event to.
+  Future<Map<String, Object?>> _relayTheater(
+    Map<String, Object?> params,
+  ) async {
+    const refused = {'accepted': false};
+    final inner = params['method'];
+    final raw = params['frameOrigin'];
+    final frameOrigin = raw is String ? Uri.tryParse(raw) : null;
+    if (inner is! String || !_theaterMethods.contains(inner)) return refused;
+    if (frameOrigin == null ||
+        isTheaterFrameOrigin?.call(frameOrigin) != true) {
+      log.warn(name, 'refused $inner from a frame at $raw: not allowed');
+      return refused;
+    }
+    final innerParams = params['params'] is Map
+        ? Map<String, Object?>.from(params['params'] as Map)
+        : <String, Object?>{};
+    innerParams['source'] = 'page';
+    final result = await commands.execute(_exposedMethods[inner]!, innerParams);
+    return {
+      'accepted': true,
+      'result': result.ok
+          ? (result.data ?? true)
+          : (result.data == null ? false : null),
+    };
+  }
+
   void _dispatchToPage(String wireName, Map<String, Object?> detail) {
+    debugDispatch?.call(wireName, detail);
     final controller = _controller;
     if (controller == null) return;
     final js =

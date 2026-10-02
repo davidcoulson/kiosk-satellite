@@ -1,0 +1,853 @@
+{
+  "@@locale": "en",
+  "settingUpdateSourceTitle": "Update source",
+  "@settingUpdateSourceTitle": {
+    "context": "Settings:Device:Updates",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "settingUpdateSourceDescription": "Where the app looks for new releases.",
+  "@settingUpdateSourceDescription": {
+    "context": "Settings:Device:Updates",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "settingUpdateSourceUrlTitle": "Repository URL",
+  "@settingUpdateSourceUrlTitle": {
+    "context": "Settings:Device:Updates",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "settingUpdateSourceUrlDescription": "A folder on a web server the kiosk can reach, holding releases.json and the release APKs.",
+  "@settingUpdateSourceUrlDescription": {
+    "context": "Settings:Device:Updates",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceUpdatesPage": "Updates",
+  "@deviceUpdatesPage": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceUpdateGithub": "GitHub Repository",
+  "@deviceUpdateGithub": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceUpdateCustom": "Custom Repository",
+  "@deviceUpdateCustom": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceUpdateGuide": "Custom repository guide",
+  "@deviceUpdateGuide": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceUpdateGuideHelp": "How to host the releases file and the APKs on your own network.",
+  "@deviceUpdateGuideHelp": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceInstallFile": "Install from file",
+  "@deviceInstallFile": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceInstallFileHelp": "Upload a Kiosk Satellite APK from a computer through the remote admin, on this same page. For a kiosk that cannot reach GitHub or a custom repository.",
+  "@deviceInstallFileHelp": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceInstallFileRemoteHelp": "Upload a Kiosk Satellite APK from this computer and install it. For a kiosk that cannot reach GitHub or a custom repository.",
+  "@deviceInstallFileRemoteHelp": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceUploadedApk": "Uploaded APK",
+  "@deviceUploadedApk": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceInstalling": "Installing…",
+  "@deviceInstalling": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceDeviceNoAnswer": "The device did not answer.",
+  "@deviceDeviceNoAnswer": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceInstallFailed": "Update failed. Check the device logs.",
+  "@deviceInstallFailed": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceConfirmTablet": "Confirm on the tablet screen",
+  "@deviceConfirmTablet": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceUploadedVersion": "Version {version} (build {build}, {size} MB) is on the device, waiting to be installed.",
+  "@deviceUploadedVersion": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "2026.9.59"
+      },
+      "build": {
+        "type": "String",
+        "example": "258"
+      },
+      "size": {
+        "type": "String",
+        "example": "131.5"
+      }
+    }
+  },
+  "deviceInstallVersion": "Install version {version}",
+  "@deviceInstallVersion": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "2026.9.59"
+      }
+    }
+  },
+  "deviceHttpError": "The device answered HTTP {code}.",
+  "@deviceHttpError": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "Example"
+      }
+    }
+  },
+  "deviceUploadFailed": "The upload failed.",
+  "@deviceUploadFailed": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceInstallFleet": "Install on the fleet",
+  "@deviceInstallFleet": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceSendingFleet": "Sending to the fleet…",
+  "@deviceSendingFleet": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceSameBuild": "The kiosk already runs this build.",
+  "@deviceSameBuild": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceInstallConfirmation": "The install must be confirmed on the tablet screen unless the kiosk installs silently.",
+  "@deviceInstallConfirmation": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceSelfLast": "This kiosk installs last.",
+  "@deviceSelfLast": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceUpdatingFleet": "Updating the fleet",
+  "@deviceUpdatingFleet": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceUploading": "Uploading… {percent}%",
+  "@deviceUploading": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "50"
+      }
+    }
+  },
+  "deviceUploadedDetails": "The uploaded APK is version {version} (build {build}, {size} MB).",
+  "@deviceUploadedDetails": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "2026.9.59"
+      },
+      "build": {
+        "type": "String",
+        "example": "258"
+      },
+      "size": {
+        "type": "String",
+        "example": "131.5"
+      }
+    }
+  },
+  "deviceCurrentBuild": "The kiosk runs {version} (build {build}).",
+  "@deviceCurrentBuild": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "2026.9.59"
+      },
+      "build": {
+        "type": "String",
+        "example": "258"
+      }
+    }
+  },
+  "deviceSendingTo": "Sending to {name}… {percent}%",
+  "@deviceSendingTo": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Kitchen"
+      },
+      "percent": {
+        "type": "String",
+        "example": "50"
+      }
+    }
+  },
+  "deviceInstallingOn": "Installing on {name}…",
+  "@deviceInstallingOn": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Kitchen"
+      }
+    }
+  },
+  "deviceInstallingNames": "{names} installing.",
+  "@deviceInstallingNames": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "names": {
+        "type": "String",
+        "example": "Example"
+      }
+    }
+  },
+  "deviceUpdateUrlInvalid": "Enter the folder URL, for example http://nas.local/kiosk-satellite",
+  "@deviceUpdateUrlInvalid": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "deviceUpdateUrlPath": "Enter only the folder URL, without anything after the path. Example: http://nas.local/kiosk-satellite",
+  "@deviceUpdateUrlPath": {
+    "context": "Settings:Device:Updates",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "updateDownloadBusy": "A download is running. Wait for it to finish.",
+  "@updateDownloadBusy": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "updateInstallBusy": "An install is running. Wait for it to finish.",
+  "@updateInstallBusy": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "updateNoAvailable": "No update is available.",
+  "@updateNoAvailable": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "updateNoUploaded": "No uploaded APK is waiting.",
+  "@updateNoUploaded": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "updateUploadEmpty": "The upload was empty.",
+  "@updateUploadEmpty": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "updateInvalidApk": "The file is not an Android APK.",
+  "@updateInvalidApk": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "updateUploadedGone": "The uploaded APK is gone. Upload it again.",
+  "@updateUploadedGone": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "updateShizukuInstallerFailed": "Shizuku could not install the update. No confirmation installer was opened.",
+  "@updateShizukuInstallerFailed": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    }
+  },
+  "updateUploadSpace": "Not enough free space: the APK is {size} MB and the install needs about {required} MB, but the device has {free} MB free.",
+  "@updateUploadSpace": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "description": "Original size value reported by the device."
+      },
+      "required": {
+        "type": "String",
+        "description": "Original required value reported by the device."
+      },
+      "free": {
+        "type": "String",
+        "description": "Original free value reported by the device."
+      }
+    }
+  },
+  "updateUploadInterrupted": "The upload was interrupted after {size} MB: {error}",
+  "@updateUploadInterrupted": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "description": "Original size value reported by the device."
+      },
+      "error": {
+        "type": "String",
+        "description": "Original technical detail, unchanged."
+      }
+    }
+  },
+  "updateUploadEarly": "The upload ended early: {received} of {expected} MB arrived.",
+  "@updateUploadEarly": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "received": {
+        "type": "String",
+        "description": "Original received value reported by the device."
+      },
+      "expected": {
+        "type": "String",
+        "description": "Original expected value reported by the device."
+      }
+    }
+  },
+  "updateWrongPackage": "The APK is {package}, not Kiosk Satellite ({expected}).",
+  "@updateWrongPackage": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "package": {
+        "type": "String",
+        "description": "Original package value reported by the device."
+      },
+      "expected": {
+        "type": "String",
+        "description": "Original expected value reported by the device."
+      }
+    }
+  },
+  "updateOlderBuild": "The APK is version {version} (build {build}), older than the running {currentVersion} (build {currentBuild}). Downgrades are refused: Android would not install one either.",
+  "@updateOlderBuild": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "description": "Original version value reported by the device."
+      },
+      "build": {
+        "type": "String",
+        "description": "Original build value reported by the device."
+      },
+      "currentVersion": {
+        "type": "String",
+        "description": "Original currentVersion value reported by the device."
+      },
+      "currentBuild": {
+        "type": "String",
+        "description": "Original currentBuild value reported by the device."
+      }
+    }
+  },
+  "updateDownloadHttpFailed": "Download failed (HTTP {status}).",
+  "@updateDownloadHttpFailed": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "description": "Original status value reported by the device."
+      }
+    }
+  },
+  "updateDownloadStalled": "The download stalled: no data arrived for {seconds} seconds.",
+  "@updateDownloadStalled": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "seconds": {
+        "type": "String",
+        "description": "Original seconds value reported by the device."
+      }
+    }
+  },
+  "deviceUpdateFailedDetail": "Update failed: {error}",
+  "@deviceUpdateFailedDetail": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Original technical detail, unchanged."
+      }
+    }
+  },
+  "deviceInstallFailedDetail": "Install failed: {error}",
+  "@deviceInstallFailedDetail": {
+    "context": "Settings > Device > Updates",
+    "description": "Explanation when a device operation fails.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Updates"
+      ],
+      "remoteAdmin": [
+        "Device > Updates"
+      ]
+    },
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Original technical detail, unchanged."
+      }
+    }
+  },
+  "updateAnotherPackage": "another package",
+  "@updateAnotherPackage": {
+    "context": "Settings > Device > Updates",
+    "description": "Replacement for an unknown package name in an APK rejection message.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device > Updates > Install from file"
+      ]
+    }
+  }
+}

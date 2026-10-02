@@ -106,6 +106,15 @@ class KioskLock(private val activity: Activity, messenger: BinaryMessenger) {
     @Volatile private var blockVolume = false
     @Volatile private var blockBack = false
 
+    /**
+     * Whether the hardware volume keys are steering the followed media
+     * player right now (issue #544): pushed from Dart while the setting,
+     * the player and its playback line up. Seen here, ahead of any view,
+     * so the routing holds whichever native view has focus; the system
+     * never gets the press, so the device's own volume stays put.
+     */
+    @Volatile private var volumeToPlayer = false
+
     /** With the home role held, screen pinning is skipped on non-owner
      *  devices (HOME already lands on the kiosk, and the consent dialog
      *  is the one thing pinning still buys there); the home.keep_pinning
@@ -160,6 +169,7 @@ class KioskLock(private val activity: Activity, messenger: BinaryMessenger) {
                     // The screen-level lockdown shield. Its window consumes
                     // every touch, so the exit-gesture counter is fed from
                     // there instead of the Activity while it is up.
+                    call.argument<String>("lockShieldText")?.let { LockShieldOverlay.setText(it) }
                     LockShieldOverlay.onTouch = { ev -> onTouch(ev) }
                     LockShieldOverlay.sync(
                         activity.applicationContext,
@@ -173,6 +183,13 @@ class KioskLock(private val activity: Activity, messenger: BinaryMessenger) {
                     call.argument<String>("cutout")?.let {
                         CutoutLayout.apply(activity, it)
                     }
+                    call.argument<String>("orientation")?.let {
+                        ScreenOrientation.apply(activity, it)
+                    }
+                    result.success(null)
+                }
+                "volumeKeys" -> {
+                    volumeToPlayer = call.arguments as? Boolean ?: false
                     result.success(null)
                 }
                 "navCapture" -> {
@@ -195,6 +212,10 @@ class KioskLock(private val activity: Activity, messenger: BinaryMessenger) {
                         am.lockTaskModeState !=
                             ActivityManager.LOCK_TASK_MODE_NONE
                     )
+                }
+                "lockShieldText" -> {
+                    call.argument<String>("text")?.let { LockShieldOverlay.setText(it) }
+                    result.success(null)
                 }
                 "lockShieldPassThrough" -> {
                     LockShieldOverlay.setPassThrough(
@@ -270,7 +291,28 @@ class KioskLock(private val activity: Activity, messenger: BinaryMessenger) {
         when (event.keyCode) {
             KeyEvent.KEYCODE_VOLUME_UP,
             KeyEvent.KEYCODE_VOLUME_DOWN,
-            KeyEvent.KEYCODE_VOLUME_MUTE -> if (blockVolume) return true
+            KeyEvent.KEYCODE_VOLUME_MUTE -> {
+                if (volumeToPlayer) {
+                    // Every action of the press is swallowed, so the
+                    // system never sees half of one. A held key repeats
+                    // its DOWN and Dart paces the player commands; mute
+                    // fires once per press, a repeating toggle would flap.
+                    if (event.action == KeyEvent.ACTION_DOWN) {
+                        val direction = when (event.keyCode) {
+                            KeyEvent.KEYCODE_VOLUME_UP -> "up"
+                            KeyEvent.KEYCODE_VOLUME_DOWN -> "down"
+                            else -> if (event.repeatCount == 0) "mute" else null
+                        }
+                        if (direction != null) {
+                            main.post {
+                                channel.invokeMethod("volumeKey", direction)
+                            }
+                        }
+                    }
+                    return true
+                }
+                if (blockVolume) return true
+            }
             // Back would background the whole kiosk. Swallowed here; Dart
             // decides what it means instead (close the menu, step the page's
             // history) — never leaving the app.
@@ -551,6 +593,13 @@ class KioskLock(private val activity: Activity, messenger: BinaryMessenger) {
 
     fun notifyHomePressed() {
         main.post { channel.invokeMethod("homePressed", null) }
+    }
+
+    /** A navigation key MainActivity handed to the dashboard's WebView.
+     *  It never passes through Flutter, so Dart counts it as activity
+     *  from here. */
+    fun notifyPageKey() {
+        main.post { channel.invokeMethod("pageKey", null) }
     }
 
     fun dispose() {

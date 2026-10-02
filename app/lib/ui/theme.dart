@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Kiosk Satellite visual identity: modern flat, light + dark, built from the
 /// shared brand palette (the remote admin UI's CSS carries the same values —
-/// see assets/remote-ui/static/app.css):
+/// see remote-ui/static/app.css):
 ///
 ///   teal        #488284  primary (the mark's keyline, deepened a step)
 ///   teal        #558387  secondary accent
@@ -56,6 +56,29 @@ abstract final class Ks {
   /// Height of the fade-out an [EdgeFade] paints over a scroll edge that
   /// still hides content. The remote admin's --fade-size matches.
   static const double fadeEdge = 28;
+}
+
+/// The ground of a full screen overlay (the app launcher, the intercom):
+/// the theme surface as an unmistakable vertical gradient, lit at the top
+/// and settling deeper below, in both themes. The light theme pins its
+/// own endpoints instead of offsetting the surface: the paper tone sits
+/// so close to white that a relative lift clamps flat and the screen read
+/// as a plain sheet.
+LinearGradient ksGroundGradient(Color surface, Brightness brightness) {
+  final hsl = HSLColor.fromColor(surface);
+  final dark = brightness == Brightness.dark;
+  HSLColor tone(double lightness) =>
+      hsl.withLightness(lightness.clamp(0.0, 1.0));
+  return LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: dark
+        ? [
+            tone(hsl.lightness + 0.08).toColor(),
+            tone(hsl.lightness - 0.06).toColor(),
+          ]
+        : [tone(0.99).toColor(), tone(0.78).toColor()],
+  );
 }
 
 ColorScheme _lightScheme() =>

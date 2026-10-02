@@ -50,6 +50,11 @@ void main() {
     ],
   };
 
+  // What getUpdateStatus reports as the uploaded APK, when a test set one,
+  // and whether an install is under way.
+  Map<String, Object?>? uploaded;
+  var installing = false;
+
   Future<void> build({Map<String, Object> prefs = const {}}) async {
     SharedPreferences.setMockInitialValues({
       'ks.browser.start_url': 'http://ha.local:8123/lovelace/0',
@@ -89,6 +94,8 @@ void main() {
         handler: (p) async => CommandResult.ok('tok-${p['leader']}'),
       ),
     );
+    uploaded = null;
+    installing = false;
     commands.register(
       Command(
         name: 'getUpdateStatus',
@@ -97,6 +104,8 @@ void main() {
           'currentVersion': '2026.9.19',
           'availableVersion': null,
           'progress': null,
+          'installing': installing,
+          'uploaded': uploaded,
         }),
       ),
     );
@@ -153,6 +162,390 @@ void main() {
       },
     },
   };
+
+  group('manual fleet invitations', () {
+    test('finds HTTPS without discovery and never sends credentials', () async {
+      peers.clear();
+      await build(prefs: {'ks.fleet.leader': true});
+      final identity = answers['GET /api/fleet/identity']!;
+      answers['GET /api/fleet/identity'] = (request) {
+        if (request.url.scheme == 'http') {
+          throw const SocketException(
+            'HTTPS listener closed plaintext request',
+          );
+        }
+        return identity(request);
+      };
+      final found = await commands.execute('fleetLookup', {
+        'address': '192.168.1.80',
+      });
+      expect(found.ok, isTrue, reason: found.error);
+      expect((found.data as Map)['tls'], isTrue);
+      expect(sent.map((r) => r.url.scheme), ['http', 'https']);
+      expect(sent.every((r) => r.method == 'GET'), isTrue);
+      expect(
+        sent.every((r) => !r.headers.containsKey('authorization')),
+        isTrue,
+      );
+      expect(fleet.followers, isEmpty);
+    });
+
+    test('does not retry an advertised HTTPS kiosk over HTTP', () async {
+      peers.single['tls'] = true;
+      await build(prefs: {'ks.fleet.leader': true});
+      answers['GET /api/fleet/identity'] = (_) =>
+          throw const SocketException('Kiosk unavailable');
+      final found = await commands.execute('fleetLookup', {
+        'address': '192.168.1.71',
+      });
+      expect(found.ok, isFalse);
+      expect(sent.map((r) => r.url.scheme), ['https']);
+      expect(fleet.followers, isEmpty);
+    });
+
+    test(
+      'looks up an IP and invites without discovery or syncing before acceptance',
+      () async {
+        peers.clear();
+        await build(prefs: {'ks.fleet.leader': true});
+        final found = await commands.execute('fleetLookup', {
+          'address': ' 192.168.1.80 ',
+          'port': '2345',
+        });
+        expect(found.ok, isTrue, reason: found.error);
+        final kiosk = found.data as Map;
+        expect(kiosk['id'], 'bed');
+        expect(kiosk['name'], 'Bedroom');
+        expect(kiosk['address'], '192.168.1.80');
+        expect(kiosk['port'], 2345);
+        expect(fleet.followers, isEmpty);
+        expect(sent.every((r) => r.method == 'GET'), isTrue);
+        answers['POST /api/fleet/invite'] = (_) => {
+          'ok': true,
+          'data': {'pending': true},
+        };
+        final invited = await commands.execute('fleetInvite', {
+          'id': kiosk['id'],
+          'address': kiosk['address'],
+          'port': kiosk['port'],
+          'profile': 'updates-only',
+        });
+        expect(invited.ok, isTrue, reason: invited.error);
+        final follower = fleet.followers.single;
+        expect(follower.address, '192.168.1.80');
+        expect(follower.port, 2345);
+        expect(follower.profile, 'updates-only');
+        expect(follower.token, isNull);
+        expect(follower.invite, isNotEmpty);
+        expect(sent.where((r) => r.url.path == '/api/fleet/apply'), isEmpty);
+        expect(
+          sent.where((r) => r.url.path == '/api/fleet/identity'),
+          hasLength(2),
+        );
+        final duplicate = await commands.execute('fleetLookup', {
+          'address': '192.168.1.80',
+        });
+        expect(duplicate.error, 'This kiosk already belongs to this fleet.');
+
+        answers['GET /api/fleet/invite/${follower.invite}'] = (_) => {
+          'status': 'accepted',
+          'token': 'accepted-token',
+        };
+        answers['GET /api/fleet/status'] = (_) => {
+          'id': 'bed',
+          'leaderId': 'me',
+          'version': '2026.9.19',
+        };
+        answers['POST /api/fleet/apply'] = (_) => {
+          'ok': true,
+          'data': {'applied': 0},
+        };
+        await commands.execute('fleetSyncNow', const {});
+        expect(follower.token, 'accepted-token');
+        final push = sent.singleWhere((r) => r.url.path == '/api/fleet/apply');
+        expect((jsonDecode(push.body) as Map)['settings'], isEmpty);
+        expect(push.url.port, 2345);
+      },
+    );
+
+    test('rejects invalid inputs before contacting any host', () async {
+      await build(prefs: {'ks.fleet.leader': true});
+      for (final params in [
+        {'address': ''},
+        {'address': 'http://192.168.1.80'},
+        {'address': 'not-an-ip'},
+        {'address': '192.168.1.80', 'port': 0},
+        {'address': '192.168.1.80', 'port': '65536'},
+        {'address': '192.168.1.80', 'port': 23.5},
+      ]) {
+        expect((await commands.execute('fleetLookup', params)).ok, isFalse);
+      }
+      expect(sent, isEmpty);
+      expect(fleet.followers, isEmpty);
+    });
+
+    test(
+      'IPv6 addresses use bracketed URLs and the default admin port',
+      () async {
+        peers.clear();
+        await build(prefs: {'ks.fleet.leader': true});
+        final found = await commands.execute('fleetLookup', {
+          'address': '2001:db8::80',
+        });
+        expect(found.ok, isTrue, reason: found.error);
+        expect(
+          sent.single.url.toString(),
+          'http://[2001:db8::80]:2324/api/fleet/identity',
+        );
+        answers['POST /api/fleet/invite'] = (_) => {
+          'ok': true,
+          'data': {'pending': true},
+        };
+        final invited = await commands.execute('fleetInvite', {
+          'id': 'bed',
+          'address': '2001:db8::80',
+        });
+        expect(invited.ok, isTrue, reason: invited.error);
+        expect(fleet.followers.single.url, 'http://[2001:db8::80]:2324');
+      },
+    );
+
+    test(
+      'refuses self, malformed identities, leaders and kiosks following another leader',
+      () async {
+        await build(prefs: {'ks.fleet.leader': true});
+        final identity = {
+          'id': 'bed',
+          'name': 'Bedroom',
+          'version': '2026.9.19',
+          'leader': false,
+        };
+        for (final answer in [
+          {},
+          {...identity, 'id': 'me'},
+          {...identity, 'leader': true},
+          {...identity, 'follows': 'Another leader'},
+          http.Response('no fleet endpoint', 404),
+        ]) {
+          answers['GET /api/fleet/identity'] = (_) => answer;
+          expect(
+            (await commands.execute('fleetLookup', {
+              'address': '192.168.1.80',
+            })).ok,
+            isFalse,
+          );
+        }
+        expect(sent.where((r) => r.method == 'POST'), isEmpty);
+        expect(fleet.followers, isEmpty);
+      },
+    );
+
+    test(
+      'rechecks the identity and profile before sending an invitation',
+      () async {
+        await build(prefs: {'ks.fleet.leader': true});
+        final found = await commands.execute('fleetLookup', {
+          'address': '192.168.1.80',
+        });
+        expect(found.ok, isTrue);
+        final invalidProfile = await commands.execute('fleetInvite', {
+          'id': 'bed',
+          'address': '192.168.1.80',
+          'profile': 'removed-profile',
+        });
+        expect(invalidProfile.error, 'No such profile');
+        answers['GET /api/fleet/identity'] = (_) => {
+          'id': 'someone-else',
+          'name': 'Other kiosk',
+          'version': '2026.9.19',
+          'leader': false,
+        };
+        final changed = await commands.execute('fleetInvite', {
+          'id': 'bed',
+          'address': '192.168.1.80',
+        });
+        expect(
+          changed.error,
+          'The address belongs to a different kiosk or fleet',
+        );
+        expect(sent.where((r) => r.method == 'POST'), isEmpty);
+        expect(fleet.followers, isEmpty);
+      },
+    );
+
+    test('Invite again uses a saved address when discovery is empty', () async {
+      peers.clear();
+      await build(
+        prefs: {
+          'ks.fleet.leader': true,
+          'ks.fleet.followers': jsonEncode([
+            {
+              'id': 'bed',
+              'name': 'Bedroom',
+              'address': '192.168.1.80',
+              'port': 2345,
+              'token': 'old-token',
+            },
+          ]),
+        },
+      );
+      answers['GET /api/fleet/identity'] = (_) => {
+        'id': 'bed',
+        'name': 'Bedroom',
+        'version': '2026.9.19',
+        'leader': false,
+        'follows': 'Living Room',
+      };
+      answers['POST /api/fleet/invite'] = (_) => {
+        'ok': true,
+        'data': {'token': 'new-token'},
+      };
+      final result = await commands.execute('fleetInvite', {'id': 'bed'});
+      expect(result.ok, isTrue, reason: result.error);
+      expect(fleet.followers, hasLength(1));
+      expect(fleet.followers.single.token, 'new-token');
+      expect(sent.every((r) => r.url.port == 2345), isTrue);
+    });
+  });
+
+  test(
+    'polls saved followers and shares membership across versions without mDNS',
+    () async {
+      peers.clear();
+      final bedroom = {
+        'id': 'bed',
+        'name': 'Bedroom',
+        'address': '192.168.1.71',
+        'port': 2324,
+        'token': 'private-token',
+      };
+      await build(
+        prefs: {
+          'ks.fleet.leader': true,
+          'ks.fleet.followers': jsonEncode([
+            bedroom,
+            {...bedroom, 'id': 'pending', 'invite': 'private-nonce'},
+            {...bedroom, 'id': 'left', 'token': null},
+          ]),
+        },
+      );
+      var reachable = true;
+      var revision = '';
+      answers['GET /api/fleet/status'] = (_) => reachable
+          ? {
+              'id': 'bed',
+              'name': 'New bedroom name',
+              'version': '2026.9.20',
+              'leaderId': 'me',
+              'rosterRevision': revision,
+            }
+          : http.Response('unreachable', 503);
+      answers['POST /api/fleet/roster'] = (_) => {'ok': true};
+      await commands.execute('fleetSyncNow', const {});
+      final follower = fleet.followers.first;
+      expect(follower.online, isTrue);
+      expect(follower.version, '2026.9.20');
+      expect(sent.where((r) => r.url.path == '/api/fleet/apply'), isEmpty);
+      final request = sent.singleWhere(
+        (r) => r.url.path == '/api/fleet/roster',
+      );
+      expect(request.headers['authorization'], 'Bearer private-token');
+      final roster = (jsonDecode(request.body) as Map)['devices'] as List;
+      expect(roster.map((d) => d['id']), ['bed', 'me']);
+      expect(roster.first['name'], 'New bedroom name');
+      expect(request.body, isNot(contains('private-token')));
+      expect(request.body, isNot(contains('private-nonce')));
+      final saved = jsonDecode(settings.get(defs.fleetFollowers)) as List;
+      expect(saved.first['name'], 'New bedroom name');
+      revision = follower.rosterRevision!;
+
+      // An acknowledged directory does not need to be sent on every poll.
+      sent.clear();
+      await commands.execute('fleetSyncNow', const {});
+      expect(sent.where((r) => r.url.path == '/api/fleet/roster'), isEmpty);
+
+      reachable = false;
+      await commands.execute('fleetSyncNow', const {});
+      expect(follower.online, isFalse);
+      reachable = true;
+      await commands.execute('fleetSyncNow', const {});
+      expect(follower.online, isTrue);
+
+      // The saved IP now answers as another kiosk with the same leader.
+      answers['GET /api/fleet/status'] = (_) => {
+        'id': 'another-kiosk',
+        'leaderId': 'me',
+        'version': '2026.9.19',
+        'rosterRevision': '',
+      };
+      sent.clear();
+      await commands.execute('fleetSyncNow', const {});
+      expect(follower.online, isFalse);
+      expect(follower.token, 'private-token');
+      expect(sent.where((r) => r.method == 'POST'), isEmpty);
+    },
+  );
+
+  test(
+    'the follower stores only directory fields and clears them on leaving',
+    () async {
+      const leader = {
+        'id': 'lead',
+        'name': 'Leader',
+        'version': '2026.9.99',
+        'address': '192.168.1.1',
+        'port': 2324,
+      };
+      final sibling = {...leader, 'id': 'sibling', 'name': 'Bedroom'};
+      await build(prefs: {'ks.fleet.leader_info': jsonEncode(leader)});
+      final result = await commands.execute('fleetRosterReceived', {
+        'devices': [
+          {...sibling, 'token': 'must-not-travel', 'self': true},
+          leader,
+        ],
+      });
+      expect(result.ok, isTrue, reason: result.error);
+      final stored = settings.get(defs.fleetRoster);
+      expect(stored, isNot(contains('must-not-travel')));
+      expect(stored, isNot(contains('self')));
+      expect((jsonDecode(stored) as List).map((d) => d['id']), [
+        'lead',
+        'sibling',
+      ]);
+      expect(settings.get(defs.fleetAppliedRevision), isEmpty);
+      expect(settings.get(defs.fleetSyncedKeys), isEmpty);
+      final status = await fleet.followerStatus();
+      expect(status['rosterRevision'], isNotEmpty);
+
+      for (final devices in [
+        [sibling],
+        [leader, leader],
+        [
+          leader,
+          {...sibling, 'port': 0},
+        ],
+      ]) {
+        final invalid = await commands.execute('fleetRosterReceived', {
+          'devices': devices,
+        });
+        expect(invalid.ok, isFalse);
+        expect(settings.get(defs.fleetRoster), stored);
+      }
+
+      await commands.execute('fleetRosterReceived', {
+        'devices': [leader],
+      });
+      expect(jsonDecode(settings.get(defs.fleetRoster)), hasLength(1));
+      await fleet.leave();
+      expect(settings.get(defs.fleetRoster), isEmpty);
+      expect(
+        (await commands.execute('fleetRosterReceived', {
+          'devices': [leader],
+        })).ok,
+        isFalse,
+      );
+    },
+  );
 
   group('plugins stay local', () {
     test(
@@ -485,16 +878,18 @@ void main() {
         expect(withCreds.keys, isNot(contains('sendspin.ma_token')));
         expect(withCreds.keys, isNot(contains('screensaver.immich_api_key')));
         // A new follower shares the household credentials, not the user.
+        // The intercom key is the household's too.
         expect(SyncProfile.initial.credentials, {
           'sendspin.ma_token',
           'screensaver.immich_api_key',
+          'intercom.key',
         });
         expect(
           SyncProfile.parse({
             'categories': [],
             'credentials': ['ha.token', 'bogus'],
           })!.describe(),
-          'Categories: 0 of 16. Credentials: 1 of 3. Excluded: 28.',
+          'Categories: 0 of 18. Credentials: 1 of 4. Excluded: 34.',
         );
         expect(
           withCreds['browser.start_url'],
@@ -1054,9 +1449,10 @@ void main() {
       final profiles = fleet.status()['profiles'] as List;
       expect(profiles.map((p) => (p as Map)['name']), [
         'Default',
+        'Updates only',
         'Kiosk only',
       ]);
-      expect((profiles[1] as Map)['kiosks'], 1);
+      expect((profiles[2] as Map)['kiosks'], 1);
       // Back to the Default.
       await commands.execute('fleetAssignProfile', {'id': 'bed'});
       await commands.execute('fleetSyncNow', const {});
@@ -1232,6 +1628,307 @@ void main() {
       },
     );
 
+    test('the uploaded APK is streamed to each follower and installed there, '
+        'then here', () async {
+      await build(
+        prefs: {
+          'ks.fleet.leader': true,
+          'ks.fleet.followers': jsonEncode([
+            {
+              'id': 'bed',
+              'name': 'Bedroom',
+              'address': '192.168.1.71',
+              'port': 2324,
+              'token': 't',
+            },
+          ]),
+        },
+      );
+      final apk = await File(
+        '${Directory.systemTemp.path}/ks_fleet_upload_test.apk',
+      ).writeAsBytes(List<int>.generate(300, (i) => i % 251));
+      addTearDown(() => apk.delete());
+      // What the update manager reports once the admin uploaded a file.
+      uploaded = {
+        'version': '2026.9.20',
+        'buildNumber': 21,
+        'size': 300,
+        'path': apk.path,
+      };
+      var selfInstalls = 0;
+      commands.register(
+        Command(
+          name: 'installUploadedApk',
+          description: 'install stub',
+          handler: (_) async {
+            selfInstalls++;
+            return const CommandResult.ok(true);
+          },
+        ),
+      );
+      answers['GET /api/fleet/status'] = (_) => {
+        'id': 'bed',
+        'version': '2026.9.19',
+        'leaderId': 'me',
+      };
+      // What the status says while the follower takes the upload: the
+      // whole file has streamed by the time the answer is built.
+      Map<String, Object?>? midway;
+      List<Map<String, Object?>>? midwayRows;
+      answers['POST /api/update/upload'] = (_) {
+        // A copy: the manager keeps mutating the same map.
+        midway = Map<String, Object?>.of(
+          (fleet.status()['install'] as Map).cast<String, Object?>(),
+        );
+        midwayRows = (fleet.status()['followers'] as List)
+            .cast<Map<String, Object?>>();
+        return {
+          'ok': true,
+          'data': {
+            'version': '2026.9.20',
+            'buildNumber': 21,
+            'currentBuild': 20,
+          },
+        };
+      };
+      answers['POST /api/commands/installUploadedApk'] = (_) => {
+        'ok': true,
+        'data': true,
+      };
+      await commands.execute('fleetSyncNow', const {});
+      final before = changes;
+      final r = await commands.execute('fleetInstallUploaded', const {});
+      expect(r.ok, isTrue);
+      final data = r.data as Map;
+      expect(data['started'], ['Bedroom']);
+      expect(data['self'], isTrue);
+      expect(selfInstalls, 1);
+      // Progress reached both UIs on the way: the row said Sending, the
+      // install summary named the kiosk and the fraction.
+      expect(midway?['sendingTo'], 'Bedroom');
+      expect(midway?['progress'], 1.0);
+      expect(midway?['done'], isFalse);
+      expect(midwayRows?.single['status'], 'Sending 100%');
+      expect(changes - before, greaterThanOrEqualTo(3));
+      final after = (fleet.status()['install'] as Map).cast<String, Object?>();
+      expect(after['done'], isTrue);
+      expect(after['sendingTo'], isNull);
+      expect(after['started'], ['Bedroom']);
+      expect(after['self'], isTrue);
+      expect(after['version'], '2026.9.20');
+      expect(
+        (fleet.status()['followers'] as List).cast<Map>().single['status'],
+        'Installing',
+      );
+      final upload = sent.singleWhere(
+        (q) => q.url.path == '/api/update/upload',
+      );
+      expect(upload.headers['Authorization'], 'Bearer t');
+      expect(upload.bodyBytes, await apk.readAsBytes());
+      expect(
+        sent.where((q) => q.url.path == '/api/commands/installUploadedApk'),
+        hasLength(1),
+      );
+
+      // A follower already on that build is skipped.
+      sent.clear();
+      answers['POST /api/update/upload'] = (_) => {
+        'ok': true,
+        'data': {'version': '2026.9.20', 'buildNumber': 21, 'currentBuild': 21},
+      };
+      final again = await commands.execute('fleetInstallUploaded', {
+        'id': 'bed',
+      });
+      expect((again.data as Map)['skipped'], {
+        'Bedroom': 'already on 2026.9.20',
+      });
+      expect(
+        sent.where((q) => q.url.path == '/api/commands/installUploadedApk'),
+        isEmpty,
+      );
+    });
+
+    test('followers mirror the leader\'s custom wake word models', () async {
+      await build(
+        prefs: {
+          'ks.fleet.leader': true,
+          'ks.fleet.followers': jsonEncode([
+            {
+              'id': 'bed',
+              'name': 'Bedroom',
+              'address': '192.168.1.71',
+              'port': 2324,
+              'token': 't',
+            },
+          ]),
+        },
+      );
+      // The first tick runs on its own before the stubs below exist: a
+      // leader that cannot read its models must not touch the followers'.
+      await settle();
+      expect(
+        sent.where((q) => q.url.path == '/api/fleet/wake-models'),
+        isEmpty,
+      );
+      sent.clear();
+      final dir = await Directory.systemTemp.createTemp('ks_wake_models');
+      addTearDown(() => dir.delete(recursive: true));
+      final onnx = await File('${dir.path}/my_word.onnx').writeAsBytes([1, 2]);
+      final json = await File('${dir.path}/luna.json').writeAsString('{}');
+      final mine = {
+        'openwakeword/my_word.onnx': 'aaa',
+        'microwakeword/luna.json': 'bbb',
+      };
+      commands
+        ..register(
+          Command(
+            name: 'customWakeModelsManifest',
+            description: 'stub',
+            handler: (_) async => CommandResult.ok({'files': mine}),
+          ),
+        )
+        ..register(
+          Command(
+            name: 'customWakeModelPath',
+            description: 'stub',
+            handler: (p) async => CommandResult.ok({
+              'path': p['path'] == 'openwakeword/my_word.onnx'
+                  ? onnx.path
+                  : json.path,
+            }),
+          ),
+        );
+      answers['GET /api/fleet/status'] = (_) => {
+        'id': 'bed',
+        'version': '2026.9.19',
+        'leaderId': 'me',
+      };
+      answers['POST /api/fleet/apply'] = (_) => {
+        'ok': true,
+        'data': {'applied': 0},
+      };
+      // The follower has an old copy of one file and one the leader dropped.
+      answers['GET /api/fleet/wake-models'] = (_) => {
+        'ok': true,
+        'data': {
+          'files': {
+            'openwakeword/my_word.onnx': 'old',
+            'vswakeword/gone.onnx': 'ccc',
+          },
+        },
+      };
+      answers['PUT /api/fleet/wake-models'] = (_) => {'ok': true};
+      answers['DELETE /api/fleet/wake-models'] = (_) => {'ok': true};
+      await commands.execute('fleetSyncNow', const {});
+      await settle();
+      final puts = sent.where((q) => q.method == 'PUT').toList();
+      expect(
+        [for (final q in puts) q.url.queryParameters['path']],
+        unorderedEquals([
+          'openwakeword/my_word.onnx',
+          'microwakeword/luna.json',
+        ]),
+      );
+      expect(
+        puts
+            .firstWhere(
+              (q) =>
+                  q.url.queryParameters['path'] == 'openwakeword/my_word.onnx',
+            )
+            .bodyBytes,
+        [1, 2],
+      );
+      expect(
+        [
+          for (final q in sent)
+            if (q.method == 'DELETE') q.url.queryParameters['path'],
+        ],
+        ['vswakeword/gone.onnx'],
+      );
+      // In step: the next sync compares nothing until the leader's change.
+      sent.clear();
+      await commands.execute('fleetSyncNow', const {});
+      await settle();
+      expect(
+        sent.where((q) => q.url.path == '/api/fleet/wake-models'),
+        isEmpty,
+      );
+    });
+
+    test('with nothing uploaded the fleet install says so', () async {
+      await build(prefs: {'ks.fleet.leader': true});
+      final r = await commands.execute('fleetInstallUploaded', const {});
+      expect(r.ok, isFalse);
+      expect(r.error, contains('No uploaded APK'));
+    });
+
+    test('the fleet export carries this kiosk and each follower, and names '
+        'the ones that did not answer', () async {
+      await build(
+        prefs: {
+          'ks.fleet.leader': true,
+          'ks.fleet.followers': jsonEncode([
+            {
+              'id': 'bed',
+              'name': 'Bedroom',
+              'address': '192.168.1.71',
+              'port': 2324,
+              'token': 't',
+            },
+            {
+              'id': 'kit',
+              'name': 'Kitchen',
+              'address': '192.168.1.70',
+              'port': 2324,
+              'token': 'k',
+            },
+            // Invited, not accepted: no token, nothing to ask.
+            {
+              'id': 'hall',
+              'name': 'Hall',
+              'address': '192.168.1.72',
+              'port': 2324,
+              'invite': 'n',
+            },
+          ]),
+        },
+      );
+      answers['GET /api/config/export'] = (req) =>
+          req.url.host == '192.168.1.71'
+          ? {
+              'kind': 'kiosk-satellite-config',
+              'version': 1,
+              'deviceName': 'Bedroom',
+              'settings': {'device.name': 'Bedroom'},
+            }
+          : http.Response(jsonEncode({'error': 'fleet token'}), 403);
+      final r = await commands.execute('fleetExport', const {});
+      expect(r.ok, isTrue, reason: r.error);
+      final out = r.data as Map;
+      expect(out['kind'], 'kiosk-satellite-fleet-config');
+      final devices = (out['devices'] as List).cast<Map>();
+      expect(devices.map((d) => d['id']), ['me', 'bed', 'kit']);
+      expect(devices[0]['self'], isTrue);
+      expect(devices[0]['name'], 'Living Room');
+      expect((devices[0]['config'] as Map)['kind'], 'kiosk-satellite-config');
+      expect((devices[1]['config'] as Map)['deviceName'], 'Bedroom');
+      expect(devices[2]['config'], isNull);
+      expect(devices[2]['error'], contains('Update this kiosk'));
+      final asked = sent.where((q) => q.url.path == '/api/config/export');
+      expect(asked.map((q) => q.headers['Authorization']).toSet(), {
+        'Bearer t',
+        'Bearer k',
+      });
+    });
+
+    test('a kiosk that leads nobody exports only itself', () async {
+      await build();
+      final r = await commands.execute('fleetExport', const {});
+      final devices = ((r.data as Map)['devices'] as List).cast<Map>();
+      expect(devices.single['self'], isTrue);
+      expect(sent.where((q) => q.url.path == '/api/config/export'), isEmpty);
+    });
+
     test(
       'candidates are the kiosks heard, minus the followers, with whom they follow',
       () async {
@@ -1321,6 +2018,53 @@ void main() {
     );
   });
 
+  test('the brightness curve travels as one: its middle points go where '
+      'Minimum brightness goes', () {
+    final mids = [
+      defs.adaptivePoint2Position,
+      defs.adaptivePoint2Level,
+      defs.adaptivePoint3Position,
+      defs.adaptivePoint3Level,
+    ];
+    // Screen & Audio with the default exclusions: the ends stay per room,
+    // and so do the middle points.
+    const kept = SyncProfile(categories: {'Screen & Audio'});
+    expect(FleetSyncManager.syncs(defs.adaptiveMinBrightness, kept), isFalse);
+    for (final def in mids) {
+      expect(FleetSyncManager.syncs(def, kept), isFalse, reason: def.key);
+    }
+    // Brought back into the profile, the whole curve travels.
+    const shared = SyncProfile(categories: {'Screen & Audio'}, excluded: {});
+    expect(FleetSyncManager.syncs(defs.adaptiveMinBrightness, shared), isTrue);
+    for (final def in mids) {
+      expect(FleetSyncManager.syncs(def, shared), isTrue, reason: def.key);
+    }
+    // Hidden, so a profile never lists them among its exclusions.
+    for (final def in mids) {
+      expect(def.hidden, isTrue);
+      expect(defs.fleetDefaultExcluded, isNot(contains(def.key)));
+    }
+  });
+
+  test('the recorded former default exclusions lead to the current one', () {
+    // Each former list is a real past default: a strict subset of the
+    // current one, never equal to it (or every fresh profile would be
+    // rewritten at load) and growing across the history.
+    var previous = <String>{};
+    for (final former in defs.fleetFormerDefaultExcluded) {
+      expect(former, isNot(equals(defs.fleetDefaultExcluded)));
+      expect(defs.fleetDefaultExcluded.containsAll(former), isTrue);
+      expect(former.containsAll(previous), isTrue);
+      previous = former;
+    }
+    // Voice Satellite's mute and speaker joined last: the newest former
+    // list is the current one without them.
+    expect(
+      defs.fleetFormerDefaultExcluded.last,
+      defs.fleetDefaultExcluded.difference({'voice.mute', 'voice.tts_output'}),
+    );
+  });
+
   test('the Never synced table in docs/fleet.md matches the flags', () {
     // The doc lists every per device key by name (fleet.* as one entry):
     // a key flagged in the code must be there and the doc must not name a
@@ -1358,5 +2102,122 @@ void main() {
     f.version = '2026.9.19+118';
     f.online = false;
     expect(FleetSyncManager.phaseOf(f, '2026.9.19', '3', now)['tone'], 'muted');
+    // An update on its way outranks the version gap it closes.
+    f
+      ..online = true
+      ..version = '2026.9.18'
+      ..sending = 0.4;
+    expect(FleetSyncManager.phaseOf(f, '2026.9.19', '3', now), {
+      'phase': 'updating',
+      'status': 'Sending 40%',
+      'tone': 'muted',
+    });
+    f
+      ..sending = null
+      ..update = {'installing': true};
+    expect(
+      FleetSyncManager.phaseOf(f, '2026.9.19', '3', now)['status'],
+      'Installing',
+    );
+  });
+
+  test('a follower reports that it is installing, so the leader keeps '
+      'saying so between polls', () async {
+    await build();
+    installing = true;
+    final st = await fleet.followerStatus();
+    expect((st['update'] as Map)['installing'], isTrue);
+  });
+
+  group('the Updates only profile', () {
+    test('ships built in after the Default, syncs nothing and stays', () async {
+      await build(
+        prefs: {
+          'ks.fleet.leader': true,
+          'ks.fleet.profiles': jsonEncode([
+            {
+              'id': 'own',
+              'name': 'Own',
+              'categories': ['Gestures'],
+              'credentials': [],
+              'dashboard': false,
+              'excluded': [],
+            },
+            // A stored copy (an edit that somehow landed) is dropped.
+            {
+              'id': 'updates-only',
+              'name': 'Edited',
+              'categories': ['Gestures'],
+              'credentials': [],
+              'dashboard': false,
+              'excluded': [],
+            },
+          ]),
+        },
+      );
+      expect(fleet.profiles.map((p) => p.id), [
+        'default',
+        'updates-only',
+        'own',
+      ]);
+      final p = fleet.profiles[1];
+      expect(p.name, 'Updates only');
+      expect(p.isBuiltIn, isTrue);
+      expect(p.describe(), 'Nothing syncs. Only updates are pushed.');
+      expect(fleet.profileSettings(p), isEmpty);
+      // Never stored.
+      final stored = jsonDecode(settings.get(defs.fleetProfiles)) as List;
+      expect(stored.map((e) => (e as Map)['id']), ['default', 'own']);
+
+      final edit = await commands.execute('fleetSetProfile', {
+        'profile': {
+          ...p.toJson(),
+          'categories': ['Gestures'],
+        },
+      });
+      expect(edit.ok, isFalse);
+      expect(edit.error, contains('cannot be changed'));
+      final del = await commands.execute('fleetDeleteProfile', {
+        'id': 'updates-only',
+      });
+      expect(del.ok, isFalse);
+      expect(del.error, contains('stays'));
+      final dup = await commands.execute('fleetSetProfile', {
+        'profile': {...p.toJson(), 'id': '', 'name': 'Some settings'},
+      });
+      expect(dup.ok, isTrue);
+      expect(fleet.profiles.last.name, 'Some settings');
+      expect(fleet.profiles.last.categories, isEmpty);
+    });
+
+    test('a follower can be put on it and then gets no settings', () async {
+      await build(
+        prefs: {
+          'ks.fleet.leader': true,
+          'ks.fleet.followers': jsonEncode([
+            {
+              'id': 'bed',
+              'name': 'Bedroom',
+              'address': '192.168.1.71',
+              'port': 2324,
+              'token': 't',
+            },
+          ]),
+        },
+      );
+      final r = await commands.execute('fleetAssignProfile', {
+        'id': 'bed',
+        'profile': 'updates-only',
+      });
+      expect(r.ok, isTrue);
+      final status =
+          (await commands.execute('fleetStatus', const {})).data as Map;
+      final f = (status['followers'] as List).single as Map;
+      expect(f['profile'], 'updates-only');
+      expect(
+        fleet.profileSettings(fleet.profileFor(fleet.followers.single)),
+        isEmpty,
+      );
+    });
   });
 }

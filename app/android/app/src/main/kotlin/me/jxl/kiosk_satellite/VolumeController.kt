@@ -37,6 +37,7 @@ import kotlin.math.roundToInt
  * its bottom fifth.
  */
 object VolumeController {
+
     private const val PREFS = "volume_controller"
     private const val KEY_PERCENT = "software_volume"
     private const val KEY_MUTED = "software_muted"
@@ -61,8 +62,6 @@ object VolumeController {
     @Volatile private var mediaPct = 100
     @Volatile private var assistPct = 100
     @Volatile private var mediaMutedFlag = false
-
-    internal val assistantCallVolume = CallVolumeBaseline()
 
     fun init(context: Context) {
         audioManager =
@@ -181,11 +180,10 @@ object VolumeController {
     // ── Media and assistant faders ────────────────────────────────────
 
     /** The Dart settings arriving; both at once, one notification. */
-    fun setMix(media: Int, assistant: Int, fullAssistantRange: Boolean) {
+    fun setMix(media: Int, assistant: Int) {
         val m = media.coerceIn(0, 100)
         val a = assistant.coerceIn(0, 100)
-        val rangeChanged = assistantCallVolume.setEnabled(fullAssistantRange)
-        if (m == mediaPct && a == assistPct && !rangeChanged) return
+        if (m == mediaPct && a == assistPct) return
         mediaPct = m
         assistPct = a
         notifyChanged()
@@ -224,30 +222,15 @@ object VolumeController {
     val assistGain: Float
         get() = masterSoftGain() * curve(assistPct)
 
-    /** Keep communication sounds under the same master as media playback. */
-    fun communicationGain(deviceType: Int): Float {
-        if (isFixed) return 1f // assistGain already includes the software master.
-        if (muted() || percent() == 0) return 0f
-        if (Build.VERSION.SDK_INT >= 28) {
-            try {
-                val mediaDb = audioManager.getStreamVolumeDb(
-                    AudioManager.STREAM_MUSIC,
-                    audioManager.getStreamVolume(AudioManager.STREAM_MUSIC), deviceType,
-                )
-                val voiceDb = audioManager.getStreamVolumeDb(
-                    AudioManager.STREAM_VOICE_CALL,
-                    audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL), deviceType,
-                )
-                if (mediaDb == Float.NEGATIVE_INFINITY) return 0f
-                if (mediaDb.isFinite() && voiceDb.isFinite()) {
-                    return PlaybackVolume.compensation(mediaDb, voiceDb)
-                }
-            } catch (_: IllegalArgumentException) {}
-        }
-        return curve(percent())
-    }
+    /**
+     * The master alone, for a sink with a fader of its own (the intercom):
+     * 1.0 where the stream applies master in hardware, the software
+     * master on fixed-volume devices.
+     */
+    val masterGain: Float
+        get() = masterSoftGain()
 
-    /** Master and call-volume changes affect communication playback gain. */
+    /** A system volume change: the software master on fixed-volume devices. */
     fun systemVolumeChanged() = notifyChanged()
 
     private fun notifyChanged() {

@@ -39,6 +39,35 @@ class DeviceDetails {
   /// Read on demand and never displayed as a row: it exists to be adopted as
   /// the ESPHome identity so Home Assistant links this kiosk with the same
   /// device from router integrations (issue #252).
+  /// The Java heap's ceiling in bytes, or null where the platform cannot
+  /// say. ExoPlayer buffers media into Java byte arrays, so this is the
+  /// budget a video's buffering must fit in.
+  static Future<int?> javaHeapMax() async {
+    try {
+      return await _channel.invokeMethod<int>('javaHeapMax');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// [tags] as language names in [display]'s language, for the text to
+  /// speech Language pickers: en-US reads English (United States). A tag
+  /// the platform cannot name, or no platform at all (tests), keeps the tag.
+  static Future<Map<String, String>> languageNames(
+    List<String> tags,
+    String display,
+  ) async {
+    try {
+      final raw = await _channel.invokeMapMethod<String, String>(
+        'languageNames',
+        {'tags': tags, 'display': display},
+      );
+      return {for (final t in tags) t: raw?[t] ?? t};
+    } catch (_) {
+      return {for (final t in tags) t: t};
+    }
+  }
+
   static Future<String?> wifiMac() async {
     try {
       return await _channel.invokeMethod<String>('wifiMac');
@@ -52,6 +81,16 @@ class DeviceDetails {
   static Future<Map<String, Object?>> cpu() async {
     try {
       return await _channel.invokeMapMethod<String, Object?>('cpu') ?? const {};
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  /// Free (the kernel's MemAvailable) and total memory in bytes, plus the
+  /// low-memory flag: `free`, `total`, `low`. Empty off-Android.
+  static Future<Map<String, Object?>> ram() async {
+    try {
+      return await _channel.invokeMapMethod<String, Object?>('ram') ?? const {};
     } catch (_) {
       return const {};
     }
@@ -118,8 +157,9 @@ class DeviceDetails {
     }
   }
 
-  /// Seconds since the process started (`app`) and since the default network
-  /// last came up (`network`, null while offline). The network number reads
+  /// Seconds since the process started (`app`), since the device booted
+  /// (`device`) and since the default network last came up (`network`, null
+  /// while offline). The network number reads
   /// the kernel's own timestamp on the interface's IP address where it can,
   /// so it survives app restarts; where the kernel read is refused it falls
   /// back to a clock anchored at app start at the earliest, which then reads
@@ -131,6 +171,18 @@ class DeviceDetails {
           const {};
     } catch (_) {
       return const {};
+    }
+  }
+
+  /// The default network's `type` (ethernet, wifi, cellular, vpn or other)
+  /// and, on Wi-Fi, `rssi` (dBm), `speedMbps` and `frequencyMhz`, each null
+  /// when Android reports it as unknown. Null while offline or off Android.
+  /// No SSID: that needs a location grant.
+  static Future<Map<String, Object?>?> link() async {
+    try {
+      return await _channel.invokeMapMethod<String, Object?>('link');
+    } catch (_) {
+      return null;
     }
   }
 
@@ -159,10 +211,24 @@ class DeviceDetails {
   int? get screenHeight => (_map('screen')?['height'] as num?)?.toInt();
   double? get screenDensity => (_map('screen')?['density'] as num?)?.toDouble();
 
+  /// `landscape` or `portrait`, from the current size.
+  String? get screenOrientation => _map('screen')?['orientation'] as String?;
+
+  /// Degrees the display is turned from its natural orientation (0, 90, 180
+  /// or 270). A panel mounted sideways reads landscape at 90.
+  int? get screenRotation => (_map('screen')?['rotation'] as num?)?.toInt();
+
   /// The WebView implementation in use — not the app's, the system's, and it
   /// updates itself out from under the app.
   String? get webviewPackage => _map('webview')?['package'] as String?;
   String? get webviewVersion => _map('webview')?['version'] as String?;
+
+  /// False when Android reports no WebView provider at all (API 26+); null
+  /// where the platform cannot say.
+  bool? get webviewAvailable => _map('webview')?['available'] as bool?;
+
+  /// MediaTek's DuraSpeed is installed and on (see DeviceDetails.kt).
+  bool get duraSpeed => _map('webview')?['duraSpeed'] == true;
 
   Map<String, Object?> toJson() => {
     'brand': brand,
@@ -176,6 +242,8 @@ class DeviceDetails {
       'width': screenWidth,
       'height': screenHeight,
       'density': screenDensity,
+      'orientation': screenOrientation,
+      'rotation': screenRotation,
     },
     'webview': {'package': webviewPackage, 'version': webviewVersion},
   };

@@ -3,10 +3,13 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '../app_container.dart';
+import '../l10n/camera_view_messages.dart';
+import '../l10n/messages.dart';
 import '../managers/camera/camera_manager.dart';
 import '../managers/camera/models.dart';
 import '../managers/settings/definitions.dart' as defs;
@@ -53,10 +56,14 @@ class ClosingCameraPlayer extends StatefulWidget {
     this.interactive = true,
     this.onDismiss,
     this.onPlaying,
+    this.paused,
   });
 
   final AppContainer container;
   final CameraViewConfig? view;
+
+  /// While true the page is paused; see [CameraPlayer.paused].
+  final ValueListenable<bool>? paused;
   final bool interactive;
   final VoidCallback? onDismiss;
 
@@ -224,6 +231,7 @@ class _ClosingCameraPlayerState extends State<ClosingCameraPlayer>
             onDismiss: widget.onDismiss,
             onPlaying: widget.onPlaying,
             closing: _closing,
+            paused: widget.paused,
           ),
         ),
       ),
@@ -246,6 +254,7 @@ class CameraPlayer extends StatefulWidget {
     this.onDismiss,
     this.onPlaying,
     this.closing = false,
+    this.paused,
   });
 
   final AppContainer container;
@@ -265,12 +274,19 @@ class CameraPlayer extends StatefulWidget {
   /// still mounted and its channel still delivers. See [ClosingCameraPlayer].
   final bool closing;
 
+  /// While true the page is paused (its own onPause, which stops its
+  /// rendering and video): the camera screensaver under the native voice
+  /// overlay, which shows a still of it.
+  final ValueListenable<bool>? paused;
+
   @override
   State<CameraPlayer> createState() => _CameraPlayerState();
 }
 
 class _CameraPlayerState extends State<CameraPlayer> {
-  late final String _configJson = _buildConfig();
+  late String _configJson;
+  String _messagesJson = '{}';
+  String _language = 'en';
   InAppWebViewController? _controller;
   bool _tornDown = false;
 
@@ -290,7 +306,33 @@ class _CameraPlayerState extends State<CameraPlayer> {
     if (widget.interactive) {
       widget.container.camera.focusedCameraId.addListener(_syncFocus);
     }
+    widget.paused?.addListener(_syncPaused);
   }
+
+  void _syncPaused() {
+    final controller = _controller;
+    if (controller == null || _tornDown) return;
+    final paused = widget.paused?.value ?? false;
+    unawaited(paused ? controller.pause() : controller.resume());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final strings = l10n(context);
+    final messagesJson = jsonEncode(cameraViewMessages(strings));
+    final language = strings.localeName.replaceAll('_', '-');
+    final changed = messagesJson != _messagesJson || language != _language;
+    _messagesJson = messagesJson;
+    _language = language;
+    _configJson = _buildConfig();
+    if (changed && !_tornDown) {
+      _controller?.evaluateJavascript(source: _messageScript);
+    }
+  }
+
+  String get _messageScript =>
+      'window.ksSetMessages && window.ksSetMessages($_messagesJson, ${jsonEncode(_language)});';
 
   /// Stop the streams from inside the page.
   ///
@@ -338,6 +380,7 @@ class _CameraPlayerState extends State<CameraPlayer> {
     if (widget.interactive) {
       widget.container.camera.focusedCameraId.removeListener(_syncFocus);
     }
+    widget.paused?.removeListener(_syncPaused);
     _teardown();
     super.dispose();
   }
@@ -360,6 +403,8 @@ class _CameraPlayerState extends State<CameraPlayer> {
         camera.id: camera,
     };
     return jsonEncode({
+      'messages': jsonDecode(_messagesJson),
+      'language': _language,
       'viewId': widget.view.id,
       'viewName': widget.view.name,
       'showCameraNames': widget.view.showCameraNames,
@@ -447,7 +492,8 @@ class _CameraPlayerState extends State<CameraPlayer> {
       // WebViews where the injection arrived late. Where it arrived on
       // time the page has already booted and dropped the hook.
       controller.evaluateJavascript(
-        source: 'window.ksSetConfig && window.ksSetConfig($_configJson);',
+        source:
+            'window.ksSetConfig && window.ksSetConfig($_configJson); $_messageScript',
       );
     },
     initialFile: 'assets/camera-view/index.html',
@@ -470,6 +516,7 @@ class _CameraPlayerState extends State<CameraPlayer> {
     ),
     onWebViewCreated: (controller) {
       _controller = controller;
+      if (widget.paused?.value ?? false) unawaited(controller.pause());
       // This player is the camera surface: Home Assistant's trickled ICE
       // candidates (issue #124) land on the manager and are pushed into
       // the page's matching peer connection from here.

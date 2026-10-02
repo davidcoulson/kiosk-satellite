@@ -1,0 +1,337 @@
+{
+  "ui.theme": {
+    "dark": "deviceThemeDark",
+    "light": "deviceThemeLight",
+    "system": "deviceThemeSystem"
+  },
+  "update.source": {
+    "github": "deviceUpdateGithub",
+    "custom": "deviceUpdateCustom"
+  },
+  "ha.haptics_strength": {
+    "light": "haVibrationLight",
+    "medium": "haVibrationMedium",
+    "strong": "haVibrationStrong"
+  },
+  "ha.theme": {
+    "auto": "haThemeAuto",
+    "light": "deviceThemeLight",
+    "dark": "deviceThemeDark"
+  },
+  "browser.cutout_mode": {
+    "always": "screenAudioCutoutAlways",
+    "short_edges": "screenAudioCutoutShort",
+    "default": "screenAudioCutoutDefault",
+    "never": "screenAudioCutoutNever"
+  },
+  "screen.orientation": {
+    "auto": "screenAudioAutomatic",
+    "landscape": "screenAudioLandscape",
+    "reverse_landscape": "screenAudioReverseLandscape",
+    "portrait": "screenAudioPortrait",
+    "reverse_portrait": "screenAudioReversePortrait"
+  },
+  "audio.mic_capture_format": {
+    "auto": "screenAudioAutomaticDefault",
+    "hardware": "screenAudioStereo"
+  },
+  "screensaver.mode": {
+    "dim": "screensaverModeDim",
+    "black": "screensaverModeBlack",
+    "clock": "screensaverModeClock",
+    "media": "screensaverModeMedia",
+    "local": "screensaverModeLocal",
+    "gallery": "screensaverModeGallery",
+    "immich": "screensaverModeImmich",
+    "website": "screensaverModeWebsite",
+    "camera": "screensaverModeCamera",
+    "weather_mood": "screensaverWeatherMood",
+    "dashboard": "screensaverModeDashboard"
+  },
+  "screensaver.clock_style": {
+    "digital": "screensaverStyleDigital",
+    "flip": "screensaverStyleFlip",
+    "roller": "screensaverStyleRoller"
+  },
+  "screensaver.clock_font_weight": {
+    "default": "screensaverFontDefault",
+    "light": "screensaverFontLight",
+    "regular": "screensaverFontRegular",
+    "medium": "screensaverFontMedium",
+    "bold": "screensaverFontBold",
+    "black": "screensaverFontBlack"
+  },
+  "screensaver.media_transition": {
+    "none": "screensaverMediaTransitionNone",
+    "fade": "screensaverMediaTransitionFade",
+    "slide": "screensaverMediaTransitionSlide",
+    "zoom": "screensaverMediaTransitionZoom",
+    "kenburns": "screensaverMediaTransitionKenBurns",
+    "random": "screensaverMediaTransitionRandom"
+  },
+  "screensaver.media_fill": {
+    "off": "screensaverMediaFillOff",
+    "smart": "screensaverMediaFillSmart",
+    "always": "screensaverMediaFillAlways"
+  },
+  "screensaver.gallery_transition": {
+    "none": "screensaverMediaTransitionNone",
+    "fade": "screensaverMediaTransitionFade",
+    "slide": "screensaverMediaTransitionSlide",
+    "zoom": "screensaverMediaTransitionZoom",
+    "kenburns": "screensaverMediaTransitionKenBurns",
+    "random": "screensaverMediaTransitionRandom"
+  },
+  "screensaver.gallery_fill": {
+    "off": "screensaverMediaFillOff",
+    "smart": "screensaverMediaFillSmart",
+    "always": "screensaverMediaFillAlways"
+  },
+  "screensaver.local_transition": {
+    "none": "screensaverMediaTransitionNone",
+    "fade": "screensaverMediaTransitionFade",
+    "slide": "screensaverMediaTransitionSlide",
+    "zoom": "screensaverMediaTransitionZoom",
+    "kenburns": "screensaverMediaTransitionKenBurns",
+    "random": "screensaverMediaTransitionRandom"
+  },
+  "screensaver.local_fill": {
+    "off": "screensaverMediaFillOff",
+    "smart": "screensaverMediaFillSmart",
+    "always": "screensaverMediaFillAlways"
+  },
+  "screensaver.immich_transition": {
+    "none": "screensaverMediaTransitionNone",
+    "fade": "screensaverMediaTransitionFade",
+    "slide": "screensaverMediaTransitionSlide",
+    "zoom": "screensaverMediaTransitionZoom",
+    "kenburns": "screensaverMediaTransitionKenBurns",
+    "random": "screensaverMediaTransitionRandom"
+  },
+  "screensaver.immich_fill": {
+    "off": "screensaverMediaFillOff",
+    "smart": "screensaverMediaFillSmart",
+    "always": "screensaverMediaFillAlways"
+  },
+  "screensaver.immich_metadata_position": {
+    "top_left": "screensaverMediaTopLeft",
+    "top_right": "screensaverMediaTopRight",
+    "bottom_left": "screensaverMediaBottomLeft",
+    "bottom_right": "screensaverMediaBottomRight"
+  },
+  "screensaver.immich_taken_within": {
+    "": "screensaverMediaAnyTime",
+    "30": "screensaverMediaPastMonth",
+    "90": "screensaverMediaPast3Months",
+    "365": "screensaverMediaPastYear",
+    "730": "screensaverMediaPast2Years",
+    "1825": "screensaverMediaPast5Years",
+    "3650": "screensaverMediaPast10Years",
+    "since": "screensaverMediaSince",
+    "range": "screensaverMediaTimeframe"
+  },
+  "screensaver.widget_font_weight": {
+    "default": "screensaverFontDefault",
+    "light": "screensaverFontLight",
+    "regular": "screensaverFontRegular",
+    "medium": "screensaverFontMedium",
+    "bold": "screensaverFontBold",
+    "black": "screensaverFontBlack"
+  },
+  "screensaver.glance_font_weight": {
+    "default": "screensaverFontDefault",
+    "light": "screensaverFontLight",
+    "regular": "screensaverFontRegular",
+    "medium": "screensaverFontMedium",
+    "bold": "screensaverFontBold",
+    "black": "screensaverFontBlack"
+  },
+  "screensaver.widget_font": {
+    "system": "screensaverOverlayFontSystem",
+    "serif": "screensaverOverlayFontSerif",
+    "condensed": "screensaverOverlayFontCondensed",
+    "monospace": "screensaverOverlayFontMonospace",
+    "casual": "screensaverOverlayFontCasual",
+    "cursive": "screensaverOverlayFontCursive"
+  },
+  "screensaver.glance_font": {
+    "system": "screensaverOverlayFontSystem",
+    "serif": "screensaverOverlayFontSerif",
+    "condensed": "screensaverOverlayFontCondensed",
+    "monospace": "screensaverOverlayFontMonospace",
+    "casual": "screensaverOverlayFontCasual",
+    "cursive": "screensaverOverlayFontCursive"
+  },
+  "face.preview_position": {
+    "top_left": "screensaverMediaTopLeft",
+    "top_right": "screensaverMediaTopRight",
+    "bottom_left": "screensaverMediaBottomLeft",
+    "bottom_right": "screensaverMediaBottomRight"
+  },
+  "camera.device": {
+    "front": "cameraFront",
+    "back": "cameraBack"
+  },
+  "sendspin.player_source": {
+    "": "mediaThisDevice"
+  },
+  "sendspin.volume_keys": {
+    "off": "mediaOff",
+    "now_playing": "mediaKeysNowPlaying",
+    "playing": "mediaKeysPlaying"
+  },
+  "sendspin.codec": {
+    "flac": "mediaFlac",
+    "opus": "mediaOpus",
+    "pcm": "mediaPcm"
+  },
+  "sendspin.player_size": {
+    "compact": "mediaCompact",
+    "large": "mediaLargeControls"
+  },
+  "sendspin.fullscreen_photo_fill": {
+    "default": "mediaDefaultFill",
+    "off": "mediaFillOff",
+    "smart": "mediaFillSmart",
+    "always": "mediaFillAlways"
+  },
+  "intercom.answer_mode": {
+    "ring": "intercomOptionAnswerRing",
+    "auto": "intercomOptionAnswerAuto",
+    "dnd": "intercomOptionAnswerDnd"
+  },
+  "intercom.ring_seconds": {
+    "15": "intercomOptionAnswer15",
+    "30": "intercomOptionAnswer30",
+    "45": "intercomOptionAnswer45",
+    "60": "intercomOptionAnswer60"
+  },
+  "intercom.talk_mode": {
+    "ptt": "intercomOptionTalkPtt",
+    "handsfree": "intercomOptionTalkHandsfree"
+  },
+  "kiosk.exit_gesture": {
+    "taps5": "kioskGestureTaps5",
+    "taps7": "kioskGestureTaps7",
+    "taps5hold": "kioskGestureTaps5Hold",
+    "taps7hold": "kioskGestureTaps7Hold",
+    "none": "kioskGestureNone"
+  },
+  "gestures.clap_strictness": {
+    "standard": "gestureStrictnessStandard",
+    "strict": "gestureStrictnessStrict"
+  },
+  "lockdown.exit_gesture": {
+    "taps5": "kioskGestureTaps5",
+    "taps7": "kioskGestureTaps7",
+    "taps5hold": "kioskGestureTaps5Hold",
+    "taps7hold": "kioskGestureTaps7Hold",
+    "none": "lockdownGestureNone"
+  },
+  "btproxy.scan_duty": {
+    "low_latency": "esphomeOptionContinuous",
+    "balanced": "esphomeOptionBalanced",
+    "low_power": "esphomeOptionLowPower"
+  },
+  "btproxy.nearby_sort": {
+    "last_seen": "esphomeOptionLastSeen",
+    "name": "esphomeOptionName",
+    "mac": "esphomeOptionMacAddress",
+    "rssi": "esphomeOptionSignalStrength"
+  },
+  "btproxy.min_connect_rssi": {
+    "": "esphomeOptionNoLimit",
+    "-70": "esphomeOption70DbmSameRoom",
+    "-80": "esphomeOption80Dbm",
+    "-85": "esphomeOption85Dbm",
+    "-90": "esphomeOption90DbmEdgeOfRange"
+  },
+  "screensaver.weather_preview_condition": {
+    "sunny": "screensaverWeatherPreviewSunny",
+    "partlycloudy": "screensaverWeatherPreviewPartlycloudy",
+    "cloudy": "screensaverWeatherPreviewCloudy",
+    "rainy": "screensaverWeatherPreviewRainy",
+    "pouring": "screensaverWeatherPreviewPouring",
+    "snowy": "screensaverWeatherPreviewSnowy",
+    "snowy-rainy": "screensaverWeatherPreviewSnowyRainy",
+    "fog": "screensaverWeatherPreviewFog",
+    "hail": "screensaverWeatherPreviewHail",
+    "lightning": "screensaverWeatherPreviewLightning",
+    "lightning-rainy": "screensaverWeatherPreviewLightningRainy",
+    "windy": "screensaverWeatherPreviewWindy",
+    "windy-variant": "screensaverWeatherPreviewWindyVariant",
+    "exceptional": "screensaverWeatherPreviewExceptional"
+  },
+  "screensaver.weather_preview_period": {
+    "day": "screensaverWeatherPreviewDay",
+    "twilight": "screensaverWeatherPreviewTwilight",
+    "night": "screensaverWeatherPreviewNight"
+  },
+  "screensaver.weather_clock_font_weight": {
+    "default": "screensaverFontDefault",
+    "light": "screensaverFontLight",
+    "regular": "screensaverFontRegular",
+    "medium": "screensaverFontMedium",
+    "bold": "screensaverFontBold",
+    "black": "screensaverFontBlack"
+  },
+  "voice.tts_output_mode": {
+    "announcement": "voiceOptionAnnouncement",
+    "normal_playback": "voiceOptionNormalPlayback"
+  },
+  "voice.wake_word_sensitivity": {
+    "slightly": "voiceOptionSlightly",
+    "moderately": "voiceOptionModerately",
+    "very": "voiceOptionVery"
+  },
+  "voice.theme": {
+    "auto": "haThemeAuto",
+    "light": "deviceThemeLight",
+    "dark": "deviceThemeDark"
+  },
+  "voice.skin": {
+    "default": "voiceVadDefault"
+  },
+  "alarms.snooze_minutes": {
+    "5": "alarmsOption5Minutes",
+    "10": "alarmsOption10Minutes",
+    "15": "alarmsOption15Minutes",
+    "20": "alarmsOption20Minutes",
+    "25": "alarmsOption25Minutes",
+    "30": "alarmsOption30Minutes"
+  },
+  "alarms.silence_after_minutes": {
+    "5": "alarmsOption5Minutes",
+    "10": "alarmsOption10Minutes",
+    "15": "alarmsOption15Minutes",
+    "20": "alarmsOption20Minutes",
+    "30": "alarmsOption30Minutes"
+  },
+  "alarms.sunrise_minutes": {
+    "10": "alarmsOption10Minutes",
+    "15": "alarmsOption15Minutes",
+    "20": "alarmsOption20Minutes",
+    "25": "alarmsOption25Minutes",
+    "30": "alarmsOption30Minutes"
+  },
+  "voice.realtime_tools": {
+    "custom": "voiceRealtimeToolsCustom",
+    "none": "voiceNone"
+  },
+  "voice.overlay_mode": {
+    "full": "voiceOverlayFullScreen",
+    "docked": "voiceOverlayDocked"
+  },
+  "voice.realtime_openai_model": {
+    "": "voiceRealtimeProviderDefault"
+  },
+  "voice.realtime_openai_voice": {
+    "": "voiceRealtimeProviderDefault"
+  },
+  "voice.realtime_xai_model": {
+    "": "voiceRealtimeProviderDefault"
+  },
+  "voice.realtime_xai_voice": {
+    "": "voiceRealtimeProviderDefault"
+  }
+}

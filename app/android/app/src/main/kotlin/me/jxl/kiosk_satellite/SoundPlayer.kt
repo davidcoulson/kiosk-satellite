@@ -7,6 +7,7 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.media.AudioTimestamp
+import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.media.audiofx.Visualizer
 import android.os.Build
@@ -15,6 +16,7 @@ import android.os.HandlerThread
 import android.os.Looper
 import android.util.Log
 import androidx.media3.common.C
+import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -24,11 +26,15 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DecoderReuseEvaluation
+import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.audio.AudioSink
-import androidx.media3.exoplayer.audio.DefaultAudioSink
+import androidx.media3.exoplayer.audio.ForwardingAudioSink
 import androidx.media3.exoplayer.audio.TeeAudioProcessor
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.LoadEventInfo
+import androidx.media3.exoplayer.source.MediaLoadData
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
@@ -72,6 +78,9 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
         /** Cap on how long ExoPlayer.release() may block its caller (the
          *  main thread) waiting for the internal playback thread. */
         private const val RELEASE_TIMEOUT_MS = 50L
+
+        /** How often a playing stream reports its position to the page. */
+        private const val PROGRESS_INTERVAL_MS = 250L
 
         /** Playback errors that mean the decoder, not the sound: worth one
          *  retry on software decoders, which need no vendor codec service. */
@@ -122,24 +131,16 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
     private fun effectiveVolume(id: String): Float {
         val base = baseVolumes[id] ?: 1f
         val gain = if (id in absoluteVolumes) 1f else VolumeController.assistGain
-        val master = if (communicationSound(id)) {
-            VolumeController.communicationGain(requests[id]?.output?.type ?: AudioDeviceInfo.TYPE_BUILTIN_SPEAKER)
-        } else 1f
-        return PlaybackVolume.level(base, gain, master)
+        return PlaybackVolume.level(base, gain, 1f)
     }
 
-    private class PlaybackRequest(
-        val lease: AutoCloseable?,
-        val output: AudioDeviceInfo?,
-    )
-    private val communication = CommunicationPlayback.get(appContext)
+    private class PlaybackRequest(val output: AudioDeviceInfo?)
     private val requests = java.util.concurrent.ConcurrentHashMap<String, PlaybackRequest>()
 
-    private fun communicationSound(id: String): Boolean = requests[id]?.lease != null
-
-    private fun attributes(id: String): AudioAttributes = AudioAttributes.Builder()
-        .setUsage(if (communicationSound(id)) AudioAttributes.USAGE_VOICE_COMMUNICATION else AudioAttributes.USAGE_MEDIA)
-        .setContentType(if (communicationSound(id)) AudioAttributes.CONTENT_TYPE_SPEECH else AudioAttributes.CONTENT_TYPE_MUSIC)
+    /** Media, like everything the kiosk plays: Android puts the master on it. */
+    private val mediaAttributes: AudioAttributes = AudioAttributes.Builder()
+        .setUsage(AudioAttributes.USAGE_MEDIA)
+        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
         .build()
 
     /** Per-sound level taps, feeding the page's reactive bar. */
@@ -166,15 +167,43 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
     /** Live clip playbacks by sound id, alongside [players]. */
     private val tracks = mutableMapOf<String, AudioTrack>()
 
+    /** What each clip and stream plays, for the software echo canceller. */
+    private val clipTaps = java.util.concurrent.ConcurrentHashMap<String, TrackTap>()
+    private val streamTaps = java.util.concurrent.ConcurrentHashMap<String, SinkTap>()
+
+    private fun tapGain(id: String) {
+        val e = effectiveVolume(id)
+        clipTaps[id]?.gain = e
+        streamTaps[id]?.gain = e
+    }
+
     init {
         channel.setMethodCallHandler { call, result ->
             when (call.method) {
-                "play" -> result.success(
+                "duration" -> {
+                    val source = call.argument<String>("source") ?: ""
+                    workerHandler.post {
+                        val reader = MediaMetadataRetriever()
+                        val seconds = try {
+                            reader.setDataSource(source)
+                            reader.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                                ?.toDoubleOrNull()?.div(1000.0)
+                        } catch (_: Exception) {
+                            null
+                        } finally {
+                            try { reader.release() } catch (_: Exception) {}
+                        }
+                        mainHandler.post { result.success(seconds) }
+                    }
+                }
+                "play", "playDiagnostic" -> result.success(
                     play(
                         call.argument<String>("id") ?: "",
                         call.argument<String>("source") ?: "",
                         call.argument<Double>("volume") ?: 1.0,
                         call.argument<Boolean>("absolute") ?: false,
+                        if (call.method == "playDiagnostic")
+                            call.argument<String>("exoDecoder") ?: "default" else null,
                     ),
                 )
                 "stop" -> {
@@ -200,6 +229,7 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
                         baseVolumes[id] = v
                         try { it.setVolume(effectiveVolume(id)) } catch (_: Exception) {}
                     }
+                    tapGain(id)
                     result.success(true)
                 }
                 else -> result.notImplemented()
@@ -220,6 +250,7 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
             for ((id, track) in live) {
                 try { track.setVolume(effectiveVolume(id)) } catch (_: Exception) {}
             }
+            for (id in clipTaps.keys + streamTaps.keys) tapGain(id)
         }
     }
 
@@ -228,21 +259,32 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
         source: String,
         volume: Double,
         absolute: Boolean = false,
+        exoDecoder: String? = null,
     ): Boolean {
         if (id.isEmpty() || source.isEmpty()) return false
+        if (exoDecoder != null && exoDecoder !in setOf("default", "software")) return false
         // Same id twice = replace: the page re-firing a chime wants the new
         // one, not two overlapped copies.
-        val selected = AudioRouting.currentOutput()
-        val lease = communication.acquire(selected)
-        val target = if (lease != null) communication.output else selected
+        val target = AudioRouting.currentOutput()
         finish(id, null)
-        val request = PlaybackRequest(lease, target)
+        val request = PlaybackRequest(target)
         requests[id] = request
         val callRouteWanted =
             target != null && target.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
         val v = volume.toFloat().coerceIn(0f, 1f)
         baseVolumes[id] = v
         if (absolute) absoluteVolumes.add(id) else absoluteVolumes.remove(id)
+        if (exoDecoder != null) {
+            if (callRouteWanted) {
+                finish(id, "ExoPlayer diagnostic replay is unavailable on the Bluetooth call route")
+                return false
+            }
+            return playWithExo(
+                id, source, target,
+                softwareDecoders = exoDecoder == "software",
+                diagnosticReplay = true,
+            )
+        }
         // The call route stays on MediaPlayer, where the SCO handling
         // already lives. A short local file plays from decoded PCM: no
         // codec spin-up, no teardown, and none of it on this thread.
@@ -279,7 +321,7 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
                 if (callRoute) AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
-                else attributes(id),
+                else mediaAttributes,
             )
             if (callRoute) ensureScoLink(id, target!!)
             mp.setDataSource(source)
@@ -298,6 +340,11 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
                 // real audio start, not off the play call.
                 channel.invokeMethod("started", mapOf("id" to id))
                 startLevelCapture(id, player)
+                reportProgress(id) {
+                    val live = players[id]
+                    if (live !== player) null
+                    else live.currentPosition.toLong() to live.duration.toLong()
+                }
             }
             mp.setOnCompletionListener { if (players[id] === it) finish(id, null) }
             mp.setOnErrorListener { player, what, extra ->
@@ -335,7 +382,7 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
         }
         val track = try {
             AudioTrack.Builder()
-                .setAudioAttributes(attributes(id))
+                .setAudioAttributes(mediaAttributes)
                 .setAudioFormat(
                     AudioFormat.Builder()
                         .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
@@ -343,8 +390,12 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
                         .setChannelMask(channelMask)
                         .build(),
                 )
-                // The whole clip lives in the track: one write, then play.
-                .setTransferMode(AudioTrack.MODE_STATIC)
+                // The whole clip lives in the track: one write, then play. A
+                // streaming track rather than a static one: a static track's
+                // playback head starts the echo canceller's reference off by
+                // a varying 60 to 140 ms until its first timestamp, where a
+                // streaming one is steady (measured on a Galaxy Tab S8).
+                .setTransferMode(AudioTrack.MODE_STREAM)
                 .setBufferSizeInBytes(clip.pcm.size)
                 .build()
         } catch (e: Exception) {
@@ -353,8 +404,16 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
             return
         }
         try {
+            // No lead-in for a chime (see LeadInProcessor): a chime is short,
+            // what follows it places itself, and a chime that starts late
+            // is what the user notices.
             track.write(clip.pcm, 0, clip.pcm.size)
             track.setVolume(effectiveVolume(id))
+            clipTaps.remove(id)?.close()
+            clipTaps[id] = TrackTap(track, clip.sampleRate, if (clip.channels >= 2) 2 else 1).also {
+                it.gain = effectiveVolume(id)
+                it.wrote(clip.pcm, 0, clip.pcm.size)
+            }
             if (Build.VERSION.SDK_INT >= 28) {
                 target?.let {
                     track.preferredDevice = it
@@ -430,9 +489,13 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
         source: String,
         target: AudioDeviceInfo?,
         softwareDecoders: Boolean = false,
+        diagnosticReplay: Boolean = false,
     ): Boolean {
         return try {
-            val player = ExoPlayer.Builder(appContext, exoRenderersFactory(id, softwareDecoders))
+            val diagnostics = ExoDiagnostics()
+            val player = ExoPlayer.Builder(
+                appContext, exoRenderersFactory(id, softwareDecoders, diagnosticReplay, diagnostics),
+            )
                 // Media3's default HTTP stack announces itself, not the app;
                 // a Home Assistant access log should name the kiosk that
                 // pulled the TTS clip.
@@ -466,26 +529,87 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
             exoPlayers[id] = player
             player.setAudioAttributes(
                 androidx.media3.common.AudioAttributes.Builder()
-                    .setUsage(if (communicationSound(id)) C.USAGE_VOICE_COMMUNICATION else C.USAGE_MEDIA)
-                    .setContentType(if (communicationSound(id)) C.AUDIO_CONTENT_TYPE_SPEECH else C.AUDIO_CONTENT_TYPE_MUSIC)
+                    .setUsage(C.USAGE_MEDIA)
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
                     .build(),
                 /* handleAudioFocus = */ false,
             )
             target?.let { player.setPreferredAudioDevice(it) }
             player.volume = effectiveVolume(id)
+            diagnostic(id, "ExoPlayer prepare software=$softwareDecoders replay=$diagnosticReplay " +
+                "output=${target?.type}")
+            player.addAnalyticsListener(object : AnalyticsListener {
+                override fun onAudioDecoderInitialized(
+                    eventTime: AnalyticsListener.EventTime,
+                    decoderName: String,
+                    initializedTimestampMs: Long,
+                    initializationDurationMs: Long,
+                ) {
+                    diagnostics.decoder = decoderName
+                    diagnostic(id, "decoder=$decoderName initialized=${initializationDurationMs}ms")
+                }
+
+                override fun onAudioInputFormatChanged(
+                    eventTime: AnalyticsListener.EventTime,
+                    format: Format,
+                    decoderReuseEvaluation: DecoderReuseEvaluation?,
+                ) {
+                    diagnostic(id, "format=${format.sampleMimeType} rate=${format.sampleRate} " +
+                        "channels=${format.channelCount} delay=${format.encoderDelay} padding=${format.encoderPadding}")
+                }
+
+                override fun onAudioPositionAdvancing(
+                    eventTime: AnalyticsListener.EventTime,
+                    playoutStartSystemTimeMs: Long,
+                ) {
+                    diagnostics.positionAdvanced = true
+                    diagnostic(id, "audio position advancing")
+                }
+
+                override fun onLoadCompleted(
+                    eventTime: AnalyticsListener.EventTime,
+                    loadEventInfo: LoadEventInfo,
+                    mediaLoadData: MediaLoadData,
+                ) {
+                    diagnostics.loadCompleted = true
+                    diagnostic(id, "player load complete bytes=${loadEventInfo.bytesLoaded} " +
+                        "elapsed=${loadEventInfo.loadDurationMs}ms")
+                }
+
+                override fun onAudioUnderrun(
+                    eventTime: AnalyticsListener.EventTime,
+                    bufferSize: Int,
+                    bufferSizeMs: Long,
+                    elapsedSinceLastFeedMs: Long,
+                ) {
+                    // One report per player keeps a broken track from filling App Logs.
+                    if (!diagnostics.underrun) {
+                        diagnostics.underrun = true
+                        diagnostic(id, "audio underrun buffer=$bufferSize " +
+                            "lastFeed=${elapsedSinceLastFeedMs}ms")
+                    }
+                }
+            })
             player.addListener(object : Player.Listener {
                 private var reported = false
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     if (!isPlaying || reported) return
                     if (exoPlayers[id] !== player) return
                     reported = true
-                    // The page times stop-word arming and its speaking UI
-                    // off real audio start, not off the play call.
+                    // This is the player's playing state. Position advancement
+                    // is logged separately and neither proves audible output.
+                    diagnostic(id, "player isPlaying=true")
                     channel.invokeMethod("started", mapOf("id" to id))
                     scheduleRoutingKicks(id, player)
+                    reportProgress(id) {
+                        if (exoPlayers[id] !== player) null
+                        else player.currentPosition to player.duration
+                    }
                 }
 
                 override fun onPlaybackStateChanged(state: Int) {
+                    diagnostic(id, "player state=$state position=${player.currentPosition}ms " +
+                        "buffered=${player.bufferedPosition}ms duration=${player.duration}ms")
                     if (state == Player.STATE_ENDED && exoPlayers[id] === player) {
                         finish(id, null)
                     }
@@ -493,11 +617,26 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
 
                 override fun onPlayerError(error: PlaybackException) {
                     if (exoPlayers[id] !== player) return
+                    // The same timeout code covers stalled playback, buffering
+                    // and teardown. Keep the cause in the page's diagnostic log.
+                    val causes = generateSequence(error.cause) { it.cause }
+                        .take(4)
+                        .joinToString(" <- ") { "${it.javaClass.simpleName}: ${it.message}" }
+                    val description = if (causes.isEmpty()) error.errorCodeName
+                        else "${error.errorCodeName}: $causes"
+                    val progress = "position=${player.currentPosition}ms " +
+                        "buffered=${player.bufferedPosition}ms duration=${player.duration}ms " +
+                        diagnostics.summary()
+                    Log.w(
+                        TAG,
+                        "sound $id failed: $description ($progress output=${target?.type})",
+                        error,
+                    )
                     // A vendor codec service can be crashed outright (issue
                     // #234's MediaTek HAL: every hardware MP3 decode dies
                     // with DEAD_OBJECT). Software decoders run in-process
                     // and keep working - retry the sound on them once.
-                    if (!softwareDecoders && error.errorCode in DECODER_ERROR_CODES) {
+                    if (!diagnosticReplay && !softwareDecoders && error.errorCode in DECODER_ERROR_CODES) {
                         Log.w(
                             TAG,
                             "sound $id decoder failed (${error.errorCodeName}); " +
@@ -512,7 +651,7 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
                         )
                         return
                     }
-                    finish(id, error.errorCodeName)
+                    finish(id, "$description ($progress)")
                 }
             })
             player.setMediaItem(MediaItem.fromUri(source))
@@ -524,6 +663,29 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
             finish(id, e.message ?: "play failed")
             false
         }
+    }
+
+    /**
+     * Reports a playing stream's position and duration (ms) to the page
+     * every [PROGRESS_INTERVAL_MS] until [read] returns null (the sound is
+     * over or replaced), so it can pace what it shows to what is heard. A
+     * streamed TTS answer has no duration until all of it has arrived: -1.
+     */
+    private fun reportProgress(id: String, read: () -> Pair<Long, Long>?) {
+        mainHandler.post(object : Runnable {
+            override fun run() {
+                val (position, duration) = read() ?: return
+                channel.invokeMethod(
+                    "progress",
+                    mapOf(
+                        "id" to id,
+                        "position" to position,
+                        "duration" to if (duration == C.TIME_UNSET || duration <= 0) -1L else duration,
+                    ),
+                )
+                mainHandler.postDelayed(this, PROGRESS_INTERVAL_MS)
+            }
+        })
     }
 
     /**
@@ -550,19 +712,81 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
     private fun exoRenderersFactory(
         id: String,
         softwareDecoders: Boolean,
-    ): DefaultRenderersFactory =
-        object : DefaultRenderersFactory(appContext) {
+        diagnosticReplay: Boolean,
+        diagnostics: ExoDiagnostics,
+    ): DefaultRenderersFactory {
+        val echoTap = SinkTap().also {
+            it.gain = effectiveVolume(id)
+            streamTaps.put(id, it)?.close()
+        }
+        return object : DefaultRenderersFactory(appContext) {
             override fun buildAudioSink(
                 context: Context,
                 enableFloatOutput: Boolean,
                 enableAudioTrackPlaybackParams: Boolean,
-            ): AudioSink = DefaultAudioSink.Builder(context)
-                .setAudioProcessors(arrayOf(levelTap(id)))
-                .build()
+            ): AudioSink = object : ForwardingAudioSink(
+                tappedSink(
+                    context,
+                    echoTap,
+                    FrameAlignedAudioProcessor { bytes ->
+                        diagnostics.incompletePcmBytes += bytes
+                        diagnostic(id, "discarded incomplete final PCM frame bytes=$bytes")
+                    },
+                    levelTap(id),
+                ),
+            ) {
+                override fun playToEndOfStream() {
+                    if (!diagnostics.sinkEosRequested) {
+                        diagnostics.sinkEosRequested = true
+                        diagnostic(id, "renderer requested sink end of stream")
+                    }
+                    super.playToEndOfStream()
+                }
+
+                override fun isEnded(): Boolean {
+                    val ended = super.isEnded()
+                    if (ended && diagnostics.sinkEosRequested && !diagnostics.sinkEnded) {
+                        diagnostics.sinkEnded = true
+                        diagnostic(id, "audio sink ended")
+                    }
+                    return ended
+                }
+            }
         }.apply {
             setEnableDecoderFallback(true)
-            if (softwareDecoders) setMediaCodecSelector(softwareCodecSelector)
+            if (softwareDecoders) setMediaCodecSelector(
+                if (diagnosticReplay) MediaCodecSelector { mime, secure, tunneling ->
+                    MediaCodecSelector.DEFAULT.getDecoderInfos(mime, secure, tunneling)
+                        .filter { it.softwareOnly }
+                } else softwareCodecSelector,
+            )
         }
+    }
+
+    private class ExoDiagnostics {
+        var decoder = "unknown"
+        var loadCompleted = false
+        var positionAdvanced = false
+        var underrun = false
+        @Volatile var sinkEosRequested = false
+        @Volatile var sinkEnded = false
+        @Volatile var incompletePcmBytes = 0
+
+        fun summary(): String = "decoder=$decoder loadComplete=$loadCompleted " +
+            "positionAdvanced=$positionAdvanced sinkEos=$sinkEosRequested sinkEnded=$sinkEnded " +
+            "incompletePcmBytes=$incompletePcmBytes"
+    }
+
+    private fun diagnostic(id: String, message: String) {
+        Log.d(TAG, "sound $id: $message")
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            channel.invokeMethod("diagnostic", mapOf("id" to id, "message" to message))
+        } else {
+            mainHandler.post {
+                channel.invokeMethod("diagnostic", mapOf("id" to id, "message" to message))
+            }
+        }
+    }
 
     /** [MediaCodecSelector.DEFAULT] narrowed to software decoders, which
      *  need no vendor codec service. Empty results fall back to the full
@@ -830,6 +1054,8 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
         val beganNs = System.nanoTime()
         val request = synchronized(tracks) { requests.remove(id) } ?: return
         val track = synchronized(tracks) { tracks.remove(id) }
+        clipTaps.remove(id)?.close()
+        streamTaps.remove(id)?.close()
         visualizers.remove(id)?.let {
             try {
                 it.enabled = false
@@ -867,11 +1093,9 @@ class SoundPlayer(context: Context, messenger: BinaryMessenger) {
             workerHandler.post {
                 track?.let { releaseTrack(it) }
                 try { mp?.release() } catch (_: Exception) {}
-                mainHandler.post { request.lease?.close() }
             }
         }
         try { exo?.release() } catch (_: Exception) {}
-        if (mp == null && track == null) request.lease?.close()
         Log.d(TAG, "sound finish $id: main=${(System.nanoTime() - beganNs) / 1_000_000}ms error=$error")
     }
 }

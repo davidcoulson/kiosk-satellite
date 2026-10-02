@@ -1,18 +1,27 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'alarm_ring_overlay.dart';
+import 'alarms_overlay.dart';
 import '../core/permissions.dart';
 
 import '../app_container.dart';
+import '../l10n/messages.dart';
+import '../l10n/gesture_messages.dart';
 import 'screensaver_view.dart';
 import '../core/events.dart';
 import '../managers/browser/carousel_script.dart';
+import '../managers/browser/preload_views_script.dart';
 import '../managers/browser/disable_suspend_script.dart';
 import '../managers/browser/dashboard_camera_script.dart';
 import '../managers/browser/ha_session_script.dart';
@@ -24,19 +33,23 @@ import '../managers/browser/no_cache_script.dart';
 import '../managers/browser/pull_to_refresh_script.dart';
 import '../managers/browser/dashboards_watch_script.dart';
 import '../managers/browser/socket_watch_script.dart';
+import '../managers/browser/vs_watch_script.dart';
 import '../managers/browser/viewport_zoom_script.dart';
 import '../managers/browser/visibility_mask_script.dart';
 import '../managers/browser/ws_filter_script.dart';
 import '../managers/kiosk/app_link.dart';
+import '../managers/kiosk/kiosk_link.dart';
 import '../managers/wake_word/background_listening.dart';
 import '../managers/proxy/media_rewrite_script.dart';
 import '../managers/sendspin/music_assistant_api.dart';
 import '../managers/home_assistant/kiosk_mode.dart';
 import '../managers/gestures/gesture_mappings.dart';
+import '../managers/browser/browser_manager.dart';
 import '../managers/settings/definitions.dart' as defs;
 import 'app_launcher_overlay.dart';
 import 'ui_scale.dart' show UiScaleExempt;
 import 'lockdown_shield.dart';
+import 'theater_overlay.dart';
 import 'notification_overlay.dart';
 import 'plugin_overlay.dart';
 import 'offline_notice.dart';
@@ -44,13 +57,17 @@ import 'dlna_media_overlay.dart';
 import 'camera_view_overlay.dart';
 import 'face_preview_overlay.dart';
 import 'fleet_settings.dart';
+import 'intercom_settings.dart';
 import 'back_nav.dart';
 import 'key_nav.dart';
 import 'kiosk_drawer.dart';
 import 'sendspin_player_overlay.dart';
+import 'assist/assist_overlay.dart';
 import 'toast.dart';
 import 'settings_screen.dart';
+import 'voice_timer_overlay.dart';
 import 'web_console_panel.dart';
+import 'webview_server_trust.dart';
 
 /// Watches the navigator for the kiosk screen (issue #377): a dialog
 /// pushed over it — the exit confirm, the PIN prompt, a picker — must flip
@@ -111,6 +128,7 @@ class _KioskScreenState extends State<KioskScreen>
   StreamSubscription<CameraViewStateChanged>? _cameraSub;
   StreamSubscription<ScreensaverStateChanged>? _saverSub;
   StreamSubscription<WebViewRebuildRequested>? _rebuildSub;
+  StreamSubscription<WebViewMissing>? _missingSub;
 
   /// Whether the Activity has attached to the process-wide engine. The
   /// dashboard WebView build waits for this: the Dart isolate boots in
@@ -157,14 +175,31 @@ class _KioskScreenState extends State<KioskScreen>
   DateTime? _backArmedUntil;
 
   static const _backAgainWindow = Duration(seconds: 3);
+  static const _backEcho = Duration(milliseconds: 200);
+
+  /// When the last back press ran the ladder, to drop its echo.
+  DateTime? _lastBackAt;
 
   /// One ladder for every back press — the predictive pop (the PopScope in
   /// build) and the KeyEvent path KioskLock routes here as KioskBackPressed
   /// land in the same place, so the two can never drift apart.
   void _handleBack() {
+    // Android 16 with targetSdk 36 hands a key-driven back to both paths
+    // at once when KioskLock swallows it (kiosk mode or the home role):
+    // the predictive callback Flutter registers for the PopScope, and the
+    // KeyEvent. The two land a few milliseconds apart, and ran the ladder
+    // twice: the first opened the menu, the second closed it again and
+    // stepped back, so a remote's back could never open the menu (issue
+    // #745). No hand presses back twice this fast.
+    final now = DateTime.now();
+    final last = _lastBackAt;
+    _lastBackAt = now;
+    if (last != null && now.difference(last) < _backEcho) return;
     if (_drawer.value == 0 &&
         !c.screensaver.isActive &&
         !c.launcher.visible.value &&
+        !c.intercom.rosterVisible.value &&
+        !c.alarms.visible.value &&
         c.camera.activeViewId.value == null &&
         !c.kiosk.lockdownActive &&
         c.plugins.windows.value.isNotEmpty) {
@@ -179,7 +214,10 @@ class _KioskScreenState extends State<KioskScreen>
     final action = decideBack(
       drawerOpen: _drawer.value > 0,
       armed: armed,
-      launcherVisible: c.launcher.visible.value,
+      launcherVisible:
+          c.launcher.visible.value ||
+          c.intercom.rosterVisible.value ||
+          c.alarms.visible.value,
       overlayUp: c.browser.overlayUrl.value != null,
       cameraViewUp: c.camera.activeViewId.value != null,
       cameraFocused: c.camera.focusedCameraId.value != null,
@@ -204,6 +242,8 @@ class _KioskScreenState extends State<KioskScreen>
         _backArmedUntil = DateTime.now().add(_backAgainWindow);
       case BackAction.hideLauncher:
         c.launcher.visible.value = false;
+        c.intercom.rosterVisible.value = false;
+        c.alarms.visible.value = false;
       case BackAction.dismissOverlay:
         // A link or rotation page covers the dashboard: back uncovers it.
         c.browser.dismissOverlay();
@@ -216,6 +256,11 @@ class _KioskScreenState extends State<KioskScreen>
         // restricted quick menu, never the full one.
         setState(() => _drawerRestricted = c.kiosk.locked);
         _drawer.fling(velocity: 1);
+        // Back is the remote's menu key (issue #745), so the arrows start
+        // on the first entry the way they did when left opened the menu.
+        // A touch-driven back leaves Flutter in touch highlight mode and
+        // the focus draws nothing.
+        _focusDrawer();
         _backArmedUntil = DateTime.now().add(_backAgainWindow);
         // No toast while the home role is held: a home screen's back has
         // no app to close and usually no history to step, so there is
@@ -225,8 +270,8 @@ class _KioskScreenState extends State<KioskScreen>
           showToast(
             context,
             title: _backWouldLeaveApp
-                ? 'Press back again to close the app'
-                : 'Press back again to go back',
+                ? l10n(context).kioskBackClose
+                : l10n(context).kioskBackAgain,
             duration: _backAgainWindow,
           );
         }
@@ -297,7 +342,9 @@ class _KioskScreenState extends State<KioskScreen>
         (c.settings.get(defs.kioskAllowHold) && hasHold) ||
         (c.settings.get(defs.kioskAllowLockdown) &&
             c.settings.get(defs.lockdownMenu)) ||
-        (c.settings.get(defs.kioskAllowApps) && hasApps);
+        (c.settings.get(defs.kioskAllowApps) && hasApps) ||
+        (c.settings.get(defs.kioskAllowAlarms) &&
+            c.settings.get(defs.alarmsMenu));
   }
 
   /// Pull-to-refresh as the user experiences it: the Web Browsing toggle,
@@ -334,6 +381,10 @@ class _KioskScreenState extends State<KioskScreen>
   /// The next rebuilt WebView loads the start URL instead of picking up
   /// where the current page was (a token change, see _onSettingChanged).
   bool _rebuildFromStart = false;
+
+  /// Set when auto-login turns on: the seed replaces a login done by hand
+  /// once, on the first page that sees this marker.
+  String? _autoLoginReplace;
 
   /// Pull-to-refresh, Fully style. The native wrapper handles pages that fit
   /// the screen; scrollable pages never hand it the gesture (Chromium claims
@@ -457,9 +508,23 @@ class _KioskScreenState extends State<KioskScreen>
         e.key == defs.pinchToZoom.key ||
         e.key == defs.wsFilter.key ||
         e.key == defs.disableSuspend.key ||
-        e.key == defs.haAutoLogin.key ||
         e.key == defs.kioskDisableContextMenus.key) {
       setState(() => _webViewEpoch++);
+      return;
+    }
+    // Auto-login on reloads from the start URL: the page on screen is
+    // usually Home Assistant's login form, which never reads the seeded
+    // session. It also signs out a login done by hand, once, since turning
+    // it on asks for the token's user. Off reloads in place and the login
+    // form follows.
+    if (e.key == defs.haAutoLogin.key) {
+      setState(() {
+        _webViewEpoch++;
+        if (c.settings.get(defs.haAutoLogin)) {
+          _rebuildFromStart = true;
+          _autoLoginReplace = '${DateTime.now().microsecondsSinceEpoch}';
+        }
+      });
       return;
     }
     // A new long-lived token reaches the dashboard only through the
@@ -484,11 +549,11 @@ class _KioskScreenState extends State<KioskScreen>
       if (e.value == true) {
         showToast(
           context,
-          title: 'Hold mode on',
-          message: 'The current view stays until you turn it off.',
+          title: l10n(context).kioskHoldOn,
+          message: l10n(context).kioskHoldNotice,
         );
       } else {
-        showToast(context, title: 'Hold mode off');
+        showToast(context, title: l10n(context).kioskHoldOff);
       }
       return;
     }
@@ -519,6 +584,8 @@ class _KioskScreenState extends State<KioskScreen>
         if (_drawer.value > 0) _closeDrawer();
         if (_settingsOpen) Navigator.of(context).popUntil((r) => r.isFirst);
         c.launcher.visible.value = false;
+        c.intercom.rosterVisible.value = false;
+        c.alarms.visible.value = false;
       }
       return;
     }
@@ -544,7 +611,14 @@ class _KioskScreenState extends State<KioskScreen>
         e.key == defs.sendspinMaUrl.key ||
         e.key == defs.haKioskMenu.key ||
         e.key == defs.screensaverMenu.key ||
-        e.key == defs.lockdownMenu.key) {
+        e.key == defs.lockdownMenu.key ||
+        e.key == defs.intercomEnabled.key ||
+        e.key == defs.intercomMenu.key ||
+        e.key == defs.kioskAllowIntercom.key ||
+        e.key == defs.kioskAllowAlarms.key ||
+        e.key == defs.alarmsMenu.key ||
+        e.key == defs.remoteEnabled.key ||
+        e.key == defs.remoteFleetDiscovery.key) {
       setState(() {});
       return;
     }
@@ -578,6 +652,13 @@ class _KioskScreenState extends State<KioskScreen>
     // The satellite seed script is fixed at WebView creation, so a plain
     // reload re-runs the stale one — clearing the binding would be undone
     // at the next document start. Rebuild for fresh user scripts.
+    // Where Voice Satellite runs decides whether the dashboard may boot the
+    // integration's engine at all (the suppress script below), and user
+    // scripts are frozen at WebView creation.
+    if (e.key == defs.voiceRuntime.key) {
+      setState(() => _webViewEpoch++);
+      return;
+    }
     if (e.key == defs.haSatelliteEntity.key) {
       setState(() => _webViewEpoch++);
       return;
@@ -615,6 +696,9 @@ class _KioskScreenState extends State<KioskScreen>
         setState(() => _webViewEpoch++);
       }
     });
+    _missingSub = c.bus.on<WebViewMissing>().listen((_) {
+      if (mounted) setState(() {});
+    });
     _settingsSub = c.bus.on<SettingChanged>().listen(_onSettingChanged);
     _gestureSub = c.bus.on<KioskExitGesture>().listen(_onExitGesture);
     // Dpad and keyboard navigation (issue #377), registered on both stages
@@ -628,10 +712,10 @@ class _KioskScreenState extends State<KioskScreen>
       if (!mounted) return;
       // The command's error already names the call the outcome names.
       final error = e.error?.replaceFirst(RegExp(r'^.*? failed: '), '');
-      final outcome = describeGestureActionOutcome(e.action, ok: e.ok);
+      final outcome = localizedGestureOutcome(context, e.action, ok: e.ok);
       showToast(
         context,
-        title: gestureActionKindTitle(e.action),
+        title: gestureText(context, gestureActionKindTitle(e.action)),
         message: e.ok || error == null || error.isEmpty
             ? outcome
             : '$outcome: $error',
@@ -676,13 +760,21 @@ class _KioskScreenState extends State<KioskScreen>
       if (_drawer.value > 0) _closeDrawer();
       if (_settingsOpen) Navigator.of(context).popUntil((r) => r.isFirst);
       c.launcher.visible.value = false;
+      c.intercom.rosterVisible.value = false;
+      c.alarms.visible.value = false;
       if (c.browser.overlayUrl.value != null) c.browser.dismissOverlay();
       if (c.camera.activeViewId.value != null) c.camera.hideView();
       unawaited(c.commands.execute('stopScreensaver', const {}));
     });
+    // The volume key routing follows the player and the screensaver
+    // slot (issue #544); the setting rides _onSettingChanged.
+    c.sendspin.nowPlaying.addListener(_syncVolumeKeys);
+    c.screensaver.activeView.addListener(_syncVolumeKeys);
     // The build and the native key routing both follow these surfaces.
     c.browser.overlayUrl.addListener(_onOverlayChanged);
     c.launcher.visible.addListener(_onOverlayChanged);
+    c.intercom.rosterVisible.addListener(_onOverlayChanged);
+    c.alarms.visible.addListener(_onOverlayChanged);
     c.plugins.windows.addListener(_onOverlayChanged);
     c.plugins.installed.addListener(_onOverlayChanged);
     c.homeLauncher.roleHeld.addListener(_onOverlayChanged);
@@ -693,22 +785,22 @@ class _KioskScreenState extends State<KioskScreen>
     BackgroundListening.onDownloadComplete = (id, success, filename) {
       if (!mounted) return;
       final name = (filename == null || filename.isEmpty)
-          ? 'Download'
+          ? l10n(context).kioskDownload
           : filename;
       if (success) {
         showToast(
           context,
-          title: 'Download complete',
+          title: l10n(context).kioskDownloadComplete,
           message: name,
           kind: ToastKind.success,
           duration: const Duration(seconds: 10),
-          actionLabel: 'Open',
+          actionLabel: l10n(context).kioskOpen,
           onAction: () => BackgroundListening.openDownload(id),
         );
       } else {
         showToast(
           context,
-          title: 'Download failed',
+          title: l10n(context).kioskDownloadFailed,
           message: name,
           kind: ToastKind.error,
           duration: const Duration(seconds: 6),
@@ -721,8 +813,8 @@ class _KioskScreenState extends State<KioskScreen>
         if (!mounted) return;
         showToast(
           context,
-          title: 'Tip',
-          message: 'Swipe from the left edge to open the menu.',
+          title: l10n(context).kioskTip,
+          message: l10n(context).kioskMenuHint,
           duration: const Duration(seconds: 10),
         );
       });
@@ -868,6 +960,14 @@ class _KioskScreenState extends State<KioskScreen>
       source: haSocketWatchScript,
       injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
     ),
+    // Reports a Voice Satellite session that died and stayed dead while the
+    // page around it is healthy, which no socket-level watch can see (see
+    // vs_watch_script). Always injected: it guards itself on the engine
+    // actually being loaded.
+    UserScript(
+      source: voiceSatelliteWatchScript,
+      injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+    ),
     // Reports the moments the dashboard set can have moved (a dashboard
     // created, deleted or edited, the connection back after an outage), so
     // the dashboard view selects re-read their options then and never on
@@ -889,6 +989,18 @@ class _KioskScreenState extends State<KioskScreen>
     ),
     UserScript(
       source: dashboardCarouselScript,
+      injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+    ),
+    // View preloading: same contract again. The flag is read once per
+    // load rather than per navigation, since the walk only ever runs once.
+    UserScript(
+      source:
+          'window.__ksPreloadViews = '
+          '${c.settings.get(defs.haPreloadViews)};',
+      injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+    ),
+    UserScript(
+      source: preloadViewsScript,
       injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
     ),
     // Haptics and the tap sound: same always-injected, flag-gated contract.
@@ -928,7 +1040,16 @@ class _KioskScreenState extends State<KioskScreen>
     if (c.settings.get(defs.haAutoLogin) &&
         c.settings.get(defs.haToken).trim().isNotEmpty)
       UserScript(
-        source: buildHaAutoLoginScript(token: c.settings.get(defs.haToken))!,
+        source: buildHaAutoLoginScript(
+          token: c.settings.get(defs.haToken),
+          replace: _autoLoginReplace,
+        )!,
+        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+      ),
+    // Off, the seeded session goes too, so the page asks for a login.
+    if (!c.settings.get(defs.haAutoLogin))
+      UserScript(
+        source: haAutoLoginClearScript,
         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
       ),
     // The wizard's satellite choice, handed to Voice Satellite before its
@@ -936,7 +1057,16 @@ class _KioskScreenState extends State<KioskScreen>
     // assist_satellite, hydrates its server-side profile and starts. Only
     // seeded while the key is absent — a satellite changed in the page
     // afterwards must win over a stale wizard choice.
-    if (c.settings.get(defs.haSatelliteEntity).isNotEmpty)
+    // Native Voice Satellite owns the satellite: the integration's engine
+    // must never boot here, dashboard included, even while the integration
+    // is still installed (see vs_suppress_script).
+    if (c.voice.suppressPageEngine)
+      UserScript(
+        source: vsSuppressScript,
+        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+      ),
+    if (!c.voice.suppressPageEngine &&
+        c.settings.get(defs.haSatelliteEntity).isNotEmpty)
       UserScript(
         source:
             '''
@@ -1027,6 +1157,8 @@ class _KioskScreenState extends State<KioskScreen>
   /// Diffed — every caller is a state listener that fires often.
   bool? _lastNavCapture;
   void _syncNavCapture() {
+    // The volume key routing rides the same state changes.
+    _syncVolumeKeys();
     final capture =
         _settingsOpen ||
         !(ModalRoute.of(context)?.isCurrent ?? true) ||
@@ -1034,11 +1166,26 @@ class _KioskScreenState extends State<KioskScreen>
         c.screensaver.isActive ||
         c.kiosk.lockdownActive ||
         c.launcher.visible.value ||
+        c.intercom.rosterVisible.value ||
+        c.alarms.visible.value ||
         c.camera.activeViewId.value != null ||
         c.plugins.windows.value.isNotEmpty;
     if (capture == _lastNavCapture) return;
     _lastNavCapture = capture;
     unawaited(c.kiosk.setNavCapture(capture));
+  }
+
+  /// Push whether the hardware volume keys steer the followed media
+  /// player right now (issue #544): the setting's mode against what is
+  /// on screen and playing. Diffed like the nav capture.
+  bool? _lastVolumeKeys;
+  void _syncVolumeKeys() {
+    final active = c.sendspin.volumeKeysWanted(
+      viewShown: c.screensaver.nowPlayingShowing,
+    );
+    if (active == _lastVolumeKeys) return;
+    _lastVolumeKeys = active;
+    unawaited(c.kiosk.setVolumeKeys(active));
   }
 
   /// The dpad, arrow and select keys MainActivity routes into Flutter
@@ -1090,16 +1237,21 @@ class _KioskScreenState extends State<KioskScreen>
     // A key press is activity like a touch is: it resets the idle clock
     // and dismisses a showing screensaver. Repeats from a held key are not
     // new activity, and volume stays out — nudging the volume during a
-    // night screensaver should not light the room. Neither is a press
-    // that is driving the menu or the settings: its ping is delivered on
-    // the event bus a beat after the press acts, so the very key that
-    // activates "Start Screensaver" would race the start it commanded and
-    // dismiss it mid-flight. A screensaver already showing takes the ping
-    // whatever sits open under it — dismissal is the point then.
+    // night screensaver should not light the room. A press that is
+    // driving the menu or the settings restarts the idle clock but sends
+    // no ping: the ping is delivered on the event bus a beat after the
+    // press acts, so the very key that activates "Start Screensaver"
+    // would race the start it commanded and dismiss it mid-flight. A
+    // screensaver already showing takes the ping whatever sits open under
+    // it — dismissal is the point then.
     final drivingUi =
         (_settingsOpen || _drawer.value > 0) && !c.screensaver.isActive;
-    if (event is KeyDownEvent && !_volumeKeys.contains(key) && !drivingUi) {
-      c.bus.publish(const ActivityDetected(source: 'key'));
+    if (event is KeyDownEvent && !_volumeKeys.contains(key)) {
+      if (drivingUi) {
+        c.screensaver.extendIdle();
+      } else {
+        c.bus.publish(const ActivityDetected(source: 'key'));
+      }
     }
     if (!nav) return false;
     // A focused slider answers to every arrow, vertical included, so up
@@ -1126,6 +1278,8 @@ class _KioskScreenState extends State<KioskScreen>
       nowPlayingControls: c.screensaver.nowPlayingControlsUp,
       overlayUp:
           c.launcher.visible.value ||
+          c.intercom.rosterVisible.value ||
+          c.alarms.visible.value ||
           c.browser.overlayUrl.value != null ||
           c.camera.activeViewId.value != null,
       // Any route above this one: settings, and every dialog — the exit
@@ -1134,19 +1288,10 @@ class _KioskScreenState extends State<KioskScreen>
           _settingsOpen || !(ModalRoute.of(context)?.isCurrent ?? true),
       drawerOpen: _drawer.value > 0,
       drawerFocused: _drawerFocus.hasFocus,
-      openAllowed: !c.kiosk.locked || _quickMenuAvailable,
-      isLeft: key == LogicalKeyboardKey.arrowLeft,
     )) {
       case KeyNavAction.pass:
         return false;
       case KeyNavAction.swallow:
-        return true;
-      case KeyNavAction.openDrawer:
-        // Mirrors the edge swipe: opening while locked earns only the
-        // restricted quick menu, never the full one.
-        setState(() => _drawerRestricted = c.kiosk.locked);
-        _drawer.fling(velocity: 1);
-        _focusDrawer();
         return true;
       case KeyNavAction.focusDrawer:
         _focusDrawer();
@@ -1165,27 +1310,6 @@ class _KioskScreenState extends State<KioskScreen>
       // row its geometry liked best.
       _drawerFocus.nextFocus();
     });
-  }
-
-  /// Whether a WebView permission request may be granted: its Web Content
-  /// toggle must be on and the OS runtime grant must be held (requested
-  /// lazily here — never all-at-once at launch).
-  Future<bool> _resourceAllowed(PermissionResourceType resource) async {
-    if (resource == PermissionResourceType.MICROPHONE) {
-      return c.settings.get(defs.webMicrophone) &&
-          await ensureOsPermission(Permission.microphone);
-    }
-    if (resource == PermissionResourceType.CAMERA) {
-      return c.settings.get(defs.webCamera) &&
-          await ensureOsPermission(Permission.camera);
-    }
-    if (resource == PermissionResourceType.GEOLOCATION) {
-      return c.settings.get(defs.webGeolocation) &&
-          await ensureOsPermission(Permission.location);
-    }
-    // Anything else the page asks for (e.g. protected media id) follows the
-    // camera/mic decision conservatively: deny unless explicitly handled.
-    return false;
   }
 
   /// The kiosk exit gesture: N fast taps (optionally holding the last),
@@ -1234,19 +1358,19 @@ class _KioskScreenState extends State<KioskScreen>
   Future<bool> _askPin() async {
     final controller = TextEditingController();
     var failed = false;
-    final ok = await showDialog<bool>(
+    final route = DialogRoute<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Kiosk PIN'),
+          title: Text(kioskText(context, "Kiosk PIN")),
           content: TextField(
             controller: controller,
             autofocus: true,
             obscureText: true,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
-              hintText: 'PIN',
-              errorText: failed ? 'Wrong PIN' : null,
+              hintText: kioskText(context, "PIN"),
+              errorText: failed ? kioskText(context, "Wrong PIN") : null,
             ),
             onSubmitted: (v) {
               if (c.kiosk.pinMatches(v)) {
@@ -1259,7 +1383,7 @@ class _KioskScreenState extends State<KioskScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text(kioskText(context, "Cancel")),
             ),
             FilledButton(
               onPressed: () {
@@ -1269,12 +1393,14 @@ class _KioskScreenState extends State<KioskScreen>
                   setDialogState(() => failed = true);
                 }
               },
-              child: const Text('Unlock'),
+              child: Text(kioskText(context, "Unlock")),
             ),
           ],
         ),
       ),
     );
+    final ok = await Navigator.of(context, rootNavigator: true).push(route);
+    await route.completed;
     controller.dispose();
     return ok ?? false;
   }
@@ -1293,14 +1419,19 @@ class _KioskScreenState extends State<KioskScreen>
     _gestureResultSub?.cancel();
     _consoleReqSub?.cancel();
     _rebuildSub?.cancel();
+    _missingSub?.cancel();
     _backSub?.cancel();
     _homeSub?.cancel();
     _wakeSub?.cancel();
     kioskRouteObserver.unsubscribe(this);
     _cameraSub?.cancel();
     _saverSub?.cancel();
+    c.sendspin.nowPlaying.removeListener(_syncVolumeKeys);
+    c.screensaver.activeView.removeListener(_syncVolumeKeys);
     c.browser.overlayUrl.removeListener(_onOverlayChanged);
     c.launcher.visible.removeListener(_onOverlayChanged);
+    c.intercom.rosterVisible.removeListener(_onOverlayChanged);
+    c.alarms.visible.removeListener(_onOverlayChanged);
     c.plugins.windows.removeListener(_onOverlayChanged);
     c.plugins.installed.removeListener(_onOverlayChanged);
     c.homeLauncher.roleHeld.removeListener(_onOverlayChanged);
@@ -1341,11 +1472,23 @@ class _KioskScreenState extends State<KioskScreen>
         // exactly what the splash was showing); see _waitForActivityAttach.
         // Exempt from the Scale UI factor: the dashboard has its own zoom
         // setting, and scaling the platform view would reflow and blur it.
-        if (_activityAttached) UiScaleExempt(child: _webView()),
+        if (_activityAttached && !c.browser.webViewMissing)
+          UiScaleExempt(child: _webView()),
         // Directly over the dashboard: it hides Chromium's error page, and
         // everything below in this list (an overlay page, the player) is
         // content that belongs on top of the dashboard, error or not.
         OfflineNotice(container: c),
+        // Over the offline cover too: with no WebView provider there is no
+        // page to wait for, and the cover would hide the only explanation.
+        if (c.browser.webViewMissing) const _WebViewMissingNotice(),
+        // DuraSpeed refusing the renderer: the WebView stays mounted
+        // underneath, still retrying, and the notice says what to do.
+        ValueListenableBuilder<bool>(
+          valueListenable: c.browser.duraSpeedBlocking,
+          builder: (context, blocking, _) => blocking
+              ? const _WebViewMissingNotice(duraSpeed: true)
+              : const SizedBox.shrink(),
+        ),
         // The rotation's external pages, shown OVER the dashboard so the
         // dashboard (and the Voice Satellite session with it) never
         // unloads. A wake detection hides this instantly, revealing the
@@ -1374,6 +1517,7 @@ class _KioskScreenState extends State<KioskScreen>
           onClose: _closeDrawer,
           onSettings: _openSettings,
           restricted: _drawerRestricted,
+          visible: _drawer.status != AnimationStatus.dismissed,
         ),
       ),
     );
@@ -1426,7 +1570,21 @@ class _KioskScreenState extends State<KioskScreen>
                     top: 0,
                     width: size.width + overdraw,
                     height: size.height + overdraw,
-                    child: kioskPlane,
+                    child: ValueListenableBuilder<String?>(
+                      valueListenable: c.screensaver.activeView,
+                      child: kioskPlane,
+                      builder: (context, view, child) =>
+                          ValueListenableBuilder<bool>(
+                            valueListenable: c.browser.renderingFrozenState,
+                            child: child,
+                            builder: (context, frozen, child) => Offstage(
+                              // Skip platform view compositing only after the
+                              // browser confirms it is safe to hide the dashboard.
+                              offstage: view == 'weather_mood' && frozen,
+                              child: child,
+                            ),
+                          ),
+                    ),
                   ),
                   // The drawer plane, sliding in from the same seam. While
                   // fully closed its entries sit just offscreen, still
@@ -1495,9 +1653,21 @@ class _KioskScreenState extends State<KioskScreen>
                   // Below the screensaver: an abandoned launcher gives way
                   // to it (the manager also closes on screensaver start).
                   AppLauncherOverlay(container: c),
+                  // The intercom's Call a kiosk screen, the launcher's
+                  // twin: full screen, below the screensaver, closed by
+                  // the manager when a call starts.
+                  IntercomRosterOverlay(container: c),
+                  // The alarm list, the launcher's twin again: full
+                  // screen, below the screensaver.
+                  AlarmsOverlay(container: c),
                   // The screensaver covers both planes — it owns the whole
                   // display, drawer open or not.
-                  ScreensaverOverlay(container: c),
+                  // Paused under the native voice overlay, which
+                  // draws over it instead of dismissing it.
+                  PausedUnder(
+                    paused: c.screensaver.renderPaused,
+                    child: ScreensaverOverlay(container: c),
+                  ),
                   CameraViewOverlay(container: c),
                   // The camera preview a face wake leaves behind
                   // (discussion #371): over the screensaver, whose fade
@@ -1510,6 +1680,30 @@ class _KioskScreenState extends State<KioskScreen>
                   // thing whose whole job is that nothing here answers
                   // a touch.
                   NotificationOverlay(notifications: c.notifications),
+                  // The intercom's call card: over the screensaver and a
+                  // camera wall like a notification, since a call coming
+                  // in wakes the screen for exactly this, and under the
+                  // lockdown shield, whose kiosk answers as Do not disturb.
+                  IntercomCallOverlay(container: c),
+                  // An announcement from Home Assistant: its own card, with
+                  // the spoken text, in the same slot.
+                  AnnouncementOverlay(container: c),
+                  // The black timeout cover while a voice turn shows: the
+                  // turn draws over it (issue #746). Outside a turn it
+                  // sits above everything below.
+                  ScreensaverBlankOverlay(container: c, underVoice: true),
+                  // Native Voice Satellite: the assist overlay, in the same
+                  // slot, over the screensaver and the camera views.
+                  AssistOverlay(container: c),
+                  // The timer pills stay over the voice overlay, as Voice
+                  // Satellite stacks them over its own.
+                  VoiceTimerOverlay(container: c),
+                  ScreensaverBlankOverlay(container: c),
+                  // Theater mode's wash and touch gate: over every plane
+                  // and overlay so the whole display dims and the first
+                  // touch in the dark presses nothing, and under the
+                  // lockdown shield, which still owns every touch (IX-8).
+                  TheaterOverlay(theater: c.theater),
                   // Lockdown Mode's touch shield: topmost, above every
                   // overlay, so nothing on screen is tappable while it
                   // holds. Transparent by default — the dashboard stays
@@ -1520,6 +1714,10 @@ class _KioskScreenState extends State<KioskScreen>
                     LockdownShield(
                       blackout: c.settings.get(defs.lockdownBlackout),
                     ),
+                  // An alarm on its own view: over everything, the lockdown
+                  // shield included, since Stop has to answer. Its sunrise
+                  // covers the screensaver and the dark panel too.
+                  AlarmRingOverlay(container: c),
                   // A fleet invitation: above the shield, since answering
                   // it is an admin act the shield must not swallow.
                   FleetInviteOverlay(container: c),
@@ -1554,6 +1752,14 @@ class _KioskScreenState extends State<KioskScreen>
     initialUserScripts: UnmodifiableListView(_userScripts),
     pullToRefreshController: _pullToRefresh,
     initialSettings: InAppWebViewSettings(
+      // The bridge to the app is for the page the kiosk was pointed at, not
+      // for whatever that page embeds. Left at the plugin's default it is
+      // injected into every frame, so a webpage card or an advert inside one
+      // could call window.kioskSatellite -- which can open the microphone
+      // with no prompt. Every script this app injects is main-frame only
+      // already, so nothing of ours is lost. Must be set at creation.
+      javaScriptBridgeForMainFrameOnly: true,
+      javaScriptHandlersForMainFrameOnly: true,
       // Hybrid composition, decided twice. Virtual display (false) freed
       // Flutter animations from syncing with the Android UI thread, but it
       // paced the WebView itself badly: a constantly-animating dashboard
@@ -1617,24 +1823,15 @@ class _KioskScreenState extends State<KioskScreen>
       // kiosk's page is the point of the device, not a background tab.
       allowBackgroundAudioPlaying: true,
     ),
-    onReceivedServerTrustAuthRequest: (controller, challenge) async {
-      // Accept untrusted/self-signed certs only when the user opted
-      // in (e.g. a local HA instance without proper SSL). Otherwise
-      // fall through to the platform's default validation.
-      if (c.settings.get(defs.ignoreSslErrors)) {
-        return ServerTrustAuthResponse(
-          action: ServerTrustAuthResponseAction.PROCEED,
-        );
-      }
-      return ServerTrustAuthResponse(
-        action: ServerTrustAuthResponseAction.CANCEL,
-      );
-    },
+    onReceivedServerTrustAuthRequest: (controller, challenge) async =>
+        webViewServerTrust('dashboard', c.settings, challenge),
     // A dashboard button can open another Android app by navigating to
     // app://<package> (issue #44): the clock app to set an alarm, a music
-    // app, whatever is installed. Everything else loads as usual.
+    // app, whatever is installed. ks://<action> reaches the kiosk's own
+    // features the same way: the app launcher, Now Playing, a camera view,
+    // the screensaver (kiosk_link.dart). Everything else loads as usual.
     //
-    // Only this app's own scheme is claimed. Chromium's intent:// URLs are
+    // Only this app's own schemes are claimed. Chromium's intent:// URLs are
     // deliberately not honoured: they can carry an arbitrary component and
     // extras, and a kiosk pointed at a page is not the place to hand a web
     // document that much reach.
@@ -1653,6 +1850,33 @@ class _KioskScreenState extends State<KioskScreen>
         c.browser.showLinkOverlay(url.toString());
         return NavigationActionPolicy.CANCEL;
       }
+      if (url.scheme == 'ks') {
+        // Cancel whatever it names: a link that is ours by scheme must never
+        // reach Chromium, which would put its error page over the dashboard.
+        final action = kioskLinkAction(url.toString());
+        if (action == null) {
+          c.log.warn('kiosk', 'unknown kiosk link: $url');
+          if (mounted) {
+            showToast(
+              context,
+              title: l10n(context).kioskUnknownLink,
+              message: url.toString(),
+              kind: ToastKind.error,
+            );
+          }
+          return NavigationActionPolicy.CANCEL;
+        }
+        final result = await c.gestures.runGestureAction(action);
+        if (!result.ok && mounted) {
+          showToast(
+            context,
+            title: localizedGestureAction(context, action),
+            message: gestureError(context, result.error ?? 'Failed'),
+            kind: ToastKind.error,
+          );
+        }
+        return NavigationActionPolicy.CANCEL;
+      }
       if (url.scheme != 'app') {
         return NavigationActionPolicy.ALLOW;
       }
@@ -1668,8 +1892,8 @@ class _KioskScreenState extends State<KioskScreen>
       if (!result.ok && mounted) {
         showToast(
           context,
-          title: 'Could not open the app',
-          message: result.error ?? package,
+          title: l10n(context).kioskOpenAppFailed,
+          message: launcherText(context, result.error ?? package),
           kind: ToastKind.error,
         );
       }
@@ -1689,6 +1913,24 @@ class _KioskScreenState extends State<KioskScreen>
       controller.addJavaScriptHandler(
         handlerName: 'ksHaSocketClosed',
         callback: (_) => c.browser.onHaSocketClosed(),
+      );
+      // A Voice Satellite session died and did not come back, on a page whose
+      // socket is fine (see vs_watch_script). Only a reload re-runs it.
+      controller.addJavaScriptHandler(
+        handlerName: 'ksVoiceSatelliteDown',
+        // Only a configured page may ask for the reload: the watcher runs
+        // on the dashboard, and no other site has a satellite to report.
+        callback: (JavaScriptHandlerFunctionData data) async {
+          if (!data.isMainFrame ||
+              !await c.jsApi.isConfiguredPage(data.origin)) {
+            return;
+          }
+          final args = data.args;
+          await c.browser.onVoiceSatelliteDown(
+            args.isNotEmpty ? '${args.first}' : '',
+            args.length > 1 ? int.tryParse('${args[1]}') ?? 0 : 0,
+          );
+        },
       );
       // The dashboard set may have moved (see dashboards_watch_script).
       controller.addJavaScriptHandler(
@@ -1812,7 +2054,11 @@ class _KioskScreenState extends State<KioskScreen>
       }
       c.browser.log.info('browser', 'downloading $name (${request.url})');
       if (mounted) {
-        showToast(context, title: 'Downloading', message: name);
+        showToast(
+          context,
+          title: l10n(context).kioskDownloading,
+          message: name,
+        );
       }
       await BackgroundListening.download(
         url: request.url.toString(),
@@ -1850,20 +2096,8 @@ class _KioskScreenState extends State<KioskScreen>
         _ => 'log',
       }, message.message);
     },
-    onPermissionRequest: (controller, request) async {
-      // Fully-Kiosk-style: grant a resource only if its Web Content
-      // toggle is on, ensuring the OS runtime grant lazily.
-      final granted = <PermissionResourceType>[];
-      for (final resource in request.resources) {
-        if (await _resourceAllowed(resource)) granted.add(resource);
-      }
-      return PermissionResponse(
-        resources: granted,
-        action: granted.isEmpty
-            ? PermissionResponseAction.DENY
-            : PermissionResponseAction.GRANT,
-      );
-    },
+    onPermissionRequest: (controller, request) =>
+        _webPermissionResponse(c, request),
   );
 }
 
@@ -1878,6 +2112,47 @@ class _KioskScreenState extends State<KioskScreen>
 /// button, back, a wake word — destroys the WebView outright. Nothing will
 /// re-show that page, and keeping a spare renderer warm is exactly what a
 /// low-RAM device cannot afford.
+/// Fully-Kiosk-style WebView permissions, shared by the dashboard and the
+/// overlay: a resource is granted only if its Web Content toggle is on and
+/// the OS runtime grant is held (requested lazily here, never all at once at
+/// launch).
+Future<PermissionResponse> _webPermissionResponse(
+  AppContainer c,
+  PermissionRequest request,
+) async {
+  final granted = <PermissionResourceType>[];
+  for (final resource in request.resources) {
+    if (await _webResourceAllowed(c, resource)) granted.add(resource);
+  }
+  return PermissionResponse(
+    resources: granted,
+    action: granted.isEmpty
+        ? PermissionResponseAction.DENY
+        : PermissionResponseAction.GRANT,
+  );
+}
+
+Future<bool> _webResourceAllowed(
+  AppContainer c,
+  PermissionResourceType resource,
+) async {
+  if (resource == PermissionResourceType.MICROPHONE) {
+    return c.settings.get(defs.webMicrophone) &&
+        await ensureOsPermission(Permission.microphone);
+  }
+  if (resource == PermissionResourceType.CAMERA) {
+    return c.settings.get(defs.webCamera) &&
+        await ensureOsPermission(Permission.camera);
+  }
+  if (resource == PermissionResourceType.GEOLOCATION) {
+    return c.settings.get(defs.webGeolocation) &&
+        await ensureOsPermission(Permission.location);
+  }
+  // Anything else the page asks for (e.g. protected media id) follows the
+  // camera/mic decision conservatively: deny unless explicitly handled.
+  return false;
+}
+
 class _OverlayHost extends StatefulWidget {
   const _OverlayHost({required this.container});
 
@@ -2314,6 +2589,14 @@ class _OverlayWebViewState extends State<_OverlayWebView> {
           hardwareAcceleration: false,
           transparentBackground: false,
           supportZoom: false,
+          // A call or camera page opened here gets the dashboard's media
+          // policy (issue #700): autoplay with sound and mic/camera access
+          // follow the same Web Content settings.
+          mediaPlaybackRequiresUserGesture: !widget.container.settings.get(
+            defs.webAutoplay,
+          ),
+          allowsInlineMediaPlayback: true,
+          iframeAllow: 'camera; microphone',
         ),
         onWebViewCreated: (controller) {
           _controller = controller;
@@ -2342,16 +2625,12 @@ class _OverlayWebViewState extends State<_OverlayWebView> {
         // local servers with certificates of their own making (Music
         // Assistant's add-on generates one), and the address was typed by
         // the owner on their own network.
-        onReceivedServerTrustAuthRequest: (controller, challenge) async {
-          if (widget.container.settings.get(defs.ignoreSslErrors)) {
-            return ServerTrustAuthResponse(
-              action: ServerTrustAuthResponseAction.PROCEED,
-            );
-          }
-          return ServerTrustAuthResponse(
-            action: ServerTrustAuthResponseAction.CANCEL,
-          );
-        },
+        onReceivedServerTrustAuthRequest: (controller, challenge) async =>
+            webViewServerTrust(
+              'page overlay',
+              widget.container.settings,
+              challenge,
+            ),
         onReceivedError: (controller, request, error) {
           if (request.isForMainFrame ?? true) _scheduleRetry();
         },
@@ -2361,9 +2640,175 @@ class _OverlayWebViewState extends State<_OverlayWebView> {
             _scheduleRetry();
           }
         },
+        onPermissionRequest: (controller, request) =>
+            _webPermissionResponse(widget.container, request),
         onRenderProcessGone: (controller, detail) =>
             widget.onRenderGone?.call(),
       ),
+    );
+  }
+}
+
+/// What the dashboard slot shows on a device with no WebView provider:
+/// the one case where waiting, rebuilding and restarting all change
+/// nothing, so the screen says what is missing instead of staying black.
+/// With [duraSpeed], the provider is there but MediaTek's DuraSpeed keeps
+/// refusing its renderer: the notice gives the one command that turns it
+/// off and a link to the guide.
+class _WebViewMissingNotice extends StatelessWidget {
+  const _WebViewMissingNotice({this.duraSpeed = false});
+
+  final bool duraSpeed;
+
+  static const _duraSpeedDocsUrl =
+      'https://kiosksatellite.com/docs/permissions/#mediatek-duraspeed';
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = l10n(context);
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.web_asset_off, color: Colors.white54, size: 48),
+              SizedBox(height: 16),
+              Text(
+                duraSpeed
+                    ? strings.kioskDuraSpeedBlocking
+                    : strings.kioskWebViewMissing,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              SizedBox(height: 8),
+              Text(
+                duraSpeed
+                    ? strings.kioskDuraSpeedBlockingHelp
+                    : strings.kioskWebViewMissingHelp,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white54, fontSize: 16),
+              ),
+              if (duraSpeed) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white10,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const SelectableText(
+                    BrowserManager.duraSpeedCommand,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'monospace',
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () => launchUrl(
+                    Uri.parse(_duraSpeedDocsUrl),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: Text(strings.deviceOpenGuide),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Shows [child] live, or while [paused] as a still picture of its last
+/// frame, with the live tree offstage and its tickers stopped. Impeller
+/// keeps no raster cache, so a merely idle screensaver under the voice
+/// overlay would still be drawn again, filters and all, every frame the
+/// overlay moves; the picture costs one texture.
+class PausedUnder extends StatefulWidget {
+  const PausedUnder({super.key, required this.paused, required this.child});
+
+  final ValueListenable<bool> paused;
+  final Widget child;
+
+  @override
+  State<PausedUnder> createState() => _PausedUnderState();
+}
+
+class _PausedUnderState extends State<PausedUnder> {
+  final _boundary = GlobalKey();
+  ui.Image? _still;
+  bool _paused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.paused.addListener(_changed);
+  }
+
+  @override
+  void dispose() {
+    widget.paused.removeListener(_changed);
+    _still?.dispose();
+    super.dispose();
+  }
+
+  void _changed() {
+    final paused = widget.paused.value;
+    if (paused == _paused || !mounted) return;
+    ui.Image? still;
+    if (paused) {
+      // The frame on screen right now, taken before anything changes.
+      final boundary =
+          _boundary.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
+      try {
+        still = boundary?.toImageSync(
+          pixelRatio: MediaQuery.devicePixelRatioOf(context),
+        );
+      } catch (_) {
+        still = null;
+      }
+    }
+    setState(() {
+      _paused = paused;
+      _still?.dispose();
+      _still = still;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final still = _paused ? _still : null;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (still != null)
+          IgnorePointer(
+            child: RawImage(image: still, fit: BoxFit.fill),
+          ),
+        Offstage(
+          offstage: still != null,
+          child: TickerMode(
+            enabled: !_paused,
+            // The screensaver's root is Positioned: it needs a Stack
+            // above it.
+            child: RepaintBoundary(
+              key: _boundary,
+              child: Stack(fit: StackFit.expand, children: [widget.child]),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

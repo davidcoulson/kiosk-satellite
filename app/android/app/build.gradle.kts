@@ -26,6 +26,11 @@ android {
     ndkVersion = flutter.ndkVersion
 
     buildFeatures { aidl = true }
+    testOptions.unitTests.isIncludeAndroidResources = true
+    // Robolectric installs Conscrypt, whose JVM socket implementation reads InetAddress internals.
+    testOptions.unitTests.all {
+        it.jvmArgs("--add-opens=java.base/java.net=ALL-UNNAMED")
+    }
 
     // Keep the universal download available alongside --split-per-abi builds.
     splits.abi.isUniversalApk = true
@@ -33,6 +38,27 @@ android {
     // AGP's universal split includes dependency ABIs outside Flutter's list.
     // Flutter has no 32-bit x86 engine, so keep those libraries out as before.
     packaging.jniLibs.excludes.add("**/x86/**")
+
+    // Flutter narrows its own engine to --target-platform, but dependencies
+    // still ship every ABI they have: an arm64 build carried 42 MB of 32-bit
+    // ARM and x86_64 libraries from plugins that no arm64 panel can load.
+    // Follow Flutter's choice for theirs too. A build with no
+    // --target-platform is handed every platform and keeps every ABI, so the
+    // universal APK is unchanged.
+    providers.gradleProperty("target-platform").orNull?.let { targets ->
+        val abiOf = mapOf(
+            "android-arm" to "armeabi-v7a",
+            "android-arm64" to "arm64-v8a",
+            "android-x64" to "x86_64",
+            "android-x86" to "x86",
+        )
+        val wanted = targets.split(',').mapNotNull { abiOf[it.trim()] }.toSet()
+        if (wanted.isNotEmpty()) {
+            for (abi in abiOf.values - wanted) {
+                packaging.jniLibs.excludes.add("**/$abi/**")
+            }
+        }
+    }
 
     // The face detection model (FaceDetector.kt) is memory-mapped straight
     // out of the APK, which only works on an asset stored uncompressed.
@@ -55,11 +81,32 @@ android {
         minSdk = maxOf(24, flutter.minSdkVersion)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        // This fork's builds are not upstream's, and a panel reporting a
+        // bare upstream version cannot be told apart from one running it --
+        // in the ESPHome device page, the mDNS TXT record, Remote Admin, or
+        // an issue report. The stamp lives in app/djc_build.txt as
+        // yyyy.MM.dd.NN and is appended to whatever upstream version the
+        // pubspec carries, so a rebase changes the left half and a rebuild
+        // on the same day changes only the counter.
+        //
+        // Not in the pubspec version itself: pub parses that as semver,
+        // which forbids the leading zeros a zero-padded date has.
+        versionName = rootProject.file("../djc_build.txt").let { stamp ->
+            if (stamp.exists()) {
+                "${flutter.versionName}-djc-${stamp.readText().trim()}"
+            } else {
+                flutter.versionName
+            }
+        }
 
         externalNativeBuild {
             cmake {
                 arguments("-DANDROID_STL=c++_static")
+                // Explicit local opt-in for acoustic tests on the two test kiosks.
+                val prototype = providers.gradleProperty("kioskEchoPrototype").orNull == "true"
+                arguments("-DKIOSK_ECHO_PROTOTYPE=${if (prototype) "ON" else "OFF"}")
+                val realtimePrototype = providers.gradleProperty("kioskEchoPrototypeRealtime").orNull == "true"
+                arguments("-DKIOSK_ECHO_PROTOTYPE_REALTIME=${if (realtimePrototype) "ON" else "OFF"}")
             }
         }
     }
@@ -217,12 +264,37 @@ dependencies {
     // supported level; R8 strips all but the referenced primitives from the
     // release build.
     implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.78.1")
 
     // The btproxy protocol layer is deliberately Android-free so it runs
     // under plain JVM unit tests, where a real aioesphomeapi client can
     // exercise the wire format end to end.
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.16.1")
     testImplementation("org.json:json:20240303")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.3.20")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+}
+
+// The remote admin UI ships minified. tool/build_remote_ui.mjs turns
+// remote-ui/ (the tracked sources) into assets/remote-ui/ (gitignored),
+// and Flutter bundles the result. It runs before Flutter's own compile
+// step so a plain `flutter build apk` never ships stale or readable modules.
+val buildRemoteUi = tasks.register<Exec>("buildRemoteUi") {
+    val app = rootProject.projectDir.parentFile
+    workingDir = app
+    commandLine("node", "tool/build_remote_ui.mjs")
+    inputs.dir(app.resolve("remote-ui"))
+    inputs.file(app.resolve("package.json"))
+    inputs.file(app.resolve("tool/build_remote_ui.mjs"))
+    outputs.dir(app.resolve("assets/remote-ui"))
+}
+tasks.matching { it.name.startsWith("compileFlutterBuild") }.configureEach {
+    dependsOn(buildRemoteUi)
+}
+
+// Resource-backed JVM tests package the assets Flutter contributes.
+tasks.matching { it.name.startsWith("package") && it.name.endsWith("UnitTestForUnitTest") }.configureEach {
+    val variant = name.removePrefix("package").removeSuffix("UnitTestForUnitTest")
+    dependsOn("copyFlutterAssets$variant")
 }

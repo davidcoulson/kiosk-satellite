@@ -4,37 +4,166 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
+import '../../core/tls_identity.dart';
 import '../../core/manager.dart';
+import '../device_camera/camera_resolutions.dart';
+import '../remote/password_hash.dart';
 import 'definitions.dart';
+import 'secret_vault.dart';
 
 export 'definitions.dart';
 
 /// Owns persistence and change notification for every declared setting.
 class SettingsManager extends Manager {
-  SettingsManager(super.bus, super.commands, super.log);
+  SettingsManager(
+    super.bus,
+    super.commands,
+    super.log, {
+    SecretVault vault = const SecretVault(),
+    // A named parameter cannot be private, so it cannot be a formal.
+    // ignore: prefer_initializing_formals
+  }) : _vault = vault;
+
+  final SecretVault _vault;
+
+  /// Whether this device's Keystore passed its round trip this run, which is
+  /// the condition for entrusting anything new to it.
+  var _vaultReady = false;
+
+  /// Every secret as typed, by preference key, read out of the Keystore once
+  /// at startup because [get] is synchronous and the Keystore is not.
+  final _secrets = <String, String>{};
+
+  /// Preference keys holding a wrapped value that would not unwrap this run.
+  /// Read as unset, and never written over by anything but a person: what is
+  /// on disk may well unwrap next launch, and it is the only copy.
+  final _unreadable = <String>{};
+
+  /// Stand-ins handed out by [secret] for an unreadable one, for this run.
+  final _ephemeral = <String, String>{};
 
   @override
   String get name => 'settings';
 
   late SharedPreferences _prefs;
+  late final tls = TlsIdentity(this);
 
   /// Live renderer names, supplied by the plugin runtime without persisting HTML.
   Map<String, String> Function() pluginScreensavers = () => const {};
-  List<String> optionsFor(SettingDef<Object> def) => [
-    ...?def.options,
-    if (def.key == screensaverMode.key) ...{
-      ...pluginScreensavers().keys,
-      if (isPluginScreensaver(get(def))) get(def) as String,
-    },
-  ];
+  List<String>? _cameraStreamResolutions;
+  List<String>? get cameraStreamResolutions => _cameraStreamResolutions;
+  CameraStreamingCapabilities? _cameraStreamingCapabilities;
+  String get cameraResolutionNotice =>
+      _cameraStreamingCapabilities?.notice(get(cameraRtspAnalysis)) ??
+      'Checking camera and H.264 encoder support...';
+
+  void updateCameraStreamingCapabilities(
+    CameraStreamingCapabilities? capabilities,
+  ) {
+    final previousNotice = cameraResolutionNotice;
+    final previousSizes = _cameraStreamResolutions?.join(',');
+    _cameraStreamingCapabilities = capabilities;
+    _cameraStreamResolutions = capabilities == null
+        ? null
+        : List.unmodifiable(capabilities.sizes(get(cameraRtspAnalysis)));
+    if (previousNotice != cameraResolutionNotice ||
+        previousSizes != _cameraStreamResolutions?.join(',')) {
+      bus.publish(SettingOptionsChanged(cameraRtspResolution.key));
+    }
+  }
+
+  void refreshCameraStreamingMode() {
+    _cameraStreamResolutions = _cameraStreamingCapabilities == null
+        ? null
+        : List.unmodifiable(
+            _cameraStreamingCapabilities!.sizes(get(cameraRtspAnalysis)),
+          );
+    bus.publish(SettingOptionsChanged(cameraRtspResolution.key));
+  }
+
+  void updateCameraStreamResolutions(List<String>? sizes) {
+    if (_cameraStreamResolutions?.join(',') == sizes?.join(',')) return;
+    _cameraStreamResolutions = sizes == null ? null : List.unmodifiable(sizes);
+    bus.publish(SettingOptionsChanged(cameraRtspResolution.key));
+  }
+
+  /// Each realtime provider's models and voices: fetched from it when the
+  /// kiosk talks to it directly, else the ones built in (VoiceManager).
+  final _realtimeCatalog =
+      <String, ({List<String> models, List<String> voices})>{};
+
+  /// The Model and Voice settings of each provider, and which list each
+  /// takes: (provider, models).
+  static final _realtimeLists = <String, (String, bool)>{
+    voiceRealtimeOpenAiModel.key: ('openai', true),
+    voiceRealtimeOpenAiVoice.key: ('openai', false),
+    voiceRealtimeXaiModel.key: ('xai', true),
+    voiceRealtimeXaiVoice.key: ('xai', false),
+  };
+
+  void updateRealtimeCatalog(
+    String provider, {
+    required List<String> models,
+    required List<String> voices,
+  }) {
+    final before = _realtimeCatalog[provider];
+    _realtimeCatalog[provider] = (
+      models: List.unmodifiable(models),
+      voices: List.unmodifiable(voices),
+    );
+    for (final entry in _realtimeLists.entries) {
+      final (owner, isModels) = entry.value;
+      if (owner != provider) continue;
+      final was = isModels ? before?.models : before?.voices;
+      final now = isModels ? models : voices;
+      if (was?.join(',') != now.join(',')) {
+        bus.publish(SettingOptionsChanged(entry.key));
+      }
+    }
+  }
+
+  /// '' (the provider's default) first, then the catalog, and the value
+  /// set when the catalog no longer lists it. Null for any other setting.
+  List<String>? _realtimeOptions(SettingDef<Object> def) {
+    final list = _realtimeLists[def.key];
+    if (list == null) return null;
+    final (provider, isModels) = list;
+    final catalog = _realtimeCatalog[provider];
+    final entries = (isModels ? catalog?.models : catalog?.voices) ?? const [];
+    final current = get(def) as String;
+    return [
+      '',
+      ...entries,
+      if (current.isNotEmpty && !entries.contains(current)) current,
+    ];
+  }
+
+  List<String> optionsFor(SettingDef<Object> def) =>
+      def.key == cameraRtspResolution.key
+      ? _cameraStreamResolutions ?? const []
+      : _realtimeOptions(def) ??
+            [
+              ...?def.options,
+              if (def.key == screensaverMode.key) ...{
+                ...pluginScreensavers().keys,
+                if (isPluginScreensaver(get(def))) get(def) as String,
+              },
+            ];
   String? optionLabel(SettingDef<Object> def, String value) =>
-      def.optionLabels?[value] ??
-      (def.key == screensaverMode.key
-          ? pluginScreensavers()[value] ??
-                (isPluginScreensaver(value)
-                    ? 'Unavailable plugin screensaver'
-                    : null)
-          : null);
+      def.key == cameraRtspResolution.key
+      ? cameraResolutionLabel(value)
+      // Model ids read as they are; voices are names.
+      : _realtimeLists[def.key] != null && value.isNotEmpty
+      ? (_realtimeLists[def.key]!.$2
+            ? value
+            : value[0].toUpperCase() + value.substring(1))
+      : def.optionLabels?[value] ??
+            (def.key == screensaverMode.key
+                ? pluginScreensavers()[value] ??
+                      (isPluginScreensaver(value)
+                          ? 'Unavailable plugin screensaver'
+                          : null)
+                : null);
 
   static const _prefix = 'ks.';
 
@@ -55,9 +184,22 @@ class SettingsManager extends Manager {
   @override
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
+    // Before the migrations: one of them reads a secret.
+    await _openVault();
     await _migrate();
 
     commands
+      ..register(
+        Command(
+          name: 'forgetCertificates',
+          description:
+              'Forget the certificates remembered for Home Assistant and '
+              'Immich, so the next one each presents is the one trusted. '
+              'For a self-signed certificate that was renewed.',
+          handler: (_) async =>
+              CommandResult.ok({'forgotten': await forgetCertificates()}),
+        ),
+      )
       ..register(
         Command(
           name: 'exportConfig',
@@ -243,17 +385,76 @@ class SettingsManager extends Manager {
   /// longer matches its definition's type is invisible to [get] — it falls
   /// back to the default — so a rename in place has to be rewritten once,
   /// here, before anything reads it.
+  static const _remotePasswordKey = 'remote.password';
+  static const _unversionedTokens = 'remote.unversioned_tokens';
+
+  /// Whether session tokens issued before they named a password are still
+  /// accepted: from the upgrade that introduced the naming until the first
+  /// password change after it.
+  bool get acceptsUnversionedTokens => internal(_unversionedTokens).isNotEmpty;
+
   Future<void> _migrate() async {
-    // Turn noise suppression off once for existing installs. Record this
-    // on fresh installs too so later choices survive app restarts.
-    const noiseSuppressionMigration =
-        'audio.mic_noise_suppression_off.migrated';
-    if (internal(noiseSuppressionMigration).isEmpty) {
-      if (get(micNoiseSuppression)) {
-        await _prefs.setBool(_prefix + micNoiseSuppression.key, false);
-        log.info(name, 'turned microphone noise suppression off on upgrade');
+    // A remote admin password kept as typed by an earlier build. Written
+    // straight to the store, not through set(): that would count as changing
+    // the password and sign out every automation holding a token, when all
+    // that changed is how the same password is kept.
+    final password = _secretValue(_prefix + _remotePasswordKey) ?? '';
+    if (password.isNotEmpty && !PasswordHash.isHashed(password)) {
+      await _storeSecret(
+        _prefix + _remotePasswordKey,
+        PasswordHash.hash(password),
+      );
+      await setInternal(_unversionedTokens, '1');
+      log.info(name, 'remote admin password is no longer kept as typed');
+    }
+    // Native Voice Satellite: a kiosk that already runs Voice Satellite in
+    // the dashboard (a satellite assigned) keeps doing so until its owner
+    // migrates; every other install starts native. Written once, the first
+    // time this version starts, so a later assignment never flips it.
+    if (_prefs.get(_prefix + voiceRuntime.key) == null) {
+      final assigned =
+          (_prefs.get(_prefix + haSatelliteEntity.key) as String? ?? '')
+              .trim()
+              .isNotEmpty;
+      await _prefs.setString(
+        _prefix + voiceRuntime.key,
+        assigned ? 'dashboard' : 'native',
+      );
+      log.info(
+        name,
+        'Voice Satellite runtime set to ${assigned ? 'dashboard' : 'native'}',
+      );
+    }
+    // The preview's automatic language choice is now explicit English.
+    if (_prefs.get(_prefix + uiLanguage.key) == 'system') {
+      await _prefs.setString(_prefix + uiLanguage.key, 'en');
+    }
+    // The platform's echo canceller, capture mode, noise suppression and
+    // gain control are gone: the capture is the raw microphone with the
+    // app's own canceller over it, which an install from the days of the
+    // switch may have turned off to try. On once for everyone.
+    const softwareEchoMigration =
+        'audio.software_echo_cancellation_on.migrated';
+    if (internal(softwareEchoMigration).isEmpty) {
+      if (!get(micSoftwareEchoCancellation)) {
+        await _prefs.setBool(_prefix + micSoftwareEchoCancellation.key, true);
+        log.info(name, 'turned echo cancellation on on upgrade');
       }
-      await setInternal(noiseSuppressionMigration, '1');
+      await setInternal(softwareEchoMigration, '1');
+    }
+    // The music duck used to go up to 25%, more than the software echo
+    // canceller keeps out of the microphone. Bring existing installs down
+    // to the new ceiling once.
+    const duckCapMigration = 'sendspin.duck_percent_10.migrated';
+    if (internal(duckCapMigration).isEmpty) {
+      if (get(sendspinDuckPercent) > sendspinDuckMax) {
+        await _prefs.setInt(_prefix + sendspinDuckPercent.key, sendspinDuckMax);
+        log.info(
+          name,
+          'lowered the music duck to $sendspinDuckMax% on upgrade',
+        );
+      }
+      await setInternal(duckCapMigration, '1');
     }
     // HA kiosk mode was a strategy choice (off/auto/plugin/css) while the
     // hiding could be handed to the kiosk-mode resource. It does the hiding
@@ -282,6 +483,22 @@ class SettingsManager extends Manager {
         _prefs.get('${_prefix}btproxy.enabled') == true) {
       await _prefs.setBool('${_prefix}esphome.enabled', true);
       log.info(name, 'migrated btproxy.enabled -> esphome.enabled');
+    }
+    // The ESPHome Person sensor followed Dismiss on person and has its own
+    // switch now (issue #734). A kiosk that exposed it keeps the entity
+    // across the update. Once only, so turning Dismiss on person on later
+    // never turns the sensor on with it.
+    const personSensorMigration = 'person.sensor.migrated';
+    if (internal(personSensorMigration).isEmpty) {
+      if (_prefs.get(_prefix + personSensorEnabled.key) == null &&
+          _prefs.get(_prefix + screensaverDismissOnPerson.key) == true) {
+        await _prefs.setBool(_prefix + personSensorEnabled.key, true);
+        log.info(
+          name,
+          'migrated screensaver.dismiss_on_person -> person.sensor',
+        );
+      }
+      await setInternal(personSensorMigration, '1');
     }
     // The HA base URL is normalized to its origin on write now, but a value
     // saved with a trailing slash by an older version keeps breaking the
@@ -313,9 +530,11 @@ class SettingsManager extends Manager {
       await _prefs.remove('${_prefix}sendspin.ma_player_name');
     }
     // The pick is filtered by a source now: a pick stored before the
-    // source existed names its own.
+    // source existed names its own. The Local Media Session is this
+    // device's own pick and belongs under the empty source.
     final picked = _prefs.getString('${_prefix}sendspin.player') ?? '';
     if (picked.trim().isNotEmpty &&
+        !picked.startsWith('session:') &&
         (_prefs.getString('${_prefix}sendspin.player_source') ?? '').isEmpty) {
       final source = picked.startsWith('ha:')
           ? 'ha'
@@ -351,7 +570,9 @@ class SettingsManager extends Manager {
   }
 
   T get<T>(SettingDef<T> def) {
-    final raw = _prefs.get(_prefix + def.key);
+    final raw = def.secret
+        ? _secretValue(_prefix + def.key)
+        : _prefs.get(_prefix + def.key);
     // The `raw != null` guard matters: when T is inferred nullable (e.g.
     // Object? from a caller's ternary), `null is T` is true, which would
     // wrongly return null for an unstored setting instead of its default.
@@ -368,12 +589,36 @@ class SettingsManager extends Manager {
   Future<void> set<T>(SettingDef<T> def, T value, {String? source}) async {
     final normalizer = def.normalizer;
     if (normalizer != null) value = normalizer(value as Object) as T;
+    // The one setting that is never kept as given (password_hash.dart). Done
+    // here rather than by each caller because there are five of them -- both
+    // wizards, both settings screens and an import -- and one that forgot
+    // would put a password back on disk as typed. A value already in the
+    // kept form is a backup being restored and is stored as it stands.
+    if (def.key == _remotePasswordKey &&
+        value is String &&
+        value.isNotEmpty &&
+        !PasswordHash.isHashed(value)) {
+      // On this isolate: it happens about once in a panel's life, and an
+      // isolate round trip never completes under a widget test's fake clock,
+      // which turned an import into a hang rather than a slow one.
+      value = PasswordHash.hash(value) as T;
+    }
     final previous = get(def);
+    if (value == true &&
+        (def.key == remoteTls.key ||
+            def.key == cameraRtspTls.key ||
+            def.key == intercomTls.key)) {
+      (await tls.load()).securityContext();
+    }
     switch (value) {
       case final bool v:
         await _prefs.setBool(_prefix + def.key, v);
       case final String v:
-        await _prefs.setString(_prefix + def.key, v);
+        if (def.secret) {
+          await _storeSecret(_prefix + def.key, v);
+        } else {
+          await _prefs.setString(_prefix + def.key, v);
+        }
       case final num v:
         // A whole value is an int, not 10.0 — SharedPreferences keeps the two
         // apart, and get() reads back whichever was stored.
@@ -391,6 +636,22 @@ class SettingsManager extends Manager {
     // an import, makes the value theirs: the record goes with it.
     if (def.key == 'render.disable_impeller') {
       await _prefs.remove('${_prefix}render.disabled_by');
+    }
+    // A remembered certificate belongs to the server it was seen on. Point
+    // the app at another server, or switch "Ignore SSL errors" on to say the
+    // one presented now is the one to trust, and what was remembered goes --
+    // which is also how a renewed self-signed certificate is adopted without
+    // a command line (ha_http_overrides.dart).
+    // Tokens issued before they named a password stay good only until the
+    // password next changes (auth.dart).
+    if (def.key == _remotePasswordKey && value != previous) {
+      await setInternal(_unversionedTokens, '');
+    }
+    if (value != previous &&
+        (def.key == 'ha.url' ||
+            def.key == 'screensaver.immich_url' ||
+            (def.key == 'browser.ignore_ssl_errors' && value == true))) {
+      await forgetCertificates();
     }
     log.info(
       name,
@@ -416,11 +677,135 @@ class SettingsManager extends Manager {
   /// Persisted internal value not exposed in the settings UI (e.g. the
   /// remote-auth signing secret). Returns [orElse] and stores it when absent.
   Future<String> secret(String key, String Function() orElse) async {
-    final existing = _prefs.getString('${_prefix}secret.$key');
+    final full = '${_prefix}secret.$key';
+    final existing = _secretValue(full);
     if (existing != null && existing.isNotEmpty) return existing;
+    // One is stored and would not unwrap. Minting a replacement over it would
+    // make a bad launch permanent -- every session token ever issued is
+    // signed with one of these -- so this run gets a stand-in and the stored
+    // one is left for a launch that can read it.
+    if (_unreadable.contains(full)) return _ephemeral[full] ??= orElse();
     final value = orElse();
-    await _prefs.setString('${_prefix}secret.$key', value);
+    await _storeSecret(full, value);
     return value;
+  }
+
+  /// The secret at preference key [full] as typed, or null when there is
+  /// none or it could not be read this run.
+  String? _secretValue(String full) {
+    final known = _secrets[full];
+    if (known != null) return known;
+    final raw = _prefs.get(full);
+    if (raw is! String || SecretVault.isWrapped(raw)) return null;
+    return raw;
+  }
+
+  /// Stores [value] at [full], wrapped when this device can be trusted to
+  /// unwrap it again and as typed otherwise -- a secret the app cannot read
+  /// back is worse than one a file thief can.
+  Future<void> _storeSecret(String full, String value) async {
+    _secrets[full] = value;
+    _unreadable.remove(full);
+    _ephemeral.remove(full);
+    var stored = value;
+    if (_vaultReady && value.isNotEmpty) {
+      final wrapped = (await _vault.wrap([value])).single;
+      if (wrapped == null) {
+        log.warn(name, 'could not protect a secret; kept it as typed');
+      } else {
+        stored = wrapped;
+      }
+    }
+    await _prefs.setString(full, stored);
+  }
+
+  /// Reads every secret out of the Keystore, and moves any still kept as
+  /// typed into it (secret_vault.dart, SecretVault.kt).
+  Future<void> _openVault() async {
+    final keys = <String>{
+      for (final def in allSettings)
+        if (def.secret) _prefix + def.key,
+      ..._prefs.getKeys().where((k) => k.startsWith('${_prefix}secret.')),
+    };
+    final wrapped = <String, String>{};
+    final typed = <String, String>{};
+    for (final key in keys) {
+      final raw = _prefs.get(key);
+      if (raw is! String || raw.isEmpty) continue;
+      (SecretVault.isWrapped(raw) ? wrapped : typed)[key] = raw;
+    }
+
+    var pending = wrapped.keys.toList();
+    for (var attempt = 0; attempt < 2 && pending.isNotEmpty; attempt++) {
+      // Once more after a pause: a Keystore daemon still starting is the
+      // failure a panel booting straight into the app is most likely to meet.
+      if (attempt > 0) await Future<void>.delayed(_vaultRetry);
+      final plain = await _vault.unwrap([for (final k in pending) wrapped[k]!]);
+      final failed = <String>[];
+      for (var i = 0; i < pending.length; i++) {
+        final value = plain[i];
+        if (value == null) {
+          failed.add(pending[i]);
+        } else {
+          _secrets[pending[i]] = value;
+        }
+      }
+      pending = failed;
+    }
+    _unreadable.addAll(pending);
+    if (pending.isNotEmpty) {
+      log.error(
+        name,
+        '${pending.length} protected setting(s) could not be read and are '
+        'treated as unset for this run: '
+        '${pending.map((k) => k.substring(_prefix.length)).join(', ')}. '
+        'What is stored has been left alone.',
+      );
+    }
+
+    _vaultReady = await _vault.selfTest();
+    if (!_vaultReady || typed.isEmpty) return;
+    final order = typed.keys.toList();
+    final sealed = await _vault.wrap([for (final k in order) typed[k]!]);
+    var moved = 0;
+    for (var i = 0; i < order.length; i++) {
+      _secrets[order[i]] = typed[order[i]]!;
+      final value = sealed[i];
+      if (value == null) continue;
+      await _prefs.setString(order[i], value);
+      moved++;
+    }
+    if (moved > 0) log.info(name, 'moved $moved secret(s) into the Keystore');
+  }
+
+  /// How long [_openVault] waits before asking again for what failed.
+  static const _vaultRetry = Duration(milliseconds: 750);
+
+  /// The certificate fingerprint remembered for [host], or null. A
+  /// fingerprint is public, so this is ordinary storage: it is kept apart
+  /// from the settings because nobody chooses it and no export should carry
+  /// one panel's first sight of a server to another.
+  String? pinnedCertificate(String host) =>
+      _prefs.getString('${_prefix}certpin.${host.toLowerCase()}');
+
+  /// Remembers [fingerprint] for [host]. Not awaited by its one caller, a
+  /// TLS callback that must answer synchronously; the value is readable from
+  /// the in-memory cache at once and lands on disk behind it.
+  void pinCertificate(String host, String fingerprint) => unawaited(
+    _prefs.setString('${_prefix}certpin.${host.toLowerCase()}', fingerprint),
+  );
+
+  /// Forgets every remembered certificate, so the next one each server
+  /// presents is the one trusted. How many were forgotten.
+  Future<int> forgetCertificates() async {
+    final keys = _prefs
+        .getKeys()
+        .where((k) => k.startsWith('${_prefix}certpin.'))
+        .toList();
+    for (final key in keys) {
+      await _prefs.remove(key);
+    }
+    return keys.length;
   }
 
   SettingDef<Object>? defByKey(String key) {
@@ -471,6 +856,8 @@ class SettingsManager extends Manager {
       case SettingType.select
           when value is String &&
               (optionsFor(def).contains(value) ||
+                  (def.key == cameraRtspResolution.key &&
+                      isCameraStreamResolution(value)) ||
                   (def.key == screensaverMode.key &&
                       isPluginScreensaver(value))):
         await set(def, value, source: source);
@@ -503,13 +890,22 @@ class SettingsManager extends Manager {
     return satisfied(get(dep)) && visible(dep);
   }
 
-  List<Map<String, Object?>> describe() => [
-    for (final def in allSettings)
+  List<Map<String, Object?>> describe({Set<String>? keys}) => [
+    for (final def in allSettings.where(
+      (def) => keys == null || keys.contains(def.key),
+    ))
       {
         'key': def.key,
         'type': def.type.name,
         'title': def.title,
         'description': def.description,
+        if (def.titleMessageId != null) 'titleMessageId': def.titleMessageId,
+        if (def.descriptionMessageId != null)
+          'descriptionMessageId': def.descriptionMessageId,
+        if (def.optionMessageIds != null)
+          'optionMessageIds': def.optionMessageIds,
+        if (def.placeholderMessageId != null)
+          'placeholderMessageId': def.placeholderMessageId,
         'category': def.category,
         if (def.section != null) 'section': def.section,
         // The remote admin folds these into the same second-level page the
@@ -527,10 +923,18 @@ class SettingsManager extends Manager {
         if (def.multiline) 'multiline': true,
         if (def.placeholder != null) 'placeholder': def.placeholder,
         if (def.options != null) 'options': optionsFor(def),
+        if (def.key == cameraRtspResolution.key)
+          'notice': cameraResolutionNotice,
         if (def.optionLabels != null)
           'optionLabels': {
             ...?def.optionLabels,
+            if (def.key == cameraRtspResolution.key)
+              for (final size in optionsFor(def))
+                size: cameraResolutionLabel(size),
             if (def.key == screensaverMode.key) ...pluginScreensavers(),
+            if (_realtimeLists.containsKey(def.key))
+              for (final option in optionsFor(def))
+                if (option.isNotEmpty) option: optionLabel(def, option)!,
             if (def.key == screensaverMode.key &&
                 isPluginScreensaver(get(def)) &&
                 !pluginScreensavers().containsKey(get(def)))

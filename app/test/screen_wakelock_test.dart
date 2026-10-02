@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_satellite/core/command_registry.dart';
 import 'package:kiosk_satellite/core/event_bus.dart';
+import 'package:kiosk_satellite/core/events.dart';
 import 'package:kiosk_satellite/core/logging.dart';
 import 'package:kiosk_satellite/managers/screen/screen_manager.dart';
 import 'package:kiosk_satellite/managers/settings/settings_manager.dart';
@@ -29,8 +30,9 @@ class _FakeWakelock extends WakelockPlusPlatformInterface {
     toggleCalls++;
     if (!activityAttached) {
       throw PlatformException(
-          code: 'wakelock',
-          message: 'wakelock requires a foreground activity');
+        code: 'wakelock',
+        message: 'wakelock requires a foreground activity',
+      );
     }
     lastToggle = enable;
   }
@@ -44,6 +46,7 @@ void main() {
 
   late _FakeWakelock wakelock;
   late ScreenManager screen;
+  late EventBus bus;
 
   Future<void> build(Map<String, Object> initial) async {
     wakelock = _FakeWakelock();
@@ -51,7 +54,7 @@ void main() {
     // that into this variable on first use and never re-reads it.
     wakelockPlusPlatformInstance = wakelock;
     SharedPreferences.setMockInitialValues(initial);
-    final bus = EventBus();
+    bus = EventBus();
     final log = Logger();
     final commands = CommandRegistry(log);
     final settings = SettingsManager(bus, commands, log);
@@ -83,6 +86,19 @@ void main() {
     expect(wakelock.lastToggle, isTrue);
   });
 
+  test('a return without the input focus retries the apply too', () async {
+    await build({'ks.screen.keep_on': true});
+    expect(wakelock.lastToggle, isNull);
+    wakelock.activityAttached = true;
+    // Android reports an Activity resumed under a focus-holding window as
+    // inactive, never resumed (issue #560): an Activity exists all the same.
+    binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await Future<void>.delayed(Duration.zero);
+    expect(wakelock.lastToggle, isTrue);
+    binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+  });
+
   test('a resume with the setting off reapplies the disable, keeping the '
       'window flag off on a rebuilt Activity', () async {
     await build({'ks.screen.keep_on': false});
@@ -110,5 +126,26 @@ void main() {
     wakelock.lastToggle = null;
     await resume();
     expect(wakelock.lastToggle, isTrue);
+  });
+
+  test('the intercom screen holds the screen on with Keep screen on off, '
+      'so a call never lets the OS timeout put the device to sleep', () async {
+    await build({'ks.screen.keep_on': false});
+    wakelock.activityAttached = true;
+    await resume();
+    expect(wakelock.lastToggle, isFalse);
+
+    bus.publish(const FullscreenViewChanged(view: 'intercom', shown: true));
+    await Future<void>.delayed(Duration.zero);
+    expect(wakelock.lastToggle, isTrue);
+
+    // Another view closing leaves the intercom's hold alone.
+    bus.publish(const FullscreenViewChanged(view: 'launcher', shown: false));
+    await Future<void>.delayed(Duration.zero);
+    expect(wakelock.lastToggle, isTrue);
+
+    bus.publish(const FullscreenViewChanged(view: 'intercom', shown: false));
+    await Future<void>.delayed(Duration.zero);
+    expect(wakelock.lastToggle, isFalse);
   });
 }

@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'theme.dart';
+import '../l10n/messages.dart';
 
 /// Full-screen scanner for the QR code Home Assistant shows next to a newly
 /// created long-lived access token, so the token never has to be typed on
@@ -17,14 +20,50 @@ class TokenQrScanner extends StatefulWidget {
 
 class _TokenQrScannerState extends State<TokenQrScanner> {
   final _controller = MobileScannerController(
+    facing: CameraFacing.front,
     formats: const [BarcodeFormat.qrCode],
   );
 
   /// A capture can carry several frames' worth of hits; pop exactly once.
   bool _done = false;
+  bool _switching = false;
+  bool _initialCamera = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onCameraChanged);
+  }
+
+  void _onCameraChanged() {
+    if (!_initialCamera) return;
+    final state = _controller.value;
+    if (state.isRunning) {
+      _initialCamera = false;
+    } else if (state.error?.errorCode == MobileScannerErrorCode.unsupported) {
+      // A device with only a rear camera must still be able to scan.
+      _initialCamera = false;
+      scheduleMicrotask(() {
+        if (mounted && !_done) {
+          unawaited(_controller.start(cameraDirection: CameraFacing.back));
+        }
+      });
+    }
+  }
+
+  Future<void> _flipCamera() async {
+    if (_switching || _done || !_controller.value.isRunning) return;
+    setState(() => _switching = true);
+    try {
+      await _controller.switchCamera();
+    } finally {
+      if (mounted) setState(() => _switching = false);
+    }
+  }
 
   @override
   void dispose() {
+    _controller.removeListener(_onCameraChanged);
     _controller.dispose();
     super.dispose();
   }
@@ -56,7 +95,7 @@ class _TokenQrScannerState extends State<TokenQrScanner> {
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Text(
-                  'The camera could not be started.',
+                  l10n(context).setupQrCameraFailed,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: Colors.white,
@@ -83,7 +122,7 @@ class _TokenQrScannerState extends State<TokenQrScanner> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                   child: Text(
-                    'Scan the token QR code',
+                    l10n(context).setupQrTitle,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontFamily: Ks.displayFont,
@@ -94,8 +133,7 @@ class _TokenQrScannerState extends State<TokenQrScanner> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'It appears next to a newly created token in your '
-                  'Home Assistant profile.',
+                  l10n(context).setupQrHelp,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: Colors.white70,
@@ -110,8 +148,26 @@ class _TokenQrScannerState extends State<TokenQrScanner> {
                     children: [
                       _RoundAction(
                         icon: Icons.close,
-                        tooltip: 'Cancel',
+                        tooltip: l10n(context).commonCancel,
                         onTap: () => Navigator.of(context).pop(),
+                      ),
+                      ValueListenableBuilder(
+                        valueListenable: _controller,
+                        builder: (context, state, _) => _RoundAction(
+                          icon: Icons.flip_camera_android_outlined,
+                          tooltip: l10n(context).setupQrFlipCamera,
+                          onTap:
+                              state.isRunning &&
+                                  !_switching &&
+                                  (state.availableCameras == null ||
+                                      state.availableCameras! > 1) &&
+                                  (state.cameraDirection ==
+                                          CameraFacing.front ||
+                                      state.cameraDirection ==
+                                          CameraFacing.back)
+                              ? _flipCamera
+                              : null,
+                        ),
                       ),
                       ValueListenableBuilder(
                         valueListenable: _controller,
@@ -120,9 +176,14 @@ class _TokenQrScannerState extends State<TokenQrScanner> {
                               ? Icons.flashlight_off_outlined
                               : Icons.flashlight_on_outlined,
                           tooltip: state.torchState == TorchState.on
-                              ? 'Turn off the flashlight'
-                              : 'Turn on the flashlight',
-                          onTap: _controller.toggleTorch,
+                              ? l10n(context).setupQrFlashOff
+                              : l10n(context).setupQrFlashOn,
+                          onTap:
+                              state.isRunning &&
+                                  !_switching &&
+                                  state.torchState != TorchState.unavailable
+                              ? _controller.toggleTorch
+                              : null,
                         ),
                       ),
                     ],
@@ -147,7 +208,7 @@ class _RoundAction extends StatelessWidget {
 
   final IconData icon;
   final String tooltip;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -158,6 +219,7 @@ class _RoundAction extends StatelessWidget {
       iconSize: 26,
       padding: const EdgeInsets.all(14),
       color: Colors.white,
+      disabledColor: Colors.white38,
       icon: Icon(icon),
       tooltip: tooltip,
       onPressed: onTap,

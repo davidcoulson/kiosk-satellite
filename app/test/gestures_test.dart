@@ -64,10 +64,13 @@ void main() {
           '{"id":"g4","trigger":{"type":"claps","claps":2},'
           '"action":{"type":"menu"}},'
           '{"id":"g5","trigger":{"type":"fingers","fingers":2},'
+          '"action":{"type":"menu"}},'
+          '{"id":"g6","trigger":{"type":"remote_key","keyCode":3},'
           '"action":{"type":"menu"}}]',
         ),
       );
-      // Claps and hands are not touch: the native engine never sees them.
+      // Claps, hands and remote keys are not touch: the native engine
+      // never sees them (keys go to the accessibility service).
       expect(triggers, [
         {'id': 'g1', 'type': 'corner_taps', 'corner': 'tl', 'taps': 3},
         {'id': 'g2', 'type': 'finger_hold', 'fingers': 2, 'holdMs': 1500},
@@ -81,6 +84,39 @@ void main() {
   });
 
   group('describe helpers', () {
+    test('remote key labels use the captured name, else the code', () {
+      expect(
+        describeGestureTrigger({
+          'type': 'remote_key',
+          'keyCode': 3,
+          'keyName': 'Home',
+        }),
+        'Press the Home key',
+      );
+      expect(
+        describeGestureTrigger({
+          'type': 'remote_key',
+          'keyCode': 134,
+          'keyName': 'F4',
+          'longPress': true,
+        }),
+        'Long press the F4 key',
+      );
+      expect(
+        describeGestureTrigger({'type': 'remote_key', 'keyCode': 82}),
+        'Press the 82 key',
+      );
+      expect(
+        hasRemoteKeyTrigger(
+          decodeGestureMappings(
+            '[{"id":"k1","trigger":{"type":"remote_key","keyCode":3},'
+            '"action":{"type":"android_settings"}}]',
+          ),
+        ),
+        isTrue,
+      );
+    });
+
     test('trigger labels', () {
       expect(
         describeGestureTrigger({
@@ -183,7 +219,11 @@ void main() {
     late List<GestureActionCompleted> outcomes;
 
     /// [haFailure] makes the Home Assistant stubs fail with that error.
-    Future<void> build(String mappingsJson, {String? haFailure}) async {
+    Future<void> build(
+      String mappingsJson, {
+      String? haFailure,
+      Duration Function()? handClock,
+    }) async {
       SharedPreferences.setMockInitialValues({
         'ks.${defs.gestureMappings.key}': mappingsJson,
       });
@@ -226,7 +266,13 @@ void main() {
       }
       settings = SettingsManager(bus, commands, log);
       await settings.init();
-      gestures = GesturesManager(bus, commands, log, settings);
+      gestures = GesturesManager(
+        bus,
+        commands,
+        log,
+        settings,
+        handClock: handClock,
+      );
       await gestures.init();
     }
 
@@ -513,6 +559,7 @@ void main() {
         '{"id":"open","trigger":{"type":"fingers","fingers":5},'
         '"action":{"type":"screensaver_stop"}}]',
       );
+      await settings.set(defs.handGestureHoldSeconds, 0);
       Future<void> show(int hands, int? fingers) async {
         bus.publish(PalmDetected(hands: hands, fingers: fingers));
         await Future<void>.delayed(Duration.zero);
@@ -541,12 +588,115 @@ void main() {
       expect(executed, hasLength(4));
     });
 
+    test(
+      'the default one-second hold requires continued readings and fires once',
+      () async {
+        var now = Duration.zero;
+        await build(
+          '[{"id":"open","trigger":{"type":"fingers","fingers":5},'
+          '"action":{"type":"screensaver_stop"}}]',
+          handClock: () => now,
+        );
+        expect(settings.get(defs.handGestureHoldSeconds), 1);
+        Future<void> show(int ms, {int hands = 1, int? fingers = 5}) async {
+          now = Duration(milliseconds: ms);
+          bus.publish(PalmDetected(hands: hands, fingers: fingers));
+          await Future<void>.delayed(Duration.zero);
+        }
+
+        await show(0);
+        await show(2000);
+        expect(
+          executed,
+          isEmpty,
+          reason: 'a stale first sighting cannot confirm',
+        );
+        await show(2500);
+        expect(executed, isEmpty);
+        await show(3000);
+        await show(3500);
+        expect(executed, hasLength(1));
+        await show(3600, hands: 0, fingers: null);
+        await show(4000);
+        await show(4500);
+        expect(executed, hasLength(1));
+        await show(5000);
+        expect(executed, hasLength(2));
+        await settings.setFromJson(defs.handGestureHoldSeconds.key, 4);
+        expect(settings.get(defs.handGestureHoldSeconds), 3);
+        await settings.setFromJson(defs.handGestureHoldSeconds.key, -1);
+        expect(settings.get(defs.handGestureHoldSeconds), 0);
+        await settings.setFromJson(defs.handGestureHoldSeconds.key, 1.4);
+        expect(settings.get(defs.handGestureHoldSeconds), 1.5);
+        await gestures.dispose();
+      },
+    );
+
+    test('settings and detection pauses cancel an unfinished hold', () async {
+      var now = Duration.zero;
+      const mapping =
+          '[{"id":"open","trigger":{"type":"fingers","fingers":5},'
+          '"action":{"type":"screensaver_stop"}}]';
+      await build(mapping, handClock: () => now);
+      await settings.set(defs.handGestureHoldSeconds, 1);
+      Future<void> show(int ms) async {
+        now = Duration(milliseconds: ms);
+        bus.publish(const PalmDetected(hands: 1, fingers: 5));
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      final pauses = <Future<void> Function()>[
+        () => settings.set(defs.gestureMappings, mapping),
+        () => settings.set(defs.handGestureHoldSeconds, 1),
+        () => settings.set(defs.cameraEnabled, false),
+        () async {
+          await settings.set(defs.lockdownEnabled, true);
+          await show(now.inMilliseconds + 10);
+          await settings.set(defs.lockdownEnabled, false);
+        },
+        () async {
+          bus.publish(const ScreenStateChanged(on: false));
+          bus.publish(const ScreenStateChanged(on: true));
+        },
+        () async {
+          bus.publish(
+            const WakeWordStateChanged(active: false, listening: false),
+          );
+          await show(now.inMilliseconds + 10);
+          bus.publish(
+            const WakeWordStateChanged(active: true, listening: true),
+          );
+        },
+      ];
+      for (var i = 0; i < pauses.length; i++) {
+        final base = i * 3000;
+        bus.publish(const PalmDetected(hands: 0, fingers: null));
+        await show(base);
+        await show(base + 500);
+        await pauses[i]();
+        await show(base + 750);
+        await show(base + 1250);
+        expect(executed, hasLength(i), reason: 'pause $i resets the hold');
+        await show(base + 1750);
+        expect(executed, hasLength(i + 1));
+      }
+      await settings.set(defs.handGestureHoldSeconds, 0);
+      await show(20000);
+      expect(
+        executed,
+        hasLength(pauses.length + 1),
+        reason: 'Instant applies live',
+      );
+      await gestures.dispose();
+    });
+
     test('a hand shown during a voice interaction fires nothing; the hand '
         'gone still re-arms', () async {
       await build(
         '[{"id":"two","trigger":{"type":"fingers","fingers":2},'
         '"action":{"type":"screensaver"}}]',
       );
+      await settings.set(defs.handGestureHoldSeconds, 0);
       Future<void> show(int hands, int? fingers) async {
         bus.publish(PalmDetected(hands: hands, fingers: fingers));
         await Future<void>.delayed(Duration.zero);
@@ -572,6 +722,7 @@ void main() {
         '[{"id":"two","trigger":{"type":"fingers","fingers":2},'
         '"action":{"type":"screensaver"}}]',
       );
+      await settings.set(defs.handGestureHoldSeconds, 0);
       Future<void> show() async {
         bus.publish(const PalmDetected(hands: 1, fingers: 2));
         await Future<void>.delayed(Duration.zero);

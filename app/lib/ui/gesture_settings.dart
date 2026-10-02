@@ -3,8 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../app_container.dart';
+import '../l10n/messages.dart';
+import '../l10n/gesture_messages.dart';
 import '../managers/gestures/gesture_mappings.dart';
 import '../managers/settings/definitions.dart' as defs;
+import 'dashboard_view_picker.dart';
+import 'hand_gesture_tester.dart';
 import 'kit.dart';
 import 'toast.dart';
 import 'settings_search.dart';
@@ -37,6 +41,8 @@ const _actionGroups = <(String, List<(String, String, IconData)>)>[
       ('now_playing', 'Show Now Playing', Icons.play_circle_outline),
       ('music_assistant', 'Open Music Assistant', Icons.library_music_outlined),
       ('app_launcher', 'Open the app launcher', Icons.apps_outlined),
+      ('intercom_open', 'Open Call a kiosk', Icons.speaker_phone_outlined),
+      ('intercom_call', 'Call a kiosk', Icons.phone_outlined),
       ('screensaver', 'Start the screensaver', Icons.nightlight_outlined),
       ('screensaver_stop', 'Stop the screensaver', Icons.light_mode_outlined),
       ('hold_mode', 'Toggle hold mode', Icons.pause_circle_outline),
@@ -71,10 +77,16 @@ const _triggerTypes = <(String, String)>[
   ('corner_sequence', 'Corner sequence'),
   ('claps', 'Claps'),
   ('fingers', 'Show fingers'),
+  ('remote_key', 'Remote key'),
 ];
 
 class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
   AppContainer get c => widget.container;
+  double? _handHoldDrag;
+
+  /// Whether the accessibility service is up, read once per page visit:
+  /// no remote key works without it, so its absence is worth a warning.
+  late final Future<Map<String, Object?>> _remoteKeys = c.remoteKeys.status();
 
   List<GestureMapping> get _mappings =>
       decodeGestureMappings(c.settings.get(defs.gestureMappings));
@@ -102,22 +114,28 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
             clipBehavior: Clip.antiAlias,
             child: ListTile(
               leading: const Icon(Icons.info_outline),
-              title: const Text('Gestures are off'),
-              subtitle: const Text(
-                'Disable Gestures is on in Kiosk Mode settings.',
+              title: Text(gestureText(context, 'Gestures are off')),
+              subtitle: Text(
+                gestureText(
+                  context,
+                  'Disable Gestures is on in Kiosk Mode settings.',
+                ),
               ),
             ),
           ),
-        const SectionHeading('Gestures'),
+        SectionHeading(gestureText(context, 'Gestures')),
         SettingsCard(
           children: [
             if (mappings.isEmpty)
-              const ListTile(
+              ListTile(
                 leading: Icon(Icons.gesture),
-                title: Text('No gestures configured'),
+                title: Text(gestureText(context, 'No gestures configured')),
                 subtitle: Text(
-                  'A gesture triggers its action without any visible '
-                  'control.',
+                  gestureText(
+                    context,
+                    'A gesture triggers its action without any visible '
+                    'control.',
+                  ),
                 ),
               ),
             for (final mapping in mappings)
@@ -127,42 +145,113 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                 leading: Icon(switch (mapping.triggerType) {
                   'claps' => Icons.sign_language_outlined,
                   'fingers' => Icons.waving_hand_outlined,
+                  'remote_key' => Icons.settings_remote_outlined,
                   _ => Icons.gesture,
                 }),
-                title: Text(describeGestureTrigger(mapping.trigger)),
-                subtitle: Text(describeGestureAction(mapping.action)),
+                title: Text(localizedGestureTrigger(context, mapping.trigger)),
+                subtitle: Text(localizedGestureAction(context, mapping.action)),
                 onTap: () => _edit(mapping),
                 trailing: IconButton(
-                  tooltip: 'Delete gesture',
+                  tooltip: gestureText(context, 'Delete gesture'),
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () => _delete(mapping),
                 ),
               ),
             ListTile(
               leading: const Icon(Icons.add),
-              title: const Text('Add gesture'),
-              subtitle: const Text(
-                'Pick a gesture and the action it triggers.',
+              title: Text(gestureText(context, 'Add gesture')),
+              subtitle: Text(
+                gestureText(
+                  context,
+                  'Pick a gesture and the action it triggers.',
+                ),
               ),
               onTap: () => _edit(null),
             ),
           ],
         ),
-        const GroupNote(
-          'Gestures are observed, not blocked: the taps also reach the '
-          'dashboard, so corners and multi-finger shapes keep them from '
-          'firing anything there.',
+        GroupNote(
+          gestureText(
+            context,
+            'Gestures are observed, not blocked: the taps also reach the '
+            'dashboard, so corners and multi-finger shapes keep them from '
+            'firing anything there.',
+          ),
         ),
-        const SectionHeading('Clapper'),
+        SectionHeading(gestureText(context, 'Remote keys')),
+        SettingsCard(
+          children: [
+            SearchLandingTarget(
+              id: defs.gestureRemoteKeysEnabled.key,
+              child: SettingsRow(
+                title: Text(
+                  defs.gestureRemoteKeysEnabled.localizedTitle(context),
+                ),
+                subtitle: Text(
+                  defs.gestureRemoteKeysEnabled.localizedDescription(context),
+                ),
+                trailing: Switch(
+                  value: c.settings.get(defs.gestureRemoteKeysEnabled),
+                  onChanged: (value) async {
+                    await c.settings.set(defs.gestureRemoteKeysEnabled, value);
+                    if (mounted) setState(() {});
+                  },
+                ),
+              ),
+            ),
+            SearchLandingTarget(
+              id: defs.keepAccessibility.key,
+              child: SettingsRow(
+                title: Text(defs.keepAccessibility.localizedTitle(context)),
+                subtitle: Text(
+                  defs.keepAccessibility.localizedDescription(context),
+                ),
+                trailing: Switch(
+                  value: c.settings.get(defs.keepAccessibility),
+                  onChanged: (value) async {
+                    await c.settings.set(defs.keepAccessibility, value);
+                    if (mounted) setState(() {});
+                  },
+                ),
+              ),
+            ),
+            FutureBuilder<Map<String, Object?>>(
+              future: _remoteKeys,
+              builder: (context, snapshot) {
+                final running = snapshot.data?['serviceRunning'] == true;
+                if (!snapshot.hasData || running) {
+                  return HintRow(
+                    gestureText(
+                      context,
+                      'A mapped key runs its action whatever app is in '
+                      'front, and does nothing else.',
+                    ),
+                  );
+                }
+                return WarnRow(
+                  gestureText(
+                    context,
+                    'Remote keys need the Kiosk Satellite accessibility '
+                    'service. Enable it in Android Accessibility settings.',
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        SectionHeading(gestureText(context, 'Clapper')),
         SettingsCard(
           children: [
             SearchLandingTarget(
               id: defs.clapStrictness.key,
               child: DropdownRow<String>(
-                title: defs.clapStrictness.title,
-                description: defs.clapStrictness.description,
+                title: defs.clapStrictness.localizedTitle(context),
+                description: defs.clapStrictness.localizedDescription(context),
                 value: c.settings.get(defs.clapStrictness),
-                options: const [('standard', 'Standard'), ('strict', 'Strict')],
+                options: [
+                  ('standard', gestureText(context, 'Standard')),
+                  ('strict', gestureText(context, 'Strict')),
+                ],
                 onChanged: (value) async {
                   if (value == null) return;
                   await c.settings.setFromJson(defs.clapStrictness.key, value);
@@ -172,6 +261,63 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
             ),
           ],
         ),
+        SectionHeading(gestureText(context, 'Hand Gestures')),
+        SettingsCard(
+          children: [
+            SearchLandingTarget(
+              id: defs.handGestureHoldSeconds.key,
+              child: Column(
+                children: [
+                  ListTile(
+                    title: Text(
+                      defs.handGestureHoldSeconds.localizedTitle(context),
+                    ),
+                    subtitle: Text(
+                      defs.handGestureHoldSeconds.localizedDescription(context),
+                    ),
+                    trailing: Text(
+                      localizedHandHoldDuration(
+                        context,
+                        _handHoldDrag ??
+                            c.settings.get(defs.handGestureHoldSeconds),
+                      ),
+                    ),
+                  ),
+                  Slider(
+                    value:
+                        _handHoldDrag ??
+                        c.settings
+                            .get(defs.handGestureHoldSeconds)
+                            .toDouble()
+                            .clamp(0, 3),
+                    min: 0,
+                    max: 3,
+                    divisions: 6,
+                    label: localizedHandHoldDuration(
+                      context,
+                      _handHoldDrag ??
+                          c.settings.get(defs.handGestureHoldSeconds),
+                    ),
+                    semanticFormatterCallback: (value) =>
+                        localizedHandHoldDuration(context, value),
+                    onChanged: (value) => setState(() => _handHoldDrag = value),
+                    onChangeEnd: (value) async {
+                      await c.settings.set(defs.handGestureHoldSeconds, value);
+                      if (mounted) setState(() => _handHoldDrag = null);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        // The tester: a live look at the fingers the camera reads, for
+        // learning how to hold a hand before (or after) mapping one.
+        SectionHeading(gestureText(context, 'Hand Gesture Tester')),
+        SearchLandingTarget(
+          id: 'x:hand_gesture_tester',
+          child: SettingsCard(children: [HandGestureTesterTile(container: c)]),
+        ),
       ],
     );
   }
@@ -179,11 +325,12 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
   Future<void> _delete(GestureMapping mapping) async {
     final confirmed = await showConfirmDialog(
       context,
-      title: 'Delete gesture?',
-      message:
-          '${describeGestureTrigger(mapping.trigger)} will no longer '
-          '${describeGestureAction(mapping.action).toLowerCase()}.',
-      confirmLabel: 'Delete',
+      title: gestureText(context, 'Delete gesture?'),
+      message: l10n(context).gestureDeleteMessage(
+        localizedGestureTrigger(context, mapping.trigger),
+        localizedGestureAction(context, mapping.action),
+      ),
+      confirmLabel: gestureText(context, 'Delete'),
       destructive: true,
     );
     if (!confirmed) return;
@@ -202,6 +349,15 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
     var holdMs = (existing?.trigger['holdMs'] as num?)?.toInt() ?? 1500;
     var claps = (existing?.trigger['claps'] as num?)?.toInt() ?? 2;
     var fingerCount = (existing?.trigger['fingers'] as num?)?.toInt() ?? 5;
+    var keyCode = type == 'remote_key'
+        ? (existing?.trigger['keyCode'] as num?)?.toInt()
+        : null;
+    var keyName = type == 'remote_key'
+        ? '${existing?.trigger['keyName'] ?? ''}'
+        : '';
+    var longPress = existing?.trigger['longPress'] == true;
+    var capturing = false;
+    var captureMissed = false;
     final sequence = [
       for (final s in (existing?.trigger['sequence'] as List?) ?? const [])
         '$s',
@@ -217,9 +373,14 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
           final holdSeconds = holdMs / 1000;
           final canSave =
               action != null &&
-              (type != 'corner_sequence' || sequence.length >= 2);
+              (type != 'corner_sequence' || sequence.length >= 2) &&
+              (type != 'remote_key' || keyCode != null);
           return AlertDialog(
-            title: Text(existing == null ? 'Add gesture' : 'Edit gesture'),
+            title: Text(
+              existing == null
+                  ? gestureText(context, 'Add gesture')
+                  : gestureText(context, 'Edit gesture'),
+            ),
             content: SizedBox(
               width: 480,
               child: EdgeFade(
@@ -230,8 +391,9 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                     spacing: 16,
                     children: [
                       LabeledField(
-                        label: 'Gesture',
+                        label: gestureText(context, 'Gesture'),
                         child: DropdownButtonFormField<String>(
+                          isExpanded: true,
                           initialValue: type,
                           decoration: const InputDecoration(),
                           items: [
@@ -245,7 +407,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                                   !c.deviceCamera.handsKnownUnsupported)
                                 DropdownMenuItem(
                                   value: value,
-                                  child: Text(label),
+                                  child: Text(gestureText(context, label)),
                                 ),
                           ],
                           onChanged: (value) =>
@@ -254,8 +416,9 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                       ),
                       if (type == 'corner_taps' || type == 'corner_hold')
                         LabeledField(
-                          label: 'Corner',
+                          label: gestureText(context, 'Corner'),
                           child: DropdownButtonFormField<String>(
+                            isExpanded: true,
                             initialValue: corner,
                             decoration: const InputDecoration(),
                             items: [
@@ -263,8 +426,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                                 DropdownMenuItem(
                                   value: entry.key,
                                   child: Text(
-                                    '${entry.value[0].toUpperCase()}'
-                                    '${entry.value.substring(1)} corner',
+                                    localizedGestureCorner(context, entry.key),
                                   ),
                                 ),
                             ],
@@ -274,14 +436,23 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                         ),
                       if (type == 'corner_taps')
                         LabeledField(
-                          label: 'Taps',
+                          label: gestureText(context, 'Taps'),
                           child: DropdownButtonFormField<int>(
                             initialValue: taps.clamp(2, 4),
                             decoration: const InputDecoration(),
-                            items: const [
-                              DropdownMenuItem(value: 2, child: Text('2 taps')),
-                              DropdownMenuItem(value: 3, child: Text('3 taps')),
-                              DropdownMenuItem(value: 4, child: Text('4 taps')),
+                            items: [
+                              DropdownMenuItem(
+                                value: 2,
+                                child: Text(gestureText(context, '2 taps')),
+                              ),
+                              DropdownMenuItem(
+                                value: 3,
+                                child: Text(gestureText(context, '3 taps')),
+                              ),
+                              DropdownMenuItem(
+                                value: 4,
+                                child: Text(gestureText(context, '4 taps')),
+                              ),
                             ],
                             onChanged: (value) =>
                                 setDialogState(() => taps = value ?? taps),
@@ -289,18 +460,18 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                         ),
                       if (type == 'finger_taps' || type == 'finger_hold')
                         LabeledField(
-                          label: 'Fingers',
+                          label: gestureText(context, 'Fingers'),
                           child: DropdownButtonFormField<int>(
                             initialValue: fingers.clamp(2, 3),
                             decoration: const InputDecoration(),
-                            items: const [
+                            items: [
                               DropdownMenuItem(
                                 value: 2,
-                                child: Text('2 fingers'),
+                                child: Text(gestureText(context, '2 fingers')),
                               ),
                               DropdownMenuItem(
                                 value: 3,
-                                child: Text('3 fingers'),
+                                child: Text(gestureText(context, '3 fingers')),
                               ),
                             ],
                             onChanged: (value) => setDialogState(
@@ -310,18 +481,18 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                         ),
                       if (type == 'finger_taps')
                         LabeledField(
-                          label: 'Taps',
+                          label: gestureText(context, 'Taps'),
                           child: DropdownButtonFormField<int>(
                             initialValue: fingerTaps.clamp(1, 2),
                             decoration: const InputDecoration(),
-                            items: const [
+                            items: [
                               DropdownMenuItem(
                                 value: 1,
-                                child: Text('Single tap'),
+                                child: Text(gestureText(context, 'Single tap')),
                               ),
                               DropdownMenuItem(
                                 value: 2,
-                                child: Text('Double tap'),
+                                child: Text(gestureText(context, 'Double tap')),
                               ),
                             ],
                             onChanged: (value) => setDialogState(
@@ -331,7 +502,9 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                         ),
                       if (type == 'corner_hold' || type == 'finger_hold') ...[
                         Text(
-                          'Hold for ${holdSeconds.toStringAsFixed(2)} s',
+                          l10n(
+                            context,
+                          ).gestureHoldDuration(holdSeconds.toStringAsFixed(2)),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         Slider(
@@ -346,30 +519,32 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                       ],
                       if (type == 'fingers')
                         LabeledField(
-                          label: 'Fingers',
+                          label: gestureText(context, 'Fingers'),
                           child: DropdownButtonFormField<int>(
                             initialValue: fingerCount.clamp(1, 5),
                             decoration: const InputDecoration(),
-                            items: const [
+                            items: [
                               DropdownMenuItem(
                                 value: 1,
-                                child: Text('1 finger'),
+                                child: Text(gestureText(context, '1 finger')),
                               ),
                               DropdownMenuItem(
                                 value: 2,
-                                child: Text('2 fingers'),
+                                child: Text(gestureText(context, '2 fingers')),
                               ),
                               DropdownMenuItem(
                                 value: 3,
-                                child: Text('3 fingers'),
+                                child: Text(gestureText(context, '3 fingers')),
                               ),
                               DropdownMenuItem(
                                 value: 4,
-                                child: Text('4 fingers'),
+                                child: Text(gestureText(context, '4 fingers')),
                               ),
                               DropdownMenuItem(
                                 value: 5,
-                                child: Text('Open hand (5)'),
+                                child: Text(
+                                  gestureText(context, 'Open hand (5)'),
+                                ),
                               ),
                             ],
                             onChanged: (value) => setDialogState(
@@ -380,30 +555,39 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                       if (type == 'fingers')
                         Text(
                           c.deviceCamera.handsKnownUnsupported
-                              ? (c.deviceCamera.visionHint ??
-                                    'Not available on this device.')
-                              : 'Requires the camera enabled and a well '
-                                    'lit environment.',
+                              ? gestureText(
+                                  context,
+                                  cameraText(
+                                    context,
+                                    c.deviceCamera.visionHint ??
+                                        'Not available on this device.',
+                                  ),
+                                )
+                              : gestureText(
+                                  context,
+                                  'Requires the camera enabled and a well '
+                                  'lit environment.',
+                                ),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       if (type == 'claps') ...[
                         LabeledField(
-                          label: 'Claps',
+                          label: gestureText(context, 'Claps'),
                           child: DropdownButtonFormField<int>(
                             initialValue: claps.clamp(2, 4),
                             decoration: const InputDecoration(),
-                            items: const [
+                            items: [
                               DropdownMenuItem(
                                 value: 2,
-                                child: Text('2 claps'),
+                                child: Text(gestureText(context, '2 claps')),
                               ),
                               DropdownMenuItem(
                                 value: 3,
-                                child: Text('3 claps'),
+                                child: Text(gestureText(context, '3 claps')),
                               ),
                               DropdownMenuItem(
                                 value: 4,
-                                child: Text('4 claps'),
+                                child: Text(gestureText(context, '4 claps')),
                               ),
                             ],
                             onChanged: (value) =>
@@ -411,17 +595,94 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                           ),
                         ),
                         Text(
-                          'Claps are heard through the microphone, with or '
-                          'without wake word detection.',
+                          gestureText(
+                            context,
+                            'Claps are heard through the microphone, with or '
+                            'without wake word detection.',
+                          ),
                           style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                      if (type == 'remote_key') ...[
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.settings_remote_outlined),
+                          title: Text(
+                            capturing
+                                ? gestureText(
+                                    context,
+                                    'Press the key on the remote…',
+                                  )
+                                : keyCode == null
+                                ? gestureText(context, 'No key yet')
+                                : remoteKeyName({
+                                    'keyCode': keyCode,
+                                    'keyName': keyName,
+                                  }),
+                          ),
+                          subtitle: captureMissed
+                              ? Text(
+                                  gestureText(context, 'No key was pressed.'),
+                                )
+                              : null,
+                          trailing: capturing
+                              ? const SizedBox.square(
+                                  dimension: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : OutlinedButton(
+                                  onPressed: () async {
+                                    setDialogState(() {
+                                      capturing = true;
+                                      captureMissed = false;
+                                    });
+                                    final key = await c.remoteKeys.capture();
+                                    if (!context.mounted) return;
+                                    setDialogState(() {
+                                      capturing = false;
+                                      if (key == null) {
+                                        captureMissed = true;
+                                      } else {
+                                        keyCode = (key['keyCode'] as num?)
+                                            ?.toInt();
+                                        keyName = '${key['keyName'] ?? ''}';
+                                      }
+                                    });
+                                  },
+                                  child: Text(
+                                    gestureText(context, 'Capture key'),
+                                  ),
+                                ),
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(gestureText(context, 'Long press')),
+                          subtitle: Text(
+                            gestureText(
+                              context,
+                              'Runs when the key is held for half a second. '
+                              'While a key has a long press action, a short '
+                              'press runs only its own action, if it has one.',
+                            ),
+                          ),
+                          value: longPress,
+                          onChanged: (value) =>
+                              setDialogState(() => longPress = value),
                         ),
                       ],
                       if (type == 'corner_sequence') ...[
                         Text(
                           sequence.isEmpty
-                              ? 'Tap the corners in order (2 to 8 steps).'
+                              ? gestureText(
+                                  context,
+                                  'Tap the corners in order (2 to 8 steps).',
+                                )
                               : sequence
-                                    .map((s) => s.toUpperCase())
+                                    .map(
+                                      (s) => localizedGestureCorner(context, s),
+                                    )
                                     .join(' > '),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
@@ -436,10 +697,12 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                                     : () => setDialogState(
                                         () => sequence.add(entry.key),
                                       ),
-                                child: Text(entry.key.toUpperCase()),
+                                child: Text(
+                                  localizedGestureCorner(context, entry.key),
+                                ),
                               ),
                             IconButton(
-                              tooltip: 'Remove last step',
+                              tooltip: gestureText(context, 'Remove last step'),
                               icon: const Icon(Icons.backspace_outlined),
                               onPressed: sequence.isEmpty
                                   ? null
@@ -455,13 +718,16 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                         leading: const Icon(Icons.play_circle_outline),
                         title: Text(
                           action == null
-                              ? 'Choose an action'
-                              : describeGestureAction(action!),
+                              ? gestureText(context, 'Choose an action')
+                              : localizedGestureAction(context, action!),
                         ),
                         subtitle: Text(
                           action == null
-                              ? 'What this gesture triggers.'
-                              : 'Tap to change.',
+                              ? gestureText(
+                                  context,
+                                  'What this gesture triggers.',
+                                )
+                              : gestureText(context, 'Tap to change.'),
                         ),
                         onTap: () async {
                           final picked = await _pickAction(action);
@@ -477,12 +743,17 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                onPressed: () {
+                  if (capturing) c.remoteKeys.cancelCapture();
+                  Navigator.pop(context, false);
+                },
+                child: Text(gestureText(context, 'Cancel')),
               ),
               FilledButton(
-                onPressed: canSave ? () => Navigator.pop(context, true) : null,
-                child: const Text('Save'),
+                onPressed: canSave && !capturing
+                    ? () => Navigator.pop(context, true)
+                    : null,
+                child: Text(gestureText(context, 'Save')),
               ),
             ],
           );
@@ -501,6 +772,11 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
       if (type == 'corner_sequence') 'sequence': sequence,
       if (type == 'claps') 'claps': claps,
       if (type == 'fingers') 'fingers': fingerCount,
+      if (type == 'remote_key') ...{
+        'keyCode': keyCode,
+        if (keyName.isNotEmpty) 'keyName': keyName,
+        'longPress': longPress,
+      },
     };
     final mapping = GestureMapping(
       id: existing?.id ?? 'g${DateTime.now().millisecondsSinceEpoch}',
@@ -525,13 +801,16 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
     return showDialog<Map<String, Object?>>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('Plugin action'),
+        title: Text(gestureText(context, 'Plugin action')),
         children: [
           if (actions.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(24),
               child: Text(
-                'Enable a plugin with actions in Plugin Manager first.',
+                gestureText(
+                  context,
+                  'Enable a plugin with actions in Plugin Manager first.',
+                ),
               ),
             ),
           for (final action in actions)
@@ -559,7 +838,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
     final type = await showDialog<String>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('Action'),
+        title: Text(gestureText(context, 'Action')),
         children: [
           for (final (group, actions) in _actionGroups) ...[
             Padding(
@@ -578,7 +857,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                   children: [
                     Icon(icon, size: 20),
                     const SizedBox(width: 12),
-                    Expanded(child: Text(label)),
+                    Expanded(child: Text(gestureText(context, label))),
                   ],
                 ),
               ),
@@ -586,7 +865,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
         ],
       ),
     );
-    if (type == null) return null;
+    if (type == null || !mounted) return null;
     final carried = current != null && '${current['type']}' == type
         ? current
         : null;
@@ -598,6 +877,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
       'now_playing' ||
       'music_assistant' ||
       'app_launcher' ||
+      'intercom_open' ||
       'screensaver' ||
       'screensaver_stop' ||
       'hold_mode' ||
@@ -621,6 +901,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
         },
       ),
       'camera_view' => _configureCameraView(carried),
+      'intercom_call' => _configureIntercomCall(carried),
       'launch_app' => _configureText(
         carried,
         type: 'launch_app',
@@ -679,7 +960,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
   }) async {
     final controller = TextEditingController(text: '${current?[field] ?? ''}');
     String? error;
-    final result = await showDialog<Map<String, Object?>>(
+    final route = DialogRoute<Map<String, Object?>>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
@@ -694,16 +975,21 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
           }
 
           return AlertDialog(
-            title: Text(title),
+            title: Text(gestureText(context, title)),
             content: SizedBox(
               width: 480,
               child: LabeledField(
-                label: label,
+                label: gestureText(context, label),
                 child: TextField(
                   controller: controller,
                   autofocus: true,
                   keyboardType: keyboard,
-                  decoration: InputDecoration(hintText: hint, errorText: error),
+                  decoration: InputDecoration(
+                    hintText: hint,
+                    errorText: error == null
+                        ? null
+                        : gestureError(context, error!),
+                  ),
                   onSubmitted: (_) => submit(),
                 ),
               ),
@@ -711,14 +997,19 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(gestureText(context, 'Cancel')),
               ),
-              FilledButton(onPressed: submit, child: const Text('OK')),
+              FilledButton(
+                onPressed: submit,
+                child: Text(gestureText(context, 'OK')),
+              ),
             ],
           );
         },
       ),
     );
+    final result = await Navigator.of(context).push(route);
+    await route.completed;
     controller.dispose();
     return result;
   }
@@ -762,13 +1053,13 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Icon(Icons.checklist_outlined, size: 18),
-        label: const Text('Validate'),
+        label: Text(gestureText(context, 'Validate')),
       ),
       const SizedBox(width: 8),
       if (verdict != null)
         Expanded(
           child: Text(
-            verdict.$2,
+            gestureError(context, verdict.$2),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: verdict.$1
                   ? Theme.of(context).colorScheme.primary
@@ -800,7 +1091,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
       return value.isEmpty || value.contains('.') ? value : '$domain.$value';
     }
 
-    final result = await showDialog<Map<String, Object?>>(
+    final route = DialogRoute<Map<String, Object?>>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
@@ -815,7 +1106,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
           }
 
           return AlertDialog(
-            title: Text(title),
+            title: Text(gestureText(context, title)),
             content: SizedBox(
               width: 480,
               child: Column(
@@ -824,13 +1115,15 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                 spacing: 16,
                 children: [
                   LabeledField(
-                    label: label,
+                    label: gestureText(context, label),
                     child: TextField(
                       controller: entity,
                       autofocus: true,
                       decoration: InputDecoration(
                         hintText: hint,
-                        errorText: error,
+                        errorText: error == null
+                            ? null
+                            : gestureError(context, error!),
                       ),
                       onSubmitted: (_) => submit(),
                     ),
@@ -849,6 +1142,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                         service: service,
                         entity: qualified(),
                       );
+                      if (!context.mounted) return;
                       setDialogState(() {
                         checking = false;
                         verdict = checked;
@@ -861,14 +1155,19 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(gestureText(context, 'Cancel')),
               ),
-              FilledButton(onPressed: submit, child: const Text('OK')),
+              FilledButton(
+                onPressed: submit,
+                child: Text(gestureText(context, 'OK')),
+              ),
             ],
           );
         },
       ),
     );
+    final result = await Navigator.of(context).push(route);
+    await route.completed;
     entity.dispose();
     return result;
   }
@@ -876,60 +1175,67 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
   Future<Map<String, Object?>?> _configureNavigate(
     Map<String, Object?>? current,
   ) async {
-    // Fetch every dashboard's views up front; the radio list mirrors the
-    // rotation picker's "dashboard / view" flattening.
-    final entries = <(String, String)>[];
-    final dashboards = await c.commands.execute('haListDashboards', const {});
-    if (dashboards.ok && dashboards.data is List) {
-      for (final d in dashboards.data as List) {
-        if (d is! Map) continue;
-        final urlPath = '${d['url_path'] ?? ''}';
-        final title = '${d['title'] ?? urlPath}';
-        if (urlPath.isEmpty) continue;
-        final views = await c.commands.execute('haListDashboardViews', {
-          'url_path': urlPath,
-        });
-        var added = false;
-        if (views.ok && views.data is List) {
-          for (final v in views.data as List) {
-            if (v is! Map) continue;
-            final route = '${v['route'] ?? ''}';
-            if (route.isEmpty) continue;
-            entries.add(('$urlPath/$route', '$title / ${v['title'] ?? route}'));
-            added = true;
-          }
-        }
-        // Strategy dashboards expose no views; the dashboard root still
-        // makes a fine target.
-        if (!added) entries.add((urlPath, title));
-      }
-    }
+    // The same flattened "dashboard / view" list the Home Assistant
+    // Dashboard screensaver picks from.
+    final entries = await listDashboardViewEntries(c);
     if (!mounted) return null;
     if (entries.isEmpty) {
       showToast(
         context,
-        title: 'Could not list dashboards',
-        message: 'Is Home Assistant connected?',
+        title: gestureText(context, 'Could not list dashboards'),
+        message: gestureText(context, 'Is Home Assistant connected?'),
         kind: ToastKind.error,
       );
       return null;
     }
-    final currentPath = '${current?['path'] ?? ''}';
+    final path = await showDashboardViewPicker(
+      context,
+      title: gestureText(context, 'Go to a dashboard view'),
+      entries: entries,
+      current: '${current?['path'] ?? ''}',
+    );
+    return path == null ? null : {'type': 'navigate', 'path': path};
+  }
+
+  /// The kiosk a Call a kiosk gesture rings: every kiosk the intercom
+  /// has heard, whatever its state today, since a mapping outlives a
+  /// kiosk being off for the afternoon.
+  Future<Map<String, Object?>?> _configureIntercomCall(
+    Map<String, Object?>? current,
+  ) async {
+    final r = await c.commands.execute('intercomStatus', const {});
+    final kiosks = [
+      for (final k in ((r.data as Map?)?['kiosks'] as List? ?? const []))
+        if (k is Map) k.cast<String, Object?>(),
+    ];
+    if (!mounted) return null;
+    final currentId = '${current?['kioskId'] ?? ''}';
     return showDialog<Map<String, Object?>>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('Go to a dashboard view'),
+        title: Text(gestureText(context, 'Call a kiosk')),
         children: [
-          for (final (path, label) in entries)
+          for (final k in kiosks)
             ListTile(
               leading: Icon(
-                currentPath == path
+                currentId == '${k['id']}'
                     ? Icons.radio_button_checked
                     : Icons.radio_button_off,
               ),
-              title: Text(label),
-              onTap: () =>
-                  Navigator.pop(context, {'type': 'navigate', 'path': path}),
+              title: Text('${k['name']}'),
+              subtitle: Text('${k['address']}'),
+              onTap: () => Navigator.pop(context, {
+                'type': 'intercom_call',
+                'kioskId': '${k['id']}',
+                'kioskName': '${k['name']}',
+              }),
+            ),
+          if (kiosks.isEmpty)
+            Padding(
+              padding: EdgeInsets.fromLTRB(24, 8, 24, 8),
+              child: Text(
+                gestureText(context, 'No kiosk found on the network yet.'),
+              ),
             ),
         ],
       ),
@@ -945,7 +1251,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
     return showDialog<Map<String, Object?>>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('Camera view'),
+        title: Text(gestureText(context, 'Camera view')),
         children: [
           for (final view in views)
             ListTile(
@@ -954,7 +1260,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                     ? Icons.radio_button_checked
                     : Icons.radio_button_off,
               ),
-              title: Text('Show ${view.name}'),
+              title: Text(l10n(context).gestureCameraShow(view.name)),
               onTap: () => Navigator.pop(context, {
                 'type': 'camera_view',
                 'mode': 'show',
@@ -968,14 +1274,16 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                   ? Icons.radio_button_checked
                   : Icons.radio_button_off,
             ),
-            title: const Text('Close the camera view'),
+            title: Text(gestureText(context, 'Close the camera view')),
             onTap: () =>
                 Navigator.pop(context, {'type': 'camera_view', 'mode': 'hide'}),
           ),
           if (views.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.fromLTRB(24, 8, 24, 8),
-              child: Text('No camera views configured yet.'),
+              child: Text(
+                gestureText(context, 'No camera views configured yet.'),
+              ),
             ),
         ],
       ),
@@ -994,7 +1302,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
     String? error;
     var checking = false;
     (bool, String)? verdict;
-    final result = await showDialog<Map<String, Object?>>(
+    final route = DialogRoute<Map<String, Object?>>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
@@ -1025,7 +1333,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
           }
 
           return AlertDialog(
-            title: const Text('Call a Home Assistant service'),
+            title: Text(gestureText(context, 'Call a Home Assistant service')),
             content: SizedBox(
               width: 480,
               child: EdgeFade(
@@ -1036,14 +1344,14 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                     spacing: 16,
                     children: [
                       LabeledField(
-                        label: 'Domain',
+                        label: gestureText(context, 'Domain'),
                         child: TextField(
                           controller: domain,
                           decoration: const InputDecoration(hintText: 'light'),
                         ),
                       ),
                       LabeledField(
-                        label: 'Service',
+                        label: gestureText(context, 'Service'),
                         child: TextField(
                           controller: service,
                           decoration: const InputDecoration(
@@ -1052,7 +1360,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                         ),
                       ),
                       LabeledField(
-                        label: 'Entity (optional)',
+                        label: gestureText(context, 'Entity (optional)'),
                         child: TextField(
                           controller: entity,
                           decoration: const InputDecoration(
@@ -1061,13 +1369,15 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                         ),
                       ),
                       LabeledField(
-                        label: 'Service data (optional)',
+                        label: gestureText(context, 'Service data (optional)'),
                         child: TextField(
                           controller: data,
                           maxLines: 3,
                           decoration: InputDecoration(
                             hintText: '{"brightness_pct": 60}',
-                            errorText: error,
+                            errorText: error == null
+                                ? null
+                                : gestureError(context, error!),
                           ),
                         ),
                       ),
@@ -1095,6 +1405,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                             service: service.text.trim(),
                             entity: entity.text.trim(),
                           );
+                          if (!context.mounted) return;
                           setDialogState(() {
                             checking = false;
                             verdict = checked;
@@ -1109,14 +1420,19 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(gestureText(context, 'Cancel')),
               ),
-              FilledButton(onPressed: submit, child: const Text('OK')),
+              FilledButton(
+                onPressed: submit,
+                child: Text(gestureText(context, 'OK')),
+              ),
             ],
           );
         },
       ),
     );
+    final result = await Navigator.of(context).push(route);
+    await route.completed;
     domain.dispose();
     service.dispose();
     entity.dispose();
@@ -1132,7 +1448,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
       text: current?['data'] is Map ? jsonEncode(current!['data']) : '',
     );
     String? error;
-    final result = await showDialog<Map<String, Object?>>(
+    final route = DialogRoute<Map<String, Object?>>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
@@ -1161,7 +1477,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
           }
 
           return AlertDialog(
-            title: const Text('Fire a Home Assistant event'),
+            title: Text(gestureText(context, 'Fire a Home Assistant event')),
             content: SizedBox(
               width: 480,
               child: Column(
@@ -1169,17 +1485,19 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                 spacing: 16,
                 children: [
                   LabeledField(
-                    label: 'Event type',
+                    label: gestureText(context, 'Event type'),
                     child: TextField(
                       controller: event,
                       decoration: InputDecoration(
                         hintText: 'kiosk_satellite_gesture',
-                        errorText: error,
+                        errorText: error == null
+                            ? null
+                            : gestureError(context, error!),
                       ),
                     ),
                   ),
                   LabeledField(
-                    label: 'Event data (optional)',
+                    label: gestureText(context, 'Event data (optional)'),
                     child: TextField(
                       controller: data,
                       maxLines: 3,
@@ -1194,14 +1512,19 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(gestureText(context, 'Cancel')),
               ),
-              FilledButton(onPressed: submit, child: const Text('OK')),
+              FilledButton(
+                onPressed: submit,
+                child: Text(gestureText(context, 'OK')),
+              ),
             ],
           );
         },
       ),
     );
+    final result = await Navigator.of(context).push(route);
+    await route.completed;
     event.dispose();
     data.dispose();
     return result;

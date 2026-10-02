@@ -300,9 +300,108 @@ void main() {
     },
   );
 
+  test('the hand gesture tester runs the hand leg without a mapping and '
+      'takes the reports the gestures manager would get', () async {
+    await build({
+      'ks.gestures.mappings': clapMapping,
+      'ks.camera.enabled': true,
+    });
+    await pump();
+    expect(listens, 0);
+    final palms = <PalmDetected>[];
+    bus.on<PalmDetected>().listen(palms.add);
+
+    motion.startHandTest();
+    await pump();
+    expect(motion.handTesting, isTrue);
+    expect(listens, 1);
+    expect(lastArgs?['fingers'], isTrue);
+
+    sink!.success({
+      'palms': 1,
+      'fingers': 5,
+      'up': [true, true, true, true, true],
+    });
+    await pump();
+    expect(
+      palms.map((e) => e.hands),
+      [0],
+      reason: 'opening the tester clears a pending gesture hold',
+    );
+    expect(motion.handTest.value?.hands, 1);
+    expect(motion.handTest.value?.fingers, 5);
+    expect(motion.handTest.value?.fingersUp, everyElement(isTrue));
+
+    sink!.success({'palms': 0, 'fingers': -1});
+    await pump();
+    expect(motion.handTest.value, isNull);
+
+    motion.stopHandTest();
+    await pump();
+    expect(motion.handTesting, isFalse);
+    expect(sink, isNull, reason: 'a session only the tester wanted ends');
+  });
+
+  test(
+    'the tester leaves a hand mapping\'s session up and hands it back',
+    () async {
+      await build(handOnly);
+      await pump();
+      expect(listens, 1);
+      final palms = <PalmDetected>[];
+      bus.on<PalmDetected>().listen(palms.add);
+
+      motion.startHandTest();
+      await pump();
+      expect(listens, 1, reason: 'already bound for hands');
+      sink!.success({
+        'palms': 1,
+        'fingers': 2,
+        'up': [false, true, true, false, false],
+      });
+      await pump();
+      expect(palms.map((e) => e.hands), [0]);
+      expect(motion.handTest.value?.fingers, 2);
+
+      motion.stopHandTest();
+      await pump();
+      expect(listens, 1);
+      expect(motion.handTest.value, isNull);
+      sink!.success({
+        'palms': 1,
+        'fingers': 2,
+        'up': [false, true, true, false, false],
+      });
+      await pump();
+      expect(
+        palms.map((e) => e.hands),
+        [0, 0, 1],
+        reason: 'closing the tester starts a new gesture hold',
+      );
+      expect(palms.last.fingersUp, [false, true, true, false, false]);
+    },
+  );
+
   test('the wire parses hands and fingers', () {
     expect(NativeMotionTick.fromNative({'palms': 2, 'fingers': 5}).palms, 2);
     expect(NativeMotionTick.fromNative({'palms': 2, 'fingers': 5}).fingers, 5);
+    expect(
+      NativeMotionTick.fromNative({
+        'palms': 1,
+        'fingers': 4,
+        'up': [false, true, true, true, true],
+      }).fingersUp,
+      [false, true, true, true, true],
+    );
+    expect(
+      NativeMotionTick.fromNative({
+        'palms': 1,
+        'fingers': 4,
+        'up': [true, true],
+      }).fingersUp,
+      isNull,
+      reason: 'anything but five flags is not a hand',
+    );
     expect(NativeMotionTick.fromNative({'face': 0.3}).isPalms, isFalse);
     expect(NativeMotionTick.fromNative(null).isPalms, isFalse);
   });

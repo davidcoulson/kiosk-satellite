@@ -7,6 +7,10 @@ library;
 
 import 'dart:convert';
 
+import '../../l10n/generated/language_codes.dart';
+import '../../l10n/generated/setting_ids.dart';
+import '../../l10n/generated/setting_option_ids.dart';
+
 import '../btproxy/node_name.dart';
 
 enum SettingType { string, boolean, number, select, password }
@@ -46,6 +50,11 @@ class SettingDef<T> {
   final T defaultValue;
   final String title;
   final String description;
+
+  String? get titleMessageId => settingMessageIds[key]?['title'];
+  String? get descriptionMessageId => settingMessageIds[key]?['description'];
+  Map<String, String>? get optionMessageIds => settingOptionMessageIds[key];
+  String? get placeholderMessageId => settingPlaceholderMessageIds[key];
   final String category;
 
   /// An optional subheading within [category]. Consecutive settings sharing a
@@ -91,14 +100,23 @@ class SettingDef<T> {
   /// boolean-switch case; set to a string to gate on a mode select, or to a
   /// list of them for a row that belongs to more than one mode (the Immich
   /// From date, which both Since and Timeframe want).
+  /// A map with `gt` gates on a number greater than the supplied value, one
+  /// with `ne` on any value but the supplied one (a picker set to anything).
   final Object dependsOnValue;
 
   /// Whether [value] satisfies [dependsOnValue], which is a list when the
   /// row belongs to several modes. Both UIs ask this same question, the
   /// remote's over the serialized definition.
-  bool dependsSatisfiedBy(Object? value) => dependsOnValue is List
-      ? (dependsOnValue as List).contains(value)
-      : value == dependsOnValue;
+  bool dependsSatisfiedBy(Object? value) => _satisfies(value, dependsOnValue);
+
+  static bool _satisfies(Object? value, Object wanted) {
+    if (wanted is List) return wanted.contains(value);
+    if (wanted is Map && wanted['gt'] is num) {
+      return value is num && value > (wanted['gt'] as num);
+    }
+    if (wanted is Map && wanted.containsKey('ne')) return value != wanted['ne'];
+    return value == wanted;
+  }
 
   /// A second gate, for a row that only means anything under two settings
   /// at once (the flip clock's night card color: Night mode on AND the
@@ -110,9 +128,8 @@ class SettingDef<T> {
   /// The value [alsoDependsOn] must hold, the shape of [dependsOnValue].
   final Object alsoDependsOnValue;
 
-  bool alsoDependsSatisfiedBy(Object? value) => alsoDependsOnValue is List
-      ? (alsoDependsOnValue as List).contains(value)
-      : value == alsoDependsOnValue;
+  bool alsoDependsSatisfiedBy(Object? value) =>
+      _satisfies(value, alsoDependsOnValue);
 
   /// Persisted and readable, but never shown as a settings row. For state the
   /// app tracks on the user's behalf — e.g. whether the chosen media is a
@@ -187,6 +204,7 @@ class SettingDef<T> {
 final Set<String> deviceHiddenKeys = {};
 
 const Map<String, String> subpageHints = {
+  'Localization Credits': 'Contributors by language',
   'User Interface': 'Kiosk mode, dashboard carousel, haptics, tap sounds',
   'Theme': 'Match the app, or switch dark and light on a schedule',
   'Dashboard View Rotation': 'Cycle through views, dwell time, fade',
@@ -197,10 +215,19 @@ const Map<String, String> subpageHints = {
   // Voice Satellite. Both pages are mostly live rows from the
   // integration rather than settings, so the pages themselves are
   // placed by the Voice Satellite page; only their names live here.
+  'Chimes': 'Wake, done, error, timer and announcement sounds',
   'Wake Word': 'Engine, wake words, sensitivity, cached models',
   'Appearance': 'Overlay skin, theme, activity bar, text size',
+  // Native Voice Satellite's own pages.
+  'Assistant': 'Pipelines, follow-ups',
+  'Realtime': 'OpenAI, xAI Grok, tools, talk over answers',
+  'Conversation': 'What the overlay shows and for how long',
+  'Timers': 'Pills, alerts, spoken reminders',
+  // Its entry row sits under the tester, not with the three pages above.
+  'Wake word diagnostics':
+      'Recent activations and near misses with audio clips',
   // Screen & Audio.
-  'Microphone settings': 'Capture mode, channel, gain, live level',
+  'Microphone settings': 'Echo cancellation, noise, gain, format, live level',
   'Adaptive brightness': 'Follow the room light with the ambient light sensor',
   // Screensaver. The six mode pages only exist while that mode is the
   // one selected, since every setting on them gates on it.
@@ -211,10 +238,13 @@ const Map<String, String> subpageHints = {
   'Photo Gallery screensaver': 'Photos, timing, shuffle, transition',
   'Immich Media screensaver': 'Server, media, slideshow, metadata, filters',
   'Camera Streams screensaver': 'Views to show, seconds per view, sound',
+  'Weather Mood screensaver': 'Weather entity, lightning, preview',
   'Widgets': 'Corner overlays and their scale',
   'At a Glance': 'Entities shown over the screensaver',
-  'RTSP Streaming': 'Share the device camera via RTSP',
+  'RTSP & ONVIF Streaming': 'Share the device camera via RTSP or ONVIF',
   'Motion Sensor': 'Home Assistant motion sensor and shared detection settings',
+  'Person Sensor':
+      "Home Assistant occupancy sensor from the device's person sensor",
   'Motion Detection': 'Dismiss or postpone the screensaver on motion',
   'Face Detection': 'Dismiss the screensaver when someone looks at it',
   'Proximity Detection':
@@ -232,6 +262,7 @@ const Map<String, String> subpageHints = {
   'Lyrics': 'Synchronized lyrics, their source and timing',
   // ESPHome.
   'Notifications': 'Transparency, blur, notification sound, test notification',
+  'Announcements': 'Spoken announcements from Home Assistant',
   'Bluetooth Proxy': 'Relay nearby Bluetooth devices to Home Assistant',
   'GPS Sensor': 'Expose GPS sensor data to Home Assistant',
   'Advanced settings': 'Real or spoofed Wi-Fi MAC address',
@@ -241,8 +272,12 @@ const Map<String, String> subpageHints = {
   'Kiosk Satellite Service':
       'Status, what keeps it running, required permissions',
   'Remote Administration': 'Manage this kiosk from a browser on your network',
+  'TLS': 'Connection encryption and certificates',
+  'Updates': 'Where the app looks for new releases',
   'Shizuku': 'Connection, Android permissions and setup',
   'Optional update helper': 'Silent update status, ADB setup and instructions',
+  'Kiosk Satellite Analytics':
+      'Share anonymized information to help improve Kiosk Satellite',
   // Read-only reports the remote admin shows about the tablet; the
   // device's own settings page has no equivalent.
   'Hardware': 'Model, Android version, addresses, memory, uptime',
@@ -289,6 +324,41 @@ String normalizeBaseUrl(String value) {
 Object normalizeBaseUrlSetting(Object value) =>
     value is String ? normalizeBaseUrl(value) : value;
 
+/// A custom update repository: the folder that holds `releases.json` and
+/// the release APKs, on any web server the kiosk can reach. Unlike a Home
+/// Assistant base URL a path is expected (the folder), so only the scheme,
+/// the host and a clean tail are checked.
+String? validateUpdateSourceUrl(Object? value) {
+  if (value is! String || value.trim().isEmpty) return null; // empty = unset
+  final uri = Uri.tryParse(value.trim());
+  if (uri == null ||
+      (uri.scheme != 'http' && uri.scheme != 'https') ||
+      uri.host.isEmpty) {
+    return 'Enter the folder URL, for example '
+        'http://nas.local/kiosk-satellite';
+  }
+  if (uri.hasQuery || uri.hasFragment) {
+    return 'Enter only the folder URL, without anything after the path. '
+        'Example: http://nas.local/kiosk-satellite';
+  }
+  return null;
+}
+
+/// Canonical stored form of the repository folder: no trailing slash (the
+/// updater appends `/releases.json` and `/<asset name>` itself) and, when
+/// the file itself was pasted, the folder it sits in.
+String normalizeUpdateSourceUrl(String value) {
+  var trimmed = value.trim();
+  if (trimmed.endsWith('/releases.json')) {
+    trimmed = trimmed.substring(0, trimmed.length - '/releases.json'.length);
+  }
+  return trimmed.replaceFirst(RegExp(r'/+$'), '');
+}
+
+/// [SettingDef.normalizer] adapter for [normalizeUpdateSourceUrl].
+Object normalizeUpdateSourceUrlSetting(Object value) =>
+    value is String ? normalizeUpdateSourceUrl(value) : value;
+
 /// The Immich album pick as the `[{id, name}]` list it is stored as. A
 /// bare album id is the shape the setting had while it held one album; it
 /// becomes a one-entry list, name left for the Immich manager to fill in
@@ -317,6 +387,56 @@ const startUrl = SettingDef<String>(
   category: 'Browser',
   hidden: true,
 );
+
+// What the start URL is: a Home Assistant dashboard (the picker's choice,
+// and every install before this existed) or a custom page such as the theater
+// panel's own web app. The URL itself stays in browser.start_url either way.
+// It decides one thing beyond the picker shown: whether the start page's
+// origin is trusted as Home Assistant's, which is what gates handing a page
+// the HA session. Hidden: both settings UIs build the choice by hand.
+const startPage = SettingDef<String>(
+  key: 'browser.start_page',
+  type: SettingType.select,
+  defaultValue: 'ha',
+  title: 'Start page',
+  description: 'A Home Assistant dashboard, or a custom URL.',
+  category: 'Browser',
+  options: ['ha', 'custom'],
+  optionLabels: {'ha': 'Home Assistant dashboard', 'custom': 'Custom URL'},
+  hidden: true,
+);
+
+// The custom start page's URL, remembered apart from browser.start_url so
+// that picking a Home Assistant dashboard (from the settings or from Home
+// Assistant's Default dashboard select) does not lose it: choosing Custom URL
+// again, or the select's "Start page" option, brings it back. The browser
+// manager keeps the two in step; nothing else writes start_url for it.
+const customStartUrl = SettingDef<String>(
+  key: 'browser.custom_start_url',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Custom start URL',
+  description: 'The page loaded on launch when the start page is custom.',
+  category: 'Browser',
+  validator: validateCustomStartUrl,
+  hidden: true,
+);
+
+/// A custom start page is a web page: http or https with a host. The start
+/// page is also what theater mode and the page bridge trust, so anything
+/// else -- file:, javascript:, a bare word -- is refused here rather than
+/// discovered later.
+String? validateCustomStartUrl(Object? value) {
+  final text = '${value ?? ''}'.trim();
+  if (text.isEmpty) return null;
+  final uri = Uri.tryParse(text);
+  if (uri == null ||
+      !(uri.scheme == 'http' || uri.scheme == 'https') ||
+      uri.host.isEmpty) {
+    return 'Enter a full http:// or https:// address';
+  }
+  return null;
+}
 
 // Hidden from the generic renderers: both UIs hand-build this row inside
 // the Home Assistant connection card (below Validate connection), because
@@ -489,6 +609,38 @@ const browserCutoutMode = SettingDef<String>(
   },
 );
 
+/// Which way the screen faces. Devices without a rotation sensor, or ones
+/// mounted in a frame that the sensor misreads, keep whatever orientation
+/// Android picked at boot; forcing one here rotates the window regardless
+/// (issue #541). Applied live through the kiosk_lock channel, and read
+/// natively from SharedPreferences at Activity creation so the window is
+/// right from the first frame.
+const screenOrientation = SettingDef<String>(
+  key: 'screen.orientation',
+  type: SettingType.select,
+  defaultValue: 'auto',
+  title: 'Screen orientation',
+  description:
+      'Force the screen into one orientation. Use this on a device without '
+      'a rotation sensor, or one mounted a way the sensor gets wrong.',
+  category: 'Screen & Audio',
+  section: 'Screen',
+  options: [
+    'auto',
+    'landscape',
+    'reverse_landscape',
+    'portrait',
+    'reverse_portrait',
+  ],
+  optionLabels: {
+    'auto': 'Automatic',
+    'landscape': 'Landscape',
+    'reverse_landscape': 'Reverse landscape',
+    'portrait': 'Portrait',
+    'reverse_portrait': 'Reverse portrait',
+  },
+);
+
 const pinchToZoom = SettingDef<bool>(
   key: 'browser.pinch_to_zoom',
   type: SettingType.boolean,
@@ -574,6 +726,19 @@ const ignoreSslErrors = SettingDef<bool>(
   description:
       'Accept untrusted or self-signed certificates. Use only on your own '
       'network, since it disables certificate verification.',
+  category: 'Browser',
+);
+
+const webviewDebugging = SettingDef<bool>(
+  key: 'browser.webview_debugging',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'WebView debugging',
+  description:
+      'Let Chrome DevTools attach to the dashboard over ADB, for profiling '
+      'and inspecting the page. Off by default: it is a diagnostic, not '
+      'something a wall panel needs running. Takes effect at the next '
+      'restart. A userdebug panel has this on regardless of this switch.',
   category: 'Browser',
 );
 
@@ -796,6 +961,22 @@ const gestureMappings = SettingDef<String>(
   hidden: true,
 );
 
+// Remote key mappings: the remote_key gestures, caught by the accessibility
+// service (RemoteKeys.kt). Their own switch rather than Kiosk Mode's Disable
+// Gestures: a mapped key is the device's remote, not a hidden admin
+// gesture, and silencing it with the touch gestures would take a
+// projector's Home key away with them.
+const gestureRemoteKeysEnabled = SettingDef<bool>(
+  key: 'gestures.remote_keys.enabled',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Remote keys',
+  description:
+      'Run the actions mapped to keys on the remote, whatever app is in '
+      'front.',
+  category: 'Gestures',
+);
+
 // Deliberateness thresholds for the clap detector (discussion #177: a child
 // playing with toys near the device produced enough clap-shaped impulses to
 // false-trigger). Standard already requires a quiet lead-in and consistent
@@ -812,6 +993,25 @@ const clapStrictness = SettingDef<String>(
       'noise false-triggers.',
   category: 'Gestures',
 );
+
+const handGestureHoldSeconds = SettingDef<num>(
+  key: 'gestures.hand_hold_seconds',
+  type: SettingType.number,
+  defaultValue: 1,
+  min: 0,
+  max: 3,
+  step: 0.5,
+  unit: 's',
+  normalizer: normalizeHandGestureHold,
+  title: 'Hold duration',
+  description:
+      'Hold the same finger gesture for this long before its action runs. '
+      'Increase this to reduce accidental triggers.',
+  category: 'Gestures',
+);
+
+Object normalizeHandGestureHold(Object value) =>
+    value is num && value.isFinite ? (value.clamp(0, 3) * 2).round() / 2 : 0;
 
 // The quick-actions escape hatch (issue #64): a wall-mounted kiosk in
 // lockdown still wants "back to the dashboard" and "show the camera" to
@@ -865,6 +1065,30 @@ const kioskAllowCamera = SettingDef<bool>(
   defaultValue: true,
   title: 'Camera View',
   description: 'Open the default camera view.',
+  category: 'Kiosk',
+  section: 'Allowed Actions',
+  subpage: 'Allowed Actions',
+  dependsOn: 'kiosk.allow_drawer',
+);
+
+const kioskAllowIntercom = SettingDef<bool>(
+  key: 'kiosk.allow_intercom',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Intercom',
+  description: 'Call other kiosks from the kiosk menu.',
+  category: 'Kiosk',
+  section: 'Allowed Actions',
+  subpage: 'Allowed Actions',
+  dependsOn: 'kiosk.allow_drawer',
+);
+
+const kioskAllowAlarms = SettingDef<bool>(
+  key: 'kiosk.allow_alarms',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Alarms',
+  description: 'Set and manage alarms from the kiosk menu.',
   category: 'Kiosk',
   section: 'Allowed Actions',
   subpage: 'Allowed Actions',
@@ -1203,11 +1427,12 @@ const defaultBrightness = SettingDef<num>(
 
 // Adaptive brightness (issue #343): the room's light sets the screen
 // brightness on the device itself, so the mapping keeps working with Home
-// Assistant unreachable. Its own page: the switch, the live sensor reading,
-// the two brightness ends and the two light-level ends of the curve. The
-// screensaver and Dim sliders keep their meaning as the level in a bright
-// room and scale with the curve; Default brightness stands down while the
-// switch is on.
+// Assistant unreachable. Its own page: the switch, the live sensor reading
+// and the curve (issue #742), four points both UIs draw as one editor. The
+// ends are the four settings below; the middle two points are hidden
+// settings of their own. The screensaver and Dim sliders keep their
+// meaning as the level in a bright room and scale with the curve; Default
+// brightness stands down while the switch is on.
 const adaptiveBrightness = SettingDef<bool>(
   key: 'screen.adaptive_brightness',
   type: SettingType.boolean,
@@ -1229,7 +1454,7 @@ const adaptiveMinBrightness = SettingDef<num>(
   description: 'Screen brightness in a dark room.',
   category: 'Screen & Audio',
   subpage: 'Adaptive brightness',
-  section: 'Adaptive brightness',
+  section: 'Brightness curve',
   min: 0,
   max: 1,
   step: 0.05,
@@ -1246,7 +1471,7 @@ const adaptiveMaxBrightness = SettingDef<num>(
   description: 'Screen brightness in a bright room.',
   category: 'Screen & Audio',
   subpage: 'Adaptive brightness',
-  section: 'Adaptive brightness',
+  section: 'Brightness curve',
   min: 0,
   max: 1,
   step: 0.05,
@@ -1255,10 +1480,10 @@ const adaptiveMaxBrightness = SettingDef<num>(
   crossValidator: validateMaxAboveMin,
 );
 
-// Typed, not slid: light sensors disagree wildly about what a lit room
-// reads (an Echo Show 8 reports about 50 lx with every light on, a tablet
-// by a window thousands), so the ends are set against the live reading
-// shown above them rather than against a fixed scale.
+// Light sensors disagree wildly about what a lit room reads (an Echo Show 8
+// reports about 50 lx with every light on, a tablet by a window
+// thousands), so the curve editor marks the live reading on the chart and
+// takes typed values as well as drags.
 const adaptiveDarkLux = SettingDef<num>(
   key: 'screen.adaptive_dark_lux',
   type: SettingType.number,
@@ -1268,7 +1493,7 @@ const adaptiveDarkLux = SettingDef<num>(
       'Light level at or below which the screen sits at Minimum brightness.',
   category: 'Screen & Audio',
   subpage: 'Adaptive brightness',
-  section: 'Adaptive brightness',
+  section: 'Brightness curve',
   dependsOn: 'screen.adaptive_brightness',
   validator: validateLux,
   crossValidator: validateDarkBelowBright,
@@ -1283,11 +1508,133 @@ const adaptiveBrightLux = SettingDef<num>(
       'Light level at or above which the screen sits at Maximum brightness.',
   category: 'Screen & Audio',
   subpage: 'Adaptive brightness',
-  section: 'Adaptive brightness',
+  section: 'Brightness curve',
   dependsOn: 'screen.adaptive_brightness',
   validator: validateLux,
   crossValidator: validateBrightAboveDark,
 );
+
+// The curve's middle two points (issue #742), hidden: the editor on both
+// UIs draws and writes them. Stored as shares of the span between the
+// ends, not as absolute values: a position is the point's light level
+// along the log scale from Dark room to Bright room, a level its
+// brightness between Minimum and Maximum. That way Home Assistant's
+// Screen light, which turns Maximum brightness, stretches the curve
+// rather than pushing its top under the middle. A third and two thirds
+// on both axes is the straight line the curve was before these existed.
+const adaptivePoint2Position = SettingDef<num>(
+  key: 'screen.adaptive_point2_position',
+  type: SettingType.number,
+  defaultValue: 1 / 3,
+  title: 'Curve point 2 light level',
+  description:
+      'Share of the way from Dark room to Bright room, on a log '
+      'scale.',
+  category: 'Screen & Audio',
+  subpage: 'Adaptive brightness',
+  section: 'Brightness curve',
+  hidden: true,
+  validator: validateCurvePosition,
+  crossValidator: validatePoint2Position,
+);
+
+const adaptivePoint2Level = SettingDef<num>(
+  key: 'screen.adaptive_point2_level',
+  type: SettingType.number,
+  defaultValue: 1 / 3,
+  title: 'Curve point 2 brightness',
+  description: 'Share of the way from Minimum to Maximum brightness.',
+  category: 'Screen & Audio',
+  subpage: 'Adaptive brightness',
+  section: 'Brightness curve',
+  hidden: true,
+  validator: validateCurveShare,
+  crossValidator: validatePoint2Level,
+);
+
+const adaptivePoint3Position = SettingDef<num>(
+  key: 'screen.adaptive_point3_position',
+  type: SettingType.number,
+  defaultValue: 2 / 3,
+  title: 'Curve point 3 light level',
+  description:
+      'Share of the way from Dark room to Bright room, on a log '
+      'scale.',
+  category: 'Screen & Audio',
+  subpage: 'Adaptive brightness',
+  section: 'Brightness curve',
+  hidden: true,
+  validator: validateCurvePosition,
+  crossValidator: validatePoint3Position,
+);
+
+const adaptivePoint3Level = SettingDef<num>(
+  key: 'screen.adaptive_point3_level',
+  type: SettingType.number,
+  defaultValue: 2 / 3,
+  title: 'Curve point 3 brightness',
+  description: 'Share of the way from Minimum to Maximum brightness.',
+  category: 'Screen & Audio',
+  subpage: 'Adaptive brightness',
+  section: 'Brightness curve',
+  hidden: true,
+  validator: validateCurveShare,
+  crossValidator: validatePoint3Level,
+);
+
+/// A middle point sits strictly between the ends: at either one it would
+/// share a light level with it.
+String? validateCurvePosition(Object? value) {
+  final share = _asNum(value);
+  if (share == null || share <= 0 || share >= 1) {
+    return 'Enter a share between 0 and 1';
+  }
+  return null;
+}
+
+String? validateCurveShare(Object? value) {
+  final share = _asNum(value);
+  if (share == null || share < 0 || share > 1) {
+    return 'Enter a share from 0 to 1';
+  }
+  return null;
+}
+
+/// The middle points keep their order: point 2 below point 3 in light,
+/// and never brighter than it.
+String? validatePoint2Position(
+  Object? value,
+  Object? Function(String key) read,
+) {
+  final own = _asNum(value);
+  final other = _asNum(read(adaptivePoint3Position.key));
+  if (own == null || other == null || own < other) return null;
+  return 'Point 2 must be below point 3';
+}
+
+String? validatePoint3Position(
+  Object? value,
+  Object? Function(String key) read,
+) {
+  final own = _asNum(value);
+  final other = _asNum(read(adaptivePoint2Position.key));
+  if (own == null || other == null || own > other) return null;
+  return 'Point 3 must be above point 2';
+}
+
+String? validatePoint2Level(Object? value, Object? Function(String key) read) {
+  final own = _asNum(value);
+  final other = _asNum(read(adaptivePoint3Level.key));
+  if (own == null || other == null || own <= other) return null;
+  return 'Point 2 must not be brighter than point 3';
+}
+
+String? validatePoint3Level(Object? value, Object? Function(String key) read) {
+  final own = _asNum(value);
+  final other = _asNum(read(adaptivePoint2Level.key));
+  if (own == null || other == null || own >= other) return null;
+  return 'Point 3 must not be dimmer than point 2';
+}
 
 /// A light level the curve can take a log of: a positive number.
 String? validateLux(Object? value) {
@@ -1380,19 +1727,6 @@ const assistantVolume = SettingDef<num>(
   section: 'Audio Volume',
 );
 
-const assistantFullVolumeRange = SettingDef<bool>(
-  key: 'audio.assistant_full_volume_range',
-  type: SettingType.boolean,
-  defaultValue: true,
-  title: 'Full assistant volume range',
-  description:
-      "Initialize the built-in speaker's call volume at 100% when assistant "
-      'audio first starts. Master and assistant volume still apply. Other '
-      'apps share this call volume, which is not restored afterward.',
-  category: 'Screen & Audio',
-  section: 'Audio Volume',
-);
-
 // ── Screensaver ────────────────────────────────────────────────────────
 
 const screensaverEnabled = SettingDef<bool>(
@@ -1441,14 +1775,18 @@ const screensaverWidgets = SettingDef<String>(
   subpage: 'Widgets',
 );
 
-// One knob for every widget rather than per-entry sizes: the corners all
-// sit on the same panel, so they want the same correction.
+// One knob over every widget, for the panel: the corners all sit on the
+// same screen, so they want the same correction. Each widget's own Scale
+// slider (its config's scale key) then sets its size relative to the
+// others, and this slider multiplies the lot.
 const screensaverWidgetScale = SettingDef<num>(
   key: 'screensaver.widget_scale',
   type: SettingType.number,
   defaultValue: 100,
-  title: 'Widget scaling',
-  description: 'Scale all widgets to better fit your screen size.',
+  title: 'Global widget scaling',
+  description:
+      'Scale all widgets together to better fit your screen size. '
+      'Each widget keeps its own scale relative to the others.',
   category: 'Screensaver',
   section: 'Widgets',
   subpage: 'Widgets',
@@ -1456,6 +1794,39 @@ const screensaverWidgetScale = SettingDef<num>(
   max: 200,
   step: 5,
   unit: '%',
+);
+
+// The typeface and weight every widget is drawn in unless its own Font
+// family or Font weight (its config's font and font_weight keys, Default
+// by default) says otherwise: the clock screensaver's vocabulary, so a
+// clock face and its corner widgets can wear the same font.
+const screensaverWidgetFont = SettingDef<String>(
+  key: 'screensaver.widget_font',
+  type: SettingType.select,
+  defaultValue: 'rubik',
+  title: 'Global font family',
+  description:
+      'The typeface every widget is drawn in. A widget can pick its own.',
+  category: 'Screensaver',
+  section: 'Widgets',
+  subpage: 'Widgets',
+  options: fontFamilyOptions,
+  optionLabels: fontFamilyLabels,
+);
+
+const screensaverWidgetFontWeight = SettingDef<String>(
+  key: 'screensaver.widget_font_weight',
+  type: SettingType.select,
+  defaultValue: 'default',
+  title: 'Global font weight',
+  description:
+      "How heavy every widget's text is drawn. Default is each line's own "
+      'weight. A widget can pick its own.',
+  category: 'Screensaver',
+  section: 'Widgets',
+  subpage: 'Widgets',
+  options: fontWeightOptions,
+  optionLabels: fontWeightLabels,
 );
 
 const screensaverWidgetTextShadow = SettingDef<bool>(
@@ -1577,24 +1948,474 @@ const screensaverMode = SettingDef<String>(
     'dim',
     'black',
     'clock',
+    'weather_mood',
     'media',
     'local',
     'gallery',
     'immich',
     'website',
     'camera',
+    'dashboard',
   ],
   optionLabels: {
     'dim': 'Dim',
     'black': 'Black',
     'clock': 'Clock',
+    'weather_mood': 'Weather Mood',
     'media': 'Home Assistant Media',
     'local': 'Local Media',
     'gallery': 'Photo Gallery',
     'immich': 'Immich Media',
     'website': 'Website',
     'camera': 'Camera Streams',
+    'dashboard': 'Home Assistant Dashboard',
   },
+);
+
+// The Home Assistant Dashboard mode shows this view in the dashboard's own
+// WebView: a soft navigation there and back, never a second page load.
+// Picked from the instance's dashboards in both UIs, never typed. Empty
+// leaves whatever the dashboard shows on screen.
+const screensaverDashboardView = SettingDef<String>(
+  key: 'screensaver.dashboard_view',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Dashboard view',
+  description: 'The Home Assistant dashboard view the screensaver shows.',
+  category: 'Screensaver',
+  section: 'Home Assistant Dashboard screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'dashboard',
+);
+
+// Weather Mood follows the selected weather entity and sun.sun.
+const screensaverWeatherEntity = SettingDef<String>(
+  key: 'screensaver.weather_entity',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Weather entity',
+  description:
+      'The Home Assistant weather entity that controls the animated scene. Day, dawn/dusk and night follow sun.sun, with local time as a fallback.',
+  category: 'Screensaver',
+  section: 'Weather Mood screensaver',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'weather_mood',
+);
+
+const screensaverWeatherLightning = SettingDef<bool>(
+  key: 'screensaver.weather_lightning',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Lightning flashes',
+  description: 'Show lightning strikes and cloud flashes during thunderstorms.',
+  category: 'Screensaver',
+  section: 'Weather Mood screensaver',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'weather_mood',
+);
+
+const screensaverWeatherBlur = SettingDef<num>(
+  key: 'screensaver.weather_blur',
+  type: SettingType.number,
+  defaultValue: 0,
+  title: 'Scene blur',
+  description:
+      'Soften the animated weather scene while keeping the clock, weather bar and widgets sharp.',
+  category: 'Screensaver',
+  section: 'Weather Mood screensaver',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'weather_mood',
+  min: 0,
+  max: 30,
+  step: 1,
+  unit: 'px',
+);
+
+const screensaverWeatherClock = SettingDef<bool>(
+  key: 'screensaver.weather_clock',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: "Enable clock",
+  description: "Show a digital clock over the weather scene.",
+  category: 'Screensaver',
+  section: 'Clock',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'weather_mood',
+);
+
+/// The Weather Mood twin of [screensaverClockVertical].
+const screensaverWeatherClockVertical = SettingDef<bool>(
+  key: 'screensaver.weather_clock_vertical',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Vertical mode',
+  description: 'Stack the hours above the minutes, for portrait screens.',
+  category: 'Screensaver',
+  section: 'Clock',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_clock',
+);
+
+const screensaverWeatherClockFont = SettingDef<String>(
+  key: 'screensaver.weather_clock_font',
+  type: SettingType.select,
+  defaultValue: 'rubik',
+  title: 'Font Family',
+  description: 'The typeface the clock is drawn in.',
+  category: 'Screensaver',
+  section: 'Clock',
+  subpage: 'Weather Mood screensaver',
+  options: fontFamilyOptions,
+  optionLabels: fontFamilyLabels,
+  dependsOn: 'screensaver.weather_clock',
+);
+
+const screensaverWeatherClockFontWeight = SettingDef<String>(
+  key: 'screensaver.weather_clock_font_weight',
+  type: SettingType.select,
+  defaultValue: 'default',
+  title: 'Font weight',
+  description:
+      "How heavy the clock's digits are drawn. Default is each face's own "
+      'weight.',
+  category: 'Screensaver',
+  section: 'Clock',
+  subpage: 'Weather Mood screensaver',
+  options: fontWeightOptions,
+  optionLabels: fontWeightLabels,
+  dependsOn: 'screensaver.weather_clock',
+);
+
+const screensaverWeatherClock24h = SettingDef<bool>(
+  key: 'screensaver.weather_clock_24h',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: '24-hour clock',
+  description: 'Show a 24-hour time instead of AM/PM.',
+  category: 'Screensaver',
+  section: 'Clock',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_clock',
+);
+
+const screensaverWeatherClockSeconds = SettingDef<bool>(
+  key: 'screensaver.weather_clock_seconds',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Show seconds',
+  description: 'Include seconds in the clock.',
+  category: 'Screensaver',
+  section: 'Clock',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_clock',
+);
+
+const screensaverWeatherClockDate = SettingDef<bool>(
+  key: 'screensaver.weather_clock_show_date',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show date',
+  description: 'Show the weekday and date under the clock.',
+  category: 'Screensaver',
+  section: 'Clock',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_clock',
+);
+
+const screensaverWeatherClockScale = SettingDef<num>(
+  key: 'screensaver.weather_clock_scale',
+  type: SettingType.number,
+  defaultValue: 100,
+  title: 'Clock size',
+  description: 'Scale the clock from 50 to 300 percent for this screen.',
+  category: 'Screensaver',
+  section: 'Clock',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_clock',
+  min: 50,
+  max: 300,
+  step: 5,
+  unit: '%',
+);
+
+const screensaverWeatherClockColor = SettingDef<String>(
+  key: 'screensaver.weather_clock_color',
+  type: SettingType.string,
+  // Stored as "r,g,b"; both UIs render a real color picker for it.
+  defaultValue: '250,250,250',
+  title: 'Clock color',
+  description: 'The color of the clock text.',
+  category: 'Screensaver',
+  section: 'Clock',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_clock',
+);
+
+const screensaverWeatherClockShadow = SettingDef<bool>(
+  key: 'screensaver.weather_clock_shadow',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: "Text drop shadow",
+  description:
+      "Add a drop shadow to text for readability over the weather scene.",
+  category: 'Screensaver',
+  section: 'Clock',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_clock',
+);
+
+const screensaverWeatherBar = SettingDef<bool>(
+  key: 'screensaver.weather_bar',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: "Enable weather bar",
+  description: "Show live weather information along the bottom of the screen.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'weather_mood',
+);
+
+const screensaverWeatherBarScale = SettingDef<num>(
+  key: 'screensaver.weather_bar_scale',
+  type: SettingType.number,
+  defaultValue: 100,
+  title: "Text scale",
+  description: "Scale the weather information from 50 to 200 percent.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_bar',
+
+  min: 50,
+  max: 200,
+  step: 5,
+  unit: '%',
+);
+
+const screensaverWeatherBarColor = SettingDef<String>(
+  key: 'screensaver.weather_bar_color',
+  type: SettingType.string,
+  defaultValue: '255,255,255',
+  title: "Text color",
+  description: "The color of the weather information.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_bar',
+);
+
+const screensaverWeatherBarOpacity = SettingDef<num>(
+  key: 'screensaver.weather_bar_opacity',
+  type: SettingType.number,
+  defaultValue: 50,
+  title: "Background opacity",
+  description: "Darken the bottom bar to keep weather information readable.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_bar',
+
+  min: 0,
+  max: 100,
+  step: 5,
+  unit: '%',
+);
+
+const screensaverWeatherBarShadow = SettingDef<bool>(
+  key: 'screensaver.weather_bar_shadow',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: "Text drop shadow",
+  description:
+      "Add a drop shadow to text for readability over the weather scene.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_bar',
+);
+
+const screensaverWeatherBarTitles = SettingDef<bool>(
+  key: 'screensaver.weather_bar_titles',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: "Show titles",
+  description:
+      "Name each reading above its value. When off, values match the temperature size.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_bar',
+);
+
+const screensaverWeatherBarLocation = SettingDef<String>(
+  key: 'screensaver.weather_bar_location',
+  type: SettingType.string,
+  defaultValue: '',
+  title: "Location name",
+  description: "Leave empty to hide the location line.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_bar',
+);
+
+const screensaverWeatherBarFeelsLike = SettingDef<bool>(
+  key: 'screensaver.weather_bar_feels_like',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: "Feels like",
+  description:
+      "Show the apparent temperature instead of the actual temperature when available.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_bar',
+);
+
+const screensaverWeatherBarForecast = SettingDef<bool>(
+  key: 'screensaver.weather_bar_forecast',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: "Forecast",
+  description: "The conditions, with a matching icon.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_bar',
+);
+
+const screensaverWeatherBarHumidity = SettingDef<bool>(
+  key: 'screensaver.weather_bar_humidity',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: "Humidity",
+  description: "Show humidity when the weather entity reports it.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_bar',
+);
+
+const screensaverWeatherBarWind = SettingDef<bool>(
+  key: 'screensaver.weather_bar_wind',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: "Wind speed",
+  description: "Show wind speed when the weather entity reports it.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_bar',
+);
+
+const screensaverWeatherBarVisibility = SettingDef<bool>(
+  key: 'screensaver.weather_bar_visibility',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: "Visibility",
+  description: "Show visibility when the weather entity reports it.",
+  category: 'Screensaver',
+  section: 'Weather information',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_bar',
+);
+
+const screensaverWeatherPreview = SettingDef<bool>(
+  key: 'screensaver.weather_preview',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Enable weather preview',
+  description:
+      'Show the selected scene instead of live weather. Turn off to follow Home Assistant again.',
+  category: 'Screensaver',
+  section: 'Weather Preview',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'weather_mood',
+  perDevice: true,
+);
+
+const screensaverWeatherPreviewCondition = SettingDef<String>(
+  key: 'screensaver.weather_preview_condition',
+  type: SettingType.select,
+  defaultValue: 'sunny',
+  title: 'Weather type',
+  description: 'The animated weather scene to preview.',
+  category: 'Screensaver',
+  section: 'Weather Preview',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_preview',
+  perDevice: true,
+  options: [
+    'sunny',
+    'partlycloudy',
+    'cloudy',
+    'rainy',
+    'pouring',
+    'snowy',
+    'snowy-rainy',
+    'fog',
+    'hail',
+    'lightning',
+    'lightning-rainy',
+    'windy',
+    'windy-variant',
+    'exceptional',
+  ],
+  optionLabels: {
+    'sunny': 'Clear',
+    'partlycloudy': 'Partly cloudy',
+    'cloudy': 'Cloudy',
+    'rainy': 'Rain',
+    'pouring': 'Heavy rain',
+    'snowy': 'Snow',
+    'snowy-rainy': 'Snow and rain',
+    'fog': 'Fog',
+    'hail': 'Hail',
+    'lightning': 'Lightning',
+    'lightning-rainy': 'Lightning and rain',
+    'windy': 'Wind',
+    'windy-variant': 'Wind and clouds',
+    'exceptional': 'Exceptional weather',
+  },
+);
+
+const screensaverWeatherPreviewPeriod = SettingDef<String>(
+  key: 'screensaver.weather_preview_period',
+  type: SettingType.select,
+  defaultValue: 'day',
+  title: 'Time of day',
+  description: 'Choose the day, dawn/dusk or night version of the scene.',
+  category: 'Screensaver',
+  section: 'Weather Preview',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_preview',
+  perDevice: true,
+  options: ['day', 'twilight', 'night'],
+  optionLabels: {'day': 'Day', 'twilight': 'Dawn/Dusk', 'night': 'Night'},
+);
+
+/// The Weather Mood twin of [screensaverClockAlarmTakeover]: the weather
+/// bar makes way for Snooze and Stop in its glass.
+const screensaverWeatherAlarmTakeover = SettingDef<bool>(
+  key: 'screensaver.weather_alarm_takeover',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Let alarms take over',
+  description:
+      'A ringing alarm shows on this screensaver, in its style, instead '
+      'of on its own screen.',
+  category: 'Screensaver',
+  section: 'Weather Mood screensaver',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'weather_mood',
 );
 
 // ── Black (mode: black) ──
@@ -1643,6 +2464,23 @@ const screensaverClockStyle = SettingDef<String>(
   dependsOnValue: 'clock',
 );
 
+// Hours above minutes for a portrait panel (issue #767), so the digits
+// can grow into the height instead of being capped by the width. Digital
+// and Flip only: the roller's digits are cropped to the screen's width on
+// purpose and have nothing to stack.
+const screensaverClockVertical = SettingDef<bool>(
+  key: 'screensaver.clock_vertical',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Vertical mode',
+  description: 'Stack the hours above the minutes, for portrait screens.',
+  category: 'Screensaver',
+  section: 'Clock screensaver',
+  subpage: 'Clock screensaver',
+  dependsOn: 'screensaver.clock_style',
+  dependsOnValue: ['digital', 'flip'],
+);
+
 // The typeface, any face (issue #391): the app's own Rubik plus Android's
 // generic families, resolved through the platform font manager. What each
 // generic maps to is the ROM's call (AOSP serves Noto Serif, Dancing
@@ -1652,6 +2490,58 @@ const screensaverClockStyle = SettingDef<String>(
 // Apple StandBy face the issue's screenshot shows) and LCD, DSEG14
 // (28 KB), the LED alarm clock. clockFontFamily (clock_faces.dart) maps
 // the stored value to the family name.
+/// The font family vocabulary, shared by the clock and the widgets: the
+/// stored values and their picker labels.
+const fontFamilyOptions = [
+  'rubik',
+  'nunito',
+  'inter',
+  'oswald',
+  'roboto_slab',
+  'system',
+  'serif',
+  'condensed',
+  'monospace',
+  'casual',
+  'cursive',
+  'lcd',
+];
+
+const fontFamilyLabels = {
+  'rubik': 'Rubik',
+  'nunito': 'Nunito',
+  'inter': 'Inter',
+  'oswald': 'Oswald',
+  'roboto_slab': 'Roboto Slab',
+  'system': 'System',
+  'serif': 'Serif',
+  'condensed': 'Condensed',
+  'monospace': 'Monospace',
+  'casual': 'Casual',
+  'cursive': 'Cursive',
+  'lcd': 'LCD',
+};
+
+/// The font weight vocabulary, shared the same way. Default leaves the
+/// weight to whatever is drawn.
+const fontWeightOptions = [
+  'default',
+  'light',
+  'regular',
+  'medium',
+  'bold',
+  'black',
+];
+
+const fontWeightLabels = {
+  'default': 'Default',
+  'light': 'Light',
+  'regular': 'Regular',
+  'medium': 'Medium',
+  'bold': 'Bold',
+  'black': 'Black',
+};
+
 const screensaverClockFont = SettingDef<String>(
   key: 'screensaver.clock_font',
   type: SettingType.select,
@@ -1661,30 +2551,8 @@ const screensaverClockFont = SettingDef<String>(
   category: 'Screensaver',
   section: 'Clock screensaver',
   subpage: 'Clock screensaver',
-  options: [
-    'rubik',
-    'nunito',
-    'inter',
-    'system',
-    'serif',
-    'condensed',
-    'monospace',
-    'casual',
-    'cursive',
-    'lcd',
-  ],
-  optionLabels: {
-    'rubik': 'Rubik',
-    'nunito': 'Nunito',
-    'inter': 'Inter',
-    'system': 'System',
-    'serif': 'Serif',
-    'condensed': 'Condensed',
-    'monospace': 'Monospace',
-    'casual': 'Casual',
-    'cursive': 'Cursive',
-    'lcd': 'LCD',
-  },
+  options: fontFamilyOptions,
+  optionLabels: fontFamilyLabels,
   dependsOn: 'screensaver.mode',
   dependsOnValue: 'clock',
 );
@@ -1705,15 +2573,8 @@ const screensaverClockFontWeight = SettingDef<String>(
   category: 'Screensaver',
   section: 'Clock screensaver',
   subpage: 'Clock screensaver',
-  options: ['default', 'light', 'regular', 'medium', 'bold', 'black'],
-  optionLabels: {
-    'default': 'Default',
-    'light': 'Light',
-    'regular': 'Regular',
-    'medium': 'Medium',
-    'bold': 'Bold',
-    'black': 'Black',
-  },
+  options: fontWeightOptions,
+  optionLabels: fontWeightLabels,
   dependsOn: 'screensaver.mode',
   dependsOnValue: 'clock',
 );
@@ -2038,6 +2899,20 @@ const screensaverClockNightHideBackground = SettingDef<bool>(
   dependsOn: 'screensaver.clock_night',
 );
 
+// A bare face at night (issue #784): the corner widgets and the At a Glance
+// row stand down while Night mode holds, and come back with the light.
+const screensaverClockNightHideWidgets = SettingDef<bool>(
+  key: 'screensaver.clock_night_hide_widgets',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Hide widgets and At a Glance',
+  description: 'Show only the clock while Night mode is active.',
+  category: 'Screensaver',
+  section: 'Night mode',
+  subpage: 'Clock screensaver',
+  dependsOn: 'screensaver.clock_night',
+);
+
 // The flip cards in the dark: the one part of a face the night background
 // does not cover, and a card color tuned for daylight kept glowing on the
 // night's black wall. Near-black by default, the day card default, so a
@@ -2055,6 +2930,24 @@ const screensaverClockNightCardColor = SettingDef<String>(
   dependsOn: 'screensaver.clock_night',
   alsoDependsOn: 'screensaver.clock_style',
   alsoDependsOnValue: 'flip',
+);
+
+/// A ringing alarm shows on the Clock screensaver in its own style (the
+/// date line becomes the label, Snooze and Stop come in under the face)
+/// instead of on the alarm's own full screen view.
+const screensaverClockAlarmTakeover = SettingDef<bool>(
+  key: 'screensaver.clock_alarm_takeover',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Let alarms take over',
+  description:
+      'A ringing alarm shows on this screensaver, in its style, instead '
+      'of on its own screen.',
+  category: 'Screensaver',
+  section: 'Clock screensaver',
+  subpage: 'Clock screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'clock',
 );
 
 // ── Media (mode: media) ──
@@ -2631,6 +3524,23 @@ const screensaverImmichPairPortrait = SettingDef<bool>(
   dependsOn: 'screensaver.immich_validated',
 );
 
+// The same for a portrait panel: two landscape photos one above the other
+// (issue #644). Each setting only ever acts on the panel shape it names,
+// so both stay on by default and the frame does the right thing whichever
+// way it is mounted.
+const screensaverImmichPairLandscape = SettingDef<bool>(
+  key: 'screensaver.immich_pair_landscape',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Pair landscape photos',
+  description:
+      'Show two landscape photos one above the other so they fill a portrait screen.',
+  category: 'Screensaver',
+  section: 'Slideshow',
+  subpage: 'Immich Media screensaver',
+  dependsOn: 'screensaver.immich_validated',
+);
+
 const screensaverImmichEdgeTaps = SettingDef<bool>(
   key: 'screensaver.immich_edge_taps',
   type: SettingType.boolean,
@@ -2759,6 +3669,25 @@ const screensaverImmichMetadataTextShadow = SettingDef<bool>(
   dependsOn: 'screensaver.immich_metadata',
 );
 
+// The metadata overlay's own text size, the Global widget scaling
+// slider's twin: the panel's fixed pixel sizes read right on a tablet and
+// too small on a wall display, and this corrects them for the panel.
+const screensaverImmichMetadataScale = SettingDef<num>(
+  key: 'screensaver.immich_metadata_scale',
+  type: SettingType.number,
+  defaultValue: 100,
+  title: 'Text scaling',
+  description: 'Scale the photo details to better fit your screen size.',
+  category: 'Screensaver',
+  section: 'Metadata',
+  subpage: 'Immich Media screensaver',
+  min: 50,
+  max: 200,
+  step: 5,
+  unit: '%',
+  dependsOn: 'screensaver.immich_metadata',
+);
+
 // The metadata overlay's own vignette, the widgets' slider's twin (same
 // range, same default, same meaning) so the two can be set apart.
 const screensaverImmichVignetteStrength = SettingDef<num>(
@@ -2818,6 +3747,18 @@ const screensaverImmichTags = SettingDef<String>(
   defaultValue: '[]',
   title: 'Tags',
   description: 'Show only media with any of these tags.',
+  category: 'Screensaver',
+  section: 'Filters',
+  subpage: 'Immich Media screensaver',
+  dependsOn: 'screensaver.immich_validated',
+);
+
+const screensaverImmichExcludeTags = SettingDef<String>(
+  key: 'screensaver.immich_exclude_tags',
+  type: SettingType.string,
+  defaultValue: '[]',
+  title: 'Exclude tags',
+  description: 'Skip media with any of these tags.',
   category: 'Screensaver',
   section: 'Filters',
   subpage: 'Immich Media screensaver',
@@ -3118,6 +4059,39 @@ const screensaverScreenOffMinutes = SettingDef<num>(
   category: 'Screensaver',
 );
 
+const screensaverScreenOffBlack = SettingDef<bool>(
+  key: 'screensaver.screen_off_black',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Use a black screen instead',
+  description:
+      'Show a plain black screen at zero brightness instead of powering off '
+      'the display. Hides widgets and Now Playing. No Device Administrator '
+      'permission is needed.',
+  category: 'Screensaver',
+  dependsOn: 'screensaver.screen_off_minutes',
+  dependsOnValue: {'gt': 0},
+);
+
+// Every detection wake from a dark panel lands on the dashboard, which is
+// wrong for a photo frame: someone walking into the room wants the photos
+// back, and a touch is what asks for the dashboard. On, a detection under a
+// dark panel only powers the screen on, the way the ESPHome Screen light
+// does, so the session stays up and the screen-off countdown starts over.
+// Touch, the wake word and the ESPHome dismiss still land on the dashboard.
+const screensaverScreenOffWakeToScreensaver = SettingDef<bool>(
+  key: 'screensaver.screen_off_wake_to_screensaver',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Wake to screensaver',
+  description:
+      'Motion, face, proximity or person detection after the screen has '
+      'turned off brings the screensaver back instead of the dashboard, '
+      'with a fresh Turn screen off after countdown. Touch still opens the '
+      'dashboard.',
+  category: 'Screensaver',
+);
+
 /// The brightness to restore when the screensaver ends, persisted so a
 /// process death mid-screensaver cannot turn the dim level into the new
 /// normal. -1 means no restore pending.
@@ -3199,6 +4173,36 @@ const screensaverGlanceScale = SettingDef<num>(
 // already names a temperature or a humidity. Without the name the value
 // grows into the room the name took, so the reading gets bigger, not the
 // chip smaller. The custom names are kept, only not drawn.
+const screensaverGlanceFont = SettingDef<String>(
+  key: 'screensaver.glance_font',
+  type: SettingType.select,
+  defaultValue: 'rubik',
+  title: 'Font family',
+  description: 'The typeface the row is drawn in.',
+  category: 'Screensaver',
+  section: 'Appearance',
+  subpage: 'At a Glance',
+  dependsOn: 'screensaver.glance_enabled',
+  options: fontFamilyOptions,
+  optionLabels: fontFamilyLabels,
+);
+
+const screensaverGlanceFontWeight = SettingDef<String>(
+  key: 'screensaver.glance_font_weight',
+  type: SettingType.select,
+  defaultValue: 'default',
+  title: 'Font weight',
+  description:
+      "How heavy the row's text is drawn. Default is each line's own "
+      'weight: regular names, semibold values.',
+  category: 'Screensaver',
+  section: 'Appearance',
+  subpage: 'At a Glance',
+  dependsOn: 'screensaver.glance_enabled',
+  options: fontWeightOptions,
+  optionLabels: fontWeightLabels,
+);
+
 const screensaverGlanceHideNames = SettingDef<bool>(
   key: 'screensaver.glance_hide_names',
   type: SettingType.boolean,
@@ -3795,17 +4799,66 @@ const motionSensitivity = SettingDef<num>(
   step: 1,
 );
 
+// Camera: Person Sensor
+// The device's own person sensor (today the Meta Portal's, see Person
+// Detection under Screensaver) exposed as a Home Assistant occupancy
+// sensor on its own, with no screensaver behavior attached (issue #734).
+// It needs no camera session of the app's, so it does not gate on the
+// Camera switch. Hidden where the device has no such sensor
+// (deviceHiddenKeys, filled at boot by the person sensor manager).
+const personSensorEnabled = SettingDef<bool>(
+  key: 'person.sensor',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Enable person sensor',
+  description:
+      "Expose the device's person sensor to Home Assistant as an occupancy "
+      'sensor. Needs the Log access grant below.',
+  category: 'Camera',
+  section: 'Person Sensor',
+  subpage: 'Person Sensor',
+);
+
 const cameraRtspEnabled = SettingDef<bool>(
   key: 'camera.rtsp.enabled',
   type: SettingType.boolean,
   defaultValue: false,
-  title: 'Enable RTSP Streaming',
+  title: 'Enable camera streaming',
   description:
-      'Stream H.264 video over RTSP/TCP. Video encoding runs only while a viewer is connected. Hardware encoding is preferred with software fallback when needed. Uses the camera selected in Camera settings.',
+      'Share H.264 video with RTSP or ONVIF clients. Video encoding runs only while a viewer is connected. Hardware encoding is preferred with software fallback when needed. Uses the camera selected in Camera settings.',
   category: 'Camera',
-  section: 'RTSP Streaming',
-  subpage: 'RTSP Streaming',
+  section: 'RTSP & ONVIF Streaming',
+  subpage: 'RTSP & ONVIF Streaming',
   dependsOn: 'camera.enabled',
+);
+
+const cameraStreamingProtocol = SettingDef<String>(
+  key: 'camera.rtsp.protocol',
+  type: SettingType.select,
+  defaultValue: 'rtsp',
+  title: 'Streaming protocol',
+  description:
+      'ONVIF lets compatible clients discover the camera and connect to its stream.',
+  category: 'Camera',
+  section: 'RTSP & ONVIF Streaming',
+  subpage: 'RTSP & ONVIF Streaming',
+  dependsOn: 'camera.rtsp.enabled',
+  options: ['rtsp', 'onvif'],
+  optionLabels: {'rtsp': 'RTSP', 'onvif': 'ONVIF'},
+);
+
+const cameraRtspTls = SettingDef<bool>(
+  key: 'camera.rtsp.tls',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Encrypt stream',
+  description:
+      'Use TLS to encrypt video and audio. Requires a compatible viewer.',
+  category: 'Camera',
+  section: 'TLS',
+  subpage: 'RTSP & ONVIF Streaming',
+  dependsOn: 'camera.rtsp.enabled',
+  perDevice: true,
 );
 
 const cameraRtspPort = SettingDef<num>(
@@ -3813,27 +4866,57 @@ const cameraRtspPort = SettingDef<num>(
   type: SettingType.number,
   defaultValue: 8554,
   title: 'Port',
-  description: 'RTSP server port. Connect to rtsp://DEVICE_IP:PORT/camera.',
+  description: 'RTSP server port.',
   category: 'Camera',
-  section: 'RTSP Streaming',
-  subpage: 'RTSP Streaming',
-  dependsOn: 'camera.rtsp.enabled',
+  section: 'RTSP & ONVIF Streaming',
+  subpage: 'RTSP & ONVIF Streaming',
+  dependsOn: 'camera.rtsp.protocol',
+  dependsOnValue: 'rtsp',
+  validator: validateRtspPort,
+);
+
+const cameraOnvifPort = SettingDef<num>(
+  key: 'camera.onvif.port',
+  type: SettingType.number,
+  defaultValue: 8080,
+  title: 'Port',
+  description: 'ONVIF server port.',
+  category: 'Camera',
+  section: 'RTSP & ONVIF Streaming',
+  subpage: 'RTSP & ONVIF Streaming',
+  dependsOn: 'camera.rtsp.protocol',
+  dependsOnValue: 'onvif',
   validator: validateRtspPort,
 );
 
 const cameraRtspResolution = SettingDef<String>(
   key: 'camera.rtsp.resolution',
   type: SettingType.select,
-  defaultValue: '480',
+  defaultValue: '640x480',
   title: 'Resolution',
   description:
-      'Video follows the device orientation. Android selects the closest supported size.',
+      'Supported streaming sizes for the selected camera and encoder. Video follows the device orientation.',
   category: 'Camera',
-  section: 'RTSP Streaming',
-  subpage: 'RTSP Streaming',
+  section: 'RTSP & ONVIF Streaming',
+  subpage: 'RTSP & ONVIF Streaming',
   dependsOn: 'camera.rtsp.enabled',
-  options: ['480', '720', '1080'],
-  optionLabels: {'480': '480p', '720': '720p', '1080': '1080p'},
+  options: [],
+  optionLabels: {},
+  perDevice: true,
+);
+
+const cameraRtspAnalysis = SettingDef<bool>(
+  key: 'camera.rtsp.analysis',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Motion analysis while streaming',
+  description:
+      'Keep motion detection, face detection and hand gestures available while viewers are connected. Turning this off can allow higher resolutions. Snapshots then use video frames at the streaming resolution.',
+  category: 'Camera',
+  section: 'RTSP & ONVIF Streaming',
+  subpage: 'RTSP & ONVIF Streaming',
+  dependsOn: 'camera.rtsp.enabled',
+  perDevice: true,
 );
 
 const cameraRtspFps = SettingDef<num>(
@@ -3844,8 +4927,8 @@ const cameraRtspFps = SettingDef<num>(
   description:
       'Target video frames per second. Motion keeps its separate analysis rate. Actual delivery depends on the camera.',
   category: 'Camera',
-  section: 'RTSP Streaming',
-  subpage: 'RTSP Streaming',
+  section: 'RTSP & ONVIF Streaming',
+  subpage: 'RTSP & ONVIF Streaming',
   dependsOn: 'camera.rtsp.enabled',
   min: 5,
   max: 30,
@@ -3861,8 +4944,8 @@ const cameraRtspBitrate = SettingDef<num>(
   description:
       'Target video bitrate. Higher improves detail and uses more network bandwidth.',
   category: 'Camera',
-  section: 'RTSP Streaming',
-  subpage: 'RTSP Streaming',
+  section: 'RTSP & ONVIF Streaming',
+  subpage: 'RTSP & ONVIF Streaming',
   dependsOn: 'camera.rtsp.enabled',
   min: 100,
   max: 8000,
@@ -3876,10 +4959,10 @@ const cameraRtspAudio = SettingDef<bool>(
   defaultValue: false,
   title: 'Include microphone audio',
   description:
-      'Encode microphone audio in the RTSP stream. Shares your microphone settings. WARNING: Increased CPU usage.',
+      'Include microphone audio in the camera stream. Shares your microphone settings. WARNING: Increased CPU usage.',
   category: 'Camera',
-  section: 'RTSP Streaming',
-  subpage: 'RTSP Streaming',
+  section: 'RTSP & ONVIF Streaming',
+  subpage: 'RTSP & ONVIF Streaming',
   dependsOn: 'camera.rtsp.enabled',
 );
 
@@ -3889,10 +4972,10 @@ const cameraRtspAuth = SettingDef<bool>(
   defaultValue: false,
   title: 'Require authentication',
   description:
-      'Require a username and password to view the stream. RTSP traffic is not encrypted.',
+      'Require a username and password to view the stream. Authentication does not enable encryption.',
   category: 'Camera',
-  section: 'RTSP Streaming',
-  subpage: 'RTSP Streaming',
+  section: 'RTSP & ONVIF Streaming',
+  subpage: 'RTSP & ONVIF Streaming',
   dependsOn: 'camera.rtsp.enabled',
 );
 
@@ -3901,10 +4984,10 @@ const cameraRtspUsername = SettingDef<String>(
   type: SettingType.string,
   defaultValue: 'kiosk',
   title: 'Username',
-  description: 'Username for RTSP viewers.',
+  description: 'Username for streaming clients.',
   category: 'Camera',
-  section: 'RTSP Streaming',
-  subpage: 'RTSP Streaming',
+  section: 'RTSP & ONVIF Streaming',
+  subpage: 'RTSP & ONVIF Streaming',
   dependsOn: 'camera.rtsp.auth',
   validator: validateRtspUsername,
 );
@@ -3916,10 +4999,36 @@ const cameraRtspPassword = SettingDef<String>(
   title: 'Password',
   description: 'Set a password to start the authenticated stream.',
   category: 'Camera',
-  section: 'RTSP Streaming',
-  subpage: 'RTSP Streaming',
+  section: 'RTSP & ONVIF Streaming',
+  subpage: 'RTSP & ONVIF Streaming',
   dependsOn: 'camera.rtsp.auth',
   secret: true,
+);
+
+const cameraRtspDateTime = SettingDef<bool>(
+  key: 'camera.rtsp.datetime',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Show date and time',
+  description:
+      'Show the device date and time in the upper-left corner of the video using its date format and 12/24-hour setting.',
+  category: 'Camera',
+  section: 'Overlays',
+  subpage: 'RTSP & ONVIF Streaming',
+  dependsOn: 'camera.rtsp.enabled',
+);
+
+const cameraRtspDateTimeBackground = SettingDef<bool>(
+  key: 'camera.rtsp.datetime_background',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Black background',
+  description:
+      'Add a black background behind the date and time for visibility.',
+  category: 'Camera',
+  section: 'Overlays',
+  subpage: 'RTSP & ONVIF Streaming',
+  dependsOn: 'camera.rtsp.datetime',
 );
 
 String? validateRtspPort(Object? value) {
@@ -3981,26 +5090,47 @@ const screensaverSchedule = SettingDef<String>(
 
 // ── Microphone ─────────────────────────────────────────────────────────
 //
-// Escape hatches for devices whose audio stack does not behave: custom ROMs
-// and cheap tablets where the mic reads far quieter through the app than it
-// does through a recorder app. Every default here is what the app has always
-// done, so an untouched install is bit-for-bit the old behaviour.
+// The capture is the raw microphone, the path a recorder app uses, with
+// the app's own echo cancellation over it. Gain, format and channel are
+// escape hatches for devices whose audio stack does not behave: cheap
+// tablets and custom ROMs where the microphone reads far quieter through
+// the app than through a recorder app, or in a format the app has to ask
+// for by name.
 
-const micAudioSource = SettingDef<String>(
-  key: 'audio.mic_source',
-  type: SettingType.select,
-  defaultValue: 'voice_communication',
-  options: ['voice_communication', 'voice_recognition', 'mic'],
-  optionLabels: {
-    'voice_communication': 'Voice communication (default)',
-    'voice_recognition': 'Voice recognition',
-    'mic': 'Raw microphone',
-  },
-  title: 'Capture mode',
+/// WebRTC's echo canceller (AEC3) over the microphone, fed everything the
+/// kiosk plays itself (SoftwareEcho.kt, EchoReference.kt). The platform's
+/// own canceller is gone: it needed the call capture path, which came in
+/// 20 dB quieter on some ROMs, and on most devices it let the assistant
+/// hear itself anyway. Off is the escape hatch for a microphone that does
+/// its own cancellation and sounds worse with a second one over it.
+const micSoftwareEchoCancellation = SettingDef<bool>(
+  key: 'audio.software_echo_cancellation',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Echo cancellation',
   description:
-      'Voice communication is the only mode with echo cancellation, so '
-      'leave it unless the microphone reads far quieter here than in a '
-      'recorder app.',
+      'Removes the kiosk\'s own sounds from the microphone so the wake '
+      'word and the assistant do not hear them. Leave it on unless a '
+      'microphone that cancels its own echo sounds worse with it.',
+  category: 'Screen & Audio',
+  section: 'Microphone settings',
+  subpage: 'Microphone settings',
+  perDevice: true,
+);
+
+/// WebRTC's noise suppressor over the capture (SoftwareEcho.kt), on any
+/// source: the raw microphone's hiss carried straight into intercom calls
+/// on an Echo Show 8. Off by default, since it changes what the wake word
+/// hears. The key is the old platform suppressor's, so a kiosk that had it
+/// on keeps it on.
+const micNoiseSuppression = SettingDef<bool>(
+  key: 'audio.mic_noise_suppression',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Noise suppression',
+  description:
+      'Takes the hiss out of the microphone. It changes what the wake '
+      'word hears, so turn it on for a microphone that hisses.',
   category: 'Screen & Audio',
   section: 'Microphone settings',
   subpage: 'Microphone settings',
@@ -4031,35 +5161,6 @@ const micChannel = SettingDef<num>(
   perDevice: true,
 );
 
-const micAgc = SettingDef<bool>(
-  key: 'audio.mic_agc',
-  type: SettingType.boolean,
-  defaultValue: false,
-  title: 'Automatic gain control',
-  description:
-      'Let Android level the microphone instead of a fixed gain. It '
-      'also lifts room noise, and on some devices it does nothing at '
-      'all.',
-  category: 'Screen & Audio',
-  section: 'Microphone settings',
-  subpage: 'Microphone settings',
-  perDevice: true,
-);
-
-const micNoiseSuppression = SettingDef<bool>(
-  key: 'audio.mic_noise_suppression',
-  type: SettingType.boolean,
-  defaultValue: false,
-  title: 'Noise suppression',
-  description:
-      'Reduce microphone background noise using Android processing. '
-      'It may help or hurt wake word detection depending on the device.',
-  category: 'Screen & Audio',
-  section: 'Microphone settings',
-  subpage: 'Microphone settings',
-  perDevice: true,
-);
-
 const micGainDb = SettingDef<num>(
   key: 'audio.mic_gain_db',
   type: SettingType.number,
@@ -4076,10 +5177,35 @@ const micGainDb = SettingDef<num>(
   category: 'Screen & Audio',
   section: 'Microphone settings',
   subpage: 'Microphone settings',
-  // Hidden while Android is doing the levelling: a fixed gain under an
-  // adaptive one is two controls fighting over the same number.
-  dependsOn: 'audio.mic_agc',
-  dependsOnValue: false,
+  perDevice: true,
+);
+
+// The rate and channel count capture asks the platform for. 16 kHz mono is
+// what the engines consume and what the app has always requested, leaving
+// Android to convert from whatever the microphone does. Some sound cards
+// record at 48 kHz stereo and nothing else (an I2S codec on a Raspberry
+// Pi, most USB interfaces), and a ROM whose audio HAL hands the requested
+// format straight to the card then refuses the open, reads nothing, or
+// delivers the card's frames misread as 16 kHz mono, which sounds like
+// crackle. Capture walks a ladder (16 kHz mono, 48 kHz stereo, 48 kHz
+// mono) and steps down it on a refused open, two seconds of zeros or
+// errors, or a delivered frame rate that does not match the one opened;
+// this starts the ladder at the card's format. The app converts to 16 kHz
+// mono itself.
+const micCaptureFormat = SettingDef<String>(
+  key: 'audio.mic_capture_format',
+  type: SettingType.select,
+  defaultValue: 'auto',
+  options: ['auto', 'hardware'],
+  optionLabels: {'auto': 'Automatic (default)', 'hardware': '48 kHz stereo'},
+  title: 'Capture format',
+  description:
+      'Pick 48 kHz stereo when the microphone works in other apps but '
+      'not here: some sound cards record in that format only and the app '
+      'converts it itself.',
+  category: 'Screen & Audio',
+  section: 'Microphone settings',
+  subpage: 'Microphone settings',
   perDevice: true,
 );
 
@@ -4107,7 +5233,8 @@ const wakeWordEnabled = SettingDef<bool>(
 
 /// Kiosk Satellite fetches the quantized `int8/` model siblings by default
 /// (~35% faster inference, same manifest and thresholds). This opts back into
-/// the original fp32 files for users who want zero quantization drift.
+/// the original fp32 files the integration serves, for users who want zero
+/// quantization drift. Native Voice Satellite bundles the int8 build only.
 const wakeWordPreferFp32 = SettingDef<bool>(
   key: 'wake_word.prefer_fp32',
   type: SettingType.boolean,
@@ -4118,7 +5245,8 @@ const wakeWordPreferFp32 = SettingDef<bool>(
       'more CPU usage while listening to avoid about 2% confidence drift.',
   category: 'Voice Satellite',
   subpage: 'Wake Word',
-  dependsOn: 'wake_word.enabled',
+  dependsOn: 'voice.runtime',
+  dependsOnValue: 'dashboard',
 );
 
 const wakeWordBackground = SettingDef<bool>(
@@ -4136,6 +5264,20 @@ const wakeWordBackground = SettingDef<bool>(
   dependsOn: 'wake_word.enabled',
 );
 
+const wakeWordReturnToBackground = SettingDef<bool>(
+  key: 'wake_word.return_to_background',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Return to the previous app',
+  description:
+      'Return to the previous app or home screen after a voice interaction '
+      'brings Kiosk Satellite forward and finishes.',
+  category: 'Voice Satellite',
+  dependsOn: 'wake_word.background',
+);
+
+/// The dashboard runtime's self-heal for a page that never hands the wake
+/// word back. The native runtime ends its own turns, so it has no row.
 const wakeWordResumeTimeoutSeconds = SettingDef<num>(
   key: 'wake_word.resume_timeout_seconds',
   type: SettingType.number,
@@ -4143,11 +5285,1043 @@ const wakeWordResumeTimeoutSeconds = SettingDef<num>(
   title: 'Resume timeout (seconds)',
   description:
       'Self-heal: resume listening if the page never calls '
-      'setWakeWordActive(true) after a handoff.',
+      'setWakeWordActive(true) after a handoff. Waits while a voice turn is '
+      'still streaming audio, so a long turn is never cut short.',
   category: 'Voice Satellite',
   subpage: 'Wake Word',
-  dependsOn: 'wake_word.enabled',
+  dependsOn: 'voice.runtime',
+  dependsOnValue: 'dashboard',
 );
+
+/// Keeps the last 10 wake word activations with a short clip of each, for
+/// telling a false trigger from a real one and hearing what the microphone
+/// picked up. Audio stays on the device and goes away with the switch.
+const wakeWordDiagnostics = SettingDef<bool>(
+  key: 'wake_word.diagnostics',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Enable wake word diagnostics',
+  description:
+      'Records the last 10 wake word activations and near misses with their '
+      'scores and a 3 second audio clip of each. Turning this off deletes '
+      'them.',
+  category: 'Voice Satellite',
+  subpage: 'Wake word diagnostics',
+  dependsOn: 'wake_word.enabled',
+  perDevice: true,
+);
+
+// ── Native Voice Satellite ─────────────────────────────────────────────
+//
+// The kiosk as an Assist satellite of its own: its ESPHome device carries
+// the satellite in Home Assistant and the app runs every turn. Kiosks that
+// ran Voice Satellite in the dashboard keep doing so ('dashboard') until
+// they migrate; everyone else is native. The visible rows gate on it, so a
+// dashboard runtime never shows them.
+
+/// Where Voice Satellite runs on this kiosk: 'native' (the app, through its
+/// ESPHome device) or 'dashboard' (the integration's engine in the page).
+/// Hidden: the migration wizard and Run from the dashboard again own it.
+const voiceRuntime = SettingDef<String>(
+  key: 'voice.runtime',
+  type: SettingType.select,
+  defaultValue: 'native',
+  title: 'Voice Satellite runtime',
+  description: 'Where Voice Satellite runs on this kiosk.',
+  category: 'Voice Satellite',
+  options: ['native', 'dashboard'],
+  hidden: true,
+  perDevice: true,
+);
+
+/// The native satellite's master switch. On, the kiosk's ESPHome device
+/// becomes an Assist satellite in Home Assistant and the microphone listens
+/// for the wake word; off, neither. Off for a new install: a kiosk that
+/// never wanted voice must not start listening on an update. The migration
+/// turns it on.
+const voiceEnabled = SettingDef<bool>(
+  key: 'voice.enabled',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Enable Voice Satellite',
+  description:
+      'Turns this kiosk into a voice assistant for Home Assistant through '
+      'its ESPHome server.',
+  category: 'Voice Satellite',
+  dependsOn: 'voice.runtime',
+  dependsOnValue: 'native',
+);
+
+const voiceMute = SettingDef<bool>(
+  key: 'voice.mute',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Mute microphone',
+  description: 'Stop listening for the wake word.',
+  category: 'Voice Satellite',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceSeamlessWake = SettingDef<bool>(
+  key: 'voice.seamless_wake',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Talk right after the wake word',
+  description:
+      'Skip the wake sound and keep what you say right after the wake word.',
+  category: 'Voice Satellite',
+  subpage: 'Assistant',
+  section: 'Wake word and command',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceFollowupDelayMs = SettingDef<num>(
+  key: 'voice.followup_delay_ms',
+  type: SettingType.number,
+  defaultValue: 0,
+  title: 'Follow-up delay',
+  description: 'A pause before listening for the answer to a question.',
+  category: 'Voice Satellite',
+  subpage: 'Assistant',
+  section: 'Follow-up',
+  min: 0,
+  max: 1000,
+  step: 50,
+  unit: 'ms',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceFollowupChime = SettingDef<bool>(
+  key: 'voice.followup_chime',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Chime before a follow-up',
+  description: 'Play the wake sound when it starts listening again.',
+  category: 'Voice Satellite',
+  subpage: 'Assistant',
+  section: 'Follow-up',
+  dependsOn: 'voice.enabled',
+);
+
+/// The media player all of Voice Satellite's sounds play on, or empty for
+/// the kiosk itself: its TTS output.
+const voiceTtsOutput = SettingDef<String>(
+  key: 'voice.tts_output',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Play sounds on',
+  description:
+      'Chimes, answers, announcements and timer alerts play on this speaker.',
+  category: 'Voice Satellite',
+  subpage: 'Assistant',
+  section: 'Speaker',
+  dependsOn: 'voice.enabled',
+);
+
+/// How the speaker plays them, Voice Satellite's TTS output mode.
+const voiceTtsOutputMode = SettingDef<String>(
+  key: 'voice.tts_output_mode',
+  type: SettingType.select,
+  defaultValue: 'announcement',
+  options: ['announcement', 'normal_playback'],
+  optionLabels: {
+    'announcement': 'Announcement',
+    'normal_playback': 'Normal playback',
+  },
+  title: 'Play as',
+  description:
+      'An announcement lets the speaker pause its music and resume it. '
+      'Normal playback starts the music again afterward, for speakers that '
+      'ignore announcements.',
+  category: 'Voice Satellite',
+  subpage: 'Assistant',
+  section: 'Speaker',
+  dependsOn: 'voice.tts_output',
+  dependsOnValue: {'ne': ''},
+);
+
+const voiceWakeWordEngine = SettingDef<String>(
+  key: 'voice.wake_word_engine',
+  type: SettingType.select,
+  defaultValue: 'vswakeword',
+  title: 'Wake word engine',
+  description: 'Which engine listens. All models ship with the app.',
+  category: 'Voice Satellite',
+  subpage: 'Wake Word',
+  options: ['vswakeword', 'microwakeword', 'openwakeword'],
+  optionLabels: {
+    'vswakeword': 'vsWakeWord',
+    'microwakeword': 'microWakeWord',
+    'openwakeword': 'openWakeWord',
+  },
+  dependsOn: 'voice.enabled',
+);
+
+/// The active wake words as a JSON list of model ids, slot 1 first. Home
+/// Assistant owns the choice through its Wake word selects on the kiosk's
+/// device; the kiosk keeps the last set it was told for when Home
+/// Assistant is away.
+const voiceWakeWords = SettingDef<String>(
+  key: 'voice.wake_words',
+  type: SettingType.string,
+  defaultValue: '["ok_nabu"]',
+  title: 'Active wake words',
+  description: 'The wake words Home Assistant set on this kiosk.',
+  category: 'Voice Satellite',
+  hidden: true,
+  // Home Assistant's pick for this satellite, not a setting of the fleet's.
+  perDevice: true,
+);
+
+// Home Assistant's selects on the kiosk's device, mirrored here from their
+// state: the Assistant and Wake word selects and Finished speaking
+// detection live in Home Assistant, not on the kiosk. The copies carry a
+// leader's picks to its followers, which set their own selects to match,
+// and a follower's own pick reads as drift. Hidden: the Voice Satellite
+// pages draw the selects themselves.
+
+const voiceHaPipeline = SettingDef<String>(
+  key: 'voice.ha_pipeline',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Assistant 1',
+  description: 'Answers wake word 1.',
+  category: 'Voice Satellite',
+  hidden: true,
+);
+
+const voiceHaPipeline2 = SettingDef<String>(
+  key: 'voice.ha_pipeline_2',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Assistant 2',
+  description: 'Answers wake word 2.',
+  category: 'Voice Satellite',
+  hidden: true,
+);
+
+const voiceHaVadSensitivity = SettingDef<String>(
+  key: 'voice.ha_vad_sensitivity',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Finished speaking detection',
+  description: 'How long a pause ends a voice command.',
+  category: 'Voice Satellite',
+  hidden: true,
+);
+
+const voiceHaWakeWord = SettingDef<String>(
+  key: 'voice.ha_wake_word',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Wake word 1',
+  description: 'The word that starts a voice command.',
+  category: 'Voice Satellite',
+  hidden: true,
+);
+
+const voiceHaWakeWord2 = SettingDef<String>(
+  key: 'voice.ha_wake_word_2',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Wake word 2',
+  description: 'A second wake word, answered by Assistant 2.',
+  category: 'Voice Satellite',
+  hidden: true,
+);
+
+/// Picks for Home Assistant's selects made before Home Assistant has the
+/// kiosk (at onboarding, or migrating then), JSON of select key to option:
+/// set once its selects appear, then cleared. Hidden and per kiosk.
+const voicePendingSelects = SettingDef<String>(
+  key: 'voice.pending_selects',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Pending Home Assistant picks',
+  description: 'Set on the selects once Home Assistant adds this kiosk.',
+  category: 'Voice Satellite',
+  hidden: true,
+  perDevice: true,
+);
+
+/// What answers each wake word: Home Assistant's Assist pipeline
+/// ('assist'), or a realtime conversation with a provider ('openai',
+/// 'xai'). Hidden: the Assistant selects offer every validated provider as
+/// one more choice and set these.
+const voiceEngine1 = SettingDef<String>(
+  key: 'voice.engine_1',
+  type: SettingType.select,
+  defaultValue: 'assist',
+  title: 'Wake word 1',
+  description: 'What answers wake word 1.',
+  category: 'Voice Satellite',
+  options: ['assist', 'openai', 'xai'],
+  hidden: true,
+);
+
+const voiceEngine2 = SettingDef<String>(
+  key: 'voice.engine_2',
+  type: SettingType.select,
+  defaultValue: 'assist',
+  title: 'Wake word 2',
+  description: 'What answers wake word 2.',
+  category: 'Voice Satellite',
+  options: ['assist', 'openai', 'xai'],
+  hidden: true,
+);
+
+// Realtime: wake words answered by a speech to speech model, full duplex.
+// OpenAI and xAI Grok side by side, each with its own connection, and the
+// conversation and the tools shared. A provider's settings are edited in
+// its Configure dialog, which saves them only once they connect: the
+// Providers group shows one row per provider in their place
+// (realtimeProviderSettings), in both UIs.
+
+const voiceRealtimeOpenAiApiKey = SettingDef<String>(
+  key: 'voice.realtime_openai_api_key',
+  type: SettingType.password,
+  defaultValue: '',
+  title: 'API key',
+  description: 'Leave empty when a relay adds it.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  secret: true,
+  dependsOn: 'voice.enabled',
+);
+
+/// OpenAI's models (SettingsManager's realtime catalog); '' is its default.
+const voiceRealtimeOpenAiModel = SettingDef<String>(
+  key: 'voice.realtime_openai_model',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Model',
+  description: 'The speech to speech model that answers.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  options: [''],
+  optionLabels: {'': 'Provider default'},
+  dependsOn: 'voice.enabled',
+);
+
+/// OpenAI's voices; '' is its default.
+const voiceRealtimeOpenAiVoice = SettingDef<String>(
+  key: 'voice.realtime_openai_voice',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Voice',
+  description: 'How the assistant sounds.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  options: [''],
+  optionLabels: {'': 'Provider default'},
+  dependsOn: 'voice.enabled',
+);
+
+const voiceRealtimeOpenAiEndpoint = SettingDef<String>(
+  key: 'voice.realtime_openai_endpoint',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Endpoint',
+  description:
+      'Leave empty to use the provider. Use a relay on your network to keep '
+      'this kiosk offline.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  placeholder: 'Provider default',
+  dependsOn: 'voice.enabled',
+);
+
+/// What OpenAI's last successful Save & Validate checked: a hash of
+/// its endpoint and key. The Assistant selects offer it only while that
+/// still matches. Per device: each kiosk reaches the provider on its own.
+const voiceRealtimeOpenAiValidated = SettingDef<String>(
+  key: 'voice.realtime_openai_validated',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Realtime connection validated',
+  description: '',
+  category: 'Voice Satellite',
+  hidden: true,
+  perDevice: true,
+);
+
+const voiceRealtimeXaiApiKey = SettingDef<String>(
+  key: 'voice.realtime_xai_api_key',
+  type: SettingType.password,
+  defaultValue: '',
+  title: 'API key',
+  description: 'Leave empty when a relay adds it.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  secret: true,
+  dependsOn: 'voice.enabled',
+);
+
+/// xAI's models (SettingsManager's realtime catalog); '' is its default.
+const voiceRealtimeXaiModel = SettingDef<String>(
+  key: 'voice.realtime_xai_model',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Model',
+  description: 'The speech to speech model that answers.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  options: [''],
+  optionLabels: {'': 'Provider default'},
+  dependsOn: 'voice.enabled',
+);
+
+/// xAI's voices; '' is its default.
+const voiceRealtimeXaiVoice = SettingDef<String>(
+  key: 'voice.realtime_xai_voice',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Voice',
+  description: 'How the assistant sounds.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  options: [''],
+  optionLabels: {'': 'Provider default'},
+  dependsOn: 'voice.enabled',
+);
+
+const voiceRealtimeXaiEndpoint = SettingDef<String>(
+  key: 'voice.realtime_xai_endpoint',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Endpoint',
+  description:
+      'Leave empty to use the provider. Use a relay on your network to keep '
+      'this kiosk offline.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  placeholder: 'Provider default',
+  dependsOn: 'voice.enabled',
+);
+
+/// What xAI's last successful Save & Validate checked: a hash of
+/// its endpoint and key. The Assistant selects offer it only while that
+/// still matches. Per device: each kiosk reaches the provider on its own.
+const voiceRealtimeXaiValidated = SettingDef<String>(
+  key: 'voice.realtime_xai_validated',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Realtime connection validated',
+  description: '',
+  category: 'Voice Satellite',
+  hidden: true,
+  perDevice: true,
+);
+
+/// The settings each provider's Configure dialog holds, by provider id.
+/// Neither UI draws them as rows: the first one's place in the Providers
+/// group takes the provider's row, the others add nothing.
+const realtimeProviderSettings = <String, List<SettingDef<String>>>{
+  'openai': [
+    voiceRealtimeOpenAiApiKey,
+    voiceRealtimeOpenAiModel,
+    voiceRealtimeOpenAiVoice,
+    voiceRealtimeOpenAiEndpoint,
+  ],
+  'xai': [
+    voiceRealtimeXaiApiKey,
+    voiceRealtimeXaiModel,
+    voiceRealtimeXaiVoice,
+    voiceRealtimeXaiEndpoint,
+  ],
+};
+
+const voiceRealtimeInstructions = SettingDef<String>(
+  key: 'voice.realtime_instructions',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Instructions',
+  description: 'How the assistant behaves. Leave empty for a short default.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Conversation',
+  multiline: true,
+  dependsOn: 'voice.enabled',
+);
+
+const voiceRealtimeIdleSeconds = SettingDef<num>(
+  key: 'voice.realtime_idle_seconds',
+  type: SettingType.number,
+  defaultValue: 10,
+  title: 'End after silence',
+  description: 'The conversation ends after this long with nobody talking.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Conversation',
+  min: 5,
+  max: 60,
+  step: 1,
+  unit: 's',
+  dependsOn: 'voice.enabled',
+);
+
+/// Needs the echo canceller: off, the microphone is shut while the answer
+/// plays and the stop word interrupts it.
+const voiceRealtimeTalkOver = SettingDef<bool>(
+  key: 'voice.realtime_talk_over',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Talk over answers',
+  description:
+      'Interrupt an answer by speaking. Turn off if it interrupts itself.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Conversation',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceRealtimeTools = SettingDef<String>(
+  key: 'voice.realtime_tools',
+  type: SettingType.select,
+  defaultValue: 'home_assistant',
+  title: 'Tools',
+  description:
+      'What the assistant can control. Home Assistant uses its MCP Server '
+      'integration and the entities exposed to Assist.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Home Assistant tools',
+  options: ['home_assistant', 'custom', 'none'],
+  optionLabels: {
+    'home_assistant': 'Home Assistant',
+    'custom': 'Custom MCP server',
+    'none': 'None',
+  },
+  dependsOn: 'voice.enabled',
+);
+
+const voiceRealtimeMcpUrl = SettingDef<String>(
+  key: 'voice.realtime_mcp_url',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'MCP server URL',
+  description: 'The server\'s Streamable HTTP address.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Home Assistant tools',
+  placeholder: 'http://homeassistant.local:8123/api/mcp',
+  dependsOn: 'voice.realtime_tools',
+  dependsOnValue: 'custom',
+);
+
+const voiceRealtimeMcpToken = SettingDef<String>(
+  key: 'voice.realtime_mcp_token',
+  type: SettingType.password,
+  defaultValue: '',
+  title: 'MCP token',
+  description:
+      'Sent as a bearer token. Leave empty when the server needs none.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Home Assistant tools',
+  secret: true,
+  dependsOn: 'voice.realtime_tools',
+  dependsOnValue: 'custom',
+);
+
+/// The mirrored selects by the key the kiosk's device gives each one.
+const voiceHaSelectSettings = <String, SettingDef<String>>{
+  'pipeline': voiceHaPipeline,
+  'pipeline_2': voiceHaPipeline2,
+  'vad_sensitivity': voiceHaVadSensitivity,
+  'wake_word': voiceHaWakeWord,
+  'wake_word_2': voiceHaWakeWord2,
+};
+
+const voiceWakeWordSensitivity = SettingDef<String>(
+  key: 'voice.wake_word_sensitivity',
+  type: SettingType.select,
+  defaultValue: 'moderately',
+  title: 'Wake word sensitivity',
+  description: 'How easily the wake word triggers.',
+  category: 'Voice Satellite',
+  subpage: 'Wake Word',
+  options: ['slightly', 'moderately', 'very'],
+  optionLabels: {
+    'slightly': 'Slightly sensitive',
+    'moderately': 'Moderately sensitive',
+    'very': 'Very sensitive',
+  },
+  dependsOn: 'voice.enabled',
+);
+
+const voiceNoiseGate = SettingDef<bool>(
+  key: 'voice.noise_gate',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Wake word noise gate',
+  description: 'Skip wake word inference while the room is quiet, saving CPU.',
+  category: 'Voice Satellite',
+  subpage: 'Wake Word',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceStopWord = SettingDef<bool>(
+  key: 'voice.stop_word',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Stop word interruption',
+  description:
+      'Say "stop" to cut off an answer, a timer alert or an announcement.',
+  category: 'Voice Satellite',
+  subpage: 'Wake Word',
+  dependsOn: 'voice.enabled',
+);
+
+/// Kiosks that hear the same wake word settle which one answers: each
+/// broadcasts how loud the wake word reached it and the loudest one goes on
+/// while the others go back to listening. Off by default: a single kiosk
+/// gains nothing and every wake would wait out the window.
+const voiceWakeArbitration = SettingDef<bool>(
+  key: 'voice.wake_arbitration',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Enable wake word arbitration',
+  description:
+      'When several kiosks hear the wake word, the closest one answers. '
+      'Increases detection latency.',
+  category: 'Voice Satellite',
+  subpage: 'Wake Word',
+  section: 'Wake Word Arbitration',
+  dependsOn: 'voice.enabled',
+);
+
+/// How long a kiosk listens for the others' claims before it decides. It
+/// has to cover the gap between the fastest and the slowest kiosk to detect
+/// the same wake word plus the claim's trip over Wi-Fi, where access points
+/// hold broadcast frames for sleeping clients: claims landed up to 325 ms
+/// after detection between a Tab S8 and an Echo Show 8.
+const voiceWakeArbitrationWindowMs = SettingDef<num>(
+  key: 'voice.wake_arbitration_window_ms',
+  type: SettingType.number,
+  defaultValue: 400,
+  title: 'Arbitration window',
+  description:
+      'How long to wait for the other kiosks. Raise it if a slower kiosk '
+      'loses when it is closer.',
+  category: 'Voice Satellite',
+  subpage: 'Wake Word',
+  section: 'Wake Word Arbitration',
+  min: 100,
+  max: 500,
+  step: 50,
+  unit: 'ms',
+  dependsOn: 'voice.wake_arbitration',
+);
+
+const voiceSkin = SettingDef<String>(
+  key: 'voice.skin',
+  type: SettingType.select,
+  defaultValue: 'kiosk-satellite',
+  title: 'Skin',
+  description: 'The look of the voice assistant overlay.',
+  category: 'Voice Satellite',
+  subpage: 'Appearance',
+  options: [
+    'kiosk-satellite',
+    'default',
+    'google-home',
+    'home-assistant',
+    'alexa',
+    'siri',
+    'retro-terminal',
+    'waveform',
+    'lens-flares',
+    'ink-blobs',
+  ],
+  optionLabels: {
+    'kiosk-satellite': 'Kiosk Satellite',
+    'default': 'Default',
+    'google-home': 'Google Home',
+    'home-assistant': 'Home Assistant',
+    'alexa': 'Alexa',
+    'siri': 'Siri',
+    'retro-terminal': 'Retro Terminal',
+    'waveform': 'Waveform',
+    'lens-flares': 'Lens Flares',
+    'ink-blobs': 'Ink Blobs',
+  },
+  dependsOn: 'voice.enabled',
+);
+
+const voiceTheme = SettingDef<String>(
+  key: 'voice.theme',
+  type: SettingType.select,
+  defaultValue: 'auto',
+  title: 'Theme',
+  description: 'Auto follows the Home Assistant theme.',
+  category: 'Voice Satellite',
+  subpage: 'Appearance',
+  options: ['auto', 'light', 'dark'],
+  optionLabels: {'auto': 'Auto', 'light': 'Light', 'dark': 'Dark'},
+  dependsOn: 'voice.enabled',
+);
+
+/// Where the assistant shows: the full screen overlay, or a bubble docked
+/// over the dashboard, which leaves it visible and usable. Assist turns and
+/// realtime conversations alike.
+const voiceOverlayMode = SettingDef<String>(
+  key: 'voice.overlay_mode',
+  type: SettingType.select,
+  defaultValue: 'full',
+  title: 'Overlay mode',
+  description:
+      'Docked shows a small bubble over the dashboard. It does not show '
+      'rich results such as images, weather or videos.',
+  category: 'Voice Satellite',
+  subpage: 'Appearance',
+  options: ['full', 'docked'],
+  optionLabels: {'full': 'Full screen', 'docked': 'Docked'},
+  dependsOn: 'voice.enabled',
+);
+
+/// The docked bubble's position as "x,y" fractions of the free area.
+/// Saved by dragging it and kept local to this device.
+const voiceDockPosition = SettingDef<String>(
+  key: 'voice.dock_position',
+  type: SettingType.string,
+  defaultValue: '0.5,1',
+  title: 'Docked bubble position',
+  description: 'Saved position of the docked bubble.',
+  category: 'Voice Satellite',
+  hidden: true,
+  perDevice: true,
+);
+
+/// The overlay's backdrop opacity in percent; -1 keeps the skin's own.
+const voiceBackgroundOpacity = SettingDef<num>(
+  key: 'voice.background_opacity',
+  type: SettingType.number,
+  defaultValue: -1,
+  title: 'Background',
+  description: 'How much of the dashboard shows through. Skin default at -1.',
+  category: 'Voice Satellite',
+  subpage: 'Appearance',
+  min: -1,
+  max: 100,
+  step: 1,
+  unit: '%',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceTextScale = SettingDef<num>(
+  key: 'voice.text_scale',
+  type: SettingType.number,
+  defaultValue: 100,
+  title: 'Text size',
+  description: 'The size of the overlay text.',
+  category: 'Voice Satellite',
+  subpage: 'Appearance',
+  min: 50,
+  max: 200,
+  step: 5,
+  unit: '%',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceReactiveBar = SettingDef<bool>(
+  key: 'voice.reactive_bar',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Reactive activity bar',
+  description: 'The bar follows your voice and the answer.',
+  category: 'Voice Satellite',
+  subpage: 'Appearance',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceShowCommand = SettingDef<bool>(
+  key: 'voice.show_command',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show what you said',
+  description: 'Your command above the answer.',
+  category: 'Voice Satellite',
+  subpage: 'Conversation',
+  section: 'On screen',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceShowAnswer = SettingDef<bool>(
+  key: 'voice.show_answer',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show the answer',
+  description: 'The answer as it is spoken.',
+  category: 'Voice Satellite',
+  subpage: 'Conversation',
+  section: 'On screen',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceShowTools = SettingDef<bool>(
+  key: 'voice.show_tools',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show tool use',
+  description: 'A line for each action the assistant takes.',
+  category: 'Voice Satellite',
+  subpage: 'Conversation',
+  section: 'On screen',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceHideSentimentTags = SettingDef<bool>(
+  key: 'voice.hide_sentiment_tags',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Hide sentiment tags',
+  description: 'Leave out tags like [happy] that some assistants add.',
+  category: 'Voice Satellite',
+  subpage: 'Conversation',
+  section: 'On screen',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceAnswerLinger = SettingDef<num>(
+  key: 'voice.answer_linger',
+  type: SettingType.number,
+  defaultValue: 0,
+  title: 'Keep the answer on screen',
+  description: 'After the answer is spoken.',
+  category: 'Voice Satellite',
+  subpage: 'Conversation',
+  section: 'How long it stays',
+  min: 0,
+  max: 15,
+  step: 1,
+  unit: 's',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceResultsLinger = SettingDef<num>(
+  key: 'voice.results_linger',
+  type: SettingType.number,
+  defaultValue: 30,
+  title: 'Keep results on screen',
+  description:
+      'Images, weather and other results. 0 keeps them until you dismiss '
+      'them.',
+  category: 'Voice Satellite',
+  subpage: 'Conversation',
+  section: 'How long it stays',
+  min: 0,
+  max: 180,
+  step: 5,
+  unit: 's',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceAnnouncementLinger = SettingDef<num>(
+  key: 'voice.announcement_linger',
+  type: SettingType.number,
+  defaultValue: 5,
+  title: 'Announcement time',
+  description: 'After an announcement is spoken.',
+  category: 'Voice Satellite',
+  subpage: 'Conversation',
+  section: 'How long it stays',
+  min: 1,
+  max: 60,
+  step: 1,
+  unit: 's',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceTimerPills = SettingDef<bool>(
+  key: 'voice.timer_pills',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show timer pills',
+  description: 'Running timers float over the screen. Drag them anywhere.',
+  category: 'Voice Satellite',
+  subpage: 'Timers',
+  section: 'Pills',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceTimerNameInPill = SettingDef<bool>(
+  key: 'voice.timer_name_in_pill',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show the timer name',
+  description: 'The name beside the time in a pill.',
+  category: 'Voice Satellite',
+  subpage: 'Timers',
+  section: 'Pills',
+  dependsOn: 'voice.enabled',
+);
+
+/// The pills draw for both runtimes (the dashboard's integration pushes
+/// its timers to the same overlay), so this row shows for both.
+const voiceTimerPillScale = SettingDef<num>(
+  key: 'voice.timer_pill_scale',
+  type: SettingType.number,
+  defaultValue: 100,
+  title: 'Timer pill scale',
+  description: 'The size of the timer pills.',
+  category: 'Voice Satellite',
+  subpage: 'Timers',
+  section: 'Pills',
+  min: 50,
+  max: 300,
+  step: 5,
+  unit: '%',
+);
+
+const voiceMuteTimers = SettingDef<bool>(
+  key: 'voice.mute_timers',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Mute timer alerts',
+  description: 'Show the alert without the sound.',
+  category: 'Voice Satellite',
+  subpage: 'Timers',
+  section: 'When a timer ends',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceTimerNameOnAlert = SettingDef<bool>(
+  key: 'voice.timer_name_on_alert',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show the name on the alert',
+  description: 'The timer name under the alert.',
+  category: 'Voice Satellite',
+  subpage: 'Timers',
+  section: 'When a timer ends',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceTimerSpeak = SettingDef<bool>(
+  key: 'voice.timer_speak',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Speak when a timer ends',
+  description: 'Say a phrase between the alert sounds.',
+  category: 'Voice Satellite',
+  subpage: 'Timers',
+  section: 'When a timer ends',
+  dependsOn: 'voice.enabled',
+);
+
+const voiceTimerPhrase = SettingDef<String>(
+  key: 'voice.timer_phrase',
+  type: SettingType.string,
+  defaultValue: 'Your timer is up.',
+  title: 'Phrase',
+  description: 'Spoken for a timer without a name.',
+  category: 'Voice Satellite',
+  subpage: 'Timers',
+  section: 'When a timer ends',
+  dependsOn: 'voice.timer_speak',
+);
+
+const voiceTimerNamedPhrase = SettingDef<String>(
+  key: 'voice.timer_named_phrase',
+  type: SettingType.string,
+  defaultValue: 'Your {name} timer is up.',
+  title: 'Phrase for named timers',
+  description: '{name} is replaced with the timer name.',
+  category: 'Voice Satellite',
+  subpage: 'Timers',
+  section: 'When a timer ends',
+  dependsOn: 'voice.timer_speak',
+);
+
+const voiceWakeSound = SettingDef<bool>(
+  key: 'voice.wake_sound',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Play chimes',
+  description: 'The wake, done and error sounds.',
+  category: 'Voice Satellite',
+  subpage: 'Chimes',
+  dependsOn: 'voice.enabled',
+);
+
+// Sounds stored on this kiosk, shared by the device and Remote Admin.
+const voiceChimeWake = SettingDef<String>(
+  key: 'voice_chimes.wake',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Wake sound',
+  description: 'Plays when Voice Satellite starts listening.',
+  category: 'Voice Satellite',
+  subpage: 'Chimes',
+  perDevice: true,
+  validator: validateNotificationSound,
+);
+
+const voiceChimeDone = SettingDef<String>(
+  key: 'voice_chimes.done',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Done sound',
+  description: 'Plays when a voice interaction finishes.',
+  category: 'Voice Satellite',
+  subpage: 'Chimes',
+  perDevice: true,
+  validator: validateNotificationSound,
+);
+
+const voiceChimeError = SettingDef<String>(
+  key: 'voice_chimes.error',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Error sound',
+  description: 'Plays when a voice interaction fails.',
+  category: 'Voice Satellite',
+  subpage: 'Chimes',
+  perDevice: true,
+  validator: validateNotificationSound,
+);
+
+const voiceChimeTimer = SettingDef<String>(
+  key: 'voice_chimes.alert',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Timer sound',
+  description: 'Repeats when a timer finishes until you dismiss it.',
+  category: 'Voice Satellite',
+  subpage: 'Chimes',
+  perDevice: true,
+  validator: validateNotificationSound,
+);
+
+const voiceChimeAnnounce = SettingDef<String>(
+  key: 'voice_chimes.announce',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Announcement sound',
+  description:
+      'Plays before a Voice Satellite announcement unless it supplies its own sound.',
+  category: 'Voice Satellite',
+  subpage: 'Chimes',
+  perDevice: true,
+  validator: validateNotificationSound,
+);
+
+const voiceChimeSettings = <String, SettingDef<String>>{
+  'wake': voiceChimeWake,
+  'done': voiceChimeDone,
+  'error': voiceChimeError,
+  'alert': voiceChimeTimer,
+  'announce': voiceChimeAnnounce,
+};
 
 // Hidden: rendered as hand-built dropdowns (device settings screen and the
 // remote UI both) because the option lists are live hardware, not constants.
@@ -4172,8 +6346,7 @@ const audioSpeakerDevice = SettingDef<String>(
   title: 'Speaker',
   description:
       'Output for Voice Satellite sounds; media playback follows the system '
-      'route. Echo cancellation only works with the microphone and speaker '
-      'on the same device.',
+      'route.',
   category: 'Screen & Audio',
   hidden: true,
   perDevice: true,
@@ -4226,8 +6399,9 @@ const haToken = SettingDef<String>(
 /// `hassTokens`, see ha_session_script.dart) at document start, so a fresh
 /// kiosk never shows the Home Assistant login form. A login someone did by
 /// hand always wins over the seed; a session the seed wrote for an earlier
-/// token is replaced when the token changes. Turning this off stops future
-/// seeding without logging anything out.
+/// token is replaced when the token changes. Turning this off removes the
+/// seeded session, so the dashboard shows the login form; a login done by
+/// hand stays.
 const haAutoLogin = SettingDef<bool>(
   key: 'ha.auto_login',
   type: SettingType.boolean,
@@ -4316,6 +6490,108 @@ const haKioskMenu = SettingDef<bool>(
 /// on a small screen the view tabs are the last navigation left, and this
 /// gives their job to the whole screen instead. Strategy dashboards without
 /// listable views and single-view dashboards leave the script inert.
+/// Builds every view of the dashboard once, at idle after a load, so the
+/// first switch to each is as fast as the second (see
+/// preload_views_script.dart). Measured on a px30 panel over a three-view
+/// dashboard: first switch 1060ms and 232ms, every later one 9ms -- the
+/// cost is entirely the first visit, and this moves it off the moment
+/// someone is watching.
+///
+/// Off by default, because it is a trade rather than a free win: every
+/// preloaded view stays in hui-root's cache for the life of the page, and
+/// a panel with many heavy views can spend more memory than a slow first
+/// switch is worth. Views carrying a camera card are skipped whatever this
+/// says -- preloading one would start its stream.
+const haPreloadViews = SettingDef<bool>(
+  key: 'ha.preload_views',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Preload dashboard views',
+  description:
+      'After the dashboard loads, build its other views in the background '
+      'so switching to them is instant. Uses more memory, and views with a '
+      'camera card are always skipped.',
+  category: 'Home Assistant',
+  section: 'User Interface',
+  subpage: 'User Interface',
+);
+
+/// Categories to leave out of the on-device settings list, as a JSON array
+/// of category names ("Screensaver", "DLNA", ...). The pages still exist --
+/// this hides entry points, it does not disable features -- and Remote
+/// Admin is untouched, since the reason to hide a page is that a wall panel
+/// is not where you configure it.
+///
+/// Decluttering, not access control: on-device search still finds a hidden
+/// page, so nobody is locked out of one they hid. Kiosk lockdown and the
+/// PIN are what actually restrict. The page hosting this setting cannot be
+/// hidden, so the control is never behind the thing it controls.
+///
+/// A panel using none of the screensaver, DLNA and camera features carries
+/// three pages it will never open, in a list someone scrolls while standing
+/// at a wall.
+const uiHiddenPages = SettingDef<String>(
+  key: 'ui.hidden_pages',
+  type: SettingType.string,
+  defaultValue: '[]',
+  title: 'Hidden settings pages',
+  description:
+      'Settings pages to leave out of the on-device list. The features keep '
+      'working, search still finds them, and Remote Admin still shows them.',
+  category: 'Device',
+  validator: _validateHiddenPages,
+);
+
+String? _validateHiddenPages(Object? value) {
+  try {
+    final decoded = json.decode(value as String);
+    if (decoded is List && decoded.every((e) => e is String)) return null;
+  } catch (_) {}
+  return 'Expected a JSON array of category names.';
+}
+
+/// Rail groups rolled up on this device, by their heading.
+///
+/// The sibling of [uiHiddenPages], for the case where a whole group is
+/// uninteresting rather than a page: the heading stays, its tiles fold
+/// away, and one tap brings them back. Hiding a page is a decision about
+/// this panel; rolling up a group is a view of the list, so a rolled-up
+/// group is still a tap from open and nothing is removed.
+///
+/// Stored by heading rather than by category, so a group that gains a page
+/// upstream keeps its state, and a heading that is renamed simply comes
+/// back open rather than stranding its tiles out of reach.
+const uiCollapsedGroups = SettingDef<String>(
+  key: 'ui.collapsed_groups',
+  type: SettingType.string,
+  defaultValue: '[]',
+  title: 'Rolled-up settings groups',
+  description:
+      'Groups to show rolled up in the on-device settings list. Tapping the '
+      'heading opens one again; nothing is hidden from search or Remote Admin.',
+  category: 'Device',
+  validator: _validateCollapsedGroups,
+);
+
+String? _validateCollapsedGroups(Object? value) {
+  try {
+    final decoded = json.decode(value as String);
+    if (decoded is List && decoded.every((e) => e is String)) return null;
+  } catch (_) {}
+  return 'Expected a JSON array of group headings.';
+}
+
+/// A settings value holding a JSON array of strings, as a set. Shared by
+/// the hidden-pages and rolled-up-groups lists; a missing or malformed
+/// value reads as empty rather than throwing at a wall panel.
+Set<String> decodeStringSet(String value) {
+  try {
+    final decoded = json.decode(value);
+    if (decoded is List) return decoded.whereType<String>().toSet();
+  } catch (_) {}
+  return {};
+}
+
 const haDashboardCarousel = SettingDef<bool>(
   key: 'ha.dashboard_carousel',
   type: SettingType.boolean,
@@ -4880,7 +7156,10 @@ const sendspinPlayerSource = SettingDef<String>(
 /// controls follow: empty is this device's own Sendspin player, otherwise
 /// `ma:<player id>` for a Music Assistant player, `ha:<entity id>` for a
 /// Home Assistant media player or `sonos:<player id>` for a Sonos speaker
-/// followed directly, always of the source picked above. Visible so both
+/// followed directly, always of the source picked above. With this device
+/// as the source, empty is its own Sendspin player and `session:*` the
+/// Local Media Session: whichever other app plays on the device, through
+/// its Android media session. Visible so both
 /// settings surfaces place it under the source, but its row is
 /// hand-built on each: a picker fed by that source's live player list,
 /// never a text field. Always on the page, so a source change never
@@ -4896,21 +7175,92 @@ const sendspinPlayer = SettingDef<String>(
   perDevice: true,
 );
 
+/// Music under a voice interaction. Past 10% the software echo canceller
+/// cannot keep it out of the microphone, so the range stops there, and a
+/// value from an older backup or leader is brought down to it.
 const sendspinDuckPercent = SettingDef<num>(
   key: 'sendspin.duck_percent',
   type: SettingType.number,
   defaultValue: 10,
   title: 'Duck volume during voice interactions',
   description:
-      'While the assistant listens or speaks, music drops to this '
-      'fraction of its volume so the microphone hears you. Capped at '
-      '25% to keep detection reliable. Applies to every player source '
-      'with volume control and restores the previous volume afterward.',
+      'Music drops to this share of its volume during voice interactions '
+      'and intercom calls, then comes back.',
   category: 'Sendspin',
   min: 0,
-  max: 25,
+  max: sendspinDuckMax,
   step: 5,
   unit: '%',
+  normalizer: normalizeSendspinDuck,
+);
+
+const sendspinDuckMax = 10;
+
+Object normalizeSendspinDuck(Object value) =>
+    value is num && value.isFinite ? value.clamp(0, sendspinDuckMax) : 10;
+
+/// The followed player as ESPHome entities (issue #741): transport
+/// buttons and what is playing, for whichever player the surfaces follow.
+/// Not a media_player entity: ESPHome's carries no title or artist and
+/// no skip, and Music Assistant already lists the Sendspin player as one.
+/// Off by default, since it re-registers the device like the other
+/// catalog-shaping switches.
+const sendspinEsphomeEntities = SettingDef<bool>(
+  key: 'sendspin.esphome_entities',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Expose ESPHome entities',
+  description:
+      'Play, pause, next and previous buttons for the followed player in '
+      'Home Assistant, with its state, title, artist and source as '
+      'sensors.',
+  category: 'Sendspin',
+);
+
+/// The device's hardware volume keys steer the followed player instead
+/// of the tablet's own volume (issue #544): a kiosk that only shows and
+/// remotes a speaker elsewhere has nothing of its own to make louder,
+/// and the buttons are the one control that needs no look at the
+/// screen. Only for a player elsewhere; with this device as the source
+/// the keys keep their Android meaning, since the music comes out of
+/// this device and the master volume is the right thing to move.
+const sendspinVolumeKeys = SettingDef<String>(
+  key: 'sendspin.volume_keys',
+  type: SettingType.select,
+  defaultValue: 'off',
+  title: 'Volume buttons control the player',
+  description:
+      "This device's volume buttons change the followed player's volume "
+      'instead of its own. Only while the Now Playing view is on screen, '
+      'or whenever the player is playing.',
+  category: 'Sendspin',
+  options: ['off', 'now_playing', 'playing'],
+  optionLabels: {
+    'off': 'Off',
+    'now_playing': 'While Now Playing is shown',
+    'playing': 'While the player is playing',
+  },
+  dependsOn: 'sendspin.player_source',
+  dependsOnValue: ['ha', 'ma', 'sonos'],
+);
+
+/// How far one volume key press moves the followed player, in percent
+/// (issue #548). Five suits most speakers, but a sensitive amplifier or
+/// a bedroom at night wants finer steps, so the size is a slider down to
+/// one percent. Shown only while the buttons are routed to the player.
+const sendspinVolumeKeyStep = SettingDef<int>(
+  key: 'sendspin.volume_key_step',
+  type: SettingType.number,
+  defaultValue: 5,
+  title: 'Volume button step',
+  description: 'How far one press of a volume button moves the player.',
+  category: 'Sendspin',
+  min: 1,
+  max: 10,
+  step: 1,
+  unit: '%',
+  dependsOn: 'sendspin.volume_keys',
+  dependsOnValue: ['now_playing', 'playing'],
 );
 
 /// The picked player's display name: what the settings rows show and what
@@ -4983,6 +7333,10 @@ const sendspinEnabled = SettingDef<bool>(
   // page entry goes with them.
   dependsOn: 'sendspin.player_source',
   dependsOnValue: '',
+  // Gone the same way while this device's Local Media Session is the
+  // pick: the surfaces follow another app then, not the Sendspin player.
+  alsoDependsOn: 'sendspin.player',
+  alsoDependsOnValue: {'ne': 'session:*'},
   type: SettingType.boolean,
   defaultValue: false,
   title: 'Enable Sendspin player',
@@ -5229,7 +7583,7 @@ const sendspinPlayerSize = SettingDef<String>(
   section: 'Floating Player',
   options: ['compact', 'large'],
   optionLabels: {'compact': 'Compact', 'large': 'Large with controls'},
-  dependsOn: 'sendspin.show_player',
+  dependsOn: 'sendspin.player_active',
 );
 
 const sendspinPausedHideMinutes = SettingDef<num>(
@@ -5247,7 +7601,7 @@ const sendspinPausedHideMinutes = SettingDef<num>(
   max: 10,
   step: 1,
   unit: 'min',
-  dependsOn: 'sendspin.show_player',
+  dependsOn: 'sendspin.player_active',
 );
 
 const sendspinDismissKeepsPlaying = SettingDef<bool>(
@@ -5632,6 +7986,19 @@ const sendspinLyricsOffset = SettingDef<num>(
   unit: 's',
 );
 
+/// Timer group position as "x,y" fractions of the free area.
+/// Saved by dragging and kept local to this device.
+const voiceTimerPosition = SettingDef<String>(
+  key: 'voice.timer_position',
+  type: SettingType.string,
+  defaultValue: '0.5,0.08',
+  title: 'Timer pill position',
+  description: 'Saved position of the floating timer pills.',
+  category: 'Voice Satellite',
+  hidden: true,
+  perDevice: true,
+);
+
 /// The floating player's position as "x,y" fractions of the free area.
 /// Hidden: owned by the drag gesture, not a settings row.
 const sendspinPlayerPos = SettingDef<String>(
@@ -5817,7 +8184,8 @@ const esphomeNodeName = SettingDef<String>(
 /// keys the ESPHome device entry on: existing installs have a device built
 /// on the generated address, and adopting the real one creates a new entry.
 /// The first successful read is stored (see adoptedWifiMac), so the identity
-/// holds even if the address later becomes unreadable.
+/// holds even if the address later becomes unreadable. Turning it off drops
+/// the stored address, and turning it back on reads the hardware again.
 const esphomeRealMac = SettingDef<bool>(
   key: 'esphome.real_mac',
   type: SettingType.boolean,
@@ -6000,6 +8368,102 @@ String? validateNotificationSound(Object? value) {
   if (notificationSoundExtensions.contains(fileExtension(name))) return null;
   return 'Pick an MP3, OGG, WAV, FLAC, M4A or AAC file.';
 }
+
+// ── Announcements (subpage under ESPHome) ──
+// Home Assistant speaks on this kiosk through the `announce` ESPHome
+// action: a message its text to speech turns into audio, or an audio
+// URL, decoded and played here, with a chime first. No other kiosk is
+// involved, unlike the intercom's Announce to all.
+
+const announcementsEnabled = SettingDef<bool>(
+  key: 'announcements.enabled',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Enable announcements',
+  description:
+      'Play the announcements Home Assistant sends with the announce action.',
+  category: 'ESPHome',
+  subpage: 'Announcements',
+  dependsOn: 'esphome.enabled',
+);
+
+/// The Home Assistant text to speech entity the announce action speaks
+/// with; empty picks the first one Home Assistant has. Picked from the
+/// list, never typed.
+const announcementsTtsEngine = SettingDef<String>(
+  key: 'announcements.tts_engine',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Text to speech engine',
+  description:
+      'The Home Assistant text to speech entity that speaks announcements.',
+  category: 'ESPHome',
+  section: 'Text to Speech',
+  subpage: 'Announcements',
+  dependsOn: 'announcements.enabled',
+  placeholder: 'First available',
+);
+
+/// The language the announcements' engine speaks, from those it lists;
+/// empty leaves it to the engine. Also picks which voices the Voice row
+/// offers. Only under an engine picked by name: First available has no
+/// languages to list.
+const announcementsTtsLanguage = SettingDef<String>(
+  key: 'announcements.tts_language',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Language',
+  description: 'The language announcements are spoken in.',
+  category: 'ESPHome',
+  section: 'Text to Speech',
+  subpage: 'Announcements',
+  dependsOn: 'announcements.tts_engine',
+  dependsOnValue: {'ne': ''},
+  placeholder: 'Default',
+);
+
+/// The voice the announcements' engine speaks with, from those it lists
+/// for the language; empty leaves it to the engine.
+const announcementsTtsVoice = SettingDef<String>(
+  key: 'announcements.tts_voice',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Voice',
+  description: 'The voice that speaks announcements.',
+  category: 'ESPHome',
+  section: 'Text to Speech',
+  subpage: 'Announcements',
+  dependsOn: 'announcements.tts_engine',
+  dependsOnValue: {'ne': ''},
+  placeholder: 'Default',
+);
+
+const announcementsChime = SettingDef<bool>(
+  key: 'announcements.chime',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Chime first',
+  description: 'Play a chime before the announcement.',
+  category: 'ESPHome',
+  section: 'Chime',
+  subpage: 'Announcements',
+  dependsOn: 'announcements.enabled',
+);
+
+/// A file in the sounds folder like the notification sound, or empty for
+/// the built-in announcement chime. Plays at the notification volume.
+const announcementsChimeFile = SettingDef<String>(
+  key: 'announcements.chime_file',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Chime sound',
+  description: 'Plays as loud as the announcement.',
+  category: 'ESPHome',
+  section: 'Chime',
+  subpage: 'Announcements',
+  dependsOn: 'announcements.chime',
+  validator: validateNotificationSound,
+);
 
 /// Independent of the mixer's faders on purpose: a notification is not
 /// assistant speech and not media, and its loudness should not move when
@@ -6202,6 +8666,169 @@ const btproxyPort = SettingDef<String>(
 /// later, all while its held slot blocked the proxy that could actually
 /// hold it. Refusing weak connects makes Home Assistant fail over to a
 /// closer proxy immediately. Last in its group by request.
+/// A wall panel hears the whole building: one here sees 131 devices while
+/// holding zero connections, and every one of those advertisements crosses
+/// the platform channel, the API server and the network to Home Assistant.
+///
+/// Where dedicated proxies already cover the house, the advertisements
+/// worth relaying from a panel are the ones close enough to mean "someone
+/// is standing at it" -- presence a distant proxy cannot report. A floor
+/// around -55 to -60 dBm is roughly arm's length to a few metres, though
+/// BLE RSSI varies enough by device and pocket that the right number is
+/// found by watching, not calculated.
+///
+/// Does not save radio: the scan runs at the same duty cycle either way.
+/// What it cuts is everything after the scan callback.
+/// Identity-level filtering for the Bluetooth proxy, as a JSON object.
+/// Modelled on esphome-bluetooth-proxy-filter, which solves the same
+/// problem on the ESP32 proxies: core ESPHome forwards every packet, and so
+/// does this one.
+///
+/// ```json
+/// {
+///   "irks": ["ec0234a357c8ad05341010a60a397d9b"],
+///   "irksEntity": "sensor.ble_proxy_irks",
+///   "irksAttribute": "irks",
+///   "macs": ["AA:BB:CC:DD:EE:FF"],
+///   "macBlocklist": ["11:22:33:44:55:66"],
+///   "manufacturers": ["0x004C"],
+///   "names": ["airpods"],
+///   "serviceUuids": ["0xFFF6", "00467768-6228-2272-4663-277478268000"],
+///   "ibeacons": [{"uuidPrefix": "fde3b150-2f64-43ba", "major": 1, "rssi": -95}],
+///   "allowHomekit": true,
+///   "allowFindmy": {"rssi": -85},
+///   "dropNonResolvable": true,
+///   "allowlistExclusive": false,
+///   "rssiFloor": -90,
+///   "rssiThreshold": -70,
+///   "rssiMacAllowlist": 0,
+///   "rssiIrk": 0,
+///   "rssiServiceUuid": -90
+/// }
+/// ```
+///
+/// Every key mirrors the ESPHome component's option of the same name, so a
+/// filter written for the house's proxies can be spelled in JSON here and
+/// behave the same way. Two differences in spelling only: the keys are
+/// camelCase, and an unset RSSI limit is `0` rather than the component's
+/// `-127`.
+///
+/// An advertisement is categorised before it is measured, which is what
+/// makes the limits independent: any category can be looser *or* stricter
+/// than the fleet threshold. An allowlisted address, a resolvable private
+/// address matching one of the IRKs, a named iBeacon, a FindMy accessory
+/// and an allowlisted service UUID are each *protected*, which exempts them
+/// from the manufacturer and name blocklists. That protection is the point
+/// -- your own phones advertise Apple manufacturer data, so a blocklist of
+/// Apple would otherwise discard exactly the devices the IRK list exists to
+/// keep, along with every HomeKit accessory (`allowHomekit`) and AirTag
+/// (`allowFindmy`). An RPA matching none of the IRKs belongs to someone
+/// else, rotates, and can never be tracked, so it is dropped -- unless an
+/// iBeacon, FindMy or service UUID rule claims it first, which is how a
+/// device pairing from a rotating address still gets through (filter
+/// v1.7.0).
+///
+/// `irksEntity` takes the keys from Home Assistant instead, the way the ESP
+/// proxies' irks-from-ha.yaml does: the panel asks for that entity's
+/// `irksAttribute` (empty for its state) over the native API and uses every
+/// 32-digit hex key in it, names beside them allowed. A value with no key
+/// (unavailable, a restart) is ignored; `clear` empties the list. Home
+/// Assistant's list wins while it has one, falling back to `irks` (the
+/// [btproxyFilterIrks] setting) when it is empty, and the last list it sent
+/// is kept on the device, outside the settings, for use from boot. Without
+/// `irksEntity` nothing is asked for.
+///
+/// A per-category limit of `0` inherits: `rssiMacAllowlist` leaves the
+/// allowlist bounded only by `rssiFloor`, and the rest fall back to
+/// `rssiThreshold`. An `rssi` on an iBeacon or FindMy rule overrides the
+/// floor as well, which is how a house's own calibration beacons are
+/// forwarded at any strength while tracked tags stay bounded.
+///
+/// With a filter configured the panel also publishes what it kept and
+/// dropped as five diagnostic sensors, matching the ones the ESPHome
+/// proxies carry, so a panel and a proxy can be compared on one dashboard.
+///
+/// Not secret, and deliberately so: thresholds and allowlists are ordinary
+/// configuration, and a panel restored from a backup should come back
+/// filtering the way it did. The key material lives in
+/// [btproxyFilterIrks], which is secret, so protecting it costs no backup
+/// coverage here.
+const btproxyFilter = SettingDef<String>(
+  key: 'btproxy.filter',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Advertisement filter',
+  description:
+      'JSON filter deciding which devices reach Home Assistant: identity '
+      'keys (IRKs) for your own phones and watches, address and service '
+      'UUID allowlists, iBeacon and FindMy rules, and manufacturer or name '
+      'blocklists, each with its own signal limit. Empty relays everything.',
+  category: 'ESPHome',
+  section: 'Bluetooth Proxy',
+  subpage: 'Bluetooth Proxy',
+  dependsOn: 'btproxy.enabled',
+);
+
+/// Identity Resolving Keys for this household's own phones and watches, as
+/// a JSON array of 32-character hex strings, mirrored from Home Assistant's
+/// private_ble_device entries.
+///
+/// Kept apart from [btproxyFilter] because the two want opposite handling.
+/// An IRK identifies a person's phone wherever that phone goes, for as long
+/// as the key lives, so it must not travel in an ordinary settings export --
+/// while the thresholds and allowlists beside it are exactly what a restored
+/// panel should get back. The two are merged into one filter before it
+/// reaches the scanner.
+///
+/// Empty means no IRK test runs and every resolvable private address is
+/// relayed, which is a reasonable choice for a panel: Home Assistant holds
+/// the keys centrally and resolves identity there. With `irksEntity` in
+/// [btproxyFilter], the keys Home Assistant delivers take precedence and
+/// these are the fallback while it has none.
+const btproxyFilterIrks = SettingDef<String>(
+  key: 'btproxy.filter_irks',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Identity keys (IRKs)',
+  description:
+      'JSON array of Identity Resolving Keys for your own phones and '
+      'watches. With any listed, a rotating private address resolving to '
+      'none of them is dropped as somebody else\'s. Empty relays them all '
+      'and leaves identity to Home Assistant.',
+  category: 'ESPHome',
+  section: 'Bluetooth Proxy',
+  subpage: 'Bluetooth Proxy',
+  secret: true,
+  dependsOn: 'btproxy.enabled',
+);
+
+const btproxyMinAdvertiseRssi = SettingDef<String>(
+  key: 'btproxy.min_advertise_rssi',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Only relay devices this close',
+  description:
+      'Drop advertisements heard weaker than this instead of relaying them '
+      'to Home Assistant, so the panel reports what is in front of it '
+      'rather than the whole building. Devices that report no signal '
+      'strength are dropped too, since their distance cannot be judged. '
+      'Scanning itself is unchanged.',
+  category: 'ESPHome',
+  section: 'Bluetooth Proxy',
+  subpage: 'Bluetooth Proxy',
+  options: ['', '-50', '-55', '-60', '-65', '-70', '-80'],
+  optionLabels: {
+    '': 'Relay everything',
+    '-50': '-50 dBm (at the panel)',
+    '-55': '-55 dBm (arm\'s length)',
+    '-60': '-60 dBm (standing in front)',
+    '-65': '-65 dBm (same room)',
+    '-70': '-70 dBm',
+    '-80': '-80 dBm (most of the floor)',
+  },
+  dependsOn: 'btproxy.enabled',
+);
+
 const btproxyMinConnectRssi = SettingDef<String>(
   key: 'btproxy.min_connect_rssi',
   type: SettingType.select,
@@ -6258,6 +8885,19 @@ const remoteEnabled = SettingDef<bool>(
   perDevice: true,
 );
 
+const remoteTls = SettingDef<bool>(
+  key: 'remote.tls',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Use HTTPS',
+  description:
+      'Encrypt the remote admin, API and WebSocket. Your browser may ask you to accept the device certificate.',
+  category: 'Device',
+  section: 'Remote Administration',
+  subpage: 'Remote Administration',
+  perDevice: true,
+);
+
 const remotePort = SettingDef<num>(
   key: 'remote.port',
   type: SettingType.number,
@@ -6298,6 +8938,44 @@ const remoteFleetDiscovery = SettingDef<bool>(
   perDevice: true,
 );
 
+// ── Updates ────────────────────────────────────────────────────────────
+// Where releases come from. GitHub is the default and the only source
+// until now; a custom repository is a folder on the user's own web server
+// holding a copy of GitHub's releases.json and the APKs it names, for
+// kiosks on a network without internet access (docs/updates.md). Not
+// perDevice: a fleet points every kiosk at the same folder.
+
+const updateSource = SettingDef<String>(
+  key: 'update.source',
+  type: SettingType.select,
+  defaultValue: 'github',
+  options: ['github', 'custom'],
+  optionLabels: {'github': 'GitHub Repository', 'custom': 'Custom Repository'},
+  title: 'Update source',
+  description: 'Where the app looks for new releases.',
+  category: 'Device',
+  section: 'Updates',
+  subpage: 'Updates',
+);
+
+const updateSourceUrl = SettingDef<String>(
+  key: 'update.source_url',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Repository URL',
+  description:
+      'A folder on a web server the kiosk can reach, holding releases.json '
+      'and the release APKs.',
+  placeholder: 'http://nas.local/kiosk-satellite',
+  category: 'Device',
+  section: 'Updates',
+  subpage: 'Updates',
+  dependsOn: 'update.source',
+  dependsOnValue: 'custom',
+  validator: validateUpdateSourceUrl,
+  normalizer: normalizeUpdateSourceUrlSetting,
+);
+
 const shizukuInstallUpdates = SettingDef<bool>(
   key: 'shizuku.install_updates',
   type: SettingType.boolean,
@@ -6306,12 +8984,441 @@ const shizukuInstallUpdates = SettingDef<bool>(
   description:
       'Install Kiosk Satellite updates without on-device confirmation. Shizuku must be running and authorized.',
   category: 'Device',
-  section: 'Updates',
+  section: 'Shizuku',
   subpage: 'Shizuku',
   perDevice: true,
 );
 
+// ── Kiosk Satellite Analytics ──────────────────────────────────────────
+// Three switches, on by default, each naming what leaves the device when it
+// is on. The page's intro and docs/analytics.md say where it goes and what
+// is never sent. Not perDevice: a fleet decides once.
+
+const analyticsBasic = SettingDef<bool>(
+  key: 'analytics.basic',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Basic analytics',
+  description:
+      'Information about your device, such as model, Android version, app '
+      'version, screen size and language.',
+  category: 'Device',
+  section: 'Kiosk Satellite Analytics',
+  subpage: 'Kiosk Satellite Analytics',
+);
+
+const analyticsUsage = SettingDef<bool>(
+  key: 'analytics.usage',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Usage',
+  description: 'Details of what you use with Kiosk Satellite.',
+  category: 'Device',
+  section: 'Kiosk Satellite Analytics',
+  subpage: 'Kiosk Satellite Analytics',
+);
+
+const analyticsDiagnostics = SettingDef<bool>(
+  key: 'analytics.diagnostics',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Diagnostics',
+  description: 'Share crash reports when unexpected errors occur.',
+  category: 'Device',
+  section: 'Kiosk Satellite Analytics',
+  subpage: 'Kiosk Satellite Analytics',
+);
+
 // ── Fleet Management ───────────────────────────────────────────────────
+
+// Kiosks on the same network talk to each other over the remote admin
+// port: a call rings on the kiosk picked from the kiosk menu, or one kiosk
+// talks to every other at once. The shared key is the trust between them.
+
+const intercomEnabled = SettingDef<bool>(
+  key: 'intercom.enabled',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Enable intercom',
+  description: 'Call the other kiosks on this network and take their calls.',
+  category: 'Intercom',
+);
+
+const intercomTls = SettingDef<bool>(
+  key: 'intercom.tls',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Encrypt communications',
+  description:
+      'Use TLS to encrypt intercom calls between kiosks. All kiosks in the call need this enabled.',
+  category: 'Intercom',
+  section: 'TLS',
+  dependsOn: 'intercom.enabled',
+  perDevice: true,
+);
+
+/// The shared secret every kiosk on the intercom holds: made on the first
+/// enable, copied or pasted between kiosks, synced by Fleet Management as
+/// a credential. A call from a kiosk with a different key is refused.
+const intercomKey = SettingDef<String>(
+  key: 'intercom.key',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Intercom key',
+  description:
+      'Kiosks with the same key can call each other. Fleet Management can '
+      'sync it.',
+  category: 'Intercom',
+  dependsOn: 'intercom.enabled',
+  placeholder: 'Made when the intercom is enabled',
+);
+
+/// The kiosk menu entry, like the screensaver's and HA kiosk mode's own
+/// opt-outs (issue #473). Kiosk Mode's Allowed Actions still gates it in
+/// the restricted menu.
+const intercomMenu = SettingDef<bool>(
+  key: 'intercom.menu',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show in the kiosk menu',
+  description: 'Add an Intercom entry to the kiosk menu.',
+  category: 'Intercom',
+  dependsOn: 'intercom.enabled',
+);
+
+const intercomAnswerMode = SettingDef<String>(
+  key: 'intercom.answer_mode',
+  type: SettingType.select,
+  defaultValue: 'ring',
+  title: 'Answer mode',
+  description:
+      'Ring asks on the screen. Answer automatically opens the call after '
+      'a chime.',
+  category: 'Intercom',
+  section: 'Answer',
+  options: ['ring', 'auto', 'dnd'],
+  optionLabels: {
+    'ring': 'Ring',
+    'auto': 'Answer automatically',
+    'dnd': 'Do not disturb',
+  },
+  dependsOn: 'intercom.enabled',
+);
+
+const intercomRingSeconds = SettingDef<String>(
+  key: 'intercom.ring_seconds',
+  type: SettingType.select,
+  defaultValue: '30',
+  title: 'Ring for',
+  description: 'How long a call rings before it counts as missed.',
+  category: 'Intercom',
+  section: 'Answer',
+  options: ['15', '30', '45', '60'],
+  optionLabels: {
+    '15': '15 seconds',
+    '30': '30 seconds',
+    '45': '45 seconds',
+    '60': '60 seconds',
+  },
+  dependsOn: 'intercom.enabled',
+);
+
+/// A file in the sounds folder like the notification sound, or empty for
+/// the bundled chime. Plays at the notification volume.
+const intercomRingSound = SettingDef<String>(
+  key: 'intercom.ring_sound',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Ring sound',
+  description: 'Plays at the notification volume.',
+  category: 'Intercom',
+  section: 'Answer',
+  dependsOn: 'intercom.enabled',
+  validator: validateNotificationSound,
+);
+
+/// Off, the kiosk refuses Announce to all from the other kiosks.
+const intercomAcceptAnnouncements = SettingDef<bool>(
+  key: 'intercom.accept_announcements',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Accept announcements',
+  description: 'Play Announce to all from the other kiosks.',
+  category: 'Intercom',
+  section: 'Answer',
+  dependsOn: 'intercom.enabled',
+);
+
+const intercomTalkMode = SettingDef<String>(
+  key: 'intercom.talk_mode',
+  type: SettingType.select,
+  defaultValue: 'ptt',
+  title: 'Talk mode',
+  description:
+      'Push to talk sends while the button is held. Hands free keeps the '
+      'microphone open for the whole call.',
+  category: 'Intercom',
+  section: 'Talk',
+  options: ['ptt', 'handsfree'],
+  optionLabels: {'ptt': 'Push to talk', 'handsfree': 'Hands free'},
+  dependsOn: 'intercom.enabled',
+);
+
+/// Beside the media and assistant faders: the intercom's own share of the
+/// master volume, the third voice the kiosk plays. 60 on the squared taper
+/// is 9 dB under the master: clearly heard, and every dB off the far voice
+/// is a dB less echo for the canceller and less of the distortion it cannot
+/// remove, which at 100 left a Galaxy Tab S8 half duplex.
+const intercomVolume = SettingDef<num>(
+  key: 'intercom.volume',
+  type: SettingType.number,
+  defaultValue: 60,
+  title: 'Intercom volume',
+  description:
+      "The other kiosk's voice and announcements play at this share of "
+      'the master volume.',
+  category: 'Screen & Audio',
+  section: 'Audio Volume',
+  min: 0,
+  max: 100,
+  step: 5,
+  unit: '%',
+  dependsOn: 'intercom.enabled',
+);
+
+// ── Alarms ─────────────────────────────────────────────────────────────
+// The kiosk's own alarms: they live here and ring without Home Assistant.
+// The list and the ringing state are hand-edited on both surfaces (the
+// full screen alarm list on the device, the Alarms page on the remote);
+// the defaults below render from these definitions.
+
+/// Every alarm, a JSON array of
+/// `{id, time: "HH:mm", days: [0..6, 0 = Sunday], date: "yyyy-MM-dd"?,
+/// label, tone, sunrise, on}`. `days` empty rings once, on `date`.
+const alarmsList = SettingDef<String>(
+  key: 'alarms.list',
+  type: SettingType.string,
+  defaultValue: '[]',
+  title: 'Alarms',
+  description: 'Every alarm set on this kiosk.',
+  category: 'Alarms',
+  hidden: true,
+  // A bedroom's wake up alarm is not the kitchen's: the defaults travel
+  // with the Alarms category, the alarms themselves never do.
+  perDevice: true,
+  validator: validateAlarmsList,
+);
+
+/// What the alarm manager keeps across a restart: the occurrence each
+/// alarm last rang for, and a ring or a snooze in progress.
+const alarmsRuntime = SettingDef<String>(
+  key: 'alarms.runtime',
+  type: SettingType.string,
+  defaultValue: '{}',
+  title: 'Alarm state',
+  description: 'Rings and snoozes in progress.',
+  category: 'Alarms',
+  hidden: true,
+  perDevice: true,
+);
+
+/// The Alarms entry in the kiosk menu. The restricted menu also needs
+/// Alarms under Kiosk Mode's Allowed Actions.
+const alarmsMenu = SettingDef<bool>(
+  key: 'alarms.menu',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show in the kiosk menu',
+  description: 'Add an Alarms entry to the kiosk menu.',
+  category: 'Alarms',
+);
+
+/// The alarm stream is set to this share of its range while an alarm
+/// rings, apart from the media and assistant volumes.
+const alarmsVolume = SettingDef<num>(
+  key: 'alarms.volume',
+  type: SettingType.number,
+  defaultValue: 0.7,
+  title: 'Alarm volume',
+  description: 'How loud alarms ring, apart from the media volume.',
+  category: 'Alarms',
+  section: 'Defaults',
+  min: 0.05,
+  max: 1,
+  step: 0.05,
+  unit: '%',
+);
+
+/// Alarms start quiet and grow to the alarm volume over
+/// [alarmsEaseInSeconds]. Each alarm follows this unless it was switched
+/// on or off by itself.
+const alarmsEaseIn = SettingDef<bool>(
+  key: 'alarms.ease_in',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Ease in the volume',
+  description: 'Start quiet and grow to the alarm volume.',
+  category: 'Alarms',
+  section: 'Defaults',
+);
+
+const alarmsEaseInSeconds = SettingDef<num>(
+  key: 'alarms.ease_in_seconds',
+  type: SettingType.number,
+  defaultValue: 30,
+  title: 'Ease in over',
+  description: 'How long an alarm takes to reach its full volume.',
+  category: 'Alarms',
+  section: 'Defaults',
+  min: 5,
+  max: 120,
+  step: 5,
+  unit: 's',
+  dependsOn: 'alarms.ease_in',
+);
+
+/// A file in the sounds folder, or empty for the built-in alarm. An alarm
+/// set to Default rings this.
+const alarmsTone = SettingDef<String>(
+  key: 'alarms.tone',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Alarm tone',
+  description: 'Plays at the alarm volume.',
+  category: 'Alarms',
+  section: 'Defaults',
+  validator: validateNotificationSound,
+);
+
+const alarmsSnoozeMinutes = SettingDef<String>(
+  key: 'alarms.snooze_minutes',
+  type: SettingType.select,
+  defaultValue: '10',
+  title: 'Snooze length',
+  description: 'How long Snooze holds an alarm off.',
+  category: 'Alarms',
+  section: 'Defaults',
+  options: ['5', '10', '15', '20', '25', '30'],
+  optionLabels: {
+    '5': '5 minutes',
+    '10': '10 minutes',
+    '15': '15 minutes',
+    '20': '20 minutes',
+    '25': '25 minutes',
+    '30': '30 minutes',
+  },
+);
+
+const alarmsSilenceAfterMinutes = SettingDef<String>(
+  key: 'alarms.silence_after_minutes',
+  type: SettingType.select,
+  defaultValue: '10',
+  title: 'Silence after',
+  description: 'An alarm nobody stops goes quiet after this long.',
+  category: 'Alarms',
+  section: 'Defaults',
+  options: ['5', '10', '15', '20', '30'],
+  optionLabels: {
+    '5': '5 minutes',
+    '10': '10 minutes',
+    '15': '15 minutes',
+    '20': '20 minutes',
+    '30': '30 minutes',
+  },
+);
+
+const alarmsSunriseMinutes = SettingDef<String>(
+  key: 'alarms.sunrise_minutes',
+  type: SettingType.select,
+  defaultValue: '30',
+  title: 'Sunrise length',
+  description: 'How long the screen takes to brighten before a sunrise alarm.',
+  category: 'Alarms',
+  section: 'Defaults',
+  options: ['10', '15', '20', '25', '30'],
+  optionLabels: {
+    '10': '10 minutes',
+    '15': '15 minutes',
+    '20': '20 minutes',
+    '25': '25 minutes',
+    '30': '30 minutes',
+  },
+);
+
+/// The Home Assistant text to speech entity an alarm speaks its phrase
+/// with; empty picks the first one Home Assistant has. Picked from the
+/// list, never typed, like the Announcements engine.
+const alarmsTtsEngine = SettingDef<String>(
+  key: 'alarms.tts_engine',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Text to speech engine',
+  description: 'The Home Assistant text to speech entity that speaks alarms.',
+  category: 'Alarms',
+  section: 'Text to Speech',
+  placeholder: 'First available',
+);
+
+/// The language alarms are spoken in, the Announcements language's twin.
+const alarmsTtsLanguage = SettingDef<String>(
+  key: 'alarms.tts_language',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Language',
+  description: 'The language alarms are spoken in.',
+  category: 'Alarms',
+  section: 'Text to Speech',
+  dependsOn: 'alarms.tts_engine',
+  dependsOnValue: {'ne': ''},
+  placeholder: 'Default',
+);
+
+/// The voice alarms are spoken with, the Announcements voice's twin.
+const alarmsTtsVoice = SettingDef<String>(
+  key: 'alarms.tts_voice',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Voice',
+  description: 'The voice that speaks alarms.',
+  category: 'Alarms',
+  section: 'Text to Speech',
+  dependsOn: 'alarms.tts_engine',
+  dependsOnValue: {'ne': ''},
+  placeholder: 'Default',
+);
+
+/// What an alarm set to speak says between its rings, unless it has a
+/// phrase of its own. {label}, {time} and {day} are filled in.
+const alarmsPhrase = SettingDef<String>(
+  key: 'alarms.phrase',
+  type: SettingType.string,
+  defaultValue: "It's {time}. {label}",
+  title: 'Phrase',
+  description:
+      "{label}, {time} and {day} become the alarm's label, time and day.",
+  category: 'Alarms',
+  section: 'Defaults',
+);
+
+/// The list must decode to alarms, or it is refused rather than stored:
+/// a bad write over the API would otherwise silently drop every alarm.
+String? validateAlarmsList(Object? value) {
+  if (value is! String) return 'Alarms must be a JSON array.';
+  try {
+    final raw = jsonDecode(value);
+    if (raw is! List) return 'Alarms must be a JSON array.';
+    for (final item in raw) {
+      if (item is! Map) return 'Each alarm must be an object.';
+      final time = '${item['time'] ?? ''}';
+      if (!RegExp(r'^([01]\d|2[0-3]):[0-5]\d$').hasMatch(time)) {
+        return 'Each alarm needs a time as HH:mm.';
+      }
+    }
+    return null;
+  } catch (_) {
+    return 'Alarms must be a JSON array.';
+  }
+}
 
 /// The categories a fleet leader can push, in the sidebar's order: the
 /// definitions category, the name both UIs show for it and what stays per
@@ -6321,7 +9428,7 @@ const shizukuInstallUpdates = SettingDef<bool>(
 const fleetSyncCategories = <(String, String, String)>[
   // ha.satellite_entity stays per kiosk; its row (Assigned satellite) is
   // on the Voice Satellite page, so the note goes there.
-  ('Home Assistant', 'Home Assistant Setup', ''),
+  ('Home Assistant', 'Home Assistant', ''),
   ('Voice Satellite', 'Voice Satellite', 'the assigned satellite'),
   (
     'Screen & Audio',
@@ -6342,6 +9449,8 @@ const fleetSyncCategories = <(String, String, String)>[
   ('Home', 'Home Launcher', ''),
   ('Launcher', 'App Launcher', ''),
   ('Gestures', 'Gestures', ''),
+  ('Intercom', 'Intercom', 'the key, unless synced as a credential'),
+  ('Alarms', 'Alarms', 'the alarms themselves'),
   (
     'Device',
     'Device',
@@ -6364,12 +9473,14 @@ const fleetCredentials = <(String, String)>[
   ('ha.token', 'Home Assistant token'),
   ('sendspin.ma_token', 'Music Assistant token'),
   ('screensaver.immich_api_key', 'Immich API key'),
+  ('intercom.key', 'Intercom key'),
 ];
 
 const fleetCredentialKeys = {
   'ha.token',
   'sendspin.ma_token',
   'screensaver.immich_api_key',
+  'intercom.key',
 };
 
 /// The dashboard: synced only when the leader was told to include it.
@@ -6381,6 +9492,8 @@ const fleetDashboardKeys = {'browser.start_url'};
 const fleetDefaultCredentials = {
   'sendspin.ma_token',
   'screensaver.immich_api_key',
+  // The intercom is one household: a fleet shares one key.
+  'intercom.key',
 };
 
 /// Excluded from every new profile: what scales the UI, drives the
@@ -6394,6 +9507,7 @@ const fleetDefaultExcluded = {
   'screensaver.website_zoom',
   'screensaver.clock_scale',
   'screensaver.widget_scale',
+  'screensaver.immich_metadata_scale',
   'screensaver.glance_scale',
   'face.preview_scale',
   'sendspin.player_size',
@@ -6422,13 +9536,200 @@ const fleetDefaultExcluded = {
   'camera.snapshot_resolution',
   // The notch handling: a panel thing, but harmless to bring back.
   'browser.cutout_mode',
+  // Which way the panel is mounted.
+  'screen.orientation',
+  // The intercom volume: every speaker is its own, like the other volumes.
+  'intercom.volume',
+  // The answer mode carries Do not disturb, which each room sets for itself.
+  'intercom.answer_mode',
+  // Voice Satellite's mute is the room's, and every room plays its sounds
+  // on its own speaker.
+  'voice.mute',
+  'voice.tts_output',
 };
 
 /// What [fleetDefaultExcluded] used to be, oldest first: a profile still on
 /// exactly one of these lists never had its exclusions touched and moves
-/// to the current default at load. Empty until the list first grows after
-/// a release.
-const fleetFormerDefaultExcluded = <Set<String>>[];
+/// to the current default at load.
+const fleetFormerDefaultExcluded = <Set<String>>[
+  // Before the screen orientation joined (2026.9.49).
+  {
+    'browser.zoom',
+    'screensaver.website_zoom',
+    'screensaver.clock_scale',
+    'screensaver.widget_scale',
+    'screensaver.glance_scale',
+    'face.preview_scale',
+    'sendspin.player_size',
+    'screen.default_brightness',
+    'screen.adaptive_min_brightness',
+    'screen.adaptive_max_brightness',
+    'screen.adaptive_dark_lux',
+    'screen.adaptive_bright_lux',
+    'screensaver.brightness_level',
+    'screensaver.dim_level',
+    'audio.media_volume',
+    'audio.assistant_volume',
+    'notifications.volume',
+    'ha.tap_sound_volume',
+    'screensaver.gallery_items',
+    'screensaver.local_folder',
+    'screensaver.clock_background',
+    'notifications.chime_file',
+    'launcher.apps',
+    'motion.sensitivity',
+    'motion.fps',
+    'face.sensitivity',
+    'camera.snapshot_resolution',
+    'browser.cutout_mode',
+  },
+  // Before the Immich metadata text scaling joined (2026.9.49).
+  {
+    'browser.zoom',
+    'screensaver.website_zoom',
+    'screensaver.clock_scale',
+    'screensaver.widget_scale',
+    'screensaver.glance_scale',
+    'face.preview_scale',
+    'sendspin.player_size',
+    'screen.default_brightness',
+    'screen.adaptive_min_brightness',
+    'screen.adaptive_max_brightness',
+    'screen.adaptive_dark_lux',
+    'screen.adaptive_bright_lux',
+    'screensaver.brightness_level',
+    'screensaver.dim_level',
+    'audio.media_volume',
+    'audio.assistant_volume',
+    'notifications.volume',
+    'ha.tap_sound_volume',
+    'screensaver.gallery_items',
+    'screensaver.local_folder',
+    'screensaver.clock_background',
+    'notifications.chime_file',
+    'launcher.apps',
+    'motion.sensitivity',
+    'motion.fps',
+    'face.sensitivity',
+    'camera.snapshot_resolution',
+    'browser.cutout_mode',
+    'screen.orientation',
+  },
+  // Before the intercom volume joined (2026.9.50).
+  {
+    'browser.zoom',
+    'screensaver.website_zoom',
+    'screensaver.clock_scale',
+    'screensaver.widget_scale',
+    'screensaver.immich_metadata_scale',
+    'screensaver.glance_scale',
+    'face.preview_scale',
+    'sendspin.player_size',
+    'screen.default_brightness',
+    'screen.adaptive_min_brightness',
+    'screen.adaptive_max_brightness',
+    'screen.adaptive_dark_lux',
+    'screen.adaptive_bright_lux',
+    'screensaver.brightness_level',
+    'screensaver.dim_level',
+    'audio.media_volume',
+    'audio.assistant_volume',
+    'notifications.volume',
+    'ha.tap_sound_volume',
+    'screensaver.gallery_items',
+    'screensaver.local_folder',
+    'screensaver.clock_background',
+    'notifications.chime_file',
+    'launcher.apps',
+    'motion.sensitivity',
+    'motion.fps',
+    'face.sensitivity',
+    'camera.snapshot_resolution',
+    'browser.cutout_mode',
+    'screen.orientation',
+  },
+  // Before the intercom answer mode joined (2026.9.80).
+  {
+    'browser.zoom',
+    'screensaver.website_zoom',
+    'screensaver.clock_scale',
+    'screensaver.widget_scale',
+    'screensaver.immich_metadata_scale',
+    'screensaver.glance_scale',
+    'face.preview_scale',
+    'sendspin.player_size',
+    'screen.default_brightness',
+    'screen.adaptive_min_brightness',
+    'screen.adaptive_max_brightness',
+    'screen.adaptive_dark_lux',
+    'screen.adaptive_bright_lux',
+    'screensaver.brightness_level',
+    'screensaver.dim_level',
+    'audio.media_volume',
+    'audio.assistant_volume',
+    'notifications.volume',
+    'ha.tap_sound_volume',
+    'screensaver.gallery_items',
+    'screensaver.local_folder',
+    'screensaver.clock_background',
+    'notifications.chime_file',
+    'launcher.apps',
+    'motion.sensitivity',
+    'motion.fps',
+    'face.sensitivity',
+    'camera.snapshot_resolution',
+    'browser.cutout_mode',
+    'screen.orientation',
+    'intercom.volume',
+  },
+  // Before Voice Satellite's mute and speaker joined (2026.9.87).
+  {
+    'browser.zoom',
+    'screensaver.website_zoom',
+    'screensaver.clock_scale',
+    'screensaver.widget_scale',
+    'screensaver.immich_metadata_scale',
+    'screensaver.glance_scale',
+    'face.preview_scale',
+    'sendspin.player_size',
+    'screen.default_brightness',
+    'screen.adaptive_min_brightness',
+    'screen.adaptive_max_brightness',
+    'screen.adaptive_dark_lux',
+    'screen.adaptive_bright_lux',
+    'screensaver.brightness_level',
+    'screensaver.dim_level',
+    'audio.media_volume',
+    'audio.assistant_volume',
+    'notifications.volume',
+    'ha.tap_sound_volume',
+    'screensaver.gallery_items',
+    'screensaver.local_folder',
+    'screensaver.clock_background',
+    'notifications.chime_file',
+    'launcher.apps',
+    'motion.sensitivity',
+    'motion.fps',
+    'face.sensitivity',
+    'camera.snapshot_resolution',
+    'browser.cutout_mode',
+    'screen.orientation',
+    'intercom.volume',
+    'intercom.answer_mode',
+  },
+];
+
+/// Hidden settings that travel in a fleet exactly when another one does:
+/// the adaptive brightness curve's middle points are shares of the span
+/// between its ends and mean nothing apart from them, so they go where
+/// Minimum brightness goes and never need a row of their own in a
+/// profile's exclusions.
+const fleetFollowsKey = {
+  'screen.adaptive_point2_position': 'screen.adaptive_min_brightness',
+  'screen.adaptive_point2_level': 'screen.adaptive_min_brightness',
+  'screen.adaptive_point3_position': 'screen.adaptive_min_brightness',
+  'screen.adaptive_point3_level': 'screen.adaptive_min_brightness',
+};
 
 /// What a new follower gets unless the leader says otherwise.
 const fleetDefaultCategories = {
@@ -6537,6 +9838,18 @@ const fleetLeaderInfo = SettingDef<String>(
   perDevice: true,
 );
 
+/// The member directory last received from this kiosk's leader.
+const fleetRoster = SettingDef<String>(
+  key: 'fleet.roster',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Fleet roster',
+  description: 'Internal: known fleet members and their admin addresses.',
+  category: 'Fleet',
+  hidden: true,
+  perDevice: true,
+);
+
 /// The leader revision this kiosk last applied in full or empty while
 /// dirty (a synced setting changed here since), which the leader answers
 /// with a fresh push.
@@ -6580,6 +9893,76 @@ const fleetLastSyncAt = SettingDef<num>(
 
 // ── Device ─────────────────────────────────────────────────────────────
 
+/// Suppress the battery readings on a panel whose board invents one.
+///
+/// The mains-powered kiosk boards in this fleet report a battery that does
+/// not exist: `present: true`, a level pinned at exactly 50, 3300 mV, a
+/// charge counter of -1000, and a status of DISCHARGING while sitting on
+/// AC. Every one of those passes the range check in [batteryPercent], so
+/// the panel shows "50%" forever and Home Assistant gets a battery sensor
+/// that never moves.
+///
+/// A switch rather than a heuristic on purpose. The obvious tell -- a
+/// negative or absent charge counter -- is also what a genuine tablet
+/// reports when its kernel simply does not expose that property, and a real
+/// battery hidden by a clever guess is a worse failure than a fake one
+/// shown. Whoever mounted the panel on the wall knows whether it has a
+/// battery; nothing else on the device does.
+/// Publish the proximity sensor to Home Assistant.
+///
+/// The sensor already drives screensaver dismissal; this is the capability
+/// switch that also makes it an entity, so an automation can use it — to
+/// pause a panel's camera streams when nobody is in front of it, say.
+///
+/// Off by default and separate from the screensaver switches on purpose:
+/// they are about waking a screen, this is about telling the house what the
+/// panel can see, and a panel may well want one without the other.
+const proximitySensor = SettingDef<bool>(
+  key: 'proximity.sensor',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Proximity sensor',
+  description:
+      'Expose proximity as a Home Assistant sensor, so automations can tell '
+      'whether someone is at the panel. Costs nothing to run — unlike the '
+      'camera motion sensor, the hardware reports changes on its own. Most '
+      'proximity sensors only reach a few centimetres, so check the range '
+      'before relying on it.',
+  category: 'Screensaver',
+  section: 'Proximity Detection',
+  subpage: 'Proximity Detection',
+);
+
+const proximitySensorOffDelay = SettingDef<int>(
+  key: 'proximity.sensor_off_delay',
+  type: SettingType.number,
+  defaultValue: 10,
+  title: 'Clear after',
+  description: 'Seconds without proximity before the sensor reads clear.',
+  category: 'Screensaver',
+  section: 'Proximity Detection',
+  subpage: 'Proximity Detection',
+  min: 1,
+  max: 300,
+  step: 1,
+  unit: 's',
+  dependsOn: 'proximity.sensor',
+);
+
+const noBattery = SettingDef<bool>(
+  key: 'device.no_battery',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'No battery',
+  description:
+      'Hide the battery readings on a mains-powered panel. Some kiosk '
+      'boards report a battery that is not there, stuck at a level that '
+      'never changes; turn this on and the charge is left out of the '
+      'status widget, Home Assistant and the admin pages entirely.',
+  category: 'Device',
+  perDevice: true,
+);
+
 const deviceName = SettingDef<String>(
   key: 'device.name',
   type: SettingType.string,
@@ -6610,8 +9993,8 @@ const deviceHostname = SettingDef<String>(
   defaultValue: '',
   title: 'mDNS name',
   description:
-      'Reach the remote admin at http://<name>.local:<port> on the local '
-      'network. Clear it to take the device name again.',
+      'Reach the remote admin using this name and the configured port on the '
+      'local network. Clear it to take the device name again.',
   category: 'Device',
   placeholder: 'Set from the device name',
   normalizer: normalizeHostnameSetting,
@@ -6630,6 +10013,21 @@ String effectiveHostname(String typed, String deviceName) {
   if (chosen.isNotEmpty) return chosen;
   return esphomeNodeFromDeviceName(deviceName);
 }
+
+const uiLanguage = SettingDef<String>(
+  key: 'ui.language',
+  type: SettingType.select,
+  defaultValue: 'en',
+  title: 'Language',
+  description:
+      'Language for Kiosk Satellite and remote administration. '
+      'Home Assistant keeps its own language.',
+  category: 'Device',
+  section: 'User Interface',
+  options: messageLanguageOptions,
+  optionLabels: messageLanguageLabels,
+  perDevice: true,
+);
 
 const uiTheme = SettingDef<String>(
   key: 'ui.theme',
@@ -6691,6 +10089,61 @@ const legacyWebView = SettingDef<bool>(
 // scales; the WebViews opt back out (UiScaleExempt), since web pages have
 // their own zoom settings and are the reason a high density device needs
 // this at all: the dashboard is sized right while the chrome reads tiny.
+/// Runs this install as a management agent rather than a kiosk.
+///
+/// Not every Android box on the network is a wall panel. A projector, a
+/// media box, a spare tablet: the useful part of Kiosk Satellite there is
+/// what it already knows how to do - publish the device to Home Assistant
+/// over ESPHome, answer the remote admin, take updates and belong to the
+/// fleet - and the useless part is everything that draws a dashboard or
+/// listens for a wake word.
+///
+/// So this is a mode, not a second build: one branch in the manager list
+/// rather than a separate artifact to build, sign and deploy on every sync.
+/// The browser, kiosk lock, launchers, screensavers, theater mode, cameras,
+/// motion, voice, media players and the intercom are never started; settings,
+/// the screen, the foreground service, ESPHome, the remote admin, updates and
+/// fleet membership are. The app shows a status screen instead of a page.
+///
+/// Read once at startup, because managers are constructed and initialized
+/// there - changing it takes a restart, which the description says.
+const agentMode = SettingDef<bool>(
+  key: 'device.agent_mode',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Agent mode',
+  description:
+      'Run as a management agent instead of a kiosk: no dashboard, '
+      'screensaver, voice or cameras, but still a Home Assistant device with '
+      'its sensors, the remote admin, updates and fleet membership. For a '
+      'projector, a media box or anything that is not a wall panel. Takes a '
+      'restart.',
+  category: 'Device',
+  section: 'User Interface',
+  perDevice: true,
+);
+
+// The accessibility service carries remote keys and the System UI guard,
+// and some firmware turns it off behind the owner's back (the HY260
+// projector clears it at random). With WRITE_SECURE_SETTINGS granted over
+// adb, Kiosk Satellite puts its own service back whenever it is removed
+// (AccessibilityKeeper.kt). Without the grant this does nothing.
+const keepAccessibility = SettingDef<bool>(
+  key: 'device.keep_accessibility',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Keep accessibility service on',
+  description:
+      'Turn the Kiosk Satellite accessibility service back on whenever '
+      'something turns it off. Needs android.permission.WRITE_SECURE_SETTINGS '
+      'granted over adb; does nothing without it.',
+  category: 'Gestures',
+  // Shown in the Gestures page's Remote keys card (both UIs), beside the
+  // warning it answers, not in a generic settings list.
+  hidden: true,
+  perDevice: true,
+);
+
 const uiScale = SettingDef<num>(
   key: 'ui.scale',
   type: SettingType.number,
@@ -6709,6 +10162,281 @@ const uiScale = SettingDef<num>(
 );
 
 /// All settings, in display order.
+// Theater mode: a runtime state, not a setting (see TheaterManager). These
+// are the levels and behaviours it uses; a caller turning it on may override
+// the first six for that activation only. It lives on the Screen & Audio page
+// as a section rather than a page of its own, so the settings screen and the
+// remote admin render it with no code of their own.
+
+const theaterBacklight = SettingDef<num>(
+  key: 'theater.backlight',
+  type: SettingType.number,
+  defaultValue: 0,
+  title: 'Backlight while dimmed',
+  description:
+      'Screen brightness in theater mode. 0 is the lowest the panel can go; '
+      'the dimming layer takes it darker still.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  min: 0,
+  max: 1,
+  step: 0.05,
+  unit: '%',
+);
+
+const theaterOverlayOpacity = SettingDef<num>(
+  key: 'theater.overlay_opacity',
+  type: SettingType.number,
+  defaultValue: 0.6,
+  title: 'Dimming',
+  description:
+      'How much a black layer darkens the page in theater mode, below what '
+      'the backlight can do on its own.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  min: 0,
+  max: 0.95,
+  step: 0.05,
+  unit: '%',
+);
+
+const theaterPeekBrightness = SettingDef<num>(
+  key: 'theater.peek_brightness',
+  type: SettingType.number,
+  defaultValue: 0.3,
+  title: 'Brightness when touched',
+  description:
+      'Screen brightness while the panel is woken by a touch or an alert.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  min: 0,
+  max: 1,
+  step: 0.05,
+  unit: '%',
+);
+
+const theaterPeekSeconds = SettingDef<num>(
+  key: 'theater.peek_seconds',
+  type: SettingType.number,
+  defaultValue: 8,
+  title: 'Stay bright for',
+  description: 'How long the panel stays bright after the last touch.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  min: 3,
+  max: 60,
+  step: 1,
+  unit: 's',
+);
+
+const theaterBlackAfterMinutes = SettingDef<num>(
+  key: 'theater.black_after_minutes',
+  type: SettingType.number,
+  defaultValue: 0,
+  title: 'Go black after',
+  description:
+      'Turn the dimmed panel fully black after this long without a touch. '
+      'The screen stays on, so the next touch shows a current page. '
+      '0 never goes black.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  min: 0,
+  max: 240,
+  step: 5,
+  unit: ' min',
+);
+
+const theaterFirstTouchWakes = SettingDef<bool>(
+  key: 'theater.first_touch_wakes',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'First touch only wakes the screen',
+  description:
+      'While dimmed, the first touch brightens the panel and is not passed '
+      'to the page, so a finger landing on a button in the dark presses '
+      'nothing.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+);
+
+const theaterIgnoreAmbientWake = SettingDef<bool>(
+  key: 'theater.ignore_ambient_wake',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Ignore people moving',
+  description:
+      'Motion, face, proximity and person detection do not brighten the '
+      'panel in theater mode. Home Assistant still sees them.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+);
+
+const theaterPeekOnAlerts = SettingDef<bool>(
+  key: 'theater.peek_on_alerts',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Brighten for alerts',
+  description:
+      'Announcements, notifications, camera views, voice turns and the '
+      'intercom brighten the panel while they show.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+);
+
+const theaterMuteWakeWord = SettingDef<bool>(
+  key: 'theater.mute_wake_word',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Mute the wake word',
+  description:
+      'Stop listening for the wake word in theater mode, so a film cannot '
+      'set it off. It comes back when theater mode ends.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+);
+
+// A page that may use theater mode from inside a frame: the theater
+// panel's web app on a Home Assistant Webpage dashboard, so the dashboard
+// around it keeps running Voice Satellite. The bridge itself stays main-frame
+// only; the dashboard relays theater calls from a frame at exactly this
+// origin (theater_relay_script.dart), and nothing else.
+const theaterFrameUrl = SettingDef<String>(
+  key: 'theater.frame_url',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Page allowed from a frame',
+  description:
+      'A page shown in a frame on a Home Assistant dashboard, such as a '
+      'Webpage dashboard, that may turn theater mode on and off. Only that '
+      'exact site is allowed. Leave empty for none.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  validator: validateCustomStartUrl,
+);
+
+const theaterMaxHours = SettingDef<num>(
+  key: 'theater.max_hours',
+  type: SettingType.number,
+  defaultValue: 6,
+  title: 'Turn off after',
+  description:
+      'Theater mode turns itself off after this long however it was turned '
+      'on, so a lost "off" never leaves the panel dark for days.',
+  category: 'Screen & Audio',
+  section: 'Theater mode',
+  min: 0.05,
+  max: 24,
+  step: 0.05,
+  unit: ' h',
+);
+
+// ── Headless management ────────────────────────────────────────────────
+//
+// For a box whose screen belongs to another app - a projector, a media
+// box - usually in agent mode: the remote, the playback and the app in
+// front, as Home Assistant sees them (AgentToolsManager). Every one is off
+// until turned on, and per device.
+
+const remoteKeysReport = SettingDef<bool>(
+  key: 'gestures.remote_keys.report',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Send remote keys to Home Assistant',
+  description:
+      'Fire the Remote key event in Home Assistant for each key pressed on '
+      'the remote: navigation, media, volume, colour and function keys, '
+      'never letters or digits. Needs the accessibility service.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
+const nowPlaying = SettingDef<bool>(
+  key: 'device.now_playing',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Report what is playing',
+  description:
+      'Publish the app, title, artist and state of whatever plays on this '
+      'device to Home Assistant, with play, pause and skip controls. Needs '
+      'notification access, which Kiosk Satellite turns on itself when it '
+      'holds WRITE_SECURE_SETTINGS.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
+const homeApp = SettingDef<String>(
+  key: 'device.home_app',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Home app',
+  description:
+      'The package this device should normally show, such as '
+      'com.spocky.projengmenu. Empty for none.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
+const homeAppAtBoot = SettingDef<bool>(
+  key: 'device.home_app_at_boot',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Open the home app at boot',
+  description: 'Start the home app once the device has booted.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
+const homeAppIdleMinutes = SettingDef<num>(
+  key: 'device.home_app_idle_minutes',
+  type: SettingType.number,
+  defaultValue: 0,
+  min: 0,
+  max: 240,
+  step: 5,
+  unit: 'min',
+  title: 'Return to the home app when idle',
+  description:
+      'After this many minutes with no remote key pressed and nothing '
+      'playing, bring the home app back to the front. 0 turns it off.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
+const rebootTime = SettingDef<String>(
+  key: 'device.reboot_time',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Daily restart',
+  description:
+      'Restart the device every day at this time (24-hour, HH:MM). Empty '
+      'for never. Needs Kiosk Satellite to be able to restart the device '
+      '(device owner).',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
+const hotThreshold = SettingDef<num>(
+  key: 'device.hot_threshold',
+  type: SettingType.number,
+  defaultValue: 85,
+  min: 50,
+  max: 110,
+  step: 1,
+  unit: '°C',
+  title: 'Running hot above',
+  description:
+      'The Running hot sensor turns on while the CPU is hotter than this.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
 const List<SettingDef<Object>> allSettings = [
   startUrl,
   secureProxy,
@@ -6723,6 +10451,7 @@ const List<SettingDef<Object>> allSettings = [
   browserInjectJsExternal,
   allowMixedContent,
   ignoreSslErrors,
+  webviewDebugging,
   webMicrophone,
   webCamera,
   webGeolocation,
@@ -6740,11 +10469,15 @@ const List<SettingDef<Object>> allSettings = [
   kioskDisablePullRefresh,
   kioskDisableGestures,
   gestureMappings,
+  gestureRemoteKeysEnabled,
   clapStrictness,
+  handGestureHoldSeconds,
   kioskAllowDrawer,
   kioskAllowDashboard,
   kioskAllowHaKiosk,
   kioskAllowCamera,
+  kioskAllowIntercom,
+  kioskAllowAlarms,
   kioskAllowMusic,
   kioskAllowSendspinPlayer,
   kioskAllowScreensaver,
@@ -6770,6 +10503,7 @@ const List<SettingDef<Object>> allSettings = [
   setBrightnessOnLaunch,
   defaultBrightness,
   browserCutoutMode,
+  screenOrientation,
   // After the whole Screen group: the remote places a page's entry row
   // where its first definition sits, and the device puts the entry card
   // under the Screen card.
@@ -6778,15 +10512,19 @@ const List<SettingDef<Object>> allSettings = [
   adaptiveMaxBrightness,
   adaptiveDarkLux,
   adaptiveBrightLux,
+  adaptivePoint2Position,
+  adaptivePoint2Level,
+  adaptivePoint3Position,
+  adaptivePoint3Level,
   mediaVolume,
+  intercomVolume,
   assistantVolume,
-  assistantFullVolumeRange,
   audioMicDevice,
   audioSpeakerDevice,
-  micAudioSource,
-  micAgc,
+  micSoftwareEchoCancellation,
   micNoiseSuppression,
   micGainDb,
+  micCaptureFormat,
   // Hand-built row: renders after the gain in both UIs, and only when the
   // selected microphone reports more than one channel.
   micChannel,
@@ -6798,6 +10536,8 @@ const List<SettingDef<Object>> allSettings = [
   screensaverBrightnessLevel,
   screensaverNotificationBrightness,
   screensaverScreenOffMinutes,
+  screensaverScreenOffBlack,
+  screensaverScreenOffWakeToScreensaver,
   // Pixel shift sits with the general controls: it applies to every mode.
   screensaverPixelShift,
   screensaverMenu,
@@ -6809,6 +10549,35 @@ const List<SettingDef<Object>> allSettings = [
   screensaverMiniClock24h,
   screensaverMiniClockDate,
   screensaverMode,
+  screensaverWeatherEntity,
+  screensaverWeatherLightning,
+  screensaverWeatherBlur,
+  screensaverWeatherAlarmTakeover,
+  screensaverWeatherClock,
+  screensaverWeatherClockVertical,
+  screensaverWeatherClockFont,
+  screensaverWeatherClockFontWeight,
+  screensaverWeatherClock24h,
+  screensaverWeatherClockSeconds,
+  screensaverWeatherClockDate,
+  screensaverWeatherClockScale,
+  screensaverWeatherClockColor,
+  screensaverWeatherClockShadow,
+  screensaverWeatherBar,
+  screensaverWeatherBarScale,
+  screensaverWeatherBarColor,
+  screensaverWeatherBarOpacity,
+  screensaverWeatherBarShadow,
+  screensaverWeatherBarTitles,
+  screensaverWeatherBarLocation,
+  screensaverWeatherBarFeelsLike,
+  screensaverWeatherBarForecast,
+  screensaverWeatherBarHumidity,
+  screensaverWeatherBarWind,
+  screensaverWeatherBarVisibility,
+  screensaverWeatherPreview,
+  screensaverWeatherPreviewCondition,
+  screensaverWeatherPreviewPeriod,
   // One titled panel per mode, in the dropdown's order; only the panel of
   // the selected mode is visible (each setting depends on the mode).
   screensaverDimLevel,
@@ -6816,6 +10585,7 @@ const List<SettingDef<Object>> allSettings = [
   screensaverSavedBrightness,
   screensaverBlackHideExtras,
   screensaverClockStyle,
+  screensaverClockVertical,
   screensaverClockFont,
   screensaverClockFontWeight,
   screensaverClock24h,
@@ -6831,11 +10601,13 @@ const List<SettingDef<Object>> allSettings = [
   screensaverFlipBackdropColor,
   screensaverRollerDigitColor,
   screensaverRollerBgColor,
+  screensaverClockAlarmTakeover,
   screensaverClockNight,
   screensaverClockNightLux,
   screensaverClockNightColor,
   screensaverClockNightBgColor,
   screensaverClockNightHideBackground,
+  screensaverClockNightHideWidgets,
   screensaverClockNightCardColor,
   screensaverMediaId,
   screensaverMediaIsFolder,
@@ -6871,6 +10643,7 @@ const List<SettingDef<Object>> allSettings = [
   screensaverImmichTransition,
   screensaverImmichFill,
   screensaverImmichPairPortrait,
+  screensaverImmichPairLandscape,
   screensaverImmichEdgeTaps,
   screensaverImmichMetadata,
   screensaverImmichMetadataAlbum,
@@ -6879,10 +10652,12 @@ const List<SettingDef<Object>> allSettings = [
   screensaverImmichMetadataLocation,
   screensaverImmichMetadataPosition,
   screensaverImmichMetadataTextShadow,
+  screensaverImmichMetadataScale,
   screensaverImmichVignetteStrength,
   screensaverImmichPeople,
   screensaverImmichExcludePeople,
   screensaverImmichTags,
+  screensaverImmichExcludeTags,
   screensaverImmichFavoritesOnly,
   screensaverImmichTakenWithin,
   screensaverImmichTakenFrom,
@@ -6895,10 +10670,13 @@ const List<SettingDef<Object>> allSettings = [
   screensaverCameraMute,
   screensaverCameraView,
   screensaverCameraViewName,
+  screensaverDashboardView,
   // The Widgets group: corner overlays riding over the mode panels above,
   // so it sits between them and the other overlay group, At a Glance.
   screensaverWidgets,
   screensaverWidgetScale,
+  screensaverWidgetFont,
+  screensaverWidgetFontWeight,
   screensaverWidgetTextShadow,
   screensaverVignetteStrength,
   // The behavior rows first, then the Appearance group under its own
@@ -6907,6 +10685,8 @@ const List<SettingDef<Object>> allSettings = [
   screensaverGlanceEntities,
   screensaverGlanceNowPlaying,
   screensaverGlanceScale,
+  screensaverGlanceFont,
+  screensaverGlanceFontWeight,
   screensaverGlanceHideNames,
   screensaverGlanceBwIcons,
   screensaverGlanceTextOnly,
@@ -6940,22 +10720,93 @@ const List<SettingDef<Object>> allSettings = [
   motionFps,
   motionSensitivity,
   motionStartDelay,
+  // The Person Sensor page (Meta Portal only) sits under Motion Sensor.
+  personSensorEnabled,
   cameraRtspEnabled,
+  cameraStreamingProtocol,
   cameraRtspPort,
+  cameraOnvifPort,
   cameraRtspResolution,
+  cameraRtspAnalysis,
   cameraRtspFps,
   cameraRtspBitrate,
   cameraRtspAudio,
   cameraRtspAuth,
   cameraRtspUsername,
   cameraRtspPassword,
+  cameraRtspDateTime,
+  cameraRtspDateTimeBackground,
+  cameraRtspTls,
   screensaverScheduleEnabled,
   screensaverSchedule,
   wakeWordEnabled,
   wakeWordPreferFp32,
   wakeWordBackground,
+  wakeWordReturnToBackground,
   wakeWordResumeTimeoutSeconds,
+  wakeWordDiagnostics,
   vsNativePipeline,
+  voiceRuntime,
+  voiceEnabled,
+  voiceMute,
+  voiceSeamlessWake,
+  voiceFollowupDelayMs,
+  voiceFollowupChime,
+  voiceTtsOutput,
+  voiceTtsOutputMode,
+  voiceWakeWordEngine,
+  voiceWakeWords,
+  voiceHaPipeline,
+  voiceHaPipeline2,
+  voiceHaVadSensitivity,
+  voiceHaWakeWord,
+  voiceHaWakeWord2,
+  voicePendingSelects,
+  voiceEngine1,
+  voiceEngine2,
+  voiceRealtimeOpenAiApiKey,
+  voiceRealtimeOpenAiModel,
+  voiceRealtimeOpenAiVoice,
+  voiceRealtimeOpenAiEndpoint,
+  voiceRealtimeOpenAiValidated,
+  voiceRealtimeXaiApiKey,
+  voiceRealtimeXaiModel,
+  voiceRealtimeXaiVoice,
+  voiceRealtimeXaiEndpoint,
+  voiceRealtimeXaiValidated,
+  voiceRealtimeInstructions,
+  voiceRealtimeIdleSeconds,
+  voiceRealtimeTalkOver,
+  voiceRealtimeTools,
+  voiceRealtimeMcpUrl,
+  voiceRealtimeMcpToken,
+  voiceWakeWordSensitivity,
+  voiceNoiseGate,
+  voiceStopWord,
+  voiceWakeArbitration,
+  voiceWakeArbitrationWindowMs,
+  voiceSkin,
+  voiceTheme,
+  voiceOverlayMode,
+  voiceDockPosition,
+  voiceBackgroundOpacity,
+  voiceTextScale,
+  voiceReactiveBar,
+  voiceShowCommand,
+  voiceShowAnswer,
+  voiceShowTools,
+  voiceHideSentimentTags,
+  voiceAnswerLinger,
+  voiceResultsLinger,
+  voiceAnnouncementLinger,
+  voiceTimerPills,
+  voiceTimerNameInPill,
+  voiceTimerPillScale,
+  voiceMuteTimers,
+  voiceTimerNameOnAlert,
+  voiceTimerSpeak,
+  voiceTimerPhrase,
+  voiceTimerNamedPhrase,
   haUrl,
   haToken,
   haAutoLogin,
@@ -6965,6 +10816,9 @@ const List<SettingDef<Object>> allSettings = [
   haKioskHideSidebar,
   haKioskMenu,
   haDashboardCarousel,
+  uiHiddenPages,
+  uiCollapsedGroups,
+  haPreloadViews,
   haCarouselOverCards,
   haHaptics,
   haHapticsStrength,
@@ -7005,6 +10859,9 @@ const List<SettingDef<Object>> allSettings = [
   sendspinPlayerSource,
   sendspinPlayer,
   sendspinDuckPercent,
+  sendspinEsphomeEntities,
+  sendspinVolumeKeys,
+  sendspinVolumeKeyStep,
   sendspinPlayerName,
   sendspinEnabled,
   sendspinServer,
@@ -7045,6 +10902,7 @@ const List<SettingDef<Object>> allSettings = [
   sendspinLyricsFallback,
   sendspinLyricsOffset,
   sendspinPlayerPos,
+  voiceTimerPosition,
   sendspinClientId,
   sendspinPlayerActive,
   sendspinLocalPlayerName,
@@ -7060,10 +10918,25 @@ const List<SettingDef<Object>> allSettings = [
   // The Notifications page sits above the Bluetooth Proxy one.
   notificationsTransparency,
   notificationsBlur,
+  voiceWakeSound,
+  voiceChimeWake,
+  voiceChimeDone,
+  voiceChimeError,
+  voiceChimeTimer,
+  voiceChimeAnnounce,
   notificationsChimeFile,
   notificationsVolume,
+  announcementsEnabled,
+  announcementsTtsEngine,
+  announcementsTtsLanguage,
+  announcementsTtsVoice,
+  announcementsChime,
+  announcementsChimeFile,
   btproxyEnabled,
   btproxyScanDuty,
+  btproxyMinAdvertiseRssi,
+  btproxyFilter,
+  btproxyFilterIrks,
   btproxyConnections,
   btproxyMinConnectRssi,
   btproxyMacLookup,
@@ -7075,26 +10948,84 @@ const List<SettingDef<Object>> allSettings = [
   esphomeRealMac,
   esphomeMacOverride,
   deviceName,
+  noBattery,
+  proximitySensor,
+  proximitySensorOffDelay,
   deviceHostname,
   disableImpeller,
   legacyWebView,
   // The User Interface group: consecutive, or the heading would repeat.
+  uiLanguage,
   uiTheme,
+  agentMode,
+  keepAccessibility,
   uiScale,
   // The two pages, service first, close the Device page.
   serviceCpuAwake,
   remoteEnabled,
   remotePort,
+  remoteTls,
   remotePassword,
   remoteFleetDiscovery,
+  updateSource,
+  updateSourceUrl,
   shizukuInstallUpdates,
+  // The Kiosk Satellite Analytics page is the last group on the Device
+  // page, after Permissions Manager (settings_screen places its entry).
+  remoteKeysReport,
+  nowPlaying,
+  homeApp,
+  homeAppAtBoot,
+  homeAppIdleMinutes,
+  rebootTime,
+  hotThreshold,
+  analyticsBasic,
+  analyticsUsage,
+  analyticsDiagnostics,
   fleetLeader,
   fleetAutoUpdate,
   fleetProfiles,
   fleetFollowers,
   fleetInvite,
   fleetLeaderInfo,
+  fleetRoster,
   fleetAppliedRevision,
   fleetSyncedKeys,
   fleetLastSyncAt,
+  intercomEnabled,
+  intercomKey,
+  intercomMenu,
+  intercomAnswerMode,
+  intercomRingSeconds,
+  intercomRingSound,
+  intercomAcceptAnnouncements,
+  intercomTalkMode,
+  theaterBacklight,
+  theaterOverlayOpacity,
+  theaterPeekBrightness,
+  theaterPeekSeconds,
+  theaterBlackAfterMinutes,
+  theaterFirstTouchWakes,
+  theaterIgnoreAmbientWake,
+  theaterPeekOnAlerts,
+  theaterMuteWakeWord,
+  theaterMaxHours,
+  theaterFrameUrl,
+  startPage,
+  customStartUrl,
+  intercomTls,
+  alarmsList,
+  alarmsRuntime,
+  alarmsMenu,
+  alarmsVolume,
+  alarmsEaseIn,
+  alarmsEaseInSeconds,
+  alarmsTone,
+  alarmsSnoozeMinutes,
+  alarmsSilenceAfterMinutes,
+  alarmsSunriseMinutes,
+  alarmsPhrase,
+  alarmsTtsEngine,
+  alarmsTtsLanguage,
+  alarmsTtsVoice,
 ];

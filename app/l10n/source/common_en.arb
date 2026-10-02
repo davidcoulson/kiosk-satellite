@@ -1,0 +1,239 @@
+{
+  "@@locale": "en",
+  "commonImport": "Import",
+  "@commonImport": {
+    "context": "Common:Actions",
+    "description": "Button to import a configuration file."
+  },
+  "commonBack": "Back",
+  "@commonBack": {
+    "context": "Common:Actions",
+    "description": "Button to return to the previous step."
+  },
+  "commonNext": "Next",
+  "@commonNext": {
+    "context": "Common:Actions",
+    "description": "Button to advance to the next step."
+  },
+  "commonFinish": "Finish",
+  "@commonFinish": {
+    "context": "Common:Actions",
+    "description": "Button to complete setup."
+  },
+  "commonWorking": "Working…",
+  "@commonWorking": {
+    "context": "Common:Actions",
+    "description": "Button label while an operation is running."
+  },
+  "commonSettings": "Settings",
+  "@commonSettings": {
+    "context": "Common:Actions",
+    "description": "Heading for Settings and the drawer action that opens it."
+  },
+  "commonCancel": "Cancel",
+  "@commonCancel": {
+    "context": "Common:Actions",
+    "description": "Button to dismiss a dialog without applying its action."
+  },
+  "commonOk": "OK",
+  "@commonOk": {
+    "context": "Common:Actions",
+    "description": "Button to dismiss a message."
+  },
+  "commonGrant": "Grant",
+  "@commonGrant": {
+    "context": "Common:Actions",
+    "description": "Button to grant an Android permission."
+  },
+  "commonEnable": "Enable",
+  "@commonEnable": {
+    "context": "Common:Actions",
+    "description": "Button to enable a feature."
+  },
+  "commonRefresh": "Refresh",
+  "@commonRefresh": {
+    "context": "Common:Actions",
+    "description": "Button to refresh the displayed status."
+  },
+  "commonTest": "Test",
+  "@commonTest": {
+    "context": "Common:Actions",
+    "description": "Button to test a connection."
+  },
+  "commonInstall": "Install",
+  "@commonInstall": {
+    "context": "Common:Actions",
+    "description": "Button to install an update."
+  },
+  "commonSave": "Save",
+  "@commonSave": {
+    "context": "Common:Actions",
+    "description": "Button to save edited settings."
+  },
+  "commonRetry": "Retry",
+  "@commonRetry": {
+    "context": "Common:Actions",
+    "description": "Button to retry a failed action."
+  },
+  "commonCopy": "Copy",
+  "@commonCopy": {
+    "context": "Common:Actions",
+    "description": "Button to copy a value to the clipboard."
+  },
+  "commonAdd": "Add",
+  "@commonAdd": {
+    "context": "Common:Actions",
+    "description": "Add action button."
+  },
+  "commonRemove": "Remove",
+  "@commonRemove": {
+    "context": "Common:Actions",
+    "description": "Remove action button."
+  },
+  "commonClose": "Close",
+  "@commonClose": {
+    "context": "Common:Actions",
+    "description": "Close action button."
+  },
+  "commonClear": "Clear",
+  "@commonClear": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonBrowse": "Browse",
+  "@commonBrowse": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonSet": "Set",
+  "@commonSet": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonHour": "Hour",
+  "@commonHour": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonMinute": "Minute",
+  "@commonMinute": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonUp": "Up",
+  "@commonUp": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonDown": "Down",
+  "@commonDown": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonDelete": "Delete",
+  "@commonDelete": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonSaveFailed": "Could not save",
+  "@commonSaveFailed": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonColorWhite": "White",
+  "@commonColorWhite": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonColorWarm": "Warm",
+  "@commonColorWarm": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonColorAmber": "Amber",
+  "@commonColorAmber": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonColorRed": "Red",
+  "@commonColorRed": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonColorGreen": "Green",
+  "@commonColorGreen": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonColorBlue": "Blue",
+  "@commonColorBlue": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonColorCyan": "Cyan",
+  "@commonColorCyan": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonColorDim": "Dim",
+  "@commonColorDim": {
+    "context": "Common:Dialogs",
+    "description": "Shared dialog action, time picker label or color preset."
+  },
+  "commonEdit": "Edit",
+  "@commonEdit": {
+    "context": "Common:Dialogs",
+    "description": "Shared picker action or loading state."
+  },
+  "commonMoveUp": "Move up",
+  "@commonMoveUp": {
+    "context": "Common:Dialogs",
+    "description": "Shared picker action or loading state."
+  },
+  "commonMoveDown": "Move down",
+  "@commonMoveDown": {
+    "context": "Common:Dialogs",
+    "description": "Shared picker action or loading state."
+  },
+  "commonPreviousMonth": "Previous month",
+  "@commonPreviousMonth": {
+    "context": "Common:Dialogs",
+    "description": "Shared picker action or loading state."
+  },
+  "commonNextMonth": "Next month",
+  "@commonNextMonth": {
+    "context": "Common:Dialogs",
+    "description": "Shared picker action or loading state."
+  },
+  "commonLoading": "Loading…",
+  "@commonLoading": {
+    "context": "Common:Dialogs",
+    "description": "Shared picker action or loading state."
+  },
+  "commonChoose": "Choose",
+  "@commonChoose": {
+    "context": "Common:Actions",
+    "description": "Button to choose an item."
+  },
+  "dlnaPortInvalid": "Enter a port between 1024 and 65535, or leave it empty",
+  "@dlnaPortInvalid": {
+    "context": "Shared server port validation",
+    "description": "Validation error for the server port.",
+    "x-locations": {
+      "device": [
+        "Settings > DLNA Renderer > Server port",
+        "Settings > ESPHome > API port"
+      ],
+      "remoteAdmin": [
+        "DLNA Renderer > Server port",
+        "ESPHome > API port"
+      ]
+    },
+    "x-notes": "Empty is a valid choice. Preserve the numeric port bounds."
+  },
+  "commonSelectAll": "Select all",
+  "@commonSelectAll": {
+    "context": "Common:Actions",
+    "description": "Select every item in a multi-selection list."
+  }
+}

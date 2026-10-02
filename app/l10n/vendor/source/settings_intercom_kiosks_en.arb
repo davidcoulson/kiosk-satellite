@@ -1,0 +1,147 @@
+{
+  "@@locale": "en",
+  "intercomKiosks": "Kiosks",
+  "@intercomKiosks": {
+    "context": "Settings > Intercom > Kiosks",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Kiosks"
+      ],
+      "remoteAdmin": [
+        "Intercom > Kiosks"
+      ]
+    }
+  },
+  "intercomRosterHelp": "Discovered kiosks and saved fleet members. A kiosk is ready when it is reachable with intercom on, the same key and matching encryption settings.",
+  "@intercomRosterHelp": {
+    "context": "Settings > Intercom > Kiosks",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Kiosks"
+      ],
+      "remoteAdmin": [
+        "Intercom > Kiosks"
+      ]
+    }
+  },
+  "intercomNoOther": "No other kiosks found",
+  "@intercomNoOther": {
+    "context": "Settings > Intercom > Kiosks",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Kiosks"
+      ]
+    }
+  },
+  "intercomRosterDeviceHelp": "Kiosks with Remote management and Find other kiosks on show up here.",
+  "@intercomRosterDeviceHelp": {
+    "context": "Settings > Intercom > Kiosks",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Kiosks"
+      ]
+    }
+  },
+  "intercomNoneHeard": "No kiosks found",
+  "@intercomNoneHeard": {
+    "context": "Settings > Intercom > Kiosks",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Intercom > Kiosks"
+      ]
+    }
+  },
+  "intercomRosterRemoteHelp": "Kiosks appear through network discovery or saved fleet membership. Remote management and Find other kiosks must be on.",
+  "@intercomRosterRemoteHelp": {
+    "context": "Settings > Intercom > Kiosks",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Intercom > Kiosks"
+      ]
+    }
+  },
+  "intercomReady": "Ready",
+  "@intercomReady": {
+    "context": "Settings > Intercom > Kiosks",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Kiosks"
+      ],
+      "remoteAdmin": [
+        "Intercom > Kiosks"
+      ]
+    }
+  },
+  "intercomOff": "Intercom off",
+  "@intercomOff": {
+    "context": "Settings > Intercom > Kiosks",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Kiosks"
+      ],
+      "remoteAdmin": [
+        "Intercom > Kiosks"
+      ]
+    }
+  },
+  "intercomDifferentKey": "Different key",
+  "@intercomDifferentKey": {
+    "context": "Settings > Intercom > Kiosks",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Kiosks"
+      ],
+      "remoteAdmin": [
+        "Intercom > Kiosks"
+      ]
+    }
+  },
+  "intercomUnreachable": "Unreachable",
+  "@intercomUnreachable": {
+    "context": "Settings > Intercom > Kiosks",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Kiosks"
+      ],
+      "remoteAdmin": [
+        "Intercom > Kiosks"
+      ]
+    }
+  },
+  "intercomOffline": "Offline",
+  "@intercomOffline": {
+    "context": "Settings > Intercom > Kiosks",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Kiosks"
+      ],
+      "remoteAdmin": [
+        "Intercom > Kiosks"
+      ]
+    }
+  },
+  "intercomChecking": "Checking…",
+  "@intercomChecking": {
+    "context": "Settings > Intercom > Kiosks",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Kiosks"
+      ],
+      "remoteAdmin": [
+        "Intercom > Kiosks"
+      ]
+    }
+  }
+}

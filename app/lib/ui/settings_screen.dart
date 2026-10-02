@@ -1,3 +1,5 @@
+import 'alarms_overlay.dart' show AlarmsManageCard;
+import '../l10n/fleet_messages.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -13,6 +15,9 @@ import 'package:flutter/services.dart';
 
 import '../app_container.dart';
 import '../core/events.dart';
+import '../l10n/messages.dart';
+import '../l10n/generated/language_codes.dart';
+import '../l10n/generated/localization_credits.dart';
 import '../core/logging.dart';
 import '../managers/btproxy/ble_identity.dart' show rssiTier, sortNearbyJson;
 import '../managers/camera/models.dart'
@@ -28,37 +33,51 @@ import '../managers/device/wifi_mac.dart'
     show WifiMacIdentity, WifiMacSource, wifiMacIdentity;
 import '../managers/settings/definitions.dart';
 import '../managers/person/person_sensor_manager.dart' show LogAccess;
+import '../managers/sendspin/session_player.dart' show SessionPlayer;
+import '../managers/sendspin/sendspin_manager.dart' show SendspinManager;
 import '../managers/service/service_manager.dart'
     show batteryAdbHint, overlayAdbHint;
 import '../managers/settings/export_filename.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'brightness_curve_editor.dart';
 
 import '../core/permissions.dart';
+import '../managers/voice/realtime/openai_realtime_backend.dart';
 import '../managers/wake_word/background_listening.dart';
 import '../managers/wake_word/system_permissions.dart';
+import 'start_page_card.dart';
 import 'color_picker.dart';
+import 'weather_mood_settings.dart';
 import 'date_picker.dart';
 import 'gesture_settings.dart';
 import 'entity_picker.dart';
 import 'esphome_entity_picker.dart';
+import 'hidden_pages_picker.dart';
 import 'glance_entity_picker.dart';
 import 'camera_settings.dart';
+import 'tls_settings.dart';
 import 'fleet_settings.dart';
 import 'camera_views_picker.dart';
+import 'dashboard_view_picker.dart';
 import 'import_options_dialog.dart';
+import 'intercom_settings.dart';
+import 'custom_wake_models.dart';
 import 'kit.dart';
 import 'time_picker.dart';
 import 'media_picker.dart';
 import 'theme.dart';
 import 'toast.dart';
+import 'voice_settings.dart';
 import 'mic_level_meter.dart';
 import 'settings_search.dart';
 import 'subpage_icons.dart';
 import 'shizuku_settings.dart';
 import '../managers/wake_word/permission_descriptions.dart';
 import 'wake_word_tester.dart';
+import 'wake_activations.dart';
 import 'update_helper_settings.dart';
 import 'plugin_settings.dart';
+import 'package:kiosk_satellite/core/lifecycle.dart';
 
 /// Render a category's settings as cards: consecutive settings sharing a
 /// `section` become one card under one [SectionHeading]; unsectioned runs
@@ -114,6 +133,17 @@ List<Widget> _sectionedCards(
             subpage: def.subpage!,
           ),
         );
+        if (def.category == 'Device' &&
+            def.subpage == 'Remote Administration') {
+          flush();
+          buffer.add(
+            _SubpageEntryTile(
+              container: container,
+              category: 'Device',
+              subpage: 'TLS',
+            ),
+          );
+        }
       }
       continue;
     }
@@ -124,7 +154,21 @@ List<Widget> _sectionedCards(
       // A page whose only group repeats its own title says it twice; the
       // bar already carries the name, so the heading goes.
       if (current != null && !(out.isEmpty && current == subpage)) {
-        out.add(SectionHeading(current));
+        final heading = current;
+        out.add(
+          (def.category == 'ESPHome' ||
+                  def.category == 'Device' ||
+                  def.category == 'Home Assistant' ||
+                  def.category == 'Screen & Audio' ||
+                  def.category == 'Screensaver' ||
+                  def.category == 'Voice Satellite')
+              ? Builder(
+                  builder: (context) => SectionHeading(
+                    settingsPageText(context, def.category, heading),
+                  ),
+                )
+              : SectionHeading(heading),
+        );
       }
     }
     buffer.add(
@@ -144,15 +188,43 @@ const _mediaPlayerIntro =
     'player has a track playing or a queue loaded. With nothing playing '
     'or queued, neither appears.';
 
+// The Kiosk Satellite Analytics page opens with this, above its three
+// switches, and the docs link says the rest. Mirrored word for word on the
+// remote (renderAnalyticsIntro in device.js).
+const _analyticsIntro =
+    'Share anonymized information from your installation to help make '
+    'Kiosk Satellite better and guide which devices and features get '
+    'attention.';
+const _analyticsDocsUrl = 'https://kiosksatellite.com/docs/analytics/';
+const _voiceAlarmsDocsUrl =
+    'https://kiosksatellite.com/docs/alarms/#setting-alarms-by-voice';
+
+// The Updates page closes with a link to the custom repository guide: the
+// folder layout, the releases file and the APK names live in the docs, not
+// in a row description. Mirrored on the remote (renderUpdateSourceDocs in
+// device.js).
+const _updateDocsUrl =
+    'https://kiosksatellite.com/docs/updates/'
+    '#custom-repository';
+
 /// (defs category, page title, icon, subtitle)
 // The icon is a Material [IconData], or the path of an SVG asset for a
 // category named after a product with a mark of its own.
 const _categories = <(String, String, Object, String)>[
   (
     'Home Assistant',
-    'Home Assistant Setup',
+    'Home Assistant',
     'assets/svg/home-assistant.svg',
     'Connection, dashboard, kiosk mode',
+  ),
+  // ESPHome first: native Voice Satellite runs on its device.
+  (
+    'ESPHome',
+    'ESPHome',
+    // Another product-named category (like Music Assistant): it wears the
+    // ESPHome mark, not a Material glyph.
+    'assets/svg/esphome.svg',
+    'Native entities and Bluetooth proxy',
   ),
   (
     'Voice Satellite',
@@ -166,19 +238,13 @@ const _categories = <(String, String, Object, String)>[
     Icons.brightness_6_outlined,
     'Brightness, volume, microphone',
   ),
-  ('Browser', 'Web Browsing', Icons.public, 'Cache, SSL, Zoom level'),
   (
     'Screensaver',
     'Screensaver',
     Icons.dark_mode_outlined,
     'Idle timeout, modes, motion wake',
   ),
-  (
-    'Camera',
-    'Camera',
-    Icons.photo_camera_outlined,
-    'Device camera, motion, RTSP stream',
-  ),
+  ('Browser', 'Web Browsing', Icons.public, 'Cache, SSL, Zoom level'),
   (
     'Sendspin',
     'Media Player',
@@ -186,24 +252,24 @@ const _categories = <(String, String, Object, String)>[
     'Music Assistant, Sendspin, Sonos',
   ),
   (
-    'Cameras',
-    'Camera Streams',
-    Icons.videocam_outlined,
-    'Go2RTC and Home Assistant cameras',
-  ),
-  (
     'DLNA',
     'DLNA Renderer',
     Icons.cast_outlined,
     'Play images, videos and audio remotely',
   ),
+  ('Intercom', 'Intercom', Icons.speaker_phone_outlined, 'Talk between kiosks'),
+  ('Alarms', 'Alarms', Icons.alarm, 'Set alarms, tone, snooze, sunrise'),
   (
-    'ESPHome',
-    'ESPHome',
-    // Another product-named category (like Music Assistant): it wears the
-    // ESPHome mark, not a Material glyph.
-    'assets/svg/esphome.svg',
-    'Native entities and Bluetooth proxy',
+    'Camera',
+    'Camera',
+    Icons.photo_camera_outlined,
+    'Device camera, motion, streaming',
+  ),
+  (
+    'Cameras',
+    'Camera Streams',
+    Icons.videocam_outlined,
+    'Go2RTC and Home Assistant cameras',
   ),
   (
     'Kiosk',
@@ -242,9 +308,21 @@ const _categories = <(String, String, Object, String)>[
     Icons.extension_rounded,
     'Install and manage plugins',
   ),
-  ('About', 'About', Icons.info_outline, 'Version, author, license'),
   ('Logs', 'Logs', Icons.article_outlined, 'App log and web console'),
+  ('About', 'About', Icons.info_outline, 'Version, author, license'),
 ];
+
+/// The rail's headings, keyed by the category that opens each group. The
+/// groups and their order match the remote admin sidebar: pick a heading,
+/// then choose among a few pages, instead of reading the whole list. The
+/// icon colors keep cycling across groups, so neighbors never share one.
+const _railGroups = <String, String>{
+  'Home Assistant': 'Home Assistant',
+  'Screen & Audio': 'Display',
+  'Sendspin': 'Media & Cameras',
+  'Kiosk': 'Kiosk',
+  'Device': 'System',
+};
 
 List<SettingDef<Object>> _defsFor(String category) => [
   for (final def in allSettings)
@@ -252,6 +330,15 @@ List<SettingDef<Object>> _defsFor(String category) => [
         !def.hidden &&
         !deviceHiddenKeys.contains(def.key))
       def,
+];
+
+/// The definitions the category page renders in place. The Device page
+/// keeps its Kiosk Satellite Analytics entry out of the run: that page is
+/// the last group on the page, after Permissions Manager, so its entry row
+/// is placed by hand there rather than where its first setting sits.
+List<SettingDef<Object>> _inlineDefsFor(String category) => [
+  for (final def in _defsFor(category))
+    if (category != 'Device' || def.subpage != 'Kiosk Satellite Analytics') def,
 ];
 
 /// A category icon the way One UI paints them: a solid color disc with a
@@ -306,6 +393,67 @@ class _CategoryIcon extends StatelessWidget {
   }
 }
 
+/// A group heading over the category tiles, the remote admin sidebar's:
+/// a small uppercase label, letter-spaced, in the muted ink the subtitles
+/// use, set on the tile's inset so it sits over the discs. Every group but
+/// the first opens with room above it, so the heading reads as a break
+/// between groups rather than as the previous tile's caption.
+class _RailHeading extends StatelessWidget {
+  const _RailHeading(
+    this.text, {
+    required this.first,
+    this.collapsed = false,
+    this.onTap,
+  });
+
+  final String text;
+  final bool first;
+
+  /// Whether this group's tiles are folded away. Only meaningful with
+  /// [onTap]; a heading with no handler is a plain label, as it was.
+  final bool collapsed;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final label = Text(
+      navigationText(context, text).toUpperCase(),
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1,
+      ),
+    );
+    final padding = EdgeInsets.fromLTRB(16, first ? 4 : 18, 16, 6);
+
+    if (onTap == null) return Padding(padding: padding, child: label);
+
+    // The whole heading row is the target, not just the chevron: it is a
+    // wall panel, and the label is the part a finger aims at.
+    return Semantics(
+      button: true,
+      expanded: !collapsed,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: padding,
+          child: Row(
+            children: [
+              Expanded(child: label),
+              Icon(
+                collapsed ? Icons.expand_more : Icons.expand_less,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Hierarchical settings, One UI style: on a wide screen the category list is
 /// a rail that stays put on the left while the selected category's settings
 /// fill the right pane; on a narrow screen the rail is a page of its own and
@@ -344,15 +492,145 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// back arrow of its own — One UI's tablet behavior.
   String? _subpage;
 
-  late final List<SettingsSearchEntry> _staticSearchIndex =
-      buildSettingsSearchIndex([
-        for (final (category, title, _, subtitle) in _categories)
-          (category, title, subtitle),
-      ]);
+  Object? _searchMessages;
+  List<SettingsSearchEntry>? _cachedSearchIndex;
+
+  List<SettingsSearchEntry> get _staticSearchIndex {
+    final messages = l10n(context);
+    if (!identical(messages, _searchMessages)) {
+      _searchMessages = messages;
+      _cachedSearchIndex = buildSettingsSearchIndex(
+        [
+          for (final (category, title, _, subtitle) in _categories)
+            (category, title, subtitle),
+        ],
+        pageText: (text) => navigationText(context, text),
+        deviceTextFor: (text) => deviceText(context, text),
+        haTextFor: (text) => haText(context, text),
+        screenAudioTextFor: (text) => screenAudioText(context, text),
+        screensaverTextFor: (text) => screensaverText(context, text),
+        launcherTextFor: (text) => launcherText(context, text),
+        kioskTextFor: (text) => kioskText(context, text),
+        esphomeTextFor: (text) => esphomeText(context, text),
+        voiceTextFor: (text) => voiceText(context, text),
+        gestureTextFor: (text) => gestureText(context, text),
+        fleetTextFor: (text) => fleetText(context, text),
+        pluginTextFor: (text) => pluginText(context, text),
+        intercomTextFor: (text) => intercomText(context, text),
+        alarmsTextFor: (text) => settingsPageText(context, 'Alarms', text),
+        mediaTextFor: (text) => mediaText(context, text),
+        cameraStreamsTextFor: (text) => cameraStreamsText(context, text),
+        cameraTextFor: (text) => cameraText(context, text),
+        titleFor: (def) => def.localizedTitle(context),
+        descriptionFor: (def) => def.localizedDescription(context),
+      );
+    }
+    return _cachedSearchIndex!;
+  }
+
+  /// Search deliberately still finds hidden pages. Hiding declutters a
+  /// list someone scrolls at a wall; it is not access control, and a panel
+  /// that cannot reach a page it hid is a panel someone has to fetch a
+  /// laptop for. Kiosk lockdown and the PIN are what actually restrict.
+
+  /// Categories the owner has hidden. Indices into [_categories] stay
+  /// stable -- selection and the icon palette are positional -- so hiding
+  /// happens at render, never by filtering the table itself.
+  Set<String> get _hidden =>
+      decodeStringSet(widget.container.settings.get(uiHiddenPages));
+
+  bool _isHidden(String category) => _hidden.contains(category);
+
+  /// Rail groups the owner has rolled up, by heading. Read at render like
+  /// [_hidden], so a change from Remote Admin or another surface shows up
+  /// without this screen holding its own copy to keep in step.
+  Set<String> get _collapsedGroups =>
+      decodeStringSet(widget.container.settings.get(uiCollapsedGroups));
+
+  bool _isCollapsed(String heading) => _collapsedGroups.contains(heading);
+
+  /// The heading of the group [category] belongs to, not just the one it
+  /// draws: [_headingFor] answers only for the category that opens a group,
+  /// and the tiles under it need to know what they are folded into.
+  String? _groupOf(String category) {
+    String? current;
+    for (final (_, (candidate, _, _, _)) in _categories.indexed) {
+      final heading = _railGroups[candidate];
+      if (heading != null) current = heading;
+      if (candidate == category) return current;
+    }
+    return null;
+  }
+
+  /// Whether this category's tile is folded away right now. A category
+  /// ahead of the first heading belongs to no group and never folds.
+  bool _isFolded(String category) {
+    final group = _groupOf(category);
+    return group != null && _isCollapsed(group);
+  }
+
+  Future<void> _toggleGroup(String heading) async {
+    final next = {..._collapsedGroups};
+    if (!next.remove(heading)) next.add(heading);
+    await widget.container.settings.set(
+      uiCollapsedGroups,
+      json.encode(next.toList()..sort()),
+    );
+    if (mounted) setState(() {});
+  }
+
+  /// The group heading this category should draw, if any.
+  ///
+  /// [_railGroups] marks the first category of each group, so hiding that
+  /// one would take its group's heading with it and leave the rest of the
+  /// group sitting under the previous heading. The heading moves to the
+  /// first category still shown in its run instead.
+  String? _headingFor(String category) {
+    String? pending;
+    for (final (candidate, _, _, _) in _categories) {
+      final heading = _railGroups[candidate];
+      if (heading != null) pending = heading;
+      if (_isHidden(candidate)) continue;
+      if (pending != null) {
+        if (candidate == category) return pending;
+        pending = null;
+      }
+      if (candidate == category) return null;
+    }
+    return null;
+  }
+
+  /// The first group with anything left to show: its heading wants the
+  /// tighter top margin, and that is no longer group 0 once the pages
+  /// above it are hidden.
+  int get _firstVisibleHubGroup {
+    for (final (index, (_, entries)) in _hubGroups.indexed) {
+      if (entries.any((e) => !_isHidden(e.$2.$1))) return index;
+    }
+    return 0;
+  }
+
+  /// Index of the first category still shown: the heading above it wants
+  /// the tighter top margin, and that is no longer index 0 once the pages
+  /// before it are hidden.
+  int get _firstVisibleIndex {
+    for (final (index, (category, _, _, _)) in _categories.indexed) {
+      if (!_isHidden(category)) return index;
+    }
+    return 0;
+  }
 
   List<SettingsSearchEntry> get _searchIndex => [
-    ..._staticSearchIndex,
-    ...pluginSettingsSearchEntries(widget.container.plugins.installed.value),
+    for (final entry in _staticSearchIndex)
+      if (matchesVoiceRuntime(
+        entry,
+        native: widget.container.voice.nativeRuntime,
+      ))
+        entry,
+    ...pluginSettingsSearchEntries(
+      widget.container.plugins.installed.value,
+      textFor: (text) => pluginText(context, text),
+    ),
   ];
 
   String get _query => _searchCtl.text.trim();
@@ -475,12 +753,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: (_) =>
                   setState(() => _showResults = _query.isNotEmpty),
               decoration: InputDecoration(
-                hintText: 'Search settings',
+                hintText: l10n(context).settingsSearchHint,
                 prefixIcon: Icon(Icons.search, color: scheme.onSurfaceVariant),
                 suffixIcon: _query.isEmpty
                     ? null
                     : IconButton(
-                        tooltip: 'Clear search',
+                        tooltip: l10n(context).settingsSearchClear,
                         icon: const Icon(Icons.close, size: 20),
                         onPressed: () => setState(() {
                           _searchCtl.clear();
@@ -541,7 +819,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Icon(Icons.search, size: 26),
               const SizedBox(width: 12),
               Text(
-                'Search results',
+                l10n(context).settingsSearchResults,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontFamily: Ks.displayFont,
                   fontWeight: FontWeight.w600,
@@ -557,7 +835,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(Ks.inset, 12, Ks.inset, 12),
           child: Text(
-            'No settings match "$_query".',
+            l10n(context).settingsSearchEmpty(_query),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -581,7 +859,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               .where((c) => c.$1 == category)
               .map((c) => c.$2)
               .firstOrNull;
-          children.add(SectionHeading(title ?? entry.category));
+          children.add(
+            SectionHeading(navigationText(context, title ?? entry.category)),
+          );
         }
         rows.add(
           ListTile(
@@ -670,7 +950,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Settings',
+                              l10n(context).commonSettings,
                               style: theme.textTheme.headlineMedium?.copyWith(
                                 fontFamily: Ks.displayFont,
                                 fontWeight: FontWeight.w600,
@@ -679,7 +959,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.close),
-                            tooltip: 'Close',
+                            tooltip: l10n(context).commonClose,
                             onPressed: () => Navigator.of(context).pop(),
                           ),
                         ],
@@ -694,9 +974,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: ListView(
                           padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
                           children: [
-                            for (final (index, (_, title, icon, subtitle))
-                                in _categories.indexed)
-                              _railTile(context, index, title, icon, subtitle),
+                            for (final (
+                                  index,
+                                  (category, title, icon, subtitle),
+                                )
+                                in _categories.indexed) ...[
+                              if (!_isHidden(category)) ...[
+                                if (_headingFor(category) case final heading?)
+                                  _RailHeading(
+                                    heading,
+                                    first: index == _firstVisibleIndex,
+                                    collapsed: _isCollapsed(heading),
+                                    onTap: () => _toggleGroup(heading),
+                                  ),
+                                // The rail runs flat over every category, so
+                                // the tile asks which group it sits under
+                                // rather than reading a heading it may not
+                                // have drawn itself.
+                                if (!_isFolded(category))
+                                  _railTile(
+                                    context,
+                                    index,
+                                    title,
+                                    icon,
+                                    subtitle,
+                                  ),
+                              ],
+                            ],
                           ],
                         ),
                       ),
@@ -735,7 +1039,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 child: _widePane(
                                   context,
                                   storageKey: 'settings-pane-$category',
-                                  title: title,
+                                  title: navigationText(context, title),
                                   icon: icon,
                                   child: _CategoryContent(
                                     key: ValueKey(category),
@@ -749,11 +1053,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   context,
                                   storageKey:
                                       'settings-sub-$category-$_subpage',
-                                  title: pluginSubpageTitle(
-                                    widget.container,
-                                    category,
-                                    _subpage!,
-                                  ),
+                                  title:
+                                      (category == 'About' ||
+                                          category == 'Voice Satellite' ||
+                                          category == 'ESPHome' ||
+                                          category == 'Device' ||
+                                          category == 'Home Assistant' ||
+                                          category == 'Screen & Audio' ||
+                                          category == 'Screensaver')
+                                      ? settingsPageText(
+                                          context,
+                                          category,
+                                          _subpage!,
+                                        )
+                                      : pluginSubpageTitle(
+                                          widget.container,
+                                          category,
+                                          _subpage!,
+                                        ),
                                   icon: category == 'Plugins'
                                       ? Icons.extension_rounded
                                       : subpageIcon(_subpage!),
@@ -801,7 +1118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (onBack != null) ...[
                   IconButton(
                     icon: const Icon(Icons.arrow_back),
-                    tooltip: 'Back',
+                    tooltip: l10n(context).commonBack,
                     onPressed: onBack,
                   ),
                   const SizedBox(width: 4),
@@ -886,14 +1203,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title,
+                        navigationText(context, title),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        subtitle,
+                        navigationText(context, subtitle),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -914,9 +1231,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// Narrow screens: the classic hub page; categories push on top of it.
   /// The search field sits under the title; typing swaps the category list
   /// for results, and results push their pane like a category tap does.
+  /// The categories in their rail groups, each entry keeping its place in
+  /// [_categories] so the icon color cycle runs on across group edges.
+  static List<(String, List<(int, (String, String, Object, String))>)>
+  get _hubGroups {
+    final groups = <(String, List<(int, (String, String, Object, String))>)>[];
+    for (final entry in _categories.indexed) {
+      final heading = _railGroups[entry.$2.$1];
+      if (heading != null) groups.add((heading, []));
+      groups.last.$2.add(entry);
+    }
+    return groups;
+  }
+
   Widget _hub(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(l10n(context).commonSettings)),
       body: constrainedColumn(
         Column(
           children: [
@@ -931,33 +1261,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: ListView(
                         padding: Ks.pagePadding,
                         children: [
-                          SettingsCard(
-                            children: [
-                              for (final (
-                                    index,
-                                    (category, title, icon, subtitle),
-                                  )
-                                  in _categories.indexed)
-                                ListTile(
-                                  leading: _CategoryIcon(
-                                    index: index,
-                                    icon: icon,
-                                  ),
-                                  title: Text(title),
-                                  subtitle: Text(subtitle),
-                                  trailing: const Icon(Icons.chevron_right),
-                                  onTap: () => Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => CategorySettingsScreen(
-                                        container: widget.container,
-                                        title: title,
-                                        category: category,
-                                      ),
-                                    ),
-                                  ),
+                          for (final (index, (heading, entries))
+                              in _hubGroups.indexed)
+                            if (entries.any((e) => !_isHidden(e.$2.$1))) ...[
+                              _RailHeading(
+                                heading,
+                                first: index == _firstVisibleHubGroup,
+                                collapsed: _isCollapsed(heading),
+                                onTap: () => _toggleGroup(heading),
+                              ),
+                              if (!_isCollapsed(heading))
+                                SettingsCard(
+                                  children: [
+                                    for (final (
+                                          index,
+                                          (category, title, icon, subtitle),
+                                        )
+                                        in entries)
+                                      if (!_isHidden(category))
+                                        ListTile(
+                                          leading: _CategoryIcon(
+                                            index: index,
+                                            icon: icon,
+                                          ),
+                                          title: Text(
+                                            navigationText(context, title),
+                                          ),
+                                          subtitle: Text(
+                                            navigationText(context, subtitle),
+                                          ),
+                                          trailing: const Icon(
+                                            Icons.chevron_right,
+                                          ),
+                                          onTap: () =>
+                                              Navigator.of(context).push(
+                                                MaterialPageRoute<void>(
+                                                  builder: (_) =>
+                                                      CategorySettingsScreen(
+                                                        container:
+                                                            widget.container,
+                                                        title: title,
+                                                        category: category,
+                                                      ),
+                                                ),
+                                              ),
+                                        ),
+                                  ],
                                 ),
                             ],
-                          ),
                         ],
                       ),
                     ),
@@ -1019,7 +1370,7 @@ class CategorySettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
               ],
-              Text(title),
+              Text(navigationText(context, title)),
             ],
           ),
         ),
@@ -1113,8 +1464,9 @@ class _RemoteStatusRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<String?>(
       valueListenable: container.remote.stoppedReason,
-      builder: (context, reason, _) =>
-          reason == null ? const SizedBox.shrink() : WarnRow(reason),
+      builder: (context, reason, _) => reason == null
+          ? const SizedBox.shrink()
+          : WarnRow(localizedRemoteReason(context, reason)),
     );
   }
 }
@@ -1163,8 +1515,12 @@ class _SubpageEntryTile extends StatelessWidget {
       // hangs the hint under the name, past the glyph, on any pane.
       child: ListTile(
         leading: SubpageGlyph(subpage),
-        title: Text(subpage),
-        subtitle: hint == null ? null : Text(hint),
+        title: Text(
+          _subpageDisplayTitle(context, container, category, subpage),
+        ),
+        subtitle: hint == null
+            ? null
+            : Text(settingsPageText(context, category, hint)),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => nav == null
             ? Navigator.of(context).push(
@@ -1230,7 +1586,21 @@ class SubpageSettingsScreen extends StatelessWidget {
             const SizedBox(width: 12),
             Flexible(
               child: Text(
-                pluginSubpageTitle(container, category, subpage),
+                (category == 'About' ||
+                        category == 'Voice Satellite' ||
+                        category == 'ESPHome' ||
+                        category == 'Device' ||
+                        category == 'Home Assistant' ||
+                        category == 'Screen & Audio' ||
+                        category == 'Screensaver' ||
+                        category == 'Camera')
+                    ? _subpageDisplayTitle(
+                        context,
+                        container,
+                        category,
+                        subpage,
+                      )
+                    : pluginSubpageTitle(container, category, subpage),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -1304,7 +1674,7 @@ class _CategoryContentState extends State<_CategoryContent> {
     }
     return [
       cards.first,
-      WarnRow('The ESPHome server failed to start: $_espStartError'),
+      WarnRow(l10n(context).esphomeStartFailed(_espStartError!)),
       ...cards.skip(1),
     ];
   }
@@ -1368,6 +1738,14 @@ class _CategoryContentState extends State<_CategoryContent> {
         if (mounted) setState(() {});
       });
     }
+    if (widget.category == 'Camera') {
+      unawaited(widget.container.deviceCamera.refreshStreamResolutions());
+      // The Person Sensor page is hidden where the device has no person
+      // sensor of its own (issue #734).
+      widget.container.personSensor.sensorSupport().then((_) {
+        if (mounted) setState(() {});
+      });
+    }
     // The face rows read the vision runtime's answer the same way
     // (issue #331: Android 7 cannot load it).
     if (widget.category == 'Screensaver') {
@@ -1403,38 +1781,20 @@ class _CategoryContentState extends State<_CategoryContent> {
         const Duration(seconds: 5),
         (_) => _pollBtAdapter(),
       );
-      // The encryption key is written by the manager ~500ms after Enable
-      // ESPHome is switched on (behind the restart debounce), which is
-      // AFTER the toggle's own rebuild. Without this, the key row keeps
-      // its placeholder until the next unrelated tap and the page reads
-      // as if enabling did nothing.
-      _keyEcho = widget.container.bus.on<SettingChanged>().listen((e) {
-        if (e.key == btproxyKey.key && mounted) setState(() {});
-      });
     }
-    // Adaptive brightness (issue #343) is switched on its own page and on
-    // the remote admin, and the Default brightness row standing down and
-    // the screensaver's bright-room hints answer for it: this page must
-    // hear the flip, not wait for its next tap.
-    if (widget.category == 'Screen & Audio' ||
-        widget.category == 'Screensaver') {
-      _keyEcho = widget.container.bus.on<SettingChanged>().listen((e) {
-        if (e.key == adaptiveBrightness.key && mounted) setState(() {});
-      });
-    }
-    // The launcher's permissions group follows Return automatically; a
-    // flip from the remote admin must show or hide it here too.
-    if (widget.category == 'Launcher') {
-      _keyEcho = widget.container.bus.on<SettingChanged>().listen((e) {
-        if ((e.key == launcherAutoReturn.key || e.key == launcherEnabled.key) &&
-            mounted) {
-          setState(() {});
-        }
-      });
-    }
+    // Remote saves, fleet updates and manager writes use the same event.
+    // Listen while this pane is open, including cross-category dependencies.
+    // Flutter combines events in the same frame into one rebuild.
+    _settingsEcho = widget.container.bus.on<SettingChanged>().listen((_) {
+      if (mounted) setState(() {});
+    });
+    _optionsEcho = widget.container.bus.on<SettingOptionsChanged>().listen((_) {
+      if (mounted) setState(() {});
+    });
   }
 
-  StreamSubscription<SettingChanged>? _keyEcho;
+  StreamSubscription<SettingChanged>? _settingsEcho;
+  StreamSubscription<SettingOptionsChanged>? _optionsEcho;
 
   @override
   void dispose() {
@@ -1443,7 +1803,8 @@ class _CategoryContentState extends State<_CategoryContent> {
     );
     _btAdapterTimer?.cancel();
     _fleetEcho?.cancel();
-    _keyEcho?.cancel();
+    _settingsEcho?.cancel();
+    _optionsEcho?.cancel();
     super.dispose();
   }
 
@@ -1453,7 +1814,12 @@ class _CategoryContentState extends State<_CategoryContent> {
     ToastKind kind = ToastKind.info,
   }) {
     if (!mounted) return;
-    showToast(context, title: title, message: message, kind: kind);
+    showToast(
+      context,
+      title: deviceText(context, title),
+      message: message == null ? null : deviceText(context, message),
+      kind: kind,
+    );
   }
 
   Future<void> _exportConfig() async {
@@ -1506,8 +1872,8 @@ class _CategoryContentState extends State<_CategoryContent> {
     if (!mounted) return;
     final options = await showImportOptionsDialog(
       context,
-      backupDeviceName: config is Map
-          ? '${(config['settings'] as Map?)?['device.name'] ?? ''}'
+      backupDeviceName: config is Map && config['settings'] is Map
+          ? '${config['settings']['device.name'] ?? ''}'
           : null,
     );
     if (options == null) return;
@@ -1519,19 +1885,33 @@ class _CategoryContentState extends State<_CategoryContent> {
     if (result.ok) {
       _toast(
         'Import complete',
-        message: "Applied ${(result.data as Map)['applied']} settings.",
+        message: mounted
+            ? l10n(
+                context,
+              ).deviceAppliedSettings('${(result.data as Map)['applied']}')
+            : null,
         kind: ToastKind.success,
       );
       if (mounted) setState(() {});
     } else {
-      _toast('Import failed', message: result.error, kind: ToastKind.error);
+      if (!mounted) return;
+      _toast(
+        'Import failed',
+        message: result.error == null
+            ? null
+            : setupImportError(context, result.error!),
+        kind: ToastKind.error,
+      );
     }
   }
 
   /// Leave the settings stack and show [url] in the kiosk browser.
+  /// Opens a page in the link overlay above the dashboard, the surface a
+  /// tapped dashboard link gets. Loading it into the kiosk view itself
+  /// replaced the dashboard and took the Voice Satellite session with it.
   void _openLink(String url) {
     Navigator.of(context).popUntil((route) => route.isFirst);
-    widget.container.commands.execute('loadUrl', {'url': url});
+    widget.container.browser.showLinkOverlay(url);
   }
 
   /// The app log, mirroring the remote UI's Logs tab: the same buffer the
@@ -1541,6 +1921,7 @@ class _CategoryContentState extends State<_CategoryContent> {
   /// which the in-app log by definition cannot record.
   String _logSource = 'app';
   String? _logcatText;
+  String? _logcatError;
   bool _logcatLoading = false;
 
   /// Logcat type filters, so a crash can be copied without 800 lines of
@@ -1578,9 +1959,8 @@ class _CategoryContentState extends State<_CategoryContent> {
     if (!mounted) return;
     setState(() {
       _logcatLoading = false;
-      _logcatText = r.ok
-          ? '${r.data}'
-          : 'Could not read logcat: ${r.error ?? 'unknown'}';
+      _logcatText = r.ok ? '${r.data}' : null;
+      _logcatError = r.ok ? null : r.error ?? '';
     });
   }
 
@@ -1626,14 +2006,17 @@ class _CategoryContentState extends State<_CategoryContent> {
           ListTile(
             title: Text(
               isLogcat
-                  ? 'Android system log for this app (crashes live here)'
-                  : '${entries.length} entries',
+                  ? supportText(
+                      context,
+                      'Android system log for this app (crashes live here)',
+                    )
+                  : l10n(context).logsEntries((entries.length).toString()),
             ),
             trailing: Wrap(
               spacing: 4,
               children: [
                 IconButton(
-                  tooltip: 'Copy log',
+                  tooltip: supportText(context, 'Copy log'),
                   icon: const Icon(Icons.copy_outlined, size: 20),
                   onPressed: () async {
                     await Clipboard.setData(
@@ -1646,15 +2029,18 @@ class _CategoryContentState extends State<_CategoryContent> {
                     if (!mounted) return;
                     showToast(
                       context,
-                      title: 'Copied',
-                      message: 'The log is on the clipboard.',
+                      title: supportText(context, 'Copied'),
+                      message: supportText(
+                        context,
+                        'The log is on the clipboard.',
+                      ),
                       kind: ToastKind.success,
                       duration: const Duration(seconds: 2),
                     );
                   },
                 ),
                 IconButton(
-                  tooltip: 'Refresh',
+                  tooltip: supportText(context, 'Refresh'),
                   icon: const Icon(Icons.refresh, size: 20),
                   onPressed: () =>
                       isLogcat ? _fetchLogcat(container) : setState(() {}),
@@ -1671,9 +2057,21 @@ class _CategoryContentState extends State<_CategoryContent> {
                 spacing: 16,
                 children: [
                   for (final (label, value, set) in [
-                    ('Errors & crashes', _lcErrors, (bool v) => _lcErrors = v),
-                    ('Warnings', _lcWarnings, (bool v) => _lcWarnings = v),
-                    ('Info & debug', _lcInfo, (bool v) => _lcInfo = v),
+                    (
+                      supportText(context, 'Errors & crashes'),
+                      _lcErrors,
+                      (bool v) => _lcErrors = v,
+                    ),
+                    (
+                      supportText(context, 'Warnings'),
+                      _lcWarnings,
+                      (bool v) => _lcWarnings = v,
+                    ),
+                    (
+                      supportText(context, 'Info & debug'),
+                      _lcInfo,
+                      (bool v) => _lcInfo = v,
+                    ),
                   ])
                     InkWell(
                       onTap: () => setState(() => set(!value)),
@@ -1712,13 +2110,25 @@ class _CategoryContentState extends State<_CategoryContent> {
                         )
                       : Builder(
                           builder: (context) {
+                            if (_logcatError != null) {
+                              return Text(
+                                l10n(context).logsReadFailed(
+                                  _logcatError!.isEmpty
+                                      ? supportText(context, 'unknown')
+                                      : _logcatError!,
+                                ),
+                              );
+                            }
                             final lines = _filteredLogcat();
                             // Errors-only is the default; a quiet log must read
                             // as good news, not as a broken viewer.
                             if (lines.isEmpty && _logcatText != null) {
                               return Text(
-                                'No matching lines. Enable more types above to '
-                                'see the full log.',
+                                supportText(
+                                  context,
+                                  'No matching lines. Enable more types above to '
+                                  'see the full log.',
+                                ),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
@@ -1787,12 +2197,14 @@ class _CategoryContentState extends State<_CategoryContent> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   ListTile(
-                    title: Text('${entries.length} entries'),
+                    title: Text(
+                      l10n(context).logsEntries((entries.length).toString()),
+                    ),
                     trailing: Wrap(
                       spacing: 4,
                       children: [
                         IconButton(
-                          tooltip: 'Copy log',
+                          tooltip: supportText(context, 'Copy log'),
                           icon: const Icon(Icons.copy_outlined, size: 20),
                           onPressed: () async {
                             await Clipboard.setData(
@@ -1807,20 +2219,26 @@ class _CategoryContentState extends State<_CategoryContent> {
                             if (!context.mounted) return;
                             showToast(
                               context,
-                              title: 'Copied',
-                              message: 'The console log is on the clipboard.',
+                              title: supportText(context, 'Copied'),
+                              message: supportText(
+                                context,
+                                'The console log is on the clipboard.',
+                              ),
                               kind: ToastKind.success,
                               duration: const Duration(seconds: 2),
                             );
                           },
                         ),
                         IconButton(
-                          tooltip: 'Clear',
+                          tooltip: supportText(context, 'Clear'),
                           icon: const Icon(Icons.block_outlined, size: 20),
                           onPressed: container.browser.clearConsole,
                         ),
                         IconButton(
-                          tooltip: 'Dock over the live page',
+                          tooltip: supportText(
+                            context,
+                            'Dock over the live page',
+                          ),
                           icon: const Icon(Icons.terminal_outlined, size: 20),
                           onPressed: () {
                             Navigator.of(
@@ -1836,7 +2254,7 @@ class _CategoryContentState extends State<_CategoryContent> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     child: entries.isEmpty
                         ? Text(
-                            'No console output yet',
+                            supportText(context, 'No console output yet'),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -1884,51 +2302,76 @@ class _CategoryContentState extends State<_CategoryContent> {
     final device = container.device;
     Widget row(String name, String value, {VoidCallback? onTap}) => ListTile(
       title: Text(name),
-      trailing: Text(value, style: Theme.of(context).textTheme.bodyMedium),
+      trailing: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width * .48,
+        ),
+        child: Text(
+          value,
+          textAlign: TextAlign.end,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ),
       onTap: onTap,
     );
     return [
-      const SectionHeading('App'),
-      SettingsCard(
-        children: [
-          row('App version', '${device.appVersion} (${device.buildNumber})'),
-          row('Build', device.buildMode),
-          row('Package', device.packageName),
-        ],
-      ),
-      const SectionHeading('Attribution'),
+      SectionHeading(supportText(context, 'App')),
       SettingsCard(
         children: [
           row(
-            'Author',
+            supportText(context, 'App version'),
+            '${device.appVersion} (${device.buildNumber})',
+          ),
+          row(supportText(context, 'Build'), device.buildMode),
+          row(supportText(context, 'Package'), device.packageName),
+        ],
+      ),
+      SectionHeading(supportText(context, 'Attribution')),
+      SettingsCard(
+        children: [
+          row(
+            supportText(context, 'Author'),
             'Xavier Larrea',
             onTap: () => _openLink('https://github.com/jxlarrea'),
           ),
+          row(
+            supportText(context, 'Website'),
+            'kiosksatellite.com',
+            onTap: () => _openLink('https://kiosksatellite.com'),
+          ),
           ListTile(
-            title: const Text('Source code'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SvgPicture.string(
-                  _githubMark,
-                  height: 15,
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context).colorScheme.onSurface,
-                    BlendMode.srcIn,
+            title: Text(supportText(context, 'Source code')),
+            trailing: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width * .48,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SvgPicture.string(
+                    _githubMark,
+                    height: 15,
+                    colorFilter: ColorFilter.mode(
+                      Theme.of(context).colorScheme.onSurface,
+                      BlendMode.srcIn,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  'jxlarrea/kiosk-satellite',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
+                  const SizedBox(width: 5),
+                  Flexible(
+                    child: Text(
+                      'jxlarrea/kiosk-satellite',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      textAlign: TextAlign.end,
+                    ),
+                  ),
+                ],
+              ),
             ),
             onTap: () =>
                 _openLink('https://github.com/jxlarrea/kiosk-satellite'),
           ),
           row(
-            'License',
+            supportText(context, 'License'),
             'CC BY-NC-ND 4.0',
             onTap: () => _openLink(
               'https://github.com/jxlarrea/kiosk-satellite/blob/main/LICENSE',
@@ -1936,14 +2379,26 @@ class _CategoryContentState extends State<_CategoryContent> {
           ),
         ],
       ),
+      SettingsCard(
+        children: [
+          _SubpageEntryTile(
+            container: container,
+            category: 'About',
+            subpage: 'Localization Credits',
+          ),
+        ],
+      ),
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
         child: Text(
-          'Kiosk Satellite is free for personal, non-commercial use. It is '
-          'licensed under CC BY-NC-ND 4.0: you may use and share it, but '
-          'commercial use of the app and redistribution of modified app '
-          'builds are not permitted. Independent plugins have additional '
-          'permission under PLUGIN-EXCEPTION.md.',
+          supportText(
+            context,
+            'Kiosk Satellite is free for personal, non-commercial use. It is '
+            'licensed under CC BY-NC-ND 4.0: you may use and share it, but '
+            'commercial use of the app and redistribution of modified app '
+            'builds are not permitted. Independent plugins have additional '
+            'permission under PLUGIN-EXCEPTION.md.',
+          ),
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -1966,7 +2421,7 @@ class _CategoryContentState extends State<_CategoryContent> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // A follower's page the leader syncs says so before its rows.
-        ...fleetManagedBanner(container, widget.category),
+        ...fleetManagedBanner(context, container, widget.category),
         if (widget.category == 'Home Assistant')
           ..._haConnectionCards(container)
         else if (widget.category == 'Fleet')
@@ -1989,7 +2444,72 @@ class _CategoryContentState extends State<_CategoryContent> {
           CameraSettingsPanel(container: container)
         else if (widget.category == 'Gestures')
           GestureSettingsPanel(container: container)
-        else if (widget.category == 'Screen & Audio') ...[
+        else if (widget.category == 'Intercom')
+          // The definition rows through the generic renderer (the key's
+          // copy box, the Change key row, the ring sound picker and the
+          // Talk mode stand-in ride the replacements and extras), wrapped
+          // by the panel that adds the setup card and the Kiosks card.
+          IntercomSettingsPanel(
+            container: container,
+            cards: _sectionedCards(
+              container,
+              _inlineDefsFor('Intercom'),
+              () => setState(() {}),
+              replace: _rowReplacements(container),
+              after: _rowExtras(container),
+            ),
+          )
+        else if (widget.category == 'Alarms') ...[
+          // Show in the kiosk menu on its own untitled card, then the list
+          // itself (the full screen overlay, opened from here), then the
+          // defaults, then Voice Alarms. Mirrored on the remote's Alarms
+          // page.
+          ..._sectionedCards(
+            container,
+            [
+              for (final def in _inlineDefsFor('Alarms'))
+                if (def.section == null) def,
+            ],
+            () => setState(() {}),
+            replace: _rowReplacements(container),
+            after: _rowExtras(container),
+          ),
+          SectionHeading(l10n(context).alarmsTitle),
+          AlarmsManageCard(container: container),
+          ..._sectionedCards(
+            container,
+            [
+              for (final def in _inlineDefsFor('Alarms'))
+                if (def.section != null) def,
+            ],
+            () => setState(() {}),
+            replace: _rowReplacements(container),
+            after: _rowExtras(container),
+          ),
+          // Voice alarms live in Home Assistant (the blueprint), so this
+          // group only points at the guide. Last on the page, mirrored in
+          // alarms.js.
+          SectionHeading(l10n(context).alarmsVoiceSection),
+          SettingsCard(
+            children: [
+              SearchLandingTarget(
+                id: 'x:alarms_voice',
+                child: SettingsRow(
+                  leading: const Icon(Icons.record_voice_over_outlined),
+                  title: Text(l10n(context).alarmsVoiceManage),
+                  subtitle: Text(l10n(context).alarmsVoiceHint),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    container.commands.execute('showLinkPage', {
+                      'url': _voiceAlarmsDocsUrl,
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ] else if (widget.category == 'Screen & Audio') ...[
           // Through the generic renderer, heading included, so the row
           // replacements and extras reach this card like any other: the
           // Default brightness row standing down under adaptive brightness
@@ -2012,7 +2532,7 @@ class _CategoryContentState extends State<_CategoryContent> {
           // One card, mixer-style: the master fader (live device volume,
           // not a setting) with the media and assistant faders that scale
           // under it. The remote UI mirrors this page.
-          const SectionHeading('Audio Volume'),
+          SectionHeading(screenAudioText(context, 'Audio Volume')),
           SettingsCard(
             children: [
               SearchLandingTarget(
@@ -2032,7 +2552,7 @@ class _CategoryContentState extends State<_CategoryContent> {
           // the remote UI mirrors both rows. The mic one only while detection
           // is on — with it off this app never opens the microphone, the
           // browser does.
-          const SectionHeading('Audio Devices'),
+          SectionHeading(screenAudioText(context, 'Audio Devices')),
           SettingsCard(
             children: [
               if (container.settings.get(wakeWordEnabled))
@@ -2064,9 +2584,12 @@ class _CategoryContentState extends State<_CategoryContent> {
           // Its icon on the page title's line: the title sits 4 in from
           // the card edge, so the hint does too.
           if (widget.category == 'Sendspin')
-            const Padding(
-              padding: EdgeInsets.only(left: 4),
-              child: HintRow(_mediaPlayerIntro, inset: false),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: HintRow(
+                mediaText(context, _mediaPlayerIntro),
+                inset: false,
+              ),
             ),
           ..._withEsphomeStartError(
             _sectionedCards(
@@ -2080,7 +2603,7 @@ class _CategoryContentState extends State<_CategoryContent> {
               widget.category == 'Camera' &&
                       container.deviceCamera.cameraKnownAbsent
                   ? const [cameraEnabled]
-                  : _defsFor(widget.category),
+                  : _inlineDefsFor(widget.category),
               () => setState(() {}),
               replace: _rowReplacements(container),
               after: _rowExtras(container),
@@ -2091,7 +2614,7 @@ class _CategoryContentState extends State<_CategoryContent> {
         // the OS's to give, not ours to set. Always shown - Lockdown Mode
         // has no page on the device, so its grants live here too.
         if (widget.category == 'Kiosk') ...[
-          const SectionHeading('Required system permissions'),
+          SectionHeading(kioskText(context, 'Required system permissions')),
           SearchLandingTarget(
             id: 'x:kiosk_permissions',
             child: SettingsCard(
@@ -2104,7 +2627,7 @@ class _CategoryContentState extends State<_CategoryContent> {
         // tap in a system dialog. This row is where that state is told and
         // finished, and where the crash fuse explains itself.
         if (widget.category == 'Home') ...[
-          const SectionHeading('Status'),
+          SectionHeading(kioskText(context, 'Status')),
           SearchLandingTarget(
             id: 'x:home_role',
             child: SettingsCard(
@@ -2117,11 +2640,24 @@ class _CategoryContentState extends State<_CategoryContent> {
         if (widget.category == 'Launcher' &&
             container.settings.get(launcherEnabled) &&
             container.settings.get(launcherAutoReturn)) ...[
-          const SectionHeading('Required system permissions'),
+          SectionHeading(launcherText(context, 'Required system permissions')),
           SearchLandingTarget(
             id: 'x:launcher_permissions',
             child: SettingsCard(
               children: [_LauncherPermissionsTile(container: container)],
+            ),
+          ),
+        ],
+        // Local Media Session's one grant, only while it is the pick:
+        // Android lists other apps' sessions to no one without it.
+        // Mirrored on the remote (panels.js, updateSessionPermissions).
+        if (widget.category == 'Sendspin' &&
+            _localSessionPicked(container)) ...[
+          SectionHeading(mediaText(context, 'Required system permissions')),
+          SearchLandingTarget(
+            id: 'x:media_session_permissions',
+            child: SettingsCard(
+              children: [_MediaSessionPermissionsTile(container: container)],
             ),
           ),
         ],
@@ -2134,29 +2670,35 @@ class _CategoryContentState extends State<_CategoryContent> {
               'Optional update helper',
             ),
           ),
-          const SectionHeading('Configuration'),
+          SectionHeading(deviceText(context, 'Configuration')),
           SettingsCard(
             children: [
               SearchLandingTarget(
                 id: 'x:export_config',
                 child: ListTile(
-                  title: const Text('Export configuration'),
-                  subtitle: const Text(
-                    "Save every setting and the page's local storage to a "
-                    'file.',
+                  title: Text(deviceText(context, 'Export configuration')),
+                  subtitle: Text(
+                    deviceText(
+                      context,
+                      "Save every setting and the page's local storage to a "
+                      'file.',
+                    ),
                   ),
-                  trailing: const Icon(Icons.download_outlined),
+                  trailing: Icon(Icons.download_outlined),
                   onTap: _exportConfig,
                 ),
               ),
               SearchLandingTarget(
                 id: 'x:import_config',
                 child: ListTile(
-                  title: const Text('Import configuration'),
-                  subtitle: const Text(
-                    "Replace this device's settings from an exported file.",
+                  title: Text(deviceText(context, 'Import configuration')),
+                  subtitle: Text(
+                    deviceText(
+                      context,
+                      "Replace this device's settings from an exported file.",
+                    ),
                   ),
-                  trailing: const Icon(Icons.upload_outlined),
+                  trailing: Icon(Icons.upload_outlined),
                   onTap: _importConfig,
                 ),
               ),
@@ -2170,18 +2712,22 @@ class _CategoryContentState extends State<_CategoryContent> {
           // do I stand" — which is how a grant nobody's current features
           // ask for, like the battery exemption on a device without voice,
           // becomes findable at all.
-          const SectionHeading('Permissions Manager'),
+          SectionHeading(deviceText(context, 'Permissions Manager')),
           SearchLandingTarget(
             id: 'x:device_permissions',
             child: SettingsCard(
               children: [
                 // The explanation is the group's first row rather than
                 // floating text under the heading.
-                const HintRow(_permissionsGroupNote),
+                HintRow(deviceText(context, _permissionsGroupNote)),
                 _DevicePermissionsTile(container: container),
               ],
             ),
           ),
+          // Last on the page: what the app shares about itself, after the
+          // grants that say what it may use. The remote keeps the same
+          // order (#device-analytics).
+          _subpageEntryCard(container, 'Device', 'Kiosk Satellite Analytics'),
         ],
         if (widget.category == 'Home Assistant')
           ValueListenableBuilder<bool>(
@@ -2204,10 +2750,16 @@ class _CategoryContentState extends State<_CategoryContent> {
             child: ScrollingSegments(
               child: SegmentedButton<String>(
                 showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(value: 'app', label: Text('Kiosk Satellite')),
-                  ButtonSegment(value: 'logcat', label: Text('Logcat')),
-                  ButtonSegment(value: 'console', label: Text('Web Console')),
+                segments: [
+                  const ButtonSegment(
+                    value: 'app',
+                    label: Text('Kiosk Satellite'),
+                  ),
+                  const ButtonSegment(value: 'logcat', label: Text('Logcat')),
+                  ButtonSegment(
+                    value: 'console',
+                    label: Text(supportText(context, 'Web Console')),
+                  ),
                 ],
                 selected: {_logSource},
                 onSelectionChanged: (selection) {
@@ -2248,18 +2800,23 @@ class _CategoryContentState extends State<_CategoryContent> {
           SearchLandingTarget(
             id: 'x:ha_validate',
             child: ListTile(
-              title: const Text('Validate connection'),
+              title: Text(haText(context, 'Validate connection')),
               subtitle: Text(
                 _haValidating
-                    ? 'Checking…'
-                    : _haError ??
+                    ? haText(context, 'Checking…')
+                    : (_haError == null
+                              ? null
+                              : haConnectionError(context, _haError!)) ??
                           (container.homeAssistant.connectionOk.value
-                              ? 'Connected'
-                              : 'Not validated yet. The settings below unlock '
-                                    'once the connection checks out.'),
+                              ? haText(context, 'Connected')
+                              : haText(
+                                  context,
+                                  'Not validated yet. The settings below unlock '
+                                  'once the connection checks out.',
+                                )),
               ),
               trailing: _haValidating
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2.4),
@@ -2287,8 +2844,8 @@ class _CategoryContentState extends State<_CategoryContent> {
                     uri.host != 'localhost' &&
                     uri.host != '127.0.0.1';
                 return SwitchListTile(
-                  title: Text(secureProxy.title),
-                  subtitle: Text(secureProxy.description),
+                  title: Text(haText(context, secureProxy.title)),
+                  subtitle: Text(haText(context, secureProxy.description)),
                   value: container.settings.get(secureProxy),
                   onChanged: isHttp
                       ? (v) async {
@@ -2330,18 +2887,21 @@ class _CategoryContentState extends State<_CategoryContent> {
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Secure context proxy'),
-          content: const Text(
-            'This Home Assistant URL uses plain http, and browsers block '
-            'the microphone and other features on http pages. Kiosk '
-            'Satellite will route the dashboard through a secure proxy '
-            'inside the app so everything works. You may need to sign in '
-            'to Home Assistant again.',
+          title: Text(haText(context, 'Secure context proxy')),
+          content: Text(
+            haText(
+              context,
+              'This Home Assistant URL uses plain http, and browsers block '
+              'the microphone and other features on http pages. Kiosk '
+              'Satellite will route the dashboard through a secure proxy '
+              'inside the app so everything works. You may need to sign in '
+              'to Home Assistant again.',
+            ),
           ),
           actions: [
             FilledButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
+              child: Text(haText(context, 'OK')),
             ),
           ],
         ),
@@ -2366,11 +2926,21 @@ class _CategoryContentState extends State<_CategoryContent> {
   /// so what is left here is the row that opens each of those pages.
   List<Widget> _haConfiguredCards(AppContainer container) {
     return [
-      const SectionHeading('Dashboard'),
+      SectionHeading(haText(context, 'Dashboard')),
       SearchLandingTarget(
-        id: 'x:dashboard_picker',
-        child: _DashboardPickerCard(container: container),
+        id: 'x:start_page',
+        child: StartPageCard(
+          container: container,
+          onChanged: () => setState(() {}),
+        ),
       ),
+      // The picker chooses a Home Assistant dashboard; with a custom start
+      // page there is nothing for it to choose.
+      if (container.settings.get(startPage) != 'custom')
+        SearchLandingTarget(
+          id: 'x:dashboard_picker',
+          child: _DashboardPickerCard(container: container),
+        ),
       ..._sectionedCards(container, [
         for (final def in _defsFor('Home Assistant'))
           if (def.key != haUrl.key &&
@@ -2388,7 +2958,9 @@ class _CategoryContentState extends State<_CategoryContent> {
   Widget _vsDetectionCard(AppContainer container) => SettingsCard(
     children: [
       for (final def in _defsFor('Voice Satellite'))
-        if (def.subpage == 'Wake Word' && container.settings.visible(def))
+        if (def.subpage == 'Wake Word' &&
+            !def.key.startsWith('voice.') &&
+            container.settings.visible(def))
           SettingTile(
             container: container,
             def: def,
@@ -2417,6 +2989,31 @@ class _CategoryContentState extends State<_CategoryContent> {
           },
         ),
       ),
+    // Which pages this panel leaves out of its own settings list. The
+    // options come from the category table itself, so a page added
+    // upstream appears here with nothing to keep in sync.
+    if (widget.category == uiHiddenPages.category)
+      uiHiddenPages.key: SearchLandingTarget(
+        id: uiHiddenPages.key,
+        child: HiddenPagesRow(
+          settings: container.settings,
+          pages: [for (final (c, title, _, _) in _categories) (c, title)],
+          hostCategory: uiHiddenPages.category,
+          onChanged: () {
+            if (mounted) setState(() {});
+          },
+        ),
+      ),
+    // Voice Satellite's TTS output: this kiosk or a Home Assistant media
+    // player, from the live list, in the place of the text field.
+    if (widget.category == 'Voice Satellite')
+      voiceTtsOutput.key: SearchLandingTarget(
+        id: voiceTtsOutput.key,
+        child: _TtsOutputRow(
+          container: container,
+          onChanged: () => setState(() {}),
+        ),
+      ),
     // The player pick (issue #265): a grouped picker fed by the live
     // player lists, in the place of the plain text field its definition
     // would draw.
@@ -2435,9 +3032,12 @@ class _CategoryContentState extends State<_CategoryContent> {
       btproxyEnabled.key: SearchLandingTarget(
         id: btproxyEnabled.key,
         child: SwitchListTile(
-          title: Text(btproxyEnabled.title),
+          title: Text(btproxyEnabled.localizedTitle(context)),
           subtitle: Text(
-            container.btProxy.bleHint ?? 'Not available on this device.',
+            esphomeText(
+              context,
+              container.btProxy.bleHint ?? 'Not available on this device.',
+            ),
           ),
           value: false,
           onChanged: null,
@@ -2450,9 +3050,13 @@ class _CategoryContentState extends State<_CategoryContent> {
       locationEnabled.key: SearchLandingTarget(
         id: locationEnabled.key,
         child: SwitchListTile(
-          title: Text(locationEnabled.title),
+          title: Text(locationEnabled.localizedTitle(context)),
           subtitle: Text(
-            container.location.locationHint ?? 'Not available on this device.',
+            esphomeText(
+              context,
+              container.location.locationHint ??
+                  'Not available on this device.',
+            ),
           ),
           value: false,
           onChanged: null,
@@ -2462,11 +3066,13 @@ class _CategoryContentState extends State<_CategoryContent> {
         !container.deviceCamera.effectiveEnabled)
       screensaverDismissOnMotion.key: SearchLandingTarget(
         id: screensaverDismissOnMotion.key,
-        child: const SwitchListTile(
-          title: Text('Dismiss on motion'),
+        child: SwitchListTile(
+          title: Text(screensaverText(context, 'Dismiss on motion')),
           subtitle: Text(
-            'Requires the camera. Turn it on in the Camera '
-            'settings first.',
+            screensaverText(
+              context,
+              "Requires the camera. Turn it on in the Camera settings first.",
+            ),
           ),
           value: false,
           onChanged: null,
@@ -2476,11 +3082,13 @@ class _CategoryContentState extends State<_CategoryContent> {
         !container.deviceCamera.effectiveEnabled)
       screensaverDismissOnFace.key: SearchLandingTarget(
         id: screensaverDismissOnFace.key,
-        child: const SwitchListTile(
-          title: Text('Dismiss on face'),
+        child: SwitchListTile(
+          title: Text(screensaverText(context, 'Dismiss on face')),
           subtitle: Text(
-            'Requires the camera. Turn it on in the Camera '
-            'settings first.',
+            screensaverText(
+              context,
+              "Requires the camera. Turn it on in the Camera settings first.",
+            ),
           ),
           value: false,
           onChanged: null,
@@ -2494,10 +3102,13 @@ class _CategoryContentState extends State<_CategoryContent> {
       screensaverDismissOnFace.key: SearchLandingTarget(
         id: screensaverDismissOnFace.key,
         child: SwitchListTile(
-          title: const Text('Dismiss on face'),
+          title: Text(screensaverText(context, 'Dismiss on face')),
           subtitle: Text(
-            container.deviceCamera.visionHint ??
-                'Not available on this device.',
+            screensaverText(
+              context,
+              container.deviceCamera.visionHint ??
+                  'Not available on this device.',
+            ),
           ),
           value: false,
           onChanged: null,
@@ -2510,10 +3121,13 @@ class _CategoryContentState extends State<_CategoryContent> {
       screensaverDismissOnProximity.key: SearchLandingTarget(
         id: screensaverDismissOnProximity.key,
         child: SwitchListTile(
-          title: Text(screensaverDismissOnProximity.title),
+          title: Text(screensaverDismissOnProximity.localizedTitle(context)),
           subtitle: Text(
-            container.proximity.proximityHint ??
-                'Not available on this device.',
+            screensaverText(
+              context,
+              container.proximity.proximityHint ??
+                  'Not available on this device.',
+            ),
           ),
           value: false,
           onChanged: null,
@@ -2527,8 +3141,8 @@ class _CategoryContentState extends State<_CategoryContent> {
         id: defaultBrightness.key,
         child: SettingsRow(
           enabled: false,
-          title: Text(defaultBrightness.title),
-          subtitle: const Text(_adaptiveOwnsNote),
+          title: Text(defaultBrightness.localizedTitle(context)),
+          subtitle: Text(screenAudioText(context, _adaptiveOwnsNote)),
           trailing: Text(
             '${(container.settings.get(defaultBrightness) * 100).round()}%',
           ),
@@ -2540,12 +3154,44 @@ class _CategoryContentState extends State<_CategoryContent> {
       adaptiveBrightness.key: SearchLandingTarget(
         id: adaptiveBrightness.key,
         child: SwitchListTile(
-          title: Text(adaptiveBrightness.title),
-          subtitle: const Text(_noLightSensorNote),
+          title: Text(adaptiveBrightness.localizedTitle(context)),
+          subtitle: Text(screenAudioText(context, _noLightSensorNote)),
           value: false,
           onChanged: null,
         ),
       ),
+    // The announcements' text to speech engine, language and voice are
+    // picked from Home Assistant's lists, not typed. Mirrored on the
+    // remote (intercom.js).
+    if (widget.category == 'ESPHome') ...{
+      announcementsTtsEngine.key: AnnouncementTtsEngineRow(
+        container: container,
+      ),
+      for (final def in [announcementsTtsLanguage, announcementsTtsVoice])
+        def.key: TtsVoiceRow(
+          container: container,
+          def: def,
+          engineDef: announcementsTtsEngine,
+          languageDef: announcementsTtsLanguage,
+          voiceDef: announcementsTtsVoice,
+        ),
+    },
+    if (widget.category == 'Alarms') ...{
+      alarmsTtsEngine.key: AnnouncementTtsEngineRow(
+        container: container,
+        def: alarmsTtsEngine,
+        languageDef: alarmsTtsLanguage,
+        voiceDef: alarmsTtsVoice,
+      ),
+      for (final def in [alarmsTtsLanguage, alarmsTtsVoice])
+        def.key: TtsVoiceRow(
+          container: container,
+          def: def,
+          engineDef: alarmsTtsEngine,
+          languageDef: alarmsTtsLanguage,
+          voiceDef: alarmsTtsVoice,
+        ),
+    },
     // The Clock screensaver's Night mode (issue #391) has nothing to
     // watch without the sensor either: same disabled switch, same reason.
     // Mirrored on the remote (notices.js, updateClockNightRows).
@@ -2553,8 +3199,8 @@ class _CategoryContentState extends State<_CategoryContent> {
       screensaverClockNight.key: SearchLandingTarget(
         id: screensaverClockNight.key,
         child: SwitchListTile(
-          title: Text(screensaverClockNight.title),
-          subtitle: const Text(_noLightSensorNote),
+          title: Text(screensaverClockNight.localizedTitle(context)),
+          subtitle: Text(screenAudioText(context, _noLightSensorNote)),
           value: false,
           onChanged: null,
         ),
@@ -2563,8 +3209,8 @@ class _CategoryContentState extends State<_CategoryContent> {
       cameraEnabled.key: SearchLandingTarget(
         id: cameraEnabled.key,
         child: SwitchListTile(
-          title: Text(cameraEnabled.title),
-          subtitle: Text(cameraEnabled.description),
+          title: Text(cameraEnabled.localizedTitle(context)),
+          subtitle: Text(cameraEnabled.localizedDescription(context)),
           value: false,
           onChanged: null,
         ),
@@ -2577,14 +3223,24 @@ class _CategoryContentState extends State<_CategoryContent> {
       cameraDevice.key: SearchLandingTarget(
         id: cameraDevice.key,
         child: ListTile(
-          title: Text(cameraDevice.title),
-          subtitle: const Text('The only camera this device has.'),
+          title: Text(cameraDevice.localizedTitle(context)),
+          subtitle: Text(
+            cameraText(context, 'The only camera this device has.'),
+          ),
+          // A USB or monitor webcam is not a picker option, so it
+          // takes its label from the camera strings.
           trailing: Text(
-            cameraDevice.optionLabels?[container
-                    .deviceCamera
-                    .knownFacings!
-                    .single] ??
-                container.deviceCamera.knownFacings!.single,
+            container.deviceCamera.knownFacings!.single == 'external'
+                ? cameraText(context, 'External')
+                : cameraDevice.localizedOption(
+                    context,
+                    container.deviceCamera.knownFacings!.single,
+                    cameraDevice.optionLabels?[container
+                            .deviceCamera
+                            .knownFacings!
+                            .single] ??
+                        container.deviceCamera.knownFacings!.single,
+                  ),
           ),
         ),
       ),
@@ -2599,6 +3255,15 @@ class _CategoryContentState extends State<_CategoryContent> {
   Map<String, Widget> _rowExtras(AppContainer container) => {
     if (widget.category == 'Sendspin')
       sendspinDuckPercent.key: AlbumArtCacheRow(container: container),
+    // Under the key's copy box: paste one from another kiosk or make a
+    // new one. Mirrored on the remote (intercom.js).
+    if (widget.category == 'Intercom')
+      intercomKey.key: IntercomChangeKeyRow(
+        container: container,
+        onChanged: () {
+          if (mounted) setState(() {});
+        },
+      ),
     if (widget.category == 'Browser' &&
         container.settings.get(autoReloadOnError))
       autoReloadOnError.key: _OverlayGrantRow(key: UniqueKey()),
@@ -2617,6 +3282,9 @@ class _CategoryContentState extends State<_CategoryContent> {
       screensaverDismissOnPerson.key: _PersonSensorStatusRow(
         container: container,
       ),
+    // The same reading under the Person Sensor switch (issue #734).
+    if (widget.category == 'Camera' && !container.personSensor.knownUnsupported)
+      personSensorEnabled.key: _PersonSensorStatusRow(container: container),
     // The sensor's reading, live, under the switch: the curve's two light
     // levels are typed against it, and what a sensor calls a lit room is
     // anyone's guess until it is on screen. Mirrored on the remote
@@ -2627,7 +3295,16 @@ class _CategoryContentState extends State<_CategoryContent> {
     // is on: the slider is the bright-room level the room's light dims
     // from, which is not what a slider called "brightness" says on its own.
     if (widget.category == 'Screensaver' && _adaptiveOn(container))
-      screensaverBrightnessLevel.key: const HintRow(_adaptiveNote),
+      screensaverBrightnessLevel.key: HintRow(
+        screenAudioText(context, _adaptiveNote),
+      ),
+    if (widget.category == 'Camera')
+      cameraRtspResolution.key: HintRow(
+        cameraResolutionNotice(
+          context,
+          container.settings.cameraResolutionNotice,
+        ),
+      ),
     if (widget.category == 'Camera')
       cameraEnabled.key: Column(
         children: [
@@ -2639,17 +3316,22 @@ class _CategoryContentState extends State<_CategoryContent> {
     // Where the tuning rows used to be: camera pick, frame rate
     // and sensitivity are Camera-settings decisions now.
     if (widget.category == 'Screensaver')
-      screensaverPostponeOnMotion.key: const HintRow(
-        'Motion detection is tuned in the Camera settings.',
+      screensaverPostponeOnMotion.key: HintRow(
+        screensaverText(
+          context,
+          'Motion detection is tuned in the Camera settings.',
+        ),
       ),
     // Dismiss on motion owns the wake-up while it is on (issue #304): the
     // face leg is idle, and the row says so instead of looking armed.
     if (widget.category == 'Screensaver' &&
         container.deviceCamera.effectiveEnabled &&
         container.settings.get(screensaverDismissOnMotion))
-      screensaverDismissOnFace.key: const WarnRow(_faceMotionNote),
+      screensaverDismissOnFace.key: WarnRow(
+        screensaverText(context, _faceMotionNote),
+      ),
     if (widget.category == 'Screensaver')
-      faceSensitivity.key: const HintRow(_faceTuningNote),
+      faceSensitivity.key: HintRow(screensaverText(context, _faceTuningNote)),
     // The sensor's name under the switch, where there is one: the name is
     // what tells a hover sensor from a phone's call-only palm sensor.
     // Mirrored on the remote (notices.js, updateProximityRows).
@@ -2657,18 +3339,19 @@ class _CategoryContentState extends State<_CategoryContent> {
         !container.proximity.proximityKnownUnsupported &&
         container.proximity.sensorName != null)
       screensaverDismissOnProximity.key: SettingsRow(
-        title: const Text('Sensor'),
-        subtitle: const Text(_proximitySensorNote),
+        title: Text(screensaverText(context, 'Sensor')),
+        subtitle: Text(screensaverText(context, _proximitySensorNote)),
         trailing: Text(
           container.proximity.sensorName!,
           textAlign: TextAlign.end,
         ),
       ),
-    // The screen-off timer fails quietly without device admin;
-    // this row is what says so, right where the slider is.
+    // Keep the permission notice below the action toggle so it stays put.
     if (widget.category == 'Screensaver')
-      screensaverScreenOffMinutes.key: _ScreenOffAdminRow(
-        key: UniqueKey(),
+      (container.settings.visible(screensaverScreenOffBlack)
+          ? screensaverScreenOffBlack.key
+          : screensaverScreenOffMinutes.key): _ScreenOffAdminRow(
+        key: const ValueKey('screensaver-screen-off-admin'),
         container: container,
       ),
     // Dim is the one mode the pause-dashboard optimization cannot
@@ -2680,8 +3363,9 @@ class _CategoryContentState extends State<_CategoryContent> {
       screensaverDimLevel.key: Column(
         children: [
           if (container.settings.get(screensaverMode) == 'dim')
-            const WarnRow(_dimModeNote),
-          if (_adaptiveOn(container)) const HintRow(_adaptiveNote),
+            WarnRow(screensaverText(context, _dimModeNote)),
+          if (_adaptiveOn(container))
+            HintRow(screenAudioText(context, _adaptiveNote)),
         ],
       ),
     if (widget.category == 'Screensaver') ...{
@@ -2710,11 +3394,16 @@ class _CategoryContentState extends State<_CategoryContent> {
     // holds it: its own player is gone from Music Assistant and the rows
     // about it are gone from this page.
     if (widget.category == 'Sendspin' &&
-        container.settings.get(sendspinPlayerSource).isNotEmpty)
+        (container.settings.get(sendspinPlayerSource).isNotEmpty ||
+            _localSessionPicked(container)))
       sendspinPlayer.key: WarnRow(
-        "This device's own Sendspin player stays offline while "
-        '${container.settings.get(sendspinPlayerName).trim().isEmpty ? 'another player' : container.settings.get(sendspinPlayerName).trim()} '
-        'is controlled.',
+        l10n(context).mediaLocalOffline(
+          _localSessionPicked(container)
+              ? mediaText(context, SendspinManager.localSessionName)
+              : container.settings.get(sendspinPlayerName).trim().isEmpty
+              ? l10n(context).mediaAnotherPlayer
+              : container.settings.get(sendspinPlayerName).trim(),
+        ),
       ),
     // The live list right under the sort picker that orders it.
     // Rides the section's dependsOn: with the proxy off there is
@@ -2750,6 +3439,56 @@ class _CategoryContentState extends State<_CategoryContent> {
   /// dashboard list, a cross-group disabled state, telemetry under a toggle)
   /// and simply moved with their group.
   List<Widget> _subpageCards(AppContainer container, String subpage) {
+    if (widget.category == 'About' && subpage == 'Localization Credits') {
+      return [
+        for (final entry in localizationCredits.entries) ...[
+          SectionHeading(messageLanguageLabels[entry.key] ?? entry.key),
+          SettingsCard(
+            children: [
+              for (final contributor in entry.value)
+                ListTile(
+                  title: Text(contributor['name']!),
+                  trailing: contributor['login']!.isEmpty
+                      ? null
+                      : ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.sizeOf(context).width * .45,
+                          ),
+                          child: TextButton(
+                            onPressed: () => _openLink(
+                              'https://github.com/${contributor['login']}',
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SvgPicture.string(
+                                  _githubMark,
+                                  width: 15,
+                                  height: 15,
+                                  excludeFromSemantics: true,
+                                  colorFilter: ColorFilter.mode(
+                                    Theme.of(context).colorScheme.primary,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    contributor['login']!,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
+            ],
+          ),
+        ],
+        _MadeByFooter(container: container),
+      ];
+    }
     if (widget.category == 'Plugins') {
       return [
         PluginDetailPanel(
@@ -2782,7 +3521,7 @@ class _CategoryContentState extends State<_CategoryContent> {
     );
 
     if (widget.category == 'Camera' &&
-        subpage == 'RTSP Streaming' &&
+        subpage == 'RTSP & ONVIF Streaming' &&
         container.settings.get(cameraRtspEnabled) &&
         container.settings.get(cameraEnabled)) {
       return [
@@ -2793,8 +3532,45 @@ class _CategoryContentState extends State<_CategoryContent> {
               for (final def in _defsFor(widget.category))
                 if (def.subpage == subpage) def,
             ],
-            after: {cameraRtspPort.key: url},
+            after: {
+              ..._rowExtras(container),
+              (container.settings.get(cameraStreamingProtocol) == 'onvif'
+                      ? cameraOnvifPort.key
+                      : cameraRtspPort.key):
+                  url,
+            },
           ),
+        ),
+      ];
+    }
+
+    // Realtime: one row per provider in the Providers group, where its
+    // first setting sits. Its settings live in the dialog the row opens.
+    if (widget.category == 'Voice Satellite' && subpage == 'Realtime') {
+      final inDialog = {
+        for (final list in realtimeProviderSettings.values)
+          for (final def in list.skip(1)) def.key,
+      };
+      return [
+        ...sectioned(
+          [
+            for (final def in _defsFor(widget.category))
+              if (def.subpage == subpage && !inDialog.contains(def.key)) def,
+          ],
+          replace: {
+            ..._rowReplacements(container),
+            for (final provider in RealtimeProvider.values)
+              realtimeProviderSettings[provider.id]!.first.key:
+                  SearchLandingTarget(
+                    id: realtimeProviderSettings[provider.id]!.first.key,
+                    child: RealtimeProviderRow(
+                      key: ValueKey('realtime-provider-${provider.id}'),
+                      container: container,
+                      provider: provider,
+                      onChanged: changed,
+                    ),
+                  ),
+          },
         ),
       ];
     }
@@ -2812,7 +3588,7 @@ class _CategoryContentState extends State<_CategoryContent> {
           for (final def in defs)
             if (def.section != 'Nearby devices') def,
         ]),
-        const SectionHeading('Required system permissions'),
+        SectionHeading(esphomeText(context, 'Required system permissions')),
         const SearchLandingTarget(
           id: 'x:btproxy_permissions',
           child: SettingsCard(children: [_BtProxyPermissionsTile()]),
@@ -2832,8 +3608,11 @@ class _CategoryContentState extends State<_CategoryContent> {
       // and render it inert. The poll in initState lifts this the moment
       // Bluetooth comes back.
       return [
-        const NoticeBanner(
-          text: 'Bluetooth is off. Turn it on to use the proxy.',
+        NoticeBanner(
+          text: esphomeText(
+            context,
+            'Bluetooth is off. Turn it on to use the proxy.',
+          ),
         ),
         AbsorbPointer(
           child: Opacity(opacity: 0.45, child: Column(children: cards)),
@@ -2859,6 +3638,26 @@ class _CategoryContentState extends State<_CategoryContent> {
       ];
     }
 
+    if (widget.category == 'Camera' && subpage == 'Person Sensor') {
+      // The device's own person sensor as a Home Assistant occupancy
+      // sensor (issue #734): the switch with the live Occupancy row, then
+      // the Log access grant, as on the Person Detection page. Mirrored on
+      // the remote (settings.js, updatePersonSensorRows).
+      return [
+        ...sectioned([
+          for (final def in _defsFor(widget.category))
+            if (def.subpage == subpage) def,
+        ]),
+        SectionHeading(cameraText(context, 'Required system permissions')),
+        SearchLandingTarget(
+          id: 'x:person_sensor_log_access',
+          child: SettingsCard(
+            children: [_PersonSensorLogAccessTile(container: container)],
+          ),
+        ),
+      ];
+    }
+
     if (widget.category == 'Screensaver' && subpage == 'Person Detection') {
       // The device's own person sensor (discussion #353, today the Meta
       // Portal's): the two switches with the live Occupancy row, then the
@@ -2869,7 +3668,7 @@ class _CategoryContentState extends State<_CategoryContent> {
           for (final def in _defsFor(widget.category))
             if (def.subpage == subpage) def,
         ]),
-        const SectionHeading('Required system permissions'),
+        SectionHeading(screensaverText(context, 'Required system permissions')),
         SearchLandingTarget(
           id: 'x:person_log_access',
           child: SettingsCard(
@@ -2888,7 +3687,7 @@ class _CategoryContentState extends State<_CategoryContent> {
           for (final def in _defsFor(widget.category))
             if (def.subpage == subpage) def,
         ]),
-        const SectionHeading('Required system permissions'),
+        SectionHeading(esphomeText(context, 'Required system permissions')),
         SearchLandingTarget(
           id: 'x:location_permissions',
           child: SettingsCard(
@@ -2903,20 +3702,20 @@ class _CategoryContentState extends State<_CategoryContent> {
       // setting, and the grants it needs for what it is doing. Live rows,
       // mirrored on the remote (renderServicePage in service.js).
       return [
-        const SectionHeading('Status'),
+        SectionHeading(deviceText(context, 'Status')),
         SearchLandingTarget(
           id: 'x:service_status',
           child: SettingsCard(
             children: [_ServiceStatusTile(container: container)],
           ),
         ),
-        const SectionHeading('Keeping it running'),
+        SectionHeading(deviceText(context, 'Keeping it running')),
         SettingsCard(children: [_ServiceReasonsTile(container: container)]),
         ...sectioned([
           for (final def in _defsFor(widget.category))
             if (def.subpage == subpage) def,
         ]),
-        const SectionHeading('Required system permissions'),
+        SectionHeading(deviceText(context, 'Required system permissions')),
         SearchLandingTarget(
           id: 'x:service_permissions',
           child: SettingsCard(
@@ -2943,6 +3742,97 @@ class _CategoryContentState extends State<_CategoryContent> {
       return [UpdateHelperSettings(container: container)];
     }
 
+    if (widget.category == 'Device' && subpage == 'Kiosk Satellite Analytics') {
+      return [
+        // Why, and where to read the details, above the switches that
+        // decide what leaves the device.
+        SettingsCard(
+          children: [
+            HintRow(deviceText(context, _analyticsIntro)),
+            SearchLandingTarget(
+              id: 'x:analytics_docs',
+              child: Material(
+                type: MaterialType.transparency,
+                child: ListTile(
+                  title: Text(
+                    deviceText(context, 'Learn how we process your data'),
+                  ),
+                  subtitle: Text(
+                    deviceText(
+                      context,
+                      'What Kiosk Satellite Analytics sends and what it never '
+                      'sends.',
+                    ),
+                  ),
+                  trailing: Icon(Icons.open_in_new),
+                  onTap: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    container.commands.execute('showLinkPage', {
+                      'url': _analyticsDocsUrl,
+                    });
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+        ...sectioned([
+          for (final def in _defsFor(widget.category))
+            if (def.subpage == subpage) def,
+        ]),
+      ];
+    }
+
+    if (widget.category == 'Device' && subpage == 'Updates') {
+      return [
+        ...sectioned([
+          for (final def in _defsFor(widget.category))
+            if (def.subpage == subpage) def,
+        ]),
+        // An APK uploaded through the remote admin (issue #566): the
+        // upload itself happens in a browser, the install can be started
+        // from either side.
+        SettingsCard(
+          children: [
+            SearchLandingTarget(
+              id: 'x:update_upload',
+              child: _UploadedApkRow(container: container),
+            ),
+          ],
+        ),
+        // Last: how to host a repository of your own, for whoever picked
+        // Custom Repository above and wonders what goes in the folder.
+        SettingsCard(
+          children: [
+            SearchLandingTarget(
+              id: 'x:update_docs',
+              child: ListTile(
+                title: Text(deviceText(context, 'Custom repository guide')),
+                subtitle: Text(
+                  deviceText(
+                    context,
+                    'How to host the releases file and the APKs on your own '
+                    'network.',
+                  ),
+                ),
+                trailing: Icon(Icons.open_in_new),
+                onTap: () {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  container.commands.execute('showLinkPage', {
+                    'url': _updateDocsUrl,
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+      ];
+    }
+
+    if (widget.category == 'Device' && subpage == 'TLS') {
+      return [TlsSettingsPanel(container: container)];
+    }
+
     if (widget.category == 'Device' && subpage == 'Remote Administration') {
       return [
         ...sectioned([
@@ -2956,17 +3846,35 @@ class _CategoryContentState extends State<_CategoryContent> {
       ];
     }
 
+    // The curve's four settings draw as one editor (issue #742), in the
+    // place of the first of them; the search lands on it for any of the
+    // four. Mirrored on the remote (brightness_curve.js).
     if (widget.category == 'Screen & Audio' &&
         subpage == 'Adaptive brightness') {
-      return sectioned([
-        for (final def in _defsFor(widget.category))
-          if (def.subpage == subpage) def,
-      ]);
+      const folded = {
+        'screen.adaptive_max_brightness',
+        'screen.adaptive_dark_lux',
+        'screen.adaptive_bright_lux',
+      };
+      Widget editor = BrightnessCurveEditor(container: container);
+      for (final key in [adaptiveMinBrightness.key, ...folded]) {
+        editor = SearchLandingTarget(id: key, child: editor);
+      }
+      return sectioned(
+        [
+          for (final def in _defsFor(widget.category))
+            if (def.subpage == subpage && !folded.contains(def.key)) def,
+        ],
+        replace: {
+          ..._rowReplacements(container),
+          adaptiveMinBrightness.key: editor,
+        },
+      );
     }
 
     if (widget.category == 'Screen & Audio') {
       return [
-        const GroupNote(_micGroupNote),
+        GroupNote(screenAudioText(context, _micGroupNote)),
         SettingsCard(
           children: [
             for (final def in _defsFor(widget.category))
@@ -2981,13 +3889,124 @@ class _CategoryContentState extends State<_CategoryContent> {
                 child: MicChannelTile(container: container),
               ),
             // Live capture level under the gain it verifies. Only with
-            // detection on: it reads the engine's telemetry, and with
-            // detection off this app never opens the microphone.
-            if (container.settings.get(wakeWordEnabled))
-              MicLevelTile(container: container),
+            // detection on: it opens the microphone when no engine holds
+            // it, and with detection off this app never opens it.
+            if (container.settings.get(wakeWordEnabled)) const MicLevelTile(),
           ],
         ),
       ];
+    }
+
+    // The switch, then what it recorded while on: activations, near misses.
+    if (widget.category == 'Voice Satellite' &&
+        subpage == 'Wake word diagnostics') {
+      return [
+        SettingsCard(
+          children: [
+            SettingTile(
+              container: container,
+              def: wakeWordDiagnostics,
+              onChanged: changed,
+            ),
+          ],
+        ),
+        if (container.settings.get(wakeWordDiagnostics))
+          WakeDiagnosticsLists(container: container),
+      ];
+    }
+
+    if (widget.category == 'Voice Satellite' && container.voice.nativeRuntime) {
+      final pageDefs = [
+        for (final def in _defsFor(widget.category))
+          if (def.subpage == subpage) def,
+      ];
+      switch (subpage) {
+        case 'Assistant':
+          return [
+            SectionHeading(voiceText(context, 'Pipelines')),
+            SearchLandingTarget(
+              id: 'x:vs_pipelines',
+              child: SettingsCard(
+                children: [
+                  VoiceHaSelects(container: container, rows: voicePipelineRows),
+                ],
+              ),
+            ),
+            ...sectioned(pageDefs),
+          ];
+        case 'Wake Word':
+          final native = [
+            voiceWakeWordEngine,
+            voiceWakeWordSensitivity,
+            voiceNoiseGate,
+            voiceStopWord,
+          ];
+          return [
+            SearchLandingTarget(
+              id: 'x:vs_wake',
+              child: SettingsCard(
+                children: [
+                  SettingTile(
+                    container: container,
+                    def: voiceWakeWordEngine,
+                    onChanged: changed,
+                  ),
+                  VoiceHaSelects(container: container, rows: voiceWakeWordRows),
+                  for (final def in native.skip(1))
+                    SettingTile(
+                      container: container,
+                      def: def,
+                      onChanged: changed,
+                    ),
+                ],
+              ),
+            ),
+            ...sectioned([voiceWakeArbitration, voiceWakeArbitrationWindowMs]),
+            _vsDetectionCard(container),
+            CustomWakeModelsGroup(container: container),
+          ];
+        case 'Appearance':
+          return sectioned(
+            pageDefs,
+            replace: {
+              ..._rowReplacements(container),
+              voiceSkin.key: VoiceSkinRow(
+                container: container,
+                onChanged: changed,
+              ),
+              voiceBackgroundOpacity.key: VoiceBackgroundRow(
+                container: container,
+                onChanged: changed,
+              ),
+            },
+            after: {
+              ..._rowExtras(container),
+              voiceReactiveBar.key: VoicePreviewRow(container: container),
+            },
+          );
+        case 'Chimes':
+          return [
+            ...sectioned([voiceWakeSound]),
+            ...sectioned(voiceChimeSettings.values.toList()),
+          ];
+        case 'Wake word diagnostics':
+          break;
+        default:
+          return sectioned(pageDefs);
+      }
+    }
+
+    if (widget.category == 'Voice Satellite' && subpage == 'Chimes') {
+      return [...sectioned(voiceChimeSettings.values.toList())];
+    }
+
+    // The dashboard runtime's Timers page holds only what the kiosk draws
+    // itself: the pills.
+    if (widget.category == 'Voice Satellite' && subpage == 'Timers') {
+      return sectioned([
+        for (final def in _defsFor(widget.category))
+          if (def.subpage == subpage) def,
+      ]);
     }
 
     // Voice Satellite's two pages are almost entirely live rows from the
@@ -3020,10 +4039,13 @@ class _CategoryContentState extends State<_CategoryContent> {
             if (container.settings.get(haRotationEnabled))
               haReturnHomeEnabled.key: SearchLandingTarget(
                 id: haReturnHomeEnabled.key,
-                child: const SwitchListTile(
-                  title: Text('Return to home dashboard view'),
+                child: SwitchListTile(
+                  title: Text(haText(context, 'Return to home dashboard view')),
                   subtitle: Text(
-                    'Turned off while Dashboard view rotation is on.',
+                    haText(
+                      context,
+                      'Turned off while Dashboard view rotation is on.',
+                    ),
                   ),
                   value: false,
                   onChanged: null,
@@ -3059,7 +4081,7 @@ class _CategoryContentState extends State<_CategoryContent> {
             for (final def in _defsFor(widget.category))
               if (def.subpage == subpage) def,
           ]),
-          const SectionHeading('Speakers'),
+          SectionHeading(mediaText(context, 'Speakers')),
           SearchLandingTarget(
             id: 'x:sonos_speakers',
             child: SettingsCard(
@@ -3081,8 +4103,16 @@ class _CategoryContentState extends State<_CategoryContent> {
   String _returnHomeTargetHint(AppContainer container) {
     final path = container.homeAssistant.homeViewPath();
     return path == null
-        ? 'The configured dashboard has no view path to return to.'
-        : 'Returns to "$path" after the timeout.';
+        ? haText(
+            context,
+            'The configured dashboard has no view path to return to.',
+          )
+        : l10n(context).haReturnPath(path);
+  }
+
+  /// For the native Voice Satellite page (an extension of this state).
+  void _rebuild() {
+    if (mounted) setState(() {});
   }
 
   /// The Voice Satellite page: gated on the proven HA connection like the
@@ -3090,29 +4120,34 @@ class _CategoryContentState extends State<_CategoryContent> {
   /// being installed.
   List<Widget> _vsContent(AppContainer container) {
     if (!container.homeAssistant.connectionOk.value) {
-      return const [
+      return [
         SettingsCard(
           children: [
             ListTile(
-              title: Text('Home Assistant not connected'),
+              title: Text(voiceText(context, 'Home Assistant not connected')),
               subtitle: Text(
-                'Validate the connection under Home Assistant '
-                'Configuration first.',
+                voiceText(
+                  context,
+                  'Validate the connection under Home Assistant Setup first.',
+                ),
               ),
             ),
           ],
         ),
       ];
     }
+    if (container.voice.nativeRuntime) return _nativeVsContent(container);
     return [
       FutureBuilder<bool>(
         future: _vsDetected,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const SettingsCard(
+            return SettingsCard(
               children: [
                 ListTile(
-                  title: Text('Checking for Voice Satellite…'),
+                  title: Text(
+                    voiceText(context, 'Checking for Voice Satellite…'),
+                  ),
                   trailing: SizedBox(
                     width: 20,
                     height: 20,
@@ -3125,20 +4160,26 @@ class _CategoryContentState extends State<_CategoryContent> {
           if (snapshot.data != true) {
             return SettingsCard(
               children: [
-                const ListTile(
+                ListTile(
                   title: Text(
-                    'Voice Satellite is not installed in Home Assistant',
+                    voiceText(
+                      context,
+                      'Voice Satellite is not installed in Home Assistant',
+                    ),
                   ),
                   subtitle: Padding(
                     padding: EdgeInsets.only(top: 4),
                     child: Text(
-                      'Voice Satellite turns this kiosk into a full '
-                      'hands-free voice assistant for Home Assistant: '
-                      'wake word detection, conversations, timers and '
-                      'announcements, right on the dashboard.\n\n'
-                      'It is available in the default HACS repository. '
-                      'Install it on your Home Assistant instance, then '
-                      'come back here.',
+                      voiceText(
+                        context,
+                        'Voice Satellite turns this kiosk into a full '
+                        'hands-free voice assistant for Home Assistant: '
+                        'wake word detection, conversations, timers and '
+                        'announcements, right on the dashboard.\n\n'
+                        'It is available in the default HACS repository. '
+                        'Install it on your Home Assistant instance, then '
+                        'come back here.',
+                      ),
                     ),
                   ),
                 ),
@@ -3159,9 +4200,12 @@ class _CategoryContentState extends State<_CategoryContent> {
                         ).popUntil((route) => route.isFirst);
                         container.commands.execute('loadUrl', {'url': url});
                       },
-                      child: SvgPicture.asset(
-                        'assets/branding/hacs.svg',
-                        height: 44,
+                      child: Semantics(
+                        label: voiceText(context, 'Open HACS repository'),
+                        child: SvgPicture.asset(
+                          'assets/branding/hacs.svg',
+                          height: 44,
+                        ),
                       ),
                     ),
                   ),
@@ -3176,10 +4220,9 @@ class _CategoryContentState extends State<_CategoryContent> {
                         Navigator.of(
                           context,
                         ).popUntil((route) => route.isFirst);
-                        container.commands.execute('loadUrl', {
-                          'url':
-                              'https://github.com/jxlarrea/voice-satellite-card-integration',
-                        });
+                        container.browser.showLinkOverlay(
+                          'https://github.com/jxlarrea/voice-satellite-card-integration',
+                        );
                       },
                       child: Text.rich(
                         TextSpan(
@@ -3190,7 +4233,9 @@ class _CategoryContentState extends State<_CategoryContent> {
                                 ).colorScheme.onSurfaceVariant,
                               ),
                           children: [
-                            const TextSpan(text: 'Learn more about '),
+                            TextSpan(
+                              text: voiceText(context, 'Learn more about '),
+                            ),
                             WidgetSpan(
                               alignment: PlaceholderAlignment.middle,
                               child: Padding(
@@ -3206,7 +4251,10 @@ class _CategoryContentState extends State<_CategoryContent> {
                               ),
                             ),
                             TextSpan(
-                              text: 'Voice Satellite on Github',
+                              text: voiceText(
+                                context,
+                                'Voice Satellite on Github',
+                              ),
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.primary,
                                 decoration: TextDecoration.underline,
@@ -3227,26 +4275,47 @@ class _CategoryContentState extends State<_CategoryContent> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Still on the integration's engine: the way to native.
+              VoiceMigrationNotice(container: container),
               VsControlsSection(
                 container: container,
                 // An important switch lives with the important rows: pulled
                 // out of the detection card into General, below Auto start.
                 backgroundTile: container.settings.visible(wakeWordBackground)
-                    ? SettingTile(
-                        container: container,
-                        def: wakeWordBackground,
-                        onChanged: () => setState(() {}),
+                    ? Column(
+                        children: [
+                          for (final def in [
+                            wakeWordBackground,
+                            wakeWordReturnToBackground,
+                          ])
+                            if (container.settings.visible(def))
+                              SettingTile(
+                                container: container,
+                                def: def,
+                                onChanged: () => setState(() {}),
+                              ),
+                        ],
                       )
                     : null,
               ),
               // The tester: a live look at what the engine hears and scores,
               // for diagnosing "the wake word isn't triggering".
               if (container.settings.get(wakeWordEnabled)) ...[
-                const SectionHeading('Wake Word Tester'),
+                SectionHeading(voiceText(context, 'Wake Word Tester')),
                 SearchLandingTarget(
                   id: 'x:wake_word_tester',
                   child: SettingsCard(
-                    children: [WakeWordTesterTile(container: container)],
+                    children: [
+                      WakeWordTesterTile(container: container),
+                      // Diagnostics answers the same question after the
+                      // fact, so its page opens from the tester's group.
+                      if (container.settings.visible(wakeWordDiagnostics))
+                        _SubpageEntryTile(
+                          container: container,
+                          category: 'Voice Satellite',
+                          subpage: 'Wake word diagnostics',
+                        ),
+                    ],
                   ),
                 ),
               ],
@@ -3256,7 +4325,9 @@ class _CategoryContentState extends State<_CategoryContent> {
               // the one listening — with detection off, the browser asks
               // for the microphone through its own flow.
               if (container.settings.get(wakeWordEnabled)) ...[
-                const SectionHeading('Required system permissions'),
+                SectionHeading(
+                  voiceText(context, 'Required system permissions'),
+                ),
                 SearchLandingTarget(
                   id: 'x:vs_permissions',
                   child: SettingsCard(
@@ -3267,6 +4338,81 @@ class _CategoryContentState extends State<_CategoryContent> {
             ],
           );
         },
+      ),
+    ];
+  }
+}
+
+extension on _CategoryContentState {
+  /// Native Voice Satellite's page: the switch and status, the pages, the
+  /// tester and the permissions, and the way back to the integration while
+  /// it is still installed.
+  List<Widget> _nativeVsContent(AppContainer container) {
+    final settings = container.settings;
+    final enabled = settings.get(voiceEnabled);
+    void changed() => _rebuild();
+    SettingTile tile(SettingDef<Object> def) =>
+        SettingTile(container: container, def: def, onChanged: changed);
+    return [
+      SearchLandingTarget(
+        id: 'x:vs_status',
+        child: VoiceStatusCard(
+          container: container,
+          rows: [
+            tile(voiceEnabled),
+            if (enabled) ...[
+              tile(voiceMute),
+              for (final def in [
+                wakeWordBackground,
+                wakeWordReturnToBackground,
+              ])
+                if (settings.visible(def)) tile(def),
+            ],
+          ],
+        ),
+      ),
+      if (enabled) ...[
+        for (final page in const [
+          'Wake Word',
+          'Assistant',
+          'Realtime',
+          'Appearance',
+          'Conversation',
+          'Timers',
+          'Chimes',
+        ])
+          _subpageEntryCard(container, 'Voice Satellite', page),
+        SectionHeading(voiceText(context, 'Wake Word Tester')),
+        SearchLandingTarget(
+          id: 'x:wake_word_tester',
+          child: SettingsCard(
+            children: [
+              WakeWordTesterTile(container: container),
+              if (settings.visible(wakeWordDiagnostics))
+                _SubpageEntryTile(
+                  container: container,
+                  category: 'Voice Satellite',
+                  subpage: 'Wake word diagnostics',
+                ),
+            ],
+          ),
+        ),
+        SectionHeading(voiceText(context, 'Required system permissions')),
+        SearchLandingTarget(
+          id: 'x:vs_permissions',
+          child: SettingsCard(
+            children: [SystemPermissionsTile(container: container)],
+          ),
+        ),
+      ],
+      FutureBuilder<bool>(
+        future: _vsDetected,
+        builder: (context, snapshot) => snapshot.data == true
+            ? SearchLandingTarget(
+                id: 'x:vs_rollback',
+                child: VoiceRollbackCard(container: container),
+              )
+            : const SizedBox.shrink(),
       ),
     ];
   }
@@ -3335,11 +4481,13 @@ class _KioskPermissionsTileState extends State<_KioskPermissionsTile>
     super.dispose();
   }
 
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Both are given on OS screens that report nothing back, so re-read
     // them when the user returns from one.
-    if (state == AppLifecycleState.resumed) _refresh();
+    if (_returned.returned(state)) _refresh();
   }
 
   Future<void> _refresh() async {
@@ -3374,11 +4522,14 @@ class _KioskPermissionsTileState extends State<_KioskPermissionsTile>
         granted == true ? Icons.check_circle_outline : missingIcon,
         color: granted == true ? null : theme.colorScheme.error,
       ),
-      title: Text(title),
-      subtitle: Text(granted == true ? held : missing),
+      title: Text(kioskText(context, title)),
+      subtitle: Text(kioskText(context, granted == true ? held : missing)),
       trailing: granted == true
           ? null
-          : TextButton(onPressed: onGrant, child: Text(action)),
+          : TextButton(
+              onPressed: onGrant,
+              child: Text(kioskText(context, action)),
+            ),
     );
   }
 
@@ -3461,11 +4612,13 @@ class _HomeRoleTileState extends State<_HomeRoleTile>
     super.dispose();
   }
 
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // The role dialog and the system home settings both report nothing
     // back; coming home from them is the refresh signal.
-    if (state == AppLifecycleState.resumed) _refresh();
+    if (_returned.returned(state)) _refresh();
   }
 
   Future<void> _refresh() async {
@@ -3484,21 +4637,27 @@ class _HomeRoleTileState extends State<_HomeRoleTile>
     final s = _status;
     final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
     if (s == null) {
-      return const SettingsRow(
+      return SettingsRow(
         leading: Icon(Icons.home_outlined),
-        title: Text('Home screen'),
-        subtitle: Text('Checking the device...'),
+        title: Text(kioskText(context, "Home screen")),
+        subtitle: Text(kioskText(context, "Checking the device...")),
       );
     }
     if (s['supported'] != true) {
       final fireos = s['reason'] == 'fireos';
       return SettingsRow(
         leading: Icon(Icons.info_outline, color: muted),
-        title: const Text('Home screen'),
+        title: Text(kioskText(context, "Home screen")),
         subtitle: Text(
           fireos
-              ? 'Fire OS does not allow replacing its launcher.'
-              : 'This device does not allow changing the home screen.',
+              ? kioskText(
+                  context,
+                  "Fire OS does not allow replacing its launcher.",
+                )
+              : kioskText(
+                  context,
+                  "This device does not allow changing the home screen.",
+                ),
           style: TextStyle(color: muted),
         ),
       );
@@ -3512,30 +4671,36 @@ class _HomeRoleTileState extends State<_HomeRoleTile>
           Icons.warning_amber_outlined,
           color: theme.colorScheme.error,
         ),
-        title: const Text('Home screen'),
+        title: Text(kioskText(context, "Home screen")),
         subtitle: Text(
-          'Turned off automatically after repeated failed starts; the '
-          'previous launcher was restored. Turn the switch back on to try '
-          'again.',
+          kioskText(
+            context,
+            "Turned off automatically after repeated failed starts; the previous launcher was restored. Turn the switch back on to try again.",
+          ),
         ),
       );
     }
     if (held) {
-      return const SettingsRow(
+      return SettingsRow(
         leading: Icon(Icons.check_circle_outline),
-        title: Text('Home screen'),
+        title: Text(kioskText(context, "Home screen")),
         subtitle: Text(
-          'Kiosk Satellite is the home screen. The kiosk starts at boot and '
-          'every home press returns to it.',
+          kioskText(
+            context,
+            "Kiosk Satellite is the home screen. The kiosk starts at boot and every home press returns to it.",
+          ),
         ),
       );
     }
     if (!enabled) {
       return SettingsRow(
         leading: Icon(Icons.home_outlined, color: muted),
-        title: const Text('Home screen'),
+        title: Text(kioskText(context, "Home screen")),
         subtitle: Text(
-          'Not the home screen. Turn on Act as the home screen above.',
+          kioskText(
+            context,
+            "Not the home screen. Turn on Act as the home screen above.",
+          ),
           style: TextStyle(color: muted),
         ),
       );
@@ -3548,16 +4713,22 @@ class _HomeRoleTileState extends State<_HomeRoleTile>
         : false);
     return SettingsRow(
       leading: Icon(Icons.error_outline, color: theme.colorScheme.error),
-      title: const Text('Home screen'),
-      subtitle: const Text(
-        'Not the current home screen yet: the device is waiting for a '
-        'confirmation.',
+      title: Text(kioskText(context, "Home screen")),
+      subtitle: Text(
+        kioskText(
+          context,
+          "Not the current home screen yet: the device is waiting for a confirmation.",
+        ),
       ),
       trailing: TextButton(
         onPressed: () async {
           await widget.container.commands.execute('acquireHomeRole', const {});
         },
-        child: Text(settingsPath ? 'Open home settings' : 'Set as default'),
+        child: Text(
+          settingsPath
+              ? kioskText(context, "Open home settings")
+              : kioskText(context, "Set as default"),
+        ),
       ),
     );
   }
@@ -3592,10 +4763,12 @@ class _LauncherPermissionsTileState extends State<_LauncherPermissionsTile>
     super.dispose();
   }
 
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Both grants are given on OS screens that report nothing back.
-    if (state == AppLifecycleState.resumed) _refresh();
+    if (_returned.returned(state)) _refresh();
   }
 
   Future<void> _refresh() async {
@@ -3621,16 +4794,19 @@ class _LauncherPermissionsTileState extends State<_LauncherPermissionsTile>
         granted == true ? Icons.check_circle_outline : missingIcon,
         color: granted == true ? null : theme.colorScheme.error,
       ),
-      title: Text(title),
-      subtitle: Text(granted == true ? held : missing),
+      title: Text(launcherText(context, title)),
+      subtitle: Text(launcherText(context, granted == true ? held : missing)),
       trailing: granted == true
           ? null
           : TextButton(
               onPressed: () async {
                 await onGrant();
+                // The grant just changed, so the next read must see it
+                // rather than the cached pass this screen's own boot took.
+                SystemPermissions.invalidate();
                 await _refresh();
               },
-              child: const Text('Grant'),
+              child: Text(launcherText(context, 'Grant')),
             ),
     );
   }
@@ -3642,28 +4818,119 @@ class _LauncherPermissionsTileState extends State<_LauncherPermissionsTile>
         _row(
           granted: _perms?.displayOverOtherApps,
           missingIcon: Icons.open_in_new_off_outlined,
-          title: 'Display over other apps',
-          held:
-              'Kiosk Satellite can bring itself back in the foreground and '
-              'notice touches in the other app.',
-          missing:
-              'Without this the kiosk cannot come back on its own, and '
-              'touches in the other app go unseen.',
+          title: launcherText(context, 'Display over other apps'),
+          held: launcherText(
+            context,
+            'Kiosk Satellite can bring itself back in the foreground and '
+            'notice touches in the other app.',
+          ),
+          missing: launcherText(
+            context,
+            'Without this the kiosk cannot come back on its own, and '
+            'touches in the other app go unseen.',
+          ),
           onGrant: () => requestOsPermission(Permission.systemAlertWindow),
         ),
         _row(
           granted: _perms?.batteryUnrestricted,
           missingIcon: Icons.battery_alert_outlined,
-          title: 'Unrestricted battery',
-          held:
-              'Allows the process to run in the background without being '
-              'paused or killed.',
-          missing:
-              'Android may pause the app behind the other one, and a paused '
-              'clock never brings the kiosk back.',
+          title: launcherText(context, 'Unrestricted battery'),
+          held: launcherText(
+            context,
+            'Allows the process to run in the background without being '
+            'paused or killed.',
+          ),
+          missing: launcherText(
+            context,
+            'Android may pause the app behind the other one, and a paused '
+            'clock never brings the kiosk back.',
+          ),
           onGrant: BackgroundListening.requestBatteryUnrestricted,
         ),
       ]),
+    );
+  }
+}
+
+/// The Local Media Session player's Required system permissions group:
+/// the Notification access grant, in the Launcher group's shape.
+class _MediaSessionPermissionsTile extends StatefulWidget {
+  const _MediaSessionPermissionsTile({required this.container});
+
+  final AppContainer container;
+
+  @override
+  State<_MediaSessionPermissionsTile> createState() =>
+      _MediaSessionPermissionsTileState();
+}
+
+class _MediaSessionPermissionsTileState
+    extends State<_MediaSessionPermissionsTile>
+    with WidgetsBindingObserver {
+  bool? _granted;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refresh();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  final _returned = ReturnWatch();
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The grant is given on an OS screen that reports nothing back.
+    if (_returned.returned(state)) _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final granted = await SessionPlayer.hasAccess();
+    if (!mounted) return;
+    setState(() => _granted = granted);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final granted = _granted;
+    return SettingsRow(
+      leading: Icon(
+        granted == true
+            ? Icons.check_circle_outline
+            : Icons.notifications_off_outlined,
+        color: granted == true ? null : theme.colorScheme.error,
+      ),
+      title: Text(mediaText(context, 'Notification access')),
+      subtitle: Text(
+        mediaText(
+          context,
+          granted == true
+              ? 'Now Playing can follow the apps playing on this device.'
+              : 'Without this Android lists no media sessions, so Now '
+                    'Playing cannot follow the apps playing on this device.',
+        ),
+      ),
+      trailing: granted == true
+          ? null
+          : TextButton(
+              onPressed: () async {
+                await widget.container.commands.execute(
+                  'requestOsPermissions',
+                  {
+                    'which': ['notificationAccess'],
+                  },
+                );
+                await _refresh();
+              },
+              child: Text(mediaText(context, 'Grant')),
+            ),
     );
   }
 }
@@ -3696,16 +4963,14 @@ class _OverlayGrantRowState extends State<_OverlayGrantRow> {
     final theme = Theme.of(context);
     return SettingsRow(
       leading: Icon(Icons.layers_outlined, color: theme.colorScheme.error),
-      title: const Text('Display over other apps'),
-      subtitle: const Text(
-        'Without this the kiosk cannot come back after a crash.',
-      ),
+      title: Text(l10n(context).deviceOverlay),
+      subtitle: Text(l10n(context).browserCrashPermissionHelp),
       trailing: TextButton(
         onPressed: () async {
           await requestOsPermission(Permission.systemAlertWindow);
           await _refresh();
         },
-        child: const Text('Grant'),
+        child: Text(l10n(context).commonGrant),
       ),
     );
   }
@@ -3720,26 +4985,29 @@ Future<bool> confirmScreenOff(BuildContext context) async {
   final go = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('WARNING: Please Read!'),
-      content: const Text(
-        'Once the display truly powers off, the tablet\'s own '
-        'power management takes over, and many Android models '
-        'misbehave in that state: Wi-Fi naps or drops, the '
-        'Home Assistant entities go unavailable, the camera '
-        'can be revoked, and some models kill background apps '
-        'outright. What happens depends on the manufacturer.\n\n'
-        'The reliable alternative is the Black screensaver '
-        'with this setting left at 0: the panel looks just as '
-        'dark, and the app keeps full control.',
+      title: Text(screensaverText(context, 'WARNING: Please Read!')),
+      content: Text(
+        screensaverText(
+          context,
+          'Once the display truly powers off, the tablet\'s own '
+          'power management takes over, and many Android models '
+          'misbehave in that state: Wi-Fi naps or drops, the '
+          'Home Assistant entities go unavailable, the camera '
+          'can be revoked, and some models kill background apps '
+          'outright. What happens depends on the manufacturer.\n\n'
+          'The reliable alternative is the Black screensaver '
+          'with this setting left at 0: the panel looks just as '
+          'dark, and the app keeps full control.',
+        ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
+          child: Text(screensaverText(context, 'Cancel')),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
-          child: const Text('Turn screen off anyway'),
+          child: Text(screensaverText(context, 'Turn screen off anyway')),
         ),
       ],
     ),
@@ -3778,11 +5046,13 @@ class _ScreenOffAdminRowState extends State<_ScreenOffAdminRow>
     super.dispose();
   }
 
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // The grant is given on Android's own screen, which reports nothing on
     // the way back; returning here is the moment to look again.
-    if (state == AppLifecycleState.resumed) _refresh();
+    if (_returned.returned(state)) _refresh();
   }
 
   Future<void> _refresh() async {
@@ -3793,15 +5063,20 @@ class _ScreenOffAdminRowState extends State<_ScreenOffAdminRow>
 
   @override
   Widget build(BuildContext context) {
-    if (_granted != false) return const SizedBox.shrink();
+    if (_granted != false ||
+        widget.container.settings.get(screensaverScreenOffBlack)) {
+      return const SizedBox.shrink();
+    }
     final theme = Theme.of(context);
     return SettingsRow(
       leading: Icon(
         Icons.admin_panel_settings_outlined,
         color: theme.colorScheme.error,
       ),
-      title: const Text('Device admin'),
-      subtitle: const Text('Not granted, so the screen cannot turn off.'),
+      title: Text(screensaverText(context, 'Device admin')),
+      subtitle: Text(
+        screensaverText(context, 'Not granted, so the screen cannot turn off.'),
+      ),
       trailing: TextButton(
         onPressed: () async {
           await widget.container.commands.execute('requestOsPermissions', {
@@ -3809,7 +5084,7 @@ class _ScreenOffAdminRowState extends State<_ScreenOffAdminRow>
           });
           await _refresh();
         },
-        child: const Text('Enable'),
+        child: Text(screensaverText(context, 'Enable')),
       ),
     );
   }
@@ -3864,12 +5139,18 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
     widget.onChanged();
   }
 
-  Future<String?> _pickTime(String current) =>
-      showKsTimePicker(context, title: 'Time', initial: current);
+  Future<String?> _pickTime(String current) => showKsTimePicker(
+    context,
+    title: screensaverText(context, 'Time'),
+    initial: current,
+  );
 
-  String _modeLabel(String mode) =>
-      widget.container.settings.optionLabel(screensaverMode, mode) ??
-      (mode.isEmpty ? mode : mode[0].toUpperCase() + mode.substring(1));
+  String _modeLabel(String mode) => screensaverMode.localizedOption(
+    context,
+    mode,
+    widget.container.settings.optionLabel(screensaverMode, mode) ??
+        (mode.isEmpty ? mode : mode[0].toUpperCase() + mode.substring(1)),
+  );
 
   /// The row's second line: the mode, then only the overrides actually set,
   /// so a plain entry reads as one word instead of a row of "default"s.
@@ -3877,35 +5158,67 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
     final parts = <String>[_modeLabel('${entry['mode']}')];
     final brightness = entry['brightness'];
     if (brightness is num) {
-      parts.add('${(brightness * 100).round()}% brightness');
+      parts.add(
+        l10n(
+          context,
+        ).screensaverBrightnessPercent('${(brightness * 100).round()}'),
+      );
     }
     if (entry['motion'] is bool) {
-      parts.add('Motion ${entry['motion'] == true ? 'on' : 'off'}');
+      parts.add(
+        entry['motion'] == true
+            ? l10n(context).screensaverSummaryMotionOn
+            : l10n(context).screensaverSummaryMotionOff,
+      );
     }
     if (entry['face'] is bool) {
-      parts.add('Face ${entry['face'] == true ? 'on' : 'off'}');
+      parts.add(
+        entry['face'] == true
+            ? l10n(context).screensaverSummaryFaceOn
+            : l10n(context).screensaverSummaryFaceOff,
+      );
     }
     if (entry['proximity'] is bool) {
-      parts.add('Proximity ${entry['proximity'] == true ? 'on' : 'off'}');
+      parts.add(
+        entry['proximity'] == true
+            ? l10n(context).screensaverSummaryProximityOn
+            : l10n(context).screensaverSummaryProximityOff,
+      );
     }
     if (entry['person'] is bool) {
-      parts.add('Person ${entry['person'] == true ? 'on' : 'off'}');
+      parts.add(
+        entry['person'] == true
+            ? l10n(context).screensaverSummaryPersonOn
+            : l10n(context).screensaverSummaryPersonOff,
+      );
     }
     if (entry['widgets'] is bool) {
-      parts.add('Widgets ${entry['widgets'] == true ? 'on' : 'off'}');
+      parts.add(
+        entry['widgets'] == true
+            ? l10n(context).screensaverSummaryWidgetsOn
+            : l10n(context).screensaverSummaryWidgetsOff,
+      );
     }
     if (entry['glance'] is bool) {
-      parts.add('At a glance ${entry['glance'] == true ? 'on' : 'off'}');
+      parts.add(
+        entry['glance'] == true
+            ? l10n(context).screensaverSummaryGlanceOn
+            : l10n(context).screensaverSummaryGlanceOff,
+      );
     }
     if (entry['now_playing'] is bool) {
-      parts.add('Now Playing ${entry['now_playing'] == true ? 'on' : 'off'}');
+      parts.add(
+        entry['now_playing'] == true
+            ? l10n(context).screensaverSummaryNowPlayingOn
+            : l10n(context).screensaverSummaryNowPlayingOff,
+      );
     }
     final screenOff = entry['screen_off'];
     if (screenOff is num) {
       parts.add(
         screenOff <= 0
-            ? 'Screen off never'
-            : 'Screen off after ${screenOff.round()} min',
+            ? screensaverText(context, 'Screen off never')
+            : l10n(context).screensaverScreenOffAfter('${screenOff.round()}'),
       );
     }
     return parts.join(' · ');
@@ -3977,10 +5290,19 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                 helperText: helper,
                 helperMaxLines: 3,
               ),
-              items: const [
-                DropdownMenuItem(value: 'default', child: Text('Default')),
-                DropdownMenuItem(value: 'on', child: Text('On')),
-                DropdownMenuItem(value: 'off', child: Text('Off')),
+              items: [
+                DropdownMenuItem(
+                  value: 'default',
+                  child: Text(screensaverText(context, 'Default')),
+                ),
+                DropdownMenuItem(
+                  value: 'on',
+                  child: Text(screensaverText(context, 'On')),
+                ),
+                DropdownMenuItem(
+                  value: 'off',
+                  child: Text(screensaverText(context, 'Off')),
+                ),
               ],
               onChanged: !enabled
                   ? null
@@ -3996,7 +5318,11 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
           final level = (entry['brightness'] as num?)?.toDouble();
           final screenOff = (entry['screen_off'] as num?)?.toInt();
           return AlertDialog(
-            title: Text(existing == null ? 'Add time' : '${entry['at']}'),
+            title: Text(
+              existing == null
+                  ? screensaverText(context, 'Add time')
+                  : '${entry['at']}',
+            ),
             content: SizedBox(
               width: 480,
               child: SingleChildScrollView(
@@ -4008,7 +5334,7 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                     // Inside an editor the time is a labeled field, full
                     // width, opening the same picker as the time rows.
                     LabeledField(
-                      label: 'Time',
+                      label: screensaverText(context, 'Time'),
                       child: TimeBox(
                         value: '${entry['at']}',
                         expand: true,
@@ -4021,7 +5347,7 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                       ),
                     ),
                     LabeledField(
-                      label: 'Screensaver',
+                      label: screensaverText(context, 'Screensaver'),
                       child: DropdownButtonFormField<String>(
                         initialValue:
                             (widget.container.settings
@@ -4030,7 +5356,7 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                                 isPluginScreensaver(entry['mode']))
                             ? entry['mode'] as String
                             : screensaverMode.defaultValue,
-                        decoration: const InputDecoration(),
+                        decoration: InputDecoration(),
                         items: [
                           for (final mode in {
                             ...widget.container.settings.optionsFor(
@@ -4056,11 +5382,19 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                     // the slider below is this entry's own level.
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Screensaver brightness'),
+                      title: Text(
+                        screensaverText(context, 'Screensaver brightness'),
+                      ),
                       subtitle: Text(
                         level == null
-                            ? 'Follows the Screensaver brightness setting.'
-                            : 'Applies to every mode except Black.',
+                            ? screensaverText(
+                                context,
+                                'Follows the Screensaver brightness setting.',
+                              )
+                            : screensaverText(
+                                context,
+                                'Applies to every mode except Black.',
+                              ),
                       ),
                       value: level != null,
                       onChanged: (on) => setDialogState(() {
@@ -4108,15 +5442,26 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                     // its hours even when that slider is set (issue #437).
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Turn screen off after'),
+                      title: Text(
+                        screensaverText(context, 'Turn screen off after'),
+                      ),
                       subtitle: Text(
                         screenOff == null
-                            ? 'Follows the Turn screen off after setting.'
+                            ? screensaverText(
+                                context,
+                                'Follows the Turn screen off after setting.',
+                              )
                             : screenOff == 0
-                            ? 'Keeps the screen on during these hours.'
-                            : 'Powers down the display once the '
-                                  'screensaver has run this long. Requires '
-                                  'Device Administrator permission.',
+                            ? screensaverText(
+                                context,
+                                'Keeps the screen on during these hours.',
+                              )
+                            : screensaverText(
+                                context,
+                                'Powers down the display once the '
+                                'screensaver has run this long. Requires '
+                                'Device Administrator permission.',
+                              ),
                       ),
                       value: screenOff != null,
                       onChanged: (on) => setDialogState(() {
@@ -4151,7 +5496,11 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                               // Leaving 0 gets the same warning as the
                               // slider outside the schedule.
                               onChangeEnd: (v) async {
-                                if (screenOffBefore > 0 || v.round() == 0) {
+                                if (screenOffBefore > 0 ||
+                                    v.round() == 0 ||
+                                    widget.container.settings.get(
+                                      screensaverScreenOffBlack,
+                                    )) {
                                   return;
                                 }
                                 if (!await confirmScreenOff(context)) {
@@ -4163,7 +5512,9 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                           SizedBox(
                             width: 56,
                             child: Text(
-                              screenOff == 0 ? 'Never' : '$screenOff min',
+                              screenOff == 0
+                                  ? screensaverText(context, 'Never')
+                                  : l10n(context).haMinutes('$screenOff'),
                               textAlign: TextAlign.end,
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
@@ -4171,44 +5522,62 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                         ],
                       ),
                     override(
-                      'Dismiss on motion',
+                      screensaverText(context, 'Dismiss on motion'),
                       'motion',
                       enabled: cameraOn,
                       helper: cameraOn
                           ? null
-                          : 'Requires the camera. Turn it on in the Camera '
-                                'settings first.',
+                          : screensaverText(
+                              context,
+                              'Requires the camera. Turn it on in the Camera '
+                              'settings first.',
+                            ),
                     ),
                     // Motion keeps precedence inside an entry too: On here
                     // with motion On above still wakes on motion.
                     override(
-                      'Dismiss on face',
+                      screensaverText(context, 'Dismiss on face'),
                       'face',
                       enabled: cameraOn,
                       helper: cameraOn
                           ? null
-                          : 'Requires the camera. Turn it on in the Camera '
-                                'settings first.',
+                          : screensaverText(
+                              context,
+                              'Requires the camera. Turn it on in the Camera '
+                              'settings first.',
+                            ),
                     ),
                     override(
-                      'Dismiss on proximity',
+                      screensaverText(context, 'Dismiss on proximity'),
                       'proximity',
                       enabled: !noProximity,
                       helper: noProximity
-                          ? (proximity.proximityHint ??
-                                'Not available on this device.')
+                          ? screensaverText(
+                              context,
+                              proximity.proximityHint ??
+                                  'Not available on this device.',
+                            )
                           : null,
                     ),
-                    if (personShown) override('Dismiss on person', 'person'),
-                    override('Widgets', 'widgets'),
-                    override('At a glance', 'glance'),
+                    if (personShown)
+                      override(
+                        screensaverText(context, 'Dismiss on person'),
+                        'person',
+                      ),
+                    override(screensaverText(context, 'Widgets'), 'widgets'),
+                    override(screensaverText(context, 'At a glance'), 'glance'),
                     override(
-                      'Show Now Playing next to the screensaver',
+                      screensaverText(
+                        context,
+                        'Show Now Playing next to the screensaver',
+                      ),
                       'now_playing',
-                      helper:
-                          'Default follows the global layout. On uses a '
-                          'shared layout when Now Playing is enabled. Off '
-                          'hides Now Playing during these hours.',
+                      helper: screensaverText(
+                        context,
+                        'Default follows the global layout. On uses a '
+                        'shared layout when Now Playing is enabled. Off '
+                        'hides Now Playing during these hours.',
+                      ),
                     ),
                   ],
                 ),
@@ -4217,11 +5586,15 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(screensaverText(context, 'Cancel')),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text(existing == null ? 'Add' : 'Save'),
+                child: Text(
+                  existing == null
+                      ? screensaverText(context, 'Add')
+                      : screensaverText(context, 'Save'),
+                ),
               ),
             ],
           );
@@ -4241,20 +5614,20 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
         // An empty list is a row, not a blank card.
         if (entries.isEmpty)
           ListTile(
-            leading: const Icon(Icons.schedule),
-            title: const Text('No times yet'),
-            subtitle: Text(screensaverSchedule.description),
+            leading: Icon(Icons.schedule),
+            title: Text(screensaverText(context, 'No times yet')),
+            subtitle: Text(screensaverSchedule.localizedDescription(context)),
           ),
         // Indexed, not by identity: every read decodes new maps, so the
         // position in the stored list is what identifies an entry.
         for (var i = 0; i < entries.length; i++)
           ListTile(
-            leading: const Icon(Icons.schedule),
+            leading: Icon(Icons.schedule),
             title: Text('${entries[i]['at']}'),
             subtitle: Text(_summary(entries[i])),
             trailing: IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: 'Remove time',
+              icon: Icon(Icons.delete_outline),
+              tooltip: screensaverText(context, 'Remove time'),
               onPressed: () => _save([...entries]..removeAt(i)),
             ),
             onTap: () => _edit(context, i),
@@ -4262,9 +5635,11 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
         // The add row is the last row of the card, the whole row the
         // button, mirrored on the remote.
         ListTile(
-          leading: const Icon(Icons.add),
-          title: const Text('Add time'),
-          subtitle: const Text('A screensaver from that time on.'),
+          leading: Icon(Icons.add),
+          title: Text(screensaverText(context, 'Add time')),
+          subtitle: Text(
+            screensaverText(context, 'A screensaver from that time on.'),
+          ),
           onTap: () => _edit(context, null),
         ),
       ],
@@ -4272,9 +5647,52 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
   }
 }
 
-/// The screensaver Widgets editor (mirrored in the remote UI): one row per
-/// widget — its type and corner — plus an add button. A widget's own
-/// settings live in a dialog, so every type can carry different ones.
+/// The weather.* entities, picked from Home Assistant by friendly name.
+/// Returns (entity_id, name), or null when dismissed or unreachable.
+Future<(String, String)?> pickScreensaverWeatherEntity(
+  BuildContext context,
+  AppContainer container,
+  String current,
+) async {
+  final result = await container.commands.execute('haSearchEntities', const {
+    'query': 'weather.',
+  });
+  final data = result.data;
+  if (!result.ok || data is! List) {
+    if (context.mounted) {
+      showToast(
+        context,
+        title: screensaverText(context, 'Could not reach Home Assistant'),
+        kind: ToastKind.error,
+      );
+    }
+    return null;
+  }
+  final entities = [
+    for (final e in data)
+      if (e is Map && '${e['entity_id']}'.startsWith('weather.'))
+        ('${e['entity_id']}', '${e['name'] ?? e['entity_id']}'),
+  ];
+  if (entities.isEmpty) {
+    if (context.mounted) {
+      showToast(
+        context,
+        title: screensaverText(context, 'No weather entities'),
+        message: screensaverText(context, 'Home Assistant reported none.'),
+        kind: ToastKind.warning,
+      );
+    }
+    return null;
+  }
+  if (!context.mounted) return null;
+  return showRadioPicker<(String, String)>(
+    context,
+    title: screensaverText(context, 'Weather entity'),
+    options: [for (final e in entities) PickerOption(e, e.$2, detail: e.$1)],
+    selected: entities.where((e) => e.$1 == current).firstOrNull,
+  );
+}
+
 class _WidgetsEditor extends StatefulWidget {
   const _WidgetsEditor({required this.container, required this.onChanged});
 
@@ -4304,64 +5722,31 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
     'weather' => Icons.cloud_outlined,
     'battery' => Icons.battery_full,
     'entity' => Icons.sensors,
+    'alarm' => Icons.alarm,
     _ => Icons.widgets_outlined,
   };
 
   /// The per-type hint under the dialog's title: where the widget
   /// deliberately stays off, so nobody hunts for a hidden clock.
   String? _modeNote(String type) => switch (type) {
-    'clock' => 'Hidden in Digital Clock and Camera Streams screensaver modes.',
-    'weather' => 'Hidden in the Camera Streams screensaver mode.',
-    'battery' => 'Hidden in the Camera Streams screensaver mode.',
-    'entity' => 'Hidden in the Camera Streams screensaver mode.',
+    'clock' => screensaverText(
+      context,
+      'Hidden in Digital Clock and Camera Streams screensaver modes.',
+    ),
+    'weather' => screensaverText(
+      context,
+      'Hidden in the Camera Streams screensaver mode.',
+    ),
+    'battery' => screensaverText(
+      context,
+      'Hidden in the Camera Streams screensaver mode.',
+    ),
+    'entity' || 'alarm' => screensaverText(
+      context,
+      'Hidden in the Camera Streams screensaver mode.',
+    ),
     _ => null,
   };
-
-  /// The weather.* entities, picked from Home Assistant by friendly name.
-  /// Returns (entity_id, name), or null when dismissed or unreachable.
-  Future<(String, String)?> _pickWeatherEntity(
-    BuildContext context,
-    String current,
-  ) async {
-    final result = await widget.container.commands.execute(
-      'haSearchEntities',
-      const {'query': 'weather.'},
-    );
-    final data = result.data;
-    if (!result.ok || data is! List) {
-      if (context.mounted) {
-        showToast(
-          context,
-          title: 'Could not reach Home Assistant',
-          kind: ToastKind.error,
-        );
-      }
-      return null;
-    }
-    final entities = [
-      for (final e in data)
-        if (e is Map && '${e['entity_id']}'.startsWith('weather.'))
-          ('${e['entity_id']}', '${e['name'] ?? e['entity_id']}'),
-    ];
-    if (entities.isEmpty) {
-      if (context.mounted) {
-        showToast(
-          context,
-          title: 'No weather entities',
-          message: 'Home Assistant reported none.',
-          kind: ToastKind.warning,
-        );
-      }
-      return null;
-    }
-    if (!context.mounted) return null;
-    return showRadioPicker<(String, String)>(
-      context,
-      title: 'Weather entity',
-      options: [for (final e in entities) PickerOption(e, e.$2, detail: e.$1)],
-      selected: entities.where((e) => e.$1 == current).firstOrNull,
-    );
-  }
 
   Future<void> _edit(BuildContext context, ScreensaverWidget? existing) async {
     final others = [
@@ -4385,7 +5770,7 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
     // a controller so edits survive the dialog's rebuilds.
     final labelCtrl = TextEditingController(text: '${config['label'] ?? ''}');
 
-    final submitted = await showDialog<bool>(
+    final route = DialogRoute<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
@@ -4406,13 +5791,13 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
           // Both types carry a color; the toggle rows are per type.
           Widget colorRow() => ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Color'),
+            title: Text(screensaverText(context, 'Color')),
             trailing: GestureDetector(
               onTap: () async {
                 final picked = await pickColor(
                   context,
                   initial: '${config['color'] ?? ''}',
-                  title: 'Color',
+                  title: screensaverText(context, 'Color'),
                 );
                 if (picked != null) {
                   setDialogState(() => config['color'] = picked);
@@ -4437,6 +5822,95 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
             value: config[key] == true,
             onChanged: (v) => setDialogState(() => config[key] = v),
           );
+          // Every type carries its own scale, a percent offset from the
+          // size the Global widget scaling slider gives it: -50 halves
+          // this widget, 50 grows it half again, 0 leaves it as is.
+          final scalePercent =
+              ((screensaverWidgetScaleFactor(config) - 1) * 100).round();
+          Widget scaleRow() => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(screensaverText(context, 'Scale')),
+                subtitle: Text(
+                  screensaverText(
+                    context,
+                    'Scale this widget size to better fit your screen.',
+                  ),
+                ),
+                trailing: Text(
+                  scalePercent > 0 ? '+$scalePercent%' : '$scalePercent%',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+              Slider(
+                value: scalePercent.toDouble(),
+                min: screensaverWidgetScaleMin.toDouble(),
+                max: screensaverWidgetScaleMax.toDouble(),
+                divisions:
+                    (screensaverWidgetScaleMax - screensaverWidgetScaleMin) ~/
+                    5,
+                onChanged: (v) =>
+                    setDialogState(() => config['scale'] = v.round()),
+              ),
+            ],
+          );
+          // Every type also picks its typeface and weight: Default follows
+          // the Global font family and Global font weight rows outside.
+          Widget fontRow() => LabeledField(
+            label: screensaverText(context, 'Font family'),
+            child: DropdownButtonFormField<String>(
+              initialValue:
+                  screensaverWidgetFontOptions.contains(config['font'])
+                  ? '${config['font']}'
+                  : screensaverWidgetFontDefault,
+              decoration: const InputDecoration(),
+              items: [
+                for (final f in screensaverWidgetFontOptions)
+                  DropdownMenuItem(
+                    value: f,
+                    child: Text(
+                      f == screensaverWidgetFontDefault
+                          ? screensaverText(context, 'Default')
+                          : screensaverText(context, fontFamilyLabels[f] ?? f),
+                    ),
+                  ),
+              ],
+              onChanged: (value) => setDialogState(
+                () => config['font'] = value ?? screensaverWidgetFontDefault,
+              ),
+            ),
+          );
+          Widget fontWeightRow() => LabeledField(
+            label: screensaverText(context, 'Font weight'),
+            child: DropdownButtonFormField<String>(
+              initialValue:
+                  screensaverWidgetFontWeightOptions.contains(
+                    config['font_weight'],
+                  )
+                  ? '${config['font_weight']}'
+                  : screensaverWidgetFontDefault,
+              decoration: const InputDecoration(),
+              items: [
+                for (final w in screensaverWidgetFontWeightOptions)
+                  DropdownMenuItem(
+                    value: w,
+                    child: Text(
+                      screensaverWidgetFontWeight.localizedOption(
+                        context,
+                        w,
+                        fontWeightLabels[w] ?? w,
+                      ),
+                    ),
+                  ),
+              ],
+              onChanged: (value) => setDialogState(
+                () => config['font_weight'] =
+                    value ?? screensaverWidgetFontDefault,
+              ),
+            ),
+          );
           // The weather and entity widgets both read one entity, cached
           // with its friendly name under the same keys.
           final weatherEntity = '${config['entity'] ?? ''}';
@@ -4444,7 +5918,9 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
           return AlertDialog(
             // The widget's own name: the dialog reads as that widget's
             // settings, not as a generic form.
-            title: Text(describeScreensaverWidgetType(type)),
+            title: Text(
+              screensaverText(context, describeScreensaverWidgetType(type)),
+            ),
             content: SizedBox(
               width: 480,
               child: SingleChildScrollView(
@@ -4461,7 +5937,7 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                         ),
                       ),
                     LabeledField(
-                      label: 'Corner',
+                      label: screensaverText(context, 'Corner'),
                       child: DropdownButtonFormField<String>(
                         initialValue: position,
                         decoration: const InputDecoration(),
@@ -4469,7 +5945,12 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                           for (final corner in free)
                             DropdownMenuItem(
                               value: corner,
-                              child: Text(cornerLabels[corner] ?? corner),
+                              child: Text(
+                                screensaverText(
+                                  context,
+                                  cornerLabels[corner] ?? corner,
+                                ),
+                              ),
                             ),
                         ],
                         onChanged: (value) =>
@@ -4477,7 +5958,7 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                       ),
                     ),
                     LabeledField(
-                      label: 'Widget',
+                      label: screensaverText(context, 'Widget'),
                       child: DropdownButtonFormField<String>(
                         initialValue: type,
                         decoration: const InputDecoration(),
@@ -4485,7 +5966,12 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                           for (final t in screensaverWidgetTypes)
                             DropdownMenuItem(
                               value: t,
-                              child: Text(describeScreensaverWidgetType(t)),
+                              child: Text(
+                                screensaverText(
+                                  context,
+                                  describeScreensaverWidgetType(t),
+                                ),
+                              ),
                             ),
                         ],
                         onChanged: (value) => setDialogState(() {
@@ -4500,8 +5986,11 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                     ),
                     if (type == 'clock') ...[
                       colorRow(),
-                      toggle('24-hour clock', 'h24'),
-                      toggle('Show date', 'date'),
+                      scaleRow(),
+                      fontRow(),
+                      fontWeightRow(),
+                      toggle(screensaverText(context, '24-hour clock'), 'h24'),
+                      toggle(screensaverText(context, 'Show date'), 'date'),
                     ],
                     if (type == 'weather') ...[
                       // The entity everything is read from; the friendly
@@ -4509,18 +5998,19 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                       // show it without a Home Assistant round trip.
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Weather entity'),
+                        title: Text(screensaverText(context, 'Weather entity')),
                         subtitle: Text(
                           weatherName.isNotEmpty
                               ? weatherName
                               : (weatherEntity.isNotEmpty
                                     ? weatherEntity
-                                    : 'Not set'),
+                                    : screensaverText(context, 'Not set')),
                         ),
                         trailing: TextButton(
                           onPressed: () async {
-                            final picked = await _pickWeatherEntity(
+                            final picked = await pickScreensaverWeatherEntity(
                               context,
+                              widget.container,
                               weatherEntity,
                             );
                             if (picked != null) {
@@ -4530,39 +6020,59 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                               });
                             }
                           },
-                          child: const Text('Choose'),
+                          child: Text(screensaverText(context, 'Choose')),
                         ),
                       ),
                       // Weather entities carry no city attribute, so the
                       // place shown over the temperature is named by hand.
                       LabeledField(
-                        label: 'Location name',
+                        label: screensaverText(context, 'Location name'),
                         child: TextField(
                           controller: labelCtrl,
-                          decoration: const InputDecoration(
-                            helperText:
-                                'Leave empty to hide the location line.',
+                          decoration: InputDecoration(
+                            helperText: screensaverText(
+                              context,
+                              'Leave empty to hide the location line.',
+                            ),
                           ),
                           onChanged: (v) => config['label'] = v.trim(),
                         ),
                       ),
                       colorRow(),
+                      scaleRow(),
+                      fontRow(),
+                      fontWeightRow(),
                       // The temperature always shows; each other line also
                       // needs the entity to carry the reading. Feels like
                       // rides the temperature line, so it sits where the
                       // temperature does, between Location and Forecast.
-                      toggle('Location', 'location'),
-                      toggle('Feels like', 'feels_like'),
-                      toggle('Feels like only', 'feels_like_only'),
-                      toggle('Forecast', 'forecast'),
-                      toggle('Humidity', 'humidity'),
-                      toggle('Wind speed', 'wind'),
-                      toggle('Visibility', 'visibility'),
+                      toggle(screensaverText(context, 'Location'), 'location'),
+                      toggle(
+                        screensaverText(context, 'Feels like'),
+                        'feels_like',
+                      ),
+                      toggle(
+                        screensaverText(context, 'Feels like only'),
+                        'feels_like_only',
+                      ),
+                      toggle(screensaverText(context, 'Forecast'), 'forecast'),
+                      toggle(screensaverText(context, 'Humidity'), 'humidity'),
+                      toggle(screensaverText(context, 'Wind speed'), 'wind'),
+                      toggle(
+                        screensaverText(context, 'Visibility'),
+                        'visibility',
+                      ),
                     ],
                     if (type == 'battery') ...[
                       colorRow(),
-                      toggle('Show percentage', 'percent'),
-                      toggle('Only when low', 'low'),
+                      scaleRow(),
+                      fontRow(),
+                      fontWeightRow(),
+                      toggle(
+                        screensaverText(context, 'Show percentage'),
+                        'percent',
+                      ),
+                      toggle(screensaverText(context, 'Only when low'), 'low'),
                     ],
                     if (type == 'entity') ...[
                       // The entity everything is read from, picked by
@@ -4571,13 +6081,13 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                       // editors can show it without a round trip.
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Entity'),
+                        title: Text(screensaverText(context, 'Entity')),
                         subtitle: Text(
                           weatherName.isNotEmpty
                               ? weatherName
                               : (weatherEntity.isNotEmpty
                                     ? weatherEntity
-                                    : 'Not set'),
+                                    : screensaverText(context, 'Not set')),
                         ),
                         trailing: TextButton(
                           onPressed: () async {
@@ -4597,29 +6107,33 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                               });
                             }
                           },
-                          child: const Text('Choose'),
+                          child: Text(screensaverText(context, 'Choose')),
                         ),
                       ),
                       LabeledField(
-                        label: 'Name',
+                        label: screensaverText(context, 'Name'),
                         child: TextField(
                           controller: labelCtrl,
                           decoration: InputDecoration(
                             hintText: weatherName.isNotEmpty
                                 ? weatherName
                                 : null,
-                            helperText:
-                                'Leave empty to use the Home Assistant name.',
+                            helperText: screensaverText(
+                              context,
+                              'Leave empty to use the Home Assistant name.',
+                            ),
                           ),
                           onChanged: (v) => config['label'] = v.trim(),
                         ),
                       ),
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Displayed value'),
+                        title: Text(
+                          screensaverText(context, 'Displayed value'),
+                        ),
                         subtitle: Text(
                           '${config['attribute'] ?? ''}'.isEmpty
-                              ? 'State'
+                              ? screensaverText(context, 'State')
                               : '${config['attribute']}',
                         ),
                         trailing: TextButton(
@@ -4638,11 +6152,17 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                                     );
                                   }
                                 },
-                          child: const Text('Choose'),
+                          child: Text(screensaverText(context, 'Choose')),
                         ),
                       ),
                       colorRow(),
-                      toggle('Show name', 'show_name'),
+                      scaleRow(),
+                      fontRow(),
+                      fontWeightRow(),
+                      toggle(
+                        screensaverText(context, 'Show name'),
+                        'show_name',
+                      ),
                     ],
                   ],
                 ),
@@ -4651,7 +6171,7 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(screensaverText(context, 'Cancel')),
               ),
               FilledButton(
                 // A weather or entity widget without its entity has
@@ -4661,13 +6181,19 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                         weatherEntity.isEmpty
                     ? null
                     : () => Navigator.pop(context, true),
-                child: Text(existing == null ? 'Add' : 'Save'),
+                child: Text(
+                  existing == null
+                      ? screensaverText(context, 'Add')
+                      : screensaverText(context, 'Save'),
+                ),
               ),
             ],
           );
         },
       ),
     );
+    final submitted = await Navigator.of(context).push(route);
+    await route.completed;
     labelCtrl.dispose();
     if (submitted != true) return;
     await _save([
@@ -4687,17 +6213,21 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
       children: [
         if (widgets.isEmpty)
           ListTile(
-            title: const Text('No widgets yet'),
-            subtitle: Text(screensaverWidgets.description),
+            title: Text(screensaverText(context, 'No widgets yet')),
+            subtitle: Text(screensaverWidgets.localizedDescription(context)),
           ),
         for (final w in widgets)
           ListTile(
             leading: Icon(_icon(w.type)),
-            title: Text(describeScreensaverWidgetType(w.type)),
-            subtitle: Text(cornerLabels[w.position] ?? w.position),
+            title: Text(
+              screensaverText(context, describeScreensaverWidgetType(w.type)),
+            ),
+            subtitle: Text(
+              screensaverText(context, cornerLabels[w.position] ?? w.position),
+            ),
             trailing: IconButton(
               icon: const Icon(Icons.delete_outline),
-              tooltip: 'Remove widget',
+              tooltip: screensaverText(context, 'Remove widget'),
               onPressed: () => _save(
                 [...widgets]..removeWhere((x) => x.position == w.position),
               ),
@@ -4709,10 +6239,12 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
         // left to add: the row stays, disabled, rather than disappearing.
         ListTile(
           leading: const Icon(Icons.add),
-          title: const Text('Add widget'),
-          subtitle: const Text(
-            'A small clock, the weather, the battery or an entity in a '
-            'corner.',
+          title: Text(screensaverText(context, 'Add widget')),
+          subtitle: Text(
+            screensaverText(
+              context,
+              'A small clock, the weather, the battery or an entity in a corner.',
+            ),
           ),
           enabled: widgets.length < cornerOptions.length,
           onTap: () => _edit(context, null),
@@ -4792,13 +6324,16 @@ class _AmbientLightRowState extends State<_AmbientLightRow> {
   Widget build(BuildContext context) {
     final lux = _lux;
     return SettingsRow(
-      title: const Text('Ambient light'),
-      subtitle: const Text(_ambientLightNote),
+      title: Text(screenAudioText(context, 'Ambient light')),
+      subtitle: Text(screenAudioText(context, _ambientLightNote)),
       trailing: Text(
         lux == null
-            ? 'No reading yet'
-            : '${lux == lux.roundToDouble() ? lux.toInt() : lux.toStringAsFixed(1)} lx'
-                  '${_live ? '' : ' (last known)'}',
+            ? screenAudioText(context, 'No reading yet')
+            : (_live
+                  ? l10n(context).screenAudioLux
+                  : l10n(context).screenAudioLuxLast)(
+                '${lux == lux.roundToDouble() ? lux.toInt() : lux.toStringAsFixed(1)}',
+              ),
       ),
     );
   }
@@ -4833,9 +6368,12 @@ class _NoCameraRow extends StatelessWidget {
             Icons.no_photography_outlined,
             color: Theme.of(context).colorScheme.error,
           ),
-          title: const Text('No camera detected'),
-          subtitle: const Text(
-            'This device does not report any usable camera.',
+          title: Text(cameraText(context, 'No camera detected')),
+          subtitle: Text(
+            cameraText(
+              context,
+              'This device does not report any usable camera.',
+            ),
           ),
         );
       },
@@ -4878,12 +6416,14 @@ class _CameraGrantRowState extends State<_CameraGrantRow> {
         Icons.no_photography_outlined,
         color: theme.colorScheme.error,
       ),
-      title: const Text('Camera'),
+      title: Text(cameraText(context, 'Camera')),
       subtitle: Text(
         _blocked
-            ? 'Blocked. Android will not ask again, so allow it in the '
-                  'app settings.'
-            : 'Without this the camera cannot be used.',
+            ? cameraText(
+                context,
+                "Blocked. Android will not ask again, so allow it in the app settings.",
+              )
+            : cameraText(context, 'Without this the camera cannot be used.'),
       ),
       trailing: TextButton(
         onPressed: () async {
@@ -4897,7 +6437,11 @@ class _CameraGrantRowState extends State<_CameraGrantRow> {
           }
           await _refresh();
         },
-        child: Text(_blocked ? 'App settings' : 'Grant'),
+        child: Text(
+          _blocked
+              ? cameraText(context, 'App settings')
+              : cameraText(context, 'Grant'),
+        ),
       ),
     );
   }
@@ -4956,18 +6500,21 @@ class _ImmichValidateRowState extends State<_ImmichValidateRow> {
   Widget build(BuildContext context) {
     final validated = widget.container.settings.get(screensaverImmichValidated);
     return ListTile(
-      title: const Text('Validate connection'),
+      title: Text(screensaverText(context, 'Validate connection')),
       subtitle: Text(
         _validating
-            ? 'Checking…'
-            : _error ??
+            ? screensaverText(context, 'Checking…')
+            : (_error == null ? null : immichError(context, _error!)) ??
                   (validated || _lastOk == true
-                      ? 'Connected'
-                      : 'Not validated yet. The settings below unlock once '
-                            'the connection checks out.'),
+                      ? screensaverText(context, 'Connected')
+                      : screensaverText(
+                          context,
+                          'Not validated yet. The settings below unlock once '
+                          'the connection checks out.',
+                        )),
       ),
       trailing: _validating
-          ? const SizedBox(
+          ? SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2.4),
@@ -5006,11 +6553,27 @@ class _NotificationSoundTile extends StatefulWidget {
 
 class _NotificationSoundTileState extends State<_NotificationSoundTile> {
   List<String> _sounds = const [];
+  StreamSubscription<SoundEnded>? _ended;
+  StreamSubscription<VoiceChimesChanged>? _chimes;
+  bool _previewing = false;
+  bool _previewBusy = false;
+
+  bool get _isChime => widget.def.key.startsWith('voice_chimes.');
 
   @override
   void initState() {
     super.initState();
     unawaited(_refresh());
+    if (_isChime) {
+      _ended = widget.container.bus.on<SoundEnded>().listen((event) {
+        if (event.id == 'voice-preview' && mounted) {
+          setState(() => _previewing = false);
+        }
+      });
+      _chimes = widget.container.bus.on<VoiceChimesChanged>().listen((_) {
+        unawaited(_refresh());
+      });
+    }
   }
 
   Future<void> _refresh() async {
@@ -5034,8 +6597,8 @@ class _NotificationSoundTileState extends State<_NotificationSoundTile> {
       if (mounted) {
         showToast(
           context,
-          title: 'Not a supported sound',
-          message: '${e.message}',
+          title: intercomText(context, "Not a supported sound"),
+          message: intercomText(context, '${e.message}'),
           kind: ToastKind.error,
         );
       }
@@ -5044,7 +6607,7 @@ class _NotificationSoundTileState extends State<_NotificationSoundTile> {
       if (mounted) {
         showToast(
           context,
-          title: 'Could not copy the file',
+          title: intercomText(context, "Could not copy the file"),
           message: '$e',
           kind: ToastKind.error,
         );
@@ -5052,8 +6615,54 @@ class _NotificationSoundTileState extends State<_NotificationSoundTile> {
       return;
     }
     await widget.container.settings.setFromJson(widget.def.key, name);
+    if (widget.def.key.startsWith('voice_chimes.')) {
+      await widget.container.commands.execute(
+        'getVoiceChimeDurations',
+        const {},
+      );
+    }
     await _refresh();
     widget.onChanged();
+  }
+
+  @override
+  void dispose() {
+    unawaited(_ended?.cancel());
+    unawaited(_chimes?.cancel());
+    if (_isChime) {
+      unawaited(
+        widget.container.commands.execute('stopSound', {'id': 'voice-preview'}),
+      );
+    }
+    super.dispose();
+  }
+
+  Future<void> _preview() async {
+    if (_previewBusy) return;
+    final stop = _previewing;
+    setState(() => _previewBusy = true);
+    try {
+      await widget.container.commands.execute('stopSound', {
+        'id': 'voice-preview',
+      });
+      if (!mounted) return;
+      setState(() => _previewing = !stop);
+      if (stop) return;
+      final result = await widget.container.commands.execute(
+        'previewVoiceChime',
+        {'kind': widget.def.key.split('.').last},
+      );
+      if (!result.ok && mounted) {
+        setState(() => _previewing = false);
+        showToast(
+          context,
+          title: voiceText(context, 'Could not play the sound.'),
+          kind: ToastKind.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _previewBusy = false);
+    }
   }
 
   @override
@@ -5063,16 +6672,75 @@ class _NotificationSoundTileState extends State<_NotificationSoundTile> {
     // A stored name whose file has gone stays visible, marked, rather than
     // silently reading as the built-in chime the row would fall back to.
     final options = [
-      ('', 'Built-in chime'),
+      (
+        '',
+        def.key == intercomRingSound.key
+            ? intercomText(context, "Built-in ring")
+            : def.key == alarmsTone.key
+            ? l10n(context).alarmsBuiltInTone
+            : intercomText(context, "Built-in chime"),
+      ),
       for (final sound in _sounds) (sound, sound),
       if (current.isNotEmpty && !_sounds.contains(current))
-        (current, '$current (missing)'),
+        (current, l10n(context).intercomMissingFile(current)),
     ];
+    if (_isChime) {
+      return SettingsRow(
+        title: Text(def.localizedTitle(context)),
+        subtitle: Text(def.localizedDescription(context)),
+        stack: true,
+        trailing: SizedBox(
+          width: tightPane(context) ? double.infinity : 300,
+          child: Row(
+            children: [
+              Expanded(
+                child: KsDropdown<String>(
+                  value: current,
+                  expand: true,
+                  items: [
+                    for (final (value, label) in options)
+                      DropdownMenuItem(
+                        value: value,
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                  onChanged: (value) async {
+                    if (value == null) return;
+                    await widget.container.settings.setFromJson(def.key, value);
+                    widget.onChanged();
+                  },
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                tooltip: voiceText(
+                  context,
+                  _previewing ? 'Stop' : 'Preview on kiosk',
+                ),
+                onPressed: _previewBusy ? null : _preview,
+                icon: Icon(
+                  _previewing ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                ),
+              ),
+              IconButton(
+                tooltip: intercomText(context, 'Add a sound'),
+                onPressed: _browse,
+                icon: const Icon(Icons.upload_file_outlined),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Column(
       children: [
         DropdownRow<String>(
-          title: def.title,
-          description: def.description,
+          title: def.localizedTitle(context),
+          description: def.localizedDescription(context),
           value: current,
           options: options,
           onChanged: (v) async {
@@ -5082,11 +6750,17 @@ class _NotificationSoundTileState extends State<_NotificationSoundTile> {
           },
         ),
         ListTile(
-          title: const Text('Add a sound'),
-          subtitle: const Text(
-            'Copy a sound file from this device into the sounds folder.',
+          title: Text(intercomText(context, "Add a sound")),
+          subtitle: Text(
+            intercomText(
+              context,
+              "Copy a sound file from this device into the sounds folder.",
+            ),
           ),
-          trailing: TextButton(onPressed: _browse, child: const Text('Browse')),
+          trailing: TextButton(
+            onPressed: _browse,
+            child: Text(intercomText(context, "Browse")),
+          ),
         ),
       ],
     );
@@ -5110,26 +6784,25 @@ class _NotificationTestRow extends StatelessWidget {
         ? 'esphome.<node name>_notification'
         : 'esphome.${node.replaceAll('-', '_')}_notification';
     return ListTile(
-      title: const Text('Test notification'),
-      subtitle: Text(
-        'Notifications are sent from Home Assistant with the $action '
-        'action. Test shows one over the dashboard.',
-      ),
+      title: Text(esphomeText(context, 'Test notification')),
+      subtitle: Text(l10n(context).esphomeNotificationHelp(action)),
       trailing: FilledButton.tonal(
         onPressed: () {
           Navigator.of(context).popUntil((route) => route.isFirst);
           unawaited(
-            container.commands.execute('showNotification', const {
-              'title': 'Test notification',
-              'message':
-                  'This is what a notification from Home Assistant '
-                  'looks and sounds like.',
+            container.commands.execute('showNotification', {
+              'title': esphomeText(context, 'Test notification'),
+              'message': esphomeText(
+                context,
+                'This is what a notification from Home Assistant '
+                'looks and sounds like.',
+              ),
               'type': 'info',
               'icon': 'mdi:bell-ring',
             }),
           );
         },
-        child: const Text('Test'),
+        child: Text(esphomeText(context, 'Test')),
       ),
     );
   }
@@ -5190,18 +6863,24 @@ class _BtNearbyDevicesRowState extends State<_BtNearbyDevicesRow> {
     final seen = DateTime.tryParse('$iso');
     if (seen == null) return '';
     final age = DateTime.now().difference(seen);
-    if (age.inSeconds < 60) return '${age.inSeconds}s ago';
-    if (age.inMinutes < 60) return '${age.inMinutes}m ago';
-    return '${age.inHours}h ago';
+    if (age.inSeconds < 60) {
+      return l10n(context).esphomeSecondsAgo(age.inSeconds.toString());
+    }
+    if (age.inMinutes < 60) {
+      return l10n(context).esphomeMinutesAgo(age.inMinutes.toString());
+    }
+    return l10n(context).esphomeHoursAgo(age.inHours.toString());
   }
 
   @override
   Widget build(BuildContext context) {
     if (!_loaded) return const SizedBox.shrink();
     if (_devices.isEmpty) {
-      return const HintRow(
-        'Nothing heard yet. Devices appear here once the proxy is '
-        'scanning.',
+      return HintRow(
+        esphomeText(
+          context,
+          'Nothing heard yet. Devices appear here once the proxy is scanning.',
+        ),
       );
     }
     final sorted = sortNearbyJson(
@@ -5226,8 +6905,8 @@ class _BtNearbyDevicesRowState extends State<_BtNearbyDevicesRow> {
                 children: [
                   TextSpan(
                     text:
-                        '${device['identity'] ?? 'Unknown device'}'
-                        '${device['rotating'] == true ? '  (rotating address)' : ''}',
+                        '${esphomeDeviceIdentity(context, device)}'
+                        '${device['rotating'] == true ? '  ${esphomeText(context, '(rotating address)')}' : ''}',
                   ),
                   // The devices this kiosk is actively serving a Home
                   // Assistant connection for; the accent tone keeps it
@@ -5245,8 +6924,8 @@ class _BtNearbyDevicesRowState extends State<_BtNearbyDevicesRow> {
                           color: const Color(0xFF44686C),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text(
-                          'Connected',
+                        child: Text(
+                          esphomeText(context, 'Connected'),
                           style: TextStyle(color: Colors.white, fontSize: 11.5),
                         ),
                       ),
@@ -5293,7 +6972,11 @@ class _BtNearbyDevicesRowState extends State<_BtNearbyDevicesRow> {
             ),
           ),
         if (_devices.length > _shown)
-          HintRow('Showing the first $_shown of ${_devices.length}.'),
+          HintRow(
+            l10n(
+              context,
+            ).esphomeNearbyCount(_shown.toString(), _devices.length.toString()),
+          ),
       ],
     );
   }
@@ -5343,12 +7026,15 @@ class _MaValidateRowState extends State<_MaValidateRow> {
 
   @override
   Widget build(BuildContext context) => ListTile(
-    title: const Text('Validate connection'),
+    title: Text(mediaText(context, 'Validate connection')),
     subtitle: Text(
       _validating
-          ? 'Checking…'
-          : _message ??
-                'Check the address and token before turning on the shortcut or lyrics.',
+          ? mediaText(context, 'Checking…')
+          : mediaError(
+              context,
+              _message ??
+                  'Check the address and token before turning on the shortcut or lyrics.',
+            ),
     ),
     trailing: _validating
         ? const SizedBox(
@@ -5367,10 +7053,17 @@ class _MaValidateRowState extends State<_MaValidateRow> {
   );
 }
 
+/// Whether this device's Local Media Session is the pick: the surfaces
+/// follow whichever other app plays on the device (issue #722).
+bool _localSessionPicked(AppContainer container) =>
+    container.settings.get(sendspinPlayerSource).isEmpty &&
+    container.settings.get(sendspinPlayer) == SendspinManager.localSessionPick;
+
 /// Which player of the picked source the Now Playing surfaces follow
 /// (issue #265): a wall tablet showing and controlling the kitchen
 /// speakers instead of itself. The list is the source's, fetched when the
-/// row is tapped.
+/// row is tapped. This device offers its own two: the Sendspin player and
+/// the Local Media Session (issue #722).
 class _PlayerRow extends StatefulWidget {
   const _PlayerRow({required this.container, required this.onChanged});
 
@@ -5394,17 +7087,36 @@ class _PlayerRowState extends State<_PlayerRow> {
         container: container,
         source: source,
         current: current,
+        title: source.isEmpty ? sendspinPlayer.localizedTitle(ctx) : null,
+        players: source.isEmpty
+            ? [
+                {'id': '', 'name': mediaText(ctx, 'Sendspin Player')},
+                {
+                  'id': SendspinManager.localSessionPick,
+                  'name': mediaText(ctx, SendspinManager.localSessionName),
+                },
+              ]
+            : null,
       ),
     );
     if (result == null) return;
     await container.settings.set(sendspinPlayer, result[0]);
-    await container.settings.set(sendspinPlayerName, result[1]);
+    // Stored in English like every other name the pick keeps; the rows
+    // translate it on the way out.
+    await container.settings.set(
+      sendspinPlayerName,
+      result[0] == SendspinManager.localSessionPick
+          ? SendspinManager.localSessionName
+          : result[1],
+    );
     // The manager maintains this flag from the same inputs, but over the
     // async bus — write it here too so the pane rebuild below already
     // sees the rows it should.
     await container.settings.set(
       sendspinPlayerActive,
-      container.settings.get(sendspinEnabled) || source.isNotEmpty,
+      container.settings.get(sendspinEnabled) ||
+          source.isNotEmpty ||
+          result[0].isNotEmpty,
     );
     if (mounted) setState(() {});
     widget.onChanged();
@@ -5413,21 +7125,23 @@ class _PlayerRowState extends State<_PlayerRow> {
   @override
   Widget build(BuildContext context) {
     final settings = widget.container.settings;
-    // This device as the source: the one player there is, nothing to
-    // pick, so the box reads its name and stays put.
+    // This device as the source: its Sendspin player unless the Local
+    // Media Session is picked.
     final local = settings.get(sendspinPlayerSource).isEmpty;
     final name = settings.get(sendspinPlayerName).trim();
     final picked = local || settings.get(sendspinPlayer).trim().isNotEmpty;
-    final label = local
-        ? 'Sendspin Player'
+    final label = _localSessionPicked(widget.container)
+        ? mediaText(context, SendspinManager.localSessionName)
+        : local
+        ? mediaText(context, 'Sendspin Player')
         : picked && name.isNotEmpty
         ? name
-        : 'Pick a player';
+        : mediaText(context, 'Pick a player');
     return SettingsRow(
-      title: Text(sendspinPlayer.title),
-      subtitle: Text(sendspinPlayer.description),
+      title: Text(sendspinPlayer.localizedTitle(context)),
+      subtitle: Text(sendspinPlayer.localizedDescription(context)),
       trailing: ControlBox(
-        onTap: local ? null : _pick,
+        onTap: _pick,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -5448,7 +7162,101 @@ class _PlayerRowState extends State<_PlayerRow> {
           ],
         ),
       ),
-      onTap: local ? null : _pick,
+      onTap: _pick,
+    );
+  }
+}
+
+/// Where Voice Satellite speaks its answers: this kiosk, or a Home
+/// Assistant media player picked from the live list.
+class _TtsOutputRow extends StatefulWidget {
+  const _TtsOutputRow({required this.container, required this.onChanged});
+
+  final AppContainer container;
+  final VoidCallback onChanged;
+
+  @override
+  State<_TtsOutputRow> createState() => _TtsOutputRowState();
+}
+
+class _TtsOutputRowState extends State<_TtsOutputRow> {
+  /// The picked player's name, looked up once: the setting keeps the id.
+  String? _name;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_lookUp());
+  }
+
+  Future<void> _lookUp() async {
+    final id = widget.container.settings.get(voiceTtsOutput);
+    if (id.isEmpty) return;
+    final result = await widget.container.commands.execute('mediaPlayers', {
+      'source': 'ha',
+      'speakers': true,
+    });
+    final data = result.data;
+    final list = data is Map ? data['players'] : null;
+    for (final p in (list as List? ?? const [])) {
+      if (p is Map && '${p['id']}' == 'ha:$id' && mounted) {
+        setState(() => _name = '${p['name']}');
+      }
+    }
+  }
+
+  Future<void> _pick() async {
+    final container = widget.container;
+    final result = await showDialog<List<String>>(
+      context: context,
+      builder: (ctx) => _PlayerPickerDialog(
+        container: container,
+        source: 'ha',
+        speakers: true,
+        current: _listed(container.settings.get(voiceTtsOutput)),
+        title: voiceTtsOutput.localizedTitle(context),
+        noneLabel: voiceText(context, 'This kiosk'),
+      ),
+    );
+    if (result == null) return;
+    // The list's ids carry their source; the setting keeps the entity.
+    await container.settings.set(
+      voiceTtsOutput,
+      result[0].replaceFirst('ha:', ''),
+    );
+    if (mounted) setState(() => _name = result[1]);
+    widget.onChanged();
+  }
+
+  /// An entity as the player list names it.
+  static String _listed(String entity) => entity.isEmpty ? '' : 'ha:$entity';
+
+  @override
+  Widget build(BuildContext context) {
+    final id = widget.container.settings.get(voiceTtsOutput);
+    final label = id.isEmpty
+        ? voiceText(context, 'This kiosk')
+        : (_name?.isNotEmpty ?? false)
+        ? _name!
+        : id;
+    return SettingsRow(
+      title: Text(voiceTtsOutput.localizedTitle(context)),
+      subtitle: Text(voiceTtsOutput.localizedDescription(context)),
+      trailing: ControlBox(
+        onTap: _pick,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 200),
+              child: Text(label, overflow: TextOverflow.ellipsis),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.arrow_drop_down, size: 22),
+          ],
+        ),
+      ),
+      onTap: _pick,
     );
   }
 }
@@ -5461,11 +7269,29 @@ class _PlayerPickerDialog extends StatefulWidget {
     required this.container,
     required this.source,
     required this.current,
+    this.title,
+    this.noneLabel,
+    this.players,
+    this.speakers = false,
   });
 
   final AppContainer container;
   final String source;
   final String current;
+
+  /// A speaker for sounds: Home Assistant's list keeps Music Assistant's
+  /// own entities.
+  final bool speakers;
+
+  /// A fixed list in place of the source's live one: this device's own
+  /// players.
+  final List<Map<String, Object?>>? players;
+
+  /// The dialog's title, in place of the source's.
+  final String? title;
+
+  /// A first choice that picks no player (id ''), labelled this.
+  final String? noneLabel;
 
   @override
   State<_PlayerPickerDialog> createState() => _PlayerPickerDialogState();
@@ -5485,8 +7311,15 @@ class _PlayerPickerDialogState extends State<_PlayerPickerDialog> {
   @override
   void initState() {
     super.initState();
+    if (widget.players case final fixed?) {
+      _players = fixed;
+      return;
+    }
     widget.container.commands
-        .execute('mediaPlayers', {'source': widget.source})
+        .execute('mediaPlayers', {
+          'source': widget.source,
+          if (widget.speakers) 'speakers': true,
+        })
         .then((result) {
           if (!mounted) return;
           setState(() {
@@ -5541,19 +7374,24 @@ class _PlayerPickerDialogState extends State<_PlayerPickerDialog> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
                     child: TextField(
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search),
-                        hintText: 'Search players',
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: mediaText(context, 'Search players'),
                         isDense: true,
                       ),
                       onChanged: (v) => setState(() => _query = v.trim()),
                     ),
                   ),
+                if (widget.noneLabel != null)
+                  RadioListTile<String>(
+                    value: '',
+                    title: Text(widget.noneLabel!),
+                  ),
                 if (_note != null)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
                     child: Text(
-                      _note!,
+                      mediaError(context, _note!),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
@@ -5565,7 +7403,7 @@ class _PlayerPickerDialogState extends State<_PlayerPickerDialog> {
                       value: '${p['id']}',
                       title: Text('${p['name']}'),
                       subtitle: p['available'] == false
-                          ? const Text('Offline')
+                          ? Text(mediaText(context, 'Offline'))
                           : p['sub'] != null
                           ? Text('${p['sub']}')
                           : null,
@@ -5574,7 +7412,9 @@ class _PlayerPickerDialogState extends State<_PlayerPickerDialog> {
             ),
           );
     return AlertDialog(
-      title: Text(_titles[widget.source] ?? 'Player'),
+      title: Text(
+        widget.title ?? mediaText(context, _titles[widget.source] ?? 'Player'),
+      ),
       contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
       content: SizedBox(width: 440, child: body),
     );
@@ -5598,15 +7438,24 @@ class _SonosSpeakersCardState extends State<_SonosSpeakersCard> {
   List<Map<String, Object?>>? _speakers;
   bool _busy = false;
   final _host = TextEditingController();
+  StreamSubscription<SettingChanged>? _hosts;
 
   @override
   void initState() {
     super.initState();
     unawaited(_load());
+    // The list is the hosts setting: a speaker added or forgotten from
+    // the remote admin, or pushed by a fleet leader, lands here too.
+    _hosts = widget.container.bus.on<SettingChanged>().listen((e) {
+      if (e.key == sendspinSonosHosts.key && mounted && !_busy) {
+        unawaited(_load());
+      }
+    });
   }
 
   @override
   void dispose() {
+    _hosts?.cancel();
     _host.dispose();
     super.dispose();
   }
@@ -5627,8 +7476,11 @@ class _SonosSpeakersCardState extends State<_SonosSpeakersCard> {
     if (discover && (_speakers?.isEmpty ?? true)) {
       showToast(
         context,
-        title: 'No Sonos found',
-        message: 'Nothing answered on this network. Add one by address.',
+        title: mediaText(context, 'No Sonos found'),
+        message: mediaText(
+          context,
+          'Nothing answered on this network. Add one by address.',
+        ),
         kind: ToastKind.warning,
       );
     }
@@ -5639,7 +7491,7 @@ class _SonosSpeakersCardState extends State<_SonosSpeakersCard> {
     final host = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add a Sonos by address'),
+        title: Text(mediaText(context, 'Add a Sonos by address')),
         content: SizedBox(
           width: 420,
           child: TextField(
@@ -5653,11 +7505,11 @@ class _SonosSpeakersCardState extends State<_SonosSpeakersCard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(mediaText(context, 'Cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, _host.text),
-            child: const Text('Add'),
+            child: Text(mediaText(context, 'Add')),
           ),
         ],
       ),
@@ -5672,8 +7524,10 @@ class _SonosSpeakersCardState extends State<_SonosSpeakersCard> {
       setState(() => _busy = false);
       showToast(
         context,
-        title: 'No Sonos found',
-        message: result.error,
+        title: mediaText(context, 'No Sonos found'),
+        message: result.error == null
+            ? null
+            : mediaError(context, result.error!),
         kind: ToastKind.error,
       );
       return;
@@ -5684,7 +7538,7 @@ class _SonosSpeakersCardState extends State<_SonosSpeakersCard> {
 
   Future<void> _forget(String id) async {
     await widget.container.commands.execute('sonosForget', {'id': id});
-    await _load();
+    if (mounted) await _load();
   }
 
   @override
@@ -5695,12 +7549,15 @@ class _SonosSpeakersCardState extends State<_SonosSpeakersCard> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (speakers == null)
-          const ListTile(title: Text('Looking…'))
+          ListTile(title: Text(mediaText(context, 'Looking…')))
         else if (speakers.isEmpty)
-          const ListTile(
-            title: Text('No speakers yet'),
+          ListTile(
+            title: Text(mediaText(context, 'No speakers yet')),
             subtitle: Text(
-              'Search this network or add a speaker by its address.',
+              mediaText(
+                context,
+                'Search this network or add a speaker by its address.',
+              ),
             ),
           )
         else
@@ -5713,16 +7570,18 @@ class _SonosSpeakersCardState extends State<_SonosSpeakersCard> {
               subtitle: Text('${p['host']} · ${p['id']}'),
               trailing: IconButton(
                 icon: const Icon(Icons.delete_outline),
-                tooltip: 'Forget',
+                tooltip: mediaText(context, 'Forget'),
                 onPressed: _busy ? null : () => _forget('${p['id']}'),
               ),
             ),
         const Divider(height: 1),
         SettingsRow(
-          title: const Text('Search the network'),
-          subtitle: const Text(
-            'Finds Sonos speakers on this network. The speakers must be on '
-            'the same VLAN as this device to be auto discovered.',
+          title: Text(mediaText(context, 'Search the network')),
+          subtitle: Text(
+            mediaText(
+              context,
+              'Finds Sonos speakers on this network. The speakers must be on the same VLAN as this device to be auto discovered.',
+            ),
           ),
           trailing: _busy
               ? const SizedBox(
@@ -5732,25 +7591,27 @@ class _SonosSpeakersCardState extends State<_SonosSpeakersCard> {
                 )
               : OutlinedButton(
                   onPressed: () => _load(discover: true),
-                  child: const Text('Search'),
+                  child: Text(mediaText(context, 'Search')),
                 ),
         ),
         SettingsRow(
-          title: const Text('Add by address'),
-          subtitle: const Text(
-            'The speaker\'s address on the network. The whole household '
-            'is added from it.',
+          title: Text(mediaText(context, 'Add by address')),
+          subtitle: Text(
+            mediaText(
+              context,
+              "The speaker's address on the network. The whole household is added from it.",
+            ),
           ),
           trailing: FilledButton(
             onPressed: _busy ? null : _add,
-            child: const Text('Add'),
+            child: Text(mediaText(context, 'Add')),
           ),
         ),
         if (speakers != null && speakers.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
             child: Text(
-              'Pick a room under Player source, Sonos.',
+              mediaText(context, 'Pick a room under Player source, Sonos.'),
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
@@ -5829,17 +7690,20 @@ class _AlbumArtCacheRowState extends State<AlbumArtCacheRow> {
   Widget build(BuildContext context) {
     final stats = _stats;
     return SettingsRow(
-      title: const Text('Album art cache'),
+      title: Text(mediaText(context, 'Album art cache')),
       subtitle: Text(
-        _error ??
-            (stats == null
-                ? 'Checking cache size...'
-                : '${formatBytes(stats['bytes'] as int)} used of '
-                      '${formatBytes(stats['maxBytes'] as int)}. Queue thumbnails are cached automatically.'),
+        _error != null
+            ? mediaText(context, _error!)
+            : (stats == null
+                  ? mediaText(context, 'Checking cache size...')
+                  : l10n(context).mediaCacheUsage(
+                      formatBytes(stats['bytes'] as int),
+                      formatBytes(stats['maxBytes'] as int),
+                    )),
       ),
       trailing: OutlinedButton(
         onPressed: _busy ? null : _clear,
-        child: Text(_busy ? 'Clearing...' : 'Clear'),
+        child: Text(mediaText(context, _busy ? 'Clearing...' : 'Clear')),
       ),
     );
   }
@@ -5872,7 +7736,10 @@ class _ImmichCacheStatsRowState extends State<_ImmichCacheStatsRow> {
     final stats = _stats;
     final text = stats == null
         ? '…'
-        : '${stats['items']} cached, ${formatBytes(stats['bytes'] as int)}';
+        : l10n(context).screensaverMediaCached(
+            '${stats['items']}',
+            formatBytes(stats['bytes'] as int),
+          );
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       child: Text(
@@ -5920,7 +7787,8 @@ class _AdminAddressCardState extends State<_AdminAddressCard> {
   @override
   Widget build(BuildContext context) {
     final port = widget.container.settings.get(remotePort).toInt();
-    final address = 'http://${_ip ?? '…'}:$port';
+    final address =
+        '${widget.container.settings.get(remoteTls) ? 'https' : 'http'}://${_ip ?? '…'}:$port';
     // The same admin by name (issue #470), while the kiosk has one: the
     // Hostname setting or the device name as a DNS label.
     final hostUrl = widget.container.fleet.hostUrl;
@@ -5931,22 +7799,28 @@ class _AdminAddressCardState extends State<_AdminAddressCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SectionHeading('Access'),
+        SectionHeading(deviceText(context, 'Access')),
         SettingsCard(
           children: [
             ListTile(
-              title: const Text('Admin address'),
-              subtitle: const Text(
-                'Open this address in a browser on your computer.',
+              title: Text(deviceText(context, 'Admin address')),
+              subtitle: Text(
+                deviceText(
+                  context,
+                  'Open this address in a browser on your computer.',
+                ),
               ),
               trailing: Text(address, style: style),
             ),
             if (hostUrl != null)
               ListTile(
-                title: const Text('By name'),
-                subtitle: const Text(
-                  'The same address by hostname, on networks that resolve '
-                  '.local names.',
+                title: Text(deviceText(context, 'By name')),
+                subtitle: Text(
+                  deviceText(
+                    context,
+                    'The same address by hostname, on networks that resolve '
+                    '.local names.',
+                  ),
                 ),
                 trailing: Text(hostUrl, style: style),
               ),
@@ -6006,20 +7880,25 @@ class _BrightnessGrantCardState extends State<_BrightnessGrantCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SectionHeading('Permission'),
+        SectionHeading(screenAudioText(context, 'Permission')),
         SettingsCard(
           children: [
             ListTile(
               leading: const Icon(Icons.brightness_6_outlined),
-              title: const Text('Brightness is using a fallback'),
-              subtitle: const Text(
-                'Without the "Modify system settings" permission, '
-                'brightness changes only dim this app instead of setting '
-                "the panel's actual brightness.",
+              title: Text(
+                screenAudioText(context, 'Brightness is using a fallback'),
+              ),
+              subtitle: Text(
+                screenAudioText(
+                  context,
+                  'Without the "Modify system settings" permission, '
+                  'brightness changes only dim this app instead of setting '
+                  "the panel's actual brightness.",
+                ),
               ),
               trailing: FilledButton.tonal(
                 onPressed: _request,
-                child: const Text('Grant'),
+                child: Text(screenAudioText(context, 'Grant')),
               ),
             ),
           ],
@@ -6067,20 +7946,25 @@ class _AmbientDisplayCardState extends State<_AmbientDisplayCard> {
     if (!widget.container.screen.ambientDisplay) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: const [
-        SectionHeading('Always-on display'),
+      children: [
+        SectionHeading(screenAudioText(context, 'Always-on display')),
         SettingsCard(
           children: [
             ListTile(
-              leading: Icon(Icons.brightness_low_outlined),
-              title: Text('This device keeps a dim clock on'),
+              leading: const Icon(Icons.brightness_low_outlined),
+              title: Text(
+                screenAudioText(context, 'This device keeps a dim clock on'),
+              ),
               subtitle: Text(
-                'Turning the screen off puts the device to sleep, but the '
-                'always-on display lights the lock screen back up and no app '
-                'can stop it. Turn off "Always show time and info" in '
-                'Android settings under Display, near the lock screen '
-                'options; some ROMs call it always-on display. The Home '
-                'Assistant screen entity stays unavailable until you do.',
+                screenAudioText(
+                  context,
+                  'Turning the screen off puts the device to sleep, but the '
+                  'always-on display lights the lock screen back up and no app '
+                  'can stop it. Turn off "Always show time and info" in '
+                  'Android settings under Display, near the lock screen '
+                  'options; some ROMs call it always-on display. The Home '
+                  'Assistant screen entity stays unavailable until you do.',
+                ),
               ),
             ),
           ],
@@ -6136,7 +8020,7 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
   /// Poll the in-page filter's counters only while the filter is on.
   void _syncPolling() {
     if (_filterOn && _poll == null) {
-      _poll = Timer.periodic(const Duration(seconds: 2), (_) => _refresh());
+      _poll = Timer.periodic(Duration(seconds: 2), (_) => _refresh());
       _refresh();
     } else if (!_filterOn && _poll != null) {
       _poll!.cancel();
@@ -6192,7 +8076,7 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
     // belongs to a previous page and must be discarded.
     if (_hist.isNotEmpty && total < _hist.last.$2) _hist.clear();
     _hist.add((now, total, fwd));
-    _hist.removeWhere((s) => now.difference(s.$1) > const Duration(minutes: 1));
+    _hist.removeWhere((s) => now.difference(s.$1) > Duration(minutes: 1));
     // Deltas over the retained window, not lifetime counts.
     final dTotal = _hist.length > 1 ? total - _hist.first.$2 : 0;
     final dFwd = _hist.length > 1 ? fwd - _hist.first.$3 : 0;
@@ -6236,11 +8120,14 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
     final saved = decoded is Map ? decoded['details'] : null;
     final details = saved is String && saved.isNotEmpty
         ? saved
-        : 'Scan details are not available for the current view.';
+        : haText(
+            context,
+            'Scan details are not available for the current view.',
+          );
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Dashboard scan details'),
+        title: Text(haText(context, 'Dashboard scan details')),
         content: SizedBox(
           width: 520,
           child: SingleChildScrollView(child: SelectableText(details)),
@@ -6248,11 +8135,11 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
         actions: [
           TextButton(
             onPressed: () => Clipboard.setData(ClipboardData(text: details)),
-            child: const Text('Copy'),
+            child: Text(haText(context, 'Copy')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
+            child: Text(haText(context, 'Close')),
           ),
         ],
       ),
@@ -6286,7 +8173,7 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Watched entities (${items.length})'),
+        title: Text(l10n(context).haWatchedTitle('${items.length}')),
         content: SizedBox(
           width: 420,
           child: EdgeFade(
@@ -6307,7 +8194,7 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
+            child: Text(haText(context, 'Close')),
           ),
         ],
       ),
@@ -6340,9 +8227,7 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
   /// (see [_refresh]).
   bool _rawFirehose = false;
 
-  static const _rawFirehoseNote =
-      ' Something on this page receives every entity update anyway, so '
-      'filtering saves less here.';
+  String get _rawFirehoseNote => ' ${l10n(context).haRawUpdates}';
 
   Widget _telemetry(ThemeData theme) {
     final s = _stats;
@@ -6357,9 +8242,8 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
     if (_ready && _mode == 'filtering' && s != null) {
       final rest =
           (pct == null
-              ? ' No updates in the last minute.'
-              : ' Filtered $pct% of updates in the last minute '
-                    '(${s.dropped} of ${s.total}).') +
+              ? ' ${l10n(context).haNoUpdates}'
+              : ' ${l10n(context).haFiltered('$pct', '${s.dropped}', '${s.total}')}') +
           (_rawFirehose ? _rawFirehoseNote : '');
       return _telemetryRow(
         theme,
@@ -6368,7 +8252,7 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
             style: base,
             children: [
               TextSpan(
-                text: 'Watching ${s.allow} entities on this view.',
+                text: l10n(context).haWatching('${s.allow}'),
                 style: TextStyle(
                   color: theme.colorScheme.primary,
                   decoration: TextDecoration.underline,
@@ -6383,13 +8267,13 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
       );
     }
     final note = _rawFirehose ? _rawFirehoseNote : '';
-    final text = _ready && _mode == 'passthrough'
-        ? _runtimeAll
-              ? 'This view reads all entity states, so its updates '
-                    'are not filtered.$note'
-              : 'This view\'s entities can\'t be determined, so its updates '
-                    'are not filtered.$note'
-        : 'Waiting for the dashboard to load...';
+    final text =
+        (_ready && _mode == 'passthrough'
+            ? (_runtimeAll
+                  ? l10n(context).haAllStates
+                  : l10n(context).haUnknownEntities)
+            : l10n(context).haWaiting) +
+        note;
     return _telemetryRow(
       theme,
       Text.rich(
@@ -6399,7 +8283,7 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
             TextSpan(text: text),
             if (_ready && _mode == 'passthrough' && _runtimeAll)
               TextSpan(
-                text: ' Show scan details.',
+                text: ' ${l10n(context).haShowScan}',
                 style: TextStyle(
                   color: theme.colorScheme.primary,
                   decoration: TextDecoration.underline,
@@ -6414,7 +8298,7 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
   }
 
   Widget _telemetryRow(ThemeData theme, Widget child) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+    padding: EdgeInsets.fromLTRB(16, 12, 16, 14),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -6423,7 +8307,7 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
           size: 18,
           color: theme.colorScheme.primary,
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: 10),
         Expanded(child: child),
       ],
     ),
@@ -6515,7 +8399,7 @@ class _DashboardPickerCardState extends State<_DashboardPickerCard> {
     final current = _selectedRoute(urlPath);
     final picked = await showRadioPicker<String>(
       context,
-      title: 'Choose a view',
+      title: haText(context, 'Choose a view'),
       selected: current,
       options: [
         for (final v in views)
@@ -6535,10 +8419,10 @@ class _DashboardPickerCardState extends State<_DashboardPickerCard> {
       future: _dashboards,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const SettingsCard(
+          return SettingsCard(
             children: [
               ListTile(
-                title: Text('Loading dashboards…'),
+                title: Text(haText(context, 'Loading dashboards…')),
                 trailing: SizedBox(
                   width: 20,
                   height: 20,
@@ -6553,9 +8437,9 @@ class _DashboardPickerCardState extends State<_DashboardPickerCard> {
           return SettingsCard(
             children: [
               ListTile(
-                title: const Text('Could not list dashboards'),
-                subtitle: const Text('Tap to retry.'),
-                trailing: const Icon(Icons.refresh),
+                title: Text(haText(context, 'Could not list dashboards')),
+                subtitle: Text(haText(context, 'Tap to retry.')),
+                trailing: Icon(Icons.refresh),
                 onTap: () => setState(() {
                   _dashboards = c.homeAssistant.listDashboards();
                 }),
@@ -6612,7 +8496,7 @@ class _DashboardPickerCardState extends State<_DashboardPickerCard> {
       trailing: selected
           ? TextButton(
               onPressed: hasViews ? () => _changeView(urlPath) : null,
-              child: const Text('Change view'),
+              child: Text(haText(context, 'Change view')),
             )
           : null,
       onTap: selected ? null : () => _pickDashboard(urlPath),
@@ -6670,7 +8554,7 @@ class _RotationCardState extends State<_RotationCard> {
               // bare path — an empty route, navigated as /<url_path>, which
               // resolves the default view. A synthetic "/0" would spin.
               ? [
-                  {'title': 'Default view', 'route': ''},
+                  {'title': null, 'route': ''},
                 ]
               : views[i]!,
         ),
@@ -6776,8 +8660,8 @@ class _RotationCardState extends State<_RotationCard> {
             future: _views,
             builder: (context, snapshot) {
               if (snapshot.connectionState != ConnectionState.done) {
-                return const ListTile(
-                  title: Text('Loading dashboards…'),
+                return ListTile(
+                  title: Text(haText(context, 'Loading dashboards…')),
                   trailing: SizedBox(
                     width: 20,
                     height: 20,
@@ -6788,9 +8672,9 @@ class _RotationCardState extends State<_RotationCard> {
               final dashboards = snapshot.data;
               if (dashboards == null || dashboards.isEmpty) {
                 return ListTile(
-                  title: const Text('Could not list dashboards'),
-                  subtitle: const Text('Tap to retry.'),
-                  trailing: const Icon(Icons.refresh),
+                  title: Text(haText(context, 'Could not list dashboards')),
+                  subtitle: Text(haText(context, 'Tap to retry.')),
+                  trailing: Icon(Icons.refresh),
                   onTap: () => setState(() {
                     _views = _load();
                   }),
@@ -6804,7 +8688,7 @@ class _RotationCardState extends State<_RotationCard> {
                     // The dashboard is a plain header, not a choice — the
                     // views beneath it are what rotate.
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 2),
+                      padding: EdgeInsets.fromLTRB(20, 14, 20, 2),
                       child: Text(
                         title,
                         style: theme.textTheme.labelLarge?.copyWith(
@@ -6822,17 +8706,18 @@ class _RotationCardState extends State<_RotationCard> {
                       ])
                         CheckboxListTile(
                           value: selected.contains(path),
-                          title: Text('${v['title']}'),
+                          title: Text(
+                            v['title'] == null
+                                ? haText(context, 'Default view')
+                                : '${v['title']}',
+                          ),
                           subtitle: Text(path),
                           controlAffinity: ListTileControlAffinity.leading,
-                          contentPadding: const EdgeInsets.only(
-                            left: 28,
-                            right: 20,
-                          ),
+                          contentPadding: EdgeInsets.only(left: 28, right: 20),
                           onChanged: (_) => _toggle(path),
                         ),
                   ],
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                 ],
               );
             },
@@ -6840,9 +8725,9 @@ class _RotationCardState extends State<_RotationCard> {
           // External pages: shown in their own overlay during rotation, so
           // the dashboard (and Voice Satellite) stays loaded underneath.
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 2),
+            padding: EdgeInsets.fromLTRB(20, 8, 20, 2),
             child: Text(
-              'External pages',
+              haText(context, 'External pages'),
               style: theme.textTheme.labelLarge?.copyWith(
                 color: theme.colorScheme.primary,
                 fontWeight: FontWeight.w600,
@@ -6852,16 +8737,16 @@ class _RotationCardState extends State<_RotationCard> {
           for (final url in _urls())
             ListTile(
               dense: true,
-              contentPadding: const EdgeInsets.only(left: 28, right: 12),
+              contentPadding: EdgeInsets.only(left: 28, right: 12),
               title: Text(url, style: theme.textTheme.bodyMedium),
               trailing: IconButton(
-                icon: const Icon(Icons.close, size: 20),
-                tooltip: 'Remove',
+                icon: Icon(Icons.close, size: 20),
+                tooltip: haText(context, 'Remove'),
                 onPressed: () => _saveUrls(_urls()..remove(url)),
               ),
             ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(28, 4, 12, 12),
+            padding: EdgeInsets.fromLTRB(28, 4, 12, 12),
             child: Row(
               children: [
                 Expanded(
@@ -6871,14 +8756,17 @@ class _RotationCardState extends State<_RotationCard> {
                     autocorrect: false,
                     onSubmitted: (_) => _addUrl(),
                     // Border and fill come from the input theme.
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       isDense: true,
                       hintText: 'https://example.com',
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                FilledButton(onPressed: _addUrl, child: const Text('Add')),
+                SizedBox(width: 8),
+                FilledButton(
+                  onPressed: _addUrl,
+                  child: Text(haText(context, 'Add')),
+                ),
               ],
             ),
           ),
@@ -6891,7 +8779,7 @@ class _RotationCardState extends State<_RotationCard> {
 /// The maker's mark, closing every settings page: centered, quiet, with
 /// the name linking to GitHub and the coffee cup to the tip jar. Links
 /// open in the link overlay above the dashboard, like a dashboard link
-/// does — loading them into the kiosk view itself replaced the dashboard
+/// does. Loading them into the kiosk view itself replaced the dashboard
 /// page and took the Voice Satellite session down with it.
 class _MadeByFooter extends StatelessWidget {
   const _MadeByFooter({required this.container});
@@ -6922,25 +8810,36 @@ class _MadeByFooter extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Made with ', style: muted),
-            // An icon, not the \u2665 character: Android renders that
-            // codepoint as the emoji glyph, which ignores text color
-            // entirely and always shows its own saturated red.
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 1),
-              child: Icon(Icons.favorite, size: 15, color: Color(0xFFE86A6A)),
-            ),
-            Text(' by ', style: muted),
-            InkWell(
-              borderRadius: BorderRadius.circular(6),
-              onTap: () => _open(context, 'https://github.com/jxlarrea'),
-              child: Text('Xavier Larrea', style: link),
-            ),
+            ...l10n(context)
+                .settingsMadeBy('{heart}', '{author}')
+                .split(
+                  RegExp(r'(?=\{heart\}|\{author\})|(?<=\{heart\}|\{author\})'),
+                )
+                .where((part) => part.isNotEmpty)
+                .map(
+                  (part) => switch (part) {
+                    '{heart}' => const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 1),
+                      child: Icon(
+                        Icons.favorite,
+                        size: 15,
+                        color: Color(0xFFE86A6A),
+                      ),
+                    ),
+                    '{author}' => InkWell(
+                      borderRadius: BorderRadius.circular(6),
+                      onTap: () =>
+                          _open(context, 'https://github.com/jxlarrea'),
+                      child: Text('Xavier Larrea', style: link),
+                    ),
+                    _ => Text(part, style: muted),
+                  },
+                ),
             Text(' \u00b7 \u2615 ', style: muted),
             InkWell(
               borderRadius: BorderRadius.circular(6),
               onTap: () => _open(context, 'https://buymeacoffee.com/jxlarrea'),
-              child: Text('Buy me a coffee', style: link),
+              child: Text(l10n(context).settingsBuyCoffee, style: link),
             ),
           ],
         ),
@@ -7029,7 +8928,7 @@ class _AudioDeviceTileState extends State<AudioDeviceTile> {
     final current = c.settings.get(widget.def);
     final devices = _devices;
     final options = <(String, String)>[
-      ('', 'Automatic'),
+      ('', screenAudioText(context, 'Automatic')),
       ...?devices,
       // A configured device that is not present right now: keep it choosable
       // (it comes back when the device does), named from its selector.
@@ -7038,19 +8937,30 @@ class _AudioDeviceTileState extends State<AudioDeviceTile> {
           !devices.any((d) => d.$1 == current))
         (
           current,
-          '${current.split('|').length > 2 && current.split('|')[2].isNotEmpty ? current.split('|')[2] : 'Selected device'} (not connected)',
+          l10n(context).screenAudioDisconnected(
+            current.split('|').length > 2 && current.split('|')[2].isNotEmpty
+                ? current.split('|')[2]
+                : screenAudioText(context, 'Selected device'),
+          ),
         ),
     ];
     if (devices == null) {
       return ListTile(
-        title: Text(widget.def.title),
-        subtitle: Text(widget.def.description),
+        title: Text(
+          screenAudioText(context, widget.def.localizedTitle(context)),
+        ),
+        subtitle: Text(
+          screenAudioText(context, widget.def.localizedDescription(context)),
+        ),
         trailing: const Text('…'),
       );
     }
     return DropdownRow<String>(
-      title: widget.def.title,
-      description: widget.def.description,
+      title: screenAudioText(context, widget.def.localizedTitle(context)),
+      description: screenAudioText(
+        context,
+        widget.def.localizedDescription(context),
+      ),
       value: options.any((o) => o.$1 == current) ? current : '',
       options: options,
       onChanged: (v) async {
@@ -7110,7 +9020,8 @@ class _MicChannelTileState extends State<MicChannelTile> {
     final c = widget.container;
     final selected = c.settings.get(audioMicDevice);
     var channels = 0;
-    if (selected.isNotEmpty) {
+    // Only a USB microphone array: capture ignores a pick on any other.
+    if (isUsbInput(selected)) {
       final result = await c.commands.execute('getAudioDevices', const {});
       final data = result.data;
       final list = data is Map ? data['inputs'] : null;
@@ -7132,17 +9043,18 @@ class _MicChannelTileState extends State<MicChannelTile> {
     final c = widget.container;
     final current = c.settings.get(micChannel).toInt();
     final options = <(num, String)>[
-      (0, 'Downmix (default)'),
-      for (var i = 1; i <= _channels; i++) (i, 'Channel $i'),
+      (0, screenAudioText(context, 'Downmix (default)')),
+      for (var i = 1; i <= _channels; i++)
+        (i, l10n(context).screenAudioChannel('$i')),
       // A stored channel beyond what the mic reports stays visible instead
       // of masquerading as another option; capture falls back to the mono
       // downmix until it is repicked.
       if (current > _channels)
-        (current, 'Channel $current (not on this microphone)'),
+        (current, l10n(context).screenAudioChannelMissing('$current')),
     ];
     return DropdownRow<num>(
-      title: micChannel.title,
-      description: micChannel.description,
+      title: screenAudioText(context, micChannel.title),
+      description: screenAudioText(context, micChannel.description),
       value: current,
       options: options,
       onChanged: (v) async {
@@ -7152,6 +9064,14 @@ class _MicChannelTileState extends State<MicChannelTile> {
       },
     );
   }
+}
+
+/// A microphone selector ("type|address|name") of a USB input, the only
+/// kind a channel pick applies to (MicRecorder.kt).
+bool isUsbInput(String selector) {
+  final type = int.tryParse(selector.split('|').first);
+  // AudioDeviceInfo.TYPE_USB_DEVICE, TYPE_USB_ACCESSORY, TYPE_USB_HEADSET.
+  return type == 11 || type == 12 || type == 22;
 }
 
 /// Every OS grant the app can use, in one list, on the Device page (issue
@@ -7199,7 +9119,7 @@ class _ServiceStatusTileState extends State<_ServiceStatusTile> {
     // After the first frame: the route check in _refresh reads an
     // inherited widget, which initState may not.
     WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
-    _poll = Timer.periodic(const Duration(seconds: 3), (_) => _refresh());
+    _poll = Timer.periodic(Duration(seconds: 3), (_) => _refresh());
   }
 
   @override
@@ -7239,8 +9159,8 @@ class _ServiceStatusTileState extends State<_ServiceStatusTile> {
       leading: icon == null
           ? null
           : Icon(icon, color: ok == false ? theme.colorScheme.error : null),
-      title: Text(title),
-      subtitle: Text(subtitle),
+      title: Text(deviceText(context, title)),
+      subtitle: Text(deviceText(context, subtitle)),
     );
   }
 
@@ -7248,52 +9168,73 @@ class _ServiceStatusTileState extends State<_ServiceStatusTile> {
   Widget build(BuildContext context) {
     final st = _status;
     if (st == null) {
-      return const ListTile(title: Text('Service'), subtitle: Text('Reading…'));
+      return ListTile(
+        title: Text(deviceText(context, 'Service')),
+        subtitle: Text(deviceText(context, 'Reading…')),
+      );
     }
     final running = st['running'] == true;
     final foreground = st['foreground'] == true;
     final error = st['error'] as String?;
-    final types = (st['types'] as List?)?.cast<String>() ?? const <String>[];
+    final types = (st['types'] as List?)?.cast<String>() ?? <String>[];
     final ok = running && foreground;
     final up = _uptime(st['uptimeMs']);
     return Column(
       children: separatedRows([
         _row(
-          'Service',
+          deviceText(context, 'Service'),
           !running
-              ? (error == null ? 'Stopped.' : 'Stopped: $error')
+              ? (error == null
+                    ? deviceText(context, 'Stopped.')
+                    : l10n(context).deviceServiceStopped(error))
               : foreground
-              ? (up.isEmpty ? 'Running.' : 'Running for $up.')
-              : 'Running without the foreground exemption.',
+              ? (up.isEmpty
+                    ? deviceText(context, 'Running.')
+                    : l10n(context).deviceServiceRunning(up))
+              : deviceText(
+                  context,
+                  'Running without the foreground exemption.',
+                ),
           icon: ok ? Icons.check_circle_outline : Icons.error_outline,
           ok: ok,
         ),
         _row(
-          'Foreground service types',
-          types.isEmpty ? 'None declared.' : types.join(', '),
+          deviceText(context, 'Foreground service types'),
+          types.isEmpty
+              ? deviceText(context, 'None declared.')
+              : types.join(', '),
         ),
         _row(
-          'CPU wake lock',
+          deviceText(context, 'CPU wake lock'),
           st['cpuAwake'] == false
-              ? 'Off: the setting below is off.'
+              ? deviceText(context, 'Off: the setting below is off.')
               : st['cpuLockHeld'] == true
-              ? 'Held: the screen is off.'
+              ? deviceText(context, 'Held: the screen is off.')
               : st['screenInteractive'] != false
-              ? 'Released while the screen is on.'
-              : 'Not held.',
+              ? deviceText(context, 'Released while the screen is on.')
+              : deviceText(context, 'Not held.'),
         ),
         _row(
-          'Wi-Fi lock',
+          deviceText(context, 'Wi-Fi lock'),
           st['wifiLockHeld'] == true
-              ? 'Held: the radio stays out of power saving.'
-              : 'Not held.',
+              ? deviceText(
+                  context,
+                  'Held: the radio stays out of power saving.',
+                )
+              : deviceText(context, 'Not held.'),
         ),
         _row(
-          'Notification',
+          deviceText(context, 'Notification'),
           st['notificationsEnabled'] == false
-              ? 'Hidden: notifications are turned off for the app. The '
-                    'service runs regardless.'
-              : 'Shown in the notification shade while the service runs.',
+              ? deviceText(
+                  context,
+                  'Hidden: notifications are turned off for the app. The '
+                  'service runs regardless.',
+                )
+              : deviceText(
+                  context,
+                  'Shown in the notification shade while the service runs.',
+                ),
         ),
       ]),
     );
@@ -7312,7 +9253,10 @@ class _ServiceReasonsTile extends StatelessWidget {
     return Column(
       children: separatedRows([
         for (final reason in container.service.reasons)
-          ListTile(title: Text(reason.title), subtitle: Text(reason.detail)),
+          ListTile(
+            title: Text(deviceText(context, reason.title)),
+            subtitle: Text(deviceText(context, reason.detail)),
+          ),
       ]),
     );
   }
@@ -7349,9 +9293,11 @@ class _ServicePermissionsTileState extends State<_ServicePermissionsTile>
     super.dispose();
   }
 
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _refresh();
+    if (_returned.returned(state)) _refresh();
   }
 
   Future<void> _refresh() async {
@@ -7391,9 +9337,9 @@ class _ServicePermissionsTileState extends State<_ServicePermissionsTile>
             ? theme.colorScheme.error
             : muted,
       ),
-      title: Text(title),
+      title: Text(deviceText(context, title)),
       subtitle: Text(
-        ok ? held : adbHint ?? (needed ? missing : idle),
+        deviceText(context, ok ? held : adbHint ?? (needed ? missing : idle)),
         style: ok || urgent ? null : TextStyle(color: muted),
       ),
       trailing: ok || adbHint != null
@@ -7401,9 +9347,12 @@ class _ServicePermissionsTileState extends State<_ServicePermissionsTile>
           : TextButton(
               onPressed: () async {
                 await onGrant();
+                // The grant just changed, so the next read must see it
+                // rather than the cached pass this screen's own boot took.
+                SystemPermissions.invalidate();
                 await _refresh();
               },
-              child: Text(action),
+              child: Text(deviceText(context, action)),
             ),
     );
   }
@@ -7464,7 +9413,7 @@ class _ServicePermissionsTileState extends State<_ServicePermissionsTile>
             missingIcon: Icons.mic_off_outlined,
             title: 'Microphone',
             held:
-                'Allows microphone usage for wake word detection and speech to text.',
+                'Allows microphone usage for wake word detection, speech to text and intercom calls.',
             missing: micBlocked
                 ? 'Blocked. Android will not ask again, so allow it in the '
                       'app settings.'
@@ -7538,9 +9487,11 @@ class _DevicePermissionsTileState extends State<_DevicePermissionsTile>
     super.dispose();
   }
 
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _refresh();
+    if (_returned.returned(state)) _refresh();
   }
 
   Future<void> _refresh() async {
@@ -7589,9 +9540,9 @@ class _DevicePermissionsTileState extends State<_DevicePermissionsTile>
             ? theme.colorScheme.error
             : muted,
       ),
-      title: Text(title),
+      title: Text(deviceText(context, title)),
       subtitle: Text(
-        ok ? held : adbHint ?? (needed ? missing : idle),
+        deviceText(context, ok ? held : adbHint ?? (needed ? missing : idle)),
         style: ok || urgent ? null : TextStyle(color: muted),
       ),
       trailing: ok || adbHint != null
@@ -7599,9 +9550,12 @@ class _DevicePermissionsTileState extends State<_DevicePermissionsTile>
           : TextButton(
               onPressed: () async {
                 await onGrant();
+                // The grant just changed, so the next read must see it
+                // rather than the cached pass this screen's own boot took.
+                SystemPermissions.invalidate();
                 await _refresh();
               },
-              child: Text(action),
+              child: Text(deviceText(context, action)),
             ),
     );
   }
@@ -7632,8 +9586,8 @@ class _DevicePermissionsTileState extends State<_DevicePermissionsTile>
                     'app settings.'
               : 'Wake word detection is on and nothing is listening.',
           idle:
-              'Needed by wake word detection and by pages that ask for '
-              'the microphone.',
+              'Needed by wake word detection, the intercom and pages that '
+              'ask for the microphone.',
           action: micBlocked ? 'App settings' : 'Grant',
           onGrant: () async {
             if (micBlocked) {
@@ -7803,6 +9757,20 @@ class _DevicePermissionsTileState extends State<_DevicePermissionsTile>
               'Kiosk Satellite.',
           onGrant: () => _requestVia('usageAccess'),
         ),
+        // The Local Media Session player reads other apps' sessions
+        // through it, so it counts as missing only while it is picked.
+        _row(
+          granted: perms?.notificationAccess,
+          needed: _localSessionPicked(widget.container),
+          missingIcon: Icons.notifications_off_outlined,
+          title: devicePermissionDescriptions['notificationAccess']!.title,
+          held: devicePermissionDescriptions['notificationAccess']!.description,
+          missing:
+              'Without this Android lists no media sessions, so Now '
+              'Playing cannot follow the apps playing on this device.',
+          idle: 'Lets Now Playing follow the apps playing on this device.',
+          onGrant: () => _requestVia('notificationAccess'),
+        ),
         // Pages ask for this themselves when they need it, and Bluetooth
         // scanning cannot run without it on any Android version: the scan
         // deliberately drops neverForLocation so beacon frames survive
@@ -7866,11 +9834,13 @@ class _SystemPermissionsTileState extends State<SystemPermissionsTile>
     super.dispose();
   }
 
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Every one of these is given on an OS screen that tells us nothing on the
     // way back, so re-read them when the user returns from one.
-    if (state == AppLifecycleState.resumed) _refresh();
+    if (_returned.returned(state)) _refresh();
   }
 
   Future<void> _refresh() async {
@@ -7901,11 +9871,14 @@ class _SystemPermissionsTileState extends State<SystemPermissionsTile>
         granted == true ? Icons.check_circle_outline : missingIcon,
         color: granted == true ? null : theme.colorScheme.error,
       ),
-      title: Text(title),
-      subtitle: Text(granted == true ? held : missing),
+      title: Text(voiceText(context, title)),
+      subtitle: Text(voiceText(context, granted == true ? held : missing)),
       trailing: granted == true
           ? null
-          : TextButton(onPressed: onGrant, child: Text(action)),
+          : TextButton(
+              onPressed: onGrant,
+              child: Text(voiceText(context, action)),
+            ),
     );
   }
 
@@ -8023,10 +9996,7 @@ class _BtSlotsHintRowState extends State<_BtSlotsHintRow> {
     if (_slots <= 0 || !widget.container.settings.get(btproxyConnections)) {
       return const SizedBox.shrink();
     }
-    return HintRow(
-      'Up to $_slots devices can be connected at once through this proxy. '
-      'Home Assistant routes further devices through other proxies.',
-    );
+    return HintRow(l10n(context).esphomeSlots(_slots.toString()));
   }
 }
 
@@ -8072,14 +10042,22 @@ class _RealMacStatusRowState extends State<_RealMacStatusRow> {
       onChanged: widget.onChanged,
     );
     return switch (identity.source) {
-      WifiMacSource.hardware => HintRow('Reporting ${identity.mac}.'),
+      WifiMacSource.hardware => HintRow(
+        l10n(context).esphomeMacHardware(identity.mac!),
+      ),
       WifiMacSource.manual => Column(
-        children: [HintRow('Reporting ${identity.mac}, entered below.'), field],
+        children: [
+          HintRow(l10n(context).esphomeMacManual(identity.mac!)),
+          field,
+        ],
       ),
       WifiMacSource.none => Column(
         children: [
-          const WarnRow(
-            'Android will not reveal this device\'s hardware address.',
+          WarnRow(
+            esphomeText(
+              context,
+              "Android will not reveal this device's hardware address.",
+            ),
           ),
           field,
         ],
@@ -8122,10 +10100,12 @@ class _LocationPermissionsTileState extends State<_LocationPermissionsTile>
     super.dispose();
   }
 
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // The dialog reports nothing on the way back; re-read on return.
-    if (state == AppLifecycleState.resumed) _refresh();
+    if (_returned.returned(state)) _refresh();
   }
 
   Future<void> _refresh() async {
@@ -8159,15 +10139,24 @@ class _LocationPermissionsTileState extends State<_LocationPermissionsTile>
             : Icons.location_off_outlined,
         color: granted == true ? null : theme.colorScheme.error,
       ),
-      title: const Text('Location'),
+      title: Text(esphomeText(context, 'Location')),
       subtitle: Text(
         perms == null || !perms.location
-            ? 'Without this the GPS receiver cannot be read and the '
-                  'location sensors stay unknown.'
+            ? esphomeText(
+                context,
+                'Without this the GPS receiver cannot be read and the '
+                'location sensors stay unknown.',
+              )
             : !perms.locationServicesOn
-            ? 'Location is off in the device settings, so the receiver '
-                  'delivers nothing.'
-            : 'The location sensors can read the GPS receiver.',
+            ? esphomeText(
+                context,
+                'Location is off in the device settings, so the receiver '
+                'delivers nothing.',
+              )
+            : esphomeText(
+                context,
+                'The location sensors can read the GPS receiver.',
+              ),
       ),
       trailing: granted == true
           ? null
@@ -8176,7 +10165,7 @@ class _LocationPermissionsTileState extends State<_LocationPermissionsTile>
                 await SystemPermissions.requestLocation();
                 await _refresh();
               },
-              child: const Text('Grant'),
+              child: Text(esphomeText(context, 'Grant')),
             ),
     );
   }
@@ -8219,20 +10208,22 @@ class _LocationStatusRowState extends State<_LocationStatusRow> {
     final String text;
     String? coordinates;
     if (!location.enabled) {
-      text = 'Off.';
+      text = esphomeText(context, 'Off.');
     } else if (location.error != null) {
-      text = location.error!;
+      text = esphomeError(context, location.error!);
     } else if (fix == null) {
-      text =
-          'Waiting for the first fix. A cold start under open sky can '
-          'take a few minutes.';
+      text = esphomeText(
+        context,
+        'Waiting for the first fix. A cold start under open sky can '
+        'take a few minutes.',
+      );
     } else {
       final age = DateTime.now().toUtc().difference(fix.time);
       final ago = age.inSeconds < 60
-          ? '${age.inSeconds}s ago'
+          ? l10n(context).esphomeSecondsAgo(age.inSeconds.toString())
           : age.inMinutes < 60
-          ? '${age.inMinutes} min ago'
-          : '${age.inHours} h ago';
+          ? l10n(context).esphomeMinutesAgo(age.inMinutes.toString())
+          : l10n(context).esphomeHoursAgo(age.inHours.toString());
       coordinates =
           '${fix.latitude.toStringAsFixed(5)}, '
           '${fix.longitude.toStringAsFixed(5)}';
@@ -8242,7 +10233,7 @@ class _LocationStatusRowState extends State<_LocationStatusRow> {
     }
     return SettingsRow(
       leading: const Icon(Icons.my_location_outlined),
-      title: const Text('Last coordinates'),
+      title: Text(esphomeText(context, 'Last coordinates')),
       subtitle: Text(text),
       trailing: coordinates == null ? null : Text(coordinates),
     );
@@ -8287,9 +10278,11 @@ class _PersonSensorLogAccessTileState extends State<_PersonSensorLogAccessTile>
     super.dispose();
   }
 
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _refresh();
+    if (_returned.returned(state)) _refresh();
   }
 
   Future<void> _refresh() async {
@@ -8311,23 +10304,30 @@ class _PersonSensorLogAccessTileState extends State<_PersonSensorLogAccessTile>
         ok ? Icons.check_circle_outline : Icons.article_outlined,
         color: ok ? null : theme.colorScheme.error,
       ),
-      title: const Text('Log access'),
+      title: Text(screensaverText(context, 'Log access')),
       subtitle: Text(
         access == null
-            ? 'Checking...'
+            ? screensaverText(context, 'Checking...')
             : ok
-            ? "The device's person sensor can be read."
+            ? screensaverText(
+                context,
+                "The device's person sensor can be read.",
+              )
             : access.granted
-            ? 'Granted. Restart Kiosk Satellite to apply it.'
-            : 'This permission can only be granted via ADB. The Meta '
-                  'Portal doc has the full command. Restart Kiosk Satellite '
-                  'afterwards.',
+            ? screensaverText(
+                context,
+                'Granted. Restart Kiosk Satellite to apply it.',
+              )
+            : screensaverText(
+                context,
+                "This permission can only be granted via ADB. The Meta Portal doc has the full command. Restart Kiosk Satellite afterwards.",
+              ),
       ),
       trailing: access != null && access.granted && !ok
           ? TextButton(
               onPressed: () =>
                   widget.container.commands.execute('restartApp', const {}),
-              child: const Text('Restart'),
+              child: Text(screensaverText(context, 'Restart')),
             )
           : null,
     );
@@ -8370,29 +10370,36 @@ class _PersonSensorStatusRowState extends State<_PersonSensorStatusRow> {
     final String text;
     String? value;
     if (!sensor.wanted) {
-      text = 'Off.';
+      text = screensaverText(context, 'Off.');
     } else if (sensor.error != null) {
-      text = sensor.error!;
+      text = screensaverText(context, sensor.error!);
     } else if (!sensor.running) {
-      text = 'Starting...';
+      text = screensaverText(context, 'Starting...');
     } else if (sensor.lastBeat == null) {
-      text =
-          'Waiting for the first heartbeat. The sensor reports every 30 '
-          'seconds while someone is in view.';
-      value = 'Clear';
+      text = screensaverText(
+        context,
+        "Waiting for the first heartbeat. The sensor reports every 30 seconds while someone is in view.",
+      );
+      value = l10n(context).screensaverDetectionClear;
     } else {
       final age = DateTime.now().difference(sensor.lastBeat!);
       final ago = age.inSeconds < 60
-          ? '${age.inSeconds}s ago'
+          ? l10n(
+              context,
+            ).screensaverDetectionSecondsAgo(age.inSeconds.toString())
           : age.inMinutes < 60
-          ? '${age.inMinutes} min ago'
-          : '${age.inHours} h ago';
-      text = 'Last heartbeat $ago.';
-      value = sensor.present ? 'Detected' : 'Clear';
+          ? l10n(
+              context,
+            ).screensaverDetectionMinutesAgo(age.inMinutes.toString())
+          : l10n(context).screensaverDetectionHoursAgo(age.inHours.toString());
+      text = l10n(context).screensaverDetectionLastHeartbeat(ago);
+      value = sensor.present
+          ? screensaverText(context, 'Detected')
+          : l10n(context).screensaverDetectionClear;
     }
     return SettingsRow(
       leading: const Icon(Icons.sensor_occupied_outlined),
-      title: const Text('Occupancy'),
+      title: Text(screensaverText(context, 'Occupancy')),
       subtitle: Text(text),
       trailing: value == null ? null : Text(value),
     );
@@ -8425,10 +10432,12 @@ class _BtProxyPermissionsTileState extends State<_BtProxyPermissionsTile>
     super.dispose();
   }
 
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // The dialog reports nothing on the way back; re-read on return.
-    if (state == AppLifecycleState.resumed) _refresh();
+    if (_returned.returned(state)) _refresh();
   }
 
   Future<void> _refresh() async {
@@ -8457,8 +10466,8 @@ class _BtProxyPermissionsTileState extends State<_BtProxyPermissionsTile>
         granted == true ? Icons.check_circle_outline : missingIcon,
         color: granted == true ? null : theme.colorScheme.error,
       ),
-      title: Text(title),
-      subtitle: Text(subtitle),
+      title: Text(esphomeText(context, title)),
+      subtitle: Text(esphomeText(context, subtitle)),
       trailing: granted == true
           ? null
           : TextButton(
@@ -8469,7 +10478,7 @@ class _BtProxyPermissionsTileState extends State<_BtProxyPermissionsTile>
                 await SystemPermissions.requestBluetooth();
                 await _refresh();
               },
-              child: const Text('Grant'),
+              child: Text(esphomeText(context, 'Grant')),
             ),
     );
   }
@@ -8486,25 +10495,37 @@ class _BtProxyPermissionsTileState extends State<_BtProxyPermissionsTile>
         _row(
           granted: _bluetooth == null ? null : perms?.bluetoothPair,
           missingIcon: Icons.bluetooth_disabled_outlined,
-          title: 'Nearby devices',
+          title: esphomeText(context, 'Nearby devices'),
           subtitle: perms?.bluetoothPair == true
-              ? 'The proxy can scan for nearby Bluetooth devices.'
-              : 'Without this the proxy cannot scan for devices.',
+              ? esphomeText(
+                  context,
+                  'The proxy can scan for nearby Bluetooth devices.',
+                )
+              : esphomeText(
+                  context,
+                  'Without this the proxy cannot scan for devices.',
+                ),
         ),
         _row(
           granted: _bluetooth == null
               ? null
               : perms != null && perms.location && perms.locationServicesOn,
           missingIcon: Icons.location_off_outlined,
-          title: 'Location',
+          title: esphomeText(context, 'Location'),
           subtitle: perms == null || !perms.location
-              ? 'Android only delivers Bluetooth scan results, beacons '
-                    'included, with Location granted. The proxy never reads '
-                    'the device position.'
+              ? esphomeText(
+                  context,
+                  'Android only delivers Bluetooth scan results, beacons '
+                  'included, with Location granted. The proxy never reads '
+                  'the device position.',
+                )
               : !perms.locationServicesOn
-              ? 'Location is off in the device settings, so Bluetooth '
-                    'scanning finds nothing.'
-              : 'Bluetooth scanning can hear beacons.',
+              ? esphomeText(
+                  context,
+                  'Location is off in the device settings, so Bluetooth '
+                  'scanning finds nothing.',
+                )
+              : esphomeText(context, 'Bluetooth scanning can hear beacons.'),
         ),
       ],
     );
@@ -8527,16 +10548,23 @@ class ClearModelCacheTile extends StatefulWidget {
 
 class _ClearModelCacheTileState extends State<ClearModelCacheTile> {
   bool _busy = false;
-  String? _result;
+  bool? _ok;
+  String _removed = '0';
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.cleaning_services_outlined),
-      title: const Text('Cached models'),
+      title: Text(voiceText(context, 'Cached models')),
       subtitle: Text(
-        _result ??
-            'Re-download from Home Assistant. Use after re-publishing a model.',
+        _ok == true
+            ? l10n(context).voiceCacheCleared(_removed)
+            : _ok == false
+            ? voiceText(context, 'Could not clear the cache.')
+            : voiceText(
+                context,
+                'Re-download from Home Assistant. Use after re-publishing a model.',
+              ),
       ),
       trailing: _busy
           ? const SizedBox(
@@ -8555,12 +10583,11 @@ class _ClearModelCacheTileState extends State<ClearModelCacheTile> {
                 final removed = (result.data as Map?)?['removed'];
                 setState(() {
                   _busy = false;
-                  _result = result.ok
-                      ? 'Cleared $removed file(s); re-downloading.'
-                      : 'Could not clear the cache.';
+                  _ok = result.ok;
+                  _removed = '${removed ?? 0}';
                 });
               },
-              child: const Text('Clear'),
+              child: Text(voiceText(context, 'Clear')),
             ),
     );
   }
@@ -8614,9 +10641,12 @@ class _MasterVolumeTileState extends State<_MasterVolumeTile> {
     return Column(
       children: [
         ListTile(
-          title: const Text('Master volume'),
-          subtitle: const Text(
-            'The device volume. Media and assistant volume scale under it.',
+          title: Text(screenAudioText(context, 'Master volume')),
+          subtitle: Text(
+            screenAudioText(
+              context,
+              'The device volume. Media, intercom and assistant volumes scale under it.',
+            ),
           ),
           trailing: Text(
             '${value.round()}%',
@@ -8677,11 +10707,13 @@ class _SliderTileState extends State<_SliderTile> {
     // not) and 90 is "1 h 30 min". Wording mirrored in the remote admin.
     if (def.key == haHoldReleaseMinutes.key) {
       final minutes = v.round();
-      if (minutes <= 0) return 'Never';
+      if (minutes <= 0) return haText(context, 'Never');
       final h = minutes ~/ 60;
       final m = minutes % 60;
-      if (h == 0) return '$m min';
-      return m == 0 ? '$h h' : '$h h $m min';
+      if (h == 0) return l10n(context).haMinutes('$m');
+      return m == 0
+          ? l10n(context).haHours('$h')
+          : l10n(context).haHoursMinutes('$h', '$m');
     }
     final text = v == v.roundToDouble()
         ? v.toInt().toString()
@@ -8701,8 +10733,8 @@ class _SliderTileState extends State<_SliderTile> {
     return Column(
       children: [
         ListTile(
-          title: Text(def.title),
-          subtitle: Text(def.description),
+          title: Text(def.localizedTitle(context)),
+          subtitle: Text(def.localizedDescription(context)),
           trailing: Text(
             _label(value),
             style: Theme.of(context).textTheme.titleMedium,
@@ -8726,7 +10758,8 @@ class _SliderTileState extends State<_SliderTile> {
               // and the Black screensaver avoids the whole regime.
               if (def.key == screensaverScreenOffMinutes.key &&
                   (widget.container.settings.get(def) as num) == 0 &&
-                  parsed > 0) {
+                  parsed > 0 &&
+                  !widget.container.settings.get(screensaverScreenOffBlack)) {
                 final go = await confirmScreenOff(context);
                 if (!go) {
                   // The slider snaps back to the stored 0.
@@ -8771,13 +10804,16 @@ class SettingTile extends StatelessWidget {
 
   AppContainer get c => container;
 
-  /// A select's options, filtered for context. The Home Assistant Media
-  /// screensaver only makes sense with Home Assistant connected, so its option
-  /// is hidden until a URL and token are set.
+  /// A select's options, filtered for context. The Home Assistant Media,
+  /// Weather Mood and Home Assistant Dashboard screensavers only make sense
+  /// with Home Assistant connected, so their options are hidden until a URL
+  /// and token are set.
   List<String> _optionsFor(SettingDef<Object> def) {
     final options = List<String>.from(c.settings.optionsFor(def));
     if (def.key == screensaverMode.key && !c.homeAssistant.configured) {
       options.remove('media');
+      options.remove('weather_mood');
+      options.remove('dashboard');
     }
     return options;
   }
@@ -8800,6 +10836,7 @@ class SettingTile extends StatelessWidget {
   /// complete, and a failure surfaces as a toast instead of vanishing
   /// as an unhandled async error after the old selection is already gone.
   Future<void> _pickGalleryPhotos(BuildContext context) async {
+    final strings = l10n(context);
     final overlay = Overlay.of(context, rootOverlay: true);
     final navigator = Navigator.of(context, rootNavigator: true);
     final progress = ValueNotifier<String?>(null);
@@ -8822,7 +10859,7 @@ class SettingTile extends StatelessWidget {
                   child: ValueListenableBuilder<String?>(
                     valueListenable: progress,
                     builder: (context, label, _) =>
-                        Text(label ?? 'Loading photos...'),
+                        Text(label ?? strings.screensaverMediaLoadingPhotos),
                   ),
                 ),
               ],
@@ -8846,7 +10883,10 @@ class SettingTile extends StatelessWidget {
       await staging.create(recursive: true);
       final names = <String>[];
       for (var i = 0; i < picked.length; i++) {
-        progress.value = 'Copying photo ${i + 1} of ${picked.length}...';
+        progress.value = strings.screensaverMediaCopying(
+          '${i + 1}',
+          '${picked.length}',
+        );
         final name =
             '${i.toString().padLeft(4, '0')}_'
             '${picked[i].name.replaceAll('/', '_')}';
@@ -8865,8 +10905,8 @@ class SettingTile extends StatelessWidget {
       c.log.warn('screensaver', 'gallery pick failed: $e');
       showToastIn(
         overlay,
-        title: 'Could not copy the photos',
-        message: 'Try a smaller selection.',
+        title: strings.screensaverMediaCopyFailed,
+        message: strings.screensaverMediaSmallerSelection,
         kind: ToastKind.error,
       );
     } finally {
@@ -8884,28 +10924,47 @@ class SettingTile extends StatelessWidget {
     switch (def.type) {
       case SettingType.boolean:
         return SwitchListTile(
-          title: Text(def.title),
-          subtitle: Text(def.description),
+          title: Text(def.localizedTitle(context)),
+          subtitle: Text(def.localizedDescription(context)),
           value: c.settings.get(def) as bool,
           onChanged: (v) async {
+            if (def.key == remoteTls.key &&
+                !await confirmRemoteProtocol(context, c, v)) {
+              return;
+            }
             await c.settings.setFromJson(def.key, v);
             onChanged();
           },
         );
       case SettingType.select:
         final options = _optionsFor(def);
+        if (options.isEmpty && def.key == cameraRtspResolution.key) {
+          return ListTile(
+            title: Text(def.localizedTitle(context)),
+            subtitle: Text(
+              cameraText(
+                context,
+                'No supported sizes available. Check the camera connection.',
+              ),
+            ),
+            enabled: false,
+          );
+        }
         final current = c.settings.get(def) as String;
         // Stored values are lowercase identifiers; people read the declared
         // label ('media' → "Home Assistant Media"), or Capitalised as a
         // fallback.
-        String label(String option) =>
-            c.settings.optionLabel(def, option) ??
-            (option.isEmpty
-                ? option
-                : option[0].toUpperCase() + option.substring(1));
+        String label(String option) => def.localizedOption(
+          context,
+          option,
+          c.settings.optionLabel(def, option) ??
+              (option.isEmpty
+                  ? option
+                  : option[0].toUpperCase() + option.substring(1)),
+        );
         return DropdownRow<String>(
-          title: def.title,
-          description: def.description,
+          title: def.localizedTitle(context),
+          description: def.localizedDescription(context),
           value: options.contains(current) ? current : options.first,
           options: [for (final option in options) (option, label(option))],
           onChanged: (v) async {
@@ -8923,10 +10982,14 @@ class SettingTile extends StatelessWidget {
         }
         final value = c.settings.get(def);
         final display = def.secret
-            ? ((value as String).isEmpty ? 'Not set' : '••••••••')
+            ? ((value as String).isEmpty
+                  ? deviceText(context, 'Not set')
+                  : '••••••••')
             : (value is num
                   ? _formatNum(value)
-                  : ('$value'.isEmpty ? 'Not set' : '$value'));
+                  : ('$value'.isEmpty
+                        ? deviceText(context, 'Not set')
+                        : '$value'));
         // A color is picked, not typed. Every "r,g,b" setting ends in
         // _color by convention; the remote UI keys off the same suffix.
         if (def.key.endsWith('_color')) {
@@ -8939,14 +11002,14 @@ class SettingTile extends StatelessWidget {
               ? Color.fromARGB(255, parts[0]!, parts[1]!, parts[2]!)
               : const Color(0xFFFAFAFA);
           return ListTile(
-            title: Text(def.title),
-            subtitle: Text(def.description),
+            title: Text(def.localizedTitle(context)),
+            subtitle: Text(def.localizedDescription(context)),
             trailing: GestureDetector(
               onTap: () async {
                 final picked = await pickColor(
                   context,
                   initial: rgb,
-                  title: def.title,
+                  title: def.localizedTitle(context),
                 );
                 if (picked != null) {
                   await c.settings.setFromJson(def.key, picked);
@@ -8979,10 +11042,10 @@ class SettingTile extends StatelessWidget {
           final isUrl = isClockBackgroundUrl(path);
           return SettingsRow(
             stack: true,
-            title: Text(def.title),
+            title: Text(def.localizedTitle(context)),
             subtitle: Text(
               path.isEmpty
-                  ? 'No photo selected'
+                  ? screensaverText(context, 'No photo selected')
                   : isUrl
                   ? path
                   : path.split('/').last,
@@ -9000,11 +11063,11 @@ class SettingTile extends StatelessWidget {
                       await _deleteClockBackgroundCopy(path);
                       onChanged();
                     },
-                    child: const Text('Clear'),
+                    child: Text(screensaverText(context, 'Clear')),
                   ),
                 TextButton(
                   onPressed: () => _editText(context),
-                  child: const Text('URL'),
+                  child: Text('URL'),
                 ),
                 TextButton(
                   onPressed: () async {
@@ -9021,17 +11084,22 @@ class SettingTile extends StatelessWidget {
                     await c.settings.setFromJson(def.key, dest);
                     onChanged();
                   },
-                  child: const Text('Browse'),
+                  child: Text(screensaverText(context, 'Browse')),
                 ),
               ],
             ),
           );
         }
         // The notification sound (issue #320): a dropdown over the sounds
-        // folder, and a row to put a file of this device's into it.
-        if (def.key == notificationsChimeFile.key) {
+        // folder, and a row to put a file of this device's into it. The
+        // intercom's ring sound is picked from the same folder.
+        if (voiceChimeSettings.values.any((sound) => sound.key == def.key) ||
+            def.key == notificationsChimeFile.key ||
+            def.key == intercomRingSound.key ||
+            def.key == announcementsChimeFile.key ||
+            def.key == alarmsTone.key) {
           return _NotificationSoundTile(
-            key: const ValueKey('notification-sound'),
+            key: ValueKey('sound-${def.key}'),
             container: c,
             def: def,
             onChanged: onChanged,
@@ -9045,13 +11113,15 @@ class SettingTile extends StatelessWidget {
             count = (jsonDecode(value as String) as List).length;
           } catch (_) {}
           return ListTile(
-            title: Text(def.title),
+            title: Text(def.localizedTitle(context)),
             subtitle: Text(
-              count == 0 ? 'No photos selected' : '$count selected',
+              count == 0
+                  ? screensaverText(context, 'No photos selected')
+                  : l10n(context).screensaverMediaSelected('$count'),
             ),
             trailing: TextButton(
               onPressed: () => _pickGalleryPhotos(context),
-              child: const Text('Browse'),
+              child: Text(screensaverText(context, 'Browse')),
             ),
           );
         }
@@ -9061,7 +11131,7 @@ class SettingTile extends StatelessWidget {
         // the moment the user understands why.
         if (def.key == screensaverLocalFolder.key) {
           return ListTile(
-            title: Text(def.title),
+            title: Text(def.localizedTitle(context)),
             subtitle: Text(
               display,
               maxLines: 1,
@@ -9077,14 +11147,34 @@ class SettingTile extends StatelessWidget {
                   onChanged();
                 }
               },
-              child: const Text('Browse'),
+              child: Text(screensaverText(context, 'Browse')),
+            ),
+          );
+        }
+        if (def.key == screensaverWeatherEntity.key) {
+          return WeatherMoodEntityRow(container: c);
+        }
+        // The Home Assistant Dashboard screensaver's view is picked from
+        // the instance's dashboards, the same modal the Go to a dashboard
+        // view gesture uses, never typed.
+        if (def.key == screensaverDashboardView.key) {
+          return ListTile(
+            title: Text(def.localizedTitle(context)),
+            subtitle: Text(
+              display,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: TextButton(
+              onPressed: () => _pickDashboardView(context),
+              child: Text(screensaverText(context, 'Select dashboard')),
             ),
           );
         }
         // The screensaver's media is picked from Home Assistant, not typed.
         if (def.key == screensaverMediaId.key) {
           return ListTile(
-            title: Text(def.title),
+            title: Text(def.localizedTitle(context)),
             subtitle: Text(
               display,
               maxLines: 1,
@@ -9104,7 +11194,7 @@ class SettingTile extends StatelessWidget {
                   onChanged();
                 }
               },
-              child: const Text('Browse'),
+              child: Text(screensaverText(context, 'Browse')),
             ),
           );
         }
@@ -9113,10 +11203,12 @@ class SettingTile extends StatelessWidget {
         if (def.key == screensaverGlanceEntities.key) {
           final chosen = _glanceEntities(c);
           return ListTile(
-            title: Text(def.title),
+            title: Text(def.localizedTitle(context)),
             subtitle: Text(
               chosen.isEmpty
-                  ? 'None yet. Up to $screensaverGlanceMax entities.'
+                  ? l10n(context).screensaverOverlayGlanceEmpty(
+                      screensaverGlanceMax.toString(),
+                    )
                   : chosen.map((e) => e['custom_name'] ?? e['name']).join(', '),
             ),
             trailing: const Icon(Icons.edit_outlined),
@@ -9128,10 +11220,13 @@ class SettingTile extends StatelessWidget {
         if (def.key == launcherApps.key) {
           final chosen = decodeLauncherApps(value as String);
           return ListTile(
-            title: Text(def.title),
+            title: Text(def.localizedTitle(context)),
             subtitle: Text(
               chosen.isEmpty
-                  ? 'None yet. Pick the apps the launcher offers.'
+                  ? launcherText(
+                      context,
+                      'None yet. Pick the apps the launcher offers.',
+                    )
                   : chosen.map((a) => a.label).join(', '),
             ),
             trailing: const Icon(Icons.edit_outlined),
@@ -9144,10 +11239,10 @@ class SettingTile extends StatelessWidget {
         if (immichNamed != null) {
           final chosen = decodeImmichNamed(value as String);
           return ListTile(
-            title: Text(def.title),
+            title: Text(def.localizedTitle(context)),
             subtitle: Text(
               chosen.isEmpty
-                  ? immichNamed.empty
+                  ? screensaverText(context, immichNamed.empty)
                   : chosen.map((n) => n.name).join(', '),
             ),
             trailing: const Icon(Icons.edit_outlined),
@@ -9167,16 +11262,22 @@ class SettingTile extends StatelessWidget {
                 if (view.id == id) view,
           ];
           return ListTile(
-            title: Text(def.title),
+            title: Text(def.localizedTitle(context)),
             subtitle: Text(
               views.isEmpty
-                  ? 'No camera view has cameras yet. Add one under Camera '
-                        'Streams.'
+                  ? screensaverText(
+                      context,
+                      'No camera view has cameras yet. Add one under Camera '
+                      'Streams.',
+                    )
                   : chosen.isEmpty
-                  ? 'None yet. Pick the views the screensaver cycles through.'
+                  ? screensaverText(
+                      context,
+                      'None yet. Pick the views the screensaver cycles through.',
+                    )
                   : chosen.map((view) => view.name).join(', '),
             ),
-            trailing: const Icon(Icons.edit_outlined),
+            trailing: Icon(Icons.edit_outlined),
             onTap: views.isEmpty ? null : () => _pickCameraViews(context),
           );
         }
@@ -9195,8 +11296,8 @@ class SettingTile extends StatelessWidget {
         if (def.key == themeDarkAt.key || def.key == themeLightAt.key) {
           final current = value as String;
           return ListTile(
-            title: Text(def.title),
-            subtitle: Text(def.description),
+            title: Text(def.localizedTitle(context)),
+            subtitle: Text(def.localizedDescription(context)),
             trailing: TimeBox(
               value: current,
               onTap: () => _pickTime(context, current),
@@ -9210,11 +11311,11 @@ class SettingTile extends StatelessWidget {
             def.key == screensaverImmichTakenTo.key) {
           final current = value as String;
           return ListTile(
-            title: Text(def.title),
-            subtitle: Text(def.description),
+            title: Text(def.localizedTitle(context)),
+            subtitle: Text(def.localizedDescription(context)),
             trailing: DateBox(
               value: current,
-              placeholder: def.placeholder ?? 'Not set',
+              placeholder: def.localizedPlaceholder(context) ?? 'Not set',
               onTap: () => _pickFilterDate(context, current),
             ),
           );
@@ -9222,23 +11323,26 @@ class SettingTile extends StatelessWidget {
         // The ESPHome encryption key is read back and pasted into Home
         // Assistant, never typed: a read-only copy box, mirrored on the
         // remote. The tap copies the whole key, which a text selection
-        // never reliably did.
-        if (def.key == btproxyKey.key) {
+        // never reliably did. The intercom key is the same shape, with
+        // its Change row underneath for the paste.
+        if (def.key == btproxyKey.key || def.key == intercomKey.key) {
           return SettingsRow(
             stack: true,
-            title: Text(def.title),
-            subtitle: Text(def.description),
+            title: Text(def.localizedTitle(context)),
+            subtitle: Text(def.localizedDescription(context)),
             trailing: CopyBox(
               value: value as String,
-              placeholder: def.placeholder ?? 'Not set',
+              placeholder: def.localizedPlaceholder(context) ?? 'Not set',
             ),
           );
         }
         return ListTile(
-          title: Text(def.title),
+          title: Text(def.localizedTitle(context)),
           // A multiline blob (pasted JavaScript) is edited, not read off the
           // row — the description carries the row instead.
-          subtitle: Text(def.multiline ? def.description : display),
+          subtitle: Text(
+            def.multiline ? def.localizedDescription(context) : display,
+          ),
           trailing: const Icon(Icons.edit_outlined),
           onTap: () => _editText(context),
         );
@@ -9275,6 +11379,29 @@ class SettingTile extends StatelessWidget {
     onChanged();
   }
 
+  Future<void> _pickDashboardView(BuildContext context) async {
+    final entries = await listDashboardViewEntries(c);
+    if (!context.mounted) return;
+    if (entries.isEmpty) {
+      showToast(
+        context,
+        title: screensaverText(context, 'Could not list dashboards'),
+        message: screensaverText(context, 'Is Home Assistant connected?'),
+        kind: ToastKind.error,
+      );
+      return;
+    }
+    final picked = await showDashboardViewPicker(
+      context,
+      title: screensaverText(context, 'Select dashboard'),
+      entries: entries,
+      current: c.settings.get(screensaverDashboardView),
+    );
+    if (picked == null) return;
+    await c.settings.setFromJson(screensaverDashboardView.key, picked);
+    onChanged();
+  }
+
   Future<void> _pickCameraViews(BuildContext context) async {
     final saved = await showCameraViewsPicker(
       context,
@@ -9295,8 +11422,10 @@ class SettingTile extends StatelessWidget {
     if (!result.ok) {
       showToast(
         context,
-        title: 'Could not list the apps',
-        message: result.error,
+        title: launcherText(context, 'Could not list the apps'),
+        message: result.error == null
+            ? null
+            : launcherError(context, result.error!),
         kind: ToastKind.error,
       );
       return;
@@ -9310,11 +11439,11 @@ class SettingTile extends StatelessWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Apps'),
+          title: Text(launcherText(context, 'Apps')),
           content: SizedBox(
             width: 420,
             child: apps.isEmpty
-                ? const Text('No launchable apps found.')
+                ? Text(launcherText(context, 'No launchable apps found.'))
                 : EdgeFade(
                     child: ListView(
                       shrinkWrap: true,
@@ -9343,11 +11472,11 @@ class SettingTile extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text(launcherText(context, 'Cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Save'),
+              child: Text(launcherText(context, 'Save')),
             ),
           ],
         ),
@@ -9397,19 +11526,28 @@ class SettingTile extends StatelessWidget {
       none: 'No tags yet. Create them in Immich first.',
       errorTitle: 'Could not list the tags',
     ),
+    screensaverImmichExcludeTags.key: const _ImmichNamedRow(
+      def: screensaverImmichExcludeTags,
+      command: 'immichTags',
+      empty: 'No tags.',
+      none: 'No tags yet. Create them in Immich first.',
+      errorTitle: 'Could not list the tags',
+    ),
   };
 
   Future<void> _pickImmichNamed(
     BuildContext context,
     _ImmichNamedRow row,
   ) async {
-    final result = await c.commands.execute(row.command, const {});
+    final result = await c.commands.execute(row.command, {});
     if (!context.mounted) return;
     if (!result.ok) {
       showToast(
         context,
-        title: row.errorTitle,
-        message: result.error,
+        title: screensaverText(context, row.errorTitle),
+        message: result.error == null
+            ? null
+            : immichError(context, result.error!),
         kind: ToastKind.error,
       );
       return;
@@ -9421,7 +11559,10 @@ class SettingTile extends StatelessWidget {
     // Albums carry their size, which tells two similarly named ones apart.
     final details = {
       for (final item in (result.data as List).cast<Map>())
-        if (item['count'] != null) '${item['id']}': '${item['count']} items',
+        if (item['count'] != null)
+          '${item['id']}': l10n(
+            context,
+          ).screensaverMediaItems('${item['count']}'),
     };
     // A person hidden in Immich says so under a struck-out eye: the filter
     // still works on them (issue #382), so the line explains the name
@@ -9438,11 +11579,11 @@ class SettingTile extends StatelessWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: Text(row.def.title),
+          title: Text(row.def.localizedTitle(context)),
           content: SizedBox(
             width: 420,
             child: options.isEmpty
-                ? Text(row.none)
+                ? Text(screensaverText(context, row.none))
                 : EdgeFade(
                     child: ListView(
                       shrinkWrap: true,
@@ -9462,8 +11603,8 @@ class SettingTile extends StatelessWidget {
                                         size: 14,
                                         color: muted,
                                       ),
-                                      const SizedBox(width: 5),
-                                      const Text('Hidden'),
+                                      SizedBox(width: 5),
+                                      Text(screensaverText(context, 'Hidden')),
                                     ],
                                   )
                                 : null,
@@ -9482,11 +11623,11 @@ class SettingTile extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text(screensaverText(context, 'Cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Save'),
+              child: Text(screensaverText(context, 'Save')),
             ),
           ],
         ),
@@ -9508,7 +11649,7 @@ class SettingTile extends StatelessWidget {
   Future<void> _pickTime(BuildContext context, String current) async {
     final picked = await showKsTimePicker(
       context,
-      title: def.title,
+      title: def.localizedTitle(context),
       initial: current,
     );
     if (picked == null) return;
@@ -9521,7 +11662,7 @@ class SettingTile extends StatelessWidget {
   Future<void> _pickFilterDate(BuildContext context, String current) async {
     final picked = await showKsDatePicker(
       context,
-      title: def.title,
+      title: def.localizedTitle(context),
       initial: current,
     );
     if (picked == null) return;
@@ -9564,7 +11705,7 @@ class SettingTile extends StatelessWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(def.title),
+          title: Text(def.localizedTitle(context)),
           content: SizedBox(
             width: def.multiline ? 560 : 420,
             child: TextField(
@@ -9585,16 +11726,38 @@ class SettingTile extends StatelessWidget {
                 if (error != null) setDialogState(() => error = null);
               },
               decoration: InputDecoration(
-                hintText: def.placeholder ?? def.description,
+                hintText:
+                    def.localizedPlaceholder(context) ??
+                    def.localizedDescription(context),
                 hintMaxLines: def.multiline ? 4 : null,
-                errorText: error,
+                errorText: error == null
+                    ? null
+                    : screensaverError(
+                        context,
+                        cameraError(
+                          context,
+                          haText(
+                            context,
+                            deviceText(
+                              context,
+                              intercomError(
+                                context,
+                                esphomeText(
+                                  context,
+                                  mediaText(context, error!),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
               ),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(l10n(context).commonCancel),
             ),
             FilledButton(
               onPressed: () {
@@ -9608,7 +11771,7 @@ class SettingTile extends StatelessWidget {
                 }
                 Navigator.pop(context, controller.text);
               },
-              child: const Text('Save'),
+              child: Text(deviceText(context, 'Save')),
             ),
           ],
         ),
@@ -9651,8 +11814,8 @@ class VsControlsSection extends StatefulWidget {
   /// rows on the Wake Word page. Only that page passes one.
   final Widget? detectionCard;
 
-  /// The "Keep listening in the background" setting tile, shown in the
-  /// General card below Auto start; null while its dependency hides it.
+  /// Background listening settings shown below Auto start in General.
+  /// Null while their dependency hides them.
   final Widget? backgroundTile;
 
   @override
@@ -9758,13 +11921,18 @@ class _VsControlsSectionState extends State<VsControlsSection> {
         engine['canStart'] == true && '${_data?['satellite'] ?? ''}'.isNotEmpty;
     final scheme = Theme.of(context).colorScheme;
     return SettingsRow(
-      title: const Text('Engine'),
-      subtitle: const Text('Start or Stop the Voice Satellite engine.'),
+      stack: true,
+      title: Text(voiceText(context, 'Engine')),
+      subtitle: Text(
+        voiceText(context, 'Start or Stop the Voice Satellite engine.'),
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            running ? 'Running' : 'Stopped',
+            running
+                ? voiceText(context, 'Running')
+                : voiceText(context, 'Stopped'),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: running ? scheme.primary : scheme.onSurfaceVariant,
             ),
@@ -9780,7 +11948,13 @@ class _VsControlsSectionState extends State<VsControlsSection> {
             onPressed: _engineBusy || (!running && !canStart)
                 ? null
                 : () => _engine(running ? 'stop' : 'start'),
-            child: Text(_engineBusy ? '…' : (running ? 'Stop' : 'Start')),
+            child: Text(
+              _engineBusy
+                  ? '…'
+                  : (running
+                        ? voiceText(context, 'Stop')
+                        : voiceText(context, 'Start')),
+            ),
           ),
         ],
       ),
@@ -9805,17 +11979,17 @@ class _VsControlsSectionState extends State<VsControlsSection> {
     if (entity == null) return null;
     if (entity['available'] != true) {
       return ListTile(
-        title: Text(title),
-        subtitle: Text(description),
+        title: Text(voiceText(context, title)),
+        subtitle: Text(voiceText(context, description)),
         trailing: Text(
-          'Not available',
+          voiceText(context, 'Not available'),
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       );
     }
     return SwitchListTile(
-      title: Text(title),
-      subtitle: Text(description),
+      title: Text(voiceText(context, title)),
+      subtitle: Text(voiceText(context, description)),
       value: '${entity['state']}' == 'on',
       onChanged: (v) => _switchEntity(key, v),
     );
@@ -9852,12 +12026,7 @@ class _VsControlsSectionState extends State<VsControlsSection> {
     if (mounted) await _load();
   }
 
-  Widget? _entityRow(
-    String key,
-    String title,
-    String description, {
-    bool capitalize = false,
-  }) {
+  Widget? _entityRow(String key, String title, String description) {
     final entity = _entity(key);
     if (entity == null) return null;
     final options = [
@@ -9866,21 +12035,20 @@ class _VsControlsSectionState extends State<VsControlsSection> {
     final state = '${entity['state'] ?? ''}';
     if (entity['available'] != true || options.isEmpty) {
       return ListTile(
-        title: Text(title),
-        subtitle: Text(description),
+        title: Text(voiceText(context, title)),
+        subtitle: Text(voiceText(context, description)),
         trailing: Text(
-          'Not available',
+          voiceText(context, 'Not available'),
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       );
     }
     // Options whose values are bare lowercase words render like Home
     // Assistant shows them; the raw value is what gets written.
-    String label(String o) =>
-        capitalize && o.isNotEmpty ? o[0].toUpperCase() + o.substring(1) : o;
+    String label(String o) => voiceEntityOption(context, key, o);
     return DropdownRow<String>(
-      title: title,
-      description: description,
+      title: voiceText(context, title),
+      description: voiceText(context, description),
       value: options.contains(state) ? state : null,
       options: [for (final o in options) (o, label(o))],
       onChanged: (v) {
@@ -9890,10 +12058,12 @@ class _VsControlsSectionState extends State<VsControlsSection> {
   }
 
   Widget _satelliteRow(BuildContext context) {
-    const title = 'Assigned satellite';
-    const description =
-        'The assist_satellite entity this kiosk identifies as in Home '
-        'Assistant. Changing it reloads the dashboard.';
+    final title = voiceText(context, 'Assigned satellite');
+    final description = voiceText(
+      context,
+      'The assist_satellite entity this kiosk identifies as in Home '
+      'Assistant. Changing it reloads the dashboard.',
+    );
     final list = _data?['satellites'];
     final satellites = [
       for (final s in (list is List ? list : const []))
@@ -9902,10 +12072,10 @@ class _VsControlsSectionState extends State<VsControlsSection> {
     final current = '${_data?['satellite'] ?? ''}';
     if (satellites.isEmpty) {
       return ListTile(
-        title: const Text(title),
-        subtitle: const Text(description),
+        title: Text(title),
+        subtitle: Text(description),
         trailing: Text(
-          current.isEmpty ? 'None assigned' : current,
+          current.isEmpty ? voiceText(context, 'None assigned') : current,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       );
@@ -9913,7 +12083,7 @@ class _VsControlsSectionState extends State<VsControlsSection> {
     final options = [
       // Disabled clears the binding: this kiosk stops identifying as a
       // satellite until one is picked again.
-      ('', 'Disabled'),
+      ('', voiceText(context, 'Disabled')),
       ...satellites,
       if (current.isNotEmpty && !satellites.any((s) => s.$1 == current))
         (current, current),
@@ -9936,10 +12106,12 @@ class _VsControlsSectionState extends State<VsControlsSection> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SettingsCard(
+          SettingsCard(
             children: [
               ListTile(
-                title: Text('Loading Voice Satellite controls…'),
+                title: Text(
+                  voiceText(context, 'Loading Voice Satellite controls…'),
+                ),
                 trailing: SizedBox(
                   width: 20,
                   height: 20,
@@ -9970,8 +12142,10 @@ class _VsControlsSectionState extends State<VsControlsSection> {
       _satelliteRow(context),
       if (browser != null)
         SwitchListTile(
-          title: const Text('Auto start'),
-          subtitle: const Text('Auto start Voice Satellite on dashboard load.'),
+          title: Text(voiceText(context, 'Auto start')),
+          subtitle: Text(
+            voiceText(context, 'Auto start Voice Satellite on dashboard load.'),
+          ),
           value: browser['auto_start'] != false,
           onChanged: (v) => _applyBrowser({'auto_start': v}),
         ),
@@ -9991,24 +12165,44 @@ class _VsControlsSectionState extends State<VsControlsSection> {
         'vad_sensitivity',
         'Finished speaking detection',
         'How long a pause ends a voice command.',
-        capitalize: true,
       ),
       // Only offered once the settings hook reports the key: an older
       // Voice Satellite silently drops writes it does not know.
+      if (browser != null &&
+          browser.containsKey('disable_muted_microphone_warning'))
+        SwitchListTile(
+          title: Text(voiceText(context, 'Disable muted microphone warning')),
+          subtitle: Text(
+            voiceText(
+              context,
+              'Hide the muted microphone warning at startup and whenever '
+              'the satellite microphone is muted.',
+            ),
+          ),
+          value: browser['disable_muted_microphone_warning'] == true,
+          onChanged: (v) =>
+              _applyBrowser({'disable_muted_microphone_warning': v}),
+        ),
       if (browser != null && browser.containsKey('debug'))
         SwitchListTile(
-          title: const Text('Debug logging'),
-          subtitle: const Text(
-            'Show Voice Satellite debug info in the browser console.',
+          title: Text(voiceText(context, 'Debug logging')),
+          subtitle: Text(
+            voiceText(
+              context,
+              'Show Voice Satellite debug info in the browser console.',
+            ),
           ),
           value: browser['debug'] == true,
           onChanged: (v) => _applyBrowser({'debug': v}),
         ),
       if ('${_data?['version'] ?? ''}'.isNotEmpty)
         ListTile(
-          title: const Text('Voice Satellite version'),
-          subtitle: const Text(
-            'The integration version installed in Home Assistant.',
+          title: Text(voiceText(context, 'Voice Satellite version')),
+          subtitle: Text(
+            voiceText(
+              context,
+              'The integration version installed in Home Assistant.',
+            ),
           ),
           trailing: Text(
             'v${_data?['version']}',
@@ -10061,11 +12255,14 @@ class _VsControlsSectionState extends State<VsControlsSection> {
 
     final appearance = <Widget>[
       if (browser == null)
-        HintRow(browserHint)
+        HintRow(voiceText(context, browserHint))
       else ...[
         DropdownRow<String>(
-          title: 'Skin',
-          description: 'The look of the voice assistant overlay.',
+          title: voiceText(context, 'Skin'),
+          description: voiceText(
+            context,
+            'The look of the voice assistant overlay.',
+          ),
           value: '${browser['skin'] ?? 'default'}',
           options: [
             for (final s
@@ -10077,32 +12274,40 @@ class _VsControlsSectionState extends State<VsControlsSection> {
           },
         ),
         DropdownRow<String>(
-          title: 'Theme mode',
-          description: 'Light or dark rendering of the overlay.',
+          title: voiceText(context, 'Theme mode'),
+          description: voiceText(
+            context,
+            'Light or dark rendering of the overlay.',
+          ),
           value: '${browser['theme_mode'] ?? 'auto'}',
-          options: const [
-            ('auto', 'Auto'),
-            ('light', 'Light'),
-            ('dark', 'Dark'),
+          options: [
+            ('auto', voiceText(context, 'Auto')),
+            ('light', voiceText(context, 'Light')),
+            ('dark', voiceText(context, 'Dark')),
           ],
           onChanged: (v) {
             if (v != null) _applyBrowser({'theme_mode': v});
           },
         ),
         SwitchListTile(
-          title: const Text('Reactive activity bar'),
-          subtitle: const Text(
-            'The activity bar reacts to audio. NOT RECOMMENDED for '
-            'low-power devices like the Echo Show.',
+          title: Text(voiceText(context, 'Reactive activity bar')),
+          subtitle: Text(
+            voiceText(
+              context,
+              'The activity bar reacts to audio. NOT RECOMMENDED for '
+              'low-power devices like the Echo Show.',
+            ),
           ),
           value: browser['reactive_bar'] != false,
           onChanged: (v) => _applyBrowser({'reactive_bar': v}),
         ),
         _VsSliderRow(
-          title: 'Reactive bar update rate',
-          description:
-              'How often the activity bar redraws. Higher is smoother and '
-              'uses more CPU.',
+          title: voiceText(context, 'Reactive bar update rate'),
+          description: voiceText(
+            context,
+            'How often the activity bar redraws. Higher is smoother and '
+            'uses more CPU.',
+          ),
           min: 5,
           max: 60,
           step: 1,
@@ -10118,8 +12323,8 @@ class _VsControlsSectionState extends State<VsControlsSection> {
           }),
         ),
         _VsSliderRow(
-          title: 'Text scale',
-          description: 'The size of the overlay text.',
+          title: voiceText(context, 'Text scale'),
+          description: voiceText(context, 'The size of the overlay text.'),
           min: 50,
           max: 200,
           step: 5,
@@ -10143,8 +12348,13 @@ class _VsControlsSectionState extends State<VsControlsSection> {
             id: 'x:vs_wake',
             child: SettingsCard(
               children: wake.isEmpty
-                  ? const [
-                      HintRow('Assign a satellite to control these settings.'),
+                  ? [
+                      HintRow(
+                        voiceText(
+                          context,
+                          'Assign a satellite to control these settings.',
+                        ),
+                      ),
                     ]
                   : wake,
             ),
@@ -10162,7 +12372,7 @@ class _VsControlsSectionState extends State<VsControlsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SectionHeading('General'),
+        SectionHeading(voiceText(context, 'General')),
         SearchLandingTarget(
           id: 'x:assigned_satellite',
           child: SettingsCard(children: general),
@@ -10172,10 +12382,9 @@ class _VsControlsSectionState extends State<VsControlsSection> {
     );
   }
 
-  /// The rows opening this page's two second-level pages, each on a card of
-  /// its own, where the two groups used to sit.
+  /// Entries for the Voice Satellite settings groups.
   List<Widget> _vsPageEntries() => [
-    for (final page in const ['Wake Word', 'Appearance'])
+    for (final page in const ['Wake Word', 'Appearance', 'Timers', 'Chimes'])
       _subpageEntryCard(widget.container, 'Voice Satellite', page),
   ];
 }
@@ -10316,34 +12525,46 @@ class _RtspPageState extends State<_RtspPage> {
         (st?['clients'] as num? ?? 0) > 0 &&
         st?['error'] == null;
     final label = st == null
-        ? 'Unavailable'
+        ? cameraText(context, 'Unavailable')
         : st['error'] != null
-        ? 'Unavailable'
+        ? cameraText(context, 'Unavailable')
         : st['listening'] != true
-        ? 'Stopped'
+        ? cameraText(context, 'Stopped')
         : active
-        ? 'Streaming'
-        : 'Idle';
+        ? cameraText(context, 'Streaming')
+        : cameraText(context, 'Idle');
     final text = st == null
-        ? 'Stream status unavailable.'
+        ? cameraText(context, 'Stream status unavailable.')
         : st['error'] != null
-        ? '${st['error']}'
+        ? cameraError(context, '${st['error']}')
         : st['listening'] != true
-        ? 'Listener is stopped.'
+        ? cameraText(context, 'Listener is stopped.')
         : active
-        ? '${st['clients']} connected ${st['clients'] == 1 ? 'viewer' : 'viewers'}. ${st['resolution'] ?? ''}'
-              .trim()
-        : 'Ready. The encoder starts when a viewer connects.';
+        ? (st['clients'] == 1
+              ? l10n(context).cameraViewer
+              : l10n(context).cameraViewers)(
+            '${st['clients']}',
+            '${st['resolution'] ?? ''}',
+          )
+        : cameraText(
+            context,
+            'Ready. The encoder starts when a viewer connects.',
+          );
     final audioText = st?['audioEnabled'] != true
         ? ''
         : st?['audioError'] != null
-        ? ' Audio: ${st!['audioError']}'
+        ? ' ${l10n(context).cameraAudioError('${st!['audioError']}')}'
         : st?['audioSuspended'] == true
-        ? ' Audio paused while the browser uses the microphone.'
+        ? ' ${l10n(context).cameraAudioPaused}'
         : st?['audioEncoding'] == true
-        ? ' Microphone audio streaming.'
-        : ' Microphone audio idle.';
-    final urls = (st?['urls'] as List?)?.cast<String>() ?? const <String>[];
+        ? ' ${l10n(context).cameraAudioStreaming}'
+        : ' ${l10n(context).cameraAudioIdle}';
+    final protocol = widget.container.settings.get(cameraStreamingProtocol);
+    final onvif = protocol == 'onvif';
+    final urls = (st?['protocol'] ?? 'rtsp') == protocol
+        ? (st?[onvif ? 'onvifUrls' : 'urls'] as List?)?.cast<String>() ??
+              const <String>[]
+        : const <String>[];
     final clients = (st?['clientDetails'] as List?) ?? const [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -10354,16 +12575,23 @@ class _RtspPageState extends State<_RtspPage> {
               for (final url in urls.isEmpty ? [''] : urls)
                 SettingsRow(
                   stack: true,
-                  title: const Text('Stream URL'),
+                  title: Text(
+                    onvif
+                        ? cameraText(context, 'ONVIF URL')
+                        : cameraText(context, 'Stream URL'),
+                  ),
                   trailing: CopyBox(
                     value: url,
-                    placeholder: 'Waiting for a network address',
+                    placeholder: cameraText(
+                      context,
+                      'Waiting for a network address',
+                    ),
                   ),
                 ),
             ],
           ),
         ),
-        const SectionHeading('Stream Status'),
+        SectionHeading(cameraText(context, 'Stream Status')),
         SettingsCard(
           children: [
             SettingsRow(
@@ -10373,19 +12601,28 @@ class _RtspPageState extends State<_RtspPage> {
                 color: active ? Colors.green : Colors.grey,
               ),
               title: Text(label),
-              subtitle: Text(text + audioText),
+              subtitle: Text(
+                text +
+                    (st?['resolutionFallback'] == true
+                        ? ' ${l10n(context).cameraFallback('${st!['requestedResolution']}', '${st['captureResolution']}')}'
+                        : '') +
+                    audioText +
+                    (st?['onvifDiscoveryError'] == null
+                        ? ''
+                        : ' ${l10n(context).cameraDiscoveryError('${st!["onvifDiscoveryError"]}')}'),
+              ),
             ),
           ],
         ),
-        const SectionHeading('Connected Clients'),
+        SectionHeading(cameraText(context, 'Connected Clients')),
         SettingsCard(
           children: [
             if (clients.isEmpty)
               SettingsRow(
                 title: Text(
                   st == null
-                      ? 'Client information unavailable.'
-                      : 'No connected clients.',
+                      ? cameraText(context, 'Client information unavailable.')
+                      : cameraText(context, 'No connected clients.'),
                 ),
               ),
             for (final client in clients)
@@ -10396,8 +12633,17 @@ class _RtspPageState extends State<_RtspPage> {
                   [
                     if ((client['userAgent'] as String? ?? '').isNotEmpty)
                       '${client['userAgent']}',
-                    '${client['playing'] == true ? 'Streaming' : 'Connected'} · ${client['transport'] ?? 'TCP'} · Port ${client['port']}',
-                    'Connected for ${_connectedFor(client['connectedSeconds'] as num? ?? 0)}',
+                    l10n(context).cameraClientDetails(
+                      cameraText(
+                        context,
+                        client['playing'] == true ? 'Streaming' : 'Connected',
+                      ),
+                      '${client['transport'] ?? 'TCP'}',
+                      '${client['port']}',
+                    ),
+                    l10n(context).cameraConnectedFor(
+                      _connectedFor(client['connectedSeconds'] as num? ?? 0),
+                    ),
                   ].join('\n'),
                 ),
               ),
@@ -10409,8 +12655,110 @@ class _RtspPageState extends State<_RtspPage> {
 
   String _connectedFor(num seconds) {
     final s = seconds.toInt();
-    if (s < 60) return '${s}s';
-    if (s < 3600) return '${s ~/ 60}m ${s % 60}s';
-    return '${s ~/ 3600}h ${(s % 3600) ~/ 60}m';
+    if (s < 60) return l10n(context).cameraDurationSeconds('$s');
+    if (s < 3600) {
+      return l10n(context).cameraDurationMinutes('${s ~/ 60}', '${s % 60}');
+    }
+    return l10n(
+      context,
+    ).cameraDurationHours('${s ~/ 3600}', '${(s % 3600) ~/ 60}');
   }
+}
+
+/// The Install from file row of Settings > Device > Updates: what the
+/// remote admin uploaded, if anything, and an Install button for it. The
+/// upload can only come from a browser, so with nothing waiting the row
+/// says where to do it.
+class _UploadedApkRow extends StatefulWidget {
+  const _UploadedApkRow({required this.container});
+
+  final AppContainer container;
+
+  @override
+  State<_UploadedApkRow> createState() => _UploadedApkRowState();
+}
+
+class _UploadedApkRowState extends State<_UploadedApkRow> {
+  StreamSubscription<UpdateStateChanged>? _changes;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _changes = widget.container.bus.on<UpdateStateChanged>().listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _changes?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _install() async {
+    setState(() => _busy = true);
+    final r = await widget.container.commands.execute('installUploadedApk', {});
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (!r.ok) {
+      showToast(
+        context,
+        title: deviceText(context, 'Install from file'),
+        message: r.error == null
+            ? null
+            : deviceOperationError(context, r.error!),
+        kind: ToastKind.error,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final update = widget.container.update;
+    final up = update.uploaded;
+    final installing = update.installing;
+    return SettingsRow(
+      title: Text(deviceText(context, 'Install from file')),
+      subtitle: Text(
+        up == null
+            ? deviceText(
+                context,
+                'Upload a Kiosk Satellite APK from a computer through the '
+                'remote admin, on this same page. For a kiosk that cannot '
+                'reach GitHub or a custom repository.',
+              )
+            : l10n(context).deviceUploadedVersion(
+                up.version,
+                '${up.buildNumber}',
+                (up.size / 1048576).toStringAsFixed(1),
+              ),
+      ),
+      trailing: up == null
+          ? null
+          : OutlinedButton(
+              onPressed: _busy || installing ? null : _install,
+              child: Text(
+                installing
+                    ? deviceText(context, 'Installing…')
+                    : deviceText(context, 'Install'),
+              ),
+            ),
+    );
+  }
+}
+
+String _subpageDisplayTitle(
+  BuildContext context,
+  AppContainer container,
+  String category,
+  String subpage,
+) {
+  if (category == 'Fleet') {
+    final profile = container.fleetSync.profiles
+        .where((p) => p.name == subpage)
+        .firstOrNull;
+    if (profile != null) return fleetProfileName(context, profile);
+  }
+  return settingsPageText(context, category, subpage);
 }

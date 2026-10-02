@@ -72,6 +72,22 @@ void main() {
     expect(saver.activeView.value, isNotNull);
   }
 
+  test(
+    'timer controls leave a screensaver visible while ordinary touch dismisses it',
+    () async {
+      await build();
+      var now = DateTime(2026, 9, 18);
+      saver.clock = () => now;
+      await saver.start();
+      saver.markControlTouch();
+      saver.notifyActivity('touch');
+      expect(saver.isActive, true);
+      now = now.add(const Duration(milliseconds: 200));
+      saver.notifyActivity('touch');
+      expect(saver.isActive, false);
+    },
+  );
+
   for (final reason in ['voice', 'start_conversation', '']) {
     test('Now Playing returns after a page interaction ($reason)', () async {
       await showNowPlaying();
@@ -115,6 +131,32 @@ void main() {
       },
     );
   }
+
+  test('Now Playing reports the screen it fills', () async {
+    await build(nowPlaying: true);
+    final views = <bool>[];
+    bus.on<FullscreenViewChanged>().listen((e) {
+      if (e.view == 'nowPlaying') views.add(e.shown);
+    });
+    // Playing behind the dashboard fills nothing yet.
+    bus.publish(const SendspinNowPlayingChanged(active: true, playing: true));
+    await pumpEventQueue();
+    expect(views, isEmpty);
+    await saver.start();
+    await pumpEventQueue();
+    expect(views, [true]);
+    // Music stopping under the screensaver gives the slot back to its mode.
+    bus.publish(const SendspinNowPlayingChanged(active: false));
+    await pumpEventQueue();
+    expect(views, [true, false]);
+    expect(saver.isActive, isTrue);
+    bus.publish(const SendspinNowPlayingChanged(active: true, playing: true));
+    await pumpEventQueue();
+    expect(views, [true, false, true]);
+    await saver.stop();
+    await pumpEventQueue();
+    expect(views, [true, false, true, false]);
+  });
 
   test(
     'Now Playing returns when a wake turn ends without a page signal',
@@ -176,6 +218,50 @@ void main() {
       await page(false, 'voice');
       expect(saver.isActive, isFalse);
       expect(saver.activeView.value, isNull);
+    });
+  }
+
+  Future<void> playDuringVoiceTurn() async {
+    await build(nowPlaying: true);
+    await settings.set(defs.sendspinFullscreenOnPlay, true);
+    bus.publish(const WakeWordDetected(model: 'test', phrase: 'test'));
+    await page(true, 'voice');
+    bus.publish(const SendspinNowPlayingChanged(active: true, playing: true));
+    await pumpEventQueue();
+    expect(saver.isActive, isFalse);
+  }
+
+  Future<void> endVoiceTurn() async {
+    bus.publish(const WakeWordStateChanged(active: true, listening: true));
+    await pumpEventQueue();
+    await page(false, 'voice');
+  }
+
+  test('music started by voice launches Now Playing after the turn', () async {
+    await playDuringVoiceTurn();
+    bus.publish(const WakeWordStateChanged(active: true, listening: true));
+    await pumpEventQueue();
+    // The page still holds its voice interaction.
+    expect(saver.isActive, isFalse);
+    await page(false, 'voice');
+    expect(saver.isActive, isTrue);
+    expect(saver.activeView.value, isNotNull);
+  });
+
+  for (final change in ['music stopped', 'launch disabled', 'dismissed']) {
+    test('a deferred launch is dropped after $change', () async {
+      await playDuringVoiceTurn();
+      switch (change) {
+        case 'music stopped':
+          bus.publish(const SendspinNowPlayingChanged(active: false));
+          await pumpEventQueue();
+        case 'launch disabled':
+          await settings.set(defs.sendspinFullscreenOnPlay, false);
+        case 'dismissed':
+          await commands.execute('stopScreensaver', const {});
+      }
+      await endVoiceTurn();
+      expect(saver.isActive, isFalse);
     });
   }
 

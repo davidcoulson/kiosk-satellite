@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+
 import 'core/command_registry.dart';
 import 'core/event_bus.dart';
 import 'core/logging.dart';
@@ -7,6 +10,7 @@ import 'managers/shizuku/shizuku_manager.dart';
 import 'managers/assist_pipeline/assist_pipeline_manager.dart';
 import 'managers/audio/audio_routing_manager.dart';
 import 'managers/browser/browser_manager.dart';
+import 'managers/browser/navigation.dart';
 import 'managers/camera/camera_manager.dart';
 import 'managers/device/device_manager.dart';
 import 'managers/device_camera/device_camera_manager.dart';
@@ -14,6 +18,8 @@ import 'managers/btproxy/bt_proxy_manager.dart';
 import 'managers/dlna/dlna_manager.dart';
 import 'managers/files/files_manager.dart';
 import 'managers/gestures/gestures_manager.dart';
+import 'managers/gestures/remote_keys_manager.dart';
+import 'managers/agent/agent_tools_manager.dart';
 import 'managers/glance/glance_manager.dart';
 import 'managers/home_assistant/home_assistant_manager.dart';
 import 'managers/js_api/js_api_manager.dart';
@@ -24,6 +30,9 @@ import 'managers/motion/motion_manager.dart';
 import 'managers/notifications/notification_manager.dart';
 import 'managers/fleet/fleet_manager.dart';
 import 'managers/fleet/fleet_sync_manager.dart';
+import 'managers/intercom/intercom_manager.dart';
+import 'managers/alarms/alarm_manager.dart';
+import 'managers/analytics/analytics_manager.dart';
 import 'managers/location/location_manager.dart';
 import 'managers/person/person_sensor_manager.dart';
 import 'managers/proximity/proximity_manager.dart';
@@ -36,8 +45,13 @@ import 'managers/sendspin/sendspin_manager.dart';
 import 'managers/service/service_manager.dart';
 import 'managers/sound/sound_manager.dart';
 import 'managers/settings/provisioning.dart';
+import 'managers/settings/definitions.dart' as defs;
 import 'managers/settings/settings_manager.dart';
+import 'managers/theater/theater_manager.dart';
 import 'managers/update/update_manager.dart';
+import 'managers/voice/voice_manager.dart';
+import 'managers/voice/voice_requests_manager.dart';
+import 'managers/voice_timers/voice_timer_manager.dart';
 import 'managers/wake_word/wake_word_manager.dart';
 
 /// Composition root. Construction does no work; [init] brings managers up in
@@ -64,7 +78,11 @@ class AppContainer {
     launcher = AppLauncherManager(bus, commands, log, settings);
     homeLauncher = HomeLauncherManager(bus, commands, log, settings);
     gestures = GesturesManager(bus, commands, log, settings);
+    remoteKeys = RemoteKeysManager(bus, commands, log, settings);
+    agentTools = AgentToolsManager(bus, commands, log, settings);
     screensaver = ScreensaverManager(bus, commands, log, settings);
+    theater = TheaterManager(bus, commands, log, settings)
+      ..isTrustedOrigin = _isConfiguredOrigin;
     immich = ImmichManager(bus, commands, log, settings);
     // Before motion: its init runs the legacy motion-camera migration the
     // motion manager's gate reads.
@@ -72,6 +90,7 @@ class AppContainer {
     motion = MotionManager(bus, commands, log, settings);
     proximity = ProximityManager(bus, commands, log, settings);
     location = LocationManager(bus, commands, log, settings);
+    analytics = AnalyticsManager(bus, commands, log, settings);
     personSensor = PersonSensorManager(bus, commands, log, settings);
     // Before wakeWord: its init seeds the mic selector the engine reads at
     // start, and its SettingChanged subscription must run before wakeWord's
@@ -101,22 +120,30 @@ class AppContainer {
     dlna.transportState.addListener(syncDlnaCover);
     dlna.pending.addListener(syncDlnaCover);
     files = FilesManager(bus, commands, log);
-    sound = SoundManager(bus, commands, log);
+    sound = SoundManager(bus, commands, log, settings: settings);
+    voiceTimers = VoiceTimerManager(bus, commands, log);
+    voice = VoiceManager(bus, commands, log, settings, btProxy, wakeWord);
     notifications = NotificationManager(bus, commands, log, settings);
     update = UpdateManager(
       bus,
       commands,
       log,
       useShizuku: () => settings.get(shizukuInstallUpdates),
+      customSource: () => settings.get(updateSource) == 'custom'
+          ? settings.get(updateSourceUrl).trim()
+          : null,
     );
     // After homeAssistant: it reads states through it for the fallback.
     glance = GlanceManager(bus, commands, log, settings, homeAssistant);
     shizuku = ShizukuManager(bus, commands, log);
-    plugins = PluginManager(bus, commands, log);
+    plugins = PluginManager(bus, commands, log, agent: () => agentMode);
     settings.pluginScreensavers = () => plugins.screensaverOptions;
     remote = RemoteManager(bus, commands, log, settings);
     fleet = FleetManager(bus, commands, log, settings);
     fleetSync = FleetSyncManager(bus, commands, log, settings);
+    intercom = IntercomManager(bus, commands, log, settings);
+    alarms = AlarmManager(bus, commands, log, settings);
+    voiceRequests = VoiceRequestsManager(bus, commands, log, settings);
   }
 
   final bus = EventBus();
@@ -136,12 +163,16 @@ class AppContainer {
   late final AppLauncherManager launcher;
   late final HomeLauncherManager homeLauncher;
   late final GesturesManager gestures;
+  late final RemoteKeysManager remoteKeys;
+  late final AgentToolsManager agentTools;
   late final ScreensaverManager screensaver;
+  late final TheaterManager theater;
   late final ImmichManager immich;
   late final DeviceCameraManager deviceCamera;
   late final MotionManager motion;
   late final ProximityManager proximity;
   late final LocationManager location;
+  late final AnalyticsManager analytics;
   late final PersonSensorManager personSensor;
   late final HomeAssistantManager homeAssistant;
   late final AudioRoutingManager audio;
@@ -153,6 +184,8 @@ class AppContainer {
   late final FilesManager files;
   late final GlanceManager glance;
   late final SoundManager sound;
+  late final VoiceTimerManager voiceTimers;
+  late final VoiceManager voice;
   late final NotificationManager notifications;
   late final UpdateManager update;
   late final ShizukuManager shizuku;
@@ -160,11 +193,75 @@ class AppContainer {
   late final RemoteManager remote;
   late final FleetManager fleet;
   late final FleetSyncManager fleetSync;
+  late final IntercomManager intercom;
+  late final AlarmManager alarms;
+  late final VoiceRequestsManager voiceRequests;
 
-  /// Built after [device.init] so it can carry the app version.
+  /// Built after [device.init] so it can carry the app version, and only
+  /// for a kiosk: the page bridge has nothing to attach to without a
+  /// browser, and every caller of it lives in KioskScreen.
   late final JsApiManager jsApi;
+  bool _jsApiBuilt = false;
 
-  List<Manager> get _ordered => [
+  /// Whether this install runs as a management agent rather than a kiosk.
+  /// Read from the settings, which are loaded before anything below starts.
+  bool get agentMode => settings.get(defs.agentMode);
+
+  /// What agent mode leaves out: everything whose job is to face a person
+  /// through this device's own screen or microphone. The app launcher is a
+  /// deliberate exception - its overlay never opens on an agent, but it owns
+  /// installedApps, foregroundApp and the foreground_app sensor, and "which
+  /// app is this projector running" is most of what an agent is for. What stays is what a
+  /// projector or a media box is actually useful for - the ESPHome device
+  /// and its sensors (btProxy owns that surface), the remote admin, updates,
+  /// plugins and fleet membership - plus the pieces those rest on: the
+  /// foreground service, the screen state, files and Shizuku. Gestures stay
+  /// too, for one trigger: a remote key is the one input a projector has,
+  /// and the gestures manager is what runs the actions its keys map to.
+  /// Nothing else in it starts without a touch, clap or hand mapping.
+  ///
+  /// Skipped rather than disabled. Each of these can already be turned off
+  /// by its own setting, but every one of them is still constructed here and
+  /// still runs init(), and init() is where the cost is: a WebView, a camera
+  /// binding, an audio engine, platform channels and settings listeners, on
+  /// a box that will never show a dashboard. The objects themselves are
+  /// cheap and are built either way - this list is about what never starts.
+  List<Manager> get _agentOmits => [
+    browser,
+    camera,
+    kiosk,
+    homeLauncher,
+    screensaver,
+    theater,
+    immich,
+    deviceCamera,
+    motion,
+    proximity,
+    personSensor,
+    audio,
+    wakeWord,
+    pipeline,
+    sendspin,
+    dlna,
+    glance,
+    sound,
+    voiceTimers,
+    voice,
+    notifications,
+    intercom,
+    // An alarm rings on screen, and an agent must never bring its
+    // Activity forward (on a projector that lights the laser).
+    alarms,
+  ];
+
+  List<Manager> get _ordered {
+    final all = _everyManager;
+    if (!agentMode) return all;
+    final omit = Set<Manager>.identity()..addAll(_agentOmits);
+    return all.where((m) => !omit.contains(m)).toList();
+  }
+
+  List<Manager> get _everyManager => [
     settings,
     device,
     screen,
@@ -172,7 +269,7 @@ class AppContainer {
     proxy,
     browser,
     camera,
-    jsApi,
+    if (_jsApiBuilt) jsApi,
     kiosk,
     // After kiosk: it listens for the AppLaunched its launchApp emits,
     // and its bringToFront/screenOn calls resolve at execute time.
@@ -181,11 +278,18 @@ class AppContainer {
     // forwards, and its acquire path invokes the kiosk_lock channel.
     homeLauncher,
     screensaver,
+    // After screen (its holdBrightness) and screensaver, which stands down
+    // on the event this publishes. Nothing here runs until something turns
+    // theater mode on.
+    theater,
     immich,
     deviceCamera,
     motion,
     proximity,
     location,
+    // After device (its info feeds every report) and settings; its first
+    // report waits minutes anyway.
+    analytics,
     personSensor,
     homeAssistant,
     audio,
@@ -194,6 +298,10 @@ class AppContainer {
     // selector and tuning must be seeded first. Commands resolve at execute
     // time, so running late costs nothing.
     gestures,
+    // After gestures: the keys it hands back run as GestureDetected.
+    remoteKeys,
+    // After remoteKeys (whose reported presses reset its idle clock).
+    agentTools,
     wakeWord,
     pipeline,
     sendspin,
@@ -202,6 +310,11 @@ class AppContainer {
     files,
     glance,
     sound,
+    voiceTimers,
+    // After the ESPHome server (its voice link), the wake word engine it
+    // configures, and the sound and timer managers it plays and shows
+    // through.
+    voice,
     notifications,
     update,
     shizuku,
@@ -211,7 +324,159 @@ class AppContainer {
     fleet,
     // After fleet: it reads this kiosk's id and the others from it.
     fleetSync,
+    // After fleet too: the roster is the switcher's list. After sound: it
+    // chimes through it.
+    intercom,
+    // Its first check can ring at once, and a ring reaches for the
+    // screen, the screensaver, the kiosk and the wake word's stop word.
+    alarms,
+    // After intercom and alarms: it runs their commands.
+    voiceRequests,
   ];
+
+  /// Agent mode's one borrowed command.
+  ///
+  /// restartApp belongs to the kiosk manager, which an agent does not run -
+  /// and turning agent mode off needs a restart to take effect. Without this
+  /// an agent could be switched on from the remote admin and not switched
+  /// back off from it, which on a projector with no keyboard means fetching
+  /// a laptop and adb. The kiosk manager's own version refuses first on
+  /// Android 10+ without the draw-over-apps grant, because a process that
+  /// cannot bring itself back must not kill itself; nothing about that
+  /// changes here.
+  @visibleForTesting
+  void registerAgentRestart() {
+    const background = MethodChannel('kiosk_satellite/background');
+    commands.register(
+      Command(
+        name: 'restartApp',
+        description:
+            'Kill and relaunch the whole app. In agent mode this is what '
+            'applies a change to Agent mode itself.',
+        handler: (_) async {
+          final info = await commands.execute('getDeviceInfo', const {});
+          final sdk = info.data is Map
+              ? ((info.data as Map)['sdkInt'] as num?)?.toInt()
+              : null;
+          if (sdk != null && sdk >= 29) {
+            final canReturn =
+                await background.invokeMethod<bool>('canBringToFront') ?? false;
+            if (!canReturn) {
+              return const CommandResult.fail(
+                'Restarting needs the "Display over other apps" permission '
+                'or the app cannot bring itself back.',
+              );
+            }
+          }
+          log.info('app', 'restarting application (agent mode)');
+          try {
+            await background.invokeMethod<void>('restartProcess', {
+              'reason': 'restart requested (agent mode)',
+            });
+          } on PlatformException catch (e) {
+            return CommandResult.fail('restart failed: $e');
+          } on MissingPluginException {
+            return const CommandResult.fail('restart is Android-only');
+          }
+          return const CommandResult.ok();
+        },
+      ),
+    );
+  }
+
+  /// Opening another app is the kiosk manager's, and an agent is usually a
+  /// box whose job is to run one: a projector told from Home Assistant to
+  /// start Plezy or Kodi. The kiosk version wraps the same platform call in
+  /// screen-pinning bookkeeping that has no meaning without a kiosk lock, so
+  /// these are the plain calls. ESPHome already carries a launch_app action,
+  /// which is what makes this reachable from an automation.
+  @visibleForTesting
+  void registerAgentAppCommands() {
+    const background = MethodChannel('kiosk_satellite/background');
+    commands.register(
+      Command(
+        name: 'launchApp',
+        description:
+            'Open another Android app by package name. Fails when the '
+            'package is not installed or has nothing launchable.',
+        params: const {'package': 'Android package, e.g. com.edde746.plezy'},
+        handler: (p) async {
+          final package = '${p['package'] ?? ''}'.trim();
+          if (package.isEmpty) {
+            return const CommandResult.fail('package required');
+          }
+          try {
+            final ok =
+                await background.invokeMethod<bool>('launchApp', {
+                  'package': package,
+                }) ??
+                false;
+            return ok
+                ? const CommandResult.ok()
+                : CommandResult.fail(
+                    '$package is not installed, or has no app to open',
+                  );
+          } on MissingPluginException {
+            return const CommandResult.fail('opening apps is Android-only');
+          } on PlatformException catch (e) {
+            return CommandResult.fail('could not open the app: $e');
+          }
+        },
+      ),
+    );
+    commands.register(
+      Command(
+        name: 'openUri',
+        description:
+            'Open a deep link or custom URI with whatever app claims it - '
+            'the precise way to start a player on a particular thing.',
+        params: const {'uri': 'URI to open, e.g. plezy://item/123'},
+        handler: (p) async {
+          final uri = '${p['uri'] ?? ''}'.trim();
+          if (uri.isEmpty) return const CommandResult.fail('uri required');
+          try {
+            final ok =
+                await background.invokeMethod<bool>('openUri', {'uri': uri}) ??
+                false;
+            return ok
+                ? const CommandResult.ok()
+                : CommandResult.fail('nothing on this device opens $uri');
+          } on MissingPluginException {
+            return const CommandResult.fail('opening a URI is Android-only');
+          } on PlatformException catch (e) {
+            return CommandResult.fail('could not open the URI: $e');
+          }
+        },
+      ),
+    );
+    // The gear key's usual mapping on a projector (remote keys).
+    commands.register(
+      Command(
+        name: 'openSystemSettings',
+        description: 'Open the Android Settings app.',
+        handler: (_) async {
+          try {
+            final ok =
+                await background.invokeMethod<bool>('openSystemSettings') ??
+                false;
+            return ok
+                ? const CommandResult.ok()
+                : const CommandResult.fail('could not open settings');
+          } on MissingPluginException {
+            return const CommandResult.fail('Android settings is Android-only');
+          } on PlatformException catch (e) {
+            return CommandResult.fail('could not open settings: $e');
+          }
+        },
+      ),
+    );
+  }
+
+  /// The managers this container will actually start, for the agent-mode
+  /// test: the list is a contract about what a device stops doing, and a
+  /// regression there is silent on a box nobody looks at.
+  @visibleForTesting
+  List<Manager> get managersForTest => _ordered;
 
   Future<void> init() async {
     await settings.init();
@@ -219,11 +484,45 @@ class AppContainer {
     // their settings; the channel also handles pushes while running.
     await ProvisioningChannel(settings, log).init();
     await device.init();
-    jsApi = JsApiManager(bus, commands, log, device.appVersion);
+    if (!agentMode) {
+      jsApi = JsApiManager(bus, commands, log, device.appVersion)
+        ..isTrustedOrigin = _isConfiguredOrigin
+        ..isTheaterFrameOrigin = _isTheaterFrameOrigin;
+      _jsApiBuilt = true;
+    }
     for (final manager in _ordered.skip(2)) {
       await manager.init();
     }
+    if (agentMode) {
+      registerAgentRestart();
+      registerAgentAppCommands();
+    }
     log.info('app', 'all managers initialized');
+  }
+
+  /// Whether [origin] is a page this kiosk was pointed at, for the JS
+  /// bridge's microphone methods: Home Assistant, the start URL, or the
+  /// loopback proxy that serves either one as a secure context. Read from
+  /// the settings on every call, so changing the URL needs no re-wiring.
+  /// Whether a frame at [origin] is the page the "Page allowed from a
+  /// frame" setting names: same scheme, host and port, nothing looser.
+  bool _isTheaterFrameOrigin(Uri origin) =>
+      isSameWebOrigin(settings.get(defs.theaterFrameUrl), origin);
+
+  bool _isConfiguredOrigin(Uri origin) {
+    bool same(String configured) {
+      final uri = Uri.tryParse(configured.trim());
+      return uri != null &&
+          uri.host.isNotEmpty &&
+          uri.scheme == origin.scheme &&
+          uri.host.toLowerCase() == origin.host.toLowerCase() &&
+          uri.port == origin.port;
+    }
+
+    final loopback = proxy.loopbackOrigin;
+    return same(settings.get(defs.haUrl)) ||
+        same(settings.get(defs.startUrl)) ||
+        (loopback != null && same(loopback));
   }
 
   Future<void> dispose() async {

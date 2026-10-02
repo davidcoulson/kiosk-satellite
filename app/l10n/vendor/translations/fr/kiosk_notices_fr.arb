@@ -1,0 +1,21 @@
+{
+  "@@locale": "fr",
+  "kioskBackClose": "Appuyez à nouveau sur retour pour fermer l'application",
+  "kioskBackAgain": "Appuyez à nouveau sur retour pour revenir en arrière",
+  "kioskHoldOn": "Mode maintien activé",
+  "kioskHoldOff": "Mode maintien désactivé",
+  "kioskHoldNotice": "La vue actuelle reste affichée jusqu'à la désactivation du mode.",
+  "kioskDownloadComplete": "Téléchargement terminé",
+  "kioskDownloadFailed": "Échec du téléchargement",
+  "kioskDownload": "Télécharger",
+  "kioskDownloading": "Téléchargement en cours",
+  "kioskOpen": "Ouvrir",
+  "kioskTip": "Astuce",
+  "kioskMenuHint": "Balayez depuis le bord gauche pour ouvrir le menu.",
+  "kioskUnknownLink": "Lien de kiosque inconnu",
+  "kioskOpenAppFailed": "Impossible d'ouvrir l'application",
+  "kioskWebViewMissing": "Android System WebView n'est pas installé",
+  "kioskWebViewMissingHelp": "Cet appareil n'a pas de fournisseur WebView, Home Assistant ne peut donc pas être affiché. Installez Android System WebView ou Chrome, puis redémarrez Kiosk Satellite.",
+  "kioskDuraSpeedBlocking": "DuraSpeed bloque le tableau de bord",
+  "kioskDuraSpeedBlockingHelp": "Le DuraSpeed de cette tablette empêche le démarrage du moteur de rendu du tableau de bord, et certaines tablettes n'offrent aucune page de réglages pour lui. Désactivez-le une fois par adb, puis redémarrez Kiosk Satellite :"
+}

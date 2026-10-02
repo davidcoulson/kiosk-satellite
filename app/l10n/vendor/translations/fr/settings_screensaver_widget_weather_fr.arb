@@ -1,0 +1,22 @@
+{
+  "@@locale": "fr",
+  "screensaverOverlayWeatherEntity": "Entité météo",
+  "screensaverOverlayNoWeather": "Aucune entité météo",
+  "screensaverOverlayNoWeatherHelp": "Home Assistant n'en a signalé aucune.",
+  "screensaverOverlayPickWeather": "Choisir une entité météo…",
+  "screensaverOverlayWeatherRequired": "Choisissez une entité météo.",
+  "screensaverOverlayLocationName": "Nom du lieu",
+  "screensaverOverlayLocationHelp": "Laissez vide pour masquer la ligne du lieu.",
+  "screensaverOverlayLocation": "Lieu",
+  "screensaverOverlayLocationDetail": "Le nom du lieu au-dessus de la température.",
+  "screensaverOverlayFeelsLike": "Ressenti",
+  "screensaverOverlayFeelsLikeHelp": "Affiche la température ressentie sur une ligne avec un libellé sous la température réelle.",
+  "screensaverOverlayFeelsLikeOnly": "Ressenti uniquement",
+  "screensaverOverlayFeelsLikeOnlyHelp": "Affiche la température ressentie avec le libellé « Ressenti » à la place de la température réelle.",
+  "screensaverOverlayForecast": "Prévisions",
+  "screensaverOverlayForecastHelp": "Les conditions météo, avec l'icône correspondante.",
+  "screensaverOverlayHumidity": "Humidité",
+  "screensaverOverlayWind": "Vitesse du vent",
+  "screensaverOverlayVisibility": "Visibilité",
+  "screensaverWeatherFeelsLikeValue": "Ressenti : {temperature}"
+}

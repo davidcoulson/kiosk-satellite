@@ -27,6 +27,11 @@
 /// proposes hands; HandLandmarker.kt judges them and counts fingers):
 ///  - fingers:         fingers (1..5): a hand showing that many
 ///
+/// One is a hardware key, caught by the accessibility service whatever app
+/// is in front (RemoteKeys.kt, RemoteKeysManager), and swallowed there:
+///  - remote_key:      keyCode (Android KeyEvent code), longPress (bool),
+///                     keyName (display only, from KeyEvent.keyCodeToString)
+///
 /// Action types (run in GesturesManager):
 ///  - plugin_action:    pluginId, command (a declared plugin command)
 ///  - navigate:         path (a dashboard view, via haNavigate)
@@ -37,6 +42,8 @@
 ///  - now_playing:      show the full-screen Now Playing view
 ///  - music_assistant:  open the Music Assistant web interface
 ///  - app_launcher:     open the app launcher overlay (issue #318)
+///  - intercom_open:    open the intercom's Call a kiosk sheet
+///  - intercom_call:    kioskId, kioskName: call that kiosk straight away
 ///  - screensaver:      start the screensaver
 ///  - screensaver_stop: stop it (redundant for touch, made for claps)
 ///  - hold_mode:        toggle hold mode (pin the current view, issue #266)
@@ -101,13 +108,17 @@ List<GestureMapping> decodeGestureMappings(String json) {
   return out;
 }
 
+/// The trigger types GestureEngine never sees: claps are heard, hands are
+/// seen, and remote keys go to the accessibility service instead.
+const _notTouch = {'claps', 'fingers', 'remote_key'};
+
 /// The flat trigger list KioskLock pushes to GestureEngine.configure.
-/// Claps and hands are not touch: they never reach the native engine.
+/// Only touch triggers reach the native engine.
 List<Map<String, Object?>> nativeGestureTriggers(
   List<GestureMapping> mappings,
 ) => [
   for (final m in mappings)
-    if (m.triggerType != 'claps' && m.triggerType != 'fingers')
+    if (!_notTouch.contains(m.triggerType))
       {
         'id': m.id,
         'type': m.triggerType,
@@ -164,9 +175,26 @@ String describeGestureTrigger(Map<String, Object?> trigger) {
       return n == 5
           ? 'Show an open hand'
           : 'Show $n finger${n == 1 ? '' : 's'}';
+    case 'remote_key':
+      final key = remoteKeyName(trigger);
+      return trigger['longPress'] == true
+          ? 'Long press the $key key'
+          : 'Press the $key key';
   }
   return 'Gesture';
 }
+
+/// A remote key's display name: the one captured with it, else its code.
+String remoteKeyName(Map<String, Object?> trigger) {
+  final name = '${trigger['keyName'] ?? ''}'.trim();
+  if (name.isNotEmpty) return name;
+  return '${(trigger['keyCode'] as num?)?.toInt() ?? '?'}';
+}
+
+/// Whether any remote key is mapped: what the editors check before warning
+/// that the accessibility service is off.
+bool hasRemoteKeyTrigger(List<GestureMapping> mappings) =>
+    mappings.any((m) => m.triggerType == 'remote_key');
 
 /// The clap counts the configured mappings listen for: what ClapDetector is
 /// armed with, and empty when no clap mapping exists (no microphone use).
@@ -204,10 +232,22 @@ String describeGestureAction(Map<String, Object?> action) {
       return 'Open Music Assistant';
     case 'app_launcher':
       return 'Open the app launcher';
+    case 'intercom_open':
+      return 'Open Call a kiosk';
+    case 'intercom_call':
+      return 'Call ${action['kioskName'] ?? action['kioskId']}';
     case 'screensaver':
       return 'Start the screensaver';
     case 'screensaver_stop':
       return 'Stop the screensaver';
+    case 'theater_toggle':
+      return 'Toggle theater mode';
+    case 'theater_on':
+      return 'Turn theater mode on';
+    case 'theater_off':
+      return 'Turn theater mode off';
+    case 'theater_peek':
+      return 'Brighten theater mode for a moment';
     case 'hold_mode':
       return 'Toggle hold mode';
     case 'ha_kiosk':

@@ -24,7 +24,15 @@ void main() {
     api = JsApiManager(EventBus(), commands, log, '1.0.0');
     await api.init();
     seen = {};
-    for (final name in ['playSound', 'setSoundVolume', 'setBrightness']) {
+    for (final name in [
+      'setVoiceTimers',
+      'setVoiceTimerAlert',
+      'voiceTimerActionFailed',
+      'playSound',
+      'setSoundVolume',
+      'setBrightness',
+      'bringToFront',
+    ]) {
       commands.register(
         Command(
           name: name,
@@ -62,6 +70,35 @@ void main() {
     },
   );
 
+  test(
+    'timer snapshots cross the public bridge with names and pause state',
+    () async {
+      await build();
+      final snapshot = {
+        'entityId': 'assist_satellite.kitchen',
+        'timers': [
+          {
+            'id': 'pasta',
+            'name': 'Pasta',
+            'totalSeconds': 30,
+            'startedAt': 1,
+            'isActive': false,
+          },
+        ],
+      };
+      expect(await api.handleCall(['setVoiceTimers', snapshot]), true);
+      expect(seen, snapshot);
+      expect(
+        await api.handleCall([
+          'setVoiceTimerAlert',
+          {...snapshot, 'muted': true},
+        ]),
+        true,
+      );
+      expect(seen['muted'], true);
+    },
+  );
+
   test('a page playSound loses its volume opinion, keeps the rest', () async {
     await build();
     await api.handleCall([
@@ -83,6 +120,12 @@ void main() {
     expect(seen['id'], 'snd1');
   });
 
+  test('page foreground requests identify a voice interaction', () async {
+    await build();
+    await api.handleCall(['bringToFront']);
+    expect(seen, {'voiceInteraction': true});
+  });
+
   test('other methods pass their params through untouched', () async {
     await build();
     await api.handleCall([
@@ -100,4 +143,81 @@ void main() {
       expect(seen['volume'], 0.5);
     },
   );
+
+  group('who may call', () {
+    late List<String> ran;
+
+    Future<void> withMicrophone() async {
+      await build();
+      ran = [];
+      for (final name in ['startAudioStream', 'pipelineOpenMic']) {
+        commands.register(
+          Command(
+            name: name,
+            description: 'test stub',
+            handler: (p) async {
+              ran.add(name);
+              return const CommandResult.ok(true);
+            },
+          ),
+        );
+      }
+      api.isTrustedOrigin = (origin) => origin.host == 'ha.local';
+    }
+
+    test(
+      'a page that is not the configured one cannot open the microphone',
+      () async {
+        await withMicrophone();
+        await api.handleCall([
+          'startAudioStream',
+          <String, Object?>{},
+        ], origin: Uri.parse('https://evil.example'));
+        await api.handleCall([
+          'pipelineOpenMic',
+          <String, Object?>{},
+        ], origin: Uri.parse('https://evil.example'));
+        expect(ran, isEmpty);
+
+        await api.handleCall([
+          'startAudioStream',
+          <String, Object?>{},
+        ], origin: Uri.parse('http://ha.local:8123'));
+        expect(ran, ['startAudioStream']);
+      },
+    );
+
+    test('a call with no origin and no page to ask is refused', () async {
+      // A missing origin must not be a way around the gate: with no
+      // WebView attached there is no page to fall back on either.
+      await withMicrophone();
+      await api.handleCall(['startAudioStream', <String, Object?>{}]);
+      expect(ran, isEmpty);
+    });
+
+    test('any dashboard may still drive the panel it is drawn on', () async {
+      // The API is documented for every page; only the microphone is
+      // reserved for the configured one.
+      await withMicrophone();
+      await api.handleCall([
+        'setBrightness',
+        {'value': 40},
+      ], origin: Uri.parse('https://evil.example'));
+      expect(seen['value'], 40);
+    });
+
+    test('a sub-frame is refused whatever it asks for', () async {
+      await withMicrophone();
+      seen = {};
+      await api.handleCall(
+        [
+          'setBrightness',
+          {'value': 40},
+        ],
+        origin: Uri.parse('http://ha.local:8123'),
+        mainFrame: false,
+      );
+      expect(seen, isEmpty);
+    });
+  });
 }

@@ -1,4 +1,4 @@
-import 'dart:async' show Timer, unawaited;
+import 'dart:async' show StreamSubscription, Timer, unawaited;
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -6,12 +6,15 @@ import 'package:flutter/widgets.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/command_registry.dart';
+import '../../core/app_locales.dart';
+import '../../l10n/generated/ui_strings.dart';
 import '../../core/events.dart';
 import '../../core/manager.dart';
 import '../files/files_manager.dart' show legacyStorage;
 import '../gestures/gesture_mappings.dart';
 import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
+import 'package:kiosk_satellite/core/lifecycle.dart';
 import '../wake_word/system_permissions.dart' show SystemPermissions;
 
 /// Lockdown: keeping the device in the app and the app on the device.
@@ -40,6 +43,12 @@ class KioskManager extends Manager with WidgetsBindingObserver {
   /// the kiosk-mode reclaim must not yank the owner out of them.
   bool menuBusy = false;
 
+  /// Whether the device itself can be restarted from here (issue #528): as
+  /// device owner through the device policy, or through a granted Shizuku
+  /// connection. Read by the drawer's Restart Device entry; refreshed by
+  /// every support ask and whenever the Shizuku connection changes.
+  final rebootSupported = ValueNotifier<bool>(false);
+
   /// The last sanctioned app launch (launcher, gesture, ESPHome). A pause
   /// right after one is the launched app coming up — the launcher's
   /// auto-return owns the way back, not the reclaim.
@@ -61,6 +70,10 @@ class KioskManager extends Manager with WidgetsBindingObserver {
   bool _installPause = false;
   Timer? _installPauseTimer;
 
+  /// The panel's logical state, mirrored from the screen manager's
+  /// announcements, for the HOME press gate in [onHomePressed].
+  bool _screenOn = true;
+
   /// A confirmation nobody answers must not leave the kiosk down forever:
   /// after this long the protections re-arm on their own.
   static const _installPauseLimit = Duration(minutes: 10);
@@ -77,6 +90,9 @@ class KioskManager extends Manager with WidgetsBindingObserver {
   static const _adminChannel = MethodChannel('kiosk_satellite/admin');
   static const _backgroundChannel = MethodChannel('kiosk_satellite/background');
   static const _brightnessChannel = MethodChannel('kiosk_satellite/brightness');
+  static const _mediaSessionsChannel = MethodChannel(
+    'kiosk_satellite/media_sessions',
+  );
 
   @override
   String get name => 'kiosk';
@@ -84,6 +100,12 @@ class KioskManager extends Manager with WidgetsBindingObserver {
   /// Whether lockdown is on — the kiosk screen swaps the drawer swipe for
   /// the exit gesture while this holds.
   bool get locked => _settings.get(defs.kioskEnabled);
+
+  StreamSubscription<SettingChanged>? _languageSubscription;
+
+  String get _lockShieldText => lookupUiStrings(
+    appLocaleForLanguage(_settings.get(defs.uiLanguage)),
+  ).lockdownScreenLocked;
 
   /// Whether Lockdown Mode holds (discussion #143): the kiosk screen keeps
   /// a touch shield over everything and the exit gesture disables the mode
@@ -129,6 +151,58 @@ class KioskManager extends Manager with WidgetsBindingObserver {
   Future<void> setNavCapture(bool capture) {
     _navCapture = capture;
     return _invoke<void>('navCapture', capture);
+  }
+
+  bool _volumeKeys = false;
+
+  /// Tell the native side whether the hardware volume keys steer the
+  /// followed media player (issue #544): the kiosk screen decides from
+  /// the setting, the player and what is on screen; lockdown overrides
+  /// it here, since under lockdown no key does anything. Kept and
+  /// re-pushed on each new Activity and on a lockdown flip.
+  Future<void> setVolumeKeys(bool active) {
+    _volumeKeys = active;
+    return _pushVolumeKeys();
+  }
+
+  Future<void> _pushVolumeKeys() =>
+      _invoke<void>('volumeKeys', _volumeKeys && !lockdownActive);
+
+  /// Which route, if any, a device restart has here (issue #528):
+  /// `{supported, route, reason}` with route `device_owner` or `shizuku`.
+  /// Owner first, since it needs nothing running; a device owner keeps the
+  /// entry whatever Shizuku does. Also refreshes [rebootSupported].
+  Future<Map<String, Object?>> rebootSupport() async {
+    var owner = false;
+    try {
+      owner =
+          await _backgroundChannel.invokeMethod<bool>('isDeviceOwner') ?? false;
+    } on PlatformException catch (_) {
+      // Not owner is the safe reading of a bridge that cannot say.
+    } on MissingPluginException catch (_) {
+      // Tests and non-Android hosts.
+    }
+    Map<String, Object?> answer;
+    if (owner) {
+      answer = const {'supported': true, 'route': 'device_owner'};
+    } else {
+      final shizuku = await commands.execute('getShizukuState', const {});
+      final granted =
+          shizuku.ok &&
+          shizuku.data is Map &&
+          (shizuku.data as Map)['granted'] == true;
+      answer = granted
+          ? const {'supported': true, 'route': 'shizuku'}
+          : const {
+              'supported': false,
+              'route': null,
+              'reason':
+                  'Restarting the device needs Kiosk Satellite provisioned '
+                  'as the device owner or a granted Shizuku connection.',
+            };
+    }
+    rebootSupported.value = answer['supported'] == true;
+    return answer;
   }
 
   @override
@@ -270,6 +344,63 @@ class KioskManager extends Manager with WidgetsBindingObserver {
       ),
     );
 
+    // A device restart, as opposed to the app restart below (issue #528).
+    // Android lets no ordinary app reboot: the device owner may through
+    // the device policy, and the shell user Shizuku runs as may set the
+    // power control property. Neither is assumed; the support ask decides
+    // and the drawer, the remote tile and the ESPHome button all read it,
+    // so a button that could only fail never shows.
+    commands.register(
+      Command(
+        name: 'getDeviceRebootSupport',
+        description:
+            'Whether the whole device can be restarted from here: as device '
+            'owner, or through a granted Shizuku connection. Answers '
+            '{supported, route, reason}.',
+        quiet: true,
+        handler: (_) async => CommandResult.ok(await rebootSupport()),
+      ),
+    );
+
+    commands.register(
+      Command(
+        name: 'rebootDevice',
+        description:
+            'Restart the whole device, not just the app. Device owner or '
+            'Shizuku only; restartApp covers every other kiosk.',
+        handler: (_) async {
+          final support = await rebootSupport();
+          if (support['supported'] != true) {
+            return CommandResult.fail('${support['reason']}');
+          }
+          final route = support['route'];
+          log.info(name, 'restarting device ($route)');
+          if (route == 'device_owner') {
+            try {
+              final answer = await _backgroundChannel
+                  .invokeMapMethod<String, Object?>('rebootDevice');
+              if (answer?['ok'] == true) return const CommandResult.ok();
+              return CommandResult.fail(
+                '${answer?['error'] ?? 'Android refused the restart'}',
+              );
+            } on PlatformException catch (e) {
+              return CommandResult.fail('restart failed: $e');
+            } on MissingPluginException {
+              return const CommandResult.fail('restart is Android-only');
+            }
+          }
+          final result = await commands.execute('runShizukuAction', {
+            'action': 'reboot',
+          });
+          return result.ok
+              ? const CommandResult.ok()
+              : CommandResult.fail(
+                  result.error ?? 'Shizuku refused the restart',
+                );
+        },
+      ),
+    );
+
     commands.register(
       Command(
         name: 'restartApp',
@@ -337,7 +468,7 @@ class KioskManager extends Manager with WidgetsBindingObserver {
               'explicit list of permissions to request (microphone, camera, '
               'notifications, batteryOptimizations, overlay, location, '
               'bluetoothScan, bluetoothConnect, writeSettings, allFiles, '
-              'usageAccess, deviceAdmin); overrides full',
+              'usageAccess, notificationAccess, deviceAdmin); overrides full',
         },
         handler: (p) async {
           const known = <String, Permission>{
@@ -455,6 +586,24 @@ class KioskManager extends Manager with WidgetsBindingObserver {
               results['usageAccess'] = false;
             }
           }
+          // "Notification access" (the Media Session player source reading
+          // other apps' sessions) is one more settings screen.
+          final askNotificationAccess =
+              which is List && which.contains('notificationAccess');
+          if (askNotificationAccess) {
+            try {
+              if (await _mediaSessionsChannel.invokeMethod<bool>('hasAccess') ==
+                  true) {
+                results['notificationAccess'] = true;
+              } else {
+                await _mediaSessionsChannel.invokeMethod('requestAccess');
+                // Only launched: the user grants (or not) on that screen.
+                results['notificationAccess'] = false;
+              }
+            } catch (_) {
+              results['notificationAccess'] = false;
+            }
+          }
           // Device admin (the real "Screen off") is an Activity, not a
           // dialog, so it goes LAST: launched earlier it would bury the
           // runtime permission prompts. Activity channel first — Samsung
@@ -519,19 +668,32 @@ class KioskManager extends Manager with WidgetsBindingObserver {
 
     bus.on<AppLaunched>().listen((_) => _appLaunchedAt = DateTime.now());
 
+    // The drawer reads rebootSupported synchronously, so the answer is
+    // kept warm: once the managers are up (Shizuku registers its commands
+    // after this one) and again on every Shizuku state report, which is
+    // how a grant made from the Device page reaches the drawer.
+    bus.on<ShizukuStateChanged>().listen((_) => unawaited(rebootSupport()));
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => unawaited(rebootSupport()),
+    );
+
     // The reclaim stands down while the panel is dark (issue #291); a
     // screen coming back on with the app still paused is where the watch
     // picks back up, and is the only signal of it: a kiosk that lost the
     // foreground while the screen was off gets no lifecycle event when
     // the panel relights.
     bus.on<ScreenStateChanged>().listen((e) {
+      _screenOn = e.on;
       if (!e.on) return;
-      if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-        return;
-      }
+      if (Lifecycle.onScreen) return;
       _armReclaim();
     });
 
+    _languageSubscription = bus.on<SettingChanged>().listen((event) {
+      if (event.key == defs.uiLanguage.key && pushFlags) {
+        unawaited(_invoke<void>('lockShieldText', {'text': _lockShieldText}));
+      }
+    });
     if (!Platform.isAndroid) return;
 
     WidgetsBinding.instance.addObserver(this);
@@ -542,6 +704,7 @@ class KioskManager extends Manager with WidgetsBindingObserver {
           // A fresh Activity starts unarmed; re-push the flags.
           await _apply();
           if (_navCapture) await _invoke<void>('navCapture', true);
+          if (_volumeKeys) await _pushVolumeKeys();
         case 'exitGesture':
           log.info(name, 'exit gesture detected');
           bus.publish(const KioskExitGesture());
@@ -558,7 +721,13 @@ class KioskManager extends Manager with WidgetsBindingObserver {
         case 'homeRoleResult':
           bus.publish(HomeRoleChanged(held: call.arguments == true));
         case 'homePressed':
-          bus.publish(const HomeKeyPressed());
+          onHomePressed();
+        case 'volumeKey':
+          bus.publish(VolumeKeyPressed(direction: '${call.arguments}'));
+        // A dpad press MainActivity handed to the dashboard: activity,
+        // like the keys and touches Flutter sees itself.
+        case 'pageKey':
+          bus.publish(const ActivityDetected(source: 'key'));
       }
       return null;
     });
@@ -568,13 +737,18 @@ class KioskManager extends Manager with WidgetsBindingObserver {
           !e.key.startsWith('gestures.') &&
           !e.key.startsWith('lockdown.') &&
           !e.key.startsWith('home.') &&
-          e.key != defs.browserCutoutMode.key) {
+          e.key != defs.browserCutoutMode.key &&
+          e.key != defs.screenOrientation.key) {
         return;
       }
       // Lockdown flips on: reclaim the foreground first, so an app opened
       // via the launcher or launchApp cannot sit above the shield.
       if (e.key == defs.lockdownEnabled.key && e.value == true) {
         unawaited(commands.execute('bringToFront', const {}));
+      }
+      // The volume key routing follows the lockdown flag.
+      if (e.key == defs.lockdownEnabled.key && _volumeKeys) {
+        await _pushVolumeKeys();
       }
       // Enabling the shield needs the draw-over-apps grant; fire the system
       // settings page the first time so the person is standing in front of
@@ -639,11 +813,14 @@ class KioskManager extends Manager with WidgetsBindingObserver {
   /// bringToFront the launcher's auto-return rides on, so it needs the
   /// same draw-over-apps grant, and it keeps retrying until it lands or
   /// the mode ends.
+  final _returned = ReturnWatch();
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    final returned = _returned.returned(state);
     if (state == AppLifecycleState.paused) {
       _armReclaim();
-    } else if (state == AppLifecycleState.resumed) {
+    } else if (returned) {
       _reclaimTimer?.cancel();
       _reclaimTimer = null;
       _repinOnResume();
@@ -690,9 +867,7 @@ class KioskManager extends Manager with WidgetsBindingObserver {
     // Armed before the install pause began (the timer rechecks): stand
     // down rather than cover the install confirmation.
     if (_installPause) return;
-    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-      return;
-    }
+    if (Lifecycle.onScreen) return;
     if (!lockdownActive) {
       if (!_kioskHomeGuard || menuBusy) return;
       // Pinned means Home is already dead system-wide: whatever paused
@@ -716,8 +891,27 @@ class KioskManager extends Manager with WidgetsBindingObserver {
     _reclaimTimer = Timer(const Duration(seconds: 5), _reclaimForeground);
   }
 
+  /// A HOME intent landed on the already-front kiosk (the kiosk holds the
+  /// HOME role, issue #219). Published as [HomeKeyPressed] so the kiosk
+  /// screen closes what is open and returns to the dashboard, unless the
+  /// screen is off: nobody presses Home on a dark panel (the press that
+  /// wakes a device is consumed by the wake), so a HOME intent then is the
+  /// system's, not a person's. A Meta Portal starts its stock dream on
+  /// every sleep and that dream launches HOME, which with the kiosk as the
+  /// home app arrived here a second after the kiosk's own screenOff; the
+  /// screensaver dismissal it triggered lit the panel again, so an
+  /// explicit screen off never held (issue #553).
+  void onHomePressed() {
+    if (!_screenOn) {
+      log.info(name, 'HOME while the screen is off: ignored');
+      return;
+    }
+    bus.publish(const HomeKeyPressed());
+  }
+
   @override
   Future<void> dispose() async {
+    await _languageSubscription?.cancel();
     if (Platform.isAndroid) WidgetsBinding.instance.removeObserver(this);
     _reclaimTimer?.cancel();
     _reclaimTimer = null;
@@ -768,6 +962,7 @@ class KioskManager extends Manager with WidgetsBindingObserver {
         _settings.get(defs.kioskEnabled) &&
         _settings.get(defs.kioskDisableHome);
     await _invoke<void>('apply', {
+      'lockShieldText': _lockShieldText,
       // Back and the bar-blink watcher are tied to the master switch, not
       // their own toggles: a kiosk the back button can background — or one
       // where the bars linger — is not locked in any useful sense.
@@ -826,6 +1021,7 @@ class KioskManager extends Manager with WidgetsBindingObserver {
       // Window layout, not lockdown: applied whatever the kiosk switch says,
       // including the force=false bundle on exit (the window keeps its shape).
       'cutout': _settings.get(defs.browserCutoutMode),
+      'orientation': _settings.get(defs.screenOrientation),
     });
   }
 

@@ -1,11 +1,13 @@
 package me.jxl.kiosk_satellite.btproxy
 
 import java.io.IOException
+import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -52,6 +54,20 @@ internal interface ScannerBackend {
     fun onScanRelease()
 }
 
+/**
+ * Home Assistant entity states the device imports, the way an ESPHome
+ * node's `homeassistant` sensors do: named once per session when Home
+ * Assistant asks, then delivered now and on every change.
+ */
+internal interface HomeAssistantStateBackend {
+    /** (entity_id, attribute) pairs to ask for; an empty attribute is the
+     *  entity's state itself. */
+    val subscriptions: List<Pair<String, String>>
+
+    /** A value for one of [subscriptions]. Any session's reader thread. */
+    fun onState(entityId: String, attribute: String, state: String)
+}
+
 internal class ApiServer(
     private val identity: ProxyIdentity,
     private val bluetoothMac: String,
@@ -81,7 +97,19 @@ internal class ApiServer(
      * same connection; null keeps the server a pure Bluetooth proxy.
      */
     private val entities: EntityHub? = null,
+    /**
+     * The voice assistant: null keeps the device a plain entity device with
+     * no Assist satellite in Home Assistant.
+     */
+    private val voice: VoiceBackend? = null,
+    /**
+     * Home Assistant states to import (the filter's IRK entity); null asks
+     * for none, which is every device without one.
+     */
+    private val homeAssistantStates: HomeAssistantStateBackend? = null,
 ) {
+    private val voiceFlags: Int = if (voice != null) VoiceFeature.KIOSK else 0
+
     private val featureFlags: Int = when {
         !bluetoothProxy -> 0
         gatt != null -> BtProxyFeature.WITH_CONNECTIONS
@@ -115,6 +143,14 @@ internal class ApiServer(
     private val sessions = CopyOnWriteArrayList<Session>()
     private val sessionSeq = AtomicInteger(0)
 
+    /**
+     * The Home Assistant session that subscribed to the voice assistant, the
+     * only one pipeline requests, audio and announce results go to. Home
+     * Assistant keeps one per device; a newer subscriber takes over, the
+     * same as ESPHome firmware does.
+     */
+    @Volatile private var voiceSession: Session? = null
+
     // Scanner state as last reported by the Android layer; replayed to every
     // new subscriber and broadcast on change.
     @Volatile private var scannerState: ScannerState = ScannerState.IDLE
@@ -146,7 +182,14 @@ internal class ApiServer(
 
     fun start() {
         if (!running.compareAndSet(false, true)) return
-        val socket = ServerSocket(port).apply { reuseAddress = true }
+        // Unbound first so SO_REUSEADDR is set before the bind. A restart
+        // closes Home Assistant's sessions from this side, which leaves
+        // them in TIME_WAIT on this port, and without the flag the new
+        // listener is refused with EADDRINUSE until they expire.
+        val socket = ServerSocket().apply {
+            reuseAddress = true
+            bind(InetSocketAddress(port))
+        }
         serverSocket = socket
         acceptThread = Thread({ acceptLoop(socket) }, "btproxy-accept").apply {
             isDaemon = true
@@ -185,6 +228,62 @@ internal class ApiServer(
     }
 
     val boundPort: Int get() = serverSocket?.localPort ?: port
+
+    /** Whether Home Assistant is subscribed to the voice assistant. */
+    fun voiceSubscribed(): Boolean = voiceSession != null
+
+    /**
+     * Ask Home Assistant to run a pipeline (start = true), or to stop the
+     * running one (start = false). False when no Home Assistant session is
+     * subscribed, so the caller can say so instead of waiting.
+     */
+    fun sendVoiceRequest(
+        start: Boolean,
+        conversationId: String = "",
+        flags: Int = 0,
+        wakeWordPhrase: String = "",
+    ): Boolean {
+        val session = voiceSession ?: return false
+        session.enqueue(Msg.VOICE_ASSISTANT_REQUEST,
+            VoiceCodec.request(start, conversationId, flags, wakeWordPhrase))
+        return true
+    }
+
+    /** One chunk of microphone audio (16 kHz mono PCM16) for the running pipeline. */
+    fun sendVoiceAudio(pcm: ByteArray, end: Boolean = false): Boolean {
+        val session = voiceSession ?: return false
+        session.enqueue(Msg.VOICE_ASSISTANT_AUDIO, VoiceCodec.audio(pcm, end))
+        return true
+    }
+
+    /**
+     * An announcement, or a spoken answer, finished playing. Home Assistant
+     * returns the satellite to idle on it and unblocks the announce action.
+     */
+    fun sendAnnounceFinished(success: Boolean): Boolean {
+        val session = voiceSession ?: return false
+        session.enqueue(Msg.VOICE_ASSISTANT_ANNOUNCE_FINISHED,
+            VoiceCodec.announceFinished(success))
+        return true
+    }
+
+    /**
+     * Fire a Home Assistant event (see ServiceCodec.event) on every session
+     * that subscribed to actions. False when none did.
+     */
+    fun fireEvent(
+        name: String,
+        data: Map<String, String>,
+        typed: Map<String, String>,
+    ): Boolean {
+        val targets = sessions.filter { it.wantsActions }
+        if (targets.isEmpty()) return false
+        val payload = ServiceCodec.event(name, data, typed)
+        for (session in targets) {
+            session.enqueue(Msg.HOMEASSISTANT_ACTION_REQUEST, payload)
+        }
+        return true
+    }
 
     fun hasAdvertisementSubscribers(): Boolean = sessions.any { it.wantsAdvertisements }
 
@@ -318,32 +417,18 @@ internal class ApiServer(
     }
 
     /**
-     * A fresh frame from the capture side for the camera [objectId]: chunked to every session
-     * with an outstanding image request (16KB chunks stay far under the
-     * Noise transport's 65535-byte frame ceiling), done flag on the last.
+     * A fresh frame for sessions with an outstanding image request.
+     * Each writer chunks its image as the connection drains so a large
+     * capture cannot fill the queue used for states and control messages.
      */
     fun publishCameraImage(objectId: String, jpeg: ByteArray) {
         val cameraKey = entities?.cameraFor(objectId)?.key ?: return
-        val waiting = sessions.filter { it.takeCameraRequest(cameraKey) }
-        if (waiting.isEmpty()) return
-        val chunks = ArrayList<Pair<ByteArray, Boolean>>()
-        var offset = 0
-        while (offset < jpeg.size) {
-            val end = minOf(offset + 16_384, jpeg.size)
-            chunks.add(jpeg.copyOfRange(offset, end) to (end == jpeg.size))
-            offset = end
-        }
-        if (chunks.isEmpty()) chunks.add(ByteArray(0) to true)
-        for (session in waiting) {
-            for ((data, done) in chunks) {
-                val w = ProtoWriter()
-                w.fixed32(1, cameraKey)
-                w.bytes(2, data)
-                w.bool(3, done)
-                session.enqueue(Msg.CAMERA_IMAGE_RESPONSE, w.toByteArray())
-            }
+        for (session in sessions) {
+            session.enqueueCameraImage(cameraKey, jpeg)
         }
     }
+
+    private class CameraTransfer(val jpeg: ByteArray, var offset: Int = 0)
 
     /** Android layer reports scanner lifecycle; broadcast to subscribers. */
     fun reportScannerState(state: ScannerState, mode: ScannerMode) {
@@ -492,25 +577,53 @@ internal class ApiServer(
             private set
         @Volatile var wantsConnectionsFree = false
         @Volatile var wantsStates = false
+        /** Home Assistant takes actions and events from this session. */
+        @Volatile var wantsActions = false
         /**
          * Camera keys with a CameraImageRequest outstanding. The request
          * names no camera, so one request pends every listed camera; each
          * key clears as its frame ships.
          */
         private val pendingCameraKeys = HashSet<Int>()
+        // At most one image per camera. Never replace a partial image:
+        // the receiver joins chunks until it sees the final flag.
+        private val cameraTransfers = LinkedHashMap<Int, CameraTransfer>()
 
         fun requestCameraFrames(keys: Collection<Int>) {
             synchronized(pendingCameraKeys) { pendingCameraKeys.addAll(keys) }
         }
 
-        /** True, once, while a frame for [key] is owed to this session. */
-        fun takeCameraRequest(key: Int): Boolean =
-            synchronized(pendingCameraKeys) { pendingCameraKeys.remove(key) }
+        fun enqueueCameraImage(key: Int, jpeg: ByteArray) {
+            synchronized(pendingCameraKeys) {
+                if (closed.get() || !pendingCameraKeys.remove(key)) return
+                if (!cameraTransfers.containsKey(key)) {
+                    cameraTransfers[key] = CameraTransfer(jpeg)
+                    writerWake.release()
+                }
+            }
+        }
+
+        private fun nextCameraChunk(): ByteArray? = synchronized(pendingCameraKeys) {
+            val key = cameraTransfers.keys.firstOrNull() ?: return@synchronized null
+            val transfer = cameraTransfers.remove(key)!!
+            val end = minOf(transfer.offset + 16_384, transfer.jpeg.size)
+            val done = end == transfer.jpeg.size
+            val payload = ProtoWriter().apply {
+                fixed32(1, key)
+                bytes(2, transfer.jpeg.copyOfRange(transfer.offset, end))
+                bool(3, done)
+            }.toByteArray()
+            transfer.offset = end
+            // Rotate cameras so a large photo does not hold up a screenshot.
+            if (!done) cameraTransfers[key] = transfer
+            payload
+        }
         @Volatile var handshaken = false
         @Volatile var lastInboundAt = clock()
         @Volatile var lastPingSentAt = 0L
         private val closed = AtomicBoolean(false)
         private val writeQueue = ArrayBlockingQueue<Pair<Int, ByteArray>>(WRITE_QUEUE_FRAMES)
+        private val writerWake = Semaphore(0)
         private var transport: ApiTransport? = null
         private var writerThread: Thread? = null
         private val peer: String = socket.inetAddress?.hostAddress ?: "?"
@@ -528,6 +641,8 @@ internal class ApiServer(
                 // The peer stopped draining; treat as dead rather than block.
                 log("session #$id ($peer) write queue full, closing")
                 close("write queue overflow")
+            } else {
+                writerWake.release()
             }
         }
 
@@ -535,7 +650,15 @@ internal class ApiServer(
             if (!closed.compareAndSet(false, true)) return
             runCatching { socket.close() }
             writerThread?.interrupt()
+            synchronized(pendingCameraKeys) {
+                pendingCameraKeys.clear()
+                cameraTransfers.clear()
+            }
             sessions.remove(this)
+            if (voiceSession === this) {
+                voiceSession = null
+                voice?.onSubscribed(false)
+            }
             if (wantsAdvertisements) {
                 wantsAdvertisements = false
                 updateScanDemand()
@@ -669,11 +792,15 @@ internal class ApiServer(
         private fun writerLoop(t: ApiTransport) {
             try {
                 while (!closed.get()) {
-                    val (type, payload) = writeQueue.poll(1, TimeUnit.SECONDS) ?: continue
-                    t.writeFrame(type, payload)
+                    writerWake.drainPermits()
+                    val frame = writeQueue.poll()
+                    if (frame != null) t.writeFrame(frame.first, frame.second)
+                    val camera = nextCameraChunk()
+                    if (camera != null) t.writeFrame(Msg.CAMERA_IMAGE_RESPONSE, camera)
+                    if (frame == null && camera == null) writerWake.acquire()
                 }
             } catch (_: InterruptedException) {
-                // close() interrupting a blocked poll; done.
+                // close() interrupting the idle writer.
             } catch (e: Exception) {
                 close("write failed: ${e.message}")
             }
@@ -700,7 +827,8 @@ internal class ApiServer(
                     Msg.PING_RESPONSE -> Unit // lastInboundAt already refreshed
                     Msg.DEVICE_INFO_REQUEST ->
                         enqueue(Msg.DEVICE_INFO_RESPONSE,
-                            ApiCodec.deviceInfoResponse(identity, bluetoothMac, featureFlags))
+                            ApiCodec.deviceInfoResponse(
+                                identity, bluetoothMac, featureFlags, voiceFlags))
                     Msg.LIST_ENTITIES_REQUEST -> {
                         val hub = entities
                         if (hub != null) {
@@ -791,6 +919,11 @@ internal class ApiServer(
                         } else {
                             scannerMode = requested
                             if (hasAdvertisementSubscribers()) backend.onScanDemand(requested)
+                            // A running scanner takes the new mode without a
+                            // restart, so the engine reports nothing. Answer
+                            // like ESPHome does, or HA shows "passive" through
+                            // every Auto mode active window.
+                            reportScannerState(scannerState, requested)
                         }
                     }
                     Msg.SUBSCRIBE_STATES_REQUEST -> {
@@ -835,13 +968,71 @@ internal class ApiServer(
                             hub.requestCameraImage()
                         }
                     }
-                    // Required-ack subscriptions with nothing behind them:
-                    // this device streams no logs and calls nothing back on
-                    // Home Assistant (its own actions are served above, in
-                    // the entity listing).
-                    Msg.SUBSCRIBE_LOGS_REQUEST,
-                    Msg.SUBSCRIBE_HOMEASSISTANT_SERVICES_REQUEST,
-                    Msg.SUBSCRIBE_HOME_ASSISTANT_STATES_REQUEST -> Unit
+                    Msg.SUBSCRIBE_VOICE_ASSISTANT_REQUEST -> {
+                        val backend = voice
+                        if (backend != null) {
+                            val (subscribe, _) = VoiceCodec.parseSubscribe(frame.payload)
+                            if (subscribe) {
+                                voiceSession = this
+                                log("session #$id subscribed to the voice assistant")
+                                backend.onSubscribed(true)
+                            } else if (voiceSession === this) {
+                                voiceSession = null
+                                log("session #$id unsubscribed from the voice assistant")
+                                backend.onSubscribed(false)
+                            }
+                        }
+                    }
+                    Msg.VOICE_ASSISTANT_RESPONSE -> {
+                        val (port, error) = VoiceCodec.parseResponse(frame.payload)
+                        voice?.onPipelineResponse(port, error)
+                    }
+                    Msg.VOICE_ASSISTANT_EVENT_RESPONSE -> {
+                        val (type, data) = VoiceCodec.parseEvent(frame.payload)
+                        voice?.onEvent(type, data)
+                    }
+                    // Speaker audio: never sent, the kiosk does not claim
+                    // the speaker feature and plays URLs instead.
+                    Msg.VOICE_ASSISTANT_AUDIO -> Unit
+                    Msg.VOICE_ASSISTANT_TIMER_EVENT_RESPONSE ->
+                        voice?.onTimerEvent(VoiceCodec.parseTimerEvent(frame.payload))
+                    Msg.VOICE_ASSISTANT_ANNOUNCE_REQUEST ->
+                        voice?.onAnnounce(VoiceCodec.parseAnnounce(frame.payload))
+                    Msg.VOICE_ASSISTANT_CONFIGURATION_REQUEST -> {
+                        val backend = voice
+                        if (backend != null) {
+                            val external = VoiceCodec.parseConfigurationRequest(frame.payload)
+                            // Answered whenever the Dart side is done, on the
+                            // session that asked.
+                            backend.onConfigurationRequest(external) { config ->
+                                enqueue(Msg.VOICE_ASSISTANT_CONFIGURATION_RESPONSE,
+                                    VoiceCodec.configurationResponse(config))
+                            }
+                        }
+                    }
+                    Msg.VOICE_ASSISTANT_SET_CONFIGURATION ->
+                        voice?.onSetConfiguration(
+                            VoiceCodec.parseSetConfiguration(frame.payload))
+                    Msg.SUBSCRIBE_HOME_ASSISTANT_STATES_REQUEST -> {
+                        // Home Assistant asks every session what to send;
+                        // naming nothing is the plain ack it always was.
+                        homeAssistantStates?.subscriptions?.forEach { (entityId, attribute) ->
+                            enqueue(Msg.SUBSCRIBE_HOME_ASSISTANT_STATE_RESPONSE,
+                                ApiCodec.subscribeHomeAssistantState(entityId, attribute))
+                        }
+                    }
+                    Msg.HOME_ASSISTANT_STATE_RESPONSE -> {
+                        val backend = homeAssistantStates
+                        if (backend != null) {
+                            val value = ApiCodec.parseHomeAssistantState(frame.payload)
+                            backend.onState(value.entityId, value.attribute, value.state)
+                        }
+                    }
+                    // The channel the timer and alarm events go out on.
+                    Msg.SUBSCRIBE_HOMEASSISTANT_SERVICES_REQUEST -> wantsActions = true
+                    // A required-ack subscription with nothing behind it:
+                    // this device streams no logs.
+                    Msg.SUBSCRIBE_LOGS_REQUEST -> Unit
                     else -> Unit // unknown type: HA is newer than us; skip
                 }
             } catch (e: ProtoException) {

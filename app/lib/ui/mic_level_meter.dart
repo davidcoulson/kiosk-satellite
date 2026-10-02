@@ -3,7 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../app_container.dart';
+import '../l10n/messages.dart';
+import '../managers/audio/mic_level_monitor.dart';
 
 /// RMS (0..1) to a meter fraction on a dB scale, -60 dBFS to -6 dBFS.
 ///
@@ -33,22 +34,19 @@ const micMeterSegments = 24;
 const _greenUpTo = 15; // fraction 0.625 ~= -26 dBFS ~= 0.05 RMS
 const _amberUpTo = 20; // fraction 0.833 ~= -15 dBFS
 
-/// Live microphone level row for the Microphone settings card. Rides the
-/// engine's telemetry feed in meter mode (reference counted, so it
-/// coexists with an open tester), which also means it only moves while the
-/// engine is listening - exactly when the gain above it matters. Meter
-/// mode, never tester mode: detections keep firing while it is visible.
+/// Live microphone level row for the Microphone settings card. Reads the
+/// shared capture through [MicLevelMonitor], so it moves whether or not a
+/// wake word engine is running, and detections keep firing while it is
+/// visible.
 class MicLevelTile extends StatefulWidget {
-  const MicLevelTile({super.key, required this.container});
-
-  final AppContainer container;
+  const MicLevelTile({super.key});
 
   @override
   State<MicLevelTile> createState() => _MicLevelTileState();
 }
 
 class _MicLevelTileState extends State<MicLevelTile> {
-  StreamSubscription<Map<String, Object?>>? _sub;
+  StreamSubscription<double>? _sub;
   Timer? _staleness;
   final _rms = ValueNotifier<double>(0);
   int _lastSampleMs = 0;
@@ -56,13 +54,15 @@ class _MicLevelTileState extends State<MicLevelTile> {
   @override
   void initState() {
     super.initState();
-    widget.container.wakeWord.startMeter();
-    _sub = widget.container.wakeWord.telemetry.listen((m) {
+    final monitor = MicLevelMonitor.instance;
+    _sub = monitor.levels.listen((rms) {
       _lastSampleMs = DateTime.now().millisecondsSinceEpoch;
-      _rms.value = (m['rms'] as num?)?.toDouble() ?? 0;
+      _rms.value = rms;
     });
-    // Telemetry stops when detection pauses (a voice turn) or the engine
-    // drops; decay to dark instead of freezing on the last value.
+    monitor.start();
+    // Levels stop when the capture closes (the page takes the microphone,
+    // a setting change reopens it); decay to dark instead of freezing on
+    // the last value.
     _staleness = Timer.periodic(const Duration(milliseconds: 250), (_) {
       if (_rms.value > 0 &&
           DateTime.now().millisecondsSinceEpoch - _lastSampleMs > 500) {
@@ -75,7 +75,7 @@ class _MicLevelTileState extends State<MicLevelTile> {
   void dispose() {
     _staleness?.cancel();
     _sub?.cancel();
-    widget.container.wakeWord.stopMeter();
+    MicLevelMonitor.instance.stop();
     _rms.dispose();
     super.dispose();
   }
@@ -85,12 +85,15 @@ class _MicLevelTileState extends State<MicLevelTile> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const ListTile(
-          leading: Icon(Icons.graphic_eq),
-          title: Text('Microphone level'),
+        ListTile(
+          leading: const Icon(Icons.graphic_eq),
+          title: Text(screenAudioText(context, 'Microphone level')),
           subtitle: Text(
-            'Speak from where you use the device; adjust the gain until '
-            'normal speech tops out around the end of the green.',
+            screenAudioText(
+              context,
+              'Speak from where you use the device; adjust the gain until '
+              'normal speech tops out around the end of the green.',
+            ),
           ),
         ),
         Padding(
@@ -105,10 +108,9 @@ class _MicLevelTileState extends State<MicLevelTile> {
                     child: CustomPaint(
                       painter: _SegmentBarPainter(
                         level: micLevelFraction(rms),
-                        offColor: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.12),
+                        offColor: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.12),
                       ),
                     ),
                   ),
@@ -121,8 +123,8 @@ class _MicLevelTileState extends State<MicLevelTile> {
                     micLevelLabel(rms),
                     textAlign: TextAlign.right,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
               ],
@@ -147,18 +149,17 @@ class _SegmentBarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     const gap = 3.0;
-    final segW =
-        (size.width - gap * (micMeterSegments - 1)) / micMeterSegments;
+    final segW = (size.width - gap * (micMeterSegments - 1)) / micMeterSegments;
     final lit = (level * micMeterSegments).round();
     final paint = Paint();
     for (var i = 0; i < micMeterSegments; i++) {
       paint.color = i >= lit
           ? offColor
           : i < _greenUpTo
-              ? _green
-              : i < _amberUpTo
-                  ? _amber
-                  : _red;
+          ? _green
+          : i < _amberUpTo
+          ? _amber
+          : _red;
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromLTWH(i * (segW + gap), 0, segW, size.height),

@@ -6,7 +6,7 @@ import 'package:kiosk_satellite/ui/settings_search.dart';
 /// The pages the device settings screen registers, category → (title,
 /// subtitle), matching _categories in settings_screen.dart.
 const _pages = <(String, String, String)>[
-  ('Home Assistant', 'Home Assistant Setup', 'Connection, dashboard'),
+  ('Home Assistant', 'Home Assistant', 'Connection, dashboard'),
   ('Voice Satellite', 'Voice Satellite', 'Wake word'),
   ('Screen & Audio', 'Screen & Audio', 'Brightness, volume'),
   ('Browser', 'Web Browsing', 'Cache, SSL'),
@@ -22,6 +22,37 @@ List<String> get _order => [for (final p in _pages) p.$1];
 
 void main() {
   final index = buildSettingsSearchIndex(_pages);
+
+  test(
+    'translated media and intercom search entries retain English aliases and destinations',
+    () {
+      final entries = buildSettingsSearchIndex(
+        [..._pages, ('Intercom', 'Intercom', '')],
+        mediaTextFor: (text) => text == 'Speakers' ? 'Altavoces' : text,
+        intercomTextFor: (text) => text == 'Kiosks' ? 'Kioskos' : text,
+      );
+      final speakers = searchSettings('Altavoces', entries, [
+        ..._order,
+        'Intercom',
+      ]).single;
+      expect(speakers.anchorId, 'x:sonos_speakers');
+      expect(speakers.subpage, 'Sonos');
+      expect(
+        searchSettings(
+          'Speakers',
+          entries,
+          _order,
+        ).any((entry) => entry.anchorId == speakers.anchorId),
+        isTrue,
+      );
+      final kiosks = searchSettings('Kioskos', entries, [
+        ..._order,
+        'Intercom',
+      ]).single;
+      expect(kiosks.category, 'Intercom');
+      expect(kiosks.englishAlias, contains('Kiosks'));
+    },
+  );
 
   group('buildSettingsSearchIndex', () {
     test('carries every non-hidden definition of a registered category', () {

@@ -70,6 +70,38 @@ class BrightnessChanged extends AppEvent {
   Map<String, Object?> toJson() => {'level': level, 'panel': panel};
 }
 
+// ── Theater mode ───────────────────────────────────────────────────────
+
+/// Theater mode turned on or off, or moved between its phases (see
+/// TheaterManager). The page hears it as `kiosksatellite:theatermode`; the
+/// screensaver, adaptive brightness and the wake word stand down on it.
+class TheaterModeChanged extends AppEvent {
+  const TheaterModeChanged({
+    required this.active,
+    required this.phase,
+    required this.source,
+  });
+
+  final bool active;
+
+  /// 'off', 'dim', 'peek' or 'black'.
+  final String phase;
+
+  /// Who caused it: 'page', 'ha', 'remote', 'link', 'timeout' or
+  /// 'navigation'.
+  final String source;
+
+  @override
+  String get wireName => 'theatermode';
+
+  @override
+  Map<String, Object?> toJson() => {
+    'active': active,
+    'phase': phase,
+    'source': source,
+  };
+}
+
 // ── Screensaver ────────────────────────────────────────────────────────
 
 class ScreensaverStateChanged extends AppEvent {
@@ -87,8 +119,13 @@ class ScreensaverStateChanged extends AppEvent {
 /// Next screensaver sensor rides it, as a single timestamp Home Assistant
 /// can trigger on rather than a seconds counter churning the recorder.
 class ScreensaverCountdownChanged extends AppEvent {
-  const ScreensaverCountdownChanged({required this.due});
+  const ScreensaverCountdownChanged({required this.due, this.mode});
   final DateTime? due;
+
+  /// The mode the idle clock will start at [due], schedule included, so a
+  /// screensaver that can get ready ahead of time knows whether it is the
+  /// one due. Null with a null [due].
+  final String? mode;
 }
 
 /// The motion policy the active screensaver schedule entry imposes (issue
@@ -121,11 +158,32 @@ class ScreensaverMotionPolicyChanged extends AppEvent {
 /// it). Internal: the browser's rendering freeze keys off whether an overlay
 /// actually covers the dashboard — Dim leaves the page visible, so hiding
 /// its WebView would blank the screen (issue #82).
+/// The dashboard's camera streams were held paused, or released, by
+/// something outside the screensaver -- a presence sensor, through Home
+/// Assistant.
+class DashboardCamerasHoldChanged extends AppEvent {
+  const DashboardCamerasHoldChanged({required this.held});
+
+  /// True while the streams are held paused from outside.
+  final bool held;
+}
+
 class ScreensaverViewChanged extends AppEvent {
   const ScreensaverViewChanged({required this.view});
 
   /// Same values as ScreensaverManager.activeView; null when no overlay.
   final String? view;
+}
+
+/// A full screen view came up or went: the Now Playing view in the
+/// screensaver slot (`nowPlaying`) or the intercom's roster or call screen
+/// (`intercom`). Internal: the remote admin labels its screenshot by it and
+/// takes a fresh one.
+class FullscreenViewChanged extends AppEvent {
+  const FullscreenViewChanged({required this.view, required this.shown});
+
+  final String view;
+  final bool shown;
 }
 
 /// A slideshow screensaver swapped to its next slide. Internal: the motion
@@ -318,6 +376,22 @@ class SoundLevel extends AppEvent {
   Map<String, Object?> toJson() => {'id': id, 'level': level};
 }
 
+/// Where a native sound's playback is, from the player about four times a
+/// second while it plays. Internal: the voice overlay paces a long answer's
+/// scroll to it.
+class SoundProgress extends AppEvent {
+  const SoundProgress({
+    required this.id,
+    required this.position,
+    this.duration,
+  });
+  final String id;
+  final Duration position;
+
+  /// Null while it is unknown, as for a stream still arriving.
+  final Duration? duration;
+}
+
 /// A native sound (playSound) finished, failed, or was stopped. Wire event
 /// so the page can await completion of audio it handed over.
 class SoundEnded extends AppEvent {
@@ -335,6 +409,18 @@ class SoundEnded extends AppEvent {
   };
 }
 
+/// The durations of the sounds selected on this kiosk, in seconds.
+class VoiceChimesChanged extends AppEvent {
+  const VoiceChimesChanged(this.durations);
+  final Map<String, double> durations;
+
+  @override
+  String get wireName => 'voice-chimes-changed';
+
+  @override
+  Map<String, Object?> toJson() => durations;
+}
+
 /// Any user/motion/page activity that should reset the idle timer.
 class ActivityDetected extends AppEvent {
   const ActivityDetected({required this.source});
@@ -342,7 +428,9 @@ class ActivityDetected extends AppEvent {
 }
 
 /// The owner whose interactions end together when it is replaced.
-enum InteractionSource { page, sendspin, command }
+/// Who reported an interaction: the dashboard page (the Voice Satellite
+/// integration), Sendspin, a command, or the native voice satellite.
+enum InteractionSource { page, sendspin, command, native }
 
 /// A voice interaction is in progress (or has ended). Driven by Voice
 /// Satellite, which brackets every turn — wake, listen, respond, speak — by
@@ -365,6 +453,63 @@ class VoiceInteractionChanged extends AppEvent {
   /// Consumers may specialize on it; absence must always behave like the
   /// plain event.
   final String reason;
+}
+
+// ── Alarms ─────────────────────────────────────────────────────────────
+
+/// The alarms or their ringing state changed: an alarm added, edited or
+/// removed, a sunrise starting, a ring, a snooze, a stop. Carries the whole
+/// `alarmsStatus` shape so the remote admin redraws from the event alone.
+class AlarmStateChanged extends AppEvent {
+  const AlarmStateChanged(this.status);
+  final Map<String, Object?> status;
+
+  @override
+  String get wireName => 'alarms';
+
+  @override
+  Map<String, Object?> toJson() => status;
+}
+
+// ── Intercom ───────────────────────────────────────────────────────────
+
+/// The intercom's state changed: a call placed, ringing, answered, ended,
+/// a broadcast coming in, the roster of kiosks moved. Carries the whole
+/// `intercomStatus` shape so the remote admin redraws from the event
+/// alone; both UIs draw the same thing.
+class IntercomStateChanged extends AppEvent {
+  const IntercomStateChanged(this.status);
+  final Map<String, Object?> status;
+
+  @override
+  String get wireName => 'intercom';
+
+  @override
+  Map<String, Object?> toJson() => status;
+}
+
+/// The intercom wants the microphone the page holds, or is done with it.
+/// A page that captures the microphone itself, such as Voice Satellite
+/// streaming to Home Assistant for its wake word, lets go for the call
+/// and brings its capture back after.
+class IntercomMicHold extends AppEvent {
+  const IntercomMicHold({required this.hold});
+  final bool hold;
+
+  @override
+  String get wireName => 'intercom-mic';
+
+  @override
+  Map<String, Object?> toJson() => {'hold': hold};
+}
+
+/// Voice levels during a call, for the card's meter: this kiosk's
+/// microphone and the other side's voice, 0..1. At most fifteen a second
+/// and never on the admin socket (no wireName), like the mic level.
+class IntercomLevel extends AppEvent {
+  const IntercomLevel({required this.near, required this.far});
+  final double near;
+  final double far;
 }
 
 // ── Motion ─────────────────────────────────────────────────────────────
@@ -438,6 +583,17 @@ class PersonSensorChanged extends AppEvent {
 /// [held] is false for the far-to-near flip and true for the repeats,
 /// the same split as [PersonDetected]: Dismiss on proximity acts on the
 /// approach, Postpone on proximity on the whole stay.
+/// The proximity sensor's near/far state, for the Home Assistant entity.
+///
+/// Separate from [ProximityDetected], which is an approach: the screensaver
+/// wants "someone arrived", an entity wants "someone is there", and the
+/// second has to fall back to false on its own after a quiet spell.
+class ProximityStateChanged extends AppEvent {
+  const ProximityStateChanged({required this.near});
+
+  final bool near;
+}
+
 class ProximityDetected extends AppEvent {
   const ProximityDetected({this.held = false});
 
@@ -456,9 +612,12 @@ class ProximityDetected extends AppEvent {
 /// one; [hands] is 0 once the hand has gone. Internal only: the gestures
 /// manager turns it into a [GestureDetected].
 class PalmDetected extends AppEvent {
-  const PalmDetected({required this.hands, this.fingers});
+  const PalmDetected({required this.hands, this.fingers, this.fingersUp});
   final int hands;
   final int? fingers;
+
+  /// Which digits are up, thumb first then index to pinky, when judged.
+  final List<bool>? fingersUp;
 }
 
 // ── Device camera ──────────────────────────────────────────────────────
@@ -663,6 +822,25 @@ class CameraConfigurationChanged extends AppEvent {
   const CameraConfigurationChanged();
 }
 
+/// Native Voice Satellite's overlay came up or went away. The screensaver
+/// holds its idle countdown while the overlay shows an answer or results,
+/// which linger after the turn itself has ended.
+class AssistOverlayVisibility extends AppEvent {
+  const AssistOverlayVisibility(this.visible, {bool? covers, bool? pauses})
+    : covers = covers ?? visible,
+      pauses = pauses ?? visible;
+  final bool visible;
+
+  /// It covers the screen (full screen). Docked, it is a bubble over the
+  /// screen, which shows around it.
+  final bool covers;
+
+  /// What is under it stops rendering: the dashboard, a camera view and an
+  /// expensive screensaver hold their last frame. Under both modes, until
+  /// a touch outside the docked bubble wakes them for the rest of it.
+  final bool pauses;
+}
+
 class CameraViewStateChanged extends AppEvent {
   const CameraViewStateChanged({
     required this.viewId,
@@ -730,11 +908,42 @@ class HomeKeyPressed extends AppEvent {
   const HomeKeyPressed();
 }
 
+/// A hardware volume key pressed while the native side routes them to
+/// the followed media player (issue #544): [direction] is 'up', 'down'
+/// or 'mute'. Held keys repeat.
+class VolumeKeyPressed extends AppEvent {
+  const VolumeKeyPressed({required this.direction});
+  final String direction;
+}
+
 // ── Gestures (issue #99) ───────────────────────────────────────────────
 
 /// A configured hidden gesture was detected natively. [id] is the mapping
 /// id from gestures.mappings; the gestures manager resolves and runs the
 /// mapped action.
+/// A remote key was pressed, while reporting keys (Home Assistant's Remote
+/// key event) or the home-app guard wants to know the remote is in use.
+/// [type] is the event type Home Assistant sees ('home', 'dpad_up').
+class RemoteKeyReported extends AppEvent {
+  const RemoteKeyReported({required this.keyCode, required this.type});
+  final int keyCode;
+  final String type;
+}
+
+/// What plays on the device changed (another app's media session).
+/// [snapshot] carries state, package, app, title, artist, album.
+class NowPlayingChanged extends AppEvent {
+  const NowPlayingChanged(this.snapshot);
+  final Map<String, Object?> snapshot;
+}
+
+/// The accessibility keeper put something back that firmware took away.
+/// [record] is the running total: {count, last (epoch ms), what}.
+class SelfRepaired extends AppEvent {
+  const SelfRepaired(this.record);
+  final Map<String, Object?> record;
+}
+
 class GestureDetected extends AppEvent {
   const GestureDetected({required this.id});
   final String id;
@@ -768,6 +977,14 @@ class SendspinNowPlayingChanged extends AppEvent {
   const SendspinNowPlayingChanged({required this.active, this.playing = false});
   final bool active;
   final bool playing;
+}
+
+/// The followed player's state, title, artist or source moved (issue
+/// #741): what the ESPHome media sensors show. Published only on a real
+/// change, never for a position tick.
+class MediaSummaryChanged extends AppEvent {
+  const MediaSummaryChanged(this.summary);
+  final Map<String, String> summary;
 }
 
 /// Someone asked for the floating player card right now (the "Show the
@@ -807,6 +1024,12 @@ class SettingChanged extends AppEvent {
   final Object? previous;
 }
 
+/// Available choices changed without a settings write.
+class SettingOptionsChanged extends AppEvent {
+  const SettingOptionsChanged(this.key);
+  final String key;
+}
+
 /// Internal plugin entity changes. These do not enter dashboard JavaScript.
 class PluginEntityCatalogChanged extends AppEvent {
   const PluginEntityCatalogChanged();
@@ -824,4 +1047,77 @@ class PluginHaStateChanged extends AppEvent {
   final String owner;
   final String entityId;
   final Map<String, Object?> data;
+}
+
+/// The Shizuku connection reported a new state (issue #528). [granted] is
+/// whether Kiosk Satellite may run commands through it right now; the
+/// Restart device entry, tile and ESPHome button follow it on a device
+/// that is not the owner.
+class ShizukuStateChanged extends AppEvent {
+  const ShizukuStateChanged({required this.granted});
+  final bool granted;
+}
+
+/// The device has no WebView provider at all, so no dashboard can ever
+/// come up: the kiosk screen swaps the WebView slot for a notice and the
+/// frame watchdog stands down instead of restarting the process forever.
+/// Internal.
+class WebViewMissing extends AppEvent {
+  const WebViewMissing();
+}
+
+/// A manager has new diagnostic state for subscribed remote viewers.
+/// The topic contains no settings or sensor payload.
+class RemoteStatusChanged extends AppEvent {
+  const RemoteStatusChanged(this.topic);
+  final String topic;
+}
+
+/// The union of topics currently requested by remote viewers.
+class RemoteObserversChanged extends AppEvent {
+  const RemoteObserversChanged(this.topics);
+  final Set<String> topics;
+}
+
+/// The dashboard document was replaced or detached.
+class VoiceTimersCleared extends AppEvent {
+  const VoiceTimersCleared();
+}
+
+/// An event for Home Assistant to fire on its bus, sent over the ESPHome
+/// API while that server runs. [name] goes out under `esphome.`, the only
+/// namespace Home Assistant fires device events in. Strings stay strings;
+/// numbers, booleans, lists and nulls arrive in Home Assistant as their
+/// own types.
+class HaEventRequested extends AppEvent {
+  const HaEventRequested(this.name, this.data);
+  final String name;
+  final Map<String, Object?> data;
+}
+
+/// A gesture on a native timer pill, routed to its owning integration.
+class VoiceTimerAction extends AppEvent {
+  const VoiceTimerAction({
+    required this.entityId,
+    required this.id,
+    required this.action,
+  });
+  final String entityId;
+  final String id;
+  final String action;
+
+  @override
+  String get wireName => 'timer-action';
+
+  @override
+  Map<String, Object?> toJson() => {
+    'entityId': entityId,
+    'id': id,
+    'action': action,
+  };
+}
+
+/// The device certificate was replaced or renewed.
+class TlsIdentityChanged extends AppEvent {
+  const TlsIdentityChanged();
 }

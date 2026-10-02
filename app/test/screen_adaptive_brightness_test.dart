@@ -4,6 +4,8 @@ import 'package:kiosk_satellite/core/command_registry.dart';
 import 'package:kiosk_satellite/core/event_bus.dart';
 import 'package:kiosk_satellite/core/events.dart';
 import 'package:kiosk_satellite/core/logging.dart';
+import 'package:kiosk_satellite/managers/btproxy/esp_entities.dart';
+import 'package:kiosk_satellite/managers/screen/adaptive_brightness.dart';
 import 'package:kiosk_satellite/managers/screen/screen_manager.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
 import 'package:kiosk_satellite/managers/settings/settings_manager.dart';
@@ -217,6 +219,21 @@ void main() {
     expect(await knob(), closeTo(0.3, 0.001));
   });
 
+  test(
+    'ESPHome can save zero brightness and write zero to the panel',
+    () async {
+      await build({});
+      final surface = EspEntitySurface(bus, commands, Logger(), settings);
+      await surface.handleService('set_brightness', {'brightness': 0});
+      await settle();
+      expect(settings.get(defs.defaultBrightness), 0.0);
+      expect(writes.last, 0.0);
+      expect(await knob(), 0.0);
+      expect(published.last.level, 0.0);
+      expect(published.last.panel, 0.0);
+    },
+  );
+
   test('a knob turned under a screensaver that leaves brightness alone '
       'lands at once', () async {
     await build({});
@@ -255,6 +272,29 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     expect(await ceiling(), 0.4);
     expect(writes.last, closeTo(0.2, 0.001));
+  });
+
+  test('a screensaver that dims before announcing itself owns the panel '
+      '(issue #569)', () async {
+    // start() applies the visuals, then publishes: the black mode's dim
+    // reaches the screen manager before ScreensaverStateChanged does.
+    await build({});
+    await commands.execute('setBrightness', {'level': 0.0, 'ceiling': true});
+    await settle();
+    expect(writes.last, 0.0);
+    bus.publish(const ScreensaverStateChanged(active: true));
+    await settle();
+    // The slider moved from the remote admin while the screensaver shows.
+    await commands.execute('setBrightness', {'level': 0.5});
+    await settle();
+    expect(settings.get(defs.defaultBrightness), 0.5);
+    expect(writes.last, 0.0, reason: 'a black screensaver stays dark');
+    // Dismissal: the screensaver restores what it saved, then the knob
+    // lands instead of being lost to that restore.
+    await commands.execute('setBrightness', {'level': 0.8, 'ceiling': true});
+    bus.publish(const ScreensaverStateChanged(active: false));
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    expect(writes.last, closeTo(0.5, 0.001));
   });
 
   test('Maximum brightness moving re-anchors the ceiling at once', () async {
@@ -351,4 +391,56 @@ void main() {
       expect(writes.last, closeTo(0.8, 0.001));
     },
   );
+
+  // The curve's middle points (issue #742): a sensor that reads low in the
+  // evening gets its climb where the readings actually are.
+  test('the middle points shape the panel between the ends', () async {
+    await build({
+      ...on,
+      'ks.screen.adaptive_point2_position': AdaptiveCurve.positionFor(
+        10,
+        5,
+        500,
+      ),
+      'ks.screen.adaptive_point2_level': AdaptiveCurve.shareFor(0.3, 0.2, 0.8),
+      'ks.screen.adaptive_point3_position': AdaptiveCurve.positionFor(
+        15,
+        5,
+        500,
+      ),
+      'ks.screen.adaptive_point3_level': AdaptiveCurve.shareFor(0.7, 0.2, 0.8),
+    });
+    bus.publish(const LightLevelChanged(lux: 10));
+    await settle();
+    expect(writes.last, closeTo(0.3, 0.001));
+    bus.publish(const LightLevelChanged(lux: 15));
+    await settle();
+    expect(writes.last, closeTo(0.7, 0.001));
+    // Moving a middle point from the editor lands at once.
+    await settings.set(
+      defs.adaptivePoint3Level,
+      AdaptiveCurve.shareFor(0.5, 0.2, 0.8),
+    );
+    await settle();
+    expect(writes.last, closeTo(0.5, 0.001));
+  });
+
+  test('Home Assistant turning Maximum down stretches the middle points '
+      'with it', () async {
+    await build({
+      ...on,
+      'ks.screen.adaptive_point2_position': AdaptiveCurve.positionFor(
+        10,
+        5,
+        500,
+      ),
+      'ks.screen.adaptive_point2_level': 0.5,
+    }, startLux: 10);
+    // Half way from Minimum 20% to Maximum 80%.
+    expect(writes.last, closeTo(0.5, 0.001));
+    await screen.setBrightness(0.6);
+    await settle();
+    // Half way from 20% to 60%.
+    expect(writes.last, closeTo(0.4, 0.001));
+  });
 }

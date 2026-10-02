@@ -1,0 +1,12 @@
+{
+  "@@locale": "de",
+  "settingMediaVolumeTitle": "Medienlautstärke",
+  "settingMediaVolumeDescription": "Musik und Videos werden mit diesem Anteil der Hauptlautstärke wiedergegeben. Die Lautstärke des Sendspin-Players in Music Assistant steuert diesen Wert.",
+  "settingAssistantVolumeTitle": "Assistentenlautstärke",
+  "settingAssistantVolumeDescription": "Sprachantworten und Signaltöne werden mit diesem Anteil der Hauptlautstärke wiedergegeben, unabhängig von der Medienlautstärke.",
+  "settingIntercomVolumeTitle": "Intercom-Lautstärke",
+  "settingIntercomVolumeDescription": "Stimme und Durchsagen des anderen Kiosks werden mit diesem Anteil der Hauptlautstärke wiedergegeben.",
+  "screenAudioVolume": "Audiolautstärke",
+  "screenAudioMasterVolume": "Hauptlautstärke",
+  "screenAudioMasterHelp": "Gerätelautstärke. Medien-, Intercom- und Assistentenlautstärke werden proportional zu diesem Wert angepasst."
+}

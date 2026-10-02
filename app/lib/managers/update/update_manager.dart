@@ -44,6 +44,30 @@ class UpdateInfo {
   final String releaseUrl;
 }
 
+/// An APK the remote admin uploaded, inspected and waiting to be installed
+/// (issue #566): a kiosk on a network without internet or a file server
+/// gets its update pushed from the admin's browser instead.
+class UploadedApk {
+  const UploadedApk({
+    required this.file,
+    required this.version,
+    required this.buildNumber,
+    required this.size,
+  });
+
+  final File file;
+  final String version;
+  final int buildNumber;
+  final int size;
+
+  Map<String, Object?> toJson() => {
+    'version': version,
+    'buildNumber': buildNumber,
+    'size': size,
+    'path': file.path,
+  };
+}
+
 /// Watches the GitHub releases for a newer APK and, on request, downloads it
 /// and hands it to the Android package installer.
 ///
@@ -57,10 +81,38 @@ class UpdateManager extends Manager {
     super.commands,
     super.log, {
     this.useShizuku = _shizukuDisabled,
+    this.customSource = _noCustomSource,
   });
 
   final bool Function() useShizuku;
   static bool _shizukuDisabled() => false;
+
+  /// The custom repository folder, or null while releases come from
+  /// GitHub. A folder on the user's own web server that holds a copy of
+  /// GitHub's releases list as `releases.json` and the APKs it names, for
+  /// kiosks on a network without internet access. Read on every check, so
+  /// a change in settings takes effect at the next one. An empty string is
+  /// the custom source picked with no URL entered yet: the check reports
+  /// that rather than quietly asking GitHub, which such a network cannot
+  /// reach anyway.
+  final String? Function() customSource;
+  static String? _noCustomSource() => null;
+
+  /// The repository this build checks for updates.
+  ///
+  /// This fork, not upstream. A panel running a fork build that offers an
+  /// upstream release is offering to overwrite itself with a build missing
+  /// every fork change, behind a one-tap "Update available" notice on a wall
+  /// panel that anyone can press. Upstream's releases are still the right
+  /// thing to watch -- they are what the fork rebases onto -- but that is a
+  /// job for whoever maintains the fork, not an offer to make on the wall.
+  ///
+  /// Keep in step with [releasesPage].
+  static const updateRepository = 'davidcoulson/kiosk-satellite';
+
+  /// Where the notice sends someone who wants to read about a release.
+  static const releasesPage =
+      'https://github.com/$updateRepository/releases';
 
   /// The releases list rather than `/releases/latest`: one request either
   /// way, but the list also carries the bodies of releases the device
@@ -69,8 +121,38 @@ class UpdateManager extends Manager {
   /// window is a display cap, not a paging cursor: a device further behind
   /// than this gets the newest releases and a pointer to the history.
   static const _releasesUrl =
-      'https://api.github.com/repos/jxlarrea/kiosk-satellite/'
+      'https://api.github.com/repos/$updateRepository/'
       'releases?per_page=30';
+
+  /// The file a custom repository serves in place of the GitHub query:
+  /// that query's response, saved as is. Same parser, same ABI selection,
+  /// same notes; only the asset URLs are re-rooted at the folder.
+  static const releasesFileName = 'releases.json';
+
+  /// Where the next check asks: GitHub, or the custom folder's releases
+  /// file. Null when the custom source is picked without a URL.
+  Uri? _releasesUri(String? source) {
+    if (source == null) return Uri.parse(_releasesUrl);
+    if (source.isEmpty) return null;
+    return Uri.parse('$source/$releasesFileName');
+  }
+
+  /// The download URL of [apk] as the source serves it: GitHub's own for
+  /// GitHub, the asset's name under the custom folder otherwise. A mirror
+  /// holds the files under the names GitHub gave them, so the saved
+  /// releases list needs no editing.
+  String? _assetUrl(Map<String, dynamic> apk, String? source) {
+    if (source == null) return apk['browser_download_url'] as String?;
+    final name = apk['name'] as String?;
+    if (name == null || name.isEmpty) return null;
+    return '$source/${Uri.encodeComponent(name)}';
+  }
+
+  /// The client for [source]: strict verification for GitHub, the app's
+  /// own certificate policy (the Ignore SSL errors setting included) for a
+  /// server on the user's network, which is where a custom source lives.
+  http.Client _clientFor(String? source) =>
+      source == null ? clientFactory() : localClientFactory();
 
   /// App-scoped (see ApkInstaller). The Shizuku opt-in overrides installation.
   /// Otherwise native silent installation, the ADB helper and confirmation keep their order.
@@ -120,6 +202,23 @@ class UpdateManager extends Manager {
   Duration stallTimeout = const Duration(seconds: 60);
 
   late final String _currentVersion;
+  late final String _packageName;
+
+  /// The running build's versionCode, what an uploaded APK is measured
+  /// against: Android refuses a lower one, so the upload is refused first
+  /// with a message that says so.
+  int _currentBuild = 0;
+
+  /// The uploaded APK waiting to be installed, or null.
+  UploadedApk? _uploaded;
+  UploadedApk? get uploaded => _uploaded;
+
+  /// True while an uploaded APK is being handed to the installer. The
+  /// download path's re-entry guard is [progress], which an upload never
+  /// sets; this is the same guard for the other path, and each refuses to
+  /// start while the other runs.
+  bool _installing = false;
+  bool get installing => _installing;
 
   /// Read once at init, not through the getDeviceInfo command: that command
   /// gathers CPU load, whose sampler pays a 500ms paired read whenever it is
@@ -132,10 +231,14 @@ class UpdateManager extends Manager {
   @visibleForTesting
   List<String> supportedAbis = const [];
 
-  /// Builds the client for the release query and the APK download. Swapped
-  /// in tests; production always hands back a real one.
+  /// Builds the client for the release query and the APK download from
+  /// GitHub. Swapped in tests; production always hands back a real one.
   @visibleForTesting
   http.Client Function() clientFactory = createUpdateHttpClient;
+
+  /// The same for a custom repository, see [_clientFor].
+  @visibleForTesting
+  http.Client Function() localClientFactory = createLocalUpdateHttpClient;
 
   Timer? _firstCheck;
   Timer? _timer;
@@ -150,7 +253,10 @@ class UpdateManager extends Manager {
 
   @override
   Future<void> init() async {
-    _currentVersion = (await PackageInfo.fromPlatform()).version;
+    final pkg = await PackageInfo.fromPlatform();
+    _currentVersion = pkg.version;
+    _packageName = pkg.packageName;
+    _currentBuild = int.tryParse(pkg.buildNumber) ?? 0;
     if (Platform.isAndroid) {
       final android = await DeviceInfoPlugin().androidInfo;
       _sdkInt = android.version.sdkInt;
@@ -162,9 +268,14 @@ class UpdateManager extends Manager {
     _installer.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'installDeclined':
-          log.info(name, 'install declined on the device screen');
+          log.info(
+            name,
+            'install declined on the device screen (${call.arguments})',
+          );
           _lastOutcome = 'cancelled';
           await _resumeKioskIfPaused();
+        case 'silentInstallRefused':
+          await _retryWithConfirmation('${call.arguments}');
         case 'installFailed':
           log.warn(name, 'install failed: ${call.arguments}');
           _fail('Install failed: ${call.arguments}');
@@ -244,6 +355,8 @@ class UpdateManager extends Manager {
             'lastOutcome': _lastOutcome,
             'lastError': _lastError,
             'canRelaunch': await canRelaunch(),
+            'uploaded': _uploaded?.toJson(),
+            'installing': _installing,
           }),
         ),
       )
@@ -281,8 +394,70 @@ class UpdateManager extends Manager {
             if (progress.value != null) {
               return CommandResult.fail('a download is already running');
             }
+            if (_installing) {
+              return CommandResult.fail('an install is already running');
+            }
             unawaited(downloadAndInstall());
             return CommandResult.ok(true);
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'receiveUploadedUpdate',
+          description:
+              'Take in an APK uploaded through POST /api/update/upload, '
+              'check that it is a newer Kiosk Satellite build and keep it '
+              'for installUploadedApk. In-process only: the APK travels as '
+              'the raw body of that endpoint, not as a command parameter',
+          params: const {
+            'stream': 'the APK bytes (in-process only)',
+            'length': 'the byte count announced by the upload, if any',
+          },
+          // The stream object must not be printed into the log.
+          quiet: true,
+          handler: (p) async {
+            final stream = p['stream'];
+            if (stream is! Stream<List<int>>) {
+              return CommandResult.fail(
+                'the APK travels as the raw body of POST /api/update/upload',
+              );
+            }
+            final length = p['length'];
+            try {
+              return CommandResult.ok(
+                await receiveUpload(
+                  stream,
+                  length: length is int && length > 0 ? length : null,
+                ),
+              );
+            } on StateError catch (e) {
+              return CommandResult.fail(e.message);
+            }
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'installUploadedApk',
+          description:
+              'Install the APK uploaded through POST /api/update/upload. '
+              'Silent or confirmed on the device screen under the same '
+              'rules as installUpdate; getUpdateStatus reports the outcome '
+              'in lastOutcome once installing turns false',
+          handler: (_) async {
+            final up = _uploaded;
+            if (up == null) {
+              return CommandResult.fail('no uploaded APK is waiting');
+            }
+            if (progress.value != null) {
+              return CommandResult.fail('a download is already running');
+            }
+            if (_installing) {
+              return CommandResult.fail('an install is already running');
+            }
+            unawaited(installUploaded(up));
+            return CommandResult.ok(up.toJson());
           },
         ),
       )
@@ -330,14 +505,26 @@ class UpdateManager extends Manager {
   /// is the case where the caller keeps what it already knew; `info` is null
   /// when GitHub answered and the running version is already the latest.
   Future<({bool reachable, UpdateInfo? info})> _fetchLatest() async {
-    final client = clientFactory();
+    final source = customSource();
+    final uri = _releasesUri(source);
+    if (uri == null) {
+      log.warn(
+        name,
+        'release check skipped: the custom update repository has no URL',
+      );
+      return (reachable: false, info: null);
+    }
+    final client = _clientFor(source);
     try {
       final res = await client.get(
-        Uri.parse(_releasesUrl),
+        uri,
         headers: const {'Accept': 'application/vnd.github+json'},
       );
       if (res.statusCode != 200) {
-        log.warn(name, 'release check failed: HTTP ${res.statusCode}');
+        log.warn(
+          name,
+          'release check failed: HTTP ${res.statusCode} from ${uri.host}',
+        );
         return (reachable: false, info: null);
       }
       String tagOf(Map<String, dynamic> r) =>
@@ -359,13 +546,14 @@ class UpdateManager extends Manager {
         log.warn(name, 'release $tag has no compatible APK');
         return (reachable: false, info: null);
       }
-      final url = apk['browser_download_url'] as String?;
+      final url = _assetUrl(apk, source);
       if (tag.isEmpty || url == null) return (reachable: false, info: null);
       final newer = _isNewer(tag, _currentVersion);
       if (newer) log.info(name, 'selected APK: ${apk['name']}');
       log.info(
         name,
-        'latest release $tag, running $_currentVersion: '
+        'latest release $tag on ${source == null ? 'GitHub' : uri.host}, '
+        'running $_currentVersion: '
         '${newer ? 'update available' : 'up to date'}',
       );
       return (
@@ -375,9 +563,7 @@ class UpdateManager extends Manager {
                 version: tag,
                 apkUrl: url,
                 notes: _combinedNotes(releases, tagOf),
-                releaseUrl:
-                    latest['html_url'] as String? ??
-                    'https://github.com/jxlarrea/kiosk-satellite/releases',
+                releaseUrl: latest['html_url'] as String? ?? releasesPage,
                 apkSize: (apk['size'] as num?)?.toInt(),
               )
             : null,
@@ -452,13 +638,13 @@ class UpdateManager extends Manager {
   /// use it walks the user through the "install unknown apps" grant).
   Future<String?> downloadAndInstall() async {
     var info = available.value;
-    if (info == null || progress.value != null) return null;
+    if (info == null || progress.value != null || _installing) return null;
     final useShizukuUpdates = useShizuku();
     progress.value = 0;
     _lastOutcome = null;
     _lastError = null;
     _cancelRequested = false;
-    final client = clientFactory();
+    final client = _clientFor(customSource());
     _downloadClient = client;
     try {
       if (useShizukuUpdates) await _needsConfirmation(shizuku: true);
@@ -506,8 +692,7 @@ class UpdateManager extends Manager {
       // APKs of identical size, and on exactly such a pair the reuse
       // check below installed the cached old release as if it were the
       // new download, "updating" the device to the version it already ran.
-      final dir = Directory('${(await getTemporaryDirectory()).path}/updates');
-      await dir.create(recursive: true);
+      final dir = await _updatesDir();
       // A release can gain a split after its universal APK was cached.
       // Include asset identity so equal-sized variants never share a file.
       final assetKey = sha256
@@ -520,6 +705,8 @@ class UpdateManager extends Manager {
       await for (final stale in dir.list()) {
         if (stale.path != file.path) await stale.delete();
       }
+      // An uploaded APK waiting in the same folder went with the sweep.
+      _uploaded = null;
       // An earlier attempt whose install never went through (declined, or
       // the confirmation could not show) already paid for this download;
       // a file of this version's name whose size matches what GitHub
@@ -609,57 +796,7 @@ class UpdateManager extends Manager {
           'MB), handing to the installer',
         );
       }
-      if (!await canRelaunch()) {
-        log.warn(
-          name,
-          'the "Display over other apps" permission is missing: the update '
-          'will install but the app cannot reopen itself afterwards',
-        );
-      }
-      // When Android's confirm screen is coming, the kiosk has to stand
-      // down first: lock task pinning blocks that screen outright, and
-      // the foreground reclaim would cover it seconds after it appeared,
-      // so the install silently went nowhere (issue #170). Asked before
-      // the session is committed — by PENDING_USER_ACTION it is too late.
-      // The kiosk re-arms when the install is declined or fails (below);
-      // a successful install kills the process and the relaunch re-arms.
-      if (await _needsConfirmation(shizuku: useShizukuUpdates)) {
-        _kioskPaused = (await commands.execute(
-          'pauseKioskForInstall',
-          const {},
-        )).ok;
-      }
-      var mode = await _installer.invokeMethod<String>('installApk', {
-        'path': file.path,
-        if (useShizukuUpdates) 'useShizuku': true,
-      });
-      if (mode == 'fallback') {
-        if (useShizukuUpdates) {
-          throw StateError(
-            'Shizuku could not install the update. No confirmation installer was opened.',
-          );
-        }
-        // The helper can disappear between preflight and upload. Native
-        // code only returns this before a commit could reach the helper.
-        if (!_kioskPaused) {
-          _kioskPaused = (await commands.execute(
-            'pauseKioskForInstall',
-            const {},
-          )).ok;
-        }
-        mode = await _installer.invokeMethod<String>('installApk', {
-          'path': file.path,
-          'useSystemInstaller': true,
-        });
-      }
-      // A native failure callback can arrive before the method reply.
-      _lastOutcome ??= mode == 'silent' ? 'silent' : 'confirm';
-      log.info(
-        name,
-        mode == 'silent'
-            ? 'installing silently; the app restarts itself when done'
-            : 'waiting for the install to be confirmed on the device screen',
-      );
+      await _installFile(file, useShizukuUpdates: useShizukuUpdates);
       return null;
     } catch (e) {
       // A cancel closes the client mid-transfer, which surfaces here as a
@@ -678,6 +815,247 @@ class UpdateManager extends Manager {
       client.close();
       progress.value = null;
     }
+  }
+
+  /// The updates/ folder of the app cache: what the manifest's FileProvider
+  /// maps, so the update helper and the confirm installer can read from it.
+  /// Holds one APK at a time, downloaded or uploaded.
+  Future<Directory> _updatesDir() async {
+    final dir = Directory('${(await getTemporaryDirectory()).path}/updates');
+    await dir.create(recursive: true);
+    return dir;
+  }
+
+  /// The installer copies the APK into its session before committing, so
+  /// an upload needs room for two copies plus some slack for the install.
+  static const _installSlack = 64 * 1024 * 1024;
+
+  /// Streams an uploaded APK into the updates folder and inspects it
+  /// (issue #566). Throws a [StateError] with the reason when the file is
+  /// refused: too big for the free space, cut short, not an APK, another
+  /// app's package, or an older build than the one running. The accepted
+  /// file waits for [installUploaded]; a new upload replaces it. Returns
+  /// what was accepted, as getUpdateStatus reports it.
+  Future<Map<String, Object?>> receiveUpload(
+    Stream<List<int>> body, {
+    int? length,
+  }) async {
+    if (progress.value != null) {
+      throw StateError('A download is running. Wait for it to finish.');
+    }
+    if (_installing) {
+      throw StateError('An install is running. Wait for it to finish.');
+    }
+    final dir = await _updatesDir();
+    _uploaded = null;
+    await for (final stale in dir.list()) {
+      await stale.delete();
+    }
+    if (length != null) {
+      final free = await _freeSpace();
+      if (free != null && free < length * 2 + _installSlack) {
+        throw StateError(
+          'Not enough free space: the APK is ${_mb(length)} MB and the '
+          'install needs about ${_mb(length * 2 + _installSlack)} MB, but '
+          'the device has ${_mb(free)} MB free.',
+        );
+      }
+    }
+    final part = File('${dir.path}/upload.apk.part');
+    Never refuse(String reason) {
+      if (part.existsSync()) part.deleteSync();
+      log.warn(name, 'refused an uploaded APK: $reason');
+      throw StateError(reason);
+    }
+
+    var got = 0;
+    final sink = part.openWrite();
+    try {
+      // addStream has backpressure built in: the socket waits for the
+      // flash, not the other way round.
+      await sink.addStream(
+        body.map((chunk) {
+          got += chunk.length;
+          return chunk;
+        }),
+      );
+    } catch (e) {
+      // The browser went away mid-transfer (tab closed, Wi-Fi dropped):
+      // nothing to keep, and the half file must not wait for the sweep.
+      // The sink is already in error and its close may say so again.
+      try {
+        await sink.close();
+      } catch (_) {}
+      refuse('The upload was interrupted after ${_mb(got)} MB: $e');
+    }
+    await sink.close();
+
+    if (got == 0) refuse('The upload was empty.');
+    if (length != null && got != length) {
+      refuse(
+        'The upload ended early: ${_mb(got)} of ${_mb(length)} MB arrived.',
+      );
+    }
+    final apk = await _inspectApk(part);
+    if (apk == null) refuse('The file is not an Android APK.');
+    final package = apk['packageName'] as String?;
+    if (package != _packageName) {
+      refuse(
+        'The APK is ${package ?? 'another package'}, not Kiosk Satellite '
+        '($_packageName).',
+      );
+    }
+    final version = '${apk['versionName'] ?? ''}';
+    final build = (apk['versionCode'] as num?)?.toInt() ?? 0;
+    if (build < _currentBuild) {
+      refuse(
+        'The APK is version $version (build $build), older than the '
+        'running $_currentVersion (build $_currentBuild). Downgrades are '
+        'refused: Android would not install one either.',
+      );
+    }
+    // Named like a download but never like one: a download's key is a
+    // hash of the asset URL, so its size-based reuse check can never pick
+    // this file up as its own.
+    final file = File('${dir.path}/kiosk-satellite-update-$version-upload.apk');
+    await part.rename(file.path);
+    _uploaded = UploadedApk(
+      file: file,
+      version: version,
+      buildNumber: build,
+      size: got,
+    );
+    log.info(
+      name,
+      'received an uploaded APK: v$version (build $build, ${_mb(got)} MB)'
+      '${build == _currentBuild ? ', the build already running' : ''}',
+    );
+    bus.publish(const UpdateStateChanged());
+    return {
+      ..._uploaded!.toJson(),
+      'currentVersion': _currentVersion,
+      'currentBuild': _currentBuild,
+    };
+  }
+
+  static String _mb(int bytes) => (bytes / 1048576).toStringAsFixed(1);
+
+  /// Installs the uploaded APK. The outcome lands in lastOutcome the way a
+  /// download's does; the file stays so a declined install can be retried
+  /// without uploading again.
+  Future<String?> installUploaded(UploadedApk up) async {
+    if (progress.value != null || _installing) {
+      return 'an update is already running';
+    }
+    _installing = true;
+    _lastOutcome = null;
+    _lastError = null;
+    bus.publish(const UpdateStateChanged());
+    try {
+      if (!await up.file.exists()) {
+        _uploaded = null;
+        return _fail('The uploaded APK is gone. Upload it again.');
+      }
+      log.info(
+        name,
+        'installing the uploaded v${up.version} (build ${up.buildNumber})',
+      );
+      await _installFile(up.file, useShizukuUpdates: useShizuku());
+      return null;
+    } catch (e) {
+      log.warn(name, 'install of the uploaded APK failed: $e');
+      await _resumeKioskIfPaused();
+      return _fail('Install failed: $e');
+    } finally {
+      _installing = false;
+      bus.publish(const UpdateStateChanged());
+    }
+  }
+
+  /// Package name, version name and version code of the APK at [file], or
+  /// null when Android cannot parse it as one.
+  Future<Map<String, dynamic>?> _inspectApk(File file) async {
+    try {
+      return await _installer.invokeMapMethod<String, dynamic>('inspectApk', {
+        'path': file.path,
+      });
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
+  /// Free bytes on the volume the app cache lives on; null when the
+  /// platform cannot say, in which case the upload is simply attempted.
+  Future<int?> _freeSpace() async {
+    try {
+      return await _installer.invokeMethod<int>('freeSpace');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Hands an APK that is already on disk to the installer: the download's
+  /// last step, and the whole of an uploaded APK's install (issue #566).
+  /// Stands the kiosk down first when Android's confirm screen is coming,
+  /// and falls back to the system installer when the update helper goes
+  /// away between preflight and commit. Throws on an installer failure;
+  /// the caller turns that into the recorded outcome.
+  Future<void> _installFile(
+    File file, {
+    required bool useShizukuUpdates,
+  }) async {
+    if (!await canRelaunch()) {
+      log.warn(
+        name,
+        'the "Display over other apps" permission is missing: the update '
+        'will install but the app cannot reopen itself afterwards',
+      );
+    }
+    // When Android's confirm screen is coming, the kiosk has to stand
+    // down first: lock task pinning blocks that screen outright, and
+    // the foreground reclaim would cover it seconds after it appeared,
+    // so the install silently went nowhere (issue #170). Asked before
+    // the session is committed — by PENDING_USER_ACTION it is too late.
+    // The kiosk re-arms when the install is declined or fails (below);
+    // a successful install kills the process and the relaunch re-arms.
+    if (await _needsConfirmation(shizuku: useShizukuUpdates)) {
+      _kioskPaused = (await commands.execute(
+        'pauseKioskForInstall',
+        const {},
+      )).ok;
+    }
+    _apkPath = file.path;
+    var mode = await _installer.invokeMethod<String>('installApk', {
+      'path': file.path,
+      if (useShizukuUpdates) 'useShizuku': true,
+    });
+    if (mode == 'fallback') {
+      if (useShizukuUpdates) {
+        throw StateError(
+          'Shizuku could not install the update. No confirmation installer was opened.',
+        );
+      }
+      // The helper can disappear between preflight and upload. Native
+      // code only returns this before a commit could reach the helper.
+      if (!_kioskPaused) {
+        _kioskPaused = (await commands.execute(
+          'pauseKioskForInstall',
+          const {},
+        )).ok;
+      }
+      mode = await _installer.invokeMethod<String>('installApk', {
+        'path': file.path,
+        'useSystemInstaller': true,
+      });
+    }
+    // A native failure callback can arrive before the method reply.
+    _lastOutcome ??= mode == 'silent' ? 'silent' : 'confirm';
+    log.info(
+      name,
+      mode == 'silent'
+          ? 'installing silently; the app restarts itself when done'
+          : 'waiting for the install to be confirmed on the device screen',
+    );
   }
 
   /// Records a failed attempt for getUpdateStatus and hands the message on.
@@ -727,6 +1105,50 @@ class UpdateManager extends Manager {
   /// re-arm. Cleared by the declined/failed callbacks; a successful
   /// install ends the process instead.
   bool _kioskPaused = false;
+
+  /// The APK most recently handed to the installer, for the retry below.
+  String? _apkPath;
+
+  /// Android accepted a silent install and then aborted it with nothing on
+  /// screen. Xiaomi's MIUI and HyperOS do this to every silent update even
+  /// though stock Android allows it (issue #768), which left those tablets
+  /// unable to update at all. The same APK goes through the confirm screen
+  /// instead. Only a silent session can trigger this, and the retry is a
+  /// confirm session, so it happens at most once per install.
+  Future<void> _retryWithConfirmation(String message) async {
+    final path = _apkPath;
+    log.warn(
+      name,
+      'Android refused the silent install ($message); asking for '
+      'confirmation on the device screen instead',
+    );
+    if (path == null || !await File(path).exists()) {
+      _fail('Install failed: $message');
+      await _resumeKioskIfPaused();
+      return;
+    }
+    try {
+      if (!_kioskPaused) {
+        _kioskPaused = (await commands.execute(
+          'pauseKioskForInstall',
+          const {},
+        )).ok;
+      }
+      await _installer.invokeMethod<String>('installApk', {
+        'path': path,
+        'useSystemInstaller': true,
+      });
+      _lastOutcome = 'confirm';
+      log.info(
+        name,
+        'waiting for the install to be confirmed on the device screen',
+      );
+    } catch (e) {
+      log.warn(name, 'install failed: $e');
+      _fail('Install failed: $e');
+      await _resumeKioskIfPaused();
+    }
+  }
 
   Future<void> _resumeKioskIfPaused() async {
     if (!_kioskPaused) return;

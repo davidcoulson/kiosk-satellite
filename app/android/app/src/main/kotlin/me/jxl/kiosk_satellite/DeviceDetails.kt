@@ -10,9 +10,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.hardware.display.DisplayManager
 import android.net.ConnectivityManager
 import android.os.BatteryManager
 import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Environment
 import android.os.Handler
@@ -25,6 +28,8 @@ import android.system.Os
 import android.system.OsConstants
 import android.system.StructTimeval
 import android.util.DisplayMetrics
+import android.view.Display
+import android.view.Surface
 import android.view.WindowManager
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
@@ -65,6 +70,55 @@ private val NOT_CPU_ZONE = listOf(
     "gpu", "cam", "flash", "modem", "mdpa", "nrpa", "dram",
 )
 
+/** One thermal zone as read from sysfs: its lowercased `type` and the raw
+ *  `temp` value, null when the file could not be read. */
+internal data class ThermalZone(val type: String, val raw: Long?)
+
+/**
+ * The hottest CPU thermal zone in °C, or null when none gives a usable
+ * reading. Zones are matched by `type`, never by index: the numbering
+ * differs per device (an S8 and an S8+ disagree). Values are milli-°C on
+ * these SoCs; a few report plain °C, so both scales are accepted and
+ * implausible readings dropped.
+ *
+ * Matching is two-tier (issue #138): zones naming "cpu" first, and only
+ * when a device has none of those, zones whose type is a known SoC
+ * spelling. Exynos names its clusters BIG/MID/LITTLE, Qualcomm has
+ * tsens/cpuss, MediaTek mtkts* and soc_max, and a package sensor is the
+ * same reading under a different label. Never both: on a device with real
+ * cpu zones the extras could only replace a right answer with a hotter
+ * wrong one.
+ *
+ * The tier is chosen by which zones exist, not by which ones happen to
+ * read plausibly right now (issue #654). The Fire HD 8's mtktscpu returns
+ * 0 on the odd read, and falling through to the MediaTek hints on that
+ * poll picked mtkts_bts1, an unwired board sensor parked at 125000. The
+ * sensor spiked to 125 °C for one update several times a day. A cpu zone
+ * that reads nonsense this poll now yields null: the ESPHome sensor skips
+ * the update so Home Assistant keeps the previous value, and the admin
+ * pages show a gap.
+ */
+internal fun pickCpuTemp(zones: List<ThermalZone>): Double? {
+    // Pseudo-zones and lookalike sensors. trip/limit report the constant
+    // throttle threshold (105°C on Snapdragon phones), and the hottest-zone
+    // pick would return it forever; the rest are real sensors of the wrong
+    // thing (battery, radios, connector, case surface), several of which
+    // sit inside the plausibility window below.
+    val candidates = zones.filter { z -> NOT_CPU_ZONE.none { z.type.contains(it) } }
+    val cpu = candidates.filter { it.type.contains("cpu") }
+    val tier = if (cpu.isNotEmpty()) cpu
+    else candidates.filter { z -> SOC_ZONE_HINTS.any { z.type.contains(it) } }
+    var max: Double? = null
+    for (z in tier) {
+        val raw = z.raw ?: continue
+        val c = if (raw > 1000) raw / 1000.0 else raw.toDouble()
+        // 125 is where MediaTek parks an NTC input with nothing wired to
+        // it, and no CPU runs there: the SoC shuts down first.
+        if (c in 20.0..<125.0 && (max == null || c > max)) max = c
+    }
+    return max
+}
+
 /** Netlink ABI numbers (linux/netlink.h, rtnetlink.h, if_addr.h). Kernel
  *  ABI, fixed forever; several are missing from OsConstants on the older
  *  API levels this app still runs on, so they are spelled out here. */
@@ -84,6 +138,8 @@ class DeviceDetails(
     messenger: BinaryMessenger,
 ) {
     private val channel = MethodChannel(messenger, "kiosk_satellite/device_details")
+    private val cpuWorker = MethodWorker("ks-cpu")
+    private val linkWorker = MethodWorker("ks-link")
 
     /**
      * When the current default network came up, on the elapsedRealtime clock,
@@ -183,19 +239,48 @@ class DeviceDetails(
                 // The real Wi-Fi hardware address, or null where Android
                 // hides it (issue #252). See WifiMac for the doors tried.
                 "wifiMac" -> result.success(WifiMac.read(context))
+                // The most the Java heap may grow to in this process: 80 MB
+                // on an Echo Show, 512 MB on a phone. What ExoPlayer's
+                // sample buffers count against, so the screensaver can
+                // tell which videos it can afford to play.
+                "javaHeapMax" -> result.success(Runtime.getRuntime().maxMemory())
+                // Language tags as names in the app's language, for the text
+                // to speech Language pickers. Engines write en_US as often as
+                // en-US, so both parse.
+                "languageNames" -> {
+                    val tags = call.argument<List<String>>("tags") ?: emptyList()
+                    val display = java.util.Locale.forLanguageTag(
+                        call.argument<String>("display") ?: "en",
+                    )
+                    result.success(
+                        tags.associateWith { tag ->
+                            val name = java.util.Locale.forLanguageTag(tag.replace('_', '-'))
+                                .getDisplayName(display)
+                            if (name.isBlank() || name == tag) tag
+                            else name.replaceFirstChar { it.titlecase(display) }
+                        },
+                    )
+                }
                 // Dozens of sysfs reads, polled every few seconds while an
                 // admin tab is open — off the main thread, so a stats tick
                 // can never cost the UI a frame.
-                "cpu" -> Thread {
-                    val data = cpu()
-                    Handler(Looper.getMainLooper()).post { result.success(data) }
-                }.start()
+                "cpu" -> cpuWorker.read(result) { cpu() }
+                // Free and total memory alone, for the stats tick and its
+                // history: the full read walks storage, the screen and the
+                // WebView to answer a question asked every few seconds.
+                "ram" -> result.success(ram())
+                // The default network's transport and, on Wi-Fi, its signal.
+                // Binder calls into system_server, so off the main thread:
+                // a stalled system server must not cost the UI a frame.
+                "link" -> linkWorker.read(result) { link() }
                 else -> result.notImplemented()
             }
         }
     }
 
     fun dispose() {
+        cpuWorker.shutdown()
+        linkWorker.shutdown()
         channel.setMethodCallHandler(null)
         try {
             context.unregisterReceiver(aclReceiver)
@@ -221,9 +306,10 @@ class DeviceDetails(
     }
 
     /**
-     * Seconds this process has been alive (`app`) and seconds since the
-     * default network last came up (`network`, `null` while offline). The
-     * app clock is elapsedRealtime, so a wall-clock change cannot bend it.
+     * Seconds this process has been alive (`app`), seconds since the device
+     * booted (`device`) and seconds since the default network last came up
+     * (`network`, `null` while offline). The app and device clocks are
+     * elapsedRealtime, so a wall-clock change cannot bend them.
      *
      * The network number prefers the kernel's own timestamp on the default
      * interface's IP address (see [addressAgeSeconds]): the kernel stamps
@@ -254,6 +340,7 @@ class DeviceDetails(
         return mapOf(
             "app" to
                 (SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()) / 1000,
+            "device" to SystemClock.elapsedRealtime() / 1000,
             "network" to network,
             "networkSource" to source,
         )
@@ -592,24 +679,84 @@ class DeviceDetails(
         )
     }
 
-    private fun screen(): Map<String, Any> {
+    /**
+     * The panel's size, density and how it sits. `rotation` is the display's
+     * turn from its natural orientation in degrees, which the size alone
+     * cannot say: a panel mounted sideways reads landscape at 90.
+     */
+    private fun screen(): Map<String, Any?> {
         val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        val (width, height, density) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // maximumWindowMetrics, not currentWindowMetrics: the latter needs a
             // visual (Activity) context and throws from the application context
             // this now runs in. The maximum bounds are the full display — the
             // right answer for a fullscreen kiosk anyway.
             val b = wm.maximumWindowMetrics.bounds
-            mapOf(
-                "width" to b.width(),
-                "height" to b.height(),
-                "density" to context.resources.displayMetrics.density,
-            )
+            Triple(b.width(), b.height(), context.resources.displayMetrics.density)
         } else {
             @Suppress("DEPRECATION")
             val dm = DisplayMetrics().also { wm.defaultDisplay.getRealMetrics(it) }
-            mapOf("width" to dm.widthPixels, "height" to dm.heightPixels, "density" to dm.density)
+            Triple(dm.widthPixels, dm.heightPixels, dm.density)
         }
+        return mapOf(
+            "width" to width,
+            "height" to height,
+            "density" to density,
+            "orientation" to if (width >= height) "landscape" else "portrait",
+            "rotation" to rotation(),
+        )
+    }
+
+    /** The default display's rotation in degrees, or null where it cannot
+     *  be read. DisplayManager rather than the context's display, which an
+     *  application context does not have. */
+    private fun rotation(): Int? = try {
+        val dm = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+        when (dm.getDisplay(Display.DEFAULT_DISPLAY)?.rotation) {
+            Surface.ROTATION_0 -> 0
+            Surface.ROTATION_90 -> 90
+            Surface.ROTATION_180 -> 180
+            Surface.ROTATION_270 -> 270
+            else -> null
+        }
+    } catch (e: Exception) {
+        null
+    }
+
+    /**
+     * The default network's transport, or null while offline. On Wi-Fi it
+     * adds the signal (`rssi`, dBm), the negotiated link speed (`speedMbps`)
+     * and the channel frequency (`frequencyMhz`, which says 2.4 or 5 GHz).
+     * Android treats none of those as location data, so ACCESS_WIFI_STATE
+     * covers them. The SSID and BSSID need a location grant and are left
+     * out. Wi-Fi is checked before VPN because a VPN over Wi-Fi carries both
+     * transports, and the radio is what explains a panel that drops out.
+     * A value Android reports as unknown comes back null.
+     */
+    private fun link(): Map<String, Any?>? {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = cm.activeNetwork ?: return null
+        val caps = cm.getNetworkCapabilities(network) ?: return null
+        val type = when {
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "vpn"
+            else -> "other"
+        }
+        if (type != "wifi") return mapOf("type" to type)
+        // Deprecated at API 31 in favor of the callback's TransportInfo, but
+        // still answered, and the one read that works from API 24 up.
+        @Suppress("DEPRECATION")
+        val info = (context.applicationContext.getSystemService(Context.WIFI_SERVICE)
+            as? WifiManager)?.connectionInfo
+        return mapOf(
+            "type" to type,
+            // -127 is WifiInfo.INVALID_RSSI.
+            "rssi" to info?.rssi?.takeIf { it in -126..-1 },
+            "speedMbps" to info?.linkSpeed?.takeIf { it > 0 },
+            "frequencyMhz" to info?.frequency?.takeIf { it > 0 },
+        )
     }
 
     /**
@@ -621,13 +768,20 @@ class DeviceDetails(
      * does let an untrusted app read, under the same label as the cpufreq
      * files, is cpuidle: each core's cumulative residency in its idle states.
      * Awake time not spent idle gives utilization, so the usage number
-     * is derived from that (see [cpuUsage]), with the old
-     * frequency-position estimate as the fallback where cpuidle is absent.
+     * is derived from that (see [cpuUsage]).
+     *
+     * A kernel without cpuidle leaves only the clock: how far each core
+     * sits between its minimum and maximum speed. That is not load - an
+     * interactive governor stepping between three speeds reads 0, 66 or
+     * 100% while the chip is 20% busy - so it is reported as `clock`, and
+     * `usage` stays null rather than carry it under the wrong name.
      */
     private fun cpu(): Map<String, Any?> {
         val temp = cpuTemp()
+        val idle = hasCpuIdle()
         val out = mutableMapOf<String, Any?>(
-            "usage" to cpuUsage(),
+            "usage" to if (idle) cpuUsage() else null,
+            "clock" to if (idle) null else frequencyLoad(),
             "temp" to temp,
         )
         // Field diagnosis for devices that report no temperature (issue
@@ -652,6 +806,13 @@ class DeviceDetails(
             if (readable) type else "$type!"
         }
     }
+
+    /** Whether this kernel exposes cpuidle at all, asked once: it does not
+     *  appear or go away while the process lives. */
+    private var cpuIdlePresent: Boolean? = null
+
+    private fun hasCpuIdle(): Boolean =
+        cpuIdlePresent ?: (idleSnapshot() != null).also { cpuIdlePresent = it }
 
     /** The previous snapshot, so each report covers the window since the
      *  last one instead of blocking to measure a fresh window. */
@@ -708,25 +869,26 @@ class DeviceDetails(
      */
     @Synchronized
     private fun cpuUsage(): Double? {
-        var first = lastIdle ?: idleSnapshot() ?: return frequencyLoad()
+        var first = lastIdle ?: idleSnapshot() ?: return null
         val age = SystemClock.elapsedRealtimeNanos() - first.elapsedNanos
         val awakeAge = System.nanoTime() - first.awakeNanos
         if (awakeAge < 500_000_000L || age > 300_000_000_000L) {
-            first = idleSnapshot() ?: return frequencyLoad()
+            first = idleSnapshot() ?: return null
             try {
                 Thread.sleep(500)
             } catch (_: InterruptedException) {
-                return frequencyLoad()
+                return null
             }
         }
-        val now = idleSnapshot() ?: return frequencyLoad()
+        val now = idleSnapshot() ?: return null
         lastIdle = now
-        return now.usageSince(first) ?: frequencyLoad()
+        return now.usageSince(first)
     }
 
     /**
-     * The old estimate, kept as the fallback for kernels without cpuidle
-     * sysfs: per core, how far the current clock sits between min and max.
+     * Where the kernel has no cpuidle sysfs, the one thing left to read:
+     * per core, how far the current clock sits between min and max. Speed,
+     * not load (see [cpu]).
      */
     private fun frequencyLoad(): Double? {
         val cores = File("/sys/devices/system/cpu")
@@ -745,32 +907,8 @@ class DeviceDetails(
         return if (n == 0) null else sum / n * 100.0
     }
 
-    /**
-     * The hottest CPU thermal zone, in °C. Zones are matched by `type`,
-     * never by index — the numbering differs per device (an S8 and an S8+
-     * disagree). Values are milli-°C on these SoCs; a few report plain °C,
-     * so both scales are accepted and implausible readings dropped.
-     *
-     * Matching is two-tier (issue #138): zones naming "cpu" first, and only
-     * when a device has none of those, zones whose type is a known SoC
-     * spelling — Exynos names its clusters BIG/MID/LITTLE, Qualcomm has
-     * tsens/cpuss, MediaTek mtkts* and soc_max — since a package sensor is
-     * the same reading under a different label. Never both: on a device
-     * with real cpu zones the extras could only replace a right answer
-     * with a hotter wrong one.
-     */
-    private fun cpuTemp(): Double? =
-        hottest { it.contains("cpu") }
-            ?: hottest { type -> SOC_ZONE_HINTS.any { type.contains(it) } }
-
-    /** Latched once /sys/class/thermal fails to enumerate: some OEM SELinux
-     *  policies (Lenovo, issue #138) deny untrusted apps the directory read
-     *  outright, and retrying on every stats poll would spray avc denials
-     *  into logcat forever. Never unlatched: a policy does not change while
-     *  the process lives. */
-    private var thermalBlocked = false
-
-    private fun hottest(wanted: (String) -> Boolean): Double? {
+    /** The hottest CPU thermal zone in °C, see [pickCpuTemp]. */
+    private fun cpuTemp(): Double? {
         if (thermalBlocked) return null
         val zones = File("/sys/class/thermal")
             .listFiles { f -> f.name.startsWith("thermal_zone") }
@@ -778,23 +916,20 @@ class DeviceDetails(
             thermalBlocked = true
             return null
         }
-        var max: Double? = null
-        for (z in zones) {
-            val type = readText(File(z, "type"))?.lowercase() ?: continue
-            if (!wanted(type)) continue
-            // Pseudo-zones and lookalike sensors. trip/limit report the
-            // constant throttle threshold (105°C on Snapdragon phones), and
-            // the hottest-zone pick would return it forever; the rest are
-            // real sensors of the wrong thing (battery, radios, connector,
-            // case surface), several of which sit inside the plausibility
-            // window below.
-            if (NOT_CPU_ZONE.any { type.contains(it) }) continue
-            val raw = readLong(File(z, "temp")) ?: continue
-            val c = if (raw > 1000) raw / 1000.0 else raw.toDouble()
-            if (c in 20.0..130.0 && (max == null || c > max)) max = c
-        }
-        return max
+        return pickCpuTemp(
+            zones.mapNotNull { z ->
+                val type = readText(File(z, "type"))?.lowercase() ?: return@mapNotNull null
+                ThermalZone(type, readLong(File(z, "temp")))
+            },
+        )
     }
+
+    /** Latched once /sys/class/thermal fails to enumerate: some OEM SELinux
+     *  policies (Lenovo, issue #138) deny untrusted apps the directory read
+     *  outright, and retrying on every stats poll would spray avc denials
+     *  into logcat forever. Never unlatched: a policy does not change while
+     *  the process lives. */
+    private var thermalBlocked = false
 
     private fun readText(file: File): String? = try {
         if (file.canRead()) file.readText().trim() else null
@@ -812,9 +947,36 @@ class DeviceDetails(
             } else {
                 null
             }
-            mapOf("package" to pkg?.packageName, "version" to pkg?.versionName)
+            // "available" is a verdict only where the platform can give one
+            // (API 26+): null below that means unknown, not missing.
+            val available = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) pkg != null else null
+            mapOf(
+                "package" to pkg?.packageName, "version" to pkg?.versionName, "available" to available,
+                "duraSpeed" to duraSpeed(),
+            )
         } catch (e: Exception) {
-            mapOf("package" to null, "version" to null)
+            mapOf("package" to null, "version" to null, "available" to null, "duraSpeed" to duraSpeed())
         }
+    }
+
+    /**
+     * MediaTek's DuraSpeed, where it is installed and switched on by the
+     * vendor: a background app control that can refuse to start the
+     * WebView's renderer service, which leaves the dashboard black with no
+     * settings page to explain it (a Lenovo Tab M8 on Android 13).
+     */
+    private fun duraSpeed(): Boolean {
+        val installed = try {
+            context.packageManager.getPackageInfo("com.mediatek.duraspeed", 0)
+            true
+        } catch (_: Exception) {
+            false
+        }
+        if (!installed) return false
+        return runCatching {
+            Class.forName("android.os.SystemProperties")
+                .getMethod("get", String::class.java, String::class.java)
+                .invoke(null, "persist.vendor.duraspeed.app.on", "1") as String
+        }.getOrDefault("1") != "0"
     }
 }

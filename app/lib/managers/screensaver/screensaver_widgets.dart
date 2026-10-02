@@ -41,9 +41,17 @@
 ///      by hand; the Home Assistant name when empty), attribute (the
 ///      attribute shown instead of the state; the state when empty),
 ///      show_name (the name line under the value) and color ("r,g,b" icon
-///      and text color).
+///      and text color). A blank value hides the whole widget, vignette
+///      included (issue #691).
 /// - config: the type's own settings; missing keys read as the type's
-///   defaults, so entries survive new keys being added.
+///   defaults, so entries survive new keys being added. Every type also
+///   carries scale, this widget's own size correction in percent from
+///   -50 to 50 (0 by default), applied on top of the Global widget
+///   scaling slider: see [screensaverWidgetScaleFactor]. Every type also
+///   carries font and font_weight, the clock screensaver's font family
+///   and weight vocabulary plus "default", which follows the Global font
+///   family and Global font weight settings: see
+///   [screensaverWidgetFontValue] and [screensaverWidgetFontWeightValue].
 ///
 /// The remote admin UI carries its own copy of the type and corner labels;
 /// keep the two word-for-word (see the gestures precedent).
@@ -51,7 +59,8 @@ library;
 
 import 'dart:convert';
 
-import '../settings/definitions.dart' show cornerOptions;
+import '../settings/definitions.dart'
+    show cornerOptions, fontFamilyOptions, fontWeightOptions;
 
 class ScreensaverWidget {
   const ScreensaverWidget({
@@ -64,29 +73,49 @@ class ScreensaverWidget {
   final String type;
   final Map<String, Object?> config;
 
-  Map<String, Object?> toJson() =>
-      {'position': position, 'type': type, 'config': config};
+  Map<String, Object?> toJson() => {
+    'position': position,
+    'type': type,
+    'config': config,
+  };
 }
 
 /// Every widget type, in the order the pickers offer them.
-const screensaverWidgetTypes = ['clock', 'weather', 'battery', 'entity'];
+const screensaverWidgetTypes = [
+  'clock',
+  'weather',
+  'battery',
+  'entity',
+  'alarm',
+];
 
 String describeScreensaverWidgetType(String type) => switch (type) {
   'clock' => 'Small clock',
   'weather' => 'Weather',
   'battery' => 'Battery',
   'entity' => 'Entity',
+  'alarm' => 'Next alarm',
   _ => type,
 };
 
 /// A fresh entry's config, also the fallback for keys an entry is missing.
 Map<String, Object?> screensaverWidgetDefaults(String type) => switch (type) {
-  'clock' => {'color': '250,250,250', 'h24': false, 'date': false},
+  'clock' => {
+    'color': '250,250,250',
+    'scale': screensaverWidgetScaleDefault,
+    'font': screensaverWidgetFontDefault,
+    'font_weight': screensaverWidgetFontDefault,
+    'h24': false,
+    'date': false,
+  },
   'weather' => {
     'entity': '',
     'name': '',
     'label': '',
     'color': '250,250,250',
+    'scale': screensaverWidgetScaleDefault,
+    'font': screensaverWidgetFontDefault,
+    'font_weight': screensaverWidgetFontDefault,
     'feels_like': false,
     'feels_like_only': false,
     'location': true,
@@ -95,7 +124,20 @@ Map<String, Object?> screensaverWidgetDefaults(String type) => switch (type) {
     'wind': true,
     'visibility': true,
   },
-  'battery' => {'color': '250,250,250', 'percent': true, 'low': false},
+  'battery' => {
+    'color': '250,250,250',
+    'scale': screensaverWidgetScaleDefault,
+    'font': screensaverWidgetFontDefault,
+    'font_weight': screensaverWidgetFontDefault,
+    'percent': true,
+    'low': false,
+  },
+  'alarm' => {
+    'color': '250,250,250',
+    'scale': screensaverWidgetScaleDefault,
+    'font': screensaverWidgetFontDefault,
+    'font_weight': screensaverWidgetFontDefault,
+  },
   'entity' => {
     'entity': '',
     'name': '',
@@ -103,19 +145,82 @@ Map<String, Object?> screensaverWidgetDefaults(String type) => switch (type) {
     'attribute': '',
     'show_name': true,
     'color': '250,250,250',
+    'scale': screensaverWidgetScaleDefault,
+    'font': screensaverWidgetFontDefault,
+    'font_weight': screensaverWidgetFontDefault,
   },
   _ => const {},
 };
+
+/// A widget's own font family or weight left at Default: the widget
+/// follows the Global font family or Global font weight setting.
+const screensaverWidgetFontDefault = 'default';
+
+/// What the per-widget Font family picker offers: Default, then the
+/// clock screensaver's families.
+const screensaverWidgetFontOptions = [
+  screensaverWidgetFontDefault,
+  ...fontFamilyOptions,
+];
+
+/// What the per-widget Font weight picker offers: the clock screensaver's
+/// list, whose own first entry is already Default.
+const screensaverWidgetFontWeightOptions = fontWeightOptions;
+
+/// The font family value a widget draws in: its own when it names one of
+/// the families, else [global], the Global font family setting. An
+/// unknown value falls to the global too, so a backup from another build
+/// cannot hand a widget a family nobody mapped.
+String screensaverWidgetFontValue(Map<String, Object?> config, String global) {
+  final own = '${config['font'] ?? ''}';
+  return fontFamilyOptions.contains(own) ? own : global;
+}
+
+/// The font weight value a widget draws in: its own when it names a
+/// weight, else [global], the Global font weight setting. Default on both
+/// leaves each line its own weight.
+String screensaverWidgetFontWeightValue(
+  Map<String, Object?> config,
+  String global,
+) {
+  final own = '${config['font_weight'] ?? ''}';
+  return fontWeightOptions.contains(own) && own != screensaverWidgetFontDefault
+      ? own
+      : global;
+}
+
+/// The per-widget scale slider's range, in percent: a widget can shrink to
+/// half its size or grow half again, and the Global widget scaling slider
+/// then scales all of them together from there.
+const screensaverWidgetScaleMin = -50;
+const screensaverWidgetScaleMax = 50;
+const screensaverWidgetScaleDefault = 0;
+
+/// The widget's own scale as a factor: 1.0 for the default, 0.5 at -50
+/// and 1.5 at 50. A missing or unreadable value is the default, and one
+/// outside the slider's range is clamped to it, so a hand-edited backup
+/// cannot blow a widget up past the screen.
+double screensaverWidgetScaleFactor(Map<String, Object?> config) {
+  final raw = config['scale'];
+  final percent = switch (raw) {
+    num n => n,
+    String s => num.tryParse(s) ?? screensaverWidgetScaleDefault,
+    _ => screensaverWidgetScaleDefault,
+  };
+  final clamped = percent
+      .clamp(screensaverWidgetScaleMin, screensaverWidgetScaleMax)
+      .toDouble();
+  return 1 + clamped / 100;
+}
 
 /// Whether [type] renders over the [mode] screensaver. Everything stays
 /// off the camera grid, where an overlay sits in the way of a live feed;
 /// the clock widget also stays off the Clock mode, which is one already —
 /// the weather widget is exactly what a clock face wants next to it.
-bool screensaverWidgetAllowedOnMode(String type, String mode) =>
-    switch (type) {
-      'clock' => mode != 'clock' && mode != 'camera',
-      _ => mode != 'camera',
-    };
+bool screensaverWidgetAllowedOnMode(String type, String mode) => switch (type) {
+  'clock' => mode != 'clock' && mode != 'camera',
+  _ => mode != 'camera',
+};
 
 /// Decode the screensaver.widgets JSON, dropping anything malformed rather
 /// than failing the lot: one bad import line should not blank the rest.
@@ -152,10 +257,11 @@ List<ScreensaverWidget> decodeScreensaverWidgets(String json) {
 /// Encode for storage, in corner order so the stored list (and every list
 /// rendered from it) reads top-left to bottom-right.
 String encodeScreensaverWidgets(List<ScreensaverWidget> widgets) {
-  final sorted = [...widgets]..sort(
-    (a, b) => cornerOptions
-        .indexOf(a.position)
-        .compareTo(cornerOptions.indexOf(b.position)),
-  );
+  final sorted = [...widgets]
+    ..sort(
+      (a, b) => cornerOptions
+          .indexOf(a.position)
+          .compareTo(cornerOptions.indexOf(b.position)),
+    );
   return jsonEncode([for (final w in sorted) w.toJson()]);
 }

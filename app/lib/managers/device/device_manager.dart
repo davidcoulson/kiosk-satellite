@@ -2,7 +2,7 @@ import 'dart:collection' show ListQueue;
 import 'dart:convert' show LineSplitter, Utf8Decoder;
 import 'dart:io';
 
-import 'dart:async' show StreamSubscription, unawaited;
+import 'dart:async' show StreamSubscription, Timer, unawaited;
 
 import 'package:flutter/foundation.dart' show ValueNotifier, kDebugMode;
 import 'package:flutter/services.dart' show EventChannel, MethodChannel;
@@ -18,9 +18,17 @@ import '../settings/settings_manager.dart';
 import '../settings/definitions.dart' as defs;
 import '../wake_word/background_listening.dart';
 import 'device_details.dart';
+import 'stats_history.dart';
+import 'logcat.dart';
 
 /// Device identity and status: model, OS, app version, battery.
 class DeviceManager extends Manager {
+  /// Recent Activity attaches, for the churn warning.
+  final _attaches = <DateTime>[];
+  DateTime? _churnWarnedAt;
+  static const _churnWindow = Duration(seconds: 10);
+  static const _churnCount = 5;
+
   DeviceManager(super.bus, super.commands, super.log, this._settings);
 
   final SettingsManager _settings;
@@ -157,6 +165,22 @@ class DeviceManager extends Manager {
           }
         } catch (_) {}
       }());
+      // System kills cannot write the exception journal. Keep Android's
+      // retained history separate so updates and force stops are not
+      // submitted as crash reports by the analytics manager.
+      unawaited(() async {
+        try {
+          const background = MethodChannel('kiosk_satellite/background');
+          final exits = await background.invokeMethod<String>(
+            'getProcessExitHistory',
+          );
+          if (exits != null && exits.trim().isNotEmpty) {
+            log.info(name, exits);
+          }
+        } catch (e) {
+          log.warn(name, 'could not read Android process exit history: $e');
+        }
+      }());
     }
 
     final deviceInfo = DeviceInfoPlugin();
@@ -234,10 +258,22 @@ class DeviceManager extends Manager {
 
     commands.register(
       Command(
+        name: 'getNetworkLink',
+        description:
+            'The default network: type (ethernet, wifi, cellular, vpn or '
+            'other) and, on Wi-Fi, rssi (dBm), speedMbps and frequencyMhz. '
+            'Null while offline.',
+        handler: (_) async => CommandResult.ok(await DeviceDetails.link()),
+      ),
+    );
+
+    commands.register(
+      Command(
         name: 'getUptime',
         description:
-            'Seconds since the app process started (app) and since the '
-            'default network last came up (network, null while offline).',
+            'Seconds since the app process started (app), since the device '
+            'booted (device) and since the default network last came up '
+            '(network, null while offline).',
         handler: (_) async {
           final data = await DeviceDetails.uptime();
           // Once per run: whether the kernel's address timestamp answered
@@ -300,8 +336,24 @@ class DeviceManager extends Manager {
     // Activity-scoped native bridges go with it (the camera session among
     // them) while this isolate never noticed. Managers holding such a
     // session rebind on this.
-    BackgroundListening.onActivityAttached = () {
-      log.info(name, 'activity attached');
+    BackgroundListening.onActivityAttached = (detail) {
+      log.info(name, 'activity attached${detail.isEmpty ? '' : ' ($detail)'}');
+      // Analytics showed 1 GB Echo Shows attaching a new Activity twice a
+      // second until the watchdog restarted them; the churn is named
+      // once a minute so a report says so without reading the tail.
+      final now = DateTime.now();
+      _attaches.add(now);
+      _attaches.removeWhere((t) => now.difference(t) > _churnWindow);
+      if (_attaches.length >= _churnCount &&
+          (_churnWarnedAt == null ||
+              now.difference(_churnWarnedAt!) > const Duration(minutes: 1))) {
+        _churnWarnedAt = now;
+        log.warn(
+          name,
+          'activity churn: ${_attaches.length} attaches in '
+          '${_churnWindow.inSeconds}s, something keeps relaunching the kiosk',
+        );
+      }
       bus.publish(const ActivityAttached());
     };
 
@@ -335,9 +387,7 @@ class DeviceManager extends Manager {
     // applies them (issue #79), so hand them down at start and on every
     // slider move, then re-read the composed gain for the Dart players.
     _mixSub = bus.on<SettingChanged>().listen((e) async {
-      if (e.key != defs.mediaVolume.key &&
-          e.key != defs.assistantVolume.key &&
-          e.key != defs.assistantFullVolumeRange.key) {
+      if (e.key != defs.mediaVolume.key && e.key != defs.assistantVolume.key) {
         return;
       }
       await _pushVolumeMix();
@@ -420,13 +470,14 @@ class DeviceManager extends Manager {
               // allowMalformed: logcat buffers carry whatever bytes apps and
               // the platform wrote; one truncated sequence must not void the
               // whole dump (issue #404, FydeOS).
-              proc.stdout
-                  .transform(const Utf8Decoder(allowMalformed: true))
-                  .transform(const LineSplitter())
-                  .forEach((line) {
-                    if (tail.length >= lines) tail.removeFirst();
-                    tail.add(line);
-                  }),
+              compactLogcat(
+                proc.stdout
+                    .transform(const Utf8Decoder(allowMalformed: true))
+                    .transform(const LineSplitter()),
+              ).forEach((line) {
+                if (tail.length >= lines) tail.removeFirst();
+                tail.add(line);
+              }),
               proc.stderr
                   .transform(const Utf8Decoder(allowMalformed: true))
                   .forEach(stderrTail.write),
@@ -456,6 +507,21 @@ class DeviceManager extends Manager {
         handler: (_) async => CommandResult.ok(await stats()),
       ),
     );
+    commands.register(
+      Command(
+        name: 'getStatsHistory',
+        description:
+            'The last fifteen minutes of CPU load, memory use (percent) '
+            'and temperature, one sample every fifteen seconds, oldest '
+            'first. Null where the platform declined that read.',
+        quiet: true,
+        handler: (_) async => CommandResult.ok(history.toJson()),
+      ),
+    );
+    // The first CPU read only primes the load delta; the second is the
+    // first real sample.
+    unawaited(_sampleHistory());
+    _historyTimer = Timer.periodic(history.interval, (_) => _sampleHistory());
 
     _watchPower();
   }
@@ -518,6 +584,17 @@ class DeviceManager extends Manager {
   /// fallback for hosts without the channel, screened the same way, since
   /// the plugin passes Android's "unsupported" sentinel through as a level.
   Future<int?> _batteryLevel() async {
+    // A panel whose board invents a battery (issue: 50% forever on a
+    // mains-only kiosk) is told so by a switch, and the answer is no
+    // battery -- the same answer a desktop gives, so every consumer
+    // downstream already knows what to do with it.
+    if (_settings.get(defs.noBattery)) {
+      if (!_batteryLogged) {
+        _batteryLogged = true;
+        log.info(name, 'no battery: this panel is configured as mains-only');
+      }
+      return null;
+    }
     int? level;
     final native = await DeviceDetails.battery();
     if (native != null) {
@@ -562,6 +639,7 @@ class DeviceManager extends Manager {
     final level = await _batteryLevel();
     final charging = await _chargingNow();
     final cpu = await DeviceDetails.cpu();
+    final ram = await DeviceDetails.ram();
     if (!_thermalLogged && cpu.containsKey('temp') && cpu['temp'] == null) {
       _thermalLogged = true;
       log.info(
@@ -573,8 +651,37 @@ class DeviceManager extends Manager {
       'battery': level,
       'charging': charging,
       'cpu': cpu['usage'],
+      // Only where the kernel has no cpuidle, in place of cpu: how far the
+      // clock sits between its minimum and maximum, which is not load.
+      'cpuClock': cpu['clock'],
       'temp': cpu['temp'],
+      // Bytes. The kernel's MemAvailable, not availMem (see DeviceDetails.kt).
+      'memFree': ram['free'],
+      'memTotal': ram['total'],
     };
+  }
+
+  /// The metric tiles' history, sampled on its own clock whether or not an
+  /// admin page is open: a sample costs a handful of sysfs reads, and a
+  /// chart that only starts when someone looks shows them nothing.
+  final history = StatsHistory();
+  Timer? _historyTimer;
+
+  Future<void> _sampleHistory() async {
+    try {
+      final s = await stats();
+      final free = (s['memFree'] as num?)?.toDouble();
+      final total = (s['memTotal'] as num?)?.toDouble();
+      history.add(
+        cpu: (s['cpu'] as num?)?.toDouble(),
+        memory: free != null && total != null && total > 0
+            ? (100 * (1 - free / total)).clamp(0, 100).toDouble()
+            : null,
+        temp: (s['temp'] as num?)?.toDouble(),
+      );
+    } catch (_) {
+      // A read that fails leaves a gap rather than a stopped clock.
+    }
   }
 
   /// Every non-loopback address of [type], keyed by interface name in
@@ -695,15 +802,13 @@ class DeviceManager extends Manager {
       await background.invokeMethod<void>('setVolumeMix', {
         'media': _settings.get(defs.mediaVolume).toInt(),
         'assistant': _settings.get(defs.assistantVolume).toInt(),
-        'assistantFullVolumeRange': _settings.get(
-          defs.assistantFullVolumeRange,
-        ),
       });
     } catch (_) {}
   }
 
   @override
   Future<void> dispose() async {
+    _historyTimer?.cancel();
     await _powerSub?.cancel();
     await _lightSub?.cancel();
     _lightMethods.setMethodCallHandler(null);
@@ -711,17 +816,35 @@ class DeviceManager extends Manager {
     await _mixSub?.cancel();
   }
 
+  /// Seven independent reads -- two of them full network-interface
+  /// enumerations -- so they run together rather than in sequence. This is
+  /// what `/api/info`, `/api/health` and the plugin `getDeviceInfo`
+  /// snapshot all wait on, and awaiting one at a time made it the sum of
+  /// every platform round trip rather than the slowest one.
   Future<Map<String, Object?>> info() async {
-    final details = await DeviceDetails.read();
-    final brightness = await commands.execute('getBrightness', {'panel': true});
-    final screenOn = await commands.execute('isScreenOn', const {});
+    final reads = await Future.wait([
+      DeviceDetails.read(),
+      commands.execute('getBrightness', {'panel': true}),
+      commands.execute('isScreenOn', const {}),
+      stats(),
+      DeviceDetails.uptime(),
+      ipAddress(),
+      ipv6Addresses(),
+    ]);
+    final details = reads[0] as DeviceDetails;
+    final brightness = reads[1] as CommandResult;
+    final screenOn = reads[2] as CommandResult;
+    final deviceStats = reads[3] as Map<String, Object?>;
+    final uptime = reads[4];
+    final ipv4 = reads[5] as String?;
+    final ipv6 = reads[6] as List<String>;
     final panelLevel = brightness.data;
     return {
-      ...await stats(),
-      'uptime': await DeviceDetails.uptime(),
+      ...deviceStats,
+      'uptime': uptime,
       'name': deviceName,
-      'ip': await ipAddress(),
-      'ipv6': await ipv6Addresses(),
+      'ip': ipv4,
+      'ipv6': ipv6,
       'model': model,
       'device': device,
       'board': board,
@@ -745,6 +868,8 @@ class DeviceManager extends Manager {
       'buildNumber': buildNumber,
       'buildMode': buildMode,
       'package': packageName,
+      'webviewPackage': details.webviewPackage,
+      'webviewVersion': details.webviewVersion,
     };
   }
 }

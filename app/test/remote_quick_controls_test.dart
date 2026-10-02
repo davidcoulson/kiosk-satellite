@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -193,6 +194,57 @@ void main() {
     );
 
     test(
+      'brightness updates preserve the adaptive maximum while the panel dims',
+      () async {
+        final token = await login();
+        final ws = await WebSocket.connect(
+          'ws://127.0.0.1:$port/api/ws?token=$token',
+        );
+        final messages = StreamIterator<Map>(
+          ws
+              .map((raw) => jsonDecode(raw as String) as Map)
+              .where(
+                (message) => ['state', 'brightness'].contains(message['type']),
+              ),
+        );
+        try {
+          ws.add(
+            jsonEncode({
+              'type': 'subscribe',
+              'topics': ['state', 'brightness'],
+            }),
+          );
+          expect(
+            await messages.moveNext().timeout(const Duration(seconds: 5)),
+            isTrue,
+          );
+          expect(messages.current['type'], 'state');
+          expect((messages.current['device'] as Map)['brightness'], 0.5);
+
+          for (final change in [
+            // Moving the slider changes the maximum, even in a dim room.
+            const BrightnessChanged(level: 0.8, panel: 0.35),
+            // Ambient dimming must leave that maximum on the slider.
+            const BrightnessChanged(level: 0.8, panel: 0.2),
+            // Manual mode still reports the current brightness.
+            const BrightnessChanged(level: 0.45),
+          ]) {
+            bus.publish(change);
+            expect(
+              await messages.moveNext().timeout(const Duration(seconds: 5)),
+              isTrue,
+            );
+            expect(messages.current['type'], 'brightness');
+            expect(messages.current['level'], change.level);
+          }
+        } finally {
+          await messages.cancel();
+          await ws.close();
+        }
+      },
+    );
+
+    test(
       'the WebSocket state snapshot carries them too, then the events',
       () async {
         final token = await login();
@@ -234,13 +286,13 @@ void main() {
   });
 
   test('the admin page has one relabelled tile per state', () {
-    final html = File('assets/remote-ui/index.html').readAsStringSync();
+    final html = File('remote-ui/index.html').readAsStringSync();
     for (final id in ['tileScreen', 'tileScreensaver', 'tileCameraView']) {
       expect(html, contains('id="$id"'), reason: id);
     }
     // Two tiles for one screen would be the pair this replaced.
     expect(html, isNot(contains('data-cmd="screenOn"')));
-    final panels = File('assets/remote-ui/static/panels.js').readAsStringSync();
+    final panels = File('remote-ui/static/panels.js').readAsStringSync();
     for (final event in [
       'screenon',
       'screenoff',

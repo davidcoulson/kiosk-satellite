@@ -160,6 +160,27 @@ void main() {
       expect(browser.renderingFrozen, isTrue);
     });
 
+    test('a return without the input focus re-asserts too', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            calls.add(call);
+            return 1;
+          });
+      await build({'ks.browser.freeze_on_screensaver': true});
+      browser.onPageLoaded('http://ha.local:8123/lovelace/0');
+      calls.clear();
+      browser.didChangeAppLifecycleState(AppLifecycleState.paused);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(calls.where((c) => c.method == 'setHidden'), isEmpty);
+      // Android reports an Activity resumed under a focus-holding window
+      // as inactive, never resumed (issue #560): the view is re-revealed
+      // on that return like on any other.
+      browser.didChangeAppLifecycleState(AppLifecycleState.inactive);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(calls.where((c) => c.method == 'setHidden'), hasLength(1));
+      expect(calls.last.arguments['hidden'], isFalse);
+    });
+
     test(
       'a thaw edge reveals even when the freeze never took by our books',
       () async {
@@ -345,5 +366,31 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 1300));
       expect(browser.renderingFrozen, isTrue);
     });
+
+    test(
+      'Weather Mood painting follows confirmed freeze and screen state',
+      () async {
+        await build({'ks.browser.freeze_on_screensaver': true});
+        final states = <bool>[];
+        void changed() => states.add(browser.renderingFrozenState.value);
+        browser.renderingFrozenState.addListener(changed);
+        addTearDown(() => browser.renderingFrozenState.removeListener(changed));
+        browser.onPageLoaded('http://ha.local:8123/lovelace/0');
+        bus.publish(const ScreensaverViewChanged(view: 'weather_mood'));
+        bus.publish(const ScreensaverStateChanged(active: true));
+        expect(browser.renderingFrozenState.value, isFalse);
+        await Future<void>.delayed(const Duration(milliseconds: 1300));
+        expect(states, [true]);
+        bus.publish(const ScreenStateChanged(on: false));
+        await pumpEventQueue();
+        expect(states, [true, false]);
+        bus.publish(const ScreenStateChanged(on: true));
+        await Future<void>.delayed(const Duration(milliseconds: 1300));
+        expect(states, [true, false, true]);
+        await settings.set(defs.freezeOnScreensaver, false);
+        await pumpEventQueue();
+        expect(states, [true, false, true, false]);
+      },
+    );
   });
 }

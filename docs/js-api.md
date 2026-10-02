@@ -34,6 +34,16 @@ Every method returns a `Promise`. To match the defensive coding style of Voice S
 | `screenOn()` / `screenOff()` | `boolean` | Controls real display power. Turning the screen on wakes a sleeping panel. Turning it off requires the device admin permission (refer to remote API docs). |
 | `isScreenOn()` | `boolean` | Returns the current screen power state. |
 
+### Theater mode
+
+Only the configured start page and Home Assistant's own pages, in the main frame, may use these; other pages get `null`. A page in a frame on a Home Assistant dashboard can ask the dashboard instead, if it is the one named in **Page allowed from a frame**. See [Theater Mode](theater.md#a-page-in-a-frame).
+
+| Method | Returns | Description |
+|---|---|---|
+| `setTheaterMode(active, options)` | `boolean` | Turns theater mode on or off. `active` must be a boolean. `options` may set `overlayOpacity` (0 to 0.95), `backlight`, `peekBrightness` (0 to 1), `peekSeconds` (3 to 60) and `blackAfterMinutes` for this time only; missing ones use the settings, out-of-range ones are clamped and unknown ones ignored. |
+| `getTheaterMode()` | `{active, phase, source, since, overlayOpacity, backlight, peekBrightness, peekSeconds}` | The current state. `phase` is `off`, `dim`, `peek` or `black`; `source` is what turned it on (`page`, `ha`, `remote`, `link`). |
+| `theaterPeek(seconds)` | `boolean` | Brightens the panel for `seconds` (3 to 600, default the setting). `false` when theater mode is off. |
+
 ### Interactions
 
 | Method | Returns | Description |
@@ -101,6 +111,7 @@ This handles the output half of the audio handoff. The web page passes a URL ove
 | Method | Returns | Description |
 |---|---|---|
 | `playSound(url, {volume, cache, stream})` | `{id}` or `false` | Plays the `url` natively. Sounds handed over by the page always play at the app's Assistant volume setting. The `volume` option is accepted for API compatibility but completely ignored, preventing the page from stacking extra attenuation on top of the app's fader. Setting `cache: true` saves the download so subsequent replays start instantly, which is ideal for fixed assets like chimes. Setting `stream: true` plays the audio through a loopback relay while it is still downloading. This is necessary for server generated sources like TTS; waiting for the whole file to download would artificially delay speech by the synthesis tail duration. Resolving `false` means the app refused the request (fetch failed, playback error, etc.), prompting Voice Satellite to fall back to browser audio. |
+| `getVoiceChimeDurations()` | `object` or `false` | Returns the durations in seconds of the five locally selected Voice Satellite sounds, keyed by `wake.mp3`, `done.mp3`, `error.mp3`, `alert.mp3` and `announce.mp3`. Missing or unreadable selections use bundled defaults. |
 | `prefetchSound(url)` | `boolean` | Warms the cache so the very first `playSound` call for that `url` starts with zero fetch delay. |
 | `stopSound(id)` | `boolean` | Stops a playing sound early. A `sound-ended` event will still fire. |
 | `setSoundVolume(id, volume)` | `boolean` | Accepted for compatibility, but the `volume` value is strictly ignored. The app's Assistant volume fader dictates loudness and applies live to playing sounds automatically. |
@@ -134,12 +145,16 @@ The API dispatches `CustomEvent`s directly on the `window` object:
 | `kiosksatellite:motion` | `{}` | Camera motion was detected (rate-limited to 1 per second). |
 | `kiosksatellite:face` | `{}` | Someone is looking directly at the kiosk. Triggers when a camera facing face reaches the configured Face sensitivity threshold while Dismiss on face is actively watching (rate-limited to 1 per second). |
 | `kiosksatellite:proximity` | `{held}` | An object came close to the proximity sensor while Dismiss on proximity had it watching. Repeats every 5 seconds while the object remains close. `held` is `true` on repeat events and `false` on the initial approach. |
-| `kiosksatellite:person` | `{held}` | Someone is visible to the device's own person sensor (currently supported on Meta Portals) while Dismiss on person is active. Repeats every 2 seconds while they remain in view. `held` is `true` on repeat events and `false` upon arrival. |
+| `kiosksatellite:person` | `{held}` | Someone is visible to the device's own person sensor (currently supported on Meta Portals) while Enable person sensor or Dismiss on person is on. Repeats every 2 seconds while they remain in view. `held` is `true` on repeat events and `false` upon arrival. |
 | `kiosksatellite:screenon` / `:screenoff` | `{}` | The screen power state changed. |
 | `kiosksatellite:screensaverstart` / `:screensaverstop` | `{}` | The screensaver state changed. |
+| `kiosksatellite:theatermode` | `{active, phase, source}` | [Theater mode](theater.md) changed phase, and once more after every page load while it is on. |
 | `kiosksatellite:sound-started` | `{id}` | A `playSound` request actually began playing (audio is physically leaving the speaker). You should time stop word arming and UI state changes off this event, not off the `playSound` resolution. |
 | `kiosksatellite:sound-level` | `{id, level}` | Provides the playback level of a playing sound (the mean absolute amplitude from 0 to 1, updating at most ~20 times per second, with near duplicate samples skipped). This allows a page visualizer to animate to audio it never actually touches. Note: This is best-effort and will be absent on devices lacking a functional hardware `Visualizer`. |
+| `kiosksatellite:voice-chimes-changed` | `{filename: seconds}` | Selected local chime durations changed. Use these values for local microphone timing. Remote speakers continue to use Home Assistant sounds. |
 | `kiosksatellite:sound-ended` | `{id, error?}` | A `playSound` request naturally finished, failed (with the `error` string detailing why), or was manually stopped. This fires exactly once per sound. |
+| `kiosksatellite:intercom` | the `intercomStatus` shape | The intercom changed: a call placed, ringing, answered or ended, a broadcast coming in, the kiosks on the network. |
+| `kiosksatellite:intercom-mic` | `{hold}` | With `hold` true the intercom wants the microphone the page holds through `getUserMedia`, for a call or a broadcast, and waits two seconds for the page to stop its tracks before the call goes on listen only. With `hold` false the call is over and the page may open its capture again. Voice Satellite lets go of its own capture on this event and brings it back after. |
 | `kiosksatellite:pipeline` | `{runId, message}` | Delivers one raw event verbatim from a delegated run's subscription. This includes the synthetic `init`, `run-start`, STT partials, `intent-progress` deltas, `tts-end`, and any errors. |
 | `kiosksatellite:pipeline-closed` | `{runId, reason}` | The delegated run's transport died mid-run (meaning the app's websocket abruptly closed). Because subscriptions cannot be resumed, the page must restart the turn entirely, just as the page's own reconnect recovery logic would. |
 | `kiosksatellite:pipeline-level` | `{level, levels?}` | Provides speech weighted microphone levels during a delegated turn, intended for the reactive visual bar. These are batched (~4 times a second). The `levels` array contains `[{o, v}]` where `o` is the millisecond offset from the batch's first entry. The page replays this locally so the bar animates smoothly at chunk cadence, sitting exactly one batch window behind live audio. A single `{level}` payload is processed immediately (used for the absolute zero a mute forces). The app uses the exact same band-split math the page applies to raw chunks, ensuring the visual bar renders identically. |
@@ -194,3 +209,23 @@ function ksPresent() {
 ```
 
 It requires an additional VS-side hook (sitting outside the current surface of the kiosk wrapper): it must listen for `kiosksatellite:wakeword` to trigger `triggerWake(session)`, and it must explicitly call `setWakeWordActive(true)` upon returning to `State.IDLE`.
+## Voice Satellite timers
+
+`setVoiceTimers({entityId, timers})` hands countdown pills to Kiosk. Each timer contains `id`, `name`, `totalSeconds`, `startedAt` and `isActive`. `startedAt` is epoch milliseconds. For paused timers, `totalSeconds` is the remaining time and the start timestamp is ignored. An empty array clears the countdown pills. The integration hides its browser pills only after this method resolves `true`.
+
+`setVoiceTimerAlert({entityId, timers, muted})` shows finished timers and plays the bundled Voice Satellite alert locally every three seconds unless muted. It uses the same timer shape. An empty array dismisses the alert and stops its sound. Alerts and countdowns are separate snapshots so finishing one timer does not remove the others. The integration keeps its interaction hold and stop word handling until dismissal.
+
+`kiosksatellite:timer-action` carries `{entityId, id, action}`. Actions are `pause`, `resume`, `cancel` and `dismiss`. The integration applies running timer actions to Home Assistant and sends the resulting snapshot. `dismiss` clears the finished alert. `voiceTimerActionFailed(entityId)` shows a local error if an action fails.
+
+Document replacement clears native timer presentation and stops alert audio. The new document restores countdowns from the satellite state. Timer positions remain stored per device.
+
+### Local Voice Satellite chimes
+
+The five canonical `/voice_satellite/sounds/` MP3 URLs passed to `playSound`
+and `prefetchSound` resolve to the selections under Voice Satellite > Chimes.
+Kiosk uses its bundled defaults when no custom file is selected. Other URLs,
+including custom preannouncement media, keep their normal playback behavior.
+Use `getVoiceChimeDurations()` before starting voice interactions and listen
+for `kiosksatellite:voice-chimes-changed` to keep local microphone timing current.
+Native timer alerts use the same timer sound and wait for its completion before
+repeating. Preview commands play on the kiosk at its assistant volume.

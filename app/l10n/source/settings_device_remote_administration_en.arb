@@ -1,0 +1,247 @@
+{
+  "@@locale": "en",
+  "settingRemoteEnabledTitle": "Remote management",
+  "@settingRemoteEnabledTitle": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Switch label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Remote management"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Remote management"
+      ]
+    }
+  },
+  "settingRemoteEnabledDescription": "Run the embedded admin web server.",
+  "@settingRemoteEnabledDescription": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Help below the switch.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Remote management"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Remote management"
+      ]
+    }
+  },
+  "settingRemotePortTitle": "Server port",
+  "@settingRemotePortTitle": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Server port field label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Server port"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Server port"
+      ]
+    }
+  },
+  "settingRemotePortDescription": "Port for the remote admin interface.",
+  "@settingRemotePortDescription": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Help below the Server port field.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Server port"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Server port"
+      ]
+    }
+  },
+  "settingRemotePasswordTitle": "Admin password",
+  "@settingRemotePasswordTitle": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Admin password field label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin password"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin password"
+      ]
+    }
+  },
+  "settingRemotePasswordDescription": "Required to log in to the remote interface.",
+  "@settingRemotePasswordDescription": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Help below the Admin password field.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin password"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin password"
+      ]
+    }
+  },
+  "settingRemoteFleetDiscoveryTitle": "Find other kiosks",
+  "@settingRemoteFleetDiscoveryTitle": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration"
+      ]
+    }
+  },
+  "settingRemoteFleetDiscoveryDescription": "Announce this device on the network and list the other kiosks in the remote admin, to switch between them.",
+  "@settingRemoteFleetDiscoveryDescription": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration"
+      ]
+    }
+  },
+  "deviceRemotePage": "Remote Administration",
+  "@deviceRemotePage": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration"
+      ]
+    }
+  },
+  "deviceAdminAddress": "Admin address",
+  "@deviceAdminAddress": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration"
+      ]
+    }
+  },
+  "deviceAdminAddressHelp": "Open this address in a browser on your computer.",
+  "@deviceAdminAddressHelp": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration"
+      ]
+    }
+  },
+  "deviceByName": "By name",
+  "@deviceByName": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration"
+      ]
+    }
+  },
+  "deviceByNameHelp": "The same address by hostname, on networks that resolve .local names.",
+  "@deviceByNameHelp": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration"
+      ]
+    }
+  },
+  "devicePasswordNeeded": "Set an admin password below to start the server.",
+  "@devicePasswordNeeded": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration"
+      ]
+    }
+  },
+  "deviceServerStopped": "The server is not running.",
+  "@deviceServerStopped": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration"
+      ]
+    }
+  },
+  "devicePortError": "Could not listen on port {port}: {error}",
+  "@devicePortError": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration"
+      ]
+    },
+    "placeholders": {
+      "port": {
+        "type": "String",
+        "example": "Example"
+      },
+      "error": {
+        "type": "String",
+        "example": "Connection refused"
+      }
+    }
+  },
+  "settingRemoteTlsTitle": "Use HTTPS",
+  "@settingRemoteTlsTitle": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "TLS encryption setting, certificate action or help text.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration"
+      ]
+    }
+  },
+  "settingRemoteTlsDescription": "Encrypt the remote admin, API and WebSocket. Your browser may ask you to accept the device certificate.",
+  "@settingRemoteTlsDescription": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "TLS encryption setting, certificate action or help text.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration"
+      ]
+    }
+  }
+}

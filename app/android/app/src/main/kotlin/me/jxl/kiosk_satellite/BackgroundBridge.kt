@@ -49,12 +49,8 @@ class BackgroundBridge(
         private const val CHANNEL = "kiosk_satellite/background"
         private const val RESTART_REQUEST = 7391
 
-        /** The deliberate restart's relaunch (restartProcess below): the
-         *  launcher intent as a clear-task launch, keyed so the schedule
-         *  and the cancel resolve the same PendingIntent. */
-        private fun restartIntent(context: Context, flags: Int): PendingIntent? {
-            val launch = context.packageManager
-                .getLaunchIntentForPackage(context.packageName) ?: return null
+        /** The deliberate restart's relaunch (restartProcess below). */
+        private fun restartIntent(context: Context, launch: Intent, flags: Int): PendingIntent? {
             launch.addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK,
             )
@@ -64,8 +60,27 @@ class BackgroundBridge(
         }
 
         fun scheduleRestartAlarm(context: Context) {
-            val restart = restartIntent(context, PendingIntent.FLAG_CANCEL_CURRENT)
+            if (AgentMode.isOn(context)) {
+                scheduleHeadlessRestart(context)
+                return
+            }
+            val launch = HomeRole.launchIntent(context) ?: return
+            val restart = restartIntent(context, launch, PendingIntent.FLAG_CANCEL_CURRENT)
                 ?: return
+            val alarm = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarm.set(AlarmManager.RTC, System.currentTimeMillis() + 800, restart)
+        }
+
+        /** An agent's restart brings the service back, never the Activity
+         *  (see AgentMode). A broadcast rather than a service PendingIntent:
+         *  ensureRunning picks the start Android allows at that moment. */
+        private fun scheduleHeadlessRestart(context: Context) {
+            val restart = PendingIntent.getBroadcast(
+                context,
+                RESTART_REQUEST,
+                Intent(context, AgentRestartReceiver::class.java),
+                PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
             val alarm = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             alarm.set(AlarmManager.RTC, System.currentTimeMillis() + 800, restart)
         }
@@ -74,12 +89,20 @@ class BackgroundBridge(
          *  to do. A no-op when none is pending. */
         fun cancelRestartAlarm(context: Context) {
             try {
-                val restart = restartIntent(context, PendingIntent.FLAG_NO_CREATE)
-                    ?: return
                 val alarm = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                alarm.cancel(restart)
-                restart.cancel()
-                Log.i("BackgroundBridge", "restart alarm cancelled: the kiosk is up")
+                // Role changes alter PendingIntent identity. Cancel both
+                // routes, including alarms scheduled before this update.
+                val launches = listOfNotNull(
+                    HomeRole.homeLaunchIntent(context),
+                    context.packageManager.getLaunchIntentForPackage(context.packageName),
+                )
+                for (launch in launches) {
+                    val restart = restartIntent(context, launch, PendingIntent.FLAG_NO_CREATE)
+                        ?: continue
+                    alarm.cancel(restart)
+                    restart.cancel()
+                    Log.i("BackgroundBridge", "restart alarm cancelled: the kiosk is up")
+                }
             } catch (e: Exception) {
                 Log.w("BackgroundBridge", "restart alarm cancel failed: $e")
             }
@@ -89,12 +112,13 @@ class BackgroundBridge(
          *  configureFlutterEngine once every Activity-scoped bridge is
          *  registered. Dart's handler is per channel name, so a channel
          *  built here reaches it like this bridge's own. */
-        fun notifyActivityAttached(messenger: BinaryMessenger) {
-            MethodChannel(messenger, CHANNEL).invokeMethod("activityAttached", null)
+        fun notifyActivityAttached(messenger: BinaryMessenger, detail: String) {
+            MethodChannel(messenger, CHANNEL).invokeMethod("activityAttached", detail)
         }
     }
 
     private val channel = MethodChannel(messenger, CHANNEL)
+    private val readWorker = MethodWorker("ks-backgroundRead")
     private var lastTouchSeen = 0L
 
     init {
@@ -142,6 +166,14 @@ class BackgroundBridge(
                     val apps = listApps()
                     Handler(Looper.getMainLooper()).post { result.success(apps) }
                 }.start()
+                // Every launchable app with its version and dates, for the
+                // remote admin's Installed apps list (headless management).
+                "listAppsDetailed" -> Thread {
+                    val apps = listAppsDetailed()
+                    Handler(Looper.getMainLooper()).post { result.success(apps) }
+                }.start()
+                // Android's own uninstall confirmation, on the device.
+                "uninstallApp" -> result.success(uninstallApp(call.argument<String>("package")))
                 // One app's launcher icon as PNG bytes, for the launcher grid
                 // and the on-device picker. Null when the package is gone.
                 "appIcon" -> {
@@ -269,10 +301,7 @@ class BackgroundBridge(
                 // The app on screen right now, as usage events report it.
                 // Off the main thread: the first query walks hours of
                 // events. Null without the grant.
-                "foregroundApp" -> Thread {
-                    val app = foregroundApp()
-                    Handler(Looper.getMainLooper()).post { result.success(app) }
-                }.start()
+                "foregroundApp" -> readWorker.read(result) { foregroundApp() }
                 // MASTER volume: no permission involved. The ESPHome volume
                 // entity reads and writes through these. VolumeController
                 // decides whether that means STREAM_MUSIC or, on
@@ -301,7 +330,6 @@ class BackgroundBridge(
                     VolumeController.setMix(
                         (call.argument<Number>("media"))?.toInt() ?: 100,
                         (call.argument<Number>("assistant"))?.toInt() ?: 100,
-                        call.argument<Boolean>("assistantFullVolumeRange") ?: true,
                     )
                     result.success(true)
                 }
@@ -341,6 +369,8 @@ class BackgroundBridge(
                     // five seconds, after the guard's relaunch was already
                     // up, and its clear-task launch evicted that Activity.
                     scheduleRestartAlarm(context)
+                    // A chosen restart, not a plugin that failed to start.
+                    me.jxl.kiosk_satellite.plugins.PluginBridge.noteDeliberateExit(context)
                     result.success(true)
                     android.os.Process.killProcess(android.os.Process.myPid())
                 }
@@ -372,11 +402,21 @@ class BackgroundBridge(
                 // across the restart that follows them, surfaced into the
                 // app log at boot so reporters can paste them at leisure.
                 "getLastCrash" -> result.success(CrashJournal.read(context))
+                "getProcessExitHistory" -> readWorker.read(result) {
+                    ProcessExitHistory.read(context)
+                }
                 "clearLastCrash" -> {
                     CrashJournal.clear(context)
                     result.success(null)
                 }
                 "canBringToFront" -> result.success(canDrawOverlays())
+                // Device restart (issue #528): DevicePolicyManager.reboot is
+                // the one reboot an app can ask for without root, and only
+                // as device owner. The Dart side asks the owner question
+                // first and falls back to Shizuku (ShizukuDeviceBridge) when
+                // the answer is no.
+                "isDeviceOwner" -> result.success(HomeRole.isDeviceOwner(context))
+                "rebootDevice" -> result.success(rebootDevice())
                 // Whether the on-device vision runtimes (face detection,
                 // hand gestures) can load here at all (issue #331).
                 "visionSupport" -> result.success(VisionRuntime.describe())
@@ -421,6 +461,7 @@ class BackgroundBridge(
                 "canRequestBatteryUnrestricted" ->
                     result.success(resolves(batteryIntent()))
                 "bringToFront" -> result.success(bringToFront())
+                "isBehindAnotherApp" -> result.success(!ActivityState.frontmost)
                 // "Screen on" from the admin or the screensaver: light a
                 // genuinely sleeping panel. Brightness restore alone cannot.
                 "wakeScreen" -> result.success(wakeScreen())
@@ -768,6 +809,7 @@ class BackgroundBridge(
         // The ESPHome server has no Activity to notice the exit; close its
         // sockets before the process goes.
         me.jxl.kiosk_satellite.btproxy.BluetoothProxyRuntime.stop()
+        me.jxl.kiosk_satellite.plugins.PluginBridge.noteDeliberateExit(context)
         if (KioskSatelliteService.isRunning) {
             // The keep-alive foreground service is what fights a clean exit:
             // kill the process on a timer while it is still started and
@@ -792,22 +834,10 @@ class BackgroundBridge(
 
     /// Bring another app to the front. Returns false when the package is
     /// not installed or exposes no launchable activity, so the caller can
-    /// say so rather than appearing to do nothing.
-    private fun launchApp(packageName: String?): Boolean {
-        if (packageName.isNullOrBlank()) return false
-        val intent = context.packageManager.getLaunchIntentForPackage(packageName)
-            ?: return false
-        return try {
-            // NEW_TASK because this may be launched with no Activity of ours
-            // on screen at all (an automation over ESPHome, the remote admin).
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-            true
-        } catch (e: Exception) {
-            android.util.Log.w("kiosk_satellite", "launchApp $packageName failed", e)
-            false
-        }
-    }
+    /// say so rather than appearing to do nothing. Shared with remote keys
+    /// (AppLaunch), which open apps from the accessibility service.
+    private fun launchApp(packageName: String?): Boolean =
+        AppLaunch.launchApp(context, packageName)
 
     /// Every app with a launcher activity, as [{package, label}] sorted by
     /// label. The set a home screen shows — which is also exactly the set
@@ -965,8 +995,73 @@ class BackgroundBridge(
     /// missing or no foreground event has been seen. ACTIVITY_RESUMED shares
     /// its value with the pre-29 MOVE_TO_FOREGROUND, so one comparison
     /// covers every supported release.
+    /// Launchable apps (phone and TV launcher entries) with what the
+    /// admin's Installed apps list shows: version, install and update
+    /// times, and whether it came with the system.
+    private fun listAppsDetailed(): List<Map<String, Any?>> = try {
+        val pm = context.packageManager
+        val packages = sortedSetOf<String>()
+        for (category in listOf(Intent.CATEGORY_LAUNCHER, Intent.CATEGORY_LEANBACK_LAUNCHER)) {
+            @Suppress("DEPRECATION")
+            pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(category), 0)
+                .mapNotNullTo(packages) { it.activityInfo?.packageName }
+        }
+        packages.mapNotNull { pkg ->
+            try {
+                @Suppress("DEPRECATION")
+                val info = pm.getPackageInfo(pkg, 0)
+                val app = info.applicationInfo
+                mapOf(
+                    "package" to pkg,
+                    "label" to (app?.let { pm.getApplicationLabel(it).toString() } ?: pkg),
+                    "version" to (info.versionName ?: ""),
+                    "versionCode" to if (Build.VERSION.SDK_INT >= 28) info.longVersionCode
+                        else @Suppress("DEPRECATION") info.versionCode.toLong(),
+                    "installed" to info.firstInstallTime,
+                    "updated" to info.lastUpdateTime,
+                    "system" to ((app?.flags ?: 0) and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0),
+                    "enabled" to (app?.enabled ?: true),
+                    "self" to (pkg == context.packageName),
+                )
+            } catch (_: Exception) {
+                null
+            }
+        }.sortedBy { (it["label"] as String).lowercase() }
+    } catch (e: Exception) {
+        android.util.Log.w("kiosk_satellite", "listAppsDetailed failed", e)
+        emptyList()
+    }
+
+    /// Opens Android's uninstall confirmation for [pkg] on the device. The
+    /// person at the device confirms; nothing is removed without that.
+    private fun uninstallApp(pkg: String?): Boolean {
+        if (pkg.isNullOrBlank() || pkg == context.packageName) return false
+        return try {
+            val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg"))
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            true
+        } catch (e: Exception) {
+            android.util.Log.w("kiosk_satellite", "uninstall $pkg failed", e)
+            false
+        }
+    }
+
+    private fun labelOf(pkg: String): String = try {
+        val pm = context.packageManager
+        pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+    } catch (_: Exception) {
+        pkg
+    }
+
     private fun foregroundApp(): Map<String, String>? {
-        if (!hasUsageAccess()) return null
+        // Without Usage access, the accessibility service's window events
+        // still say which app is in front (projectors, where nobody grants
+        // Usage access, but remote keys already need the service).
+        if (!hasUsageAccess()) {
+            val pkg = KioskAccessibilityService.foregroundPackage ?: return null
+            return mapOf("package" to pkg, "label" to labelOf(pkg))
+        }
         try {
             val usm = context.getSystemService(Context.USAGE_STATS_SERVICE)
                 as android.app.usage.UsageStatsManager
@@ -987,13 +1082,7 @@ class BackgroundBridge(
             }
             lastUsageQueryEnd = now
             val pkg = lastForegroundPkg ?: return null
-            val label = try {
-                val pm = context.packageManager
-                pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
-            } catch (_: Exception) {
-                pkg
-            }
-            return mapOf("package" to pkg, "label" to label)
+            return mapOf("package" to pkg, "label" to labelOf(pkg))
         } catch (e: Exception) {
             android.util.Log.w("kiosk_satellite", "foregroundApp failed", e)
             return null
@@ -1002,29 +1091,10 @@ class BackgroundBridge(
 
     /// Open a URI with whatever app claims it (ACTION_VIEW). Returns false
     /// when nothing on the device can handle it, so the caller can say so.
-    private fun openUri(uri: String?): Boolean {
-        if (uri.isNullOrBlank()) return false
-        return try {
-            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(uri))
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-            true
-        } catch (e: Exception) {
-            android.util.Log.w("kiosk_satellite", "openUri $uri failed", e)
-            false
-        }
-    }
+    private fun openUri(uri: String?): Boolean = AppLaunch.openUri(context, uri)
 
     /// Open the Android Settings app.
-    private fun openSystemSettings(): Boolean = try {
-        val intent = Intent(Settings.ACTION_SETTINGS)
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
-        true
-    } catch (e: Exception) {
-        android.util.Log.w("kiosk_satellite", "openSystemSettings failed", e)
-        false
-    }
+    private fun openSystemSettings(): Boolean = AppLaunch.openSystemSettings(context)
 
     /// The next alarm clock set on the device, whichever app set it: this is
     /// the same value the status bar's alarm icon reflects. Null when none is
@@ -1041,6 +1111,29 @@ class BackgroundBridge(
         } catch (e: Exception) {
             android.util.Log.w("kiosk_satellite", "nextAlarm read failed", e)
             null
+        }
+    }
+
+    /**
+     * Reboot through the device-owner policy (API 24+, which is minSdk).
+     * A map rather than a bare boolean so the refusal reason reaches the
+     * caller: not owner, or Android's own refusal (it throws when a phone
+     * call is in progress). The process dies with the device, so a note in
+     * the crash journal says why the next start finds no clean exit.
+     */
+    private fun rebootDevice(): Map<String, Any?> {
+        val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        if (!dpm.isDeviceOwnerApp(context.packageName)) {
+            return mapOf("ok" to false, "error" to "Kiosk Satellite is not the device owner")
+        }
+        return try {
+            CrashJournal.note(context, "device restart requested")
+            dpm.reboot(ComponentName(context, KioskAdminReceiver::class.java))
+            mapOf("ok" to true)
+        } catch (e: IllegalStateException) {
+            mapOf("ok" to false, "error" to "Android refused the restart while a call is in progress")
+        } catch (e: Exception) {
+            mapOf("ok" to false, "error" to (e.message ?: "Android refused the restart"))
         }
     }
 
@@ -1170,6 +1263,9 @@ class BackgroundBridge(
     }
 
     private fun bringToFront(): Boolean {
+        // Nothing of an agent's belongs in front, and waking the display
+        // is not its call either: the screen is the other app's.
+        if (AgentMode.isOn(context)) return false
         // A sleeping panel first: starting the Activity does not wake the
         // display, so a wake word heard with the screen off would answer
         // into darkness. Same wake-lock pattern as the kiosk's power-button
@@ -1179,18 +1275,9 @@ class BackgroundBridge(
         wakeScreen()
         if (!canDrawOverlays()) return false
         return try {
-            // Resume the existing task exactly the way tapping the launcher icon
-            // does. The running Activity (singleTop) and its live WebView are
-            // reused — the card session survives.
-            //
-            // The previous explicit-component intent with NEW_TASK + the empty
-            // taskAffinity could instead spawn a *second* MainActivity instance
-            // in a separate task; its fresh WebView reloaded the page and the
-            // original session was lost. The launcher intent targets the app's
-            // one task deterministically and never does that.
-            val launch = context.packageManager
-                .getLaunchIntentForPackage(context.packageName)
-                ?: return false
+            // Match the current task type so the Activity and its live
+            // WebView stay together when KS is the device's home app.
+            val launch = HomeRole.launchIntent(context) ?: return false
             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(launch)
             true
@@ -1238,6 +1325,7 @@ class BackgroundBridge(
     }
 
     fun dispose() {
+        readWorker.shutdown()
         channel.setMethodCallHandler(null)
         CameraDiagnostics.detach()
         try {

@@ -1,6 +1,8 @@
 package me.jxl.kiosk_satellite
 
 import android.graphics.SurfaceTexture
+import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.opengl.EGL14
 import android.opengl.EGLConfig
 import android.opengl.EGLExt
@@ -15,6 +17,8 @@ import java.nio.ByteOrder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.io.ByteArrayOutputStream
+import kotlin.concurrent.thread
 
 /** Camera-facing texture and a GPU pass into the encoder, owned by one GL thread. */
 internal class CameraRtspGlBridge(
@@ -48,9 +52,54 @@ internal class CameraRtspGlBridge(
                 -1f, 1f, 0f, 1f, 1f, 1f, 1f, 1f))
             position(0)
         }
+    private var overlay: RtspDateTimeOverlay? = null
     private var first = true
     private var lastPresentationNs = 0L
     private var failed = false
+    private var pendingSnapshot: ((ByteArray?, String?) -> Unit)? = null
+    private val main = Handler(android.os.Looper.getMainLooper())
+
+    fun snapshot(done: (ByteArray?, String?) -> Unit) {
+        if (closing.get() || !handler.post {
+            if (closing.get() || failed) main.post { done(null, "Video is unavailable for a snapshot") }
+            else if (pendingSnapshot != null) main.post { done(null, "A video snapshot is already pending") }
+            else pendingSnapshot = done
+        }) main.post { done(null, "Video is unavailable for a snapshot") }
+    }
+
+    /** Read only when a still is requested, then compress away from the GL thread. */
+    private fun captureSnapshot() {
+        val done = pendingSnapshot ?: return
+        pendingSnapshot = null
+        try {
+            val pixels = ByteBuffer.allocateDirect(size.width * size.height * 4)
+            GLES20.glReadPixels(0, 0, size.width, size.height, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixels)
+            check(GLES20.glGetError() == GLES20.GL_NO_ERROR) { "Could not read the video frame" }
+            thread(name = "camera-video-snapshot") {
+                var bitmap: Bitmap? = null
+                var upright: Bitmap? = null
+                try {
+                    pixels.rewind()
+                    bitmap = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)
+                    bitmap.copyPixelsFromBuffer(pixels)
+                    upright = Bitmap.createBitmap(bitmap, 0, 0, size.width, size.height,
+                        Matrix().apply { postScale(1f, -1f) }, false)
+                    val output = ByteArrayOutputStream()
+                    check(upright.compress(Bitmap.CompressFormat.JPEG, 80, output))
+                    val bytes = output.toByteArray()
+                    CameraDiagnostics.record(diagnosticSession, "video snapshot", "actual=$size, bytes=${bytes.size}")
+                    main.post { done(bytes, null) }
+                } catch (e: Exception) {
+                    main.post { done(null, "Video snapshot failed: ${e.message}") }
+                } finally {
+                    if (upright !== bitmap) upright?.recycle()
+                    bitmap?.recycle()
+                }
+            }
+        } catch (e: Exception) {
+            main.post { done(null, "Video snapshot failed: ${e.message}") }
+        }
+    }
 
     /** Initialization never binds an EGL context to Flutter's main thread. */
     fun surface(): Surface {
@@ -135,6 +184,19 @@ internal class CameraRtspGlBridge(
             "cameraInput=SurfaceTexture, encoderInput=EGL, input=$inputSize, output=$size")
     }
 
+    fun updateOverlay(context: android.content.Context?, enabled: Boolean, background: Boolean) {
+        if (!closing.get()) handler.post {
+            if (closing.get() || failed) return@post
+            if (enabled && context != null) {
+                if (overlay == null) overlay = RtspDateTimeOverlay(context, size)
+                overlay?.background = background
+            } else {
+                overlay?.close()
+                overlay = null
+            }
+        }
+    }
+
     fun updateTransform(value: RtspVideoTransform) {
         if (!closing.get()) handler.post { if (!closing.get()) applyTransform(value) }
     }
@@ -177,8 +239,10 @@ internal class CameraRtspGlBridge(
             GLES20.glEnableVertexAttribArray(coordinates)
             GLES20.glUniformMatrix4fv(transform, 1, false, matrix, 0)
             GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+            overlay?.draw(System.currentTimeMillis())
             val glError = GLES20.glGetError()
             check(glError == GLES20.GL_NO_ERROR) { "RTSP graphics error 0x${glError.toString(16)}" }
+            captureSnapshot()
             lastPresentationNs = maxOf(timestamp, lastPresentationNs + 1)
             check(EGLExt.eglPresentationTimeANDROID(display, window, lastPresentationNs)) {
                 "RTSP presentation timestamp failed"
@@ -209,12 +273,16 @@ internal class CameraRtspGlBridge(
     }
 
     private fun release() {
+        pendingSnapshot?.let { done -> main.post { done(null, "Video ended before the snapshot") } }
+        pendingSnapshot = null
         texture?.setOnFrameAvailableListener(null)
         cameraSurface?.release()
         cameraSurface = null
         texture?.release()
         texture = null
         if (context != EGL14.EGL_NO_CONTEXT) {
+            overlay?.close()
+            overlay = null
             if (program != 0) GLES20.glDeleteProgram(program)
             if (textureId != 0) GLES20.glDeleteTextures(1, intArrayOf(textureId), 0)
         }

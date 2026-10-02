@@ -8,6 +8,7 @@ import '../../core/logging.dart';
 import '../../core/permissions.dart';
 import '../audio/mic_hub.dart';
 import 'engine.dart';
+import 'pcm_ring.dart';
 import 'wake_msg.dart';
 
 export 'wake_msg.dart' show WakeMsg;
@@ -37,9 +38,14 @@ class PreRollChunk {
 /// clock shared with the compute isolate: a detection reports the absolute
 /// sample the wake word ended on, which indexes straight back into here.
 class PreRollBuffer {
-  PreRollBuffer({this.maxChunks = 8}); // 8 x 80 ms = 640 ms
+  PreRollBuffer({this.maxChunks = baseChunks});
 
-  final int maxChunks;
+  /// 8 x 80 ms = 640 ms.
+  static const baseChunks = 8;
+
+  /// Grown while wake word arbitration holds a wake back, so the command
+  /// spoken during the wait is still here when the turn asks for it.
+  int maxChunks;
   final List<PreRollChunk> _chunks = [];
   int _absSamples = 0;
 
@@ -55,10 +61,14 @@ class PreRollBuffer {
   }
 
   /// Buffered audio at or after [from], oldest first. A null [from] yields
-  /// everything: nothing was detected, so there is no wake word to trim.
+  /// the usual 640 ms: nothing was detected, so there is no wake word to
+  /// trim, and a pre-roll grown for arbitration would reach too far back.
   List<Uint8List> flush(int? from) {
     final out = <Uint8List>[];
-    for (final chunk in _chunks) {
+    final skip = from == null && _chunks.length > baseChunks
+        ? _chunks.length - baseChunks
+        : 0;
+    for (final chunk in _chunks.skip(skip)) {
       final pcm = from == null ? chunk.bytes : chunk.after(from);
       if (pcm != null && pcm.isNotEmpty) out.add(pcm);
     }
@@ -224,6 +234,40 @@ abstract class IsolateWakeEngine extends WakeWordEngine {
       'tester': _testerOn,
     });
   }
+
+  /// Recent audio for the tester's playback and the diagnostics clips.
+  /// Allocated only while someone wants it: 10 seconds is 320 KB.
+  PcmRing? _recent;
+
+  @override
+  set recordAudio(bool enabled) {
+    if (!enabled) {
+      _recent = null;
+    } else {
+      _recent ??= PcmRing(WakeWordEngine.recentAudioLimit.inMilliseconds * 16);
+    }
+  }
+
+  @override
+  set preRollExtra(Duration extra) => _preRoll.maxChunks =
+      PreRollBuffer.baseChunks + (extra.inMilliseconds / 80).ceil();
+
+  @override
+  Uint8List? recentAudio(Duration length) =>
+      _recent?.last(length.inMilliseconds * 16);
+
+  Map<String, Object?>? _lastDetection;
+
+  void Function(WakeWordModelRef, Map<String, Object?>)? _onNearMiss;
+
+  @override
+  set onNearMiss(
+    void Function(WakeWordModelRef model, Map<String, Object?> detail)? sink,
+  ) => _onNearMiss = sink;
+
+  @override
+  Map<String, Object?>? get lastDetection => _lastDetection;
+
   Completer<bool>? _ready;
   Completer<void>? _stopped;
   Map<String, Object>? _pendingInit;
@@ -379,6 +423,7 @@ abstract class IsolateWakeEngine extends WakeWordEngine {
     // classifier keeps the audio flowing even with wake detection paused.
     if (!_detectionPaused || _stopArmed) _isolatePort?.send(bytes);
     _preRoll.add(bytes);
+    _recent?.add(bytes);
     // Live stream to the page.
     _onAudioChunk?.call(bytes, false);
   }
@@ -491,6 +536,18 @@ abstract class IsolateWakeEngine extends WakeWordEngine {
         _onDetectionMessage(msg);
       case WakeMsg.telemetry:
         _onTelemetry?.call(msg.cast<String, Object?>());
+      case WakeMsg.nearMiss:
+        _onNearMiss?.call(
+          WakeWordModelRef(
+            id: msg['id'] as String? ?? '',
+            wakeWord: msg['wakeWord'] as String? ?? '',
+            manifestUrl: '',
+          ),
+          {
+            for (final e in msg.entries)
+              if (e.key != 'type') '${e.key}': e.value,
+          },
+        );
       case WakeMsg.error:
         log.error(tag, 'isolate: ${msg['message']}');
         _completeReady(false);
@@ -521,6 +578,10 @@ abstract class IsolateWakeEngine extends WakeWordEngine {
       wakeWord: msg['wakeWord'] as String? ?? '',
       manifestUrl: '',
     );
+    _lastDetection = {
+      for (final e in msg.entries)
+        if (e.key != 'type') '${e.key}': e.value,
+    };
     // Fall back to "now": an engine that cannot align its match still must not
     // replay the wake word, and detection never precedes the wake word ending.
     _wakeEndSample = msg['wakeEndSample'] as int? ?? _preRoll.absSamples;
@@ -566,7 +627,9 @@ abstract class IsolateWakeEngine extends WakeWordEngine {
     _stopArmed = false;
     _detectionPaused = false;
     _wakeEndSample = null;
+    _lastDetection = null;
     _preRoll.reset();
+    _recent?.clear();
     // The page's audio stream too: left set, the next run would base64 every
     // mic chunk into the bridge for a listener that died with the old page.
     _onAudioChunk = null;

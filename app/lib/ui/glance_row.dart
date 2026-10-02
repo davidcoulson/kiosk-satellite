@@ -3,8 +3,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../app_container.dart';
+import '../l10n/messages.dart';
+import '../l10n/generated/ui_strings.dart';
 import '../managers/glance/glance_manager.dart';
 import '../managers/settings/definitions.dart' as defs;
+import 'clock_faces.dart';
+import 'glass_chip.dart';
+import 'text_snapshot.dart';
 import 'mdi_icon.dart';
 
 /// The screensaver's At a Glance row: a few entity states (issue #37).
@@ -37,9 +42,20 @@ class GlanceRow extends StatelessWidget {
     this.tint,
     this.night,
     this.narrow = false,
+    this.glass,
+    this.shadows = const [],
   });
 
   final AppContainer container;
+
+  /// A drop shadow under the chips' text and icons, as Weather Mood gives
+  /// its own chips. Chips style only.
+  final List<Shadow> shadows;
+
+  /// Weather Mood's glass, so the chips match its weather chips: the scene
+  /// bends at their edges under the same rim and tint. Null keeps the dark
+  /// pill every other mode shows. Chips style only.
+  final GlassPalette? glass;
 
   /// Shrinks the whole row on small panels, where the clock above it has
   /// already taken what space there is.
@@ -91,13 +107,23 @@ class GlanceRow extends StatelessWidget {
     BuildContext context,
   ) => ValueListenableBuilder<List<GlanceEntity>>(
     valueListenable: container.glance.entities,
-    builder: (context, entities, _) {
+    builder: (context, all, _) {
+      // A chip whose value is blank has nothing to say (issue #691): a
+      // text sensor that empties once its alert clears drops out of the
+      // row and comes back with the next value.
+      final entities = [
+        for (final entity in all)
+          if (!glanceValueBlank(entity)) entity,
+      ];
       if (entities.isEmpty) return const SizedBox.shrink();
       final cards = !container.settings.get(defs.screensaverGlanceTextOnly);
       // Hide names: icon and value only, the value grown into the
       // name's room. Read once here so the chip measurement and the
       // chips agree on the line they are sizing to.
       final hideNames = container.settings.get(defs.screensaverGlanceHideNames);
+      // The Font family and Font weight rows, the widgets' vocabulary:
+      // resolved once so the chip measurement and the chips agree.
+      final font = glanceFont(container);
       // The Row scaling slider, on top of the caller's own computed
       // scale, so every placement of the row follows it alike (the
       // Widget scaling precedent). Shadowing the field keeps the whole
@@ -106,7 +132,7 @@ class GlanceRow extends StatelessWidget {
           this.scale *
           (container.settings.get(defs.screensaverGlanceScale).toDouble() /
               100);
-      return LayoutBuilder(
+      final row = LayoutBuilder(
         builder: (context, constraints) {
           if (cards) {
             // Narrow caps the line width so the chips break clear of a
@@ -124,7 +150,7 @@ class GlanceRow extends StatelessWidget {
             // the grid's edges line up instead of reading as rags.
             final widths = [
               for (final entity in entities)
-                _chipWidth(entity, scale, hideNames: hideNames),
+                _chipWidth(context, entity, scale, font, hideNames: hideNames),
             ];
             final total =
                 widths.fold(0.0, (a, b) => a + b) +
@@ -147,6 +173,9 @@ class GlanceRow extends StatelessWidget {
                         bw: bw,
                         hideName: hideNames,
                         night: night,
+                        font: font,
+                        glass: glass,
+                        shadows: shadows,
                       ),
                     ],
                   ],
@@ -183,6 +212,9 @@ class GlanceRow extends StatelessWidget {
                             bw: bw,
                             hideName: hideNames,
                             night: night,
+                            font: font,
+                            glass: glass,
+                            shadows: shadows,
                           ),
                         ),
                       ],
@@ -242,6 +274,7 @@ class GlanceRow extends StatelessWidget {
                             scale: scale * fit,
                             tint: night ?? tint,
                             hideName: hideNames,
+                            font: font,
                           ),
                         ),
                       ),
@@ -252,6 +285,8 @@ class GlanceRow extends StatelessWidget {
           );
         },
       );
+      // One read of the scene behind serves every glass chip in the row.
+      return glass != null && cards ? BackdropGroup(child: row) : row;
     },
   );
 }
@@ -263,19 +298,17 @@ class GlanceRow extends StatelessWidget {
 /// the uniform grid without laying anything out twice; keep the sizes here
 /// in lockstep with _GlanceCard's.
 double _chipWidth(
+  BuildContext context,
   GlanceEntity entity,
-  double scale, {
+  double scale,
+  GlanceFont font, {
   required bool hideNames,
 }) {
   double line(String text, double size, FontWeight weight) {
     final painter = TextPainter(
       text: TextSpan(
         text: text,
-        style: TextStyle(
-          fontSize: size,
-          fontWeight: weight,
-          fontFamily: 'Rubik',
-        ),
+        style: font.style(fontSize: size, weight: weight),
       ),
       maxLines: 1,
       textDirection: TextDirection.ltr,
@@ -285,13 +318,17 @@ double _chipWidth(
 
   final text = hideNames
       ? line(
-          glanceStateText(entity),
+          glanceStateText(entity, strings: l10n(context)),
           _GlanceCard.valueAloneSize * scale,
           FontWeight.w600,
         )
       : max(
           line(entity.displayName, 13 * scale, FontWeight.w400),
-          line(glanceStateText(entity), 17 * scale, FontWeight.w600),
+          line(
+            glanceStateText(entity, strings: l10n(context)),
+            17 * scale,
+            FontWeight.w600,
+          ),
         );
   // 6 + 40 + 10 + 18: left pad, circle, gap, right pad; +2 for the border.
   return min(text + 74 * scale + 2, 250 * scale);
@@ -386,14 +423,24 @@ class _GlanceCard extends StatelessWidget {
     required this.scale,
     required this.bw,
     required this.hideName,
+    required this.font,
     this.night,
+    this.glass,
+    this.shadows = const [],
   });
 
   final GlanceEntity entity;
   final double scale;
+  final GlanceFont font;
+
+  /// A drop shadow under the text and icon, as [GlanceRow.shadows].
+  final List<Shadow> shadows;
 
   /// The Clock screensaver's night color while its Night mode holds.
   final Color? night;
+
+  /// Glass instead of the dark pill, as [GlanceRow.glass].
+  final GlassPalette? glass;
 
   /// Monochromatic icons: keep the circle in the neutral grey even for an
   /// active entity.
@@ -437,77 +484,115 @@ class _GlanceCard extends StatelessWidget {
     final accent = bw || night != null ? null : glanceIconAccent(entity);
     final background = night?.withValues(alpha: 0.16) ?? _background;
     final border = night?.withValues(alpha: 0.4) ?? _border;
-    final circle = night?.withValues(alpha: 0.28) ?? _circleNeutral;
-    return Container(
+    final glass = night == null ? this.glass : null;
+    final circle =
+        night?.withValues(alpha: 0.28) ?? glass?.circle ?? _circleNeutral;
+    Widget pill(Decoration? decoration, Widget child) => Container(
       // Capped so one long name cannot stretch its pill across the
       // screen; the name inside truncates instead.
       constraints: BoxConstraints(maxWidth: 250 * scale),
       padding: EdgeInsets.fromLTRB(6 * scale, 6 * scale, 18 * scale, 6 * scale),
-      // A StadiumBorder, not a BoxDecoration with a large corner radius:
-      // the stadium's radius is always half the pill's own height. A
-      // radius bigger than the box (40 * scale on a ~52px pill) is an
-      // over-sized RRect the engine must renormalize, and re-rasterizing
-      // that shape at a new size froze Impeller's raster thread on the
-      // Tab S8 — the whole app kept running behind a stuck last frame.
-      decoration: ShapeDecoration(
+      decoration: decoration,
+      child: child,
+    );
+    final content = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 40 * scale,
+          height: 40 * scale,
+          alignment: Alignment.center,
+          // Glass keeps the disc clear and lights the glyph in the
+          // accent instead, with the chip glowing in the same color.
+          decoration:
+              glass?.disc(scale) ??
+              BoxDecoration(color: accent ?? circle, shape: BoxShape.circle),
+          // Full white on the neutral circle; the dark glyph only on a
+          // pastel, where white would wash out. The night color on its
+          // own wash at night.
+          child: GlanceIcon(
+            entity: entity,
+            size: 22 * scale,
+            shadows: shadows,
+            color: glass != null
+                ? accent ?? value
+                : accent != null
+                ? _iconOnAccent
+                : value,
+          ),
+        ),
+        SizedBox(width: 10 * scale),
+        Flexible(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!hideName)
+                Text(
+                  entity.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: font.style(
+                    color: label,
+                    fontSize: 13 * scale,
+                    height: 1.15,
+                    shadows: shadows,
+                  ),
+                ),
+              Text(
+                glanceStateText(entity, strings: l10n(context)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: font.style(
+                  color: value,
+                  fontSize: (hideName ? valueAloneSize : 17) * scale,
+                  height: 1.2,
+                  weight: FontWeight.w600,
+                  shadows: shadows,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    // Blurred shadows redraw every frame on Impeller unless the pill's
+    // content is kept as an image until what it shows changes.
+    final body = shadows.isEmpty
+        ? content
+        : TextSnapshot(
+            content: (
+              entity.displayName,
+              glanceStateText(entity, strings: l10n(context)),
+              entity.icon,
+              accent,
+              hideName,
+              scale,
+              font.family,
+              font.weight,
+            ),
+            bleed: 20 * scale,
+            child: content,
+          );
+    if (glass != null) {
+      return GlassChip(
+        palette: glass,
+        fallback: pill(glass.decoration, body),
+        child: pill(null, body),
+      );
+    }
+    // A StadiumBorder, not a BoxDecoration with a large corner radius: the
+    // stadium's radius is always half the pill's own height. A radius
+    // bigger than the box (40 * scale on a ~52px pill) is an over-sized
+    // RRect the engine must renormalize, and re-rasterizing that shape at
+    // a new size froze Impeller's raster thread on the Tab S8, the whole
+    // app kept running behind a stuck last frame.
+    return pill(
+      ShapeDecoration(
         color: background,
         shape: StadiumBorder(side: BorderSide(color: border)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40 * scale,
-            height: 40 * scale,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: accent ?? circle,
-              shape: BoxShape.circle,
-            ),
-            // Full white on the neutral circle; the dark glyph only on a
-            // pastel, where white would wash out. The night color on its
-            // own wash at night.
-            child: GlanceIcon(
-              entity: entity,
-              size: 22 * scale,
-              color: accent != null ? _iconOnAccent : value,
-            ),
-          ),
-          SizedBox(width: 10 * scale),
-          Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (!hideName)
-                  Text(
-                    entity.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: label,
-                      fontSize: 13 * scale,
-                      height: 1.15,
-                      fontFamily: 'Rubik',
-                    ),
-                  ),
-                Text(
-                  glanceStateText(entity),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: value,
-                    fontSize: (hideName ? valueAloneSize : 17) * scale,
-                    height: 1.2,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Rubik',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      body,
     );
   }
 }
@@ -517,11 +602,13 @@ class _GlanceItem extends StatelessWidget {
     required this.entity,
     required this.scale,
     required this.hideName,
+    required this.font,
     this.tint,
   });
 
   final GlanceEntity entity;
   final double scale;
+  final GlanceFont font;
   final Color? tint;
 
   /// Hide names: the value alone beside the icon, grown to the height
@@ -550,23 +637,21 @@ class _GlanceItem extends StatelessWidget {
                   entity.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: font.style(
                     color: label,
                     fontSize: 15 * scale,
                     height: 1.15,
-                    fontFamily: 'Rubik',
                   ),
                 ),
               Text(
-                glanceStateText(entity),
+                glanceStateText(entity, strings: l10n(context)),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: font.style(
                   color: value,
                   fontSize: (hideName ? 26 : 19) * scale,
                   height: 1.2,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Rubik',
+                  weight: FontWeight.w600,
                 ),
               ),
             ],
@@ -579,10 +664,12 @@ class _GlanceItem extends StatelessWidget {
 
 /// The state as a person reads it: Home Assistant's raw values are lowercase
 /// slugs, and a numeric sensor means nothing without its unit.
-String glanceStateText(GlanceEntity entity) {
+String glanceStateText(GlanceEntity entity, {UiStrings? strings}) {
   final state = entity.state;
   if (state == null || state.isEmpty) return '…';
-  if (state == 'unavailable') return 'Unavailable';
+  if (state == 'unavailable') {
+    return strings?.glanceUnavailable ?? 'Unavailable';
+  }
   // An entity configured to show an attribute (issue #132) shows that
   // instead of the state. Slug-like values get the same prettifying the
   // state would; units and precision do not apply, they are state-only.
@@ -593,7 +680,7 @@ String glanceStateText(GlanceEntity entity) {
     if (double.tryParse(value) != null) return value;
     return _pretty(value);
   }
-  if (state == 'unknown') return 'Unknown';
+  if (state == 'unknown') return strings?.glanceUnknown ?? 'Unknown';
   final unit = entity.unit;
   // A numeric state rounds to the entity's Display precision, padded the
   // same way Home Assistant's own cards pad it, so the row and the
@@ -609,6 +696,19 @@ String glanceStateText(GlanceEntity entity) {
   }
   final pretty = _pretty(state);
   return unit == null || unit.isEmpty ? pretty : '$pretty $unit';
+}
+
+/// Whether an entity's reading is in but blank (issue #691): an empty
+/// state, or an empty or missing attribute when it shows one. The row
+/// leaves the chip out and the entity widget hides rather than showing
+/// "…". Unavailable still reads.
+bool glanceValueBlank(GlanceEntity entity) {
+  final state = entity.state;
+  if (state == null) return false;
+  if (state.trim().isEmpty) return true;
+  if (state == 'unavailable') return false;
+  if (entity.attribute == null) return false;
+  return (entity.attributeValue ?? '').trim().isEmpty;
 }
 
 String _pretty(String value) => value
@@ -633,20 +733,28 @@ class GlanceIcon extends StatelessWidget {
     required this.entity,
     required this.size,
     required this.color,
+    this.shadows = const [],
   });
 
   final GlanceEntity entity;
   final double size;
   final Color color;
+  final List<Shadow> shadows;
 
   @override
   Widget build(BuildContext context) {
     final own = entity.icon;
     final fallback = glanceIcon(entity);
     if (own == null || !MdiIcons.looksLikeIcon(own)) {
-      return Icon(fallback, size: size, color: color);
+      return Icon(fallback, size: size, color: color, shadows: shadows);
     }
-    return MdiIcon(name: own, size: size, color: color, fallback: fallback);
+    return MdiIcon(
+      name: own,
+      size: size,
+      color: color,
+      fallback: fallback,
+      shadows: shadows,
+    );
   }
 }
 
@@ -708,4 +816,47 @@ IconData glanceIcon(GlanceEntity entity) {
     },
     _ => Icons.sensors,
   };
+}
+
+/// The At a Glance row's font: the Font family and Font weight rows
+/// resolved through the clock's vocabulary, so the row can wear the same
+/// face as the clock or the widgets. A weight override replaces every
+/// line's own weight; Default keeps regular names and semibold values.
+class GlanceFont {
+  const GlanceFont({this.family, this.weight, this.opticalSize});
+
+  final String? family;
+  final FontWeight? weight;
+  final double? opticalSize;
+
+  /// A line's style: [weight] is the line's own, which the override beats.
+  TextStyle style({
+    Color? color,
+    required double fontSize,
+    double? height,
+    FontWeight? weight,
+    List<Shadow>? shadows,
+  }) {
+    final w = this.weight ?? weight ?? FontWeight.w400;
+    return TextStyle(
+      color: color,
+      fontSize: fontSize,
+      height: height,
+      shadows: shadows,
+      fontWeight: w,
+      fontFamily: family,
+      fontVariations: clockFontVariations(opticalSize, w),
+    );
+  }
+}
+
+GlanceFont glanceFont(AppContainer container) {
+  final font = container.settings.get(defs.screensaverGlanceFont);
+  return GlanceFont(
+    family: clockFontFamily(font),
+    weight: clockWeightOverride(
+      container.settings.get(defs.screensaverGlanceFontWeight),
+    ),
+    opticalSize: clockOpticalSize(font),
+  );
 }

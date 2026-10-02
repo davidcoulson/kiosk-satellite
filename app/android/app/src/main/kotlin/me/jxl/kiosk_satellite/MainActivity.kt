@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
+import android.util.Log
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
@@ -26,6 +27,8 @@ import io.flutter.plugin.common.MethodChannel
  *  not trustworthy across a failed re-attach — these callbacks are. */
 object ActivityState {
     @Volatile var resumed = false
+    // Stays true when the foreground app pauses because the screen went off.
+    @Volatile var frontmost = true
 
     /** Whether an Activity is attached to the cached engine right now.
      *  Platform views can only be created while this holds — the engine's
@@ -96,9 +99,16 @@ class MainActivity : FlutterActivity() {
         // Activity, but that lands a beat after the first frame; reading the
         // shared_preferences mirror here means the window never flashes the
         // wrong shape.
-        val mode = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-            .getString("flutter.ks.browser.cutout_mode", null) ?: "always"
+        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val mode = prefs.getString("flutter.ks.browser.cutout_mode", null) ?: "always"
         CutoutLayout.apply(this, mode)
+        // Same story for the forced orientation (screen.orientation): a
+        // device without a rotation sensor would otherwise draw its first
+        // frame the way Android booted, then turn (issue #541).
+        ScreenOrientation.apply(
+            this,
+            prefs.getString("flutter.ks.screen.orientation", null) ?: "auto",
+        )
         // One transparent pixel that can hold native focus; see
         // dispatchKeyEvent. Not clickable, so the touch at that pixel
         // falls through to the app.
@@ -145,6 +155,7 @@ class MainActivity : FlutterActivity() {
     override fun onResume() {
         super.onResume()
         ActivityState.resumed = true
+        ActivityState.frontmost = true
         // Persisted so the crash self-heal (CrashSelfHeal) can tell "died
         // while on screen" from "user left for another app": only the former
         // may bring the kiosk back on its own. A clean exit and a Home press
@@ -167,7 +178,10 @@ class MainActivity : FlutterActivity() {
         // while the service keeps the device "online" in Home Assistant.
         // A Home press or an app switch happens on a lit screen.
         val power = getSystemService(Context.POWER_SERVICE) as PowerManager
-        if (power.isInteractive) setWasForeground(false)
+        if (power.isInteractive) {
+            ActivityState.frontmost = false
+            setWasForeground(false)
+        }
     }
 
     private fun setWasForeground(value: Boolean) {
@@ -231,7 +245,7 @@ class MainActivity : FlutterActivity() {
         provisionChannel = MethodChannel(messenger, "kiosk_satellite/provision")
         provisionChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
-                "getProvisionJson" -> result.success(intent?.getStringExtra("ks.provision"))
+                "getProvisionJson" -> result.success(ProvisionInbox.take())
                 else -> result.notImplemented()
             }
         }
@@ -275,13 +289,18 @@ class MainActivity : FlutterActivity() {
             }
         }
         // Cold launch: Dart's provisioning pull runs at process start, before
-        // this Activity exists, so push the launch-intent extra now.
-        intent?.getStringExtra("ks.provision")?.let {
-            provisionChannel?.invokeMethod("provision", it)
-        }
+        // this Activity exists, so push what ProvisionActivity left now.
+        deliverProvisioning(intent)
         // Last, with every bridge above in place: Dart rebinds what the
         // evicted Activity took with it (the camera session) on this.
-        BackgroundBridge.notifyActivityAttached(messenger)
+        // With what launched it: a kiosk that attaches twice a second is
+        // being relaunched by something, and the note that reports it
+        // should say by which component and intent.
+        BackgroundBridge.notifyActivityAttached(
+            messenger,
+            "${intent?.component?.shortClassName ?: "?"} action=${intent?.action ?: "?"} " +
+                "flags=0x${Integer.toHexString(intent?.flags ?: 0)} task=$taskId",
+        )
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
@@ -317,15 +336,15 @@ class MainActivity : FlutterActivity() {
         // whatever view happens to be focused, and a TV remote has no way
         // to reach the menu. While Flutter has a surface up that navigates
         // (drawer, settings, screensaver, lockdown — the navCapture flag),
-        // every key goes into the FlutterView; over the bare dashboard,
-        // left goes to Flutter (it opens the drawer) and the rest go to
-        // the frontmost WebView, so the page keeps its scrolling and its
-        // own key handling. Text entry is the exception — arrows belong to
-        // the cursor while a field is taking input, wherever that field
-        // lives.
+        // every key goes into the FlutterView; over the bare dashboard
+        // every key goes to the frontmost WebView, so the page keeps its
+        // scrolling and its own key handling. Left included (issue #745):
+        // a remote-driven card needs it to walk back along a row, and
+        // back is what opens the menu. Text entry is the exception —
+        // arrows belong to the cursor while a field is taking input,
+        // wherever that field lives.
         if (isNavKey(event.keyCode) && !isTextEditing()) {
-            val toFlutter = kioskLock?.navCapture == true ||
-                event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT
+            val toFlutter = kioskLock?.navCapture == true
             if (toFlutter && event.action == KeyEvent.ACTION_DOWN) {
                 // Park native focus on the one-pixel spot even while
                 // Flutter owns the keys (they are routed by hand below,
@@ -348,6 +367,16 @@ class MainActivity : FlutterActivity() {
                     // focused the WebView.
                     if (!it.hasFocus()) it.requestFocus()
                     it.dispatchKeyEvent(webViewKey(event))
+                    // The press skips Flutter, where every other key
+                    // counts as activity: without this, walking the
+                    // dashboard with a remote let the screensaver start
+                    // mid-navigation. A held key's repeats are not new
+                    // activity, same as on the Flutter side.
+                    if (event.action == KeyEvent.ACTION_DOWN &&
+                        event.repeatCount == 0
+                    ) {
+                        kioskLock?.notifyPageKey()
+                    }
                     return true
                 }
             }
@@ -381,9 +410,9 @@ class MainActivity : FlutterActivity() {
      * Shift+Tab: a dashboard's controls are focusables the way a desktop
      * browser walks them with Tab — Chromium hands the dpad to the page as
      * plain arrow keys, which a Home Assistant dashboard ignores. Focus
-     * movement scrolls the page along with it. Right stays an arrow (a
-     * focused slider answers to it); center and enter already activate the
-     * focused control.
+     * movement scrolls the page along with it. Left and right stay arrows
+     * (a focused slider answers to them); center and enter already
+     * activate the focused control.
      */
     private fun webViewKey(event: KeyEvent): KeyEvent = when (event.keyCode) {
         KeyEvent.KEYCODE_DPAD_UP -> KeyEvent(
@@ -421,21 +450,28 @@ class MainActivity : FlutterActivity() {
         return super.dispatchTouchEvent(ev)
     }
 
+    // Payloads come only through ProvisionActivity, which the system gates
+    // to the adb shell (issue #695). The extra on this exported launcher
+    // Activity could come from any app, so it is refused, loudly enough
+    // for an old adb script to find out why nothing applied.
+    private fun deliverProvisioning(intent: Intent?) {
+        if (intent?.hasExtra(ProvisionInbox.EXTRA) == true) {
+            Log.w("Provision", "ignored ks.provision sent to MainActivity; send it to .ProvisionActivity")
+        }
+        val channel = provisionChannel ?: return
+        ProvisionInbox.take()?.let { channel.invokeMethod("provision", it) }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        // Activity already running (launchMode singleTask finds the one
-        // instance): push instead of pull.
-        intent.getStringExtra("ks.provision")?.let {
-            provisionChannel?.invokeMethod("provision", it)
-        }
+        // Activity already running: push instead of pull.
+        deliverProvisioning(intent)
         // A HOME press while the kiosk is the home app and already in
         // front lands here. Everywhere else HOME means "back to the start
         // screen", so the kiosk honors that: Dart closes whatever is open
         // and returns to the dashboard (issue #219).
-        if (intent.action == Intent.ACTION_MAIN &&
-            intent.hasCategory(Intent.CATEGORY_HOME)
-        ) {
+        if (HomeRole.isHomePress(intent)) {
             kioskLock?.notifyHomePressed()
         }
     }

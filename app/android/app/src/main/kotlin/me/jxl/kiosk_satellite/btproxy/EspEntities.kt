@@ -122,6 +122,22 @@ internal sealed class EspEntity {
         override val deviceClass: String get() = ""
     }
 
+    /**
+     * Something that happens, not a state: Home Assistant's event entity
+     * (a remote key pressed). Each value pushed fires once, with the value
+     * as the event type, which must be one of [eventTypes]. Never cached,
+     * so a reconnecting client is not handed a press from an hour ago.
+     */
+    class Event(
+        override val objectId: String,
+        override val name: String,
+        override val icon: String = "",
+        override val deviceClass: String = "",
+        override val category: Int = 0,
+        override val disabledByDefault: Boolean = false,
+        val eventTypes: List<String> = emptyList(),
+    ) : EspEntity()
+
     /** A free-text config value. State/command value: String. */
     class Text(
         override val objectId: String,
@@ -217,6 +233,9 @@ internal sealed class EspEntity {
                     i("category"), b("disabled"))
                 "camera" -> Camera(objectId, name, s("icon"), i("category"),
                     b("disabled"))
+                "event" -> Event(objectId, name, s("icon"), s("deviceClass"),
+                    i("category"), b("disabled"),
+                    (m["eventTypes"] as? List<*>)?.map { "$it" } ?: emptyList())
                 else -> throw IllegalArgumentException("unknown entity type '$type'")
             }
         }
@@ -292,6 +311,14 @@ internal object EntityCodec {
                 w.string(8, entity.deviceClass)
                 Msg.LIST_ENTITIES_BUTTON_RESPONSE to w.toByteArray()
             }
+            is EspEntity.Event -> {
+                w.string(5, entity.icon)
+                w.bool(6, entity.disabledByDefault)
+                w.varint(7, entity.category)
+                w.string(8, entity.deviceClass)
+                for (type in entity.eventTypes) w.string(9, type)
+                Msg.LIST_ENTITIES_EVENT_RESPONSE to w.toByteArray()
+            }
             is EspEntity.Light -> {
                 // Legacy brightness capability only: HA still speaks the
                 // pre-color-modes dialect for every old ESP32, and a screen
@@ -342,6 +369,13 @@ internal object EntityCodec {
         w.fixed32(1, entity.key)
         return when (entity) {
             is EspEntity.Button -> null
+            // An event has no state to send on subscribe: only a live push
+            // (a non-null value) fires one.
+            is EspEntity.Event -> {
+                val type = value as? String ?: return null
+                w.string(2, type)
+                Msg.EVENT_RESPONSE to w.toByteArray()
+            }
             is EspEntity.Sensor -> {
                 if (value == null) w.bool(3, true)
                 else w.float(2, (value as Number).toFloat())
@@ -547,7 +581,9 @@ internal class EntityHub(
         val entity = synchronized(lock) {
             val found = byKey.values.firstOrNull { it.objectId == objectId }
                 ?: return
-            values[found.key] = value
+            // Events fire and are gone: caching one would replay it to the
+            // next client that subscribes.
+            if (found !is EspEntity.Event) values[found.key] = value
             found
         }
         onStateChanged?.invoke(entity, value)

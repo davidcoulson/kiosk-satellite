@@ -32,6 +32,7 @@ class SystemPermissions {
     required this.writeSettings,
     required this.allFiles,
     required this.usageAccess,
+    this.notificationAccess = false,
     this.overlayRequestable = true,
     this.batteryRequestable = true,
   });
@@ -99,6 +100,11 @@ class SystemPermissions {
   /// when Kiosk Satellite itself is frontmost, just never who else is.
   final bool usageAccess;
 
+  /// "Notification access": reading other apps' media sessions, for the
+  /// Media Session player source. The grant names a listener service that
+  /// reads no notifications; Android simply lists sessions to no one else.
+  final bool notificationAccess;
+
   /// Whether the device has a settings screen for the overlay grant and
   /// the battery exemption at all. Some ROMs ship without one (a LineageOS
   /// build on an Echo Show was reported with no "Display over other apps"
@@ -109,6 +115,9 @@ class SystemPermissions {
 
   static const _brightnessChannel = MethodChannel('kiosk_satellite/brightness');
   static const _backgroundChannel = MethodChannel('kiosk_satellite/background');
+  static const _mediaSessionsChannel = MethodChannel(
+    'kiosk_satellite/media_sessions',
+  );
 
   static Future<bool> _hasAllFilesAccess() async {
     try {
@@ -122,6 +131,15 @@ class SystemPermissions {
   static Future<bool> _hasUsageAccess() async {
     try {
       return await _backgroundChannel.invokeMethod<bool>('hasUsageAccess') ??
+          false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> _hasNotificationAccess() async {
+    try {
+      return await _mediaSessionsChannel.invokeMethod<bool>('hasAccess') ??
           false;
     } catch (_) {
       return false;
@@ -193,27 +211,119 @@ class SystemPermissions {
     }
   }
 
-  static Future<SystemPermissions> read() async => SystemPermissions(
-    microphone: await Permission.microphone.isGranted,
-    microphoneBlocked: await Permission.microphone.isPermanentlyDenied,
-    displayOverOtherApps: await BackgroundListening.canBringToFront(),
-    notification: await Permission.notification.isGranted,
-    batteryUnrestricted: await BackgroundListening.isBatteryUnrestricted(),
-    camera: await Permission.camera.isGranted,
-    location: await Permission.locationWhenInUse.isGranted,
-    bluetooth:
-        await _bluetoothPairSatisfied() && await _locationGateSatisfied(),
-    bluetoothPair: await _bluetoothPairSatisfied(),
-    bluetoothNeedsLocation: true,
-    locationServicesOn: (await Permission.location.serviceStatus).isEnabled,
-    deviceAdmin: await BackgroundListening.isScreenOffAvailable(),
-    writeSettings: await _canWriteSettings(),
-    allFiles: await _hasAllFilesAccess(),
-    usageAccess: await _hasUsageAccess(),
-    overlayRequestable: await BackgroundListening.canRequestBringToFront(),
-    batteryRequestable:
-        await BackgroundListening.canRequestBatteryUnrestricted(),
-  );
+  /// The last read, and when it landed. Eighteen platform round trips is
+  /// ~0.9s on a low-end panel, and Remote Admin's boot asks ten times: the
+  /// answer cannot change between those calls, so it is read once.
+  static SystemPermissions? _cached;
+  static DateTime? _cachedAt;
+  static Future<SystemPermissions>? _inFlight;
+
+  /// Short enough that a person cannot grant something and read a stale
+  /// answer -- an Android permission dialog takes seconds to tap through --
+  /// and long enough to collapse a burst of callers into one read.
+  static const _freshFor = Duration(milliseconds: 750);
+
+  /// Forget the cached answer. For callers that just changed a grant
+  /// without a dialog in the way (the Shizuku actions), where the next read
+  /// must see the new state however fast it follows.
+  static void invalidate() {
+    _cached = null;
+    _cachedAt = null;
+  }
+
+  /// A recent read, a read already running, or a fresh one -- in that order.
+  /// Concurrent callers share one pass over the platform channels rather
+  /// than queueing eighteen round trips each behind each other.
+  static Future<SystemPermissions> read() {
+    final cached = _cached;
+    final at = _cachedAt;
+    if (cached != null &&
+        at != null &&
+        DateTime.now().difference(at) < _freshFor) {
+      return Future.value(cached);
+    }
+    final running = _inFlight;
+    if (running != null) return running;
+    final pass = _read()
+        .then((permissions) {
+          _cached = permissions;
+          _cachedAt = DateTime.now();
+          return permissions;
+        })
+        .whenComplete(() => _inFlight = null);
+    _inFlight = pass;
+    return pass;
+  }
+
+  /// Every read is started before any is awaited. Each is a platform round
+  /// trip that waits on nothing but its own reply, and awaiting them in turn
+  /// made a pass cost the sum of all of them -- ~0.9s on an rk3576 panel --
+  /// rather than the slowest one. Only checks are overlapped here, never
+  /// requests: permission_handler refuses a second request() while one is
+  /// on screen, and has no such rule for reading a status.
+  static Future<SystemPermissions> _read() async {
+    final microphone = Permission.microphone.isGranted;
+    final microphoneBlocked = Permission.microphone.isPermanentlyDenied;
+    final displayOverOtherApps = BackgroundListening.canBringToFront();
+    final notification = Permission.notification.isGranted;
+    final batteryUnrestricted = BackgroundListening.isBatteryUnrestricted();
+    final camera = Permission.camera.isGranted;
+    final location = Permission.locationWhenInUse.isGranted;
+    // Asked once: it used to be read twice, for bluetooth and bluetoothPair.
+    final bluetoothPair = _bluetoothPairSatisfied();
+    final locationGate = _locationGateSatisfied();
+    final locationService = Permission.location.serviceStatus;
+    final deviceAdmin = BackgroundListening.isScreenOffAvailable();
+    final writeSettings = _canWriteSettings();
+    final allFiles = _hasAllFilesAccess();
+    final usageAccess = _hasUsageAccess();
+    final notificationAccess = _hasNotificationAccess();
+    final overlayRequestable = BackgroundListening.canRequestBringToFront();
+    final batteryRequestable =
+        BackgroundListening.canRequestBatteryUnrestricted();
+    // Settled together first, so one failing read cannot leave the others
+    // as unawaited futures whose errors land nowhere.
+    await Future.wait<Object?>([
+      microphone,
+      microphoneBlocked,
+      displayOverOtherApps,
+      notification,
+      batteryUnrestricted,
+      camera,
+      location,
+      bluetoothPair,
+      locationGate,
+      locationService,
+      deviceAdmin,
+      writeSettings,
+      allFiles,
+      usageAccess,
+      notificationAccess,
+      overlayRequestable,
+      batteryRequestable,
+    ]);
+    final paired = await bluetoothPair;
+    return SystemPermissions(
+      microphone: await microphone,
+      microphoneBlocked: await microphoneBlocked,
+      displayOverOtherApps: await displayOverOtherApps,
+      notification: await notification,
+      batteryUnrestricted: await batteryUnrestricted,
+      camera: await camera,
+      location: await location,
+      bluetooth: paired && await locationGate,
+      bluetoothPair: paired,
+      bluetoothNeedsLocation: true,
+      locationServicesOn: (await locationService).isEnabled,
+      deviceAdmin: await deviceAdmin,
+      writeSettings: await writeSettings,
+      allFiles: await allFiles,
+      usageAccess: await usageAccess,
+      notificationAccess: await notificationAccess,
+      overlayRequestable: await overlayRequestable,
+      batteryRequestable: await batteryRequestable,
+    );
+  }
 
   /// Nothing we could not read. A platform without these channels answers
   /// everything false, which would draw as a wall of red rather than an honest
@@ -252,6 +362,7 @@ class SystemPermissions {
     'writeSettings': writeSettings,
     'allFiles': allFiles,
     'usageAccess': usageAccess,
+    'notificationAccess': notificationAccess,
     'overlayRequestable': overlayRequestable,
     'batteryRequestable': batteryRequestable,
   };

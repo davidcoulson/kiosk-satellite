@@ -1,0 +1,405 @@
+{
+  "@@locale": "en",
+  "settingAdaptiveBrightnessTitle": "Adaptive brightness",
+  "@settingAdaptiveBrightnessTitle": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveBrightnessDescription": "Dim the screen as the room gets darker, using the ambient light sensor.",
+  "@settingAdaptiveBrightnessDescription": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveMinBrightnessTitle": "Minimum brightness",
+  "@settingAdaptiveMinBrightnessTitle": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveMinBrightnessDescription": "Screen brightness in a dark room.",
+  "@settingAdaptiveMinBrightnessDescription": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveMaxBrightnessTitle": "Maximum brightness",
+  "@settingAdaptiveMaxBrightnessTitle": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveMaxBrightnessDescription": "Screen brightness in a bright room.",
+  "@settingAdaptiveMaxBrightnessDescription": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveDarkLuxTitle": "Dark room (lx)",
+  "@settingAdaptiveDarkLuxTitle": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveDarkLuxDescription": "Light level at or below which the screen sits at Minimum brightness.",
+  "@settingAdaptiveDarkLuxDescription": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveBrightLuxTitle": "Bright room (lx)",
+  "@settingAdaptiveBrightLuxTitle": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveBrightLuxDescription": "Light level at or above which the screen sits at Maximum brightness.",
+  "@settingAdaptiveBrightLuxDescription": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioAdaptiveHint": "Follow the room light with the ambient light sensor",
+  "@screenAudioAdaptiveHint": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioAdaptiveNote": "Level in a bright room. Adaptive brightness dims it from there.",
+  "@screenAudioAdaptiveNote": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioAdaptiveOwns": "Adaptive brightness is on.",
+  "@screenAudioAdaptiveOwns": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioNoSensor": "No ambient light sensor on this device.",
+  "@screenAudioNoSensor": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioAmbientLight": "Ambient light",
+  "@screenAudioAmbientLight": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioAmbientHelp": "What the ambient light sensor reads right now.",
+  "@screenAudioAmbientHelp": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioNoReading": "No reading yet",
+  "@screenAudioNoReading": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioLux": "{lux} lx",
+  "@screenAudioLux": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    },
+    "placeholders": {
+      "lux": {
+        "type": "String",
+        "description": "Sensor reading in lux."
+      }
+    }
+  },
+  "screenAudioLuxLast": "{lux} lx (last known)",
+  "@screenAudioLuxLast": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    },
+    "placeholders": {
+      "lux": {
+        "type": "String",
+        "description": "Sensor reading in lux."
+      }
+    }
+  },
+  "screenAudioSetsMaximum": "Sets Maximum brightness: adaptive brightness is on.",
+  "@screenAudioSetsMaximum": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioSetsDefault": "Sets Default brightness.",
+  "@screenAudioSetsDefault": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioBrightnessCurve": "Brightness curve",
+  "@screenAudioBrightnessCurve": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Heading over the chart of screen brightness against the room's light level.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioCurveHint": "Drag a point, or tap it to type exact values. The Screen light in Home Assistant moves the top point and the curve follows.",
+  "@screenAudioCurveHint": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Help under the brightness curve chart. The Screen light is the kiosk's light entity in Home Assistant.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioCurvePoint": "Point {number}",
+  "@screenAudioCurvePoint": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Title of the dialog that edits one of the four points on the brightness curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    },
+    "placeholders": {
+      "number": {
+        "type": "String",
+        "description": "The point's number, 1 to 4, counting from the darkest."
+      }
+    }
+  },
+  "screenAudioCurveLightLevel": "Light level (lx)",
+  "@screenAudioCurveLightLevel": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Field label in the curve point dialog: the room light level in lux.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioCurveBrightness": "Brightness (%)",
+  "@screenAudioCurveBrightness": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Field label in the curve point dialog: the screen brightness in percent.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "screenAudioCurveLuxRange": "Enter a light level between {low} and {high} lx",
+  "@screenAudioCurveLuxRange": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Error under the light level field when the value is out of range.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    },
+    "placeholders": {
+      "low": {
+        "type": "String",
+        "description": "Lowest light level allowed, in lux."
+      },
+      "high": {
+        "type": "String",
+        "description": "Highest light level allowed, in lux."
+      }
+    }
+  },
+  "screenAudioCurveLevelRange": "Enter a brightness from {low}% to {high}%",
+  "@screenAudioCurveLevelRange": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Error under the brightness field when the value is out of range.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    },
+    "placeholders": {
+      "low": {
+        "type": "String",
+        "description": "Lowest brightness allowed, in percent."
+      },
+      "high": {
+        "type": "String",
+        "description": "Highest brightness allowed, in percent."
+      }
+    }
+  }
+}
