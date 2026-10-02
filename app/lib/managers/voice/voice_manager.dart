@@ -424,7 +424,9 @@ class VoiceManager extends Manager {
             if (_mirrored.remove(entry.key) == value) continue;
             if (_settings.importing) unawaited(_applySelect(entry.key, value));
           }
-          if (e.key == defs.voiceMuteTimers.key && _ringing.isNotEmpty) {
+          if ((e.key == defs.voiceMuteTimers.key ||
+                  e.key == defs.voiceTimerAlertPill.key) &&
+              _ringing.isNotEmpty) {
             _pushAlert();
           }
         }),
@@ -518,6 +520,7 @@ class VoiceManager extends Manager {
             'model': 'the model, empty for the provider\'s default',
             'voice': 'the voice, empty for the provider\'s default',
           },
+          secretParams: const {'apiKey'},
           handler: (p) async => CommandResult.ok(
             await realtimeSave(
               RealtimeProvider.byId('${p['provider'] ?? ''}'),
@@ -920,23 +923,45 @@ class VoiceManager extends Manager {
     if (unwatch != null) await unwatch();
     if (!want) return;
     final keyOf = {for (final e in entities.entries) e.value: e.key};
+    // Each select's choices as last seen. New ones (a custom model added,
+    // another engine) are no setting, so the pickers are told to read the
+    // selects again. A reload removes the entities and adds them back,
+    // so they can come in either kind of event.
+    final seenOptions = <String, String>{};
+    var optionsChanged = false;
+    void noteOptions(Object? entity, Object? attributes) {
+      if (attributes is! Map || !attributes.containsKey('options')) return;
+      final options = jsonEncode(attributes['options']);
+      final before = seenOptions['$entity'];
+      seenOptions['$entity'] = options;
+      if (before != null && before != options) optionsChanged = true;
+    }
+
     try {
       _unwatchSelects = await _ha.subscribe(
         {'type': 'subscribe_entities', 'entity_ids': keyOf.keys.toList()},
         (event) {
+          optionsChanged = false;
           // subscribe_entities: "a" carries whole states, "c" the changes.
           final added = event['a'];
           if (added is Map) {
             added.forEach((entity, raw) {
-              if (raw is Map) _mirrorSelect(keyOf['$entity'], raw['s']);
+              if (raw is! Map) return;
+              _mirrorSelect(keyOf['$entity'], raw['s']);
+              noteOptions(entity, raw['a']);
             });
           }
           final changed = event['c'];
           if (changed is Map) {
             changed.forEach((entity, raw) {
               final plus = raw is Map ? raw['+'] : null;
-              if (plus is Map) _mirrorSelect(keyOf['$entity'], plus['s']);
+              if (plus is! Map) return;
+              _mirrorSelect(keyOf['$entity'], plus['s']);
+              noteOptions(entity, plus['a']);
             });
+          }
+          if (optionsChanged) {
+            bus.publish(const RemoteStatusChanged('voice-selects'));
           }
         },
       );
@@ -2861,6 +2886,9 @@ class VoiceManager extends Manager {
       commands.execute('setVoiceTimerAlert', {
         'entityId': timerEntity,
         'muted': _settings.get(defs.voiceMuteTimers),
+        // Without its pill the alert still rings and the stop word still
+        // takes it down.
+        'hidden': !_settings.get(defs.voiceTimerAlertPill),
         'speech': ?(_ringing.isEmpty ? null : _alertSpeech),
         'speechText': _alertSpeechText,
         'timers': [

@@ -32793,6 +32793,32 @@
       }
     }
   },
+  "settingMicCaptureModeTitle": "Mode de capture",
+  "@settingMicCaptureModeTitle": {
+    "context": "Settings:Screen & Audio:Microphone settings",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Microphone settings"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Microphone settings"
+      ]
+    }
+  },
+  "settingMicCaptureModeDescription": "Choisissez Communication vocale si le microphone reste muet ici ou s'arrête après que le kiosque a joué un son. Certains appareils n'enregistrent correctement que par leur chemin audio d'appel.",
+  "@settingMicCaptureModeDescription": {
+    "context": "Settings:Screen & Audio:Microphone settings",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Microphone settings"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Microphone settings"
+      ]
+    }
+  },
   "settingMicSoftwareEchoCancellationTitle": "Annulation d'écho",
   "@settingMicSoftwareEchoCancellationTitle": {
     "context": "Settings:Screen & Audio:Microphone settings",
@@ -32977,6 +33003,32 @@
   },
   "screenAudioStereo": "Stéréo 48 kHz",
   "@screenAudioStereo": {
+    "context": "Settings:Screen & Audio:Microphone settings",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Microphone settings"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Microphone settings"
+      ]
+    }
+  },
+  "screenAudioCaptureRawMicrophone": "Microphone brut (par défaut)",
+  "@screenAudioCaptureRawMicrophone": {
+    "context": "Settings:Screen & Audio:Microphone settings",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Microphone settings"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Microphone settings"
+      ]
+    }
+  },
+  "screenAudioCaptureVoiceCommunication": "Communication vocale",
+  "@screenAudioCaptureVoiceCommunication": {
     "context": "Settings:Screen & Audio:Microphone settings",
     "description": "Heading, choice, status or guidance shown in this group.",
     "x-locations": {
@@ -44467,6 +44519,16 @@
   },
   "settingVoiceTimerPillScaleDescription": "La taille des pastilles de minuteur.",
   "@settingVoiceTimerPillScaleDescription": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimerAlertPillTitle": "Afficher les pastilles des minuteurs terminés",
+  "@settingVoiceTimerAlertPillTitle": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimerAlertPillDescription": "Touchez la pastille pour arrêter l'alerte.",
+  "@settingVoiceTimerAlertPillDescription": {
     "context": "Settings > Voice Satellite > Timers",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },

@@ -114,7 +114,7 @@ Certain settings remain unique to each kiosk regardless of the profile configura
 | Accessibility self-repair (needs a per-device adb grant) | `device.keep_accessibility` |
 | Headless management (each box's remote, player and home app) | `gestures.remote_keys.report`, `device.now_playing`, `device.home_app`, `device.home_app_at_boot`, `device.home_app_idle_minutes`, `device.reboot_time`, `device.hot_threshold` |
 | Alarms | `alarms.list`, `alarms.runtime` |
-| Hardware picks | `camera.device`, `camera.rtsp.tls`, `camera.rtsp.resolution`, `camera.rtsp.analysis`, `motion.camera`, `audio.mic_device`, `audio.speaker_device`, `audio.mic_channel`, `audio.software_echo_cancellation`, `audio.mic_noise_suppression`, `audio.mic_gain_db`, `audio.mic_capture_format`, `render.disable_impeller`, `render.legacy_webview`, `ui.scale`, `screen.ambient_display`, `device.agent_mode`, `device.no_battery` |
+| Hardware picks | `camera.device`, `camera.rtsp.tls`, `camera.rtsp.resolution`, `camera.rtsp.analysis`, `motion.camera`, `audio.mic_device`, `audio.speaker_device`, `audio.mic_channel`, `audio.mic_capture_mode`, `audio.software_echo_cancellation`, `audio.mic_noise_suppression`, `audio.mic_gain_db`, `audio.mic_capture_format`, `render.disable_impeller`, `render.legacy_webview`, `ui.scale`, `screen.ambient_display`, `device.agent_mode`, `device.no_battery` |
 | Followed player | `sendspin.player`, `sendspin.player_source`, `sendspin.player_name` |
 | Weather preview | `screensaver.weather_preview`, `screensaver.weather_preview_condition`, `screensaver.weather_preview_period` |
 | Voice Satellite chimes | `voice_chimes.wake`, `voice_chimes.done`, `voice_chimes.error`, `voice_chimes.alert`, `voice_chimes.announce` |
