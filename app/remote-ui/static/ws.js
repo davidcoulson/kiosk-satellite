@@ -304,9 +304,12 @@ export function batterySvg(level, charging) {
 export function renderStats(o) {
   // Null on a device without a battery: the header slot stays empty
   // rather than showing a made-up percent (issue #367).
+  // A number before it reaches innerHTML: the percent is interpolated into
+  // markup, so anything else the socket carried would be parsed as HTML.
+  const battery = o.battery == null ? null : Number(o.battery);
   document.querySelectorAll('.js-batt').forEach((el) => {
-    el.innerHTML = o.battery == null
-      ? '' : `${batterySvg(o.battery, o.charging)}${o.battery}%`;
+    el.innerHTML = battery == null || !Number.isFinite(battery)
+      ? '' : `${batterySvg(battery, o.charging)}${Math.round(battery)}%`;
   });
   setStat('.js-cpu', o.cpu != null ? `CPU ${Math.round(o.cpu)}%` : '');
   // The Overview's metric tiles read the same numbers (overview.js).
