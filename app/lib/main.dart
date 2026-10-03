@@ -46,7 +46,14 @@ Future<void> main() async {
   // whole run (issue #775). The policy reads settings only at handshake
   // time, after settings.init.
   CertificateLog.attach(container.log);
-  HttpOverrides.global = HaHttpOverrides(container.settings);
+  HttpOverrides.global = HaHttpOverrides(container.settings)
+    ..onRefused = (host, fingerprint) => container.log.warn(
+      'tls',
+      '$host presented a certificate other than the one remembered '
+          '(sha256 $fingerprint) and was refused. If it was renewed, switch '
+          '"Ignore SSL errors" on, reconnect and switch it off, or run the '
+          'forgetCertificates command.',
+    );
   // Private CAs the user installed on the device, for the same reason
   // before init: every connection from here on should trust them.
   await trustUserAuthorities();

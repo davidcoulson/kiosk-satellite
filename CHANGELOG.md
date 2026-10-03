@@ -2,6 +2,11 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
+## Unreleased
+
+### Fixed
+- **A self-signed Home Assistant certificate is trusted, not whoever presents one under its name.** The app accepted any untrusted certificate presented for the configured Home Assistant or Immich host, so a device that intercepted the connection could answer with a certificate of its own and collect the access token the websocket, the REST calls and the model downloads carry. The first untrusted certificate each host presents is now remembered by its SHA-256 fingerprint and only that one is accepted afterwards. A certificate that verifies normally is unaffected. When a self-signed certificate is renewed, the app log names the host and the new fingerprint: switch **Ignore SSL errors** on, let the kiosk reconnect and switch it off to accept it. Changing the Home Assistant or Immich URL forgets the remembered certificate too, and the new `forgetCertificates` command forgets them all. The dashboard WebView is unchanged.
+
 ## v2026.10.4 - 2026-10-02
 
 ### Added
