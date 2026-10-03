@@ -3033,8 +3033,8 @@
       ]
     }
   },
-  "fleetKiosksMemberOfTheFleetAFollowerMustConfirm": "Añade un kiosko encontrado o introduce su dirección IP. El seguidor debe aceptar la invitación en su pantalla.",
-  "@fleetKiosksMemberOfTheFleetAFollowerMustConfirm": {
+  "fleetAddAKioskFollowerAcceptsOnScreenOrRemoteAdmin": "Añade un kiosko encontrado o introduce su dirección IP. El seguidor acepta la invitación en su pantalla o en su administración remota.",
+  "@fleetAddAKioskFollowerAcceptsOnScreenOrRemoteAdmin": {
     "context": "Settings > Fleet Management > Add a kiosk and device invitation prompt",
     "description": "Visible label, help or status in this section.",
     "x-locations": {
@@ -3138,19 +3138,6 @@
   },
   "fleetItsSettingsReplaceThisKioskSInTheCategoriesDetail": "A partir de ahora, su configuración sustituye a la de este kiosko en las categorías que sincroniza. Este kiosko conserva su nombre, sus identidades en Home Assistant, Music Assistant y ESPHome y sus dispositivos seleccionados. Puedes salir de la flota cuando quieras desde Configuración > Gestión de flota.",
   "@fleetItsSettingsReplaceThisKioskSInTheCategoriesDetail": {
-    "context": "Settings > Fleet Management > Add a kiosk and device invitation prompt",
-    "description": "Visible label, help or status in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Fleet Management > Add a kiosk and device invitation prompt"
-      ],
-      "remoteAdmin": [
-        "Fleet Management > Add a kiosk and device invitation prompt"
-      ]
-    }
-  },
-  "fleetConfirmOnTheKioskItselfTheInvitationIsWaiting": "Confirma en el propio kiosko. La invitación aparece en su pantalla y en Configuración > Gestión de flota.",
-  "@fleetConfirmOnTheKioskItselfTheInvitationIsWaiting": {
     "context": "Settings > Fleet Management > Add a kiosk and device invitation prompt",
     "description": "Visible label, help or status in this section.",
     "x-locations": {
@@ -7801,6 +7788,16 @@
       ]
     }
   },
+  "intercomMaxDurationReached": "Se alcanzó la duración máxima de la llamada",
+  "@intercomMaxDurationReached": {
+    "context": "Intercom call controls",
+    "description": "Why the call ended: it ran for the Maximum call duration setting.",
+    "x-locations": {
+      "device": [
+        "Active intercom call overlay"
+      ]
+    }
+  },
   "intercomAnnouncement": "Anuncio",
   "@intercomAnnouncement": {
     "context": "Intercom call controls",
@@ -12300,17 +12297,6 @@
       ]
     }
   },
-  "overviewOpen": "Abrir",
-  "@overviewOpen": {
-    "context": "Remote admin > Overview > Needs attention",
-    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
-    "x-locations": {
-      "device": [],
-      "remoteAdmin": [
-        "Overview > Needs attention"
-      ]
-    }
-  },
   "overviewUpdate": "Actualizar",
   "@overviewUpdate": {
     "context": "Remote admin > Overview > Needs attention",
@@ -12336,17 +12322,6 @@
       "name": {
         "type": "String"
       }
-    }
-  },
-  "overviewInvitationHelp": "Confirma en la pantalla del kiosko o en Administración de flota en ese dispositivo.",
-  "@overviewInvitationHelp": {
-    "context": "Remote admin > Overview > Needs attention",
-    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
-    "x-locations": {
-      "device": [],
-      "remoteAdmin": [
-        "Overview > Needs attention"
-      ]
     }
   },
   "overviewOutdatedOne": "1 seguidor usa otra versión",
@@ -23788,6 +23763,32 @@
       ]
     }
   },
+  "settingBtproxyScreenOffScanTitle": "Seguir escaneando con la pantalla apagada",
+  "@settingBtproxyScreenOffScanTitle": {
+    "context": "Settings > ESPHome > Bluetooth Proxy",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > ESPHome > Bluetooth Proxy"
+      ],
+      "remoteAdmin": [
+        "ESPHome > Bluetooth Proxy"
+      ]
+    }
+  },
+  "settingBtproxyScreenOffScanDescription": "Actívalo si el proxy deja de retransmitir con la pantalla apagada. Usa más CPU.",
+  "@settingBtproxyScreenOffScanDescription": {
+    "context": "Settings > ESPHome > Bluetooth Proxy",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > ESPHome > Bluetooth Proxy"
+      ],
+      "remoteAdmin": [
+        "ESPHome > Bluetooth Proxy"
+      ]
+    }
+  },
   "settingBtproxyConnectionsTitle": "Permitir conexiones a dispositivos",
   "@settingBtproxyConnectionsTitle": {
     "context": "Settings > ESPHome > Bluetooth Proxy",
@@ -28447,6 +28448,253 @@
   "@intercomOptionTalkHandsfree": {
     "context": "Settings > Intercom > Talk",
     "description": "Visible option. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "settingIntercomMaxCallMinutesTitle": "Duración máxima de la llamada",
+  "@settingIntercomMaxCallMinutesTitle": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "settingIntercomMaxCallMinutesDescription": "Las llamadas terminan solas después de este tiempo.",
+  "@settingIntercomMaxCallMinutesDescription": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionCallUnlimited": "Ilimitada",
+  "@intercomOptionCallUnlimited": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionCall1": "1 minuto",
+  "@intercomOptionCall1": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionCall2": "2 minutos",
+  "@intercomOptionCall2": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionCall5": "5 minutos",
+  "@intercomOptionCall5": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionCall10": "10 minutos",
+  "@intercomOptionCall10": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionCall15": "15 minutos",
+  "@intercomOptionCall15": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionCall20": "20 minutos",
+  "@intercomOptionCall20": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionCall30": "30 minutos",
+  "@intercomOptionCall30": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionCall45": "45 minutos",
+  "@intercomOptionCall45": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionCall60": "60 minutos",
+  "@intercomOptionCall60": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "settingIntercomHangupKeyTitle": "Colgar la llamada al pulsar este botón",
+  "@settingIntercomHangupKeyTitle": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "settingIntercomHangupKeyDescription": "Durante una llamada, el botón la termina en lugar de hacer su función habitual.",
+  "@settingIntercomHangupKeyDescription": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionHangupOff": "Desactivado",
+  "@intercomOptionHangupOff": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionHangupVolumeUp": "Subir volumen",
+  "@intercomOptionHangupVolumeUp": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option, the hardware volume up button. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionHangupVolumeDown": "Bajar volumen",
+  "@intercomOptionHangupVolumeDown": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option, the hardware volume down button. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionHangupMute": "Silenciar",
+  "@intercomOptionHangupMute": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option, the hardware mute button. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionHangupHelp": "Ayuda",
+  "@intercomOptionHangupHelp": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option, the hardware help button. Its stored value stays unchanged.",
     "x-locations": {
       "device": [
         "Settings > Intercom > Talk"
@@ -44021,6 +44269,16 @@
   },
   "settingVoiceRealtimeIdleSecondsDescription": "La conversación termina tras este tiempo sin que nadie hable.",
   "@settingVoiceRealtimeIdleSecondsDescription": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceRealtimeHistoryHoursTitle": "Duración de la sesión",
+  "@settingVoiceRealtimeHistoryHoursTitle": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceRealtimeHistoryHoursDescription": "Lo dicho dentro de este tiempo pasa a la siguiente conversación.",
+  "@settingVoiceRealtimeHistoryHoursDescription": {
     "context": "Settings > Voice Satellite > Realtime",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },

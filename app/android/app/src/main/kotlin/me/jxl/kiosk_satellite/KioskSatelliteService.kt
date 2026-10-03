@@ -126,8 +126,8 @@ class KioskSatelliteService : Service() {
             // Already up and in the foreground: nothing to start, and no
             // deadline to arm. Every resume of the Activity lands here.
             // A service that came up from the background was refused its
-            // while-in-use types (microphone, camera, location); a resume is
-            // the first moment Android will grant them.
+            // while-in-use types (microphone, camera, location), and a
+            // resume is the first moment Android grants them.
             val live = instance
             if (live != null && isForeground) {
                 if (ActivityState.resumed) live.mainHandler.post { live.regainTypes() }
@@ -279,8 +279,8 @@ class KioskSatelliteService : Service() {
         val notification = buildNotification(reasons, localized)
         val wanted = typesFor(reasons)
         val base = typesFor(setOf(REASON_SESSIONS))
-        // Location is a while-in-use type like the microphone: refused from
-        // the background, and not worth the other types when it is.
+        // Location is a while-in-use type like the microphone. A refusal of
+        // it from the background must not cost the other types.
         val withoutLocation =
             if (Build.VERSION.SDK_INT >= 29) {
                 wanted and ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION.inv()
@@ -371,14 +371,13 @@ class KioskSatelliteService : Service() {
         // this type (or the background location grant, which the app
         // never asks for).
         //
-        // The Bluetooth proxy needs it for the same reason. Android only
-        // delivers scan results to an app that holds fine location at the
-        // moment a scan starts, and "while in use" lapses when the screen
-        // goes off unless a service of this type is running. The scan
-        // rotates every two minutes, so a panel whose screen was turned off
-        // went silent at the next rotation ("Need ACCESS_FINE_LOCATION
-        // permission to get scan results") and stayed silent until the
-        // screen came back; connectedDevice alone does not carry location.
+        // The Bluetooth proxy needs it too. Android delivers scan results
+        // only to an app that holds fine location when the scan starts, and
+        // the while-in-use grant lapses once the screen is off unless a
+        // service of this type runs. The proxy restarts its scan every two
+        // minutes, so without it a panel went deaf at the first restart
+        // after screen-off and stayed deaf until the screen came back on.
+        // connectedDevice does not carry location.
         if ((REASON_LOCATION in reasons || REASON_BLUETOOTH in reasons) &&
             Build.VERSION.SDK_INT >= 29 &&
             granted(android.Manifest.permission.ACCESS_FINE_LOCATION)

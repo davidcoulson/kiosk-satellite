@@ -1698,8 +1698,8 @@ abstract class UiStrings {
   /// Visible label, help or status in this section.
   ///
   /// In en, this message translates to:
-  /// **'Add a discovered kiosk or enter its IP address. The follower must accept the invitation on its screen.'**
-  String get fleetKiosksMemberOfTheFleetAFollowerMustConfirm;
+  /// **'Add a discovered kiosk or enter its IP address. The follower accepts the invitation on its screen or in its remote admin.'**
+  String get fleetAddAKioskFollowerAcceptsOnScreenOrRemoteAdmin;
 
   /// Visible label, help or status in this section.
   ///
@@ -1742,12 +1742,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Its settings replace this kiosk\'s in the categories it syncs, from now on. This kiosk keeps its name, its Home Assistant, Music Assistant and ESPHome selves and its hardware picks. You can leave the fleet at any time under Settings, Fleet Management.'**
   String get fleetItsSettingsReplaceThisKioskSInTheCategoriesDetail;
-
-  /// Visible label, help or status in this section.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm on the kiosk itself. The invitation is waiting on its screen and under Settings, Fleet Management.'**
-  String get fleetConfirmOnTheKioskItselfTheInvitationIsWaiting;
 
   /// Visible label, help or status in this section.
   ///
@@ -3777,6 +3771,12 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Call ended'**
   String get intercomEnded;
+
+  /// Why the call ended: it ran for the Maximum call duration setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum call duration reached'**
+  String get intercomMaxDurationReached;
 
   /// Label or guidance in this section.
   ///
@@ -5846,12 +5846,6 @@ abstract class UiStrings {
   /// Translate the interface text. Keep external names, versions and technical details unchanged.
   ///
   /// In en, this message translates to:
-  /// **'Open'**
-  String get overviewOpen;
-
-  /// Translate the interface text. Keep external names, versions and technical details unchanged.
-  ///
-  /// In en, this message translates to:
   /// **'Update'**
   String get overviewUpdate;
 
@@ -5860,12 +5854,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'{name} wants to lead this kiosk'**
   String overviewInvitation(String name);
-
-  /// Translate the interface text. Keep external names, versions and technical details unchanged.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm on the kiosk screen or under Fleet Management there.'**
-  String get overviewInvitationHelp;
 
   /// Translate the interface text. Keep external names, versions and technical details unchanged.
   ///
@@ -11127,6 +11115,18 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
+  /// **'Keep scanning with the screen off'**
+  String get settingBtproxyScreenOffScanTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on if the proxy stops relaying while the screen is off. Uses more CPU.'**
+  String get settingBtproxyScreenOffScanDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
   /// **'Allow device connections'**
   String get settingBtproxyConnectionsTitle;
 
@@ -13229,6 +13229,120 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Hands free'**
   String get intercomOptionTalkHandsfree;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum call duration'**
+  String get settingIntercomMaxCallMinutesTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Calls end on their own after this long.'**
+  String get settingIntercomMaxCallMinutesDescription;
+
+  /// Visible option. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited'**
+  String get intercomOptionCallUnlimited;
+
+  /// Visible option. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'1 minute'**
+  String get intercomOptionCall1;
+
+  /// Visible option. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'2 minutes'**
+  String get intercomOptionCall2;
+
+  /// Visible option. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'5 minutes'**
+  String get intercomOptionCall5;
+
+  /// Visible option. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'10 minutes'**
+  String get intercomOptionCall10;
+
+  /// Visible option. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'15 minutes'**
+  String get intercomOptionCall15;
+
+  /// Visible option. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'20 minutes'**
+  String get intercomOptionCall20;
+
+  /// Visible option. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'30 minutes'**
+  String get intercomOptionCall30;
+
+  /// Visible option. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'45 minutes'**
+  String get intercomOptionCall45;
+
+  /// Visible option. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'60 minutes'**
+  String get intercomOptionCall60;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Hang up call when pressing this button'**
+  String get settingIntercomHangupKeyTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'During a call the button ends it instead of its usual action.'**
+  String get settingIntercomHangupKeyDescription;
+
+  /// Visible option. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get intercomOptionHangupOff;
+
+  /// Visible option, the hardware volume up button. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume up'**
+  String get intercomOptionHangupVolumeUp;
+
+  /// Visible option, the hardware volume down button. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume down'**
+  String get intercomOptionHangupVolumeDown;
+
+  /// Visible option, the hardware mute button. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute'**
+  String get intercomOptionHangupMute;
+
+  /// Visible option, the hardware help button. Its stored value stays unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get intercomOptionHangupHelp;
 
   /// Section heading.
   ///
@@ -20879,6 +20993,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'The conversation ends after this long with nobody talking.'**
   String get settingVoiceRealtimeIdleSecondsDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Session duration'**
+  String get settingVoiceRealtimeHistoryHoursTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'What was said within this time carries into the next conversation.'**
+  String get settingVoiceRealtimeHistoryHoursDescription;
 
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///

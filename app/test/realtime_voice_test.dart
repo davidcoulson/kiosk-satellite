@@ -11,9 +11,12 @@ import 'package:kiosk_satellite/managers/voice/realtime/mcp_client.dart';
 import 'package:kiosk_satellite/managers/voice/realtime/openai_realtime_backend.dart';
 import 'package:kiosk_satellite/managers/voice/realtime/pcm_resampler.dart';
 import 'package:kiosk_satellite/managers/voice/realtime/realtime_backend.dart';
+import 'package:kiosk_satellite/managers/voice/realtime/realtime_history.dart';
 import 'package:kiosk_satellite/managers/voice/realtime/realtime_player.dart';
 import 'package:kiosk_satellite/managers/voice/realtime/realtime_session.dart';
 import 'package:kiosk_satellite/managers/voice/realtime/realtime_tools.dart';
+import 'package:kiosk_satellite/managers/voice/voice_manager.dart'
+    show realtimeLocationLine;
 import 'package:kiosk_satellite/managers/voice/voice_session.dart';
 
 Uint8List _pcm(List<int> samples) {
@@ -216,9 +219,14 @@ class _Chimes implements VoicePlayerPort {
 }
 
 class _Harness {
-  _Harness(this.time, {this.options = const RealtimeOptions()}) {
+  _Harness(this.time, {this.options = const RealtimeOptions(), this.location}) {
     session = RealtimeSession(
-      backend: () => backend,
+      location: location,
+      // A new backend once a conversation closed its own, as the app
+      // makes one per conversation.
+      backend: () => backend.closed
+          ? backend = (_Backend()..clientTurns = backend.clientTurns)
+          : backend,
       mic: mic,
       player: player,
       chimes: chimes,
@@ -237,8 +245,9 @@ class _Harness {
 
   final FakeAsync time;
   RealtimeOptions options;
+  final Future<String> Function()? location;
   late final RealtimeSession session;
-  final backend = _Backend();
+  var backend = _Backend();
   final mic = _Mic();
   final player = _Player();
   final chimes = _Chimes();
@@ -465,6 +474,133 @@ void main() {
       await backend.close();
     });
 
+    test('where the kiosk is joins the instructions, with xAI the earlier '
+        'exchanges too', () async {
+      const history = [
+        RealtimeTurn(user: true, text: 'Dim the kitchen'),
+        RealtimeTurn(user: false, text: 'Done.'),
+      ];
+      for (final provider in RealtimeProvider.values) {
+        final backend = make(
+          RealtimeConfig(provider: provider, instructions: 'Be brief.'),
+        );
+        await backend.start(
+          const RealtimeStart(
+            context: 'This kiosk is in the Kitchen area.',
+            history: history,
+          ),
+        );
+        final instructions =
+            (socket.sent.first['session'] as Map)['instructions'] as String;
+        if (provider == RealtimeProvider.xai) {
+          expect(
+            instructions,
+            'Be brief.\n\n${realtimeContextText(context: 'This kiosk is in the Kitchen area.', history: history)}',
+          );
+          expect(
+            instructions,
+            endsWith('User: Dim the kitchen\nAssistant: Done.'),
+          );
+          expect(socket.sent, hasLength(1));
+        } else {
+          expect(
+            instructions,
+            'Be brief.\n\nThis kiosk is in the Kitchen area.',
+          );
+        }
+        await backend.close();
+      }
+      // Neither: the instructions alone.
+      final backend = make(
+        const RealtimeConfig(provider: RealtimeProvider.openai),
+      );
+      await backend.start(const RealtimeStart());
+      expect(
+        (socket.sent.first['session'] as Map)['instructions'],
+        OpenAiRealtimeBackend.defaultInstructions,
+      );
+      expect(socket.sent, hasLength(1));
+      await backend.close();
+    });
+
+    test(
+      'OpenAI: earlier exchanges replay as the conversation\'s items',
+      () async {
+        final backend = make(
+          const RealtimeConfig(provider: RealtimeProvider.openai),
+        );
+        await backend.start(
+          const RealtimeStart(
+            history: [
+              RealtimeTurn(user: true, text: 'Turn on the AC.'),
+              RealtimeTurn(user: false, text: 'The office AC is now on.'),
+            ],
+          ),
+        );
+        expect(socket.sent.first['type'], 'session.update');
+        expect(socket.sent.skip(1).toList(), [
+          {
+            'type': 'conversation.item.create',
+            'item': {
+              'type': 'message',
+              'role': 'user',
+              'content': [
+                {'type': 'input_text', 'text': 'Turn on the AC.'},
+              ],
+            },
+          },
+          {
+            'type': 'conversation.item.create',
+            'item': {
+              'type': 'message',
+              'role': 'assistant',
+              'content': [
+                {'type': 'output_text', 'text': 'The office AC is now on.'},
+              ],
+            },
+          },
+        ]);
+        await backend.close();
+      },
+    );
+
+    test('Azure: the key goes in the api-key header', () async {
+      final backend = make(
+        const RealtimeConfig(
+          provider: RealtimeProvider.openai,
+          endpoint: 'https://res.openai.azure.com/openai/v1/realtime?model=dep',
+          apiKey: 'az',
+        ),
+      );
+      await backend.start(const RealtimeStart());
+      expect(
+        url.toString(),
+        'wss://res.openai.azure.com/openai/v1/realtime?model=dep',
+      );
+      expect(headers, {'api-key': 'az'});
+      await backend.close();
+    });
+
+    test('a failed connection never shows a key in the address', () async {
+      final backend = OpenAiRealtimeBackend(
+        config: const RealtimeConfig(
+          provider: RealtimeProvider.openai,
+          apiKey: 'sk',
+        ),
+        toolbox: _Tools(),
+        connector: (u, h) async => throw ArgumentError(
+          "Unsupported scheme 'wss' in URI "
+          'wss://res.openai.azure.com/v1/realtime?model=m&api-key=secret',
+        ),
+      );
+      final closed = backend.events.firstWhere((e) => e is RealtimeClosed);
+      await backend.start(const RealtimeStart());
+      final error = (await closed as RealtimeClosed).error!;
+      expect(error, contains('api-key=***'));
+      expect(error, isNot(contains('secret')));
+      await backend.close();
+    });
+
     test(
       'xAI: voice and turn detection at the top, a relay endpoint',
       () async {
@@ -686,7 +822,131 @@ void main() {
     });
   });
 
+  group('RealtimeHistory', () {
+    test('drops what is older than the duration, keeps the rest in order', () {
+      var now = DateTime(2026);
+      final history = RealtimeHistory(now: () => now);
+      history.add(user: true, text: 'first');
+      now = now.add(const Duration(minutes: 40));
+      history
+        ..add(user: true, text: 'second')
+        ..add(user: false, text: '  ')
+        ..add(user: false, text: 'answer');
+      now = now.add(const Duration(minutes: 30));
+      expect(history.recent(const Duration(hours: 1)).map((t) => t.text), [
+        'second',
+        'answer',
+      ]);
+      // Gone for good, even if the duration grows again.
+      expect(history.recent(const Duration(hours: 12)).map((t) => t.text), [
+        'second',
+        'answer',
+      ]);
+    });
+
+    test('hands over the newest exchanges within the limits', () {
+      final history = RealtimeHistory();
+      for (var i = 0; i < 100; i++) {
+        history.add(user: i.isEven, text: 'turn $i');
+      }
+      final recent = history.recent(const Duration(hours: 1));
+      expect(recent, hasLength(RealtimeHistory.maxTurns));
+      expect(recent.last.text, 'turn 99');
+      history
+        ..clear()
+        ..add(user: true, text: 'x' * 5000)
+        ..add(user: true, text: 'y' * 5000);
+      expect(history.recent(const Duration(hours: 1)).map((t) => t.text[0]), [
+        'y',
+      ]);
+    });
+  });
+
+  test('the location line names the device, not the assistant', () {
+    expect(
+      realtimeLocationLine(name: 'KS Portal Go', area: 'Kitchen'),
+      'You run on a device named "KS Portal Go" in Home Assistant. That is '
+      'its name, not yours. The device is in the Kitchen area. '
+      "When the user doesn't name an area, use this one.",
+    );
+    expect(
+      realtimeLocationLine(name: 'KS Portal Go', area: ''),
+      'You run on a device named "KS Portal Go" in Home Assistant. That is '
+      'its name, not yours.',
+    );
+    expect(
+      realtimeLocationLine(name: '', area: 'Kitchen'),
+      "The device is in the Kitchen area. When the user doesn't name an "
+      'area, use this one.',
+    );
+    expect(realtimeLocationLine(name: '', area: ''), '');
+  });
+
   group('RealtimeSession', () {
+    test(
+      'what was said carries into the next conversation for the session duration',
+      () {
+        fakeAsync((time) {
+          final h = _Harness(
+            time,
+            options: const RealtimeOptions(historyHours: 1),
+          );
+          h.wakeAndConnect();
+          expect(h.backend.started?.history, isEmpty);
+          h.backend
+            ..emit(const RealtimeUserText('Dim the kitchen'))
+            ..emit(const RealtimeAnswerText('Dim'))
+            ..emit(const RealtimeAnswerText('Dimmed to half.', complete: true));
+          time.flushMicrotasks();
+          h.session.cancel();
+          time.flushMicrotasks();
+          time.elapse(const Duration(minutes: 30));
+          h.wakeAndConnect();
+          expect(h.backend.started?.history.map((t) => (t.user, t.text)), [
+            (true, 'Dim the kitchen'),
+            (false, 'Dimmed to half.'),
+          ]);
+          h.session.cancel();
+          time.flushMicrotasks();
+          time.elapse(const Duration(minutes: 31));
+          h.wakeAndConnect();
+          expect(h.backend.started?.history, isEmpty);
+          h.session.cancel();
+          time.flushMicrotasks();
+        });
+      },
+    );
+
+    test(
+      'where the kiosk is reaches the provider, and a slow lookup does not hold it up',
+      () {
+        fakeAsync((time) {
+          final h = _Harness(
+            time,
+            location: () async => 'This kiosk is in the Kitchen area.',
+          );
+          h.wakeAndConnect();
+          expect(
+            h.backend.started?.context,
+            'This kiosk is in the Kitchen area.',
+          );
+          h.session.cancel();
+          time.flushMicrotasks();
+          final slow = _Harness(
+            time,
+            location: () => Completer<String>().future,
+          );
+          unawaited(slow.session.wake('Hey Jarvis'));
+          time.elapse(
+            RealtimeSession.locationWait + const Duration(milliseconds: 100),
+          );
+          expect(slow.backend.started?.context, '');
+          slow.session.cancel();
+          time.flushMicrotasks();
+        });
+      },
+    );
+
     test('quiet speech survives a pause and a long continuous utterance', () {
       fakeAsync((time) {
         final h = _Harness(time);

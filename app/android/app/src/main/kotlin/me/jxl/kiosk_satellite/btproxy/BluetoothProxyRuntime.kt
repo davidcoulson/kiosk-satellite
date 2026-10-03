@@ -33,6 +33,8 @@ internal object BluetoothProxyRuntime {
         val advertisementFilter: String = "",
         /** The scan duty cycle, by the setting's key (see [ScanDuty]). */
         val scanDuty: String = ScanDuty.BALANCED.key,
+        /** Use the filter list that keeps scanning with the screen off. */
+        val screenOffScan: Boolean = false,
         /** The ESPHome node name to answer as: the mDNS instance, the
          *  <name>.local host, and what Home Assistant builds this
          *  device's action names from. Empty keeps the generated
@@ -128,6 +130,7 @@ internal object BluetoothProxyRuntime {
                 filter = filter,
                 onLog = { line -> log("scan: $line") },
                 scanDuty = ScanDuty.fromKey(config.scanDuty),
+                screenOffScan = config.screenOffScan,
             )
         } else {
             null
@@ -290,6 +293,11 @@ internal object BluetoothProxyRuntime {
     /** A new scan duty cycle for the running scanner; nothing without one. */
     fun setScanDuty(key: String?) {
         engine?.setScanDuty(ScanDuty.fromKey(key))
+    }
+
+    /** Switch the screen-off filter list. Does nothing without a scanner. */
+    fun setScreenOffScan(enabled: Boolean) {
+        engine?.setScreenOffScan(enabled)
     }
 
     /** Push one entity's new value; ignored while stopped or unknown ids. */

@@ -1156,6 +1156,14 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingIntercomTalkModeTitle",
     "description": "settingIntercomTalkModeDescription",
   },
+  "intercom.max_call_minutes": {
+    "title": "settingIntercomMaxCallMinutesTitle",
+    "description": "settingIntercomMaxCallMinutesDescription",
+  },
+  "intercom.hangup_key": {
+    "title": "settingIntercomHangupKeyTitle",
+    "description": "settingIntercomHangupKeyDescription",
+  },
   "kiosk.enabled": {
     "title": "settingKioskEnabledTitle",
     "description": "settingKioskEnabledDescription",
@@ -1391,6 +1399,10 @@ const settingMessageIds = <String, Map<String, String>>{
   "btproxy.scan_duty": {
     "title": "settingBtproxyScanDutyTitle",
     "description": "settingBtproxyScanDutyDescription",
+  },
+  "btproxy.screen_off_scan": {
+    "title": "settingBtproxyScreenOffScanTitle",
+    "description": "settingBtproxyScreenOffScanDescription",
   },
   "btproxy.connections": {
     "title": "settingBtproxyConnectionsTitle",
@@ -1903,6 +1915,10 @@ const settingMessageIds = <String, Map<String, String>>{
   "voice.realtime_idle_seconds": {
     "title": "settingVoiceRealtimeIdleSecondsTitle",
     "description": "settingVoiceRealtimeIdleSecondsDescription",
+  },
+  "voice.realtime_history_hours": {
+    "title": "settingVoiceRealtimeHistoryHoursTitle",
+    "description": "settingVoiceRealtimeHistoryHoursDescription",
   },
   "voice.realtime_talk_over": {
     "title": "settingVoiceRealtimeTalkOverTitle",

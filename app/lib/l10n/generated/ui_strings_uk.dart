@@ -898,8 +898,8 @@ class UiStringsUk extends UiStrings {
   String get fleetAddAKiosk => 'Додати кіоск';
 
   @override
-  String get fleetKiosksMemberOfTheFleetAFollowerMustConfirm =>
-      'Додайте виявлений кіоск або введіть його IP-адресу. Підпорядкований кіоск повинен підтвердити запрошення на своєму екрані.';
+  String get fleetAddAKioskFollowerAcceptsOnScreenOrRemoteAdmin =>
+      'Додайте виявлений кіоск або введіть його IP-адресу. Підпорядкований кіоск підтверджує запрошення на своєму екрані або у своєму віддаленому адмініструванні.';
 
   @override
   String get fleetSendInvitation => 'Надіслати запрошення';
@@ -928,10 +928,6 @@ class UiStringsUk extends UiStrings {
   @override
   String get fleetItsSettingsReplaceThisKioskSInTheCategoriesDetail =>
       'Його налаштування замінять поточні у вибраних категоріях синхронізації відтепер. Цей кіоск збереже своє ім\'я, інтеграції Home Assistant, Music Assistant, ESPHome та вибір апаратних засобів. Ви можете вийти з групи в будь-який час у розділі Налаштування > Керування групою.';
-
-  @override
-  String get fleetConfirmOnTheKioskItselfTheInvitationIsWaiting =>
-      'Підтвердіть дію на самому кіоску. Запрошення очікує на його екрані та у розділі Налаштування > Керування групою.';
 
   @override
   String get fleetAccept => 'Прийняти';
@@ -2129,6 +2125,10 @@ class UiStringsUk extends UiStrings {
 
   @override
   String get intercomEnded => 'Виклик завершено';
+
+  @override
+  String get intercomMaxDurationReached =>
+      'Досягнуто максимальної тривалості виклику';
 
   @override
   String get intercomAnnouncement => 'Оголошення';
@@ -3339,19 +3339,12 @@ class UiStringsUk extends UiStrings {
   String get overviewAttention => 'Потребує уваги';
 
   @override
-  String get overviewOpen => 'Відкрити';
-
-  @override
   String get overviewUpdate => 'Оновити';
 
   @override
   String overviewInvitation(String name) {
     return '$name пропонує керувати цим кіоском';
   }
-
-  @override
-  String get overviewInvitationHelp =>
-      'Підтвердьте на екрані кіоска або у розділі керування парком.';
 
   @override
   String get overviewOutdatedOne =>
@@ -6439,6 +6432,14 @@ class UiStringsUk extends UiStrings {
       'Частка часу, протягом якої радіомодуль прослуховує ефір. Менше значення знижує навантаження на процесор; пристрої, які рідко передають сигнали, з\'являтимуться довше.';
 
   @override
+  String get settingBtproxyScreenOffScanTitle =>
+      'Сканувати з вимкненим екраном';
+
+  @override
+  String get settingBtproxyScreenOffScanDescription =>
+      'Увімкніть, якщо проксі перестає транслювати, коли екран вимкнено. Збільшує навантаження на процесор.';
+
+  @override
   String get settingBtproxyConnectionsTitle =>
       'Дозволити підключення пристроїв';
 
@@ -7675,6 +7676,67 @@ class UiStringsUk extends UiStrings {
 
   @override
   String get intercomOptionTalkHandsfree => 'Вільні руки';
+
+  @override
+  String get settingIntercomMaxCallMinutesTitle =>
+      'Максимальна тривалість виклику';
+
+  @override
+  String get settingIntercomMaxCallMinutesDescription =>
+      'Виклики завершуються самі після цього часу.';
+
+  @override
+  String get intercomOptionCallUnlimited => 'Без обмежень';
+
+  @override
+  String get intercomOptionCall1 => '1 хвилина';
+
+  @override
+  String get intercomOptionCall2 => '2 хвилини';
+
+  @override
+  String get intercomOptionCall5 => '5 хвилин';
+
+  @override
+  String get intercomOptionCall10 => '10 хвилин';
+
+  @override
+  String get intercomOptionCall15 => '15 хвилин';
+
+  @override
+  String get intercomOptionCall20 => '20 хвилин';
+
+  @override
+  String get intercomOptionCall30 => '30 хвилин';
+
+  @override
+  String get intercomOptionCall45 => '45 хвилин';
+
+  @override
+  String get intercomOptionCall60 => '60 хвилин';
+
+  @override
+  String get settingIntercomHangupKeyTitle =>
+      'Завершувати виклик натисканням цієї кнопки';
+
+  @override
+  String get settingIntercomHangupKeyDescription =>
+      'Під час виклику кнопка завершує його замість своєї звичайної дії.';
+
+  @override
+  String get intercomOptionHangupOff => 'Вимкнено';
+
+  @override
+  String get intercomOptionHangupVolumeUp => 'Гучніше';
+
+  @override
+  String get intercomOptionHangupVolumeDown => 'Тихіше';
+
+  @override
+  String get intercomOptionHangupMute => 'Вимкнути звук';
+
+  @override
+  String get intercomOptionHangupHelp => 'Довідка';
 
   @override
   String get intercomTalkSection => 'Розмова';
@@ -12132,6 +12194,13 @@ class UiStringsUk extends UiStrings {
   @override
   String get settingVoiceRealtimeIdleSecondsDescription =>
       'Розмова завершується, якщо стільки часу ніхто не говорить.';
+
+  @override
+  String get settingVoiceRealtimeHistoryHoursTitle => 'Тривалість сеансу';
+
+  @override
+  String get settingVoiceRealtimeHistoryHoursDescription =>
+      'Сказане протягом цього часу переноситься в наступну розмову.';
 
   @override
   String get settingVoiceRealtimeTalkOverTitle => 'Перебивати відповіді';

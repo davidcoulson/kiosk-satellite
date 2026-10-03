@@ -148,7 +148,7 @@ class OpenAiRealtimeBackend implements RealtimeBackend {
   static const rate = 24000;
 
   static const defaultInstructions =
-      'You are a voice assistant on a wall tablet in the user\'s home. Keep '
+      'You are a voice assistant in the user\'s home. Keep '
       'answers short and conversational, since they are spoken aloud. Use '
       'the tools to check and control the home. Answer in the language the '
       'user speaks to you. When the user is done, call end_conversation.';
@@ -218,10 +218,7 @@ class OpenAiRealtimeBackend implements RealtimeBackend {
     }
     if (_closing) return;
     try {
-      _socket = await _connector(url, {
-        if (config.apiKey.trim().isNotEmpty)
-          'Authorization': 'Bearer ${config.apiKey.trim()}',
-      });
+      _socket = await _connector(url, _authHeaders(url, config.apiKey.trim()));
     } catch (e) {
       // The provider turning the connection down answers the upgrade with
       // an HTTP status: say what that usually means.
@@ -257,18 +254,48 @@ class OpenAiRealtimeBackend implements RealtimeBackend {
       },
     );
     _send(_sessionUpdate(start, tools));
+    if (_replaysHistory && start.history.isNotEmpty) {
+      for (final turn in start.history) {
+        _send(_historyItem(turn));
+      }
+      log?.call('replayed ${start.history.length} earlier lines');
+    }
     _readyTimer = Timer(readyTimeout, () {
       if (!_ready) _finish(error: 'no answer from the provider');
     });
   }
 
+  /// OpenAI takes the earlier exchanges as the conversation's own items,
+  /// which the model follows far better than the same lines in its
+  /// instructions: from there "turn it off" missed the AC it had just
+  /// turned on. xAI gets them in the instructions.
+  bool get _replaysHistory => config.provider == RealtimeProvider.openai;
+
+  static Map<String, Object?> _historyItem(RealtimeTurn turn) => {
+    'type': 'conversation.item.create',
+    'item': {
+      'type': 'message',
+      'role': turn.user ? 'user' : 'assistant',
+      'content': [
+        {'type': turn.user ? 'input_text' : 'output_text', 'text': turn.text},
+      ],
+    },
+  };
+
   Map<String, Object?> _sessionUpdate(
     RealtimeStart start,
     List<RealtimeToolSpec> tools,
   ) {
-    final instructions = config.instructions.trim().isEmpty
-        ? defaultInstructions
-        : config.instructions.trim();
+    final added = realtimeContextText(
+      context: start.context,
+      history: _replaysHistory ? const [] : start.history,
+    );
+    final instructions = [
+      config.instructions.trim().isEmpty
+          ? defaultInstructions
+          : config.instructions.trim(),
+      if (added.isNotEmpty) added,
+    ].join('\n\n');
     const format = {'type': 'audio/pcm', 'rate': rate};
     final language = start.language.split(RegExp('[-_]')).first.toLowerCase();
     final toolList = [for (final tool in tools) tool.toJson()];
@@ -541,9 +568,30 @@ class OpenAiRealtimeBackend implements RealtimeBackend {
     unawaited(_events.close());
   }
 
+  /// Azure OpenAI answers a Bearer key with a redirect to the same address
+  /// with the key in the query, and dart:io cannot follow a redirect to
+  /// wss. Its own api-key header connects without one.
+  static Map<String, String> _authHeaders(Uri url, String key) {
+    if (key.isEmpty) return const {};
+    final host = url.host.toLowerCase();
+    if (host.endsWith('.azure.com') || host.endsWith('.azure.us')) {
+      return {'api-key': key};
+    }
+    return {'Authorization': 'Bearer $key'};
+  }
+
   static String _describe(Object e) {
-    // The socket's wrapper adds nothing a person needs to read.
-    final text = '$e'.replaceFirst('WebSocketChannelException: ', '');
+    // The socket's wrapper adds nothing a person needs to read. A failed
+    // redirect quotes the address it went to, which can carry a key.
+    final text = '$e'
+        .replaceFirst('WebSocketChannelException: ', '')
+        .replaceAllMapped(
+          RegExp(
+            r'([?&](?:api[-_]?key|key|token|access_token)=)[^&\s]+',
+            caseSensitive: false,
+          ),
+          (m) => '${m[1]}***',
+        );
     return text.length > 200 ? '${text.substring(0, 200)}...' : text;
   }
 

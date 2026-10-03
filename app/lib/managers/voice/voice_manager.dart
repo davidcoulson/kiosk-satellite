@@ -88,6 +88,18 @@ class VoiceManager extends Manager {
   /// What the assist overlay draws.
   final view = ValueNotifier<AssistView>(AssistView.hidden);
 
+  /// The turn in Home Assistant's assist_satellite states, as the Voice
+  /// Satellite sensor reports it. Home Assistant's own satellite entity
+  /// stays idle through a realtime conversation, which runs no pipeline.
+  String _satelliteState = 'idle';
+
+  void _publishSatelliteState() {
+    final next = satelliteState(view.value, busy: busy);
+    if (next == _satelliteState) return;
+    _satelliteState = next;
+    bus.publish(VoiceSatelliteStateChanged(next));
+  }
+
   /// Seconds into the answer (or announcement) playing now and its length,
   /// while the player knows both; the overlay paces a long answer's scroll
   /// to it.
@@ -333,6 +345,7 @@ class VoiceManager extends Manager {
         _trace('realtime: $step', text: text);
       },
       onIdle: _resumeWake,
+      location: realtimeLocation,
     );
     _esphome.onVoice = _onVoice;
     _esphome.onVoiceConfiguration = _configuration;
@@ -359,6 +372,13 @@ class VoiceManager extends Manager {
       ..add(bus.on<StopWordDetected>().listen((_) => _onStopWord()))
       ..add(
         bus.on<SettingChanged>().listen((e) {
+          // The earlier answers follow the old instructions and the model
+          // copies its own answers over what it is told now.
+          if (e.key == defs.voiceRealtimeInstructions.key &&
+              '${e.value ?? ''}'.trim() != '${e.previous ?? ''}'.trim()) {
+            _realtime.history.clear();
+            log.info(name, 'realtime: instructions changed, history cleared');
+          }
           // A provider's key or endpoint moved: its model and voice lists
           // may too.
           for (final provider in RealtimeProvider.values) {
@@ -1707,6 +1727,7 @@ class VoiceManager extends Manager {
     'conversation': _realtime.busy,
     'listening': _wakeWord.listening,
     'phase': view.value.phase.name,
+    'state': _satelliteState,
     'command': view.value.command,
     'answer': view.value.answer,
     'wakeWords': _activeIds(),
@@ -1895,7 +1916,67 @@ class VoiceManager extends Manager {
     idleSeconds: _settings.get(defs.voiceRealtimeIdleSeconds).toInt(),
     talkOver: _settings.get(defs.voiceRealtimeTalkOver),
     language: _settings.get(defs.uiLanguage),
+    historyHours: _settings.get(defs.voiceRealtimeHistoryHours).toDouble(),
   );
+
+  String _location = '';
+  DateTime? _locationAt;
+
+  /// The kiosk's name and area in Home Assistant, as a line for a realtime
+  /// conversation's instructions. With Assist, Home Assistant knows which
+  /// satellite asks and "the lights" are the ones in its area. Through the
+  /// MCP server a tool call comes from nowhere, and an unqualified command
+  /// reached every light in the house. Read from the device and area
+  /// registries, kept for a few minutes. Empty without Home Assistant.
+  Future<String> realtimeLocation() async {
+    final at = _locationAt;
+    if (at != null &&
+        DateTime.now().difference(at) < const Duration(minutes: 5)) {
+      return _location;
+    }
+    try {
+      if (homeAssistant.value.satelliteEntity.isEmpty) {
+        await refreshHomeAssistant();
+      }
+      final satellite = homeAssistant.value.satelliteEntity;
+      if (satellite.isEmpty) return '';
+      final entity = await _ha.request({
+        'type': 'config/entity_registry/get',
+        'entity_id': satellite,
+      });
+      if (entity is! Map || entity['device_id'] == null) return '';
+      final devices = await _ha.request({
+        'type': 'config/device_registry/list',
+      });
+      final device = devices is List
+          ? devices
+                .whereType<Map>()
+                .where((d) => d['id'] == entity['device_id'])
+                .firstOrNull
+          : null;
+      if (device == null) return '';
+      final kiosk = '${device['name_by_user'] ?? device['name'] ?? ''}'.trim();
+      // An area set on the entity wins over the device's.
+      final areaId = entity['area_id'] ?? device['area_id'];
+      var area = '';
+      if (areaId != null) {
+        final areas = await _ha.request({'type': 'config/area_registry/list'});
+        final match = areas is List
+            ? areas
+                  .whereType<Map>()
+                  .where((a) => a['area_id'] == areaId)
+                  .firstOrNull
+            : null;
+        area = '${match?['name'] ?? ''}'.trim();
+      }
+      _location = realtimeLocationLine(name: kiosk, area: area);
+      _locationAt = DateTime.now();
+      return _location;
+    } catch (e) {
+      log.debug(name, 'kiosk location lookup failed: $e');
+      return _location;
+    }
+  }
 
   /// A provider's settings as the backend takes them.
   RealtimeConfig realtimeConfig(
@@ -2211,6 +2292,7 @@ class VoiceManager extends Manager {
     view.value = shown;
     if (!next.visible) level.value = 0;
     _publishOverlay(was);
+    _publishSatelliteState();
   }
 
   /// What is under the overlay holds its last frame: the dashboard, a
@@ -2271,6 +2353,7 @@ class VoiceManager extends Manager {
     // The remote admin's status rows say Busy for the whole turn: the wake
     // word's microphone stays open through it, so nothing else moves them.
     _announceStatus();
+    _publishSatelliteState();
     if (busy) {
       _previewDocked = false;
       if (_busyReasons.add(reason)) {
@@ -3257,4 +3340,20 @@ class _Player implements VoicePlayerPort {
   Future<void> settle() async {
     await _commands.execute('voiceSpeakerDone', const {});
   }
+}
+
+/// The instructions' line about where the kiosk is. The kiosk's name is
+/// the device's: said plainly, or the model takes it for its own.
+String realtimeLocationLine({required String name, required String area}) {
+  if (name.isEmpty && area.isEmpty) return '';
+  final device = name.isEmpty
+      ? ''
+      : 'You run on a device named "$name" in Home Assistant. That is its '
+            'name, not yours.';
+  if (area.isEmpty) return device;
+  return [
+    if (device.isNotEmpty) device,
+    "The device is in the $area area. When the user doesn't name an area, "
+        'use this one.',
+  ].join(' ');
 }
