@@ -640,6 +640,9 @@ class DeviceManager extends Manager {
       'battery': level,
       'charging': charging,
       'cpu': cpu['usage'],
+      // Only where the kernel has no cpuidle, in place of cpu: how far the
+      // clock sits between its minimum and maximum, which is not load.
+      'cpuClock': cpu['clock'],
       'temp': cpu['temp'],
       // Bytes. The kernel's MemAvailable, not availMem (see DeviceDetails.kt).
       'memFree': ram['free'],

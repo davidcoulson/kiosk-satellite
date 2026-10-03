@@ -26,6 +26,8 @@ void main() {
   var cameraPresent = true;
   // Null for a device without a battery (issue #367).
   int? battery = 73;
+  num? cpuUsage = 12.4;
+  num? cpuClock;
   var cameraFacings = <String>['front', 'back'];
   var bluetooth = <String, Object?>{};
   var vsState = <String, Object?>{};
@@ -48,6 +50,8 @@ void main() {
       'releaseUrl': 'https://example/r',
     };
     battery = 73;
+    cpuUsage = 12.4;
+    cpuClock = null;
     storage = {'free': 16384 * 1024 * 1024, 'total': 32768 * 1024 * 1024};
     dashboardsUnreachable = false;
     catalogChanges = 0;
@@ -135,7 +139,8 @@ void main() {
         handler: (_) async => CommandResult.ok({
           'battery': battery,
           'charging': true,
-          'cpu': 12.4,
+          'cpu': cpuUsage,
+          'cpuClock': cpuClock,
           'temp': 41,
         }),
       ),
@@ -2277,6 +2282,31 @@ void main() {
         expect(lux(), [42]);
         surface.detach();
       });
+    });
+  });
+
+  group('CPU without cpuidle', () {
+    // The clock's place between its slowest and fastest speed is not load:
+    // an interactive governor reads 100% on a chip a fifth busy.
+    test(
+      'lists CPU clock in place of CPU usage, and sends the clock',
+      () async {
+        cpuUsage = null;
+        cpuClock = 66.7;
+        final ids = (await surface.build()).map((e) => e['objectId']).toList();
+        expect(ids, contains('cpu_clock'));
+        expect(ids, isNot(contains('cpu')));
+        await attach();
+        final byId = {for (final (id, value) in pushed) id: value};
+        expect(byId['cpu_clock'], 67);
+        expect(byId.containsKey('cpu'), isFalse);
+      },
+    );
+
+    test('a kernel with cpuidle keeps CPU usage and no clock', () async {
+      final ids = (await surface.build()).map((e) => e['objectId']).toList();
+      expect(ids, contains('cpu'));
+      expect(ids, isNot(contains('cpu_clock')));
     });
   });
 }

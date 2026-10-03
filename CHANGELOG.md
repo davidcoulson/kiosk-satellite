@@ -2,6 +2,11 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
+## Unreleased
+
+### Fixed
+- **CPU usage is no longer the clock speed on chips that do not report idle time.** Where the kernel has no cpuidle, the reading fell back to how far the clock sat between its slowest and fastest speed and called that usage: a projector whose chip steps between three speeds read 60 to 100% for hours while it was a fifth busy. Such a device now lists **CPU clock** in Home Assistant in place of CPU usage, and the remote admin's CPU tile shows no reading rather than a clock speed passed off as load. Devices that report idle time keep CPU usage as before.
+
 ## v2026.10.4 - 2026-10-02
 
 ### Added
