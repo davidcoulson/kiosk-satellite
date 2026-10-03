@@ -30,6 +30,7 @@ A `ks://` link runs the same action a [gesture](gestures.md) can, with the same 
 | `ks://intercom/<kiosk id>` | Calls that kiosk straight away. The id is the one under Intercom, Kiosks. |
 | `ks://screensaver` | Starts the screensaver. |
 | `ks://screensaver/stop` | Stops it. |
+| `ks://alarms` | Opens the full screen [alarm](alarms.md) list. |
 | `ks://hold` | Toggles hold mode, which pins the current view. |
 | `ks://theater` | Toggles [theater mode](theater.md). |
 | `ks://theater/on`, `ks://theater/off` | Turns it on or off. |

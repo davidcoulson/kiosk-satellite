@@ -5795,6 +5795,30 @@ const voiceRealtimeIdleSeconds = SettingDef<num>(
   dependsOn: 'voice.enabled',
 );
 
+/// How long what was said carries into the next realtime conversation, in
+/// hours. Each conversation is a new session with the provider: the kiosk
+/// keeps the exchanges and hands the ones within this time to the next.
+const voiceRealtimeHistoryHours = SettingDef<num>(
+  key: 'voice.realtime_history_hours',
+  type: SettingType.number,
+  defaultValue: 1,
+  title: 'Session duration',
+  description:
+      'What was said within this time carries into the next conversation.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Conversation',
+  min: 0.5,
+  max: 12,
+  step: 0.5,
+  unit: 'h',
+  normalizer: normalizeRealtimeHistoryHours,
+  dependsOn: 'voice.enabled',
+);
+
+Object normalizeRealtimeHistoryHours(Object value) =>
+    value is num && value.isFinite ? (value.clamp(0.5, 12) * 2).round() / 2 : 1;
+
 /// Needs the echo canceller: off, the microphone is shut while the answer
 /// plays and the stop word interrupts it.
 const voiceRealtimeTalkOver = SettingDef<bool>(
@@ -8615,6 +8639,28 @@ const btproxyScanDuty = SettingDef<String>(
   dependsOn: 'btproxy.enabled',
 );
 
+/// Some Bluetooth stacks (a Tab S8 on Android 16) stop the proxy's scan the
+/// moment the screen goes off: they count its match-everything filter as
+/// "unfiltered", which Android only runs on a lit screen. On, the scan
+/// sends a filter list those stacks accept instead (BleScanEngine's
+/// scanFilters). It is opt-in because every advertisement is then matched
+/// in software, which costs the Bluetooth process CPU for as long as the
+/// screen is off. Android 13+ only, so hidden below it (BtProxyManager).
+/// Applied live: the scan session restarts, the server does not.
+const btproxyScreenOffScan = SettingDef<bool>(
+  key: 'btproxy.screen_off_scan',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Keep scanning with the screen off',
+  description:
+      'Turn on if the proxy stops relaying while the screen is off. Uses '
+      'more CPU.',
+  category: 'ESPHome',
+  section: 'Bluetooth Proxy',
+  subpage: 'Bluetooth Proxy',
+  dependsOn: 'btproxy.enabled',
+);
+
 const btproxyConnections = SettingDef<bool>(
   key: 'btproxy.connections',
   type: SettingType.boolean,
@@ -9202,6 +9248,64 @@ const intercomTalkMode = SettingDef<String>(
   optionLabels: {'ptt': 'Push to talk', 'handsfree': 'Hands free'},
   dependsOn: 'intercom.enabled',
 );
+
+/// Minutes a live call or announcement may run before this kiosk hangs
+/// up, 0 for no limit. Each side counts on its own, so the shorter limit
+/// ends the call for both.
+const intercomMaxCallMinutes = SettingDef<String>(
+  key: 'intercom.max_call_minutes',
+  type: SettingType.select,
+  defaultValue: '0',
+  title: 'Maximum call duration',
+  description: 'Calls end on their own after this long.',
+  category: 'Intercom',
+  section: 'Talk',
+  options: ['0', '1', '2', '5', '10', '15', '20', '30', '45', '60'],
+  optionLabels: {
+    '0': 'Unlimited',
+    '1': '1 minute',
+    '2': '2 minutes',
+    '5': '5 minutes',
+    '10': '10 minutes',
+    '15': '15 minutes',
+    '20': '20 minutes',
+    '30': '30 minutes',
+    '45': '45 minutes',
+    '60': '60 minutes',
+  },
+  dependsOn: 'intercom.enabled',
+);
+
+/// A hardware button that ends the call, the Android key codes in
+/// [intercomHangupKeyCodes]. Taken from its usual job only while a call
+/// is placed or live.
+const intercomHangupKey = SettingDef<String>(
+  key: 'intercom.hangup_key',
+  type: SettingType.select,
+  defaultValue: 'off',
+  title: 'Hang up call when pressing this button',
+  description: 'During a call the button ends it instead of its usual action.',
+  category: 'Intercom',
+  section: 'Talk',
+  options: ['off', 'volume_up', 'volume_down', 'volume_mute', 'help'],
+  optionLabels: {
+    'off': 'Disabled',
+    'volume_up': 'Volume up',
+    'volume_down': 'Volume down',
+    'volume_mute': 'Mute',
+    'help': 'Help',
+  },
+  dependsOn: 'intercom.enabled',
+  perDevice: true,
+);
+
+/// Android KeyEvent codes for [intercomHangupKey]'s options.
+const intercomHangupKeyCodes = {
+  'volume_up': 24,
+  'volume_down': 25,
+  'volume_mute': 164,
+  'help': 259,
+};
 
 /// Beside the media and assistant faders: the intercom's own share of the
 /// master volume, the third voice the kiosk plays. 60 on the squared taper
@@ -10816,6 +10920,7 @@ const List<SettingDef<Object>> allSettings = [
   voiceRealtimeXaiValidated,
   voiceRealtimeInstructions,
   voiceRealtimeIdleSeconds,
+  voiceRealtimeHistoryHours,
   voiceRealtimeTalkOver,
   voiceRealtimeTools,
   voiceRealtimeMcpUrl,
@@ -10975,6 +11080,7 @@ const List<SettingDef<Object>> allSettings = [
   announcementsChimeFile,
   btproxyEnabled,
   btproxyScanDuty,
+  btproxyScreenOffScan,
   btproxyMinAdvertiseRssi,
   btproxyFilter,
   btproxyFilterIrks,
@@ -11054,6 +11160,8 @@ const List<SettingDef<Object>> allSettings = [
   theaterFrameUrl,
   startPage,
   customStartUrl,
+  intercomMaxCallMinutes,
+  intercomHangupKey,
   intercomTls,
   alarmsList,
   alarmsRuntime,

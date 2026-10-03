@@ -904,8 +904,8 @@ class UiStringsEs extends UiStrings {
   String get fleetAddAKiosk => 'Añadir un kiosko';
 
   @override
-  String get fleetKiosksMemberOfTheFleetAFollowerMustConfirm =>
-      'Añade un kiosko encontrado o introduce su dirección IP. El seguidor debe aceptar la invitación en su pantalla.';
+  String get fleetAddAKioskFollowerAcceptsOnScreenOrRemoteAdmin =>
+      'Añade un kiosko encontrado o introduce su dirección IP. El seguidor acepta la invitación en su pantalla o en su administración remota.';
 
   @override
   String get fleetSendInvitation => 'Enviar invitación';
@@ -934,10 +934,6 @@ class UiStringsEs extends UiStrings {
   @override
   String get fleetItsSettingsReplaceThisKioskSInTheCategoriesDetail =>
       'A partir de ahora, su configuración sustituye a la de este kiosko en las categorías que sincroniza. Este kiosko conserva su nombre, sus identidades en Home Assistant, Music Assistant y ESPHome y sus dispositivos seleccionados. Puedes salir de la flota cuando quieras desde Configuración > Gestión de flota.';
-
-  @override
-  String get fleetConfirmOnTheKioskItselfTheInvitationIsWaiting =>
-      'Confirma en el propio kiosko. La invitación aparece en su pantalla y en Configuración > Gestión de flota.';
 
   @override
   String get fleetAccept => 'Aceptar';
@@ -2144,6 +2140,10 @@ class UiStringsEs extends UiStrings {
 
   @override
   String get intercomEnded => 'Llamada finalizada';
+
+  @override
+  String get intercomMaxDurationReached =>
+      'Se alcanzó la duración máxima de la llamada';
 
   @override
   String get intercomAnnouncement => 'Anuncio';
@@ -3365,19 +3365,12 @@ class UiStringsEs extends UiStrings {
   String get overviewAttention => 'Requiere atención';
 
   @override
-  String get overviewOpen => 'Abrir';
-
-  @override
   String get overviewUpdate => 'Actualizar';
 
   @override
   String overviewInvitation(String name) {
     return '$name quiere dirigir este kiosko';
   }
-
-  @override
-  String get overviewInvitationHelp =>
-      'Confirma en la pantalla del kiosko o en Administración de flota en ese dispositivo.';
 
   @override
   String get overviewOutdatedOne => '1 seguidor usa otra versión';
@@ -6498,6 +6491,14 @@ class UiStringsEs extends UiStrings {
       'Cuánto tiempo escucha la radio. Una intensidad menor reduce el uso de CPU. Los dispositivos que transmiten con poca frecuencia tardan más en aparecer.';
 
   @override
+  String get settingBtproxyScreenOffScanTitle =>
+      'Seguir escaneando con la pantalla apagada';
+
+  @override
+  String get settingBtproxyScreenOffScanDescription =>
+      'Actívalo si el proxy deja de retransmitir con la pantalla apagada. Usa más CPU.';
+
+  @override
   String get settingBtproxyConnectionsTitle =>
       'Permitir conexiones a dispositivos';
 
@@ -7743,6 +7744,67 @@ class UiStringsEs extends UiStrings {
 
   @override
   String get intercomOptionTalkHandsfree => 'Manos libres';
+
+  @override
+  String get settingIntercomMaxCallMinutesTitle =>
+      'Duración máxima de la llamada';
+
+  @override
+  String get settingIntercomMaxCallMinutesDescription =>
+      'Las llamadas terminan solas después de este tiempo.';
+
+  @override
+  String get intercomOptionCallUnlimited => 'Ilimitada';
+
+  @override
+  String get intercomOptionCall1 => '1 minuto';
+
+  @override
+  String get intercomOptionCall2 => '2 minutos';
+
+  @override
+  String get intercomOptionCall5 => '5 minutos';
+
+  @override
+  String get intercomOptionCall10 => '10 minutos';
+
+  @override
+  String get intercomOptionCall15 => '15 minutos';
+
+  @override
+  String get intercomOptionCall20 => '20 minutos';
+
+  @override
+  String get intercomOptionCall30 => '30 minutos';
+
+  @override
+  String get intercomOptionCall45 => '45 minutos';
+
+  @override
+  String get intercomOptionCall60 => '60 minutos';
+
+  @override
+  String get settingIntercomHangupKeyTitle =>
+      'Colgar la llamada al pulsar este botón';
+
+  @override
+  String get settingIntercomHangupKeyDescription =>
+      'Durante una llamada, el botón la termina en lugar de hacer su función habitual.';
+
+  @override
+  String get intercomOptionHangupOff => 'Desactivado';
+
+  @override
+  String get intercomOptionHangupVolumeUp => 'Subir volumen';
+
+  @override
+  String get intercomOptionHangupVolumeDown => 'Bajar volumen';
+
+  @override
+  String get intercomOptionHangupMute => 'Silenciar';
+
+  @override
+  String get intercomOptionHangupHelp => 'Ayuda';
 
   @override
   String get intercomTalkSection => 'Conversación';
@@ -12243,6 +12305,13 @@ class UiStringsEs extends UiStrings {
   @override
   String get settingVoiceRealtimeIdleSecondsDescription =>
       'La conversación termina tras este tiempo sin que nadie hable.';
+
+  @override
+  String get settingVoiceRealtimeHistoryHoursTitle => 'Duración de la sesión';
+
+  @override
+  String get settingVoiceRealtimeHistoryHoursDescription =>
+      'Lo dicho dentro de este tiempo pasa a la siguiente conversación.';
 
   @override
   String get settingVoiceRealtimeTalkOverTitle => 'Hablar sobre las respuestas';

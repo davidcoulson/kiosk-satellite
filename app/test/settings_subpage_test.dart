@@ -351,6 +351,7 @@ void main() {
     expect(moved, [
       defs.btproxyEnabled.key,
       defs.btproxyScanDuty.key,
+      defs.btproxyScreenOffScan.key,
       // The advertisement floor sits with the scan settings it bounds;
       // min_connect_rssi keeps its place beside the connections toggle.
       defs.btproxyMinAdvertiseRssi.key,
