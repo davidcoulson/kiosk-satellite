@@ -2,6 +2,11 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
+## Unreleased
+
+### Fixed
+- **An app update or a restart no longer switches every plugin off.** Plugins are switched off after a startup that never finished, in case one of them is taking the app down. The check could not tell a plugin crash from an app update or a **Restart app** landing inside the first 30 seconds, so a quick update then restart left every plugin disabled and Home Assistant without their entities. An app update in between and a deliberate restart or exit no longer count, it now takes two incomplete startups in a row, and plugins the check switched off come back on their own with the next update, including ones switched off by earlier versions. A plugin switched off by hand stays off.
+
 ## v2026.10.4 - 2026-10-02
 
 ### Added
