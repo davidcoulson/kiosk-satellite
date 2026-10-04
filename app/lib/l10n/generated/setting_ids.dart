@@ -1916,6 +1916,10 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingVoiceRealtimeIdleSecondsTitle",
     "description": "settingVoiceRealtimeIdleSecondsDescription",
   },
+  "voice.realtime_speed": {
+    "title": "settingVoiceRealtimeSpeedTitle",
+    "description": "settingVoiceRealtimeSpeedDescription",
+  },
   "voice.realtime_history_hours": {
     "title": "settingVoiceRealtimeHistoryHoursTitle",
     "description": "settingVoiceRealtimeHistoryHoursDescription",
@@ -1944,6 +1948,10 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingVoiceRealtimeApiKeyTitle",
     "description": "settingVoiceRealtimeApiKeyDescription",
   },
+  "voice.realtime_openai_reasoning": {
+    "title": "settingVoiceRealtimeReasoningTitle",
+    "description": "settingVoiceRealtimeReasoningDescription",
+  },
   "voice.realtime_openai_endpoint": {
     "title": "settingVoiceRealtimeEndpointTitle",
     "description": "settingVoiceRealtimeEndpointDescription",
@@ -1971,5 +1979,33 @@ const settingMessageIds = <String, Map<String, String>>{
   "voice.realtime_xai_voice": {
     "title": "settingVoiceRealtimeVoiceTitle",
     "description": "settingVoiceRealtimeVoiceDescription",
+  },
+  "voice.realtime_gemini_api_key": {
+    "title": "settingVoiceRealtimeApiKeyTitle",
+    "description": "settingVoiceRealtimeApiKeyDescription",
+  },
+  "voice.realtime_gemini_endpoint": {
+    "title": "settingVoiceRealtimeEndpointTitle",
+    "description": "settingVoiceRealtimeEndpointDescription",
+  },
+  "voice.realtime_gemini_model": {
+    "title": "settingVoiceRealtimeModelTitle",
+    "description": "settingVoiceRealtimeModelDescription",
+  },
+  "voice.realtime_gemini_voice": {
+    "title": "settingVoiceRealtimeVoiceTitle",
+    "description": "settingVoiceRealtimeVoiceDescription",
+  },
+  "voice.realtime_gemini_reasoning": {
+    "title": "settingVoiceRealtimeReasoningTitle",
+    "description": "settingVoiceRealtimeGeminiReasoningDescription",
+  },
+  "voice.realtime_gemini_search": {
+    "title": "settingVoiceRealtimeGeminiSearchTitle",
+    "description": "settingVoiceRealtimeGeminiSearchBillingDescription",
+  },
+  "voice.realtime_gemini_proactive": {
+    "title": "settingVoiceRealtimeGeminiProactiveTitle",
+    "description": "settingVoiceRealtimeGeminiProactiveDescription",
   },
 };

@@ -5136,6 +5136,58 @@
       ]
     }
   },
+  "fleetOpenAiApiKey": "OpenAI-API-Schlüssel",
+  "@fleetOpenAiApiKey": {
+    "context": "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ]
+    }
+  },
+  "fleetXaiApiKey": "xAI-API-Schlüssel",
+  "@fleetXaiApiKey": {
+    "context": "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ]
+    }
+  },
+  "fleetGeminiApiKey": "Gemini-API-Schlüssel",
+  "@fleetGeminiApiKey": {
+    "context": "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ]
+    }
+  },
+  "fleetMcpServerToken": "MCP-Server-Token",
+  "@fleetMcpServerToken": {
+    "context": "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ]
+    }
+  },
   "fleetUpdateTheFleet": "Flotte aktualisieren",
   "@fleetUpdateTheFleet": {
     "context": "Settings > Fleet Management > Updates",
@@ -5365,6 +5417,19 @@
   },
   "gestureHoldMode": "Pausenmodus ein- oder ausschalten",
   "@gestureHoldMode": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureMediaPlayPause": "Medien abspielen oder pausieren",
+  "@gestureMediaPlayPause": {
     "context": "Settings > Gestures > Add gesture > Choose an action",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -20287,6 +20352,19 @@
   },
   "deviceByNameHelp": "Dieselbe Adresse über den Gerätenamen in Netzwerken, die .local-Namen auflösen.",
   "@deviceByNameHelp": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration"
+      ]
+    }
+  },
+  "deviceByCertificateNameHelp": "Dieselbe Adresse über den Namen aus ihrem Zertifikat.",
+  "@deviceByCertificateNameHelp": {
     "context": "Settings:Device:Remote Administration",
     "description": "Label or explanation on this Device settings page.",
     "x-locations": {
@@ -42800,6 +42878,11 @@
     "context": "Settings > Voice Satellite > Appearance",
     "description": "Translate the visible label or help. Keep model names and technical identifiers unchanged."
   },
+  "voiceSkinVoiceOnly": "Nur Stimme",
+  "@voiceSkinVoiceOnly": {
+    "context": "Settings > Voice Satellite > Appearance",
+    "description": "The name of a voice assistant overlay skin that shows no text, only the app logo whose bars move with the voice. Title case like the other skin names."
+  },
   "voiceAssistant1": "Assistent 1",
   "@voiceAssistant1": {
     "context": "Settings > Voice Satellite > Assistant",
@@ -44202,8 +44285,8 @@
     "context": "Settings > Voice Satellite > Realtime",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
-  "voiceRealtimeHint": "OpenAI, xAI Grok, Werkzeuge, in Antworten hineinsprechen",
-  "@voiceRealtimeHint": {
+  "voiceRealtimeProvidersHint": "OpenAI, xAI Grok, Gemini, Werkzeuge, in Antworten hineinsprechen",
+  "@voiceRealtimeProvidersHint": {
     "context": "Settings > Voice Satellite > Realtime",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
@@ -44269,6 +44352,81 @@
   },
   "settingVoiceRealtimeIdleSecondsDescription": "Das Gespräch endet, wenn so lange niemand spricht.",
   "@settingVoiceRealtimeIdleSecondsDescription": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceRealtimeReasoningTitle": "Denkaufwand",
+  "@settingVoiceRealtimeReasoningTitle": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceRealtimeReasoningDescription": "Mehr Aufwand beantwortet schwierige Fragen besser. Erfordert ein gpt-realtime-2-Modell.",
+  "@settingVoiceRealtimeReasoningDescription": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceRealtimeGeminiReasoningDescription": "Mehr Aufwand beantwortet schwierige Fragen besser. Erfordert ein Modell, das nachdenkt, etwa gemini-3.8-live-extended-thinking.",
+  "@settingVoiceRealtimeGeminiReasoningDescription": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceRealtimeGeminiSearchTitle": "Google Suche",
+  "@settingVoiceRealtimeGeminiSearchTitle": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceRealtimeGeminiSearchBillingDescription": "Lässt das Modell im Web nachschlagen. Erfordert, dass für den API-Schlüssel die Abrechnung aktiviert ist.",
+  "@settingVoiceRealtimeGeminiSearchBillingDescription": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceRealtimeGeminiProactiveTitle": "Gespräche ignorieren, die nicht ihm gelten",
+  "@settingVoiceRealtimeGeminiProactiveTitle": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceRealtimeGeminiProactiveDescription": "Das Modell bleibt still, wenn das Gehörte nicht an es gerichtet ist. Bei Google experimentell.",
+  "@settingVoiceRealtimeGeminiProactiveDescription": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "voiceRealtimeReasoningDefault": "Modellstandard",
+  "@voiceRealtimeReasoningDefault": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "voiceRealtimeReasoningMinimal": "Minimal",
+  "@voiceRealtimeReasoningMinimal": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "voiceRealtimeReasoningLow": "Niedrig",
+  "@voiceRealtimeReasoningLow": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "voiceRealtimeReasoningMedium": "Mittel",
+  "@voiceRealtimeReasoningMedium": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "voiceRealtimeReasoningHigh": "Hoch",
+  "@voiceRealtimeReasoningHigh": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "voiceRealtimeReasoningExtraHigh": "Sehr hoch",
+  "@voiceRealtimeReasoningExtraHigh": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceRealtimeSpeedTitle": "Sprechgeschwindigkeit",
+  "@settingVoiceRealtimeSpeedTitle": {
+    "context": "Settings > Voice Satellite > Realtime",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceRealtimeSpeedDescription": "Wie schnell der Assistent spricht.",
+  "@settingVoiceRealtimeSpeedDescription": {
     "context": "Settings > Voice Satellite > Realtime",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },

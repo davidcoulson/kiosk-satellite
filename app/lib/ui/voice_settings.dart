@@ -475,12 +475,21 @@ Future<bool> showRealtimeProviderDialog(
   RealtimeProvider provider,
 ) async {
   final settings = container.settings;
-  final [keyDef, modelDef, voiceDef, endpointDef] =
+  // OpenAI's and Gemini's lists end with Reasoning effort, which xAI has
+  // no say in. Gemini's switches follow.
+  final [keyDef, modelDef, voiceDef, endpointDef, ...more] =
       defs.realtimeProviderSettings[provider.id]!;
+  final reasoningDef = more.firstOrNull;
+  final switchDefs = defs.realtimeProviderSwitches[provider.id] ?? const [];
+  final switches = {for (final def in switchDefs) def: settings.get(def)};
+  // A switch's name in voiceRealtimeSave: its key after the provider's.
+  String param(defs.SettingDef<bool> def) =>
+      def.key.substring('voice.realtime_${provider.id}_'.length);
   final apiKey = TextEditingController(text: settings.get(keyDef));
   final endpoint = TextEditingController(text: settings.get(endpointDef));
   var model = settings.get(modelDef);
   var voice = settings.get(voiceDef);
+  var reasoning = reasoningDef == null ? '' : settings.get(reasoningDef);
   var saving = false;
   String? error;
 
@@ -532,6 +541,9 @@ Future<bool> showRealtimeProviderDialog(
             'endpoint': endpoint.text,
             'model': model,
             'voice': voice,
+            'reasoning': reasoning,
+            for (final MapEntry(:key, :value) in switches.entries)
+              param(key): value,
           });
           if (!ctx.mounted) return;
           final data = result.data is Map
@@ -584,6 +596,23 @@ Future<bool> showRealtimeProviderDialog(
                       voice,
                       (v) => setDialogState(() => voice = v),
                     ),
+                    if (reasoningDef != null)
+                      picker(
+                        ctx,
+                        reasoningDef,
+                        reasoning,
+                        (v) => setDialogState(() => reasoning = v),
+                      ),
+                    for (final def in switchDefs)
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(def.localizedTitle(ctx)),
+                        subtitle: Text(def.localizedDescription(ctx)),
+                        value: switches[def]!,
+                        onChanged: saving
+                            ? null
+                            : (v) => setDialogState(() => switches[def] = v),
+                      ),
                     LabeledField(
                       label: endpointDef.localizedTitle(ctx),
                       helper: endpointDef.localizedDescription(ctx),
@@ -636,6 +665,10 @@ Future<bool> showRealtimeProviderDialog(
   return saved ?? false;
 }
 
+/// A skin's name in the kiosk's language.
+String skinName(BuildContext context, AssistSkin skin) =>
+    defs.voiceSkin.localizedOption(context, skin.id, skin.name);
+
 /// The Skin row: the current skin's name, opening the picker.
 class VoiceSkinRow extends StatelessWidget {
   const VoiceSkinRow({
@@ -662,7 +695,10 @@ class VoiceSkinRow extends StatelessWidget {
           onChanged();
         }
       },
-      trailing: Text(skin.name, style: Theme.of(context).textTheme.bodyMedium),
+      trailing: Text(
+        skinName(context, skin),
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
     );
   }
 }
@@ -731,7 +767,7 @@ Future<String?> showVoiceSkinPicker(
                         ),
                       ),
                       Text(
-                        skin.name,
+                        skinName(context, skin),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -1474,7 +1510,7 @@ class _MigrationWizardState extends State<_MigrationWizard> {
             ),
             Expanded(
               child: Text(
-                skin.name,
+                skinName(context, skin),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),

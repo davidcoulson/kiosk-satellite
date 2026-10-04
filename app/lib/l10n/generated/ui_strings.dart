@@ -2605,6 +2605,30 @@ abstract class UiStrings {
   /// Visible label, help or status in this section.
   ///
   /// In en, this message translates to:
+  /// **'OpenAI API key'**
+  String get fleetOpenAiApiKey;
+
+  /// Visible label, help or status in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'xAI API key'**
+  String get fleetXaiApiKey;
+
+  /// Visible label, help or status in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Gemini API key'**
+  String get fleetGeminiApiKey;
+
+  /// Visible label, help or status in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP server token'**
+  String get fleetMcpServerToken;
+
+  /// Visible label, help or status in this section.
+  ///
+  /// In en, this message translates to:
   /// **'Update the fleet'**
   String get fleetUpdateTheFleet;
 
@@ -2709,6 +2733,12 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Toggle hold mode'**
   String get gestureHoldMode;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Play or pause media'**
+  String get gestureMediaPlayPause;
 
   /// Label or guidance in this section.
   ///
@@ -9544,6 +9574,12 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'The same address by hostname, on networks that resolve .local names.'**
   String get deviceByNameHelp;
+
+  /// Label or explanation on this Device settings page.
+  ///
+  /// In en, this message translates to:
+  /// **'The same address by the name on its certificate.'**
+  String get deviceByCertificateNameHelp;
 
   /// Label or explanation on this Device settings page.
   ///
@@ -19800,6 +19836,12 @@ abstract class UiStrings {
   /// **'Listening…'**
   String get voiceListeningEllipsis;
 
+  /// The name of a voice assistant overlay skin that shows no text, only the app logo whose bars move with the voice. Title case like the other skin names.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Only'**
+  String get voiceSkinVoiceOnly;
+
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
   /// In en, this message translates to:
@@ -20913,8 +20955,8 @@ abstract class UiStrings {
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
   /// In en, this message translates to:
-  /// **'OpenAI, xAI Grok, tools, talk over answers'**
-  String get voiceRealtimeHint;
+  /// **'OpenAI, xAI Grok, Gemini, tools, talk over answers'**
+  String get voiceRealtimeProvidersHint;
 
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
@@ -20993,6 +21035,96 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'The conversation ends after this long with nobody talking.'**
   String get settingVoiceRealtimeIdleSecondsDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning effort'**
+  String get settingVoiceRealtimeReasoningTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'More effort answers harder questions better. Needs a gpt-realtime-2 model.'**
+  String get settingVoiceRealtimeReasoningDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'More effort answers harder questions better. Needs a model that thinks, such as gemini-3.8-live-extended-thinking.'**
+  String get settingVoiceRealtimeGeminiReasoningDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Search'**
+  String get settingVoiceRealtimeGeminiSearchTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets the model look things up on the web. Needs billing turned on for the API key.'**
+  String get settingVoiceRealtimeGeminiSearchBillingDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignore talk not meant for it'**
+  String get settingVoiceRealtimeGeminiProactiveTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The model stays quiet when what it hears is not addressed to it. Experimental at Google.'**
+  String get settingVoiceRealtimeGeminiProactiveDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Model default'**
+  String get voiceRealtimeReasoningDefault;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimal'**
+  String get voiceRealtimeReasoningMinimal;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get voiceRealtimeReasoningLow;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get voiceRealtimeReasoningMedium;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get voiceRealtimeReasoningHigh;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra high'**
+  String get voiceRealtimeReasoningExtraHigh;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech speed'**
+  String get settingVoiceRealtimeSpeedTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'How fast the assistant talks.'**
+  String get settingVoiceRealtimeSpeedDescription;
 
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///

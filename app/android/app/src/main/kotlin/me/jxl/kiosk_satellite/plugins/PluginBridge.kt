@@ -22,15 +22,12 @@ import org.json.JSONObject
 /** Process-owned runtime for explicitly installed, trusted SDK 1 plugins. */
 class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
     companion object {
-        /** How many incomplete starts in a row disable the enabled plugins. */
+        /** Incomplete startups in a row that switch the enabled plugins off. */
         internal const val STARTUP_STRIKES = 2
-        private const val LEGACY_GUARD_ERROR = "Disabled after an incomplete plugin startup. Enable it to try again."
 
         /**
-         * The app is ending on purpose (Restart app, Exit, a watchdog
-         * restart): whatever startup was underway did not fail. Without this
-         * a restart within 30 seconds of the last one read as a plugin that
-         * took the process down.
+         * Restart app and Exit end the process on purpose, so a startup still
+         * inside its 30 seconds did not fail.
          */
         fun noteDeliberateExit(context: Context) {
             context.getSharedPreferences("kiosk_plugins", Context.MODE_PRIVATE)
@@ -38,21 +35,13 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
         }
 
         /**
-         * The startup guard's verdict on one launch, kept apart from the
-         * bridge so it can be tested. [pending] says the last startup never
-         * reached its 30 seconds; [startedUnder] is the app's last update
-         * time when it began, [now] the current one; [strikes] counts the
-         * incomplete starts before this one.
-         *
-         * An update in between is not a failure: installing the app kills
-         * it wherever it was. Otherwise it takes [STARTUP_STRIKES]
-         * incomplete starts in a row, so one unlucky kill (a restart from
-         * adb, a power cut) never switches everything off.
+         * Counts the incomplete startups in a row, including the previous
+         * launch. A startup that finished counts nothing, and neither does
+         * one cut short by an app update, which kills the process wherever
+         * it is.
          */
-        internal fun startupVerdict(pending: Boolean, startedUnder: Long, now: Long, strikes: Int): Int = when {
-            !pending || startedUnder != now -> 0
-            else -> strikes + 1
-        }
+        internal fun startupStrikes(pending: Boolean, startedUpdatedAt: Long, updatedAt: Long, strikes: Int): Int =
+            if (!pending || startedUpdatedAt != updatedAt) 0 else strikes + 1
     }
 
     private val channel = MethodChannel(messenger, "kiosk_satellite/plugins")
@@ -478,31 +467,15 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
             return
         }
         val updatedAt = appUpdatedAt()
-        // Plugins this guard switched off come back with the next update:
-        // the version that could not start them is gone. One switched off
-        // by hand carries no mark and stays off.
-        var restored = false
-        for (id in records.keys().asSequence().toList()) {
-            val record = records.getJSONObject(id)
-            // Builds before the mark left only their error text behind.
-            val legacy = record.optString("error") == LEGACY_GUARD_ERROR && !record.optBoolean("enabled")
-            if (legacy || record.has("guardDisabledUnder") && record.optLong("guardDisabledUnder") != updatedAt) {
-                record.remove("guardDisabledUnder")
-                record.put("enabled", true).put("error", "")
-                restored = true
-            }
-        }
-        if (restored) save()
-        val strikes = startupVerdict(
+        val strikes = startupStrikes(
             prefs.getBoolean("startupPending", false),
-            prefs.getLong("startupUnder", updatedAt),
+            prefs.getLong("startupUpdatedAt", updatedAt),
             updatedAt,
             prefs.getInt("startupStrikes", 0),
         )
         if (strikes >= STARTUP_STRIKES) {
             for (id in enabledIds()) records.getJSONObject(id).put("enabled", false)
-                .put("guardDisabledUnder", updatedAt)
-                .put("error", "Disabled after $STARTUP_STRIKES incomplete plugin startups in a row. Enable it to try again.")
+                .put("error", "Disabled after two incomplete plugin startups in a row. Enable it to try again.")
             save()
             prefs.edit().putBoolean("startupPending", false).putInt("startupStrikes", 0).commit()
             return
@@ -511,10 +484,6 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
         startEnabled()
     }
 
-    private fun appUpdatedAt(): Long = try {
-        context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
-    } catch (_: Exception) { 0L }
-
     private fun enabledIds(): List<String> = records.keys().asSequence()
         .filter { records.getJSONObject(it).optBoolean("enabled") }.toList()
 
@@ -522,7 +491,7 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
         val enabled = enabledIds()
         if (enabled.isEmpty()) return
         val generation = ++startupGeneration
-        check(prefs.edit().putBoolean("startupPending", true).putLong("startupUnder", appUpdatedAt()).commit())
+        check(prefs.edit().putBoolean("startupPending", true).putLong("startupUpdatedAt", appUpdatedAt()).commit())
         for (id in enabled) {
             try { enable(id) } catch (_: Throwable) { /* Failure is recorded by enable. */ }
         }
@@ -532,6 +501,10 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
             }
         } }, 30_000)
     }
+
+    private fun appUpdatedAt(): Long = try {
+        context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
+    } catch (_: Exception) { 0L }
 
     private fun setEnabled(enabled: Boolean) {
         if (pluginsEnabled == enabled) return
@@ -553,7 +526,7 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
                 }
             }
             save()
-            check(prefs.edit().putBoolean("startupPending", false).commit())
+            check(prefs.edit().putBoolean("startupPending", false).putInt("startupStrikes", 0).commit())
         }
     }
 
@@ -698,7 +671,6 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
                 plugin.start(current.host, Collections.unmodifiableMap(config))
             }
             record.put("enabled", true).put("error", "")
-            record.remove("guardDisabledUnder")
             save()
         } catch (error: Throwable) {
             session?.alive?.set(false)

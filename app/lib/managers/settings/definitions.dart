@@ -220,7 +220,7 @@ const Map<String, String> subpageHints = {
   'Appearance': 'Overlay skin, theme, activity bar, text size',
   // Native Voice Satellite's own pages.
   'Assistant': 'Pipelines, follow-ups',
-  'Realtime': 'OpenAI, xAI Grok, tools, talk over answers',
+  'Realtime': 'OpenAI, xAI Grok, Gemini, tools, talk over answers',
   'Conversation': 'What the overlay shows and for how long',
   'Timers': 'Pills, alerts, spoken reminders',
   // Its entry row sits under the tester, not with the three pages above.
@@ -5573,7 +5573,7 @@ const voicePendingSelects = SettingDef<String>(
 
 /// What answers each wake word: Home Assistant's Assist pipeline
 /// ('assist'), or a realtime conversation with a provider ('openai',
-/// 'xai'). Hidden: the Assistant selects offer every validated provider as
+/// 'xai', 'gemini'). Hidden: the Assistant selects offer every validated provider as
 /// one more choice and set these.
 const voiceEngine1 = SettingDef<String>(
   key: 'voice.engine_1',
@@ -5582,7 +5582,7 @@ const voiceEngine1 = SettingDef<String>(
   title: 'Wake word 1',
   description: 'What answers wake word 1.',
   category: 'Voice Satellite',
-  options: ['assist', 'openai', 'xai'],
+  options: ['assist', 'openai', 'xai', 'gemini'],
   hidden: true,
 );
 
@@ -5593,12 +5593,12 @@ const voiceEngine2 = SettingDef<String>(
   title: 'Wake word 2',
   description: 'What answers wake word 2.',
   category: 'Voice Satellite',
-  options: ['assist', 'openai', 'xai'],
+  options: ['assist', 'openai', 'xai', 'gemini'],
   hidden: true,
 );
 
 // Realtime: wake words answered by a speech to speech model, full duplex.
-// OpenAI and xAI Grok side by side, each with its own connection, and the
+// OpenAI, xAI Grok and Google Gemini side by side, each with its own connection, and the
 // conversation and the tools shared. A provider's settings are edited in
 // its Configure dialog, which saves them only once they connect: the
 // Providers group shows one row per provider in their place
@@ -5644,6 +5644,32 @@ const voiceRealtimeOpenAiVoice = SettingDef<String>(
   section: 'Providers',
   options: [''],
   optionLabels: {'': 'Provider default'},
+  dependsOn: 'voice.enabled',
+);
+
+/// OpenAI only, and only its gpt-realtime-2 models: the older ones refuse
+/// a session that sets it, which Save & Validate reports. xAI refuses the
+/// field outright. Empty leaves it to the model.
+const voiceRealtimeOpenAiReasoning = SettingDef<String>(
+  key: 'voice.realtime_openai_reasoning',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Reasoning effort',
+  description:
+      'More effort answers harder questions better. Needs a gpt-realtime-2 '
+      'model.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  options: ['', 'minimal', 'low', 'medium', 'high', 'xhigh'],
+  optionLabels: {
+    '': 'Model default',
+    'minimal': 'Minimal',
+    'low': 'Low',
+    'medium': 'Medium',
+    'high': 'High',
+    'xhigh': 'Extra high',
+  },
   dependsOn: 'voice.enabled',
 );
 
@@ -5748,6 +5774,138 @@ const voiceRealtimeXaiValidated = SettingDef<String>(
   perDevice: true,
 );
 
+const voiceRealtimeGeminiApiKey = SettingDef<String>(
+  key: 'voice.realtime_gemini_api_key',
+  type: SettingType.password,
+  defaultValue: '',
+  title: 'API key',
+  description: 'Leave empty when a relay adds it.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  secret: true,
+  dependsOn: 'voice.enabled',
+);
+
+/// Gemini's Live API models (SettingsManager's realtime catalog); '' is
+/// its default.
+const voiceRealtimeGeminiModel = SettingDef<String>(
+  key: 'voice.realtime_gemini_model',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Model',
+  description: 'The speech to speech model that answers.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  options: [''],
+  optionLabels: {'': 'Provider default'},
+  dependsOn: 'voice.enabled',
+);
+
+/// Gemini's voices; '' is its default.
+const voiceRealtimeGeminiVoice = SettingDef<String>(
+  key: 'voice.realtime_gemini_voice',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Voice',
+  description: 'How the assistant sounds.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  options: [''],
+  optionLabels: {'': 'Provider default'},
+  dependsOn: 'voice.enabled',
+);
+
+const voiceRealtimeGeminiEndpoint = SettingDef<String>(
+  key: 'voice.realtime_gemini_endpoint',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Endpoint',
+  description:
+      'Leave empty to use the provider. Use a relay on your network to keep '
+      'this kiosk offline.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  placeholder: 'Provider default',
+  dependsOn: 'voice.enabled',
+);
+
+/// Gemini's thinking level, under the title OpenAI's reasoning effort
+/// has: only the models that think take it (3.8 Live Extended Thinking
+/// from low up, 3.1 Flash Live from minimal), and the others refuse the
+/// session, which Save & Validate reports. Empty leaves it to the model.
+const voiceRealtimeGeminiReasoning = SettingDef<String>(
+  key: 'voice.realtime_gemini_reasoning',
+  type: SettingType.select,
+  defaultValue: '',
+  title: 'Reasoning effort',
+  description:
+      'More effort answers harder questions better. Needs a model that '
+      'thinks, such as gemini-3.8-live-extended-thinking.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  options: ['', 'minimal', 'low', 'medium', 'high'],
+  optionLabels: {
+    '': 'Model default',
+    'minimal': 'Minimal',
+    'low': 'Low',
+    'medium': 'Medium',
+    'high': 'High',
+  },
+  dependsOn: 'voice.enabled',
+);
+
+/// Gemini's own Google Search tool, next to the Home Assistant ones. A
+/// free tier key is refused with a quota error until billing is on.
+const voiceRealtimeGeminiSearch = SettingDef<bool>(
+  key: 'voice.realtime_gemini_search',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Google Search',
+  description:
+      'Lets the model look things up on the web. Needs billing turned on for '
+      'the API key.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  dependsOn: 'voice.enabled',
+);
+
+/// Gemini's proactive audio: the model may stay quiet when what it heard
+/// was not meant for it. Only Google's v1alpha API has it, which the
+/// backend connects to while it is on.
+const voiceRealtimeGeminiProactive = SettingDef<bool>(
+  key: 'voice.realtime_gemini_proactive',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Ignore talk not meant for it',
+  description:
+      'The model stays quiet when what it hears is not addressed to it. '
+      'Experimental at Google.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  dependsOn: 'voice.enabled',
+);
+
+/// What Gemini's last successful Save & Validate checked: a hash of
+/// its endpoint and key. The Assistant selects offer it only while that
+/// still matches. Per device: each kiosk reaches the provider on its own.
+const voiceRealtimeGeminiValidated = SettingDef<String>(
+  key: 'voice.realtime_gemini_validated',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Realtime connection validated',
+  description: '',
+  category: 'Voice Satellite',
+  hidden: true,
+  perDevice: true,
+);
+
 /// The settings each provider's Configure dialog holds, by provider id.
 /// Neither UI draws them as rows: the first one's place in the Providers
 /// group takes the provider's row, the others add nothing.
@@ -5757,6 +5915,7 @@ const realtimeProviderSettings = <String, List<SettingDef<String>>>{
     voiceRealtimeOpenAiModel,
     voiceRealtimeOpenAiVoice,
     voiceRealtimeOpenAiEndpoint,
+    voiceRealtimeOpenAiReasoning,
   ],
   'xai': [
     voiceRealtimeXaiApiKey,
@@ -5764,6 +5923,19 @@ const realtimeProviderSettings = <String, List<SettingDef<String>>>{
     voiceRealtimeXaiVoice,
     voiceRealtimeXaiEndpoint,
   ],
+  'gemini': [
+    voiceRealtimeGeminiApiKey,
+    voiceRealtimeGeminiModel,
+    voiceRealtimeGeminiVoice,
+    voiceRealtimeGeminiEndpoint,
+    voiceRealtimeGeminiReasoning,
+  ],
+};
+
+/// The switches each provider's Configure dialog holds after the settings
+/// above, by provider id. Hidden from the page the same way.
+const realtimeProviderSwitches = <String, List<SettingDef<bool>>>{
+  'gemini': [voiceRealtimeGeminiSearch, voiceRealtimeGeminiProactive],
 };
 
 const voiceRealtimeInstructions = SettingDef<String>(
@@ -5792,6 +5964,24 @@ const voiceRealtimeIdleSeconds = SettingDef<num>(
   max: 60,
   step: 1,
   unit: 's',
+  dependsOn: 'voice.enabled',
+);
+
+/// OpenAI (and Azure) accept 0.25 to 1.5 and refuse the session above
+/// that. xAI goes to 2, but one range keeps the setting the same for both.
+const voiceRealtimeSpeed = SettingDef<num>(
+  key: 'voice.realtime_speed',
+  type: SettingType.number,
+  defaultValue: 1,
+  title: 'Speech speed',
+  description: 'How fast the assistant talks.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Conversation',
+  min: 0.5,
+  max: 1.5,
+  step: 0.05,
+  unit: 'x',
   dependsOn: 'voice.enabled',
 );
 
@@ -5992,6 +6182,7 @@ const voiceSkin = SettingDef<String>(
     'waveform',
     'lens-flares',
     'ink-blobs',
+    'voice-only',
   ],
   optionLabels: {
     'kiosk-satellite': 'Kiosk Satellite',
@@ -6004,6 +6195,7 @@ const voiceSkin = SettingDef<String>(
     'waveform': 'Waveform',
     'lens-flares': 'Lens Flares',
     'ink-blobs': 'Ink Blobs',
+    'voice-only': 'Voice Only',
   },
   dependsOn: 'voice.enabled',
 );
@@ -9617,6 +9809,10 @@ const fleetCredentials = <(String, String)>[
   ('sendspin.ma_token', 'Music Assistant token'),
   ('screensaver.immich_api_key', 'Immich API key'),
   ('intercom.key', 'Intercom key'),
+  ('voice.realtime_openai_api_key', 'OpenAI API key'),
+  ('voice.realtime_xai_api_key', 'xAI API key'),
+  ('voice.realtime_gemini_api_key', 'Gemini API key'),
+  ('voice.realtime_mcp_token', 'MCP server token'),
 ];
 
 const fleetCredentialKeys = {
@@ -9624,6 +9820,21 @@ const fleetCredentialKeys = {
   'sendspin.ma_token',
   'screensaver.immich_api_key',
   'intercom.key',
+  'voice.realtime_openai_api_key',
+  'voice.realtime_xai_api_key',
+  'voice.realtime_gemini_api_key',
+  'voice.realtime_mcp_token',
+};
+
+/// Credentials that traveled with a category before they had a switch of
+/// their own. A profile saved by a version that did not offer them keeps
+/// them on where it synced that category, so an upgrade takes nothing
+/// away from a fleet. New profiles leave them off: the realtime keys are
+/// billed per use.
+const fleetFormerCategoryCredentials = {
+  'voice.realtime_openai_api_key': 'Voice Satellite',
+  'voice.realtime_xai_api_key': 'Voice Satellite',
+  'voice.realtime_mcp_token': 'Voice Satellite',
 };
 
 /// The dashboard: synced only when the leader was told to include it.
@@ -10912,14 +11123,24 @@ const List<SettingDef<Object>> allSettings = [
   voiceRealtimeOpenAiModel,
   voiceRealtimeOpenAiVoice,
   voiceRealtimeOpenAiEndpoint,
+  voiceRealtimeOpenAiReasoning,
   voiceRealtimeOpenAiValidated,
   voiceRealtimeXaiApiKey,
   voiceRealtimeXaiModel,
   voiceRealtimeXaiVoice,
   voiceRealtimeXaiEndpoint,
   voiceRealtimeXaiValidated,
+  voiceRealtimeGeminiApiKey,
+  voiceRealtimeGeminiModel,
+  voiceRealtimeGeminiVoice,
+  voiceRealtimeGeminiEndpoint,
+  voiceRealtimeGeminiReasoning,
+  voiceRealtimeGeminiSearch,
+  voiceRealtimeGeminiProactive,
+  voiceRealtimeGeminiValidated,
   voiceRealtimeInstructions,
   voiceRealtimeIdleSeconds,
+  voiceRealtimeSpeed,
   voiceRealtimeHistoryHours,
   voiceRealtimeTalkOver,
   voiceRealtimeTools,

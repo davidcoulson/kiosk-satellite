@@ -3550,6 +3550,8 @@ class _CategoryContentState extends State<_CategoryContent> {
       final inDialog = {
         for (final list in realtimeProviderSettings.values)
           for (final def in list.skip(1)) def.key,
+        for (final list in realtimeProviderSwitches.values)
+          for (final def in list) def.key,
       };
       return [
         ...sectioned(
@@ -7790,8 +7792,10 @@ class _AdminAddressCardState extends State<_AdminAddressCard> {
     final address =
         '${widget.container.settings.get(remoteTls) ? 'https' : 'http'}://${_ip ?? '…'}:$port';
     // The same admin by name (issue #470), while the kiosk has one: the
-    // Hostname setting or the device name as a DNS label.
+    // Hostname setting or the device name as a DNS label. With an imported
+    // certificate, the name it covers instead (issue #833).
     final hostUrl = widget.container.fleet.hostUrl;
+    final byCertificate = widget.container.fleet.certificateName.isNotEmpty;
     final style = Theme.of(context).textTheme.bodyMedium?.copyWith(
       color: Theme.of(context).colorScheme.primary,
       fontWeight: FontWeight.w600,
@@ -7816,11 +7820,16 @@ class _AdminAddressCardState extends State<_AdminAddressCard> {
               ListTile(
                 title: Text(deviceText(context, 'By name')),
                 subtitle: Text(
-                  deviceText(
-                    context,
-                    'The same address by hostname, on networks that resolve '
-                    '.local names.',
-                  ),
+                  byCertificate
+                      ? deviceText(
+                          context,
+                          'The same address by the name on its certificate.',
+                        )
+                      : deviceText(
+                          context,
+                          'The same address by hostname, on networks that '
+                          'resolve .local names.',
+                        ),
                 ),
                 trailing: Text(hostUrl, style: style),
               ),

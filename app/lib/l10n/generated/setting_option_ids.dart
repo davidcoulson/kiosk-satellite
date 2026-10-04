@@ -314,7 +314,8 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "dark": "deviceThemeDark"
   },
   "voice.skin": {
-    "default": "voiceVadDefault"
+    "default": "voiceVadDefault",
+    "voice-only": "voiceSkinVoiceOnly"
   },
   "alarms.snooze_minutes": {
     "5": "alarmsOption5Minutes",
@@ -338,6 +339,14 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "25": "alarmsOption25Minutes",
     "30": "alarmsOption30Minutes"
   },
+  "voice.realtime_openai_reasoning": {
+    "": "voiceRealtimeReasoningDefault",
+    "minimal": "voiceRealtimeReasoningMinimal",
+    "low": "voiceRealtimeReasoningLow",
+    "medium": "voiceRealtimeReasoningMedium",
+    "high": "voiceRealtimeReasoningHigh",
+    "xhigh": "voiceRealtimeReasoningExtraHigh"
+  },
   "voice.realtime_tools": {
     "custom": "voiceRealtimeToolsCustom",
     "none": "voiceNone"
@@ -357,6 +366,19 @@ const settingOptionMessageIds = <String, Map<String, String>>{
   },
   "voice.realtime_xai_voice": {
     "": "voiceRealtimeProviderDefault"
+  },
+  "voice.realtime_gemini_model": {
+    "": "voiceRealtimeProviderDefault"
+  },
+  "voice.realtime_gemini_voice": {
+    "": "voiceRealtimeProviderDefault"
+  },
+  "voice.realtime_gemini_reasoning": {
+    "": "voiceRealtimeReasoningDefault",
+    "minimal": "voiceRealtimeReasoningMinimal",
+    "low": "voiceRealtimeReasoningLow",
+    "medium": "voiceRealtimeReasoningMedium",
+    "high": "voiceRealtimeReasoningHigh"
   }
 };
 const settingPlaceholderMessageIds = <String, String>{
@@ -377,5 +399,6 @@ const settingPlaceholderMessageIds = <String, String>{
   "alarms.tts_language": "esphomeTtsDefault",
   "alarms.tts_voice": "esphomeTtsDefault",
   "voice.realtime_openai_endpoint": "voiceRealtimeProviderDefault",
-  "voice.realtime_xai_endpoint": "voiceRealtimeProviderDefault"
+  "voice.realtime_xai_endpoint": "voiceRealtimeProviderDefault",
+  "voice.realtime_gemini_endpoint": "voiceRealtimeProviderDefault"
 };
