@@ -399,6 +399,10 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'fleetHomeAssistantToken' => strings.fleetHomeAssistantToken,
       'fleetMusicAssistantToken' => strings.fleetMusicAssistantToken,
       'fleetImmichApiKey' => strings.fleetImmichApiKey,
+      'fleetOpenAiApiKey' => strings.fleetOpenAiApiKey,
+      'fleetXaiApiKey' => strings.fleetXaiApiKey,
+      'fleetGeminiApiKey' => strings.fleetGeminiApiKey,
+      'fleetMcpServerToken' => strings.fleetMcpServerToken,
       'fleetUpdateTheFleet' => strings.fleetUpdateTheFleet,
       'fleetUpdateTheWholeFleetToTheKioskSatelliteVersion' =>
         strings.fleetUpdateTheWholeFleetToTheKioskSatelliteVersion,
@@ -419,6 +423,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'gestureScreensaver' => strings.gestureScreensaver,
       'gestureScreensaverStop' => strings.gestureScreensaverStop,
       'gestureHoldMode' => strings.gestureHoldMode,
+      'gestureMediaPlayPause' => strings.gestureMediaPlayPause,
       'gestureHaKiosk' => strings.gestureHaKiosk,
       'gesturePluginRun' => strings.gesturePluginRun,
       'gestureLaunchApp' => strings.gestureLaunchApp,
@@ -1543,6 +1548,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'deviceAdminAddressHelp' => strings.deviceAdminAddressHelp,
       'deviceByName' => strings.deviceByName,
       'deviceByNameHelp' => strings.deviceByNameHelp,
+      'deviceByCertificateNameHelp' => strings.deviceByCertificateNameHelp,
       'devicePasswordNeeded' => strings.devicePasswordNeeded,
       'deviceServerStopped' => strings.deviceServerStopped,
       'settingRemoteTlsTitle' => strings.settingRemoteTlsTitle,
@@ -3805,6 +3811,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'voiceOverlayFullScreen' => strings.voiceOverlayFullScreen,
       'voiceOverlayDocked' => strings.voiceOverlayDocked,
       'voiceListeningEllipsis' => strings.voiceListeningEllipsis,
+      'voiceSkinVoiceOnly' => strings.voiceSkinVoiceOnly,
       'voiceAssistant1' => strings.voiceAssistant1,
       'voiceAssistant1Help' => strings.voiceAssistant1Help,
       'voiceAssistant2' => strings.voiceAssistant2,
@@ -4012,7 +4019,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'voicePermissionDirections' => strings.voicePermissionDirections,
       'voicePermissionsSearch' => strings.voicePermissionsSearch,
       'voiceRealtime' => strings.voiceRealtime,
-      'voiceRealtimeHint' => strings.voiceRealtimeHint,
+      'voiceRealtimeProvidersHint' => strings.voiceRealtimeProvidersHint,
       'voiceRealtimeToolsSection' => strings.voiceRealtimeToolsSection,
       'voiceRealtimeProviderDefault' => strings.voiceRealtimeProviderDefault,
       'voiceRealtimeToolsCustom' => strings.voiceRealtimeToolsCustom,
@@ -4036,6 +4043,31 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingVoiceRealtimeIdleSecondsTitle,
       'settingVoiceRealtimeIdleSecondsDescription' =>
         strings.settingVoiceRealtimeIdleSecondsDescription,
+      'settingVoiceRealtimeReasoningTitle' =>
+        strings.settingVoiceRealtimeReasoningTitle,
+      'settingVoiceRealtimeReasoningDescription' =>
+        strings.settingVoiceRealtimeReasoningDescription,
+      'settingVoiceRealtimeGeminiReasoningDescription' =>
+        strings.settingVoiceRealtimeGeminiReasoningDescription,
+      'settingVoiceRealtimeGeminiSearchTitle' =>
+        strings.settingVoiceRealtimeGeminiSearchTitle,
+      'settingVoiceRealtimeGeminiSearchBillingDescription' =>
+        strings.settingVoiceRealtimeGeminiSearchBillingDescription,
+      'settingVoiceRealtimeGeminiProactiveTitle' =>
+        strings.settingVoiceRealtimeGeminiProactiveTitle,
+      'settingVoiceRealtimeGeminiProactiveDescription' =>
+        strings.settingVoiceRealtimeGeminiProactiveDescription,
+      'voiceRealtimeReasoningDefault' => strings.voiceRealtimeReasoningDefault,
+      'voiceRealtimeReasoningMinimal' => strings.voiceRealtimeReasoningMinimal,
+      'voiceRealtimeReasoningLow' => strings.voiceRealtimeReasoningLow,
+      'voiceRealtimeReasoningMedium' => strings.voiceRealtimeReasoningMedium,
+      'voiceRealtimeReasoningHigh' => strings.voiceRealtimeReasoningHigh,
+      'voiceRealtimeReasoningExtraHigh' =>
+        strings.voiceRealtimeReasoningExtraHigh,
+      'settingVoiceRealtimeSpeedTitle' =>
+        strings.settingVoiceRealtimeSpeedTitle,
+      'settingVoiceRealtimeSpeedDescription' =>
+        strings.settingVoiceRealtimeSpeedDescription,
       'settingVoiceRealtimeHistoryHoursTitle' =>
         strings.settingVoiceRealtimeHistoryHoursTitle,
       'settingVoiceRealtimeHistoryHoursDescription' =>

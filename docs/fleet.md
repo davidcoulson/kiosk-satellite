@@ -47,7 +47,12 @@ A profile consists of:
 | Home Assistant token | Off | Kiosk keeps its own (stays as its local user). | Token syncs across fleet. |
 | Music Assistant token | On | Kiosk keeps its own. | Token syncs across fleet. |
 | Immich API key | On | Kiosk keeps its own. | Token syncs across fleet. |
+| OpenAI API key | Off | Kiosk keeps its own. | Key syncs across fleet, and each follower validates it on its own. |
+| xAI API key | Off | Kiosk keeps its own. | Key syncs across fleet, and each follower validates it on its own. |
+| MCP server token | Off | Kiosk keeps its own. | Token syncs across fleet. |
 | Include the dashboard | Off | Kiosk keeps its local start page and dashboard. | Start page and dashboard sync. |
+
+The realtime keys are off by default because each provider bills per use. A profile saved before they became credentials keeps them on where it syncs Voice Satellite, as they were before. When a follower receives a realtime key or endpoint, it runs the same connection test as **Save & Validate**. The provider becomes a choice for its wake words once that passes, and the provider's row shows the error if it fails.
 
 ### Excluded by Default
 
@@ -120,7 +125,7 @@ Certain settings remain unique to each kiosk regardless of the profile configura
 | Voice Satellite chimes | `voice_chimes.wake`, `voice_chimes.done`, `voice_chimes.error`, `voice_chimes.alert`, `voice_chimes.announce` |
 | Diagnostics | `wake_word.diagnostics` |
 | Wake words this kiosk listens for | `voice.wake_words`, `voice.pending_selects` |
-| Local state | `voice.runtime`, `voice.timer_position`, `voice.dock_position`, `voice.realtime_openai_validated`, `voice.realtime_xai_validated`, `screensaver.saved_brightness`, `screensaver.immich_validated`, `sendspin.player_active`, `sendspin.player_pos`, `sendspin.sonos_hosts` |
+| Local state | `voice.runtime`, `voice.timer_position`, `voice.dock_position`, `voice.realtime_openai_validated`, `voice.realtime_xai_validated`, `voice.realtime_gemini_validated`, `screensaver.saved_brightness`, `screensaver.immich_validated`, `sendspin.player_active`, `sendspin.player_pos`, `sendspin.sonos_hosts` |
 
 Plugin Manager stays entirely local. Runtime chart data, history and plugin entity declarations and readings are never synchronized. Plugin entity exclusions stay local even when ordinary ESPHome exclusions are synced. Fleet sync does not copy installed plugins, packages, plugin settings, per-plugin enabled states, drawer or Home Assistant action placements or the **Enable Plugins** master switch. A fleet token cannot call plugin management commands.
 

@@ -4,6 +4,7 @@ import { readOnlyRow } from './device.js';
 import { banner, messageBox, modalShell, showToast } from './widgets.js';
 import { vsSelectRow } from './vs.js';
 import { watchUpdates } from './live.js';
+import { toggleRow } from './audio.js';
 
 /* ---- Native Voice Satellite (runs in the kiosk, not the dashboard) ---- */
 // Mirrors the device's native page: the switch with the status and Home
@@ -266,6 +267,7 @@ export const VS_SELECT_SETTINGS = new Set([
   'voice.ha_wake_word', 'voice.ha_wake_word_2', 'voice.pending_selects',
   'voice.engine_1', 'voice.engine_2',
   'voice.realtime_openai_validated', 'voice.realtime_xai_validated',
+  'voice.realtime_gemini_validated',
 ]);
 
 /* Calls `paint` when one of `keys` changes, while `node` is on the page. */
@@ -293,8 +295,14 @@ function selectsBlock(rows) {
 /* The realtime providers, and the settings each one's Configure dialog
    holds (the device's realtimeProviderSettings). Neither UI draws them as
    rows: the provider's row takes the first one's place. */
-export const REALTIME_PROVIDERS = { openai: 'OpenAI', xai: 'xAI Grok' };
-export const providerKeys = (provider) => ['api_key', 'model', 'voice', 'endpoint']
+export const REALTIME_PROVIDERS = { openai: 'OpenAI', xai: 'xAI Grok', gemini: 'Google Gemini' };
+const PROVIDER_FIELDS = ['api_key', 'model', 'voice', 'endpoint'];
+// OpenAI's and Gemini's Reasoning effort, which xAI has no say in.
+const providerFields = (provider) => provider === 'xai'
+  ? PROVIDER_FIELDS : [...PROVIDER_FIELDS, 'reasoning'];
+// The switches after them (the device's realtimeProviderSwitches).
+const PROVIDER_SWITCHES = { gemini: ['search', 'proactive'] };
+export const providerKeys = (provider) => [...providerFields(provider), ...(PROVIDER_SWITCHES[provider] || [])]
   .map((name) => `voice.realtime_${provider}_${name}`);
 
 /* The provider settings a device echo repaints in place: their rows are
@@ -344,7 +352,7 @@ function dialogField(setting, control) {
 function openRealtimeProvider(provider, onSaved) {
   const setting = (name) => (state.settings || [])
     .find((s) => s.key === `voice.realtime_${provider}_${name}`);
-  const [keyDef, modelDef, voiceDef, endpointDef] = ['api_key', 'model', 'voice', 'endpoint'].map(setting);
+  const [keyDef, modelDef, voiceDef, endpointDef, reasoningDef] = providerFields(provider).map(setting);
   let saving = false;
   const shell = modalShell({ title: REALTIME_PROVIDERS[provider], width: 480,
     onDismiss: () => { if (!saving) shell.close(); } });
@@ -370,15 +378,22 @@ function openRealtimeProvider(provider, onSaved) {
   };
   const model = picker(modelDef);
   const voice = picker(voiceDef);
+  const reasoning = reasoningDef ? picker(reasoningDef) : null;
   const endpoint = document.createElement('input');
   endpoint.type = 'url';
   endpoint.spellcheck = false;
   endpoint.value = `${endpointDef?.value || ''}`;
   endpoint.placeholder = endpointDef?.placeholder || '';
+  const switches = (PROVIDER_SWITCHES[provider] || []).map((name) => {
+    const def = setting(name);
+    const row = toggleRow(def?.title || name, def?.description || '', def?.value === true, () => {});
+    return { name, row, input: row.querySelector('input') };
+  });
   const issue = document.createElement('div');
   issue.setAttribute('role', 'alert');
-  form.append(dialogField(keyDef, key), dialogField(modelDef, model),
-    dialogField(voiceDef, voice), dialogField(endpointDef, endpoint), issue);
+  form.append(dialogField(keyDef, key), dialogField(modelDef, model), dialogField(voiceDef, voice),
+    ...(reasoning ? [dialogField(reasoningDef, reasoning)] : []), ...switches.map((s) => s.row),
+    dialogField(endpointDef, endpoint), issue);
   shell.body.append(form);
   const cancel = document.createElement('button');
   cancel.type = 'button';
@@ -391,7 +406,8 @@ function openRealtimeProvider(provider, onSaved) {
   save.textContent = voiceText('Save & Validate');
   save.addEventListener('click', () => form.requestSubmit());
   shell.foot.append(cancel, save);
-  const controls = [cancel, save, key, model, voice, endpoint];
+  const controls = [cancel, save, key, model, voice, endpoint, ...(reasoning ? [reasoning] : []),
+    ...switches.map((s) => s.input)];
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (saving) return;
@@ -400,6 +416,8 @@ function openRealtimeProvider(provider, onSaved) {
     save.textContent = voiceText('Checking…');
     issue.replaceChildren();
     const params = { provider, endpoint: endpoint.value, model: model.value, voice: voice.value };
+    if (reasoning) params.reasoning = reasoning.value;
+    for (const s of switches) params[s.name] = s.input.checked;
     if (key.value || keyDef?.value !== '__set__') params.apiKey = key.value;
     const r = await cmd('voiceRealtimeSave', params, { timeoutMs: 40000 }).catch((e) => ({ ok: false, error: e?.message }));
     saving = false;

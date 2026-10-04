@@ -65,6 +65,11 @@ import me.jxl.kiosk_satellite.fleet.MdnsPackets.u32
  * this kiosk is reported in the snapshot: both answer, and a browser
  * lands on either.
  *
+ * A kiosk serving HTTPS with an imported certificate also announces the
+ * DNS name that certificate covers (`dns=` in the TXT record, issue
+ * #833). The switcher links to it by that name, since its certificate
+ * fails the browser's check under the IP address.
+ *
  * A Wi-Fi MulticastLock is held while running: without it most Android
  * Wi-Fi drivers drop multicast frames with the screen off, which would
  * make a dark kiosk deaf to the others and invisible to them.
@@ -102,6 +107,7 @@ class FleetDiscovery(
         // panel: it has no dashboard, and the switcher says so rather than
         // opening one and leaving someone to work it out.
         val agent: Boolean = false,
+        val dnsName: String = "",
     ) {
         fun toMap(): Map<String, Any?> = mapOf(
             "id" to id,
@@ -111,6 +117,7 @@ class FleetDiscovery(
             "port" to port,
             "tls" to tls,
             "agent" to agent,
+            "dnsName" to dnsName,
         )
     }
 
@@ -180,6 +187,8 @@ class FleetDiscovery(
     private var port: Int = 0
     @Volatile private var tls = false
     @Volatile private var agent = false
+    /** The DNS name the imported certificate covers; empty for none. */
+    @Volatile private var dnsName: String = ""
     /** The label this kiosk answers to as `<hostname>.local`; empty for none. */
     @Volatile private var hostname: String = ""
     /** Whether the service records go out and the others are listened for. */
@@ -224,11 +233,13 @@ class FleetDiscovery(
         fleet: Boolean = true,
         tls: Boolean = false,
         agent: Boolean = false,
+        dnsName: String = "",
     ) {
         this.name = name.ifBlank { Build.MODEL ?: "Kiosk Satellite" }
         this.port = port
         this.tls = tls
         this.agent = agent
+        this.dnsName = dnsName.lowercase()
         if (this.hostname != hostname) hostClash = ""
         this.hostname = hostname.lowercase()
         hostNeedle = if (this.hostname.isEmpty()) ByteArray(0)
@@ -398,6 +409,7 @@ class FleetDiscovery(
             host = hostname,
             tls = tls,
             agent = agent,
+            dnsName = dnsName,
         )
         return Snapshot(self, list, listening && running, hostClash)
     }
@@ -541,6 +553,7 @@ class FleetDiscovery(
                         host = entries["host"]?.lowercase() ?: "",
                         tls = entries["tls"] == "1",
                         agent = entries["agent"] == "1",
+                        dnsName = entries["dns"]?.lowercase() ?: "",
                     )
                     val before = peers[peerId]
                     peers[peerId] = peer
@@ -704,7 +717,8 @@ class FleetDiscovery(
                 val entries = listOf("id=$id", "name=$name", "version=$version", "port=$port") +
                     (if (hostname.isEmpty()) emptyList() else listOf("host=$hostname")) +
                     (if (tls) listOf("tls=1") else emptyList()) +
-                    (if (agent) listOf("agent=1") else emptyList())
+                    (if (agent) listOf("agent=1") else emptyList()) +
+                    (if (tls && dnsName.isNotEmpty()) listOf("dns=$dnsName") else emptyList())
                 for (entry in entries) {
                     // A TXT entry is at most 255 bytes; a name past that is cut.
                     val bytes = entry.toByteArray(Charsets.UTF_8).take(255).toByteArray()

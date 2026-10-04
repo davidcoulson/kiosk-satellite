@@ -1444,6 +1444,18 @@ class UiStringsUk extends UiStrings {
   String get fleetImmichApiKey => 'Ключ API Immich';
 
   @override
+  String get fleetOpenAiApiKey => 'Ключ API OpenAI';
+
+  @override
+  String get fleetXaiApiKey => 'Ключ API xAI';
+
+  @override
+  String get fleetGeminiApiKey => 'Ключ API Gemini';
+
+  @override
+  String get fleetMcpServerToken => 'Токен сервера MCP';
+
+  @override
   String get fleetUpdateTheFleet => 'Оновити групу';
 
   @override
@@ -1502,6 +1514,9 @@ class UiStringsUk extends UiStrings {
 
   @override
   String get gestureHoldMode => 'Перемкнути режим блокування';
+
+  @override
+  String get gestureMediaPlayPause => 'Відтворити або призупинити медіа';
 
   @override
   String get gestureHaKiosk => 'Перемкнути режим кіоска HA';
@@ -5498,6 +5513,10 @@ class UiStringsUk extends UiStrings {
   @override
   String get deviceByNameHelp =>
       'Та сама адреса за назвою хоста в мережах, що підтримують домен .local.';
+
+  @override
+  String get deviceByCertificateNameHelp =>
+      'Та сама адреса за назвою з її сертифіката.';
 
   @override
   String get devicePasswordNeeded =>
@@ -11516,6 +11535,9 @@ class UiStringsUk extends UiStrings {
   String get voiceListeningEllipsis => 'Слухає…';
 
   @override
+  String get voiceSkinVoiceOnly => 'Лише голос';
+
+  @override
   String get voiceAssistant1 => 'Асистент 1';
 
   @override
@@ -12149,8 +12171,8 @@ class UiStringsUk extends UiStrings {
   String get voiceRealtime => 'Реальний час';
 
   @override
-  String get voiceRealtimeHint =>
-      'OpenAI, xAI Grok, інструменти, перебивання відповідей';
+  String get voiceRealtimeProvidersHint =>
+      'OpenAI, xAI Grok, Gemini, інструменти, перебивання відповідей';
 
   @override
   String get voiceRealtimeToolsSection => 'Інструменти Home Assistant';
@@ -12194,6 +12216,57 @@ class UiStringsUk extends UiStrings {
   @override
   String get settingVoiceRealtimeIdleSecondsDescription =>
       'Розмова завершується, якщо стільки часу ніхто не говорить.';
+
+  @override
+  String get settingVoiceRealtimeReasoningTitle => 'Рівень міркувань';
+
+  @override
+  String get settingVoiceRealtimeReasoningDescription =>
+      'Більше зусиль дає кращі відповіді на складні запитання. Потрібна модель gpt-realtime-2.';
+
+  @override
+  String get settingVoiceRealtimeGeminiReasoningDescription =>
+      'Більше зусиль дає кращі відповіді на складні запитання. Потрібна модель, що міркує, наприклад gemini-3.8-live-extended-thinking.';
+
+  @override
+  String get settingVoiceRealtimeGeminiSearchTitle => 'Пошук Google';
+
+  @override
+  String get settingVoiceRealtimeGeminiSearchBillingDescription =>
+      'Дозволяє моделі шукати інформацію в інтернеті. Потрібно ввімкнути оплату для ключа API.';
+
+  @override
+  String get settingVoiceRealtimeGeminiProactiveTitle =>
+      'Ігнорувати мовлення, звернене не до нього';
+
+  @override
+  String get settingVoiceRealtimeGeminiProactiveDescription =>
+      'Модель мовчить, коли те, що вона чує, звернено не до неї. Експериментальна функція Google.';
+
+  @override
+  String get voiceRealtimeReasoningDefault => 'Типово для моделі';
+
+  @override
+  String get voiceRealtimeReasoningMinimal => 'Мінімальний';
+
+  @override
+  String get voiceRealtimeReasoningLow => 'Низький';
+
+  @override
+  String get voiceRealtimeReasoningMedium => 'Середній';
+
+  @override
+  String get voiceRealtimeReasoningHigh => 'Високий';
+
+  @override
+  String get voiceRealtimeReasoningExtraHigh => 'Дуже високий';
+
+  @override
+  String get settingVoiceRealtimeSpeedTitle => 'Швидкість мовлення';
+
+  @override
+  String get settingVoiceRealtimeSpeedDescription =>
+      'Як швидко говорить асистент.';
 
   @override
   String get settingVoiceRealtimeHistoryHoursTitle => 'Тривалість сеансу';

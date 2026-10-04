@@ -1440,6 +1440,18 @@ class UiStringsEn extends UiStrings {
   String get fleetImmichApiKey => 'Immich API key';
 
   @override
+  String get fleetOpenAiApiKey => 'OpenAI API key';
+
+  @override
+  String get fleetXaiApiKey => 'xAI API key';
+
+  @override
+  String get fleetGeminiApiKey => 'Gemini API key';
+
+  @override
+  String get fleetMcpServerToken => 'MCP server token';
+
+  @override
   String get fleetUpdateTheFleet => 'Update the fleet';
 
   @override
@@ -1498,6 +1510,9 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get gestureHoldMode => 'Toggle hold mode';
+
+  @override
+  String get gestureMediaPlayPause => 'Play or pause media';
 
   @override
   String get gestureHaKiosk => 'Toggle HA kiosk mode';
@@ -5455,6 +5470,10 @@ class UiStringsEn extends UiStrings {
   @override
   String get deviceByNameHelp =>
       'The same address by hostname, on networks that resolve .local names.';
+
+  @override
+  String get deviceByCertificateNameHelp =>
+      'The same address by the name on its certificate.';
 
   @override
   String get devicePasswordNeeded =>
@@ -11393,6 +11412,9 @@ class UiStringsEn extends UiStrings {
   String get voiceListeningEllipsis => 'Listening…';
 
   @override
+  String get voiceSkinVoiceOnly => 'Voice Only';
+
+  @override
   String get voiceAssistant1 => 'Assistant 1';
 
   @override
@@ -12018,7 +12040,8 @@ class UiStringsEn extends UiStrings {
   String get voiceRealtime => 'Realtime';
 
   @override
-  String get voiceRealtimeHint => 'OpenAI, xAI Grok, tools, talk over answers';
+  String get voiceRealtimeProvidersHint =>
+      'OpenAI, xAI Grok, Gemini, tools, talk over answers';
 
   @override
   String get voiceRealtimeToolsSection => 'Home Assistant tools';
@@ -12062,6 +12085,57 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingVoiceRealtimeIdleSecondsDescription =>
       'The conversation ends after this long with nobody talking.';
+
+  @override
+  String get settingVoiceRealtimeReasoningTitle => 'Reasoning effort';
+
+  @override
+  String get settingVoiceRealtimeReasoningDescription =>
+      'More effort answers harder questions better. Needs a gpt-realtime-2 model.';
+
+  @override
+  String get settingVoiceRealtimeGeminiReasoningDescription =>
+      'More effort answers harder questions better. Needs a model that thinks, such as gemini-3.8-live-extended-thinking.';
+
+  @override
+  String get settingVoiceRealtimeGeminiSearchTitle => 'Google Search';
+
+  @override
+  String get settingVoiceRealtimeGeminiSearchBillingDescription =>
+      'Lets the model look things up on the web. Needs billing turned on for the API key.';
+
+  @override
+  String get settingVoiceRealtimeGeminiProactiveTitle =>
+      'Ignore talk not meant for it';
+
+  @override
+  String get settingVoiceRealtimeGeminiProactiveDescription =>
+      'The model stays quiet when what it hears is not addressed to it. Experimental at Google.';
+
+  @override
+  String get voiceRealtimeReasoningDefault => 'Model default';
+
+  @override
+  String get voiceRealtimeReasoningMinimal => 'Minimal';
+
+  @override
+  String get voiceRealtimeReasoningLow => 'Low';
+
+  @override
+  String get voiceRealtimeReasoningMedium => 'Medium';
+
+  @override
+  String get voiceRealtimeReasoningHigh => 'High';
+
+  @override
+  String get voiceRealtimeReasoningExtraHigh => 'Extra high';
+
+  @override
+  String get settingVoiceRealtimeSpeedTitle => 'Speech speed';
+
+  @override
+  String get settingVoiceRealtimeSpeedDescription =>
+      'How fast the assistant talks.';
 
   @override
   String get settingVoiceRealtimeHistoryHoursTitle => 'Session duration';
