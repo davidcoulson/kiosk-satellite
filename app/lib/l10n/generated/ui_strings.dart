@@ -539,7 +539,7 @@ abstract class UiStrings {
   /// Service description displayed by Android in its own language.
   ///
   /// In en, this message translates to:
-  /// **'Closes the notification shade and the recents screen whenever they open while Kiosk Mode or Lockdown Mode is protecting the screen. Kiosk Satellite does not read any screen content.'**
+  /// **'Closes the notification shade and the recents screen whenever they open while Kiosk Mode or Lockdown Mode is protecting the screen. Kiosk Satellite reads screen content only to answer a vendor power dialog named in its settings.'**
   String get androidAccessibilityHelp;
 
   /// Notification channel description in Android Settings.
@@ -9099,6 +9099,30 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'The Running hot sensor turns on while the CPU is hotter than this.'**
   String get settingHotThresholdDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Power dialog app'**
+  String get settingPowerDialogPackageTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'The Android package of a vendor power-off dialog this device shows when its power key is pressed, such as com.htc.closedialog on an HY260 projector. Empty does nothing.'**
+  String get settingPowerDialogPackageDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Power dialog answer'**
+  String get settingPowerDialogChoiceTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'The view id (without the package prefix) of the button Kiosk Satellite taps the moment that dialog appears, such as rl_sleep to put the device to sleep instead of letting its countdown shut it down. Needs the accessibility service.'**
+  String get settingPowerDialogChoiceDescription;
 
   /// Label or explanation on this Device settings page.
   ///

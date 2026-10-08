@@ -10891,6 +10891,35 @@ const hotThreshold = SettingDef<num>(
   perDevice: true,
 );
 
+const powerDialogPackage = SettingDef<String>(
+  key: 'device.power_dialog_package',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Power dialog app',
+  description:
+      'The Android package of a vendor power-off dialog this device shows '
+      'when its power key is pressed, such as com.htc.closedialog on an '
+      'HY260 projector. Empty does nothing.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
+const powerDialogChoice = SettingDef<String>(
+  key: 'device.power_dialog_choice',
+  type: SettingType.string,
+  defaultValue: 'rl_sleep',
+  title: 'Power dialog answer',
+  description:
+      'The view id (without the package prefix) of the button Kiosk '
+      'Satellite taps the moment that dialog appears, such as rl_sleep to '
+      'put the device to sleep instead of letting its countdown shut it '
+      'down. Needs the accessibility service.',
+  category: 'Device',
+  section: 'Headless',
+  perDevice: true,
+);
+
 const List<SettingDef<Object>> allSettings = [
   startUrl,
   secureProxy,
@@ -11453,6 +11482,8 @@ const List<SettingDef<Object>> allSettings = [
   homeAppIdleMinutes,
   rebootTime,
   hotThreshold,
+  powerDialogPackage,
+  powerDialogChoice,
   analyticsBasic,
   analyticsUsage,
   analyticsDiagnostics,

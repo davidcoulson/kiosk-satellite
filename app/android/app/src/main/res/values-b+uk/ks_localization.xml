@@ -3,7 +3,7 @@
 <resources>
     <string name="ks_service_title" formatted="false">"Служба Kiosk Satellite Service"</string>
     <string name="ks_service_channel_help" formatted="false">"Відображається, коли служба Kiosk Satellite підтримує роботу програми з вимкненим екраном або у фоновому режимі."</string>
-    <string name="ui_guard_description" formatted="false">"Закриває панель сповіщень та екран нещодавніх програм щоразу, коли вони відкриваються, доки режим кіоска або захищений режим блокує екран. Kiosk Satellite не зчитує вміст екрана."</string>
+    <string name="ui_guard_description" formatted="false">"Closes the notification shade and the recents screen whenever they open while Kiosk Mode or Lockdown Mode is protecting the screen. Kiosk Satellite reads screen content only to answer a vendor power dialog named in its settings."</string>
     <string name="ks_service_listening" formatted="false">"очікування слова активації"</string>
     <string name="ks_service_rtsp_audio" formatted="false">"RTSP-аудіо мікрофона ввімкнено"</string>
     <string name="ks_service_esphome" formatted="false">"робота сервера ESPHome"</string>

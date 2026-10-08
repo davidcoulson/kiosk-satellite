@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The System UI guard's contract with Android: window-state events only,
-     no window content access, no feedback. See KioskAccessibilityService.
+<!-- The System UI guard's contract with Android: window-state events, no
+     feedback. See KioskAccessibilityService.
      canRequestFilterKeyEvents is the capability remote key mappings need
      (RemoteKeys); the service switches key filtering on at runtime only
-     while a remote key mapping exists, so the flag is not set here. -->
+     while a remote key mapping exists, so the flag is not set here.
+     canRetrieveWindowContent, flagReportViewIds and
+     flagRetrieveInteractiveWindows are what answering a vendor's power
+     dialog needs (PowerDialog): the dialog's views, their resource ids,
+     and the dialog's window when it is not the active one. Window-content
+     events are likewise requested at runtime, only while a power dialog
+     package is configured. No packageNames: the shade guard needs
+     SystemUI's windows, the foreground app every app's, and the power
+     dialog whichever package is configured. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagReportViewIds|flagRetrieveInteractiveWindows"
     android:notificationTimeout="0"
-    android:canRetrieveWindowContent="false"
+    android:canRetrieveWindowContent="true"
     android:canRequestFilterKeyEvents="true"
     android:description="@string/ui_guard_description" />

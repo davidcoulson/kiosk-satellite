@@ -3,7 +3,7 @@
 <resources>
     <string name="ks_service_title" formatted="false">"Kiosk Satellite Service"</string>
     <string name="ks_service_channel_help" formatted="false">"Wordt getoond wanneer de Kiosk Satellite Service de app actief houdt terwijl het scherm uitstaat of een andere app op de voorgrond staat."</string>
-    <string name="ui_guard_description" formatted="false">"Sluit het meldingenpaneel en het scherm met recente apps zodra deze worden geopend terwijl de kioskmodus of vergrendelingsmodus het scherm beschermt. Kiosk Satellite leest geen inhoud van het scherm."</string>
+    <string name="ui_guard_description" formatted="false">"Closes the notification shade and the recents screen whenever they open while Kiosk Mode or Lockdown Mode is protecting the screen. Kiosk Satellite reads screen content only to answer a vendor power dialog named in its settings."</string>
     <string name="ks_service_listening" formatted="false">"luisteren naar een wekwoord"</string>
     <string name="ks_service_rtsp_audio" formatted="false">"RTSP-microfoonaudio ingeschakeld"</string>
     <string name="ks_service_esphome" formatted="false">"ESPHome beschikbaar stellen"</string>

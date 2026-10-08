@@ -110,7 +110,9 @@ class RemoteKeysManager extends Manager {
           e.key == defs.gestureRemoteKeysEnabled.key ||
           e.key == defs.remoteKeysReport.key ||
           e.key == defs.homeApp.key ||
-          e.key == defs.homeAppIdleMinutes.key) {
+          e.key == defs.homeAppIdleMinutes.key ||
+          e.key == defs.powerDialogPackage.key ||
+          e.key == defs.powerDialogChoice.key) {
         _push();
       }
     });
@@ -199,11 +201,20 @@ class RemoteKeysManager extends Manager {
   }
 
   Future<void> _push() async {
+    final dialogPackage = _settings.get(defs.powerDialogPackage).trim();
     try {
       await _channel.invokeMethod('configure', {
         'mappings': _settings.get(defs.gestureMappings),
         'enabled': _settings.get(defs.gestureRemoteKeysEnabled),
         if (_reportWanted) 'report': remoteKeyEventTypes.keys.toList(),
+        // The vendor power dialog the service answers (PowerDialog.kt),
+        // on the same push: it needs the same service, and an agent runs
+        // this manager.
+        if (dialogPackage.isNotEmpty)
+          'powerDialog': {
+            'package': dialogPackage,
+            'choice': _settings.get(defs.powerDialogChoice).trim(),
+          },
       });
     } on MissingPluginException {
       // Not Android: there is no remote to map.
@@ -247,6 +258,15 @@ class RemoteKeysManager extends Manager {
         }
       case 'repaired':
         bus.publish(SelfRepaired(args));
+      case 'powerDialog':
+        // The service pressed the configured button on the vendor's power
+        // dialog, or looked for it and found no such view.
+        final choice = '${args['choice'] ?? ''}';
+        if (args['found'] == true) {
+          log.info(name, 'answered the power dialog with $choice');
+        } else {
+          log.warn(name, 'power dialog shown but $choice not found');
+        }
       case 'captured':
         final pending = _capture;
         _capture = null;

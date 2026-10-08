@@ -27,6 +27,7 @@ void main() {
   late EventBus bus;
   late SettingsManager settings;
   late RemoteKeysManager keys;
+  late Logger log;
   late List<MethodCall> calls;
   late bool serviceRunning;
 
@@ -35,7 +36,7 @@ void main() {
       'ks.${defs.gestureMappings.key}': mappings,
     });
     bus = EventBus();
-    final log = Logger();
+    log = Logger();
     settings = SettingsManager(bus, CommandRegistry(log), log);
     await settings.init();
     calls = [];
@@ -162,6 +163,40 @@ void main() {
     await fromNative('reported', {'keyCode': 29});
     await pumpEventQueue();
     expect(seen, ['home']);
+  });
+
+  test('the power dialog rides the push only while a package is set', () async {
+    await build();
+    expect(
+      calls.singleWhere((c) => c.method == 'configure').arguments,
+      isNot(contains('powerDialog')),
+    );
+    calls.clear();
+    await settings.set(defs.powerDialogPackage, ' com.htc.closedialog ');
+    await pumpEventQueue();
+    expect((calls.last.arguments as Map)['powerDialog'], {
+      'package': 'com.htc.closedialog',
+      'choice': 'rl_sleep',
+    });
+    await settings.set(defs.powerDialogChoice, 'rl_reboot');
+    await pumpEventQueue();
+    expect(
+      ((calls.last.arguments as Map)['powerDialog'] as Map)['choice'],
+      'rl_reboot',
+    );
+    await settings.set(defs.powerDialogPackage, '');
+    await pumpEventQueue();
+    expect(calls.last.arguments, isNot(contains('powerDialog')));
+  });
+
+  test('the power dialog answer is logged, found or not', () async {
+    await build();
+    await fromNative('powerDialog', {'choice': 'rl_sleep', 'found': true});
+    await fromNative('powerDialog', {'choice': 'rl_sleep', 'found': false});
+    await pumpEventQueue();
+    final lines = log.recent.map((e) => '${e.level.name}: ${e.message}');
+    expect(lines, contains('info: answered the power dialog with rl_sleep'));
+    expect(lines, contains('warn: power dialog shown but rl_sleep not found'));
   });
 
   test('remote keys are on by default and ride fleet sync', () {
