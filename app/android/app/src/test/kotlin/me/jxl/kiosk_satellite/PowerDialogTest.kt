@@ -220,12 +220,11 @@ class PowerDialogTest {
     // ── Sleep and dismiss ────────────────────────────────────────────
 
     @Test
-    fun `sleep is the default and needs no content events`() {
+    fun `sleep is the default, and content events are wanted for it too`() {
         val fresh = PowerDialogAnswerer({ now }, { _, _ -> }, {}, { _, _, _ -> }, screen)
         assertEquals("sleep", fresh.choice)
-        fresh.packageName = pkg
         assertFalse(fresh.wantsContent())
-        fresh.choice = "rl_reboot"
+        fresh.packageName = pkg
         assertTrue(fresh.wantsContent())
     }
 
@@ -293,13 +292,14 @@ class PowerDialogTest {
     }
 
     @Test
-    fun `content events never answer sleep, and one appearance sleeps once`() {
+    fun `a content change answers sleep when the window event was missed, once`() {
+        // The HY260 unbinds the service as the dialog launches; the
+        // countdown's content changes are what the rebound service sees.
         answerer.choice = "sleep"
         screen.showing = false
-        assertFalse(answerer.onWindow(pkg, false) { hy260() })
-        assertTrue(screen.done.isEmpty())
-        assertTrue(answerer.onWindow(pkg, true) { hy260() })
+        assertTrue(answerer.onWindow(pkg, false) { hy260() })
         now += 300
+        assertFalse(answerer.onWindow(pkg, false) { hy260() })
         assertFalse(answerer.onWindow(pkg, true) { hy260() })
         elapseFollow()
         assertEquals(listOf("back", "lock"), screen.done)
