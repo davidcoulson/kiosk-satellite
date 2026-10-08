@@ -119,6 +119,19 @@ try:
         pick = panel.locator('.dp-pick-row')
         expect(pick).to_contain_text('Light')
         expect(pick).to_contain_text('Device name')
+        # The device echoes the save and another admin adds a view: the
+        # lists repaint in place, the page is not rebuilt around them.
+        page.evaluate("window.rotationPanel=document.querySelector('[data-subpage=\"Dashboard View Rotation\"] .card')")
+        echo = '''async value => {
+          const {state} = await import('/static/core.js');
+          const s = state.settings.find(x => x.key === 'ha.rotation_dashboards');
+          (await import('/static/settings.js')).applySettingsUpdate({settings: [{...s, value}]});
+        }'''
+        page.evaluate(echo, '["dashboard-one/raw-target"]')
+        page.wait_for_timeout(300)
+        page.evaluate(echo, '["dashboard-one/raw-target","dashboard-one/original"]')
+        expect(pick).to_have_count(2)
+        assert page.evaluate("window.rotationPanel.isConnected"), 'The rotation page was rebuilt'
         page.evaluate("(async () => (await import('/static/tabs.js')).showTab('homeassistant', {refresh:false}))()")
         root.get_by_role('button', name='TEST validate', exact=True).click()
         expect(page.get_by_text('TEST proxy explanation', exact=True)).to_be_visible()

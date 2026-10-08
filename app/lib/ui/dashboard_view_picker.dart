@@ -167,6 +167,8 @@ Future<String?> showDashboardPicker(
   String? selected,
 }) => showDialog<String>(
   context: context,
+  // The dialog closes on an outside tap itself, see _PickerDialog.
+  barrierDismissible: false,
   builder: (context) => _PickerDialog<String>(
     title: title,
     builder: (close) => DashboardPicker(
@@ -189,6 +191,7 @@ Future<List<String>?> showDashboardMultiPicker(
   List<String> selected = const [],
 }) => showDialog<List<String>>(
   context: context,
+  barrierDismissible: false,
   builder: (context) => _PickerDialog<List<String>>(
     title: title,
     builder: (close) => DashboardPicker(
@@ -202,29 +205,55 @@ Future<List<String>?> showDashboardMultiPicker(
   ),
 );
 
-class _PickerDialog<T> extends StatelessWidget {
+class _PickerDialog<T> extends StatefulWidget {
   const _PickerDialog({required this.title, required this.builder});
 
   final String title;
   final Widget Function(void Function(T?) close) builder;
 
   @override
+  State<_PickerDialog<T>> createState() => _PickerDialogState<T>();
+}
+
+class _PickerDialogState<T> extends State<_PickerDialog<T>> {
+  final _openedAt = DateTime.now();
+
+  void _close(T? value) => Navigator.of(context).pop(value);
+
+  /// An outside tap closes the picker, but not the second tap of a double
+  /// tap on the field: that lands outside the dialog the first one opened.
+  void _outsideTap() {
+    if (DateTime.now().difference(_openedAt).inMilliseconds > 500) {
+      _close(null);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    void close(T? value) => Navigator.of(context).pop(value);
     final size = MediaQuery.sizeOf(context);
     if (size.width < 640) {
-      return Dialog.fullscreen(child: SafeArea(child: builder(close)));
+      return Dialog.fullscreen(child: SafeArea(child: widget.builder(_close)));
     }
-    return Dialog(
-      insetPadding: const EdgeInsets.all(24),
-      child: SizedBox(
-        width: 760,
-        height: math.min(560.0, size.height - 48),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
-          child: builder(close),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _outsideTap,
+          ),
         ),
-      ),
+        Dialog(
+          insetPadding: const EdgeInsets.all(24),
+          child: SizedBox(
+            width: 760,
+            height: math.min(560.0, size.height - 48),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
+              child: widget.builder(_close),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

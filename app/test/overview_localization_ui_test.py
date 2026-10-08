@@ -105,8 +105,13 @@ try:
         assert page.evaluate("originalInstall===document.querySelector('#attentionCard [data-key=update] button') && originalPicker===document.querySelector('#viewJump') && originalVolume===document.querySelector('#volumeRow input')")
         # Go to view opens the dashboard picker in go mode: a tap navigates,
         # nothing is checked, and names from Home Assistant stay as they are.
-        root.locator('#viewJump').click()
+        # A double click shows one picker: not two on top of each other, and
+        # the second click does not close the first through its backdrop.
+        root.locator('#viewJump').dblclick()
         modal = page.locator('.dash-picker-card')
+        expect(modal).to_have_count(1)
+        page.wait_for_timeout(600)
+        expect(modal).to_have_count(1)
         expect(modal.locator('.dp-name')).to_have_text(label('Go to view'))
         expect(modal.locator('.dp-tile.picked')).to_have_count(0)
         with page.expect_response('**/api/commands/haNavigate'):

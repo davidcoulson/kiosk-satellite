@@ -244,14 +244,16 @@ function skeleton(wide) {
 
 // Builds a picker into [host]. Options: title (null inline), selected
 // (array of paths), mode 'select' | 'go' | 'several', showing (the path on
-// screen, go mode), onPick(path), onDone(paths), onClose(). Returns
+// screen, go mode), showingUpdate (a promise of a fresher one, which only
+// moves the Showing mark), onPick(path), onDone(paths), onClose(). Returns
 // { root, head, destroy }.
 function buildPicker({ title = null, selected = [], mode = 'select', showing = null,
-  refresh = true, onPick, onDone, onClose }) {
+  showingUpdate = null, refresh = true, onPick, onDone, onClose }) {
   const st = {
     list: catalog, loading: false, failed: false, browsing: null, drill: null,
-    query: '', picked: [...selected], wide: true, opened: false,
+    query: '', picked: [...selected], wide: true, opened: false, browsed: false,
   };
+  let showingPath = showing || null;
   const root = el('div', 'dp' + (title ? '' : ' inline'));
   const head = el('div', 'dp-head');
   const bar = el('div', 'dp-bar');
@@ -289,8 +291,8 @@ function buildPicker({ title = null, selected = [], mode = 'select', showing = n
     || (v && v === d.views[0] && st.picked.includes(d.path));
   const holds = (d) => (d.views.length ? d.views.some((v) => isPicked(d, v)) : isPicked(d, null));
   const isShowing = (d, v) => {
-    if (!showing) return false;
-    const m = matchDashboard([d], showing);
+    if (!showingPath) return false;
+    const m = matchDashboard([d], showingPath);
     return !!m && m.view === v;
   };
 
@@ -312,8 +314,8 @@ function buildPicker({ title = null, selected = [], mode = 'select', showing = n
       const m = matchDashboard(list, p);
       if (m) { st.browsing = m.dashboard.path; return; }
     }
-    if (mode === 'go' && showing) {
-      const m = matchDashboard(list, showing);
+    if (mode === 'go' && showingPath) {
+      const m = matchDashboard(list, showingPath);
       if (m) { st.browsing = m.dashboard.path; return; }
     }
     st.browsing = list[0]?.path || null;
@@ -447,7 +449,7 @@ function buildPicker({ title = null, selected = [], mode = 'select', showing = n
       const left = el('div', 'dp-dashes edge-fade');
       list.forEach((x) => left.appendChild(dashboardRow(x, {
         active: x === d, holds: mode !== 'go' && holds(x),
-        onClick: () => { st.browsing = x.path; render(); },
+        onClick: () => { st.browsing = x.path; st.browsed = true; render(); },
       })));
       node.append(left, viewsPane(d));
     }
@@ -481,6 +483,19 @@ function buildPicker({ title = null, selected = [], mode = 'select', showing = n
   observer.observe(root);
   if (st.list) openOn(st.list);
   render();
+  // A fresher view on screen can arrive after the picker opened. It moves
+  // the Showing mark, never the dashboard on view, unless the picker had
+  // nothing to open on: a picker that shifts under the pointer is worse
+  // than a mark that moves.
+  if (showingUpdate) {
+    showingUpdate.then((path) => {
+      const had = showingPath;
+      showingPath = path || null;
+      if (showingPath === had) return;
+      if (!had && !st.browsed) { st.opened = false; if (st.list) openOn(st.list); }
+      if (root.isConnected) render();
+    }, () => {});
+  }
   // A modal refreshes the list on open. Inline, a re-render of the page
   // reuses what is cached.
   if (refresh || !st.list) reload();
@@ -493,11 +508,27 @@ function buildPicker({ title = null, selected = [], mode = 'select', showing = n
 
 // The picker in a modal. Resolves to the picked path ('select', 'go'), the
 // picked paths ('several'), or null when dismissed.
-export function pickDashboard({ title, selected = null, mode = 'select', showing = null }) {
+// One picker at a time: a second click while one is open, or still
+// opening, gets null instead of a second modal on top.
+let pickerOpen = false;
+
+export function pickDashboard({ title, selected = null, mode = 'select', showing = null,
+  showingUpdate = null }) {
+  if (pickerOpen) return Promise.resolve(null);
+  pickerOpen = true;
   return new Promise((resolve) => {
     let picker = null;
-    const shell = modalShell({ title: '', width: 760, onDismiss: () => finish(null) });
-    const finish = (value) => { picker?.destroy(); shell.back.remove(); resolve(value); };
+    // The second click of a double click lands on the backdrop the first
+    // one just opened: it must not close the picker again.
+    const openedAt = Date.now();
+    const shell = modalShell({ title: '', width: 760,
+      onDismiss: () => { if (Date.now() - openedAt > 500) finish(null); } });
+    const finish = (value) => {
+      pickerOpen = false;
+      picker?.destroy();
+      shell.back.remove();
+      resolve(value);
+    };
     shell.card.classList.add('dash-picker-card');
     shell.head.remove();
     shell.body.classList.remove('edge-fade');
@@ -507,6 +538,7 @@ export function pickDashboard({ title, selected = null, mode = 'select', showing
       selected: Array.isArray(selected) ? selected : (selected ? [selected] : []),
       mode,
       showing,
+      showingUpdate,
       onPick: (path) => finish(path),
       onDone: (paths) => finish(paths),
       onClose: () => finish(null),
@@ -578,12 +610,17 @@ export function dashboardField({ value = '', title, onPick, mode = 'select', sho
     box.dispatchEvent(new CustomEvent('dp-painted', { detail: { missing } }));
   };
   box.addEventListener('click', async () => {
-    if (mode === 'go' && showing) {
-      current = (await showing()) || '';
-      paint();
-    }
+    // Go mode opens at once on the view last seen, so there is no pause
+    // for a second click to land in, and asks the kiosk again meanwhile.
+    const fresh = mode === 'go' && showing
+      ? Promise.resolve(showing()).then((path) => {
+        current = path || '';
+        paint();
+        return path;
+      })
+      : null;
     const picked = mode === 'go'
-      ? await pickDashboard({ title, mode: 'go', showing: current || null })
+      ? await pickDashboard({ title, mode: 'go', showing: current || null, showingUpdate: fresh })
       : await pickDashboard({ title, selected: current });
     if (picked == null || picked === current) return;
     current = picked;

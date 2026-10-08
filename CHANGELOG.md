@@ -7,6 +7,9 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 ### Changed
 - **One dashboard picker everywhere.** Every place that picks a Home Assistant dashboard view now uses the same picker, on the device and in the remote admin: the Home Assistant **Dashboard** card, Setup, the Home Assistant Dashboard screensaver's **Dashboard view**, Now Playing's **Dashboard view**, the **Go to a dashboard view** gesture, **Views to rotate** and the remote admin's **Go to view**. Dashboards are listed on the left with the icons set in Home Assistant, and the views of the selected dashboard show as tiles on the right, with subviews under their own heading. Search finds views by name, dashboard or path. On a phone or a narrow screen the picker fills the screen and opens one dashboard at a time. **Cancel** closes it without changing anything. Settings that store a view show it as a field with the view's icon, its dashboard and its name, and flag a view that no longer exists in Home Assistant. The Home Assistant **Dashboard** card is now one **Default dashboard** row instead of a list of every dashboard. **Views to rotate** lists only the picked views, with **Add views** to pick more, and sits under its own heading beside **External pages**, which were drawn centered inside the settings card on the device. **Go to view** on the remote Overview shows the view the kiosk is on in the same field and marks it in the picker. When Home Assistant cannot be reached, the picker says so and offers **Try again** instead of an empty list.
 
+### Fixed
+- **Editing the rotation lists no longer reloads the remote admin page.** Adding or removing a view or an external page on the remote admin's **Dashboard View Rotation** page redrew the whole page. Only the changed list repaints now, and a change made on the device or from another browser shows up the same way.
+
 ## v2026.10.14 - 2026-10-08
 
 ### Added

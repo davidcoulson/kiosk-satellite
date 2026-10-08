@@ -209,6 +209,10 @@ const layoutSettings = new Set([
 // that wakes the screensaver writes the saved brightness; rebuilding the
 // settings pages for that re-rendered whatever page was open, on every
 // trigger.
+// The rotation's view and page lists repaint in place on the ks-settings
+// event (the rotation page below): a save echoed back from the device, or
+// a change from another admin, never rebuilds the tab.
+const rotationListSettings = new Set(['ha.rotation_dashboards', 'ha.rotation_urls']);
 const runtimeStateSettings = new Set([
   'screensaver.saved_brightness', 'voice.timer_position', 'sendspin.player_pos',
   // The alarms and their ring state: the Alarms page redraws from the
@@ -295,6 +299,7 @@ async function flushSettingsUpdates() {
     // its dialog, which repaint and read them themselves: a save or a new
     // model list never rebuilds the page.
     if (!hasDependants && REALTIME_PROVIDER_SETTINGS.has(setting.key)) continue;
+    if (!shapeChanged && !hasDependants && rotationListSettings.has(setting.key)) continue;
     // Only the choices of a dropdown moved (a provider's model list came
     // in): its row refreshes them in place rather than the page rebuilding
     // under whatever is being typed elsewhere on it.
@@ -2137,6 +2142,33 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
           };
           add.addEventListener('click', doAdd);
           inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdd(); });
+          // A change from the device or another admin repaints the lists
+          // in place. The echo of this page's own save matches and is
+          // skipped.
+          const parse = (key) => {
+            try {
+              const v = JSON.parse(byKey[key]?.value || '[]');
+              return Array.isArray(v) ? v : [];
+            } catch (_) { return []; }
+          };
+          const onSettings = (e) => {
+            if (!rlists.isConnected) {
+              document.removeEventListener('ks-settings', onSettings);
+              return;
+            }
+            const keys = e.detail || [];
+            if (keys.includes('ha.rotation_dashboards')) {
+              const next = parse('ha.rotation_dashboards');
+              if (JSON.stringify(next) !== JSON.stringify(sel)) { sel = next; renderSel(); }
+            }
+            if (keys.includes('ha.rotation_urls')) {
+              const next = parse('ha.rotation_urls');
+              if (JSON.stringify(next) !== JSON.stringify(urls)) { urls = next; renderUrls(); }
+            }
+          };
+          document.removeEventListener('ks-settings', rlists.onSettings || (() => {}));
+          rlists.onSettings = onSettings;
+          document.addEventListener('ks-settings', onSettings);
           const controls = document.createElement('div');
           controls.className = 'rotation-url-controls';
           controls.append(inp, add);

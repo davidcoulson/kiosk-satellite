@@ -169,6 +169,37 @@ void main() {
     });
   }
 
+  testWidgets('a double tap on the field leaves one picker open', (
+    tester,
+  ) async {
+    final c = await _container();
+    await _pump(
+      tester,
+      const Size(1200, 800),
+      (_) => DashboardViewRow(
+        container: c,
+        title: 'Dashboard view',
+        value: 'wall/clock',
+        onPick: (_) {},
+      ),
+    );
+    await tester.pumpAndSettle();
+    final field = tester.getCenter(find.byType(DashboardField));
+    await tester.tapAt(field);
+    await tester.pump(const Duration(milliseconds: 80));
+    // The second tap lands outside the dialog the first one opened.
+    await tester.tapAt(field);
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsOneWidget);
+    // A deliberate outside tap later still closes it.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 600)),
+    );
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsNothing);
+  });
+
   testWidgets('the inline picker has nothing to cancel', (tester) async {
     final c = await _container();
     await _pump(
