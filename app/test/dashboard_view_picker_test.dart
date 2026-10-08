@@ -134,6 +134,53 @@ void main() {
     expect(picked, 'map');
   });
 
+  for (final size in const [Size(1200, 800), Size(400, 800)]) {
+    testWidgets('Cancel closes the picker without a pick at $size', (
+      tester,
+    ) async {
+      final c = await _container();
+      String? picked = 'untouched';
+      var closed = false;
+      await _pump(
+        tester,
+        size,
+        (context) => TextButton(
+          onPressed: () async {
+            picked = await showDashboardPicker(
+              context,
+              container: c,
+              title: 'Dashboard view',
+              selected: 'wall/clock',
+            );
+            closed = true;
+          },
+          child: const Text('open'),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(closed, isTrue);
+      expect(picked, isNull);
+    });
+  }
+
+  testWidgets('the inline picker has nothing to cancel', (tester) async {
+    final c = await _container();
+    await _pump(
+      tester,
+      const Size(1200, 800),
+      (_) => SizedBox(
+        height: 460,
+        child: DashboardPicker(container: c, onPick: (_) {}),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Clock'), findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
+  });
+
   testWidgets('a phone drills from the dashboards into the views', (
     tester,
   ) async {

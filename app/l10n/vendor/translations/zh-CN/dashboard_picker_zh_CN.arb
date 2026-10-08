@@ -23,5 +23,5 @@
   "dashboardPickerMissing": "Home Assistant 中已没有此页面。请另选一个。",
   "dashboardPickerAddViews": "添加页面",
   "dashboardPickerDefault": "默认仪表盘",
-  "dashboardPickerStartHelp": "Kiosk 启动和返回时显示的位置。"
+  "dashboardPickerDefaultHelp": "Kiosk 启动时显示的页面。"
 }

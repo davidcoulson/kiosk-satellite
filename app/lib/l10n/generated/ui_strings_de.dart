@@ -608,8 +608,8 @@ class UiStringsDe extends UiStrings {
   String get dashboardPickerDefault => 'Standard-Dashboard';
 
   @override
-  String get dashboardPickerStartHelp =>
-      'Hier öffnet der Kiosk und hierher kehrt er zurück.';
+  String get dashboardPickerDefaultHelp =>
+      'Die Ansicht, die der Kiosk beim Start anzeigt.';
 
   @override
   String get dlnaCannotDecode =>

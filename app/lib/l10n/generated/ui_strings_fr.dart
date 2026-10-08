@@ -609,8 +609,8 @@ class UiStringsFr extends UiStrings {
   String get dashboardPickerDefault => 'Tableau de bord par défaut';
 
   @override
-  String get dashboardPickerStartHelp =>
-      'Là où le kiosque s\'ouvre et revient.';
+  String get dashboardPickerDefaultHelp =>
+      'La vue que le kiosque affiche à son démarrage.';
 
   @override
   String get dlnaCannotDecode =>

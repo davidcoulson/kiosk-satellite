@@ -137,6 +137,6 @@ export const haTextMessageIds = {
   "This view is gone from Home Assistant. Choose another.": "dashboardPickerMissing",
   "Add views": "dashboardPickerAddViews",
   "Default dashboard": "dashboardPickerDefault",
-  "Where the kiosk opens and comes back to.": "dashboardPickerStartHelp",
+  "The view the kiosk shows when it starts.": "dashboardPickerDefaultHelp",
   "Back": "commonBack"
 };

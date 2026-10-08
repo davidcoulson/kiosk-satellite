@@ -1866,7 +1866,7 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
       const startPath = dashboardPathOfUrl(byKey['browser.start_url']?.value || '', rawBase) || '';
       dcard.appendChild(dashboardViewRow({
         name: haText('Default dashboard'),
-        desc: haText('Where the kiosk opens and comes back to.'),
+        desc: haText('The view the kiosk shows when it starts.'),
         value: startPath,
         onPick: async (path) => {
           const url = `${rawBase}/${path}`;

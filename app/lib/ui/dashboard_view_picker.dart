@@ -158,7 +158,8 @@ String? dashboardPathOfUrl(String url, String base) {
 /// The dashboard picker as a dialog: dashboards on the left, the browsed
 /// dashboard's views as tiles on the right, search across both. Under 640
 /// it fills the screen and drills from dashboards into views. A tap picks
-/// and closes. Resolves to the navigation path, or null when dismissed.
+/// and closes, Cancel in the footer closes without a pick. Resolves to the
+/// navigation path, or null when dismissed.
 Future<String?> showDashboardPicker(
   BuildContext context, {
   required AppContainer container,
@@ -365,7 +366,10 @@ class _DashboardPickerState extends State<DashboardPicker> {
           children: [
             wide ? _wideHeader(context) : _narrowHeader(context),
             Expanded(child: _content(context, wide)),
-            if (widget.multiple) _footer(context),
+            // A dialog always offers Cancel, the remote's footer. Inline in
+            // Setup there is nothing to cancel.
+            if (widget.multiple || widget.onClose != null)
+              _footer(context, wide),
           ],
         );
       },
@@ -526,36 +530,44 @@ class _DashboardPickerState extends State<DashboardPicker> {
     return null;
   }
 
-  Widget _footer(BuildContext context) {
+  Widget _footer(BuildContext context, bool wide) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.only(top: 14),
+      // The full screen picker has no dialog padding of its own.
+      margin: wide ? null : const EdgeInsets.symmetric(horizontal: 12),
+      padding: EdgeInsets.only(top: 14, bottom: wide ? 0 : 12),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: scheme.outlineVariant)),
       ),
       child: Row(
         children: [
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Text(
-                l10n(context).dashboardPickerSelected('${_picked.length}'),
-                style: TextStyle(
-                  fontSize: 13.5,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ),
+            child: widget.multiple
+                ? Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Text(
+                      l10n(
+                        context,
+                      ).dashboardPickerSelected('${_picked.length}'),
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
           TextButton(
             onPressed: widget.onClose,
             child: Text(haText(context, 'Cancel')),
           ),
-          const SizedBox(width: 8),
-          FilledButton(
-            onPressed: () => widget.onDone?.call(List.of(_picked)),
-            child: Text(haText(context, 'Done')),
-          ),
+          if (widget.multiple) ...[
+            const SizedBox(width: 8),
+            FilledButton(
+              onPressed: () => widget.onDone?.call(List.of(_picked)),
+              child: Text(haText(context, 'Done')),
+            ),
+          ],
         ],
       ),
     );

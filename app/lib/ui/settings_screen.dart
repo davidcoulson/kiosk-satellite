@@ -8169,7 +8169,7 @@ class _DashboardPickerCardState extends State<_DashboardPickerCard> {
           title: haText(context, 'Default dashboard'),
           description: haText(
             context,
-            'Where the kiosk opens and comes back to.',
+            'The view the kiosk shows when it starts.',
           ),
           value: current,
           onPick: _apply,

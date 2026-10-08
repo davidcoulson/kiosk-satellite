@@ -608,8 +608,8 @@ class UiStringsEs extends UiStrings {
   String get dashboardPickerDefault => 'Panel de control predeterminado';
 
   @override
-  String get dashboardPickerStartHelp =>
-      'Donde el kiosko se abre y adonde vuelve.';
+  String get dashboardPickerDefaultHelp =>
+      'La vista que muestra el kiosko al iniciar.';
 
   @override
   String get dlnaCannotDecode =>

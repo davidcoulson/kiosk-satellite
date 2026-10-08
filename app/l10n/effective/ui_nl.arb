@@ -2258,7 +2258,7 @@
   "dashboardPickerDefault": "Standaarddashboard",
   "@dashboardPickerDefault": {
     "context": "Dashboard picker",
-    "description": "Setting name: the view the kiosk opens on and comes back to.",
+    "description": "Setting name: the view the kiosk shows when it starts.",
     "x-locations": {
       "device": [
         "Settings > Home Assistant > Dashboard",
@@ -2279,8 +2279,8 @@
       ]
     }
   },
-  "dashboardPickerStartHelp": "Waar de kiosk opent en naar terugkeert.",
-  "@dashboardPickerStartHelp": {
+  "dashboardPickerDefaultHelp": "De weergave die de kiosk toont bij het starten.",
+  "@dashboardPickerDefaultHelp": {
     "context": "Dashboard picker",
     "description": "Description of the Default dashboard setting.",
     "x-locations": {

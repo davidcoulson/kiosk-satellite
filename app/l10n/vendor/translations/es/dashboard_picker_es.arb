@@ -23,5 +23,5 @@
   "dashboardPickerMissing": "Esta vista ya no existe en Home Assistant. Elige otra.",
   "dashboardPickerAddViews": "Añadir vistas",
   "dashboardPickerDefault": "Panel de control predeterminado",
-  "dashboardPickerStartHelp": "Donde el kiosko se abre y adonde vuelve."
+  "dashboardPickerDefaultHelp": "La vista que muestra el kiosko al iniciar."
 }

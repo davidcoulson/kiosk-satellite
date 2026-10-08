@@ -592,7 +592,7 @@ class UiStringsZh extends UiStrings {
   String get dashboardPickerDefault => '默认仪表盘';
 
   @override
-  String get dashboardPickerStartHelp => 'Kiosk 启动和返回时显示的位置。';
+  String get dashboardPickerDefaultHelp => 'Kiosk 启动时显示的页面。';
 
   @override
   String get dlnaCannotDecode => '此设备无法解码此视频。';
@@ -13102,7 +13102,7 @@ class UiStringsZhCn extends UiStringsZh {
   String get dashboardPickerDefault => '默认仪表盘';
 
   @override
-  String get dashboardPickerStartHelp => 'Kiosk 启动和返回时显示的位置。';
+  String get dashboardPickerDefaultHelp => 'Kiosk 启动时显示的页面。';
 
   @override
   String get dlnaCannotDecode => '此设备无法解码此视频。';

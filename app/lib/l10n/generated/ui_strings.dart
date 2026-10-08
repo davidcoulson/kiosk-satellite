@@ -1154,7 +1154,7 @@ abstract class UiStrings {
   /// **'Add views'**
   String get dashboardPickerAddViews;
 
-  /// Setting name: the view the kiosk opens on and comes back to.
+  /// Setting name: the view the kiosk shows when it starts.
   ///
   /// In en, this message translates to:
   /// **'Default dashboard'**
@@ -1163,8 +1163,8 @@ abstract class UiStrings {
   /// Description of the Default dashboard setting.
   ///
   /// In en, this message translates to:
-  /// **'Where the kiosk opens and comes back to.'**
-  String get dashboardPickerStartHelp;
+  /// **'The view the kiosk shows when it starts.'**
+  String get dashboardPickerDefaultHelp;
 
   /// Playback failure caused by the device video decoder.
   ///

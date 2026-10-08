@@ -607,8 +607,8 @@ class UiStringsRu extends UiStrings {
   String get dashboardPickerDefault => 'Панель по умолчанию';
 
   @override
-  String get dashboardPickerStartHelp =>
-      'Здесь киоск открывается и сюда возвращается.';
+  String get dashboardPickerDefaultHelp =>
+      'Вид, который киоск показывает при запуске.';
 
   @override
   String get dlnaCannotDecode =>

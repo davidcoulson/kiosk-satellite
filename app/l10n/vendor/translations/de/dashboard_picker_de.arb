@@ -23,5 +23,5 @@
   "dashboardPickerMissing": "Diese Ansicht gibt es in Home Assistant nicht mehr. Wähle eine andere.",
   "dashboardPickerAddViews": "Ansichten hinzufügen",
   "dashboardPickerDefault": "Standard-Dashboard",
-  "dashboardPickerStartHelp": "Hier öffnet der Kiosk und hierher kehrt er zurück."
+  "dashboardPickerDefaultHelp": "Die Ansicht, die der Kiosk beim Start anzeigt."
 }

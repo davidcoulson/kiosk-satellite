@@ -603,8 +603,8 @@ class UiStringsEn extends UiStrings {
   String get dashboardPickerDefault => 'Default dashboard';
 
   @override
-  String get dashboardPickerStartHelp =>
-      'Where the kiosk opens and comes back to.';
+  String get dashboardPickerDefaultHelp =>
+      'The view the kiosk shows when it starts.';
 
   @override
   String get dlnaCannotDecode => 'This device cannot decode this video.';

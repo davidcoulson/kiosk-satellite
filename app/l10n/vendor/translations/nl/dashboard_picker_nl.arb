@@ -23,5 +23,5 @@
   "dashboardPickerMissing": "Deze weergave bestaat niet meer in Home Assistant. Kies een andere.",
   "dashboardPickerAddViews": "Weergaven toevoegen",
   "dashboardPickerDefault": "Standaarddashboard",
-  "dashboardPickerStartHelp": "Waar de kiosk opent en naar terugkeert."
+  "dashboardPickerDefaultHelp": "De weergave die de kiosk toont bij het starten."
 }

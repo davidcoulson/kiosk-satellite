@@ -605,8 +605,8 @@ class UiStringsNl extends UiStrings {
   String get dashboardPickerDefault => 'Standaarddashboard';
 
   @override
-  String get dashboardPickerStartHelp =>
-      'Waar de kiosk opent en naar terugkeert.';
+  String get dashboardPickerDefaultHelp =>
+      'De weergave die de kiosk toont bij het starten.';
 
   @override
   String get dlnaCannotDecode => 'Dit apparaat kan deze video niet decoderen.';

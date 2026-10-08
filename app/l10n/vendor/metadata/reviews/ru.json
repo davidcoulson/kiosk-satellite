@@ -23519,8 +23519,14 @@
     "ownerAuthored": true
   },
   "dashboardPickerDefault": {
-    "source": "b2fc6b9cf07dcd2e8f45f9686fd9494a5ffcab7c6dddc32dd984bc678bcc8564",
+    "source": "128b22eb3d7bc93ffa568a6fff1566272d52619e8b1bcf3a4ded6848bde97c56",
     "translation": "33b491717cadfab32e81483273bb0c51bc875d0800d777989a0f29f2ab76a5fc",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "dashboardPickerDefaultHelp": {
+    "source": "a5e03ae1d9c69c9b928bb421fd3e036c80c70507c135784aeca67569776141dd",
+    "translation": "0336d5aa65939e758ee039bcede189ce2e506665a912235ec0ab669d66e1e17c",
     "author": "Xavier Larrea",
     "ownerAuthored": true
   }

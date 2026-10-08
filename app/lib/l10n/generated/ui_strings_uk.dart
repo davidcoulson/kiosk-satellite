@@ -606,8 +606,8 @@ class UiStringsUk extends UiStrings {
   String get dashboardPickerDefault => 'Панель керування за замовчуванням';
 
   @override
-  String get dashboardPickerStartHelp =>
-      'Тут кіоск відкривається і сюди повертається.';
+  String get dashboardPickerDefaultHelp =>
+      'Вид, який кіоск показує під час запуску.';
 
   @override
   String get dlnaCannotDecode => 'Цей пристрій не може декодувати це відео.';
