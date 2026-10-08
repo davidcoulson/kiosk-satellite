@@ -326,6 +326,21 @@ class MicLevelSample extends AppEvent {
   final double rms;
 }
 
+/// The room's noise level moved by 2 dB or more, froze, thawed, came or went
+/// (issue #910). [dbfs] is a whole number averaged over 5 seconds, null
+/// while unavailable. [held] keeps the last value through a voice turn or
+/// the kiosk's own sound. Internal: the ESPHome sensor and plugins read it.
+class NoiseLevelChanged extends AppEvent {
+  const NoiseLevelChanged({
+    required this.available,
+    required this.dbfs,
+    required this.held,
+  });
+  final bool available;
+  final int? dbfs;
+  final bool held;
+}
+
 /// A playback level sample from a native sound (mean |amplitude|, 0..1, at
 /// most ~20/s). Wire event: the page's reactive bar animates to audio it
 /// never touches.

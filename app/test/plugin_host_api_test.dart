@@ -486,6 +486,63 @@ void main() {
     expect((await read('getDeviceInfo'))['ok'], false);
   });
 
+  test('the noise level needs its own capability', () async {
+    register(
+      'getNoiseLevel',
+      (_) async => const CommandResult.ok({
+        'available': true,
+        'dbfs': -42,
+        'held': false,
+        'updated': '2026-10-08T12:00:00.000Z',
+        'secret': 'hidden',
+      }),
+    );
+    final plain = (await read('getHostApi'))['data'] as Map;
+    expect(plain['commands'], isNot(contains('getNoiseLevel')));
+    expect(plain['events'], isNot(contains('audio.noise')));
+    expect((await read('getNoiseLevel'))['ok'], false);
+    subscribe('audio.noise');
+    bus.publish(
+      const NoiseLevelChanged(available: true, dbfs: -42, held: false),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 130));
+    expect(sent, isEmpty);
+    expect(executed, isEmpty);
+
+    api.open({
+      ...session,
+      'capabilities': ['host.read', 'noise'],
+    });
+    final catalog = (await read('getHostApi'))['data'] as Map;
+    expect(catalog['capabilities'], ['host.read', 'noise']);
+    expect(catalog['commands'], contains('getNoiseLevel'));
+    expect(catalog['events'], contains('audio.noise'));
+    final result = await read('getNoiseLevel');
+    expect(result['data'], {
+      'available': true,
+      'dbfs': -42,
+      'held': false,
+      'updated': '2026-10-08T12:00:00.000Z',
+    });
+    subscribe('audio.noise');
+    bus.publish(
+      const NoiseLevelChanged(available: true, dbfs: -42, held: true),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 130));
+    final event = sent.single;
+    expect(event['event'], 'audio.noise');
+    expect(event['payload'], containsPair('dbfs', -42));
+    expect(event['payload'], containsPair('held', true));
+    expect(event['payload'], containsPair('available', true));
+
+    // Without host.read the capability opens nothing.
+    api.open({
+      ...session,
+      'capabilities': ['host.control', 'noise'],
+    });
+    expect((await read('getNoiseLevel'))['ok'], false);
+  });
+
   test('events are opt-in, projected, coalesced and revoked on stop', () async {
     subscribe('screensaver.state');
     subscribe('device.light');
@@ -692,6 +749,9 @@ void main() {
     final names = RegExp(
       r'"([a-z]+\.[a-z]+)"',
     ).allMatches(source).map((m) => m[1]).toSet();
-    expect(names, PluginHostApi.eventNames.toSet());
+    expect(names, {
+      ...PluginHostApi.eventNames,
+      ...PluginHostApi.noiseEventNames,
+    });
   });
 }

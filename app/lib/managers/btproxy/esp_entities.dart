@@ -185,6 +185,20 @@ class EspEntitySurface {
   /// two values to one recorder row per half minute.
   late final _lux = LuxLimiter((lux) => _send('illuminance', lux));
 
+  /// The Ambient noise sensor (issue #910), through the same bucket. The
+  /// meter already holds it to one reading per 5 seconds and 2 dB moves,
+  /// but a TV's dialogue clears that all evening.
+  late final _noise = LuxLimiter((dbfs) => _send('ambient_noise', dbfs));
+
+  void _sendNoise(int? dbfs) {
+    if (dbfs != null) {
+      _noise.offer(dbfs);
+    } else {
+      _noise.reset();
+      unawaited(_send('ambient_noise', null));
+    }
+  }
+
   /// Unknown while the screensaver shows: a clock still running under a
   /// commanded session is not a moment anyone wants to trigger on.
   void _sendCountdown() => _countdown.set(_screensaverActive ? null : _idleDue);
@@ -760,6 +774,17 @@ class EspEntitySurface {
           'unit': 'lx',
           'stateClass': 1,
         },
+      // Home Assistant's sound pressure class takes dB and dBA only. This
+      // is a level off the microphone, not a calibrated meter, so it
+      // carries no class.
+      {
+        'type': 'sensor',
+        'objectId': 'ambient_noise',
+        'name': 'Ambient noise',
+        'icon': 'mdi:ear-hearing',
+        'unit': 'dBFS',
+        'stateClass': 1,
+      },
       // Listed with the camera and unknown while the Motion sensor
       // setting or the camera is off, so neither switch re-lists the
       // catalog.
@@ -1772,6 +1797,7 @@ class EspEntitySurface {
       // on the last known value rather than unknown.
       bus.on<LightLevelChanged>().listen((e) => _lux.offer(e.lux.round())),
     );
+    _subs.add(bus.on<NoiseLevelChanged>().listen((e) => _sendNoise(e.dbfs)));
     _subs.add(bus.on<LocationChanged>().listen(_sendLocation));
     _subs.add(
       bus.on<PersonSensorChanged>().listen((e) => _sendPerson(e.present)),
@@ -1907,6 +1933,7 @@ class EspEntitySurface {
     _interaction.dispose();
     _countdown.dispose();
     _lux.reset();
+    _noise.reset();
   }
 
   /// A command from Home Assistant landed (via the native hub). State
@@ -2256,6 +2283,12 @@ class EspEntitySurface {
       }
     }
     await _refresh();
+    final noise = await commands.execute('getNoiseLevel', const {});
+    _sendNoise(
+      noise.ok && noise.data is Map
+          ? ((noise.data as Map)['dbfs'] as num?)?.toInt()
+          : null,
+    );
     await _sendScreen();
     await _sendPanelBrightness();
     await _sendVolume();

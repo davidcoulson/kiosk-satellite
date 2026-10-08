@@ -56,6 +56,14 @@ class PluginPackageTest {
             rejects { PluginManifest(manifest().put("apiVersion", version)) }
         }
     }
+
+    @Test fun noiseLevelIsAHostReadOptedIntoOnItsOwn() {
+        val noise = PluginManifest(manifest().put("capabilities", org.json.JSONArray(listOf("host.read", "noise"))))
+        assertTrue("noise" in noise.capabilities)
+        rejects { PluginManifest(manifest().put("capabilities", org.json.JSONArray(listOf("noise")))) }
+        rejects { PluginManifest(manifest().put("capabilities", org.json.JSONArray(listOf("host.control", "noise")))) }
+        assertTrue(PluginHostPolicy.validEvent("audio.noise"))
+    }
     @Test fun asynchronousReadBudgetBoundsPendingAndRate() {
         val budget = PluginCommandBudget()
         val now = 2_000_000_000L

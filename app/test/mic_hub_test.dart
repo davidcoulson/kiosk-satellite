@@ -86,4 +86,31 @@ void main() {
       hub.opener = opener;
     },
   );
+
+  test('the tap hears only a capture someone else holds open', () async {
+    var opens = 0;
+    final capture = StreamController<Uint8List>();
+    hub.opener = () {
+      opens++;
+      return capture.stream;
+    };
+    final tapped = <Uint8List>[];
+    final tap = hub.tap().listen(tapped.add);
+    await settle();
+    expect(opens, 0);
+    expect(hub.capturing, false);
+    final wake = hub.stream().listen((_) {});
+    await settle();
+    expect(opens, 1);
+    capture.add(Uint8List.fromList([1, 2]));
+    await settle();
+    expect(tapped, hasLength(1));
+    await wake.cancel();
+    await settle();
+    // The tap alone keeps nothing open.
+    expect(hub.capturing, false);
+    await tap.cancel();
+    hub.opener = opener;
+    await capture.close();
+  });
 }

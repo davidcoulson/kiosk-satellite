@@ -5,6 +5,7 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 ## Unreleased
 
 ### Added
+- **Ambient noise sensor for Home Assistant and plugins.** The kiosk's ESPHome device gains an **Ambient noise** sensor that reports how loud the room is in dBFS, averaged over 5 seconds and rounded to a whole dB (#910). Plugins that declare the new `noise` capability read it through `getNoiseLevel` and the `audio.noise` event. Only that one number is shared, never audio. It comes from the capture the wake word engine already has open, so it never opens the microphone. It reads unknown while wake word detection is off or muted. It holds its last value through voice turns, announcements, timers, alarms, media and intercom calls and while the kiosk plays its own sounds, so speech and the kiosk's own audio never show up in it. Add it to **Excluded entities** to keep it out of Home Assistant.
 - **Music Assistant follows the dashboard's theme and has its own zoom.** The Music Assistant page opened from the kiosk menu now switches between light and dark with the Home Assistant dashboard, live while it is open (#907). It follows whenever Kiosk Satellite sets the dashboard's theme: a pinned **Theme**, **Match theme to time of day** or **Sync Home Assistant themes with Kiosk Satellite**. Music Assistant's own theme must stay on **Auto**, its default. **Settings > Media Player > Music Assistant** gains **Zoom level**, which scales the Music Assistant page the way the Web Browsing zoom scales the dashboard.
 
 ## v2026.10.15 - 2026-10-08
