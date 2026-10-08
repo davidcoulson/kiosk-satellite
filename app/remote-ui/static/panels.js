@@ -7,7 +7,7 @@ import { readOnlyRow } from './device.js';
 import { hintRow, showToast } from './widgets.js';
 import { loadSettings } from './settings.js';
 import { radioRow } from './views.js';
-import { currentDashboardPath, loadDashboards, pickDashboard } from './dashboard_picker.js';
+import { currentDashboardPath, dashboardField } from './dashboard_picker.js';
 import { messageBox, modalShell } from './widgets.js';
 
 /* Overlay grant notice: mirror of the device's row directly under
@@ -508,19 +508,26 @@ $('#brightness').addEventListener('change', (e) =>
   cmd('setBrightness', { level: e.target.value / 100 }));
 /* The free Load URL box this replaced let an admin point a locked kiosk at
    any page on the internet; the dashboard picker over the instance's own
-   views navigates without opening that door. It opens in go mode: a tap
-   navigates at once and the view on screen right now reads Showing. */
+   views navigates without opening that door. The field shows the view on
+   screen and opens the picker in go mode: a tap navigates at once and the
+   view on screen reads Showing. */
+// Built on first use, not at module load, so nothing here runs before
+// the modules it imports are ready.
+let viewJump = null;
 export async function loadViewJump() {
-  const btn = $('#viewJump');
-  btn.disabled = false;
-  loadDashboards();
+  const base = () => (state.settings || []).find((o) => o.key === 'ha.url')?.value || '';
+  if (!viewJump) {
+    viewJump = dashboardField({
+      title: overviewText('Go to view'),
+      mode: 'go',
+      showing: () => currentDashboardPath(base()),
+      onPick: (path) => cmd('haNavigate', { path }),
+    });
+    viewJump.el.id = 'viewJump';
+    $('#viewJump').replaceWith(viewJump.el);
+  }
+  viewJump.setValue(await currentDashboardPath(base()));
 }
-$('#viewJump').addEventListener('click', async () => {
-  const base = (state.settings || []).find((o) => o.key === 'ha.url')?.value || '';
-  const showing = await currentDashboardPath(base);
-  const path = await pickDashboard({ title: overviewText('Go to view'), mode: 'go', showing });
-  if (path) await cmd('haNavigate', { path });
-});
 /* ---- Quick controls ----
    The screen, screensaver and camera view tiles are one tile each that
    reads by what the device is doing, so the dashboard offers the action

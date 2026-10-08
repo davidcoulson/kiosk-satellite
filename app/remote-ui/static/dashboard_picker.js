@@ -540,18 +540,23 @@ export function dashboardPicker({ value, onPick }) {
 // dashboard muted, a slash and the view. Empty reads Choose a view. A view
 // gone from Home Assistant shows its path with an error border. Before the
 // dashboards load, the path stands in. Returns { el, setValue }.
-export function dashboardField({ value = '', title, onPick }) {
+//
+// mode 'go' (the Overview's Go to view) shows the view on screen instead of
+// a stored one: [showing] reads it fresh on every open, a page that is not
+// one of the dashboards reads Choose a view rather than missing, and the
+// picker opens in go mode with that view marked Showing.
+export function dashboardField({ value = '', title, onPick, mode = 'select', showing = null }) {
   const box = el('button', 'dp-field');
   box.type = 'button';
   let current = value;
   const paint = () => {
     box.replaceChildren();
     const m = matchDashboard(catalog, current);
-    const missing = !!current && !!catalog && !m;
+    const missing = mode !== 'go' && !!current && !!catalog && !m;
     box.classList.toggle('missing', missing);
     const lead = el('span', 'dp-field-icon');
     const text = el('span', 'dp-field-text');
-    if (!current) {
+    if (!current || (mode === 'go' && !m)) {
       lead.appendChild(svgPath('M3,11H11V3H3M5,5H9V9H5M13,21H21V13H13M15,15H19V19H15M3,21H11V13H3M5,15H9V19H5M13,3V11H21V3M15,5H19V9H15Z', 20));
       text.classList.add('placeholder');
       text.textContent = haText('Choose a view');
@@ -573,7 +578,13 @@ export function dashboardField({ value = '', title, onPick }) {
     box.dispatchEvent(new CustomEvent('dp-painted', { detail: { missing } }));
   };
   box.addEventListener('click', async () => {
-    const picked = await pickDashboard({ title, selected: current });
+    if (mode === 'go' && showing) {
+      current = (await showing()) || '';
+      paint();
+    }
+    const picked = mode === 'go'
+      ? await pickDashboard({ title, mode: 'go', showing: current || null })
+      : await pickDashboard({ title, selected: current });
     if (picked == null || picked === current) return;
     current = picked;
     paint();

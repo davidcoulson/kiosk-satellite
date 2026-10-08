@@ -89,7 +89,9 @@ try:
         expect(root.locator('.status.plugin .s-from')).to_have_text(msg('overviewPluginAttribution', name='<b>Original plugin</b>'))
         expect(root.locator('#shotFull')).to_have_attribute('aria-label', label('Full size'))
         expect(root.locator('#tileDnd')).to_contain_text(label('Do not disturb on'))
-        expect(root.locator('#viewJump')).to_have_text(label('Choose a view'))
+        # The dashboard field, empty while the kiosk shows no known view.
+        ha_ids = json.loads((APP / 'l10n/ha_text.json').read_text())
+        expect(root.locator('#viewJump.dp-field')).to_have_text(translated[ha_ids['Choose a view']])
         expect(root.locator('#attentionCard [data-key="fleet-invite"] .name')).to_have_text(msg('overviewInvitation', name='<b>Original leader</b>'))
         assert root.locator('b').count() == 0
         page.evaluate("window.originalInstall=document.querySelector('#attentionCard [data-key=update] button');window.originalPicker=document.querySelector('#viewJump');window.originalVolume=document.querySelector('#volumeRow input');")

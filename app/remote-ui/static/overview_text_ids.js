@@ -104,6 +104,5 @@ export const overviewTextMessageIds = {
   "Screen is off": "overviewScreenOffState",
   "CPU": "overviewCpu",
   "RAM": "overviewMemory",
-  "Temp": "overviewTemperature",
-  "Choose a view": "haChooseView"
+  "Temp": "overviewTemperature"
 };
