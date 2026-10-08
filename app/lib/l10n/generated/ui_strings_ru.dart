@@ -529,6 +529,88 @@ class UiStringsRu extends UiStrings {
   String get commonSelectAll => 'Выбрать всё';
 
   @override
+  String get dashboardPickerSearch => 'Поиск видов';
+
+  @override
+  String get dashboardPickerSearchAll => 'Поиск панелей и видов';
+
+  @override
+  String get dashboardPickerCurrent => 'Текущий';
+
+  @override
+  String get dashboardPickerDashboards => 'Панели';
+
+  @override
+  String get dashboardPickerSubviews => 'Вложенные виды';
+
+  @override
+  String get dashboardPickerSubview => 'Вложенный вид';
+
+  @override
+  String get dashboardPickerWhole => 'Вся панель';
+
+  @override
+  String get dashboardPickerBuildsOwn => 'Создаёт виды сама';
+
+  @override
+  String get dashboardPickerWholeHelp =>
+      'Эта панель создаёт виды сама, поэтому киоск открывает её целиком.';
+
+  @override
+  String dashboardPickerViewCount(String count) {
+    return 'Видов: $count';
+  }
+
+  @override
+  String get dashboardPickerOneView => '1 вид';
+
+  @override
+  String get dashboardPickerOffline =>
+      'Не удалось подключиться к Home Assistant';
+
+  @override
+  String get dashboardPickerOfflineHelp =>
+      'Панели загрузятся, когда соединение восстановится.';
+
+  @override
+  String get dashboardPickerTryAgain => 'Повторить';
+
+  @override
+  String get dashboardPickerEmpty => 'Панелей пока нет';
+
+  @override
+  String get dashboardPickerEmptyHelp =>
+      'Панели, которые вы добавите в Home Assistant, появятся здесь.';
+
+  @override
+  String get dashboardPickerNoMatch => 'Нет подходящих видов';
+
+  @override
+  String dashboardPickerSelected(String count) {
+    return 'Выбрано: $count';
+  }
+
+  @override
+  String get dashboardPickerDone => 'Готово';
+
+  @override
+  String get dashboardPickerShowing => 'На экране';
+
+  @override
+  String get dashboardPickerMissing =>
+      'Этого вида больше нет в Home Assistant. Выберите другой.';
+
+  @override
+  String get dashboardPickerAddViews => 'Добавить виды';
+
+  @override
+  String get dashboardPickerDefault => 'Панель по умолчанию';
+
+  @override
+  String get dashboardPickerStartHelp =>
+      'Здесь киоск открывается и сюда возвращается.';
+
+  @override
   String get dlnaCannotDecode =>
       'Это устройство не может декодировать это видео.';
 
@@ -1575,19 +1657,6 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get gestureUriError => 'Введите полный URI.';
-
-  @override
-  String get gestureNoDashboards => 'Нет панелей';
-
-  @override
-  String get gestureDashboardsFailed => 'Не удалось получить список панелей';
-
-  @override
-  String get gestureHaConnected => 'Home Assistant подключён?';
-
-  @override
-  String get gestureDashboardsHelp =>
-      'Не удалось получить список панелей. Home Assistant подключён?';
 
   @override
   String get gestureCameraTitle => 'Вид камер';
@@ -3681,21 +3750,6 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get overviewGoView => 'Перейти к виду';
-
-  @override
-  String get overviewLoadingViews => 'Загрузка видов…';
-
-  @override
-  String get overviewPickView => 'Выберите вид панели…';
-
-  @override
-  String get overviewDefaultView => 'Вид по умолчанию';
-
-  @override
-  String get overviewNoDashboards => 'Панели не найдены';
-
-  @override
-  String get overviewViewsUnavailable => 'Виды недоступны';
 
   @override
   String get screensaverNoPhotos =>
@@ -7015,9 +7069,6 @@ class UiStringsRu extends UiStrings {
   String get haRotationHint => 'Смена видов, время показа, наплыв';
 
   @override
-  String get haDefaultView => 'Вид по умолчанию';
-
-  @override
   String get haExternalPages => 'Внешние страницы';
 
   @override
@@ -7105,27 +7156,6 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get haChooseView => 'Выберите вид';
-
-  @override
-  String get haLoadingDashboards => 'Загрузка панелей…';
-
-  @override
-  String get haListFailed => 'Не удалось получить список панелей';
-
-  @override
-  String get haRetryHint => 'Нажмите, чтобы повторить.';
-
-  @override
-  String get haChangeView => 'Сменить вид';
-
-  @override
-  String get haNoViews => 'Нет вложенных видов';
-
-  @override
-  String get haNoViewsHelp => 'У этой панели нет выбираемых вложенных видов.';
-
-  @override
-  String get haNoDashboards => 'Панели не найдены';
 
   @override
   String get settingHaThemeTitle => 'Тема';
@@ -9488,9 +9518,6 @@ class UiStringsRu extends UiStrings {
   @override
   String get settingScreensaverDashboardViewDescription =>
       'Вид панели Home Assistant, который показывает заставка.';
-
-  @override
-  String get screensaverSelectDashboard => 'Выберите панель';
 
   @override
   String get screensaverDashboardSection => 'Заставка «Панель Home Assistant»';

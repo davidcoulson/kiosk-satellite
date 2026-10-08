@@ -12,7 +12,6 @@
   "settingHaRotationFadeSecondsDescription": "Totale duur van het uit- en infaden. Het laden van de volgende weergave kan extra tijd kosten, vooral de eerste keer.",
   "haRotation": "Dashboardrotatie",
   "haRotationHint": "Weergaven doorlopen, weergaveduur en overgang",
-  "haDefaultView": "Standaardweergave",
   "haExternalPages": "Externe pagina's",
   "haFadeError": "Kies een vervagingsduur van 0,2 tot 5 seconden.",
   "haPauseRemoteHelp": "Een aanraking pauzeert de rotatie gedurende deze tijd en start de timer opnieuw. Spraakinteracties pauzeren altijd totdat ze zijn afgelopen. Bij 0 blijft de rotatie actief."

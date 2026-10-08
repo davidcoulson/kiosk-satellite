@@ -1715,6 +1715,594 @@
     "context": "Common:Actions",
     "description": "Select every item in a multi-selection list."
   },
+  "dashboardPickerSearch": "Поиск видов",
+  "@dashboardPickerSearch": {
+    "context": "Dashboard picker",
+    "description": "Search box hint in the dashboard view picker.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerSearchAll": "Поиск панелей и видов",
+  "@dashboardPickerSearchAll": {
+    "context": "Dashboard picker",
+    "description": "Search box hint where the picker lists dashboards first.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerCurrent": "Текущий",
+  "@dashboardPickerCurrent": {
+    "context": "Dashboard picker",
+    "description": "Heading over the view chosen now.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerDashboards": "Панели",
+  "@dashboardPickerDashboards": {
+    "context": "Dashboard picker",
+    "description": "Heading over the list of Home Assistant dashboards.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerSubviews": "Вложенные виды",
+  "@dashboardPickerSubviews": {
+    "context": "Dashboard picker",
+    "description": "Heading over a dashboard's subviews (views opened from a card, not the tabs).",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerSubview": "Вложенный вид",
+  "@dashboardPickerSubview": {
+    "context": "Dashboard picker",
+    "description": "Tag on a view that is a Home Assistant subview.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerWhole": "Вся панель",
+  "@dashboardPickerWhole": {
+    "context": "Dashboard picker",
+    "description": "Choice for a dashboard that has no views of its own to pick.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerBuildsOwn": "Создаёт виды сама",
+  "@dashboardPickerBuildsOwn": {
+    "context": "Dashboard picker",
+    "description": "Second line of a dashboard Home Assistant generates on the fly (a strategy dashboard).",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerWholeHelp": "Эта панель создаёт виды сама, поэтому киоск открывает её целиком.",
+  "@dashboardPickerWholeHelp": {
+    "context": "Dashboard picker",
+    "description": "Note under the Whole dashboard choice.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerViewCount": "Видов: {count}",
+  "@dashboardPickerViewCount": {
+    "context": "Dashboard picker",
+    "description": "How many views a dashboard has, two or more.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    },
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "description": "Number of views, two or more."
+      }
+    }
+  },
+  "dashboardPickerOneView": "1 вид",
+  "@dashboardPickerOneView": {
+    "context": "Dashboard picker",
+    "description": "A dashboard with a single view.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerOffline": "Не удалось подключиться к Home Assistant",
+  "@dashboardPickerOffline": {
+    "context": "Dashboard picker",
+    "description": "Title when the dashboards cannot be listed.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerOfflineHelp": "Панели загрузятся, когда соединение восстановится.",
+  "@dashboardPickerOfflineHelp": {
+    "context": "Dashboard picker",
+    "description": "Message when the dashboards cannot be listed.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerTryAgain": "Повторить",
+  "@dashboardPickerTryAgain": {
+    "context": "Dashboard picker",
+    "description": "Button that lists the dashboards again.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerEmpty": "Панелей пока нет",
+  "@dashboardPickerEmpty": {
+    "context": "Dashboard picker",
+    "description": "Title when Home Assistant has no dashboards.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerEmptyHelp": "Панели, которые вы добавите в Home Assistant, появятся здесь.",
+  "@dashboardPickerEmptyHelp": {
+    "context": "Dashboard picker",
+    "description": "Message when Home Assistant has no dashboards.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerNoMatch": "Нет подходящих видов",
+  "@dashboardPickerNoMatch": {
+    "context": "Dashboard picker",
+    "description": "Shown when a search finds nothing.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerSelected": "Выбрано: {count}",
+  "@dashboardPickerSelected": {
+    "context": "Dashboard picker",
+    "description": "How many views are picked for the rotation.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    },
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "description": "Number of picked views."
+      }
+    }
+  },
+  "dashboardPickerDone": "Готово",
+  "@dashboardPickerDone": {
+    "context": "Dashboard picker",
+    "description": "Button that keeps the picked views.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerShowing": "На экране",
+  "@dashboardPickerShowing": {
+    "context": "Dashboard picker",
+    "description": "Tag on the view the kiosk shows right now.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerMissing": "Этого вида больше нет в Home Assistant. Выберите другой.",
+  "@dashboardPickerMissing": {
+    "context": "Dashboard picker",
+    "description": "Shown under a setting whose stored view no longer exists.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerAddViews": "Добавить виды",
+  "@dashboardPickerAddViews": {
+    "context": "Dashboard picker",
+    "description": "Row that opens the picker to add views to the rotation.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerDefault": "Панель по умолчанию",
+  "@dashboardPickerDefault": {
+    "context": "Dashboard picker",
+    "description": "Setting name: the view the kiosk opens on and comes back to.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerStartHelp": "Здесь киоск открывается и сюда возвращается.",
+  "@dashboardPickerStartHelp": {
+    "context": "Dashboard picker",
+    "description": "Description of the Default dashboard setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
   "dlnaCannotDecode": "Это устройство не может декодировать это видео.",
   "@dlnaCannotDecode": {
     "context": "Device > DLNA playback overlay",
@@ -5680,58 +6268,6 @@
   },
   "gestureUriError": "Введите полный URI.",
   "@gestureUriError": {
-    "context": "Settings > Gestures > Add gesture > Choose an action",
-    "description": "Label or guidance in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Gestures > Add gesture > Choose an action"
-      ],
-      "remoteAdmin": [
-        "Gestures > Add gesture > Choose an action"
-      ]
-    }
-  },
-  "gestureNoDashboards": "Нет панелей",
-  "@gestureNoDashboards": {
-    "context": "Settings > Gestures > Add gesture > Choose an action",
-    "description": "Label or guidance in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Gestures > Add gesture > Choose an action"
-      ],
-      "remoteAdmin": [
-        "Gestures > Add gesture > Choose an action"
-      ]
-    }
-  },
-  "gestureDashboardsFailed": "Не удалось получить список панелей",
-  "@gestureDashboardsFailed": {
-    "context": "Settings > Gestures > Add gesture > Choose an action",
-    "description": "Label or guidance in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Gestures > Add gesture > Choose an action"
-      ],
-      "remoteAdmin": [
-        "Gestures > Add gesture > Choose an action"
-      ]
-    }
-  },
-  "gestureHaConnected": "Home Assistant подключён?",
-  "@gestureHaConnected": {
-    "context": "Settings > Gestures > Add gesture > Choose an action",
-    "description": "Label or guidance in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Gestures > Add gesture > Choose an action"
-      ],
-      "remoteAdmin": [
-        "Gestures > Add gesture > Choose an action"
-      ]
-    }
-  },
-  "gestureDashboardsHelp": "Не удалось получить список панелей. Home Assistant подключён?",
-  "@gestureDashboardsHelp": {
     "context": "Settings > Gestures > Add gesture > Choose an action",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -13476,61 +14012,6 @@
   },
   "overviewGoView": "Перейти к виду",
   "@overviewGoView": {
-    "context": "Remote admin > Overview > Quick controls > Go to view",
-    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
-    "x-locations": {
-      "device": [],
-      "remoteAdmin": [
-        "Overview > Quick controls > Go to view"
-      ]
-    }
-  },
-  "overviewLoadingViews": "Загрузка видов…",
-  "@overviewLoadingViews": {
-    "context": "Remote admin > Overview > Quick controls > Go to view",
-    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
-    "x-locations": {
-      "device": [],
-      "remoteAdmin": [
-        "Overview > Quick controls > Go to view"
-      ]
-    }
-  },
-  "overviewPickView": "Выберите вид панели…",
-  "@overviewPickView": {
-    "context": "Remote admin > Overview > Quick controls > Go to view",
-    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
-    "x-locations": {
-      "device": [],
-      "remoteAdmin": [
-        "Overview > Quick controls > Go to view"
-      ]
-    }
-  },
-  "overviewDefaultView": "Вид по умолчанию",
-  "@overviewDefaultView": {
-    "context": "Remote admin > Overview > Quick controls > Go to view",
-    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
-    "x-locations": {
-      "device": [],
-      "remoteAdmin": [
-        "Overview > Quick controls > Go to view"
-      ]
-    }
-  },
-  "overviewNoDashboards": "Панели не найдены",
-  "@overviewNoDashboards": {
-    "context": "Remote admin > Overview > Quick controls > Go to view",
-    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
-    "x-locations": {
-      "device": [],
-      "remoteAdmin": [
-        "Overview > Quick controls > Go to view"
-      ]
-    }
-  },
-  "overviewViewsUnavailable": "Виды недоступны",
-  "@overviewViewsUnavailable": {
     "context": "Remote admin > Overview > Quick controls > Go to view",
     "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
     "x-locations": {
@@ -26082,19 +26563,6 @@
       ]
     }
   },
-  "haDefaultView": "Вид по умолчанию",
-  "@haDefaultView": {
-    "context": "Settings:Home Assistant Setup:Dashboard View Rotation",
-    "description": "Rotation subpage label, guidance or validation error.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > Dashboard View Rotation"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > Dashboard View Rotation"
-      ]
-    }
-  },
   "haExternalPages": "Внешние страницы",
   "@haExternalPages": {
     "context": "Settings:Home Assistant Setup:Dashboard View Rotation",
@@ -26430,97 +26898,6 @@
   },
   "haChooseView": "Выберите вид",
   "@haChooseView": {
-    "context": "Settings:Home Assistant Setup",
-    "description": "Connection status, action or dashboard picker text.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup"
-      ]
-    }
-  },
-  "haLoadingDashboards": "Загрузка панелей…",
-  "@haLoadingDashboards": {
-    "context": "Settings:Home Assistant Setup",
-    "description": "Connection status, action or dashboard picker text.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup"
-      ]
-    }
-  },
-  "haListFailed": "Не удалось получить список панелей",
-  "@haListFailed": {
-    "context": "Settings:Home Assistant Setup",
-    "description": "Connection status, action or dashboard picker text.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup"
-      ]
-    }
-  },
-  "haRetryHint": "Нажмите, чтобы повторить.",
-  "@haRetryHint": {
-    "context": "Settings:Home Assistant Setup",
-    "description": "Connection status, action or dashboard picker text.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup"
-      ]
-    }
-  },
-  "haChangeView": "Сменить вид",
-  "@haChangeView": {
-    "context": "Settings:Home Assistant Setup",
-    "description": "Connection status, action or dashboard picker text.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup"
-      ]
-    }
-  },
-  "haNoViews": "Нет вложенных видов",
-  "@haNoViews": {
-    "context": "Settings:Home Assistant Setup",
-    "description": "Connection status, action or dashboard picker text.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup"
-      ]
-    }
-  },
-  "haNoViewsHelp": "У этой панели нет выбираемых вложенных видов.",
-  "@haNoViewsHelp": {
-    "context": "Settings:Home Assistant Setup",
-    "description": "Connection status, action or dashboard picker text.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup"
-      ]
-    }
-  },
-  "haNoDashboards": "Панели не найдены",
-  "@haNoDashboards": {
     "context": "Settings:Home Assistant Setup",
     "description": "Connection status, action or dashboard picker text.",
     "x-locations": {
@@ -35384,19 +35761,6 @@
   "@settingScreensaverDashboardViewDescription": {
     "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
     "description": "Help below the setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Home Assistant Dashboard screensaver"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Home Assistant Dashboard screensaver"
-      ]
-    }
-  },
-  "screensaverSelectDashboard": "Выберите панель",
-  "@screensaverSelectDashboard": {
-    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
-    "description": "Label, status or guidance in this section.",
     "x-locations": {
       "device": [
         "Settings > Screensaver > Home Assistant Dashboard screensaver"

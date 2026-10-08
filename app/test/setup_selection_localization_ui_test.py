@@ -14,9 +14,11 @@ translated = {k: 'TEST ' + v for k, v in english.items()}
 if os.environ.get('KS_TEST_SPANISH'):
     translated = {k: v for p in (APP.parents[1] / 'kiosk-satellite-localization/translations/es').glob('*.arb') for k, v in json.loads(p.read_text()).items() if not k.startswith('@')}
 ids = json.loads((APP / 'l10n/setup_text.json').read_text())
+ha_ids = json.loads((APP / 'l10n/ha_text.json').read_text())
 commands = []
 patches = []
 views = [dict(title='Choose a view', route='original'), dict(title='<b>Original view</b>', route='second')]
+dashboards = [dict(url_path='raw-dashboard', title='Choose a dashboard'), dict(url_path='other-dashboard', title='<b>Original dashboard</b>')]
 
 def api(route):
     path = route.request.url.split('/api/', 1)[1]
@@ -26,7 +28,7 @@ def api(route):
         return route.fulfill(json=dict(ok=True))
     name = path.removeprefix('commands/')
     commands.append((name, params))
-    result = {'haListDashboardViews': views, 'getSystemPermissions': {}}.get(name, {})
+    result = {'haListDashboards': dashboards, 'haListDashboardViews': views, 'getSystemPermissions': {}}.get(name, {})
     route.fulfill(json=dict(ok=True, data=result))
 
 class Handler(SimpleHTTPRequestHandler):
@@ -50,33 +52,34 @@ try:
           const c=await import('/static/core.js');c.showView('wizard');
           (await import('/static/localization.js')).setLanguagePreference('es');
           const {wizard}=await import('/static/app.js');
-          Object.assign(wizard,{i:2,base:'http://ha.example',dashboard:'raw-dashboard',dashboardView:'original',dashboardViews:views,
-            dashboards:[{url_path:'raw-dashboard',title:'Choose a dashboard'},{url_path:'other-dashboard',title:'<b>Original dashboard</b>'}]});
+          await (await import('/static/dashboard_picker.js')).loadDashboards();
+          Object.assign(wizard,{i:2,base:'http://ha.example',dashboardPath:'raw-dashboard/original'});
           const w=await import('/static/wizard.js');wizard.steps=w.wizardSteps();w.wizardRender();
         }""", views)
         root = page.locator('#wizardBody')
         # Copy not in the catalogs yet reads in English.
         def label(en): return translated[ids[en]] if en in ids else en
-        def state(): return page.evaluate("async()=>{const {wizard:w}=await import('/static/app.js');return {dashboard:w.dashboard,view:w.dashboardView,voice:w.voice,rec:w.rec};}")
+        def ha_label(en): return translated[ha_ids[en]] if en in ha_ids else en
+        def state(): return page.evaluate("async()=>{const {wizard:w}=await import('/static/app.js');return {view:w.dashboardPath,voice:w.voice,rec:w.rec};}")
         def language(value):
             page.evaluate("async language=>{(await import('/static/localization.js')).setLanguagePreference(language);const {wizard}=await import('/static/app.js');const w=await import('/static/wizard.js');wizard.steps=w.wizardSteps();w.wizardRender();}", value)
         expect(page.locator('#wizardTitle')).to_have_text(label('Choose a dashboard'))
-        expect(root.get_by_text('Choose a dashboard', exact=True)).to_be_visible()
-        root.get_by_role('button', name=label('Change view'), exact=True).click()
-        modal = page.locator('.modal-back')
-        expect(modal.locator('.modal-title')).to_have_text(label('Choose a view'))
-        expect(modal.get_by_text('Choose a view', exact=True)).to_be_visible()
-        modal.get_by_text('<b>Original view</b>', exact=True).click()
-        assert state()['view'] == 'second'
+        # The picker inline: names from Home Assistant stay as they are,
+        # the picker's own wording follows the language.
+        expect(root.locator('.dp-dash.active .dp-title')).to_have_text('Choose a dashboard')
+        expect(root.locator('.dp-search')).to_have_attribute('placeholder', ha_label('Search dashboards and views'))
+        expect(root.locator('.dp-tile.picked .dp-title')).to_have_text('Choose a view')
+        root.locator('.dp-tile', has_text='<b>Original view</b>').click()
+        assert state()['view'] == 'raw-dashboard/second'
+        expect(root.locator('.dp-tile.picked .dp-title')).to_have_text('<b>Original view</b>')
         before = len(commands)
         language('en'); expect(page.locator('#wizardTitle')).to_have_text('Choose a dashboard')
         language('es'); expect(page.locator('#wizardTitle')).to_have_text(label('Choose a dashboard'))
-        assert state()['view'] == 'second'
+        assert state()['view'] == 'raw-dashboard/second'
         assert len(commands) == before
-        with page.expect_response('**/api/commands/haListDashboardViews'):
-            root.get_by_text('<b>Original dashboard</b>', exact=True).click()
-        expect(root.get_by_text('other-dashboard/original', exact=True)).to_be_visible()
-        assert ('haListDashboardViews', dict(url_path='other-dashboard')) in commands
+        root.locator('.dp-dash', has_text='<b>Original dashboard</b>').click()
+        root.locator('.dp-tile', has_text='Choose a view').click()
+        assert state()['view'] == 'other-dashboard/original'
         assert root.locator('b').count() == 0
         page.locator('#wizardNext').click()
         # The kiosk is its own satellite, so the step always shows. Detection
@@ -116,13 +119,14 @@ try:
         voice.locator('label.switch').click()
         assert state()['voice'] is True
         # Empty data keeps translated guidance.
-        page.evaluate("async()=>{const {wizard:w}=await import('/static/app.js');w.i=2;w.dashboards=[];w.dashboard=null;(await import('/static/wizard.js')).wizardRender();}")
-        expect(root).to_contain_text(label('No dashboards found'))
+        dashboards.clear()
+        page.evaluate("async()=>{await (await import('/static/dashboard_picker.js')).loadDashboards();const {wizard:w}=await import('/static/app.js');w.i=2;w.dashboardPath=null;(await import('/static/wizard.js')).wizardRender();}")
+        expect(root).to_contain_text(ha_label('No dashboards yet'))
         before = len(commands)
         page.locator('#wizardNext').click()
         expect(page.locator('#wizardError')).to_contain_text(label('Select a dashboard'))
         assert len(commands) == before
-        page.evaluate("async()=>{const {wizard:w}=await import('/static/app.js');w.i=4;w.dashboard='other-dashboard';(await import('/static/wizard.js')).wizardRender();}")
+        page.evaluate("async()=>{const {wizard:w}=await import('/static/app.js');w.i=4;w.dashboardPath='other-dashboard/original';(await import('/static/wizard.js')).wizardRender();}")
         # Check the existing final-step write without resetting a real device.
         page.route(base + '/', lambda r: r.fulfill(body='<p>Setup complete</p>', content_type='text/html'))
         with page.expect_navigation():

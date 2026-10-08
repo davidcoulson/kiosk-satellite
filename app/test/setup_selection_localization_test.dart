@@ -6,11 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_satellite/app_container.dart';
+import 'package:kiosk_satellite/core/command_registry.dart';
 import 'package:kiosk_satellite/core/app_locales.dart';
 import 'package:kiosk_satellite/core/events.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
 import 'package:kiosk_satellite/l10n/generated/ui_strings.dart';
 import 'package:kiosk_satellite/l10n/generated/ui_strings_en.dart';
+import 'package:kiosk_satellite/ui/dashboard_view_picker.dart';
 import 'package:kiosk_satellite/ui/setup_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,9 +35,7 @@ class _Spanish extends UiStringsEn {
   @override
   String get setupChooseDashboard => 'Elige un panel de control';
   @override
-  String get haChangeView => 'Cambiar vista';
-  @override
-  String get haChooseView => 'Elige una vista';
+  String get dashboardPickerSearchAll => 'Buscar paneles y vistas';
   @override
   String get setupVoiceDetected => 'Voice Satellite detectado';
   @override
@@ -254,6 +254,36 @@ void main() {
         await server.close(force: true);
       }),
     );
+    // The two list commands the app registers at start, over the real
+    // manager and this socket.
+    DashboardCatalog.reset();
+    container.commands
+      ..register(
+        Command(
+          name: 'haListDashboards',
+          description: 'test',
+          handler: (_) async {
+            final list = await container.homeAssistant.listDashboards();
+            return list == null
+                ? const CommandResult.fail('could not list dashboards')
+                : CommandResult.ok(list);
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'haListDashboardViews',
+          description: 'test',
+          handler: (p) async {
+            final views = await container.homeAssistant.listDashboardViews(
+              '${p['url_path']}',
+            );
+            return views == null
+                ? const CommandResult.fail('could not read the dashboard')
+                : CommandResult.ok(views);
+          },
+        ),
+      );
     final language = ValueNotifier(const Locale('es'));
     addTearDown(language.dispose);
     tester.view.physicalSize = const Size(1000, 1600);
@@ -292,19 +322,35 @@ void main() {
     await tester.tap(find.text('Validate & continue'));
     await settle();
     expect(find.text('Elige un panel de control'), findsOneWidget);
-    await tester.tap(find.text('Original dashboard'));
-    await settle();
-    await tester.tap(find.text('Cambiar vista'));
-    await settle();
-    expect(find.text('Elige una vista'), findsOneWidget);
-    language.value = const Locale('en');
-    await settle();
-    expect(find.text('Choose a view'), findsOneWidget);
-    language.value = const Locale('es');
-    await settle();
+    // The picker inline, opened on the first dashboard's first view. The
+    // names Home Assistant supplies stay as they are.
+    expect(find.text('Original dashboard'), findsWidgets);
+    expect(find.text('Original first view'), findsOneWidget);
+    expect(find.text('Buscar paneles y vistas'), findsOneWidget);
     await tester.tap(find.text('Original second view'));
     await settle();
-    expect(find.text('raw-dashboard/second'), findsOneWidget);
+    language.value = const Locale('en');
+    await settle();
+    expect(find.text('Search dashboards and views'), findsOneWidget);
+    language.value = const Locale('es');
+    await settle();
+    // The pick survives the language change: its tile carries the check.
+    Finder tileOf(String title) =>
+        find.ancestor(of: find.text(title), matching: find.byType(Stack)).first;
+    expect(
+      find.descendant(
+        of: tileOf('Original second view'),
+        matching: find.byIcon(Icons.check),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: tileOf('Original first view'),
+        matching: find.byIcon(Icons.check),
+      ),
+      findsNothing,
+    );
     await tester.tap(find.text('Next'));
     await settle();
     // The kiosk is its own satellite: the step always shows, on.

@@ -22,12 +22,5 @@
   "haProxyNotice": "Deze Home Assistant-URL gebruikt gewone http, en browsers blokkeren de microfoon en andere functies op http-pagina's. Kiosk Satellite leidt het dashboard via een beveiligde proxy in de app zodat alles werkt. Mogelijk moet je je opnieuw aanmelden bij Home Assistant.",
   "haProxyRemoteNotice": "Deze Home Assistant-URL gebruikt gewone http, en browsers blokkeren de microfoon en andere functies op http-pagina's. Kiosk Satellite leidt het dashboard via een beveiligde proxy in de app zodat alles werkt. Mogelijk moet je je op de tablet opnieuw aanmelden bij Home Assistant.",
   "haDashboard": "Dashboard",
-  "haChooseView": "Een weergave kiezen",
-  "haLoadingDashboards": "Dashboards laden…",
-  "haListFailed": "Kon dashboards niet tonen",
-  "haRetryHint": "Tik om het opnieuw te proberen.",
-  "haChangeView": "Weergave wijzigen",
-  "haNoViews": "Geen subweergaven",
-  "haNoViewsHelp": "Dit dashboard heeft geen selecteerbare subweergaven.",
-  "haNoDashboards": "Geen dashboards gevonden"
+  "haChooseView": "Een weergave kiezen"
 }

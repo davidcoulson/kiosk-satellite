@@ -23,7 +23,7 @@ import {
   openMediaBrowser,
 } from './pickers.js';
 import { loadSettings, refreshRealMacNote, updatePersonSensorRows, updateRtspRows } from './settings.js';
-import { dashboardViewEntries, pickDashboardView } from './views.js';
+import { dashboardField } from './dashboard_picker.js';
 import {
   attachSlider,
   dateBox,
@@ -381,40 +381,25 @@ export function settingRow(s) {
     return row;
   }
   // The Home Assistant Dashboard screensaver's view and Now Playing's
-  // chosen view are picked from the instance's dashboards, the same modal
-  // the Go to a dashboard view gesture uses, mirroring the device's row.
+  // chosen view are picked in the dashboard picker, mirroring the
+  // device's row: the field shows the stored view and opens the picker.
   if (s.key === 'screensaver.dashboard_view' || s.key === 'sendspin.fullscreen_return_view') {
     // The live value: save() writes the confirmed pick into the cache.
     const current = () => (state.settings || []).find((o) => o.key === s.key)?.value ?? s.value ?? '';
-    const val = document.createElement('span');
-    val.className = 'device picker-value';
-    const paint = () => { val.textContent = current() || screensaverText('Not set'); };
-    paint();
-    const btn = document.createElement('button');
-    btn.className = 'btn-ghost'; btn.textContent = screensaverText('Select dashboard');
-    btn.addEventListener('click', async () => {
-      const entries = await dashboardViewEntries();
-      if (!entries.length) {
-        await messageBox({
-          title: screensaverText('Could not list dashboards'),
-          message: screensaverText('Is Home Assistant connected?'),
-        });
-        return;
-      }
-      const picked = await pickDashboardView(screensaverText('Select dashboard'),
-        entries, current());
-      if (!picked) return;
-      await save(picked);
-      paint();
+    const missing = document.createElement('div');
+    missing.className = 'desc dp-missing';
+    missing.textContent = haText('This view is gone from Home Assistant. Choose another.');
+    missing.hidden = true;
+    row.querySelector('.info .name').after(missing);
+    const field = dashboardField({
+      value: current(),
+      title: s.title,
+      onPick: (path) => save(path),
     });
-    bindUpdate(val, paint);
-    // On a phone the button shares the name's line and the view path
-    // takes the full width beneath it (app.css, .picker-row).
-    row.classList.add('picker-row');
-    const controls = document.createElement('div');
-    controls.className = 'picker-controls';
-    controls.append(val, btn);
-    row.appendChild(controls);
+    field.el.addEventListener('dp-painted', (e) => { missing.hidden = !e.detail.missing; });
+    bindUpdate(field.el, () => field.setValue(current()));
+    row.classList.add('dp-field-row');
+    row.appendChild(field.el);
     return row;
   }
   // The screensaver's media is browsed from Home Assistant, not typed, the

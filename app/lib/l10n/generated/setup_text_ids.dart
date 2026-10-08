@@ -18,8 +18,6 @@ const setupTextMessageIds = <String, String>{
   "Autoplay audio and video": "setupAutoplay",
   "Not installed, skipped": "setupVoiceSkipped",
   "Choose a view": "haChooseView",
-  "Change view": "haChangeView",
-  "No dashboards found": "haNoDashboards",
   "Recommended settings": "setupRecommendedSummary",
   "Auto-reload on error": "settingAutoReloadOnErrorTitle",
   "Clear cache when pulling to refresh": "settingPullToRefreshClearCacheTitle",

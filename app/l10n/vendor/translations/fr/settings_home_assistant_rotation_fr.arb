@@ -12,7 +12,6 @@
   "settingHaRotationFadeSecondsDescription": "Durée combinée du fondu sortant et entrant. Le chargement de la vue suivante peut ajouter du temps, surtout lors de sa première visite.",
   "haRotation": "Rotation des vues du tableau de bord",
   "haRotationHint": "Parcours des vues, temps d'affichage, fondu",
-  "haDefaultView": "Vue par défaut",
   "haExternalPages": "Pages externes",
   "haFadeError": "Choisissez une durée de fondu entre 0,2 et 5 secondes.",
   "haPauseRemoteHelp": "Un appui suspend la rotation pendant cette durée ; chaque nouvel appui relance le décompte. Les interactions vocales suspendent toujours la rotation jusqu'à leur fin. 0 laisse la rotation continuer."

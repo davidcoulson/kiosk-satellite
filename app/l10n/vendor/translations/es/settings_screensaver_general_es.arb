@@ -47,6 +47,5 @@
   "screensaverModeDashboard": "Panel de control de Home Assistant",
   "settingScreensaverDashboardViewTitle": "Vista del panel de control",
   "settingScreensaverDashboardViewDescription": "La vista del panel de control de Home Assistant que muestra el protector de pantalla.",
-  "screensaverSelectDashboard": "Seleccionar panel de control",
   "screensaverDashboardSection": "Protector de pantalla: Panel de control de Home Assistant"
 }

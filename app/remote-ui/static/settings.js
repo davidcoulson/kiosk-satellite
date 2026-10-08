@@ -46,14 +46,14 @@ import { renderAlarmsPage } from './alarms.js';
 import { askImportOptions } from './pickers.js';
 import { settingRow, syncGatedRows } from './rows.js';
 import { applySubpageView, currentPath, setCurrentPath, subpageEntry, refreshNavigationText } from './tabs.js';
+import { showScanDiagnostic, showWatchedEntities } from './views.js';
 import {
-  fetchViews,
-  pickView,
-  radioRow,
-  showScanDiagnostic,
-  showWatchedEntities,
-  viewPath,
-} from './views.js';
+  dashboardPathOfUrl,
+  dashboardViewListRow,
+  dashboardViewRow,
+  loadDashboards,
+  pickDashboard,
+} from './dashboard_picker.js';
 import { loadVsPermissions, renderVsControls } from './vs.js';
 import { REALTIME_PROVIDER_SETTINGS, VS_SELECT_SETTINGS, renderNativeVs, vsMigrationNotice } from './vs_native.js';
 import { mountWakeActivations } from './wake_activations.js';
@@ -1838,7 +1838,7 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
       vbtn.disabled = true; vbtn.textContent = haText('Checking\u2026');
       const out = await (await api('/api/commands/haCheckConnection', { method: 'POST', body: '{}' })).json().catch(() => ({}));
       vbtn.disabled = false; vbtn.textContent = haText('Validate');
-      if (out.ok) { state.dashboardsCache = null; await loadSettings(); await loadVsPermissions(); loadViewJump(); }
+      if (out.ok) { state.dashboardsCache = null; loadDashboards(); await loadSettings(); await loadVsPermissions(); loadViewJump(); }
       else vdesc.textContent = out.error ? haConnectionError(out.error) : haText('Could not connect.');
     });
 
@@ -1859,70 +1859,24 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
       const dcard = document.createElement('div');
       dcard.className = 'card';
       root.appendChild(dcard);
-      let dashList = [];
-      try {
-        // Cached across re-renders: a dependant toggle elsewhere on the tab
-        // triggers loadSettings(), and re-fetching the dashboard list from
-        // Home Assistant every time blanked the pane for seconds - the
-        // "whole page refreshed" feel. Validate clears the cache.
-        if (!state.dashboardsCache) {
-          state.dashboardsCache = (await cmd('haListDashboards', {}, { timeoutMs: 10000 })).data || [];
-        }
-        const dashboards = state.dashboardsCache;
-        dashList = dashboards;
-        const rawBase = (byKey['ha.url']?.value || '').trim().replace(/\/$/, '');
-        const current = byKey['browser.start_url']?.value || '';
-        // Which dashboard + view route the stored start URL points at.
-        let selDash = null, selRoute = '';
-        for (const d of dashboards) {
-          const url = `${rawBase}/${d.url_path}`;
-          if (current === url) { selDash = d.url_path; selRoute = ''; }
-          else if (current.startsWith(url + '/')) {
-            selDash = d.url_path; selRoute = current.slice(url.length + 1);
-          }
-        }
-        const applyStart = async (url) => {
+      // One Default dashboard row whose field opens the dashboard picker.
+      // The pick becomes the start URL and the kiosk goes there at once,
+      // since picking a view and not seeing it would read as a failed tap.
+      const rawBase = (byKey['ha.url']?.value || '').trim().replace(/\/$/, '');
+      const startPath = dashboardPathOfUrl(byKey['browser.start_url']?.value || '', rawBase) || '';
+      dcard.appendChild(dashboardViewRow({
+        name: haText('Default dashboard'),
+        desc: haText('Where the kiosk opens and comes back to.'),
+        value: startPath,
+        onPick: async (path) => {
+          const url = `${rawBase}/${path}`;
           await api('/api/settings', { method: 'PATCH',
             body: JSON.stringify({ 'browser.start_url': url }) });
           await api('/api/commands/loadUrl', { method: 'POST',
             body: JSON.stringify({ url }) });
           await loadSettings();
-        };
-        for (const d of dashboards) {
-          const selected = selDash === d.url_path;
-          const sub = selected ? viewPath(d.url_path, selRoute) : d.url_path;
-          const row = radioRow(d.title || d.url_path, sub, selected, async () => {
-            if (selected) return;
-            // Land on the dashboard's first view.
-            const views = await fetchViews(d.url_path);
-            const route = (views && views.length) ? String(views[0].route) : '';
-            await applyStart(route ? `${rawBase}/${d.url_path}/${route}` : `${rawBase}/${d.url_path}`);
-          });
-          if (selected) {
-            // "Change view": pick another of this dashboard's views.
-            const btn = document.createElement('button');
-            btn.className = 'btn-ghost';
-            btn.textContent = haText('Change view');
-            btn.style.cssText = 'margin-left:8px; flex-shrink:0;';
-            btn.addEventListener('click', async (e) => {
-              e.stopPropagation();
-              const views = await fetchViews(d.url_path);
-              if (!views || !views.length) {
-                messageBox({ title: haText('No sub views'), message: haText('This dashboard has no selectable sub views.') });
-                return;
-              }
-              const route = await pickView(d.url_path, views, selRoute);
-              if (route == null) return;
-              await applyStart(route ? `${rawBase}/${d.url_path}/${route}` : `${rawBase}/${d.url_path}`);
-            });
-            row.appendChild(btn);
-          }
-          dcard.appendChild(row);
-        }
-        if (!dashboards.length) dcard.appendChild(readOnlyRow(haText('No dashboards found'), '', ''));
-      } catch (_) {
-        dcard.appendChild(readOnlyRow(haText('Could not list dashboards'), '', ''));
-      }
+        },
+      }));
       // The rest of the Home Assistant settings, through the same
       // section-aware renderer as every other tab. Almost all of them
       // declare a `subpage`, so what lands here is the row that opens each
@@ -2085,51 +2039,49 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
             renderFadeSettings();
             rcard.appendChild(fadeSettings);
           }
+          // The picked views in rotation order, each with a remove button,
+          // then the row that opens the picker to add more. Saved in place:
+          // no full re-render, the page stays put.
           let sel = [];
           try { sel = JSON.parse(byKey['ha.rotation_dashboards']?.value || '[]'); } catch (_) {}
           if (!Array.isArray(sel)) sel = [];
-          const viewLists = await Promise.all(dashList.map(async (d) => {
-            try {
-              const r = await cmd('haListDashboardViews',
-                { url_path: d.url_path }, { timeoutMs: 10000 });
-              if (r.ok && Array.isArray(r.data) && r.data.length) return r.data;
-            } catch (_) {}
-            // Auto-generated dashboards store no view list; the whole
-            // dashboard still rotates via its first view.
-            // Unreadable (strategy) dashboards rotate via their bare path:
-            // an empty route navigated as /<url_path>, which resolves the
-            // default view. A synthetic /0 would spin.
-            return [{ title: haText('Default view'), route: '' }];
-          }));
-          dashList.forEach((d, i) => {
-            const hdr = document.createElement('div');
-            hdr.style.cssText = 'padding:12px 0 2px; font-size:13px; font-weight:600;'
-              + 'color:var(--primary)';
-            hdr.textContent = d.title || d.url_path;
-            rcard.appendChild(hdr);
-            viewLists[i].forEach((v) => {
-              const path = v.route ? `${d.url_path}/${v.route}` : d.url_path;
-              // A real checkbox (accent-colored by the global input rule),
-              // saved in place: no full re-render, the page stays put.
-              const row = readOnlyRow(v.title || v.route, path, '', false);
-              row.querySelector('span').remove();
-              row.style.paddingLeft = '14px';
-              const cb = document.createElement('input');
-              cb.type = 'checkbox';
-              cb.checked = sel.includes(path);
-              cb.style.cssText = 'width:19px; height:19px; flex:none; cursor:pointer';
-              cb.addEventListener('change', async () => {
-                sel = cb.checked ? sel.concat(path) : sel.filter((p) => p !== path);
-                await api('/api/settings', { method: 'PATCH',
-                  body: JSON.stringify({ 'ha.rotation_dashboards': JSON.stringify(sel) }) });
-              });
-              row.appendChild(cb);
-              row.style.cursor = 'pointer';
-              row.addEventListener('click', (e) => { if (e.target !== cb) cb.click(); });
-              rcard.appendChild(row);
+          const saveSel = (next) => { sel = next; return api('/api/settings',
+            { method: 'PATCH',
+              body: JSON.stringify({ 'ha.rotation_dashboards': JSON.stringify(next) }) }); };
+          const vhdr = document.createElement('div');
+          vhdr.style.cssText = 'padding:12px 0 2px; font-size:13px; font-weight:600;'
+            + 'color:var(--primary)';
+          const rotDef = byKey['ha.rotation_dashboards'];
+          vhdr.textContent = rotDef?.title || haText('Views to rotate');
+          rcard.appendChild(vhdr);
+          const vlist = document.createElement('div');
+          rcard.appendChild(vlist);
+          const renderSel = () => {
+            vlist.replaceChildren();
+            sel.forEach((path) => {
+              const rm = cameraAction(haText('Remove'), async () => {
+                await saveSel(sel.filter((x) => x !== path));
+                renderSel();
+              }, false, 'delete');
+              vlist.appendChild(dashboardViewListRow(path, rm));
             });
-          });
-          if (!dashList.length) rcard.appendChild(readOnlyRow(haText('No dashboards found'), '', ''));
+            const add = document.createElement('button');
+            add.className = 'dp-add-row';
+            add.type = 'button';
+            add.textContent = haText('Add views');
+            add.addEventListener('click', async () => {
+              const picked = await pickDashboard({
+                title: rotDef?.title || haText('Views to rotate'),
+                selected: sel,
+                mode: 'several',
+              });
+              if (!picked) return;
+              await saveSel(picked);
+              renderSel();
+            });
+            vlist.appendChild(add);
+          };
+          renderSel();
 
           // External pages: shown in their own overlay during rotation, so
           // the dashboard (and Voice Satellite) stays loaded underneath.

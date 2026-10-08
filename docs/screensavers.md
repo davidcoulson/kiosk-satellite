@@ -128,7 +128,7 @@ Rotation can be stepped manually in either direction using the **Screensaver nex
 
 ### Home Assistant Dashboard
 
-Shows a Home Assistant dashboard view as the screensaver. Selecting the mode reveals the **Home Assistant Dashboard screensaver** group. Pick the view with the **Select dashboard** button on its **Dashboard view** row, which opens the same view list the **Go to a dashboard view** gesture uses. The mode needs a connected Home Assistant.
+Shows a Home Assistant dashboard view as the screensaver. Selecting the mode reveals the **Home Assistant Dashboard screensaver** group. Pick the view by tapping the field on its **Dashboard view** row, which opens the dashboard picker the **Go to a dashboard view** gesture also uses. The mode needs a connected Home Assistant.
 
 The view opens in the dashboard's own web view with the same in-page navigation view rotation uses, so Home Assistant does not reload and the Voice Satellite integration keeps running. When the screensaver ends, the dashboard goes back to the view it was on before. With **Return to home dashboard view** on it goes to the home view instead. If something in Home Assistant navigated the dashboard while the screensaver was up, it stays where that navigation left it.
 

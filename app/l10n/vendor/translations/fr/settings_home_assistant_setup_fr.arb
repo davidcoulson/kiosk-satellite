@@ -22,12 +22,5 @@
   "haProxyNotice": "Cette URL Home Assistant utilise le http simple, et les navigateurs bloquent le microphone et d'autres fonctionnalités sur les pages http. Kiosk Satellite va acheminer le tableau de bord via un proxy sécurisé intégré à l'application pour que tout fonctionne. Il se peut que vous deviez vous reconnecter à Home Assistant.",
   "haProxyRemoteNotice": "Cette URL Home Assistant utilise le http simple, et les navigateurs bloquent le microphone et d'autres fonctionnalités sur les pages http. Kiosk Satellite va acheminer le tableau de bord via un proxy sécurisé intégré à l'application pour que tout fonctionne. Il se peut que vous deviez vous reconnecter à Home Assistant sur la tablette.",
   "haDashboard": "Tableau de bord",
-  "haChooseView": "Choisir une vue",
-  "haLoadingDashboards": "Chargement des tableaux de bord…",
-  "haListFailed": "Impossible de lister les tableaux de bord",
-  "haRetryHint": "Appuyez pour réessayer.",
-  "haChangeView": "Changer de vue",
-  "haNoViews": "Aucune sous-vue",
-  "haNoViewsHelp": "Ce tableau de bord n'a pas de sous-vue sélectionnable.",
-  "haNoDashboards": "Aucun tableau de bord trouvé"
+  "haChooseView": "Choisir une vue"
 }

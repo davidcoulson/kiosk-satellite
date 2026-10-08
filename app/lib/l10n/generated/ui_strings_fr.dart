@@ -531,6 +531,88 @@ class UiStringsFr extends UiStrings {
   String get commonSelectAll => 'Tout sélectionner';
 
   @override
+  String get dashboardPickerSearch => 'Rechercher des vues';
+
+  @override
+  String get dashboardPickerSearchAll =>
+      'Rechercher des tableaux de bord et des vues';
+
+  @override
+  String get dashboardPickerCurrent => 'Actuelle';
+
+  @override
+  String get dashboardPickerDashboards => 'Tableaux de bord';
+
+  @override
+  String get dashboardPickerSubviews => 'Sous-vues';
+
+  @override
+  String get dashboardPickerSubview => 'Sous-vue';
+
+  @override
+  String get dashboardPickerWhole => 'Tableau de bord entier';
+
+  @override
+  String get dashboardPickerBuildsOwn => 'Génère ses propres vues';
+
+  @override
+  String get dashboardPickerWholeHelp =>
+      'Ce tableau de bord génère ses propres vues, le kiosque l\'ouvre donc en entier.';
+
+  @override
+  String dashboardPickerViewCount(String count) {
+    return '$count vues';
+  }
+
+  @override
+  String get dashboardPickerOneView => '1 vue';
+
+  @override
+  String get dashboardPickerOffline => 'Impossible de joindre Home Assistant';
+
+  @override
+  String get dashboardPickerOfflineHelp =>
+      'Les tableaux de bord se chargeront dès le retour de la connexion.';
+
+  @override
+  String get dashboardPickerTryAgain => 'Réessayer';
+
+  @override
+  String get dashboardPickerEmpty => 'Aucun tableau de bord pour l\'instant';
+
+  @override
+  String get dashboardPickerEmptyHelp =>
+      'Les tableaux de bord ajoutés dans Home Assistant apparaissent ici.';
+
+  @override
+  String get dashboardPickerNoMatch => 'Aucune vue ne correspond';
+
+  @override
+  String dashboardPickerSelected(String count) {
+    return '$count sélectionnées';
+  }
+
+  @override
+  String get dashboardPickerDone => 'Terminé';
+
+  @override
+  String get dashboardPickerShowing => 'Affichée';
+
+  @override
+  String get dashboardPickerMissing =>
+      'Cette vue n\'existe plus dans Home Assistant. Choisissez-en une autre.';
+
+  @override
+  String get dashboardPickerAddViews => 'Ajouter des vues';
+
+  @override
+  String get dashboardPickerDefault => 'Tableau de bord par défaut';
+
+  @override
+  String get dashboardPickerStartHelp =>
+      'Là où le kiosque s\'ouvre et revient.';
+
+  @override
   String get dlnaCannotDecode =>
       'Cet appareil ne peut pas décoder cette vidéo.';
 
@@ -1585,20 +1667,6 @@ class UiStringsFr extends UiStrings {
 
   @override
   String get gestureUriError => 'Saisissez un URI complet.';
-
-  @override
-  String get gestureNoDashboards => 'Aucun tableau de bord';
-
-  @override
-  String get gestureDashboardsFailed =>
-      'Impossible de lister les tableaux de bord';
-
-  @override
-  String get gestureHaConnected => 'Home Assistant est-il connecté ?';
-
-  @override
-  String get gestureDashboardsHelp =>
-      'Impossible de lister les tableaux de bord. Home Assistant est-il connecté ?';
 
   @override
   String get gestureCameraTitle => 'Vue caméra';
@@ -3715,21 +3783,6 @@ class UiStringsFr extends UiStrings {
 
   @override
   String get overviewGoView => 'Aller à la vue';
-
-  @override
-  String get overviewLoadingViews => 'Chargement des vues…';
-
-  @override
-  String get overviewPickView => 'Choisir une vue du tableau de bord…';
-
-  @override
-  String get overviewDefaultView => 'Vue par défaut';
-
-  @override
-  String get overviewNoDashboards => 'Aucun tableau de bord trouvé';
-
-  @override
-  String get overviewViewsUnavailable => 'Vues indisponibles';
 
   @override
   String get screensaverNoPhotos =>
@@ -7096,9 +7149,6 @@ class UiStringsFr extends UiStrings {
   String get haRotationHint => 'Parcours des vues, temps d\'affichage, fondu';
 
   @override
-  String get haDefaultView => 'Vue par défaut';
-
-  @override
   String get haExternalPages => 'Pages externes';
 
   @override
@@ -7187,28 +7237,6 @@ class UiStringsFr extends UiStrings {
 
   @override
   String get haChooseView => 'Choisir une vue';
-
-  @override
-  String get haLoadingDashboards => 'Chargement des tableaux de bord…';
-
-  @override
-  String get haListFailed => 'Impossible de lister les tableaux de bord';
-
-  @override
-  String get haRetryHint => 'Appuyez pour réessayer.';
-
-  @override
-  String get haChangeView => 'Changer de vue';
-
-  @override
-  String get haNoViews => 'Aucune sous-vue';
-
-  @override
-  String get haNoViewsHelp =>
-      'Ce tableau de bord n\'a pas de sous-vue sélectionnable.';
-
-  @override
-  String get haNoDashboards => 'Aucun tableau de bord trouvé';
 
   @override
   String get settingHaThemeTitle => 'Thème';
@@ -9601,9 +9629,6 @@ class UiStringsFr extends UiStrings {
   @override
   String get settingScreensaverDashboardViewDescription =>
       'La vue du tableau de bord Home Assistant affichée par l\'économiseur d\'écran.';
-
-  @override
-  String get screensaverSelectDashboard => 'Choisir un tableau de bord';
 
   @override
   String get screensaverDashboardSection =>

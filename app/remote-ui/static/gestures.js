@@ -11,7 +11,8 @@ import {
 import { api, cmd, state } from './core.js';
 import { applyManagedBanners } from './fleetsync.js';
 import { settingRow } from './rows.js';
-import { dashboardViewEntries, pickDashboardView, radioRow } from './views.js';
+import { radioRow } from './views.js';
+import { pickDashboard } from './dashboard_picker.js';
 import { messageBox, localizedMessageBox, modalShell } from './widgets.js';
 
 /* ---- Gestures (issue #99) ----
@@ -302,18 +303,11 @@ export async function configureGestureHaEntity(current, spec) {
 }
 
 export async function configureGestureNavigate(current) {
-  // The same flattened "dashboard / view" list the Home Assistant
-  // Dashboard screensaver picks from.
-  const entries = await dashboardViewEntries();
-  if (!entries.length) {
-    await messageBox({
-      title: gestureText('No dashboards'),
-      message: gestureText('Could not list dashboards. Is Home Assistant connected?'),
-    });
-    return null;
-  }
-  const path = await pickDashboardView(gestureText('Go to a dashboard view'),
-    entries, current?.path);
+  // The dashboard picker every dashboard view setting opens.
+  const path = await pickDashboard({
+    title: gestureText('Go to a dashboard view'),
+    selected: current?.path || null,
+  });
   return path ? { type: 'navigate', path } : null;
 }
 
@@ -450,7 +444,7 @@ export async function pickGestureAction(current) {
     case 'plugin_action': {
       const result = await cmd('getPluginActions');
       if (!result.ok) { await messageBox({ title: gestureText('Plugin actions'), message: result.error || gestureText('Could not load plugin actions.') }); return null; }
-      const actions = (result.data || []).filter((action) => action.available);
+      const actions = (Array.isArray(result.data) ? result.data : []).filter((action) => action.available);
       if (!actions.length) { await messageBox({ title: gestureText('Plugin actions'), message: gestureText('Enable a plugin with actions in Plugin Manager first.') }); return null; }
       return gestureListModal(gestureText('Plugin action'), actions.map((action) => ({
         name: action.title, desc: action.pluginName,
@@ -557,8 +551,11 @@ export async function editGesture(existing) {
   const pluginKey = (trigger) => `${trigger.pluginId}/${trigger.trigger}`;
   const pluginTriggers = new Map();
   if (triggerValue.type === 'plugin') pluginTriggers.set(pluginKey(triggerValue), triggerValue);
+  // Anything but a list (an older kiosk, a failed read) means no plugin
+  // triggers, never an editor that will not open.
   const listed = await cmd('getPluginTriggers').catch(() => null);
-  for (const item of (listed?.ok ? listed.data || [] : []).filter((item) => item.available)) {
+  const triggers = listed?.ok && Array.isArray(listed.data) ? listed.data : [];
+  for (const item of triggers.filter((item) => item.available)) {
     pluginTriggers.set(pluginKey(item), {
       type: 'plugin', pluginId: item.pluginId, trigger: item.trigger,
       pluginName: item.pluginName, title: item.title,

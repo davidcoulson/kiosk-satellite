@@ -531,6 +531,87 @@ class UiStringsDe extends UiStrings {
   String get commonSelectAll => 'Alles auswählen';
 
   @override
+  String get dashboardPickerSearch => 'Ansichten suchen';
+
+  @override
+  String get dashboardPickerSearchAll => 'Dashboards und Ansichten suchen';
+
+  @override
+  String get dashboardPickerCurrent => 'Aktuell';
+
+  @override
+  String get dashboardPickerDashboards => 'Dashboards';
+
+  @override
+  String get dashboardPickerSubviews => 'Unteransichten';
+
+  @override
+  String get dashboardPickerSubview => 'Unteransicht';
+
+  @override
+  String get dashboardPickerWhole => 'Ganzes Dashboard';
+
+  @override
+  String get dashboardPickerBuildsOwn => 'Erstellt seine Ansichten selbst';
+
+  @override
+  String get dashboardPickerWholeHelp =>
+      'Dieses Dashboard erstellt seine Ansichten selbst, daher öffnet der Kiosk es als Ganzes.';
+
+  @override
+  String dashboardPickerViewCount(String count) {
+    return '$count Ansichten';
+  }
+
+  @override
+  String get dashboardPickerOneView => '1 Ansicht';
+
+  @override
+  String get dashboardPickerOffline => 'Home Assistant nicht erreichbar';
+
+  @override
+  String get dashboardPickerOfflineHelp =>
+      'Die Dashboards laden, sobald die Verbindung wieder steht.';
+
+  @override
+  String get dashboardPickerTryAgain => 'Erneut versuchen';
+
+  @override
+  String get dashboardPickerEmpty => 'Noch keine Dashboards';
+
+  @override
+  String get dashboardPickerEmptyHelp =>
+      'Dashboards, die du in Home Assistant anlegst, erscheinen hier.';
+
+  @override
+  String get dashboardPickerNoMatch => 'Keine passenden Ansichten';
+
+  @override
+  String dashboardPickerSelected(String count) {
+    return '$count ausgewählt';
+  }
+
+  @override
+  String get dashboardPickerDone => 'Fertig';
+
+  @override
+  String get dashboardPickerShowing => 'Angezeigt';
+
+  @override
+  String get dashboardPickerMissing =>
+      'Diese Ansicht gibt es in Home Assistant nicht mehr. Wähle eine andere.';
+
+  @override
+  String get dashboardPickerAddViews => 'Ansichten hinzufügen';
+
+  @override
+  String get dashboardPickerDefault => 'Standard-Dashboard';
+
+  @override
+  String get dashboardPickerStartHelp =>
+      'Hier öffnet der Kiosk und hierher kehrt er zurück.';
+
+  @override
   String get dlnaCannotDecode =>
       'Dieses Gerät kann dieses Video nicht dekodieren.';
 
@@ -1594,20 +1675,6 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get gestureUriError => 'Bitte gib eine vollständige URI ein.';
-
-  @override
-  String get gestureNoDashboards => 'Keine Dashboards verfügbar';
-
-  @override
-  String get gestureDashboardsFailed =>
-      'Die Dashboards konnten nicht abgerufen werden';
-
-  @override
-  String get gestureHaConnected => 'Ist Home Assistant verbunden?';
-
-  @override
-  String get gestureDashboardsHelp =>
-      'Die Dashboards konnten nicht abgerufen werden. Ist Home Assistant verbunden?';
 
   @override
   String get gestureCameraTitle => 'Kameraansicht';
@@ -3745,21 +3812,6 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get overviewGoView => 'Zu einer Ansicht wechseln';
-
-  @override
-  String get overviewLoadingViews => 'Ansichten werden geladen...';
-
-  @override
-  String get overviewPickView => 'Wähle eine Dashboard-Ansicht aus...';
-
-  @override
-  String get overviewDefaultView => 'Standardansicht';
-
-  @override
-  String get overviewNoDashboards => 'Keine Dashboards gefunden';
-
-  @override
-  String get overviewViewsUnavailable => 'Ansichten nicht verfügbar';
 
   @override
   String get screensaverNoPhotos =>
@@ -7151,9 +7203,6 @@ class UiStringsDe extends UiStrings {
       'Durchläuft Ansichten, Anzeigedauer je Ansicht und Überblendungseffekt';
 
   @override
-  String get haDefaultView => 'Standardansicht';
-
-  @override
   String get haExternalPages => 'Externe Seiten';
 
   @override
@@ -7243,28 +7292,6 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get haChooseView => 'Ansicht auswählen';
-
-  @override
-  String get haLoadingDashboards => 'Dashboards werden geladen...';
-
-  @override
-  String get haListFailed => 'Die Dashboards konnten nicht aufgelistet werden';
-
-  @override
-  String get haRetryHint => 'Tippen, um es erneut zu versuchen.';
-
-  @override
-  String get haChangeView => 'Ansicht wechseln';
-
-  @override
-  String get haNoViews => 'Keine Unteransichten';
-
-  @override
-  String get haNoViewsHelp =>
-      'Dieses Dashboard enthält keine auswählbaren Unteransichten.';
-
-  @override
-  String get haNoDashboards => 'Keine Dashboards gefunden';
 
   @override
   String get settingHaThemeTitle => 'Design';
@@ -9651,9 +9678,6 @@ class UiStringsDe extends UiStrings {
   @override
   String get settingScreensaverDashboardViewDescription =>
       'Die Home-Assistant-Dashboard-Ansicht, die der Bildschirmschoner zeigt.';
-
-  @override
-  String get screensaverSelectDashboard => 'Dashboard auswählen';
 
   @override
   String get screensaverDashboardSection =>

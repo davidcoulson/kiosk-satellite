@@ -100,13 +100,9 @@
   "No camera view has any cameras yet. Add cameras to a view under Cameras first.": "overviewNoViewsWithCameras",
   "Could not show view": "overviewShowViewFailed",
   "Go to view": "overviewGoView",
-  "Loading views…": "overviewLoadingViews",
-  "Pick a dashboard view…": "overviewPickView",
-  "Default view": "overviewDefaultView",
-  "No dashboards found": "overviewNoDashboards",
-  "Views unavailable": "overviewViewsUnavailable",
   "Screen is off": "overviewScreenOffState",
   "CPU": "overviewCpu",
   "RAM": "overviewMemory",
-  "Temp": "overviewTemperature"
+  "Temp": "overviewTemperature",
+  "Choose a view": "haChooseView"
 }

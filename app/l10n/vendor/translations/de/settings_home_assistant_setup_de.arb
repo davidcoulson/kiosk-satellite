@@ -22,12 +22,5 @@
   "haProxyNotice": "Diese Home-Assistant-Adresse verwendet HTTP, und Browser blockieren Mikrofonfunktionen sowie andere Features auf HTTP-Seiten. Kiosk Satellite leitet das Dashboard über einen sicheren Proxy innerhalb der Anwendung weiter, um diese Funktionen zu aktivieren. Möglicherweise musst du dich erneut bei Home Assistant anmelden.",
   "haProxyRemoteNotice": "Diese Home-Assistant-Adresse verwendet HTTP, und Browser blockieren Mikrofonfunktionen sowie andere Features auf HTTP-Seiten. Kiosk Satellite leitet das Dashboard über einen sicheren Proxy innerhalb der Anwendung weiter, um diese Funktionen zu aktivieren. Möglicherweise musst du dich auf dem Tablet erneut bei Home Assistant anmelden.",
   "haDashboard": "Dashboard",
-  "haChooseView": "Ansicht auswählen",
-  "haLoadingDashboards": "Dashboards werden geladen...",
-  "haListFailed": "Die Dashboards konnten nicht aufgelistet werden",
-  "haRetryHint": "Tippen, um es erneut zu versuchen.",
-  "haChangeView": "Ansicht wechseln",
-  "haNoViews": "Keine Unteransichten",
-  "haNoViewsHelp": "Dieses Dashboard enthält keine auswählbaren Unteransichten.",
-  "haNoDashboards": "Keine Dashboards gefunden"
+  "haChooseView": "Ansicht auswählen"
 }

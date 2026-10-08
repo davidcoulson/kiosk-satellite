@@ -321,27 +321,39 @@ class HomeAssistantManager extends Manager {
             'source':
                 "'page' to read only the page's own registry, failing "
                 'rather than falling back to the websocket list',
+            'icons':
+                'true to add icon_path, the SVG path of each icon, for '
+                "the remote admin's dashboard picker",
           },
           handler: (p) async {
             final dashboards = await listDashboards(
               pageOnly: p['source'] == 'page',
             );
-            return dashboards == null
-                ? const CommandResult.fail('could not list dashboards')
-                : CommandResult.ok(dashboards);
+            if (dashboards == null) {
+              return const CommandResult.fail('could not list dashboards');
+            }
+            return CommandResult.ok(
+              p['icons'] == true ? await withIconPaths(dashboards) : dashboards,
+            );
           },
         ),
       )
       ..register(
         Command(
           name: 'haListDashboardViews',
-          description: "One dashboard's views, for the rotation picker",
-          params: const {'url_path': "the dashboard's url_path"},
+          description: "One dashboard's views, for the dashboard picker",
+          params: const {
+            'url_path': "the dashboard's url_path",
+            'icons': 'true to add icon_path, as haListDashboards does',
+          },
           handler: (p) async {
             final views = await listDashboardViews('${p['url_path'] ?? ''}');
-            return views == null
-                ? const CommandResult.fail('could not read the dashboard')
-                : CommandResult.ok(views);
+            if (views == null) {
+              return const CommandResult.fail('could not read the dashboard');
+            }
+            return CommandResult.ok(
+              p['icons'] == true ? await withIconPaths(views) : views,
+            );
           },
         ),
       )
@@ -2260,7 +2272,12 @@ class HomeAssistantManager extends Manager {
       var title = p.title
         ? ((hass.localize && hass.localize('panel.' + p.title)) || p.title)
         : (p.component_name === 'home' ? 'Overview' : p.url_path);
-      out.push({ url_path: p.url_path, title: title, comp: p.component_name });
+      out.push({
+        url_path: p.url_path,
+        title: title,
+        comp: p.component_name,
+        icon: p.icon || (p.component_name === 'home' ? 'mdi:home' : null),
+      });
     });
     // Default dashboard first, matching the sidebar: hass.defaultPanel when
     // set, otherwise the auto "Overview" (component `home`). The rest keep
@@ -2274,7 +2291,7 @@ class HomeAssistantManager extends Manager {
       return rank(a) - rank(b);
     });
     return JSON.stringify(out.map(function (d) {
-      return { url_path: d.url_path, title: d.title };
+      return { url_path: d.url_path, title: d.title, icon: d.icon };
     }));
   } catch (e) {
     return 'null';
@@ -2288,7 +2305,11 @@ class HomeAssistantManager extends Manager {
       if (decoded is! List || decoded.isEmpty) return null;
       return [
         for (final d in decoded.cast<Map>())
-          {'url_path': d['url_path'], 'title': d['title']},
+          {
+            'url_path': d['url_path'],
+            'title': d['title'],
+            if (d['icon'] is String) 'icon': d['icon'],
+          },
       ];
     } catch (_) {
       return null;
@@ -2297,7 +2318,8 @@ class HomeAssistantManager extends Manager {
 
   /// The views of one dashboard (`lovelace/config`). Each entry carries
   /// `title` and `route` — the path segment HA navigates by: the view's
-  /// declared path when it has one, its index otherwise. Null when the
+  /// declared path when it has one, its index otherwise — plus the view's
+  /// `icon` when it has one and `subview` when it is one. Null when the
   /// config cannot be read (auto-generated strategy dashboards store no
   /// view list).
   Future<List<Map<String, Object?>>?> listDashboardViews(String urlPath) async {
@@ -2318,6 +2340,8 @@ class HomeAssistantManager extends Manager {
           {
             'title': '${v['title'] ?? 'View ${i + 1}'}',
             'route': '${v['path'] ?? i}',
+            if (v['icon'] is String) 'icon': v['icon'],
+            if (v['subview'] == true) 'subview': true,
           },
       ];
     } catch (e) {
