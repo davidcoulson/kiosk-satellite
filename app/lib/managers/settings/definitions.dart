@@ -10908,13 +10908,15 @@ const powerDialogPackage = SettingDef<String>(
 const powerDialogChoice = SettingDef<String>(
   key: 'device.power_dialog_choice',
   type: SettingType.string,
-  defaultValue: 'rl_sleep',
+  defaultValue: 'sleep',
   title: 'Power dialog answer',
   description:
-      'The view id (without the package prefix) of the button Kiosk '
-      'Satellite taps the moment that dialog appears, such as rl_sleep to '
-      'put the device to sleep instead of letting its countdown shut it '
-      'down. Needs the accessibility service.',
+      'What Kiosk Satellite does the moment that dialog appears: sleep '
+      'closes it and puts the device to sleep (Android 9 or later), '
+      'dismiss only closes it, and anything else is the view id (without '
+      'the package prefix) of a button to tap, such as rl_reboot. A dialog '
+      'that appears right after the screen wakes is only dismissed. Needs '
+      'the accessibility service.',
   category: 'Device',
   section: 'Headless',
   perDevice: true,
