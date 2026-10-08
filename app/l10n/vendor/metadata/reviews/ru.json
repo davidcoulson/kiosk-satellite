@@ -23559,5 +23559,17 @@
     "translation": "cb373aea7789968ef50a4027179256e116ea699c3384844339bf433855a5cdd0",
     "author": "Xavier Larrea",
     "ownerAuthored": true
+  },
+  "screensaverOverlayShowIcon": {
+    "source": "cc7b5b1267e6f63a54e1e1057f3dd106998179bf4653af73bd2ca2383c530e42",
+    "translation": "89c4c17388db5f0aba97cbeb3d0456fe956077b0f5be2a25ae76ffcdf67b74a6",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "screensaverOverlayShowIconHelp": {
+    "source": "b658d096c0c7cf8b7dd99ad55050d1e535f628073ff0cd92d24c9f8a85dbf491",
+    "translation": "a84f8555f7b3f6774ca38665586e9edfa1c8f7cc3329694b1ba8efdaa524c456",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
   }
 }

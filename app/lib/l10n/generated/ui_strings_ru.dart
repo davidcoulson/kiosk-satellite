@@ -10983,6 +10983,12 @@ class UiStringsRu extends UiStrings {
   String get screensaverOverlayShowNameHelp => 'Название под значением.';
 
   @override
+  String get screensaverOverlayShowIcon => 'Показывать значок';
+
+  @override
+  String get screensaverOverlayShowIconHelp => 'Значок рядом со значением.';
+
+  @override
   String get screensaverOverlayFontSystem => 'Системный';
 
   @override

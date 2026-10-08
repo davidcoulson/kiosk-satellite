@@ -20,6 +20,8 @@
   "screensaverOverlayLowHelp": "Se oculta hasta que la carga baja al 20 por ciento.",
   "screensaverOverlayShowName": "Mostrar nombre",
   "screensaverOverlayShowNameHelp": "Muestra el nombre debajo del valor.",
+  "screensaverOverlayShowIcon": "Mostrar icono",
+  "screensaverOverlayShowIconHelp": "Muestra el icono junto al valor.",
   "screensaverOverlayFontSystem": "Sistema",
   "screensaverOverlayFontSerif": "Con remates",
   "screensaverOverlayFontCondensed": "Condensada",

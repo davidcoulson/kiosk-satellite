@@ -378,6 +378,8 @@ const screensaverTextMessageIds = <String, String>{
   "Stay hidden until the charge drops to 20 percent.": "screensaverOverlayLowHelp",
   "Show name": "screensaverOverlayShowName",
   "The name under the value.": "screensaverOverlayShowNameHelp",
+  "Show icon": "screensaverOverlayShowIcon",
+  "The icon beside the value.": "screensaverOverlayShowIconHelp",
   "No widgets yet": "screensaverOverlayWidgetsEmpty",
   "Remove widget": "screensaverOverlayRemove",
   "Add widget": "screensaverOverlayAdd",

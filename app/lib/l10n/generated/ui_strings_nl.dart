@@ -11046,6 +11046,12 @@ class UiStringsNl extends UiStrings {
   String get screensaverOverlayShowNameHelp => 'De naam onder de waarde.';
 
   @override
+  String get screensaverOverlayShowIcon => 'Pictogram tonen';
+
+  @override
+  String get screensaverOverlayShowIconHelp => 'Het pictogram naast de waarde.';
+
+  @override
   String get screensaverOverlayFontSystem => 'Systeemlettertype';
 
   @override

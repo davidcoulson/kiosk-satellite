@@ -224,6 +224,7 @@ Displays a single Home Assistant entity in a display corner over any mode except
 | Corner | First free corner | Displays in the first available corner. |
 | Color | White | Applies to icon, value, and label text. |
 | Show name | On | Disabling this hides the bottom label, displaying only the icon and value. |
+| Show icon | On | Disabling this hides the icon, displaying only the value and its name. |
 
 The widget hides completely, vignette included, while the value is blank. A text sensor that clears when an alert ends takes the widget with it and brings it back with the next alert. Unknown and Unavailable still display.
 

@@ -915,7 +915,7 @@ export function settingRow(s) {
       battery: { color: '250,250,250', scale: 0, font: 'default',
         font_weight: 'default', percent: true, low: false },
       entity: { entity: '', name: '', label: '', attribute: '',
-        show_name: true, color: '250,250,250', scale: 0, font: 'default',
+        show_name: true, show_icon: true, color: '250,250,250', scale: 0, font: 'default',
         font_weight: 'default' },
       alarm: { color: '250,250,250', scale: 0, font: 'default',
         font_weight: 'default' },
@@ -1163,9 +1163,11 @@ export function settingRow(s) {
           })();
           refs.showName = cameraToggle(screensaverText('Show name'),
             config.show_name !== false, screensaverText('The name under the value.'));
+          refs.showIcon = cameraToggle(screensaverText('Show icon'),
+            config.show_icon !== false, screensaverText('The icon beside the value.'));
           typeBlock.append(refs.entity.wrap, refs.label.wrap,
             refs.attribute.wrap, refs.color.wrap, refs.scale.wrap,
-            refs.font.wrap, refs.weight.wrap, refs.showName.wrap);
+            refs.font.wrap, refs.weight.wrap, refs.showName.wrap, refs.showIcon.wrap);
           loadAttributes();
           return;
         }
@@ -1274,7 +1276,8 @@ export function settingRow(s) {
               name: config.name || config.entity,
               label: refs.label.input.value.trim(),
               attribute: refs.attribute.select.value,
-              show_name: refs.showName.input.checked, color, scale, font,
+              show_name: refs.showName.input.checked,
+              show_icon: refs.showIcon.input.checked, color, scale, font,
               font_weight };
           } else {
             const entity = refs.entity.select.value;

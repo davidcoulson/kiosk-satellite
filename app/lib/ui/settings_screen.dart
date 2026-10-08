@@ -5968,6 +5968,10 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                         screensaverText(context, 'Show name'),
                         'show_name',
                       ),
+                      toggle(
+                        screensaverText(context, 'Show icon'),
+                        'show_icon',
+                      ),
                     ],
                   ],
                 ),

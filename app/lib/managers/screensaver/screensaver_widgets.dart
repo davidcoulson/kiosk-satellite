@@ -40,8 +40,9 @@
 ///      (its friendly name, cached for the editors), label (a name chosen
 ///      by hand; the Home Assistant name when empty), attribute (the
 ///      attribute shown instead of the state; the state when empty),
-///      show_name (the name line under the value) and color ("r,g,b" icon
-///      and text color). A blank value hides the whole widget, vignette
+///      show_name (the name line under the value), show_icon (the icon
+///      beside the value, issue #912) and color ("r,g,b" icon and text
+///      color). A blank value hides the whole widget, vignette
 ///      included (issue #691).
 /// - config: the type's own settings; missing keys read as the type's
 ///   defaults, so entries survive new keys being added. Every type also
@@ -144,6 +145,7 @@ Map<String, Object?> screensaverWidgetDefaults(String type) => switch (type) {
     'label': '',
     'attribute': '',
     'show_name': true,
+    'show_icon': true,
     'color': '250,250,250',
     'scale': screensaverWidgetScaleDefault,
     'font': screensaverWidgetFontDefault,

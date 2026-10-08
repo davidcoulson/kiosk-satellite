@@ -3621,6 +3621,9 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'screensaverOverlayShowName' => strings.screensaverOverlayShowName,
       'screensaverOverlayShowNameHelp' =>
         strings.screensaverOverlayShowNameHelp,
+      'screensaverOverlayShowIcon' => strings.screensaverOverlayShowIcon,
+      'screensaverOverlayShowIconHelp' =>
+        strings.screensaverOverlayShowIconHelp,
       'screensaverOverlayFontSystem' => strings.screensaverOverlayFontSystem,
       'screensaverOverlayFontSerif' => strings.screensaverOverlayFontSerif,
       'screensaverOverlayFontCondensed' =>

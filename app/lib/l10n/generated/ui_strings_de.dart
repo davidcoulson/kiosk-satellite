@@ -11170,6 +11170,13 @@ class UiStringsDe extends UiStrings {
       'Zeigt den Namen unter dem Wert an.';
 
   @override
+  String get screensaverOverlayShowIcon => 'Symbol anzeigen';
+
+  @override
+  String get screensaverOverlayShowIconHelp =>
+      'Zeigt das Symbol neben dem Wert an.';
+
+  @override
   String get screensaverOverlayFontSystem => 'System';
 
   @override

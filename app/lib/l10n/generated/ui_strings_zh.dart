@@ -10368,6 +10368,12 @@ class UiStringsZh extends UiStrings {
   String get screensaverOverlayShowNameHelp => '数值下方的名称。';
 
   @override
+  String get screensaverOverlayShowIcon => '显示图标';
+
+  @override
+  String get screensaverOverlayShowIconHelp => '数值旁边的图标。';
+
+  @override
   String get screensaverOverlayFontSystem => '系统';
 
   @override
@@ -22893,6 +22899,12 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get screensaverOverlayShowNameHelp => '数值下方的名称。';
+
+  @override
+  String get screensaverOverlayShowIcon => '显示图标';
+
+  @override
+  String get screensaverOverlayShowIconHelp => '数值旁边的图标。';
 
   @override
   String get screensaverOverlayFontSystem => '系统';

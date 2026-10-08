@@ -11032,6 +11032,12 @@ class UiStringsUk extends UiStrings {
   String get screensaverOverlayShowNameHelp => 'Назва під значенням.';
 
   @override
+  String get screensaverOverlayShowIcon => 'Показувати піктограму';
+
+  @override
+  String get screensaverOverlayShowIconHelp => 'Піктограма поруч зі значенням.';
+
+  @override
   String get screensaverOverlayFontSystem => 'Системний';
 
   @override

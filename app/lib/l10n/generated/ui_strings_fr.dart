@@ -11124,6 +11124,12 @@ class UiStringsFr extends UiStrings {
   String get screensaverOverlayShowNameHelp => 'Le nom sous la valeur.';
 
   @override
+  String get screensaverOverlayShowIcon => 'Afficher l\'icône';
+
+  @override
+  String get screensaverOverlayShowIconHelp => 'L\'icône à côté de la valeur.';
+
+  @override
   String get screensaverOverlayFontSystem => 'Système';
 
   @override

@@ -10910,6 +10910,12 @@ class UiStringsEn extends UiStrings {
   String get screensaverOverlayShowNameHelp => 'The name under the value.';
 
   @override
+  String get screensaverOverlayShowIcon => 'Show icon';
+
+  @override
+  String get screensaverOverlayShowIconHelp => 'The icon beside the value.';
+
+  @override
   String get screensaverOverlayFontSystem => 'System';
 
   @override

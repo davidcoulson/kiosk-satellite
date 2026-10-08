@@ -18965,6 +18965,18 @@ abstract class UiStrings {
   /// **'The name under the value.'**
   String get screensaverOverlayShowNameHelp;
 
+  /// Label or guidance in this editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Show icon'**
+  String get screensaverOverlayShowIcon;
+
+  /// Label or guidance in this editor.
+  ///
+  /// In en, this message translates to:
+  /// **'The icon beside the value.'**
+  String get screensaverOverlayShowIconHelp;
+
   /// Generic font family option. Font brand names stay unchanged.
   ///
   /// In en, this message translates to:
