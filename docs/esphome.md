@@ -99,7 +99,7 @@ Every item in this list corresponds directly to a kiosk setting. They are fully 
 | **Screensaver timeout** | number | The idle timeout in seconds, the same value as **Idle timeout** on the Screensaver page. A write restarts the idle clock at the new value right away, so an automation can shorten it at night and stretch it back in the morning. `0` turns the idle clock off, so the screensaver only starts from the switch, a schedule or a gesture. |
 | **Clock background** | text | The Clock screensaver's background photo: a path to an image on the device or an image URL the device fetches. Every write reloads the image, an unchanged value included. |
 | **Kiosk mode**, **Lockdown mode**, **HA kiosk mode**, **Keep screen on**, **Remote management**, **Screensaver brightness**, **Screensaver**, **Hold mode** | switch | Standard toggle switches. |
-| **Adaptive brightness** | switch | Requires a physical light sensor. |
+| **Adaptive brightness** | switch | Follows the device's light sensor or the Home Assistant entity picked in its settings. |
 | **Camera enabled**, **Screensaver motion detection**, **Screensaver face detection** | switch | Requires physical camera hardware. The Camera enabled switch can be safely toggled throughout the day; the camera entities will remain listed. |
 | **RTSP Streaming** | switch | Enables or disables the RTSP server using the saved stream settings. Requires physical camera hardware. Camera enabled and Android camera permission must also be on. Changes sync with the local and remote settings pages without reconnecting ESPHome. |
 | **Screensaver proximity detection** | switch | Requires a physical proximity sensor. |

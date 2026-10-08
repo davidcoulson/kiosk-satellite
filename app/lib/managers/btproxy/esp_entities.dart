@@ -225,8 +225,8 @@ class EspEntitySurface {
           'mdi:brightness-4',
           defs.screensaverBrightnessEnabled,
         ),
-        // Catalog-gated below on the light sensor, like the illuminance
-        // sensor it reads.
+        // Not gated on the light sensor: a Home Assistant entity can
+        // drive it instead (issue #911).
         'adaptive_brightness': (
           'Adaptive brightness',
           'mdi:brightness-auto',
@@ -935,7 +935,6 @@ class EspEntitySurface {
                     e.key != 'screensaver_motion' &&
                     e.key != 'screensaver_face')) &&
             (proximityPresent || e.key != 'screensaver_proximity') &&
-            (lightSensorPresent || e.key != 'adaptive_brightness') &&
             (!e.key.startsWith('vs_') || _voiceNative))
           {
             'type': 'switch',

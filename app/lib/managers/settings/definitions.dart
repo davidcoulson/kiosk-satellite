@@ -1367,6 +1367,36 @@ const adaptiveBrightness = SettingDef<bool>(
   section: 'Adaptive brightness',
 );
 
+// The light level can come from a Home Assistant entity instead of the
+// device's own sensor (issue #911): a tablet without one, or a sensor
+// better placed than the one behind the bezel. The device sensor is the
+// default. The reading is followed live over a subscription of this
+// app's own while adaptive brightness is on.
+const adaptiveUseEntity = SettingDef<bool>(
+  key: 'screen.adaptive_use_entity',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Use Home Assistant entity',
+  description: "Read the room's light level from a Home Assistant sensor.",
+  category: 'Screen & Audio',
+  subpage: 'Adaptive brightness',
+  section: 'Adaptive brightness',
+  dependsOn: 'screen.adaptive_brightness',
+);
+
+// Picked with the entity search on both UIs, never typed.
+const adaptiveLightEntity = SettingDef<String>(
+  key: 'screen.adaptive_light_entity',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Light sensor entity',
+  description: 'The Home Assistant sensor that reports the light level in lux.',
+  category: 'Screen & Audio',
+  subpage: 'Adaptive brightness',
+  section: 'Adaptive brightness',
+  dependsOn: 'screen.adaptive_use_entity',
+);
+
 const adaptiveMinBrightness = SettingDef<num>(
   key: 'screen.adaptive_min_brightness',
   type: SettingType.number,
@@ -9645,6 +9675,9 @@ const fleetDefaultExcluded = {
   'screen.adaptive_max_brightness',
   'screen.adaptive_dark_lux',
   'screen.adaptive_bright_lux',
+  // The room's own sensor, or the lack of one.
+  'screen.adaptive_use_entity',
+  'screen.adaptive_light_entity',
   'screensaver.brightness_level',
   'screensaver.dim_level',
   // Volumes: every speaker is its own.
@@ -9845,6 +9878,43 @@ const fleetFormerDefaultExcluded = <Set<String>>[
     'screen.orientation',
     'intercom.volume',
     'intercom.answer_mode',
+  },
+  // Before adaptive brightness's light source joined (issue #911).
+  {
+    'browser.zoom',
+    'screensaver.website_zoom',
+    'screensaver.clock_scale',
+    'screensaver.widget_scale',
+    'screensaver.immich_metadata_scale',
+    'screensaver.glance_scale',
+    'face.preview_scale',
+    'sendspin.player_size',
+    'screen.default_brightness',
+    'screen.adaptive_min_brightness',
+    'screen.adaptive_max_brightness',
+    'screen.adaptive_dark_lux',
+    'screen.adaptive_bright_lux',
+    'screensaver.brightness_level',
+    'screensaver.dim_level',
+    'audio.media_volume',
+    'audio.assistant_volume',
+    'notifications.volume',
+    'ha.tap_sound_volume',
+    'screensaver.gallery_items',
+    'screensaver.local_folder',
+    'screensaver.clock_background',
+    'notifications.chime_file',
+    'launcher.apps',
+    'motion.sensitivity',
+    'motion.fps',
+    'face.sensitivity',
+    'camera.snapshot_resolution',
+    'browser.cutout_mode',
+    'screen.orientation',
+    'intercom.volume',
+    'intercom.answer_mode',
+    'voice.mute',
+    'voice.tts_output',
   },
 ];
 
@@ -10235,6 +10305,8 @@ const List<SettingDef<Object>> allSettings = [
   // where its first definition sits, and the device puts the entry card
   // under the Screen card.
   adaptiveBrightness,
+  adaptiveUseEntity,
+  adaptiveLightEntity,
   adaptiveMinBrightness,
   adaptiveMaxBrightness,
   adaptiveDarkLux,

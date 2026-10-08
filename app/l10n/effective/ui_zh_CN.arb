@@ -32496,6 +32496,58 @@
       ]
     }
   },
+  "settingAdaptiveUseEntityTitle": "使用 Home Assistant 实体",
+  "@settingAdaptiveUseEntityTitle": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveUseEntityDescription": "从 Home Assistant 传感器读取房间的光照强度。",
+  "@settingAdaptiveUseEntityDescription": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveLightEntityTitle": "光照传感器实体",
+  "@settingAdaptiveLightEntityTitle": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveLightEntityDescription": "以勒克斯为单位报告光照强度的 Home Assistant 传感器。",
+  "@settingAdaptiveLightEntityDescription": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Help below the setting, shown until an entity is picked.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
   "settingAdaptiveMinBrightnessTitle": "最低亮度",
   "@settingAdaptiveMinBrightnessTitle": {
     "context": "Settings:Screen & Audio:Adaptive brightness",

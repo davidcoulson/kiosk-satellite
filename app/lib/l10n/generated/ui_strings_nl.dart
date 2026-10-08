@@ -8703,6 +8703,21 @@ class UiStringsNl extends UiStrings {
       'Dim het scherm als de kamer donkerder wordt, met behulp van de omgevingslichtsensor.';
 
   @override
+  String get settingAdaptiveUseEntityTitle =>
+      'Home Assistant-entiteit gebruiken';
+
+  @override
+  String get settingAdaptiveUseEntityDescription =>
+      'Lees het lichtniveau van de kamer uit een Home Assistant-sensor.';
+
+  @override
+  String get settingAdaptiveLightEntityTitle => 'Lichtsensor-entiteit';
+
+  @override
+  String get settingAdaptiveLightEntityDescription =>
+      'De Home Assistant-sensor die het lichtniveau in lux meldt.';
+
+  @override
   String get settingAdaptiveMinBrightnessTitle => 'Minimale helderheid';
 
   @override

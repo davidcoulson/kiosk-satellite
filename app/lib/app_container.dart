@@ -33,6 +33,7 @@ import 'managers/person/person_sensor_manager.dart';
 import 'managers/proximity/proximity_manager.dart';
 import 'managers/proxy/proxy_manager.dart';
 import 'managers/remote/remote_manager.dart';
+import 'managers/screen/adaptive_light_manager.dart';
 import 'managers/screen/screen_manager.dart';
 import 'managers/screensaver/immich_manager.dart';
 import 'managers/screensaver/screensaver_manager.dart';
@@ -63,6 +64,14 @@ class AppContainer {
     // order only; init order below is unchanged.
     homeAssistant = HomeAssistantManager(bus, commands, log, settings);
     camera = CameraManager(bus, commands, log, settings, homeAssistant);
+    // After homeAssistant: it watches the light sensor entity through it.
+    adaptiveLight = AdaptiveLightManager(
+      bus,
+      commands,
+      log,
+      settings,
+      homeAssistant,
+    );
     // Composition-root wiring, not a manager-to-manager reference: every
     // page load funnels through BrowserManager.loadUrl, and the proxy is
     // the one that knows whether the URL must move to the loopback origin.
@@ -144,6 +153,7 @@ class AppContainer {
 
   late final SettingsManager settings;
   late final DeviceManager device;
+  late final AdaptiveLightManager adaptiveLight;
   late final ScreenManager screen;
   late final ServiceManager service;
   late final ProxyManager proxy;
@@ -191,6 +201,9 @@ class AppContainer {
   List<Manager> get _ordered => [
     settings,
     device,
+    // After device, whose sensor it reads, and before screen, which starts
+    // adaptive brightness from its reading.
+    adaptiveLight,
     screen,
     service,
     proxy,

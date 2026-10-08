@@ -8213,6 +8213,20 @@ class UiStringsZh extends UiStrings {
   String get settingAdaptiveBrightnessDescription => '根据环境光自动调整屏幕亮度，房间变暗时降低亮度。';
 
   @override
+  String get settingAdaptiveUseEntityTitle => '使用 Home Assistant 实体';
+
+  @override
+  String get settingAdaptiveUseEntityDescription =>
+      '从 Home Assistant 传感器读取房间的光照强度。';
+
+  @override
+  String get settingAdaptiveLightEntityTitle => '光照传感器实体';
+
+  @override
+  String get settingAdaptiveLightEntityDescription =>
+      '以勒克斯为单位报告光照强度的 Home Assistant 传感器。';
+
+  @override
   String get settingAdaptiveMinBrightnessTitle => '最低亮度';
 
   @override
@@ -20724,6 +20738,20 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get settingAdaptiveBrightnessDescription => '根据环境光自动调整屏幕亮度，房间变暗时降低亮度。';
+
+  @override
+  String get settingAdaptiveUseEntityTitle => '使用 Home Assistant 实体';
+
+  @override
+  String get settingAdaptiveUseEntityDescription =>
+      '从 Home Assistant 传感器读取房间的光照强度。';
+
+  @override
+  String get settingAdaptiveLightEntityTitle => '光照传感器实体';
+
+  @override
+  String get settingAdaptiveLightEntityDescription =>
+      '以勒克斯为单位报告光照强度的 Home Assistant 传感器。';
 
   @override
   String get settingAdaptiveMinBrightnessTitle => '最低亮度';

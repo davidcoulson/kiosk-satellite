@@ -27,5 +27,9 @@
   "screenAudioCurveLightLevel": "Lichtniveau (lx)",
   "screenAudioCurveBrightness": "Helderheid (%)",
   "screenAudioCurveLuxRange": "Voer een lichtniveau in tussen {low} en {high} lx",
-  "screenAudioCurveLevelRange": "Voer een helderheid tussen {low}% en {high}% in"
+  "screenAudioCurveLevelRange": "Voer een helderheid tussen {low}% en {high}% in",
+  "settingAdaptiveUseEntityTitle": "Home Assistant-entiteit gebruiken",
+  "settingAdaptiveUseEntityDescription": "Lees het lichtniveau van de kamer uit een Home Assistant-sensor.",
+  "settingAdaptiveLightEntityTitle": "Lichtsensor-entiteit",
+  "settingAdaptiveLightEntityDescription": "De Home Assistant-sensor die het lichtniveau in lux meldt."
 }

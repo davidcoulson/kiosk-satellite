@@ -281,6 +281,17 @@ async function flushSettingsUpdates() {
         continue;
       }
     }
+    // Use Home Assistant entity reveals one row in its own card (issue
+    // #911): the device's echo of a local save, or a flip on the device,
+    // places it in place rather than rebuilding the page.
+    if (!shapeChanged && setting.key === 'screen.adaptive_use_entity') {
+      const byKey = Object.fromEntries(state.settings.map(s => [s.key, s]));
+      if ((!rows.length && !depSatisfied(setting, byKey)) || (rows.length
+          && rows.every(row => row.updateSetting?.() && syncGatedRows(setting.key, row)))) {
+        updateAdaptiveBrightnessRows({ reprobe: true });
+        continue;
+      }
+    }
     // The text to speech pickers repaint themselves, and the engine's
     // Language and Voice rows come and go in place (intercom.js), so a pick
     // echoed back from the device does not rebuild every page.

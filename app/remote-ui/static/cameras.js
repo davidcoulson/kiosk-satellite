@@ -518,7 +518,11 @@ export async function glanceEntityPicker(initial) {
    search without the chosen list, for the places that want a single entity
    (the entity widget). Mirrors the device's dialog. Resolves to
    {entity_id, name} when a result is clicked, null when dismissed. */
-export function entitySearchPicker(title = null, { allowClear = false } = {}) {
+/* [filter] narrows the search to one kind of entity ('illuminance': light
+   level sensors, issue #911), mirroring the device's picker. A home has
+   few of those, so the list shows as the picker opens and typing narrows
+   it. */
+export function entitySearchPicker(title = null, { allowClear = false, filter = null } = {}) {
   return new Promise((resolve) => {
     let done = false;
     const finish = (value) => {
@@ -547,7 +551,7 @@ export function entitySearchPicker(title = null, { allowClear = false } = {}) {
     };
     const renderResults = (entities) => {
       if (!entities.length) {
-        hint(search.value.trim() ? screensaverText('Nothing matched.') : screensaverText('Type to search entities.'));
+        hint(search.value.trim() || filter ? screensaverText('Nothing matched.') : screensaverText('Type to search entities.'));
         return;
       }
       results.innerHTML = '';
@@ -581,24 +585,26 @@ export function entitySearchPicker(title = null, { allowClear = false } = {}) {
       }
     };
     let debounce;
+    const run = async (query) => {
+      hint(screensaverText('Searching\u2026'));
+      try {
+        const res = await (await api('/api/commands/haSearchEntities', {
+          method: 'POST', body: JSON.stringify(filter ? { query, filter } : { query }) })).json();
+        if (search.value.trim() !== query) return; // a newer search won
+        if (!res.ok) { hint(t('screensaverOverlayUnreachable')); return; }
+        renderResults(res.data || []);
+      } catch (_) {
+        hint(screensaverText('The device did not answer.'));
+      }
+    };
     search.addEventListener('input', () => {
       clearTimeout(debounce);
       const query = search.value.trim();
-      if (!query) { renderResults([]); return; }
-      debounce = setTimeout(async () => {
-        hint(screensaverText('Searching\u2026'));
-        try {
-          const res = await (await api('/api/commands/haSearchEntities', {
-            method: 'POST', body: JSON.stringify({ query }) })).json();
-          if (search.value.trim() !== query) return; // a newer search won
-          if (!res.ok) { hint(t('screensaverOverlayUnreachable')); return; }
-          renderResults(res.data || []);
-        } catch (_) {
-          hint(screensaverText('The device did not answer.'));
-        }
-      }, 350);
+      if (!query && !filter) { renderResults([]); return; }
+      debounce = setTimeout(() => run(query), 350);
     });
-    renderResults([]);
+    if (filter) run('');
+    else renderResults([]);
     body.append(search, results);
     shell.body.appendChild(body);
     const cancel = cameraAction(screensaverText('Cancel'), () => {

@@ -32496,6 +32496,58 @@
       ]
     }
   },
+  "settingAdaptiveUseEntityTitle": "Home Assistant-Entität verwenden",
+  "@settingAdaptiveUseEntityTitle": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveUseEntityDescription": "Liest die Lichtstärke des Raums von einem Home Assistant-Sensor.",
+  "@settingAdaptiveUseEntityDescription": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveLightEntityTitle": "Lichtsensor-Entität",
+  "@settingAdaptiveLightEntityTitle": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
+  "settingAdaptiveLightEntityDescription": "Der Home Assistant-Sensor, der die Lichtstärke in Lux meldet.",
+  "@settingAdaptiveLightEntityDescription": {
+    "context": "Settings:Screen & Audio:Adaptive brightness",
+    "description": "Help below the setting, shown until an entity is picked.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive brightness"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive brightness"
+      ]
+    }
+  },
   "settingAdaptiveMinBrightnessTitle": "Minimale Helligkeit",
   "@settingAdaptiveMinBrightnessTitle": {
     "context": "Settings:Screen & Audio:Adaptive brightness",

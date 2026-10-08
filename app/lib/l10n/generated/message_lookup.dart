@@ -2631,6 +2631,13 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingAdaptiveBrightnessTitle,
       'settingAdaptiveBrightnessDescription' =>
         strings.settingAdaptiveBrightnessDescription,
+      'settingAdaptiveUseEntityTitle' => strings.settingAdaptiveUseEntityTitle,
+      'settingAdaptiveUseEntityDescription' =>
+        strings.settingAdaptiveUseEntityDescription,
+      'settingAdaptiveLightEntityTitle' =>
+        strings.settingAdaptiveLightEntityTitle,
+      'settingAdaptiveLightEntityDescription' =>
+        strings.settingAdaptiveLightEntityDescription,
       'settingAdaptiveMinBrightnessTitle' =>
         strings.settingAdaptiveMinBrightnessTitle,
       'settingAdaptiveMinBrightnessDescription' =>

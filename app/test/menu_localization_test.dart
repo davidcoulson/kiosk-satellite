@@ -940,11 +940,13 @@ void main() {
       ),
     );
     await tester.pump();
+    // No sensor: the Ambient light row says so, and the switch stays
+    // usable since a Home Assistant entity can stand in (issue #911).
     expect(find.text('TEST no sensor'), findsOneWidget);
     final toggle = tester.widget<SwitchListTile>(
       find.byType(SwitchListTile).first,
     );
-    expect(toggle.onChanged, isNull);
+    expect(toggle.onChanged, isNotNull);
     expect(toggle.value, isFalse);
     expect(
       tester

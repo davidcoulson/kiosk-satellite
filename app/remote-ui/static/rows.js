@@ -16,7 +16,12 @@ import {
 import { api, depSatisfied, gatedOn, state } from './core.js';
 import { readOnlyRow } from './device.js';
 import { openEspHomeEntityPicker } from './esphome.js';
-import { updateAdaptiveBrightnessRows, updateFaceRows, syncScreenOffAdminNotice } from './notices.js';
+import {
+  entityLightReading,
+  updateAdaptiveBrightnessRows,
+  updateFaceRows,
+  syncScreenOffAdminNotice,
+} from './notices.js';
 import {
   openImmichNamesPicker,
   openLauncherAppsPicker,
@@ -287,6 +292,10 @@ export function settingRow(s) {
     // adaptive brightness switch (issue #343). After the gated sync, so
     // the curve rows the switch reveals are in place first.
     if (s.key === 'screen.adaptive_brightness') updateAdaptiveBrightnessRows();
+    // The Ambient light row follows the reading's source (issue #911).
+    if (s.key === 'screen.adaptive_use_entity' || s.key === 'screen.adaptive_light_entity') {
+      updateAdaptiveBrightnessRows({ reprobe: true });
+    }
     // The real-MAC status row and its field answer for the switch and the
     // typed address as they are now (issues #252, #300). After the gated
     // sync: the field is a hidden definition gated on the switch, which
@@ -378,6 +387,33 @@ export function settingRow(s) {
       }
     };
     load();
+    return row;
+  }
+  // Adaptive brightness's light sensor entity (issue #911), mirroring the
+  // device's row: once one is picked, the entity id and its live reading
+  // stand in for the description, and the pencil opens the entity search
+  // the plugins' entity fields use.
+  if (s.key === 'screen.adaptive_light_entity') {
+    const desc = info.querySelector('.desc');
+    const current = () => (state.settings || []).find((o) => o.key === s.key)?.value ?? s.value ?? '';
+    const paint = () => {
+      const entity = current();
+      desc.textContent = entity ? `${entity} \u00b7 ${entityLightReading()}` : s.description;
+    };
+    paint();
+    const repaint = () => {
+      if (row.isConnected) paint();
+      else document.removeEventListener('ks-adaptivelight', repaint);
+    };
+    document.addEventListener('ks-adaptivelight', repaint);
+    const choose = cameraAction(s.title, async () => {
+      const entity = await entitySearchPicker(s.title, { allowClear: true, filter: 'illuminance' });
+      if (!entity) return;
+      await save(entity.entity_id);
+      paint();
+    }, false, 'pencil');
+    row.appendChild(choose);
+    row.updateSetting = () => { paint(); return true; };
     return row;
   }
   // The Home Assistant Dashboard screensaver's view and Now Playing's

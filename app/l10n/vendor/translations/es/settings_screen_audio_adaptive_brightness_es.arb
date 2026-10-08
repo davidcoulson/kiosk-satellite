@@ -27,5 +27,9 @@
   "screenAudioCurveLightLevel": "Nivel de luz (lx)",
   "screenAudioCurveBrightness": "Brillo (%)",
   "screenAudioCurveLuxRange": "Introduce un nivel de luz entre {low} y {high} lx",
-  "screenAudioCurveLevelRange": "Introduce un brillo entre {low}% y {high}%"
+  "screenAudioCurveLevelRange": "Introduce un brillo entre {low}% y {high}%",
+  "settingAdaptiveUseEntityTitle": "Usar entidad de Home Assistant",
+  "settingAdaptiveUseEntityDescription": "Lee el nivel de luz de la habitación desde un sensor de Home Assistant.",
+  "settingAdaptiveLightEntityTitle": "Entidad del sensor de luz",
+  "settingAdaptiveLightEntityDescription": "El sensor de Home Assistant que informa el nivel de luz en lux."
 }

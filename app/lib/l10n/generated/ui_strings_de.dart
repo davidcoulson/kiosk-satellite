@@ -8812,6 +8812,21 @@ class UiStringsDe extends UiStrings {
       'Passt die Bildschirmhelligkeit mithilfe des Umgebungslichtsensors an die Helligkeit des Raums an.';
 
   @override
+  String get settingAdaptiveUseEntityTitle =>
+      'Home Assistant-Entität verwenden';
+
+  @override
+  String get settingAdaptiveUseEntityDescription =>
+      'Liest die Lichtstärke des Raums von einem Home Assistant-Sensor.';
+
+  @override
+  String get settingAdaptiveLightEntityTitle => 'Lichtsensor-Entität';
+
+  @override
+  String get settingAdaptiveLightEntityDescription =>
+      'Der Home Assistant-Sensor, der die Lichtstärke in Lux meldet.';
+
+  @override
   String get settingAdaptiveMinBrightnessTitle => 'Minimale Helligkeit';
 
   @override

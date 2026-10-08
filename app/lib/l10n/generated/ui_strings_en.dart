@@ -8598,6 +8598,20 @@ class UiStringsEn extends UiStrings {
       'Dim the screen as the room gets darker, using the ambient light sensor.';
 
   @override
+  String get settingAdaptiveUseEntityTitle => 'Use Home Assistant entity';
+
+  @override
+  String get settingAdaptiveUseEntityDescription =>
+      'Read the room\'s light level from a Home Assistant sensor.';
+
+  @override
+  String get settingAdaptiveLightEntityTitle => 'Light sensor entity';
+
+  @override
+  String get settingAdaptiveLightEntityDescription =>
+      'The Home Assistant sensor that reports the light level in lux.';
+
+  @override
   String get settingAdaptiveMinBrightnessTitle => 'Minimum brightness';
 
   @override

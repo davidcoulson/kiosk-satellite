@@ -255,6 +255,21 @@ class RemoteManager extends Manager {
       }),
     );
 
+    // The light level adaptive brightness follows, the sensor's or a Home
+    // Assistant entity's (issue #911), for the curve's marker and the
+    // Light sensor entity row.
+    _subscriptions.add(
+      bus.on<AdaptiveLightChanged>().listen((e) {
+        if (_wsClients.isEmpty) return;
+        _broadcast({
+          'type': 'adaptivelight',
+          'source': e.source,
+          'lux': e.lux,
+          'live': e.live,
+        });
+      }),
+    );
+
     // Mic level samples for the admin settings meter. No wireName (the page
     // computes its own levels), and they only flow while a client holds a
     // mic-level watch, so this is not a standing 10 Hz feed.

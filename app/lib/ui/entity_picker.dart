@@ -27,17 +27,23 @@ Future<(String, String)?> pickHomeAssistantEntity(
   title: title,
 );
 
+///
+/// [filter] narrows the search to one kind of entity (`illuminance`: light
+/// level sensors, issue #911). A home has few of those, so the dialog then
+/// lists them all as it opens and typing narrows the list.
 Future<(String, String)?> pickHomeAssistantEntityFromCommands(
   BuildContext context,
   CommandRegistry commands, {
   String? title,
   bool allowClear = false,
+  String? filter,
 }) => showDialog<(String, String)>(
   context: context,
   builder: (context) => _EntityPickerDialog(
     commands: commands,
     title: title ?? screensaverText(context, 'Entity'),
     allowClear: allowClear,
+    filter: filter,
   ),
 );
 
@@ -101,11 +107,13 @@ class _EntityPickerDialog extends StatefulWidget {
     required this.commands,
     required this.title,
     this.allowClear = false,
+    this.filter,
   });
 
   final CommandRegistry commands;
   final bool allowClear;
   final String title;
+  final String? filter;
 
   @override
   State<_EntityPickerDialog> createState() => _EntityPickerDialogState();
@@ -119,6 +127,17 @@ class _EntityPickerDialogState extends State<_EntityPickerDialog> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    // A filtered list is short: it shows before anything is typed.
+    if (widget.filter != null) {
+      _searching = true;
+      // After initState: the search's setState cannot run inside it.
+      unawaited(Future<void>.microtask(() => _search('')));
+    }
+  }
+
+  @override
   void dispose() {
     _debounce?.cancel();
     _query.dispose();
@@ -127,9 +146,10 @@ class _EntityPickerDialogState extends State<_EntityPickerDialog> {
 
   /// Nothing is listed until something is typed: the unfiltered list is
   /// every entity in the instance, and a full state fetch to produce it.
+  /// A filtered one lists everything it keeps.
   void _onQueryChanged(String value) {
     _debounce?.cancel();
-    if (value.trim().isEmpty) {
+    if (value.trim().isEmpty && widget.filter == null) {
       setState(() {
         _results = const [];
         _searching = false;
@@ -142,13 +162,15 @@ class _EntityPickerDialogState extends State<_EntityPickerDialog> {
   }
 
   Future<void> _search(String query) async {
-    if (query.trim().isEmpty) return;
+    final filter = widget.filter;
+    if (!mounted || (query.trim().isEmpty && filter == null)) return;
     setState(() {
       _searching = true;
       _error = null;
     });
     final result = await widget.commands.execute('haSearchEntities', {
       'query': query,
+      'filter': ?filter,
     });
     if (!mounted) return;
     // A newer search won while this one was out.
@@ -215,7 +237,8 @@ class _EntityPickerDialogState extends State<_EntityPickerDialog> {
                         child: Text(
                           _searching
                               ? screensaverText(context, 'Searching…')
-                              : _query.text.trim().isEmpty
+                              : _query.text.trim().isEmpty &&
+                                    widget.filter == null
                               ? screensaverText(
                                   context,
                                   'Type to search entities.',

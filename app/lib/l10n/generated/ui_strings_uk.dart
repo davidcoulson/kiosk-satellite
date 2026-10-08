@@ -8694,6 +8694,21 @@ class UiStringsUk extends UiStrings {
       'Зменшує яскравість екрана, коли в кімнаті темнішає, використовуючи датчик освітленості.';
 
   @override
+  String get settingAdaptiveUseEntityTitle =>
+      'Використовувати сутність Home Assistant';
+
+  @override
+  String get settingAdaptiveUseEntityDescription =>
+      'Отримує рівень освітленості кімнати з датчика Home Assistant.';
+
+  @override
+  String get settingAdaptiveLightEntityTitle => 'Сутність датчика освітленості';
+
+  @override
+  String get settingAdaptiveLightEntityDescription =>
+      'Датчик Home Assistant, що повідомляє рівень освітленості в люксах.';
+
+  @override
   String get settingAdaptiveMinBrightnessTitle => 'Мінімальна яскравість';
 
   @override

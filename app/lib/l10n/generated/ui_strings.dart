@@ -14990,6 +14990,30 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
+  /// **'Use Home Assistant entity'**
+  String get settingAdaptiveUseEntityTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the room\'s light level from a Home Assistant sensor.'**
+  String get settingAdaptiveUseEntityDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Light sensor entity'**
+  String get settingAdaptiveLightEntityTitle;
+
+  /// Help below the setting, shown until an entity is picked.
+  ///
+  /// In en, this message translates to:
+  /// **'The Home Assistant sensor that reports the light level in lux.'**
+  String get settingAdaptiveLightEntityDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
   /// **'Minimum brightness'**
   String get settingAdaptiveMinBrightnessTitle;
 

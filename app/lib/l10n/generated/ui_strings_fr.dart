@@ -8764,6 +8764,21 @@ class UiStringsFr extends UiStrings {
       'Assombrir l\'écran à mesure que la pièce s\'obscurcit, à l\'aide du capteur de lumière ambiante.';
 
   @override
+  String get settingAdaptiveUseEntityTitle =>
+      'Utiliser une entité Home Assistant';
+
+  @override
+  String get settingAdaptiveUseEntityDescription =>
+      'Lire le niveau de lumière de la pièce depuis un capteur Home Assistant.';
+
+  @override
+  String get settingAdaptiveLightEntityTitle => 'Entité du capteur de lumière';
+
+  @override
+  String get settingAdaptiveLightEntityDescription =>
+      'Le capteur Home Assistant qui indique le niveau de lumière en lux.';
+
+  @override
   String get settingAdaptiveMinBrightnessTitle => 'Luminosité minimale';
 
   @override

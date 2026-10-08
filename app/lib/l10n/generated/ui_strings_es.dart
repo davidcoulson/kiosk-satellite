@@ -8769,6 +8769,20 @@ class UiStringsEs extends UiStrings {
       'Atenúa la pantalla a medida que se oscurece la habitación usando el sensor de luz ambiental.';
 
   @override
+  String get settingAdaptiveUseEntityTitle => 'Usar entidad de Home Assistant';
+
+  @override
+  String get settingAdaptiveUseEntityDescription =>
+      'Lee el nivel de luz de la habitación desde un sensor de Home Assistant.';
+
+  @override
+  String get settingAdaptiveLightEntityTitle => 'Entidad del sensor de luz';
+
+  @override
+  String get settingAdaptiveLightEntityDescription =>
+      'El sensor de Home Assistant que informa el nivel de luz en lux.';
+
+  @override
   String get settingAdaptiveMinBrightnessTitle => 'Brillo mínimo';
 
   @override

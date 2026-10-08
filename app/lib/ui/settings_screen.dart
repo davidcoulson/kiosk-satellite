@@ -2963,18 +2963,6 @@ class _CategoryContentState extends State<_CategoryContent> {
           ),
         ),
       ),
-    // No ambient light sensor: the switch says so instead of offering a
-    // curve with nothing to drive it. Mirrored on the remote too.
-    if (widget.category == 'Screen & Audio' && !container.device.hasLightSensor)
-      adaptiveBrightness.key: SearchLandingTarget(
-        id: adaptiveBrightness.key,
-        child: SwitchListTile(
-          title: Text(adaptiveBrightness.localizedTitle(context)),
-          subtitle: Text(screenAudioText(context, _noLightSensorNote)),
-          value: false,
-          onChanged: null,
-        ),
-      ),
     // The announcements' text to speech engine, language and voice are
     // picked from Home Assistant's lists, not typed. Mirrored on the
     // remote (intercom.js).
@@ -3062,7 +3050,6 @@ class _CategoryContentState extends State<_CategoryContent> {
   };
 
   bool _adaptiveOn(AppContainer container) =>
-      container.device.hasLightSensor &&
       container.settings.get(adaptiveBrightness);
 
   /// Extra widgets rendered directly under a setting: notices, validate
@@ -3102,10 +3089,14 @@ class _CategoryContentState extends State<_CategoryContent> {
       personSensorEnabled.key: _PersonSensorStatusRow(container: container),
     // The sensor's reading, live, under the switch: the curve's two light
     // levels are typed against it, and what a sensor calls a lit room is
-    // anyone's guess until it is on screen. Mirrored on the remote
+    // anyone's guess until it is on screen. Without a sensor, a note says
+    // so in its place: the switch stays usable, since a Home Assistant
+    // entity can stand in (issue #911). Mirrored on the remote
     // (notices.js, updateAdaptiveBrightnessRows).
-    if (widget.category == 'Screen & Audio' && container.device.hasLightSensor)
-      adaptiveBrightness.key: _AmbientLightRow(container: container),
+    if (widget.category == 'Screen & Audio')
+      adaptiveBrightness.key: container.device.hasLightSensor
+          ? _AmbientLightRow(container: container)
+          : HintRow(screenAudioText(context, _noLightSensorNote)),
     // Under the screensaver's brightness sliders while adaptive brightness
     // is on: the slider is the bright-room level the room's light dims
     // from, which is not what a slider called "brightness" says on its own.
@@ -6149,6 +6140,80 @@ class _AmbientLightRowState extends State<_AmbientLightRow> {
                 '${lux == lux.roundToDouble() ? lux.toInt() : lux.toStringAsFixed(1)}',
               ),
       ),
+    );
+  }
+}
+
+/// Adaptive brightness's Home Assistant light sensor (issue #911): the
+/// entity picked, with its reading live beside it, the way the Ambient
+/// light row shows the device sensor's. Tapping it opens the entity
+/// search. Mirrored on the remote (rows.js).
+class _LightEntityRow extends StatefulWidget {
+  const _LightEntityRow({
+    required this.container,
+    required this.def,
+    required this.onChanged,
+  });
+
+  final AppContainer container;
+  final SettingDef<Object> def;
+  final VoidCallback onChanged;
+
+  @override
+  State<_LightEntityRow> createState() => _LightEntityRowState();
+}
+
+class _LightEntityRowState extends State<_LightEntityRow> {
+  StreamSubscription<AdaptiveLightChanged>? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = widget.container.bus.on<AdaptiveLightChanged>().listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.container;
+    final def = widget.def;
+    final entity = c.settings.get(adaptiveLightEntity);
+    final light = c.adaptiveLight;
+    final lux = light.source == 'entity' ? light.lux : null;
+    final reading = lux == null
+        ? screenAudioText(context, 'No reading yet')
+        : (light.live
+              ? l10n(context).screenAudioLux
+              : l10n(context).screenAudioLuxLast)(
+            '${lux == lux.roundToDouble() ? lux.toInt() : lux.toStringAsFixed(1)}',
+          );
+    return SettingsRow(
+      title: Text(def.localizedTitle(context)),
+      subtitle: Text(
+        entity.isEmpty
+            ? def.localizedDescription(context)
+            : '$entity \u00b7 $reading',
+      ),
+      trailing: const Icon(Icons.edit_outlined),
+      onTap: () async {
+        final picked = await pickHomeAssistantEntityFromCommands(
+          context,
+          c.commands,
+          title: def.localizedTitle(context),
+          allowClear: true,
+          filter: 'illuminance',
+        );
+        if (picked == null) return;
+        await c.settings.setFromJson(def.key, picked.$1);
+        widget.onChanged();
+      },
     );
   }
 }
@@ -10769,6 +10834,11 @@ class SettingTile extends StatelessWidget {
         }
         if (def.key == screensaverWeatherEntity.key) {
           return WeatherMoodEntityRow(container: c);
+        }
+        // Adaptive brightness's light sensor entity (issue #911), picked
+        // with the entity search the plugins' entity fields use.
+        if (def.key == adaptiveLightEntity.key) {
+          return _LightEntityRow(container: c, def: def, onChanged: onChanged);
         }
         // The Home Assistant Dashboard screensaver's view and Now Playing's
         // chosen view are picked from the instance's dashboards in the

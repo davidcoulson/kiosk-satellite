@@ -182,6 +182,24 @@ class LightLevelChanged extends AppEvent {
   final double lux;
 }
 
+/// The light level adaptive brightness follows moved, or its source did
+/// (issue #911): the device's own sensor, or a Home Assistant entity in
+/// its place. [lux] is null while the source has nothing to report yet,
+/// [live] false while it is the last session's reading. Internal-only.
+class AdaptiveLightChanged extends AppEvent {
+  const AdaptiveLightChanged({
+    required this.source,
+    required this.lux,
+    required this.live,
+  });
+
+  /// `sensor`, `entity` or `none` (the device sensor picked on a device
+  /// without one).
+  final String source;
+  final double? lux;
+  final bool live;
+}
+
 /// A GPS fix arrived (issue #363): the location manager relays the native
 /// receiver's reading while Report location is on. Internal-only; the
 /// ESPHome surface mirrors it into the location sensors.

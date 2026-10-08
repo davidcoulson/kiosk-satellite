@@ -287,9 +287,17 @@ class HomeAssistantManager extends Manager {
           description:
               'Search entities by id or friendly name, for the At a Glance '
               'picker. Returns at most 50, closest matches first.',
-          params: const {'query': 'text to match against id and name'},
+          params: const {
+            'query': 'text to match against id and name',
+            'filter':
+                'optional: illuminance keeps only light level sensors (an '
+                'empty query then lists them all)',
+          },
           handler: (p) async {
-            final matches = await searchEntities('${p['query'] ?? ''}');
+            final matches = await searchEntities(
+              '${p['query'] ?? ''}',
+              filter: p['filter'] as String?,
+            );
             return matches == null
                 ? const CommandResult.fail('could not list entities')
                 : CommandResult.ok(matches);
@@ -1861,7 +1869,13 @@ class HomeAssistantManager extends Manager {
   ///
   /// An exact id or a name that starts with the query sorts first, so
   /// typing "gara" puts Garage Door above Front Garage Light Sensor.
-  Future<List<Map<String, Object?>>?> searchEntities(String query) async {
+  ///
+  /// [filter] `illuminance` keeps only light level sensors, for adaptive
+  /// brightness's entity (issue #911).
+  Future<List<Map<String, Object?>>?> searchEntities(
+    String query, {
+    String? filter,
+  }) async {
     final states = await fetchStates();
     if (states == null) return null;
     final needle = query.trim().toLowerCase();
@@ -1870,6 +1884,7 @@ class HomeAssistantManager extends Manager {
       final id = '${state['entity_id'] ?? ''}';
       if (id.isEmpty) continue;
       final attributes = (state['attributes'] as Map?) ?? const {};
+      if (filter == 'illuminance' && !_isIlluminance(attributes)) continue;
       final name = '${attributes['friendly_name'] ?? _prettifyEntityId(id)}';
       if (needle.isNotEmpty &&
           !id.toLowerCase().contains(needle) &&
@@ -1894,6 +1909,13 @@ class HomeAssistantManager extends Manager {
     });
     return [for (final match in matches.take(50)) match.$3];
   }
+
+  /// A light level sensor (issue #911): the illuminance device class, or
+  /// a reading in lux from a template or custom sensor that sets the unit
+  /// and no class.
+  static bool _isIlluminance(Map attributes) =>
+      attributes['device_class'] == 'illuminance' ||
+      attributes['unit_of_measurement'] == 'lx';
 
   /// One entity's current attributes, or null when it (or Home Assistant)
   /// cannot be reached. For the At a Glance attribute picker: values ride

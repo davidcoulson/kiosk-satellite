@@ -228,6 +228,14 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingAdaptiveBrightnessTitle",
     "description": "settingAdaptiveBrightnessDescription",
   },
+  "screen.adaptive_use_entity": {
+    "title": "settingAdaptiveUseEntityTitle",
+    "description": "settingAdaptiveUseEntityDescription",
+  },
+  "screen.adaptive_light_entity": {
+    "title": "settingAdaptiveLightEntityTitle",
+    "description": "settingAdaptiveLightEntityDescription",
+  },
   "screen.adaptive_min_brightness": {
     "title": "settingAdaptiveMinBrightnessTitle",
     "description": "settingAdaptiveMinBrightnessDescription",

@@ -8665,6 +8665,21 @@ class UiStringsRu extends UiStrings {
       'Затемнять экран по мере потемнения комнаты, используя датчик освещённости.';
 
   @override
+  String get settingAdaptiveUseEntityTitle =>
+      'Использовать сущность Home Assistant';
+
+  @override
+  String get settingAdaptiveUseEntityDescription =>
+      'Получать освещённость комнаты от датчика Home Assistant.';
+
+  @override
+  String get settingAdaptiveLightEntityTitle => 'Сущность датчика освещённости';
+
+  @override
+  String get settingAdaptiveLightEntityDescription =>
+      'Датчик Home Assistant, сообщающий освещённость в люксах.';
+
+  @override
   String get settingAdaptiveMinBrightnessTitle => 'Минимальная яркость';
 
   @override

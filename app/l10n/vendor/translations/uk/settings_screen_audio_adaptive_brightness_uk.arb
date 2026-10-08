@@ -27,5 +27,9 @@
   "screenAudioCurveLightLevel": "Рівень освітлення (лк)",
   "screenAudioCurveBrightness": "Яскравість (%)",
   "screenAudioCurveLuxRange": "Введіть рівень освітлення від {low} до {high} лк",
-  "screenAudioCurveLevelRange": "Введіть яскравість від {low}% до {high}%"
+  "screenAudioCurveLevelRange": "Введіть яскравість від {low}% до {high}%",
+  "settingAdaptiveUseEntityTitle": "Використовувати сутність Home Assistant",
+  "settingAdaptiveUseEntityDescription": "Отримує рівень освітленості кімнати з датчика Home Assistant.",
+  "settingAdaptiveLightEntityTitle": "Сутність датчика освітленості",
+  "settingAdaptiveLightEntityDescription": "Датчик Home Assistant, що повідомляє рівень освітленості в люксах."
 }
