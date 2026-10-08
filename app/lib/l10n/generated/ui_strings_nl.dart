@@ -528,6 +528,87 @@ class UiStringsNl extends UiStrings {
   String get commonSelectAll => 'Alles selecteren';
 
   @override
+  String get dashboardPickerSearch => 'Weergaven zoeken';
+
+  @override
+  String get dashboardPickerSearchAll => 'Dashboards en weergaven zoeken';
+
+  @override
+  String get dashboardPickerCurrent => 'Huidig';
+
+  @override
+  String get dashboardPickerDashboards => 'Dashboards';
+
+  @override
+  String get dashboardPickerSubviews => 'Subweergaven';
+
+  @override
+  String get dashboardPickerSubview => 'Subweergave';
+
+  @override
+  String get dashboardPickerWhole => 'Volledig dashboard';
+
+  @override
+  String get dashboardPickerBuildsOwn => 'Maakt eigen weergaven';
+
+  @override
+  String get dashboardPickerWholeHelp =>
+      'Dit dashboard maakt zijn eigen weergaven, dus de kiosk opent het in zijn geheel.';
+
+  @override
+  String dashboardPickerViewCount(String count) {
+    return '$count weergaven';
+  }
+
+  @override
+  String get dashboardPickerOneView => '1 weergave';
+
+  @override
+  String get dashboardPickerOffline => 'Kan Home Assistant niet bereiken';
+
+  @override
+  String get dashboardPickerOfflineHelp =>
+      'De dashboards laden zodra de verbinding terug is.';
+
+  @override
+  String get dashboardPickerTryAgain => 'Probeer opnieuw';
+
+  @override
+  String get dashboardPickerEmpty => 'Nog geen dashboards';
+
+  @override
+  String get dashboardPickerEmptyHelp =>
+      'Dashboards die je in Home Assistant toevoegt, verschijnen hier.';
+
+  @override
+  String get dashboardPickerNoMatch => 'Geen weergaven gevonden';
+
+  @override
+  String dashboardPickerSelected(String count) {
+    return '$count geselecteerd';
+  }
+
+  @override
+  String get dashboardPickerDone => 'Klaar';
+
+  @override
+  String get dashboardPickerShowing => 'Wordt getoond';
+
+  @override
+  String get dashboardPickerMissing =>
+      'Deze weergave bestaat niet meer in Home Assistant. Kies een andere.';
+
+  @override
+  String get dashboardPickerAddViews => 'Weergaven toevoegen';
+
+  @override
+  String get dashboardPickerDefault => 'Standaarddashboard';
+
+  @override
+  String get dashboardPickerDefaultHelp =>
+      'De weergave die de kiosk toont bij het starten.';
+
+  @override
   String get dlnaCannotDecode => 'Dit apparaat kan deze video niet decoderen.';
 
   @override
@@ -1582,19 +1663,6 @@ class UiStringsNl extends UiStrings {
 
   @override
   String get gestureUriError => 'Voer een volledige URI in.';
-
-  @override
-  String get gestureNoDashboards => 'Geen dashboards';
-
-  @override
-  String get gestureDashboardsFailed => 'Kon dashboards niet ophalen';
-
-  @override
-  String get gestureHaConnected => 'Is Home Assistant verbonden?';
-
-  @override
-  String get gestureDashboardsHelp =>
-      'Kon dashboards niet ophalen. Is Home Assistant verbonden?';
 
   @override
   String get gestureCameraTitle => 'Cameraweergave';
@@ -3773,21 +3841,6 @@ class UiStringsNl extends UiStrings {
 
   @override
   String get overviewGoView => 'Ga naar weergave';
-
-  @override
-  String get overviewLoadingViews => 'Weergaven laden…';
-
-  @override
-  String get overviewPickView => 'Kies een dashboardweergave…';
-
-  @override
-  String get overviewDefaultView => 'Standaardweergave';
-
-  @override
-  String get overviewNoDashboards => 'Geen dashboards gevonden';
-
-  @override
-  String get overviewViewsUnavailable => 'Weergaven niet beschikbaar';
 
   @override
   String get screensaverNoPhotos =>
@@ -7230,9 +7283,6 @@ class UiStringsNl extends UiStrings {
   String get haRotationHint => 'Weergaven doorlopen, weergaveduur en overgang';
 
   @override
-  String get haDefaultView => 'Standaardweergave';
-
-  @override
   String get haExternalPages => 'Externe pagina\'s';
 
   @override
@@ -7321,28 +7371,6 @@ class UiStringsNl extends UiStrings {
 
   @override
   String get haChooseView => 'Een weergave kiezen';
-
-  @override
-  String get haLoadingDashboards => 'Dashboards laden…';
-
-  @override
-  String get haListFailed => 'Kon dashboards niet tonen';
-
-  @override
-  String get haRetryHint => 'Tik om het opnieuw te proberen.';
-
-  @override
-  String get haChangeView => 'Weergave wijzigen';
-
-  @override
-  String get haNoViews => 'Geen subweergaven';
-
-  @override
-  String get haNoViewsHelp =>
-      'Dit dashboard heeft geen selecteerbare subweergaven.';
-
-  @override
-  String get haNoDashboards => 'Geen dashboards gevonden';
 
   @override
   String get haStartPageTitle => 'Start page';
@@ -8394,6 +8422,26 @@ class UiStringsNl extends UiStrings {
   @override
   String get settingSendspinFullscreenMotionDescription =>
       'Laat beweging Speelt nu sluiten zoals bij een gewone schermbeveiliging. Als dit uitstaat, sluit alleen een aanraking de weergave en onderbreekt voorbijlopen de muziekweergave niet. Wordt genegeerd als Speelt nu naast een schermbeveiliging staat.';
+
+  @override
+  String get settingSendspinFullscreenReturnTitle => 'Na het sluiten';
+
+  @override
+  String get settingSendspinFullscreenReturnDescription =>
+      'De dashboardweergave die verschijnt nadat Speelt nu is gesloten. Standaard volgt Terugkeren naar de startweergave van het dashboard.';
+
+  @override
+  String get mediaReturnLastView => 'Laatste weergave';
+
+  @override
+  String get mediaReturnChosenView => 'Gekozen weergave';
+
+  @override
+  String get settingSendspinFullscreenReturnViewTitle => 'Dashboardweergave';
+
+  @override
+  String get settingSendspinFullscreenReturnViewDescription =>
+      'De weergave die verschijnt nadat Speelt nu is gesloten.';
 
   @override
   String get settingSendspinFullscreenShortcutTitle => 'Toon in het kioskmenu';
@@ -9795,9 +9843,6 @@ class UiStringsNl extends UiStrings {
   @override
   String get settingScreensaverDashboardViewDescription =>
       'De Home Assistant-dashboardweergave die de schermbeveiliging toont.';
-
-  @override
-  String get screensaverSelectDashboard => 'Selecteer dashboard';
 
   @override
   String get screensaverDashboardSection =>

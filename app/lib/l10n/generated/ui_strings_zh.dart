@@ -519,6 +519,82 @@ class UiStringsZh extends UiStrings {
   String get commonSelectAll => '全选';
 
   @override
+  String get dashboardPickerSearch => '搜索页面';
+
+  @override
+  String get dashboardPickerSearchAll => '搜索仪表盘和页面';
+
+  @override
+  String get dashboardPickerCurrent => '当前';
+
+  @override
+  String get dashboardPickerDashboards => '仪表盘';
+
+  @override
+  String get dashboardPickerSubviews => '子页面';
+
+  @override
+  String get dashboardPickerSubview => '子页面';
+
+  @override
+  String get dashboardPickerWhole => '整个仪表盘';
+
+  @override
+  String get dashboardPickerBuildsOwn => '自动生成页面';
+
+  @override
+  String get dashboardPickerWholeHelp => '此仪表盘会自动生成页面，因此 Kiosk 会打开整个仪表盘。';
+
+  @override
+  String dashboardPickerViewCount(String count) {
+    return '$count 个页面';
+  }
+
+  @override
+  String get dashboardPickerOneView => '1 个页面';
+
+  @override
+  String get dashboardPickerOffline => '无法连接 Home Assistant';
+
+  @override
+  String get dashboardPickerOfflineHelp => '连接恢复后将加载仪表盘。';
+
+  @override
+  String get dashboardPickerTryAgain => '重试';
+
+  @override
+  String get dashboardPickerEmpty => '暂无仪表盘';
+
+  @override
+  String get dashboardPickerEmptyHelp => '在 Home Assistant 中添加的仪表盘会显示在这里。';
+
+  @override
+  String get dashboardPickerNoMatch => '没有匹配的页面';
+
+  @override
+  String dashboardPickerSelected(String count) {
+    return '已选择 $count 个';
+  }
+
+  @override
+  String get dashboardPickerDone => '完成';
+
+  @override
+  String get dashboardPickerShowing => '正在显示';
+
+  @override
+  String get dashboardPickerMissing => 'Home Assistant 中已没有此页面。请另选一个。';
+
+  @override
+  String get dashboardPickerAddViews => '添加页面';
+
+  @override
+  String get dashboardPickerDefault => '默认仪表盘';
+
+  @override
+  String get dashboardPickerDefaultHelp => 'Kiosk 启动时显示的页面。';
+
+  @override
   String get dlnaCannotDecode => '此设备无法解码此视频。';
 
   @override
@@ -1533,18 +1609,6 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get gestureUriError => '请输入完整的 URI。';
-
-  @override
-  String get gestureNoDashboards => '没有仪表盘';
-
-  @override
-  String get gestureDashboardsFailed => '无法获取仪表盘列表';
-
-  @override
-  String get gestureHaConnected => 'Home Assistant 是否已连接？';
-
-  @override
-  String get gestureDashboardsHelp => '无法获取仪表盘列表。Home Assistant 是否已连接？';
 
   @override
   String get gestureCameraTitle => '摄像头画面';
@@ -3618,21 +3682,6 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get overviewGoView => '切换仪表盘页面';
-
-  @override
-  String get overviewLoadingViews => '正在加载仪表盘页面…';
-
-  @override
-  String get overviewPickView => '选择仪表盘页面…';
-
-  @override
-  String get overviewDefaultView => '默认页面';
-
-  @override
-  String get overviewNoDashboards => '未找到仪表盘';
-
-  @override
-  String get overviewViewsUnavailable => '页面不可用';
 
   @override
   String get screensaverNoPhotos => '未选择照片。请在设置中选择。';
@@ -6840,9 +6889,6 @@ class UiStringsZh extends UiStrings {
   String get haRotationHint => '页面轮播、停留时长和淡入淡出';
 
   @override
-  String get haDefaultView => '默认页面';
-
-  @override
   String get haExternalPages => '外部页面';
 
   @override
@@ -6928,27 +6974,6 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get haChooseView => '选择页面';
-
-  @override
-  String get haLoadingDashboards => '正在加载仪表盘…';
-
-  @override
-  String get haListFailed => '无法获取仪表盘列表';
-
-  @override
-  String get haRetryHint => '点击重试。';
-
-  @override
-  String get haChangeView => '更改页面';
-
-  @override
-  String get haNoViews => '没有子页面';
-
-  @override
-  String get haNoViewsHelp => '此仪表盘没有可选的子页面。';
-
-  @override
-  String get haNoDashboards => '未找到仪表盘';
 
   @override
   String get haStartPageTitle => 'Start page';
@@ -7934,6 +7959,26 @@ class UiStringsZh extends UiStrings {
   @override
   String get settingSendspinFullscreenMotionDescription =>
       '开启后，检测到运动就会关闭“正在播放”页面，与普通屏保相同。关闭后，只能通过触屏关闭，避免有人路过时打断显示。“正在播放”与屏保同时显示时，此设置不生效。';
+
+  @override
+  String get settingSendspinFullscreenReturnTitle => '关闭后';
+
+  @override
+  String get settingSendspinFullscreenReturnDescription =>
+      '关闭“正在播放”后显示的仪表盘页面。“默认”沿用“返回默认仪表盘页面”的设置。';
+
+  @override
+  String get mediaReturnLastView => '上次的页面';
+
+  @override
+  String get mediaReturnChosenView => '指定页面';
+
+  @override
+  String get settingSendspinFullscreenReturnViewTitle => '仪表盘页面';
+
+  @override
+  String get settingSendspinFullscreenReturnViewDescription =>
+      '关闭“正在播放”后显示的页面。';
 
   @override
   String get settingSendspinFullscreenShortcutTitle => '在 Kiosk 菜单中显示';
@@ -9233,9 +9278,6 @@ class UiStringsZh extends UiStrings {
   @override
   String get settingScreensaverDashboardViewDescription =>
       '选择屏保显示的 Home Assistant 仪表盘页面。';
-
-  @override
-  String get screensaverSelectDashboard => '选择仪表盘';
 
   @override
   String get screensaverDashboardSection => 'Home Assistant 仪表盘屏保';
@@ -13262,6 +13304,82 @@ class UiStringsZhCn extends UiStringsZh {
   String get commonSelectAll => '全选';
 
   @override
+  String get dashboardPickerSearch => '搜索页面';
+
+  @override
+  String get dashboardPickerSearchAll => '搜索仪表盘和页面';
+
+  @override
+  String get dashboardPickerCurrent => '当前';
+
+  @override
+  String get dashboardPickerDashboards => '仪表盘';
+
+  @override
+  String get dashboardPickerSubviews => '子页面';
+
+  @override
+  String get dashboardPickerSubview => '子页面';
+
+  @override
+  String get dashboardPickerWhole => '整个仪表盘';
+
+  @override
+  String get dashboardPickerBuildsOwn => '自动生成页面';
+
+  @override
+  String get dashboardPickerWholeHelp => '此仪表盘会自动生成页面，因此 Kiosk 会打开整个仪表盘。';
+
+  @override
+  String dashboardPickerViewCount(String count) {
+    return '$count 个页面';
+  }
+
+  @override
+  String get dashboardPickerOneView => '1 个页面';
+
+  @override
+  String get dashboardPickerOffline => '无法连接 Home Assistant';
+
+  @override
+  String get dashboardPickerOfflineHelp => '连接恢复后将加载仪表盘。';
+
+  @override
+  String get dashboardPickerTryAgain => '重试';
+
+  @override
+  String get dashboardPickerEmpty => '暂无仪表盘';
+
+  @override
+  String get dashboardPickerEmptyHelp => '在 Home Assistant 中添加的仪表盘会显示在这里。';
+
+  @override
+  String get dashboardPickerNoMatch => '没有匹配的页面';
+
+  @override
+  String dashboardPickerSelected(String count) {
+    return '已选择 $count 个';
+  }
+
+  @override
+  String get dashboardPickerDone => '完成';
+
+  @override
+  String get dashboardPickerShowing => '正在显示';
+
+  @override
+  String get dashboardPickerMissing => 'Home Assistant 中已没有此页面。请另选一个。';
+
+  @override
+  String get dashboardPickerAddViews => '添加页面';
+
+  @override
+  String get dashboardPickerDefault => '默认仪表盘';
+
+  @override
+  String get dashboardPickerDefaultHelp => 'Kiosk 启动时显示的页面。';
+
+  @override
   String get dlnaCannotDecode => '此设备无法解码此视频。';
 
   @override
@@ -14276,18 +14394,6 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get gestureUriError => '请输入完整的 URI。';
-
-  @override
-  String get gestureNoDashboards => '没有仪表盘';
-
-  @override
-  String get gestureDashboardsFailed => '无法获取仪表盘列表';
-
-  @override
-  String get gestureHaConnected => 'Home Assistant 是否已连接？';
-
-  @override
-  String get gestureDashboardsHelp => '无法获取仪表盘列表。Home Assistant 是否已连接？';
 
   @override
   String get gestureCameraTitle => '摄像头画面';
@@ -16361,21 +16467,6 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get overviewGoView => '切换仪表盘页面';
-
-  @override
-  String get overviewLoadingViews => '正在加载仪表盘页面…';
-
-  @override
-  String get overviewPickView => '选择仪表盘页面…';
-
-  @override
-  String get overviewDefaultView => '默认页面';
-
-  @override
-  String get overviewNoDashboards => '未找到仪表盘';
-
-  @override
-  String get overviewViewsUnavailable => '页面不可用';
 
   @override
   String get screensaverNoPhotos => '未选择照片。请在设置中选择。';
@@ -19583,9 +19674,6 @@ class UiStringsZhCn extends UiStringsZh {
   String get haRotationHint => '页面轮播、停留时长和淡入淡出';
 
   @override
-  String get haDefaultView => '默认页面';
-
-  @override
   String get haExternalPages => '外部页面';
 
   @override
@@ -19671,27 +19759,6 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get haChooseView => '选择页面';
-
-  @override
-  String get haLoadingDashboards => '正在加载仪表盘…';
-
-  @override
-  String get haListFailed => '无法获取仪表盘列表';
-
-  @override
-  String get haRetryHint => '点击重试。';
-
-  @override
-  String get haChangeView => '更改页面';
-
-  @override
-  String get haNoViews => '没有子页面';
-
-  @override
-  String get haNoViewsHelp => '此仪表盘没有可选的子页面。';
-
-  @override
-  String get haNoDashboards => '未找到仪表盘';
 
   @override
   String get haStartPageTitle => 'Start page';
@@ -20677,6 +20744,26 @@ class UiStringsZhCn extends UiStringsZh {
   @override
   String get settingSendspinFullscreenMotionDescription =>
       '开启后，检测到运动就会关闭“正在播放”页面，与普通屏保相同。关闭后，只能通过触屏关闭，避免有人路过时打断显示。“正在播放”与屏保同时显示时，此设置不生效。';
+
+  @override
+  String get settingSendspinFullscreenReturnTitle => '关闭后';
+
+  @override
+  String get settingSendspinFullscreenReturnDescription =>
+      '关闭“正在播放”后显示的仪表盘页面。“默认”沿用“返回默认仪表盘页面”的设置。';
+
+  @override
+  String get mediaReturnLastView => '上次的页面';
+
+  @override
+  String get mediaReturnChosenView => '指定页面';
+
+  @override
+  String get settingSendspinFullscreenReturnViewTitle => '仪表盘页面';
+
+  @override
+  String get settingSendspinFullscreenReturnViewDescription =>
+      '关闭“正在播放”后显示的页面。';
 
   @override
   String get settingSendspinFullscreenShortcutTitle => '在 Kiosk 菜单中显示';
@@ -21976,9 +22063,6 @@ class UiStringsZhCn extends UiStringsZh {
   @override
   String get settingScreensaverDashboardViewDescription =>
       '选择屏保显示的 Home Assistant 仪表盘页面。';
-
-  @override
-  String get screensaverSelectDashboard => '选择仪表盘';
 
   @override
   String get screensaverDashboardSection => 'Home Assistant 仪表盘屏保';

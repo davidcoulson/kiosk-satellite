@@ -10,7 +10,6 @@ import '../managers/settings/definitions.dart' as defs;
 import 'dashboard_view_picker.dart';
 import 'hand_gesture_tester.dart';
 import 'kit.dart';
-import 'toast.dart';
 import 'settings_search.dart';
 
 /// The Gestures page (issue #99): the list of gestures and the
@@ -1237,24 +1236,12 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
   Future<Map<String, Object?>?> _configureNavigate(
     Map<String, Object?>? current,
   ) async {
-    // The same flattened "dashboard / view" list the Home Assistant
-    // Dashboard screensaver picks from.
-    final entries = await listDashboardViewEntries(c);
-    if (!mounted) return null;
-    if (entries.isEmpty) {
-      showToast(
-        context,
-        title: gestureText(context, 'Could not list dashboards'),
-        message: gestureText(context, 'Is Home Assistant connected?'),
-        kind: ToastKind.error,
-      );
-      return null;
-    }
-    final path = await showDashboardViewPicker(
+    // The dashboard picker every dashboard view setting opens.
+    final path = await showDashboardPicker(
       context,
+      container: c,
       title: gestureText(context, 'Go to a dashboard view'),
-      entries: entries,
-      current: '${current?['path'] ?? ''}',
+      selected: '${current?['path'] ?? ''}',
     );
     return path == null ? null : {'type': 'navigate', 'path': path};
   }

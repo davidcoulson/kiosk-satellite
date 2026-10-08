@@ -105,8 +105,15 @@ class TheaterModeChanged extends AppEvent {
 // ── Screensaver ────────────────────────────────────────────────────────
 
 class ScreensaverStateChanged extends AppEvent {
-  const ScreensaverStateChanged({required this.active});
+  const ScreensaverStateChanged({
+    required this.active,
+    this.nowPlaying = false,
+  });
   final bool active;
+
+  /// The session starts with Now Playing up, so the return to the dashboard
+  /// can make way for the Now Playing dismissal target (issue #899).
+  final bool nowPlaying;
 
   @override
   String get wireName => active ? 'screensaverstart' : 'screensaverstop';
@@ -461,6 +468,21 @@ class VoiceInteractionChanged extends AppEvent {
 class VoiceSatelliteStateChanged extends AppEvent {
   const VoiceSatelliteStateChanged(this.state);
   final String state;
+}
+
+/// Native Voice Satellite's timers changed: one started, changed, was
+/// cancelled, finished or had its alert dismissed. Carries the whole
+/// `voiceTimers` list so the ESPHome sensors and the page's
+/// `kiosksatellite:voice-timers` listeners redraw from the event alone.
+class VoiceTimersChanged extends AppEvent {
+  const VoiceTimersChanged(this.timers);
+  final List<Map<String, Object?>> timers;
+
+  @override
+  String get wireName => 'voice-timers';
+
+  @override
+  Map<String, Object?> toJson() => {'timers': timers};
 }
 
 // ── Alarms ─────────────────────────────────────────────────────────────

@@ -48,14 +48,14 @@ import { renderAlarmsPage } from './alarms.js';
 import { askImportOptions } from './pickers.js';
 import { settingRow, syncGatedRows } from './rows.js';
 import { applySubpageView, currentPath, setCurrentPath, subpageEntry, refreshNavigationText } from './tabs.js';
+import { showScanDiagnostic, showWatchedEntities } from './views.js';
 import {
-  fetchViews,
-  pickView,
-  radioRow,
-  showScanDiagnostic,
-  showWatchedEntities,
-  viewPath,
-} from './views.js';
+  dashboardPathOfUrl,
+  dashboardViewListRow,
+  dashboardViewRow,
+  loadDashboards,
+  pickDashboard,
+} from './dashboard_picker.js';
 import { loadVsPermissions, renderVsControls } from './vs.js';
 import { REALTIME_PROVIDER_SETTINGS, VS_SELECT_SETTINGS, renderNativeVs, vsMigrationNotice } from './vs_native.js';
 import { mountWakeActivations } from './wake_activations.js';
@@ -211,6 +211,10 @@ const layoutSettings = new Set([
 // that wakes the screensaver writes the saved brightness; rebuilding the
 // settings pages for that re-rendered whatever page was open, on every
 // trigger.
+// The rotation's view and page lists repaint in place on the ks-settings
+// event (the rotation page below): a save echoed back from the device, or
+// a change from another admin, never rebuilds the tab.
+const rotationListSettings = new Set(['ha.rotation_dashboards', 'ha.rotation_urls']);
 const runtimeStateSettings = new Set([
   'screensaver.saved_brightness', 'voice.timer_position', 'sendspin.player_pos',
   // The alarms and their ring state: the Alarms page redraws from the
@@ -297,6 +301,7 @@ async function flushSettingsUpdates() {
     // its dialog, which repaint and read them themselves: a save or a new
     // model list never rebuilds the page.
     if (!hasDependants && REALTIME_PROVIDER_SETTINGS.has(setting.key)) continue;
+    if (!shapeChanged && !hasDependants && rotationListSettings.has(setting.key)) continue;
     // Only the choices of a dropdown moved (a provider's model list came
     // in): its row refreshes them in place rather than the page rebuilding
     // under whatever is being typed elsewhere on it.
@@ -1843,7 +1848,7 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
       vbtn.disabled = true; vbtn.textContent = haText('Checking\u2026');
       const out = await (await api('/api/commands/haCheckConnection', { method: 'POST', body: '{}' })).json().catch(() => ({}));
       vbtn.disabled = false; vbtn.textContent = haText('Validate');
-      if (out.ok) { state.dashboardsCache = null; await loadSettings(); await loadVsPermissions(); loadViewJump(); }
+      if (out.ok) { state.dashboardsCache = null; loadDashboards(); await loadSettings(); await loadVsPermissions(); loadViewJump(); }
       else vdesc.textContent = out.error ? haConnectionError(out.error) : haText('Could not connect.');
     });
 
@@ -1868,70 +1873,24 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
       dcard.className = 'card';
       dcard.hidden = customStart;
       root.appendChild(dcard);
-      let dashList = [];
-      try {
-        // Cached across re-renders: a dependant toggle elsewhere on the tab
-        // triggers loadSettings(), and re-fetching the dashboard list from
-        // Home Assistant every time blanked the pane for seconds - the
-        // "whole page refreshed" feel. Validate clears the cache.
-        if (!state.dashboardsCache) {
-          state.dashboardsCache = (await cmd('haListDashboards', {}, { timeoutMs: 10000 })).data || [];
-        }
-        const dashboards = state.dashboardsCache;
-        dashList = dashboards;
-        const rawBase = (byKey['ha.url']?.value || '').trim().replace(/\/$/, '');
-        const current = byKey['browser.start_url']?.value || '';
-        // Which dashboard + view route the stored start URL points at.
-        let selDash = null, selRoute = '';
-        for (const d of dashboards) {
-          const url = `${rawBase}/${d.url_path}`;
-          if (current === url) { selDash = d.url_path; selRoute = ''; }
-          else if (current.startsWith(url + '/')) {
-            selDash = d.url_path; selRoute = current.slice(url.length + 1);
-          }
-        }
-        const applyStart = async (url) => {
+      // One Default dashboard row whose field opens the dashboard picker.
+      // The pick becomes the start URL and the kiosk goes there at once,
+      // since picking a view and not seeing it would read as a failed tap.
+      const rawBase = (byKey['ha.url']?.value || '').trim().replace(/\/$/, '');
+      const startPath = dashboardPathOfUrl(byKey['browser.start_url']?.value || '', rawBase) || '';
+      dcard.appendChild(dashboardViewRow({
+        name: haText('Default dashboard'),
+        desc: haText('The view the kiosk shows when it starts.'),
+        value: startPath,
+        onPick: async (path) => {
+          const url = `${rawBase}/${path}`;
           await api('/api/settings', { method: 'PATCH',
             body: JSON.stringify({ 'browser.start_url': url }) });
           await api('/api/commands/loadUrl', { method: 'POST',
             body: JSON.stringify({ url }) });
           await loadSettings();
-        };
-        for (const d of dashboards) {
-          const selected = selDash === d.url_path;
-          const sub = selected ? viewPath(d.url_path, selRoute) : d.url_path;
-          const row = radioRow(d.title || d.url_path, sub, selected, async () => {
-            if (selected) return;
-            // Land on the dashboard's first view.
-            const views = await fetchViews(d.url_path);
-            const route = (views && views.length) ? String(views[0].route) : '';
-            await applyStart(route ? `${rawBase}/${d.url_path}/${route}` : `${rawBase}/${d.url_path}`);
-          });
-          if (selected) {
-            // "Change view": pick another of this dashboard's views.
-            const btn = document.createElement('button');
-            btn.className = 'btn-ghost';
-            btn.textContent = haText('Change view');
-            btn.style.cssText = 'margin-left:8px; flex-shrink:0;';
-            btn.addEventListener('click', async (e) => {
-              e.stopPropagation();
-              const views = await fetchViews(d.url_path);
-              if (!views || !views.length) {
-                messageBox({ title: haText('No sub views'), message: haText('This dashboard has no selectable sub views.') });
-                return;
-              }
-              const route = await pickView(d.url_path, views, selRoute);
-              if (route == null) return;
-              await applyStart(route ? `${rawBase}/${d.url_path}/${route}` : `${rawBase}/${d.url_path}`);
-            });
-            row.appendChild(btn);
-          }
-          dcard.appendChild(row);
-        }
-        if (!dashboards.length) dcard.appendChild(readOnlyRow(haText('No dashboards found'), '', ''));
-      } catch (_) {
-        dcard.appendChild(readOnlyRow(haText('Could not list dashboards'), '', ''));
-      }
+        },
+      }));
       // The rest of the Home Assistant settings, through the same
       // section-aware renderer as every other tab. Almost all of them
       // declare a `subpage`, so what lands here is the row that opens each
@@ -1999,20 +1958,34 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
       // rotation).
       let renderReturnCard = () => {};
 
-      // Dashboard view rotation: toggle, then each dashboard as a plain
-      // header with a checkbox per view beneath it, and the dwell time,
-      // mirroring the device's card. Selection entries are navigation
+      // Dashboard view rotation: the settings card, then Views to rotate
+      // (the picked views and Add views) and External pages, each under its
+      // own heading, mirroring the device. Selection entries are navigation
       // paths ("url_path/view-route").
       const rotEnabled = byKey['ha.rotation_enabled'];
       if (rotEnabled) {
         const rcard = document.createElement('div');
         rcard.className = 'card';
         panelFor('Dashboard View Rotation').appendChild(rcard);
+        // Views to rotate and External pages: each its own heading and
+        // card under the settings, the device's layout.
+        const rlists = document.createElement('div');
+        panelFor('Dashboard View Rotation').appendChild(rlists);
         // The card re-renders itself in place on toggle, like the Theme
         // and Return-home cards: the shared settingRow save would reload
         // the whole tab.
         const renderRotationCard = async () => {
         rcard.innerHTML = '';
+        rlists.replaceChildren();
+        const section = (title) => {
+          const h = document.createElement('h2');
+          h.className = 'card-title';
+          h.textContent = title;
+          const card = document.createElement('div');
+          card.className = 'card';
+          rlists.append(h, card);
+          return card;
+        };
         rcard.appendChild(toggleRow(rotEnabled.title, rotEnabled.description,
           rotEnabled.value === true, async (on) => {
             rotEnabled.value = on;
@@ -2094,51 +2067,43 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
             renderFadeSettings();
             rcard.appendChild(fadeSettings);
           }
+          // The picked views in rotation order, each with a remove button,
+          // then the row that opens the picker to add more. Saved in place:
+          // no full re-render, the page stays put.
           let sel = [];
           try { sel = JSON.parse(byKey['ha.rotation_dashboards']?.value || '[]'); } catch (_) {}
           if (!Array.isArray(sel)) sel = [];
-          const viewLists = await Promise.all(dashList.map(async (d) => {
-            try {
-              const r = await cmd('haListDashboardViews',
-                { url_path: d.url_path }, { timeoutMs: 10000 });
-              if (r.ok && Array.isArray(r.data) && r.data.length) return r.data;
-            } catch (_) {}
-            // Auto-generated dashboards store no view list; the whole
-            // dashboard still rotates via its first view.
-            // Unreadable (strategy) dashboards rotate via their bare path:
-            // an empty route navigated as /<url_path>, which resolves the
-            // default view. A synthetic /0 would spin.
-            return [{ title: haText('Default view'), route: '' }];
-          }));
-          dashList.forEach((d, i) => {
-            const hdr = document.createElement('div');
-            hdr.style.cssText = 'padding:12px 0 2px; font-size:13px; font-weight:600;'
-              + 'color:var(--primary)';
-            hdr.textContent = d.title || d.url_path;
-            rcard.appendChild(hdr);
-            viewLists[i].forEach((v) => {
-              const path = v.route ? `${d.url_path}/${v.route}` : d.url_path;
-              // A real checkbox (accent-colored by the global input rule),
-              // saved in place: no full re-render, the page stays put.
-              const row = readOnlyRow(v.title || v.route, path, '', false);
-              row.querySelector('span').remove();
-              row.style.paddingLeft = '14px';
-              const cb = document.createElement('input');
-              cb.type = 'checkbox';
-              cb.checked = sel.includes(path);
-              cb.style.cssText = 'width:19px; height:19px; flex:none; cursor:pointer';
-              cb.addEventListener('change', async () => {
-                sel = cb.checked ? sel.concat(path) : sel.filter((p) => p !== path);
-                await api('/api/settings', { method: 'PATCH',
-                  body: JSON.stringify({ 'ha.rotation_dashboards': JSON.stringify(sel) }) });
-              });
-              row.appendChild(cb);
-              row.style.cursor = 'pointer';
-              row.addEventListener('click', (e) => { if (e.target !== cb) cb.click(); });
-              rcard.appendChild(row);
+          const saveSel = (next) => { sel = next; return api('/api/settings',
+            { method: 'PATCH',
+              body: JSON.stringify({ 'ha.rotation_dashboards': JSON.stringify(next) }) }); };
+          const rotDef = byKey['ha.rotation_dashboards'];
+          const vlist = section(rotDef?.title || haText('Views to rotate'));
+          const renderSel = () => {
+            vlist.replaceChildren();
+            sel.forEach((path) => {
+              const rm = cameraAction(haText('Remove'), async () => {
+                await saveSel(sel.filter((x) => x !== path));
+                renderSel();
+              }, false, 'delete');
+              vlist.appendChild(dashboardViewListRow(path, rm));
             });
-          });
-          if (!dashList.length) rcard.appendChild(readOnlyRow(haText('No dashboards found'), '', ''));
+            const add = document.createElement('button');
+            add.className = 'dp-add-row';
+            add.type = 'button';
+            add.textContent = haText('Add views');
+            add.addEventListener('click', async () => {
+              const picked = await pickDashboard({
+                title: rotDef?.title || haText('Views to rotate'),
+                selected: sel,
+                mode: 'several',
+              });
+              if (!picked) return;
+              await saveSel(picked);
+              renderSel();
+            });
+            vlist.appendChild(add);
+          };
+          renderSel();
 
           // External pages: shown in their own overlay during rotation, so
           // the dashboard (and Voice Satellite) stays loaded underneath.
@@ -2150,19 +2115,14 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
           const saveUrls = (next) => { urls = next; return api('/api/settings',
             { method: 'PATCH',
               body: JSON.stringify({ 'ha.rotation_urls': JSON.stringify(next) }) }); };
-          const uhdr = document.createElement('div');
-          uhdr.style.cssText = 'padding:12px 0 2px; font-size:13px; font-weight:600;'
-            + 'color:var(--primary)';
-          uhdr.textContent = haText('External pages');
-          rcard.appendChild(uhdr);
+          const ucard = section(haText('External pages'));
           const ulist = document.createElement('div');
-          rcard.appendChild(ulist);
+          ucard.appendChild(ulist);
           const renderUrls = () => {
             ulist.innerHTML = '';
             urls.forEach((u) => {
               const row = readOnlyRow(u, '', '', false);
               row.querySelector('span').remove();
-              row.style.paddingLeft = '14px';
               const rm = cameraAction(haText('Remove'), async () => {
                 await saveUrls(urls.filter((x) => x !== u));
                 renderUrls();
@@ -2172,15 +2132,14 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
             });
           };
           renderUrls();
+          // The field and its button are one control, so a phone row
+          // keeps them side by side instead of stacking them over each other.
           const addRow = document.createElement('div');
-          addRow.className = 'row';
-          addRow.style.paddingLeft = '14px';
+          addRow.className = 'row rotation-url-add';
           const inp = document.createElement('input');
           inp.type = 'url';
+          inp.className = 'field';
           inp.placeholder = 'https://example.com';
-          inp.style.cssText = 'flex:1; background:var(--surface-2);'
-            + 'border:1px solid var(--border); border-radius:var(--radius-sm);'
-            + 'color:var(--text); padding:9px 12px; margin-right:8px';
           const add = document.createElement('button');
           add.className = 'btn-ghost'; add.textContent = haText('Add');
           const doAdd = async () => {
@@ -2192,8 +2151,38 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
           };
           add.addEventListener('click', doAdd);
           inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdd(); });
-          addRow.append(inp, add);
-          rcard.appendChild(addRow);
+          // A change from the device or another admin repaints the lists
+          // in place. The echo of this page's own save matches and is
+          // skipped.
+          const parse = (key) => {
+            try {
+              const v = JSON.parse(byKey[key]?.value || '[]');
+              return Array.isArray(v) ? v : [];
+            } catch (_) { return []; }
+          };
+          const onSettings = (e) => {
+            if (!rlists.isConnected) {
+              document.removeEventListener('ks-settings', onSettings);
+              return;
+            }
+            const keys = e.detail || [];
+            if (keys.includes('ha.rotation_dashboards')) {
+              const next = parse('ha.rotation_dashboards');
+              if (JSON.stringify(next) !== JSON.stringify(sel)) { sel = next; renderSel(); }
+            }
+            if (keys.includes('ha.rotation_urls')) {
+              const next = parse('ha.rotation_urls');
+              if (JSON.stringify(next) !== JSON.stringify(urls)) { urls = next; renderUrls(); }
+            }
+          };
+          document.removeEventListener('ks-settings', rlists.onSettings || (() => {}));
+          rlists.onSettings = onSettings;
+          document.addEventListener('ks-settings', onSettings);
+          const controls = document.createElement('div');
+          controls.className = 'rotation-url-controls';
+          controls.append(inp, add);
+          addRow.appendChild(controls);
+          ucard.appendChild(addRow);
         }
         };
         await renderRotationCard();

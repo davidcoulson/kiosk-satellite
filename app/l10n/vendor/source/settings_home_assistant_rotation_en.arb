@@ -156,19 +156,6 @@
       ]
     }
   },
-  "haDefaultView": "Default view",
-  "@haDefaultView": {
-    "context": "Settings:Home Assistant Setup:Dashboard View Rotation",
-    "description": "Rotation subpage label, guidance or validation error.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > Dashboard View Rotation"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > Dashboard View Rotation"
-      ]
-    }
-  },
   "haExternalPages": "External pages",
   "@haExternalPages": {
     "context": "Settings:Home Assistant Setup:Dashboard View Rotation",

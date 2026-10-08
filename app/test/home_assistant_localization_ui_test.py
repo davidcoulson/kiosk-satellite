@@ -12,8 +12,9 @@ english = {k: v for p in (APP / 'l10n/source').glob('*_en.arb')
            for k, v in json.loads(p.read_text()).items() if not k.startswith('@')}
 spanish = {
     'haValidate': 'TEST validate', 'haInvalidToken': 'TEST invalid token',
-    'haChangeView': 'TEST change view', 'haChooseView': 'TEST choose view',
-    'haRotation': 'TEST rotation', 'haDefaultView': 'TEST default view',
+    'dashboardPickerDefault': 'TEST default dashboard', 'dashboardPickerAddViews': 'TEST add views',
+    'dashboardPickerDone': 'TEST done', 'dashboardPickerWhole': 'TEST whole dashboard',
+    'haRotation': 'TEST rotation',
     'settingHaThemeTitle': 'TEST theme', 'deviceThemeDark': 'TEST dark',
     'settingDeviceNameTitle': 'TEST device name', 'haProxy': 'TEST proxy',
     'haProxyRemoteNotice': 'TEST proxy explanation', 'commonOk': 'TEST OK',
@@ -85,13 +86,17 @@ try:
           (await import('/static/tabs.js')).showTab('homeassistant', {refresh:false});
         }""")
         root = page.locator('#tab-homeassistant')
-        expect(root.get_by_text('Device name', exact=True).first).to_be_visible()
-        root.get_by_role('button', name='TEST change view', exact=True).click()
-        expect(page.get_by_text('TEST choose view', exact=True)).to_be_visible()
-        expect(page.get_by_text('Default view', exact=True).last).to_be_visible()
+        expect(root.get_by_text('TEST default dashboard', exact=True)).to_be_visible()
+        # Names from Home Assistant stay as they are, even "Default view".
+        field = root.locator('.dp-field').first
+        expect(field).to_contain_text('Device name')
+        expect(field).to_contain_text('Default view')
+        field.click()
+        modal = page.locator('.dash-picker-card')
+        expect(modal.locator('.dp-tile.picked .dp-title')).to_have_text('Default view')
         with page.expect_response('**/api/commands/loadUrl'):
-            page.get_by_text('Light', exact=True).last.click()
-        page.wait_for_function("document.querySelector('#tab-homeassistant').textContent.includes('dashboard-one/raw-target')")
+            modal.locator('.dp-tile', has_text='Light').click()
+        expect(root.locator('.dp-field').first).to_contain_text('Light')
         assert ('settings', {'browser.start_url': 'http://ha.example/dashboard-one/raw-target'}) in requests
         assert ('loadUrl', {'url': 'http://ha.example/dashboard-one/raw-target'}) in requests
         assert page.evaluate("(async () => (await import('/static/search.js')).searchSettingsIndex('TEST rotation').some(row => row.entry === 'Dashboard View Rotation'))()")
@@ -102,12 +107,31 @@ try:
         page.evaluate("(async () => (await import('/static/tabs.js')).showTab('homeassistant/Dashboard View Rotation', {refresh:false}))()")
         expect(page.locator('#pageTitle')).to_contain_text('TEST rotation')
         panel = root.locator('[data-subpage="Dashboard View Rotation"]')
-        expect(panel.get_by_text('Default view', exact=True)).to_be_visible()
-        expect(panel.get_by_text('TEST default view', exact=True)).to_be_visible()
-        expect(panel.get_by_text('Device name', exact=True)).to_be_visible()
+        panel.get_by_role('button', name='TEST add views', exact=True).click()
+        modal = page.locator('.dash-picker-card')
+        modal.locator('.dp-dash', has_text='Another dashboard').click()
+        expect(modal.locator('.dp-tile .dp-title')).to_have_text('TEST whole dashboard')
+        modal.locator('.dp-dash', has_text='Device name').click()
+        modal.locator('.dp-tile', has_text='Light').click()
         with page.expect_response('**/api/settings'):
-            panel.get_by_text('Light', exact=True).click()
+            modal.get_by_role('button', name='TEST done', exact=True).click()
         assert ('settings', {'ha.rotation_dashboards': '["dashboard-one/raw-target"]'}) in requests
+        pick = panel.locator('.dp-pick-row')
+        expect(pick).to_contain_text('Light')
+        expect(pick).to_contain_text('Device name')
+        # The device echoes the save and another admin adds a view: the
+        # lists repaint in place, the page is not rebuilt around them.
+        page.evaluate("window.rotationPanel=document.querySelector('[data-subpage=\"Dashboard View Rotation\"] .card')")
+        echo = '''async value => {
+          const {state} = await import('/static/core.js');
+          const s = state.settings.find(x => x.key === 'ha.rotation_dashboards');
+          (await import('/static/settings.js')).applySettingsUpdate({settings: [{...s, value}]});
+        }'''
+        page.evaluate(echo, '["dashboard-one/raw-target"]')
+        page.wait_for_timeout(300)
+        page.evaluate(echo, '["dashboard-one/raw-target","dashboard-one/original"]')
+        expect(pick).to_have_count(2)
+        assert page.evaluate("window.rotationPanel.isConnected"), 'The rotation page was rebuilt'
         page.evaluate("(async () => (await import('/static/tabs.js')).showTab('homeassistant', {refresh:false}))()")
         root.get_by_role('button', name='TEST validate', exact=True).click()
         expect(page.get_by_text('TEST proxy explanation', exact=True)).to_be_visible()

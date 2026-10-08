@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_satellite/app_container.dart';
 import 'package:kiosk_satellite/core/command_registry.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
+import 'package:kiosk_satellite/ui/dashboard_view_picker.dart';
 import 'package:kiosk_satellite/ui/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -79,6 +80,7 @@ void main() {
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({'ks.screensaver.mode': 'black'});
+    DashboardCatalog.reset();
     final container = AppContainer();
     await container.settings.init();
     container.commands
@@ -126,19 +128,19 @@ void main() {
       tester.getTopLeft(row).dy,
       greaterThan(tester.getTopLeft(heading).dy),
     );
-    await tester.tap(find.text('Select dashboard'));
+    await tester.tap(find.text('Choose a view'));
     await tester.pumpAndSettle();
-    // The kit's radio picker, each view over its navigation path.
-    expect(find.byType(RadioListTile<String>), findsNWidgets(2));
-    expect(find.text('Wall / Clock'), findsOneWidget);
-    expect(find.text('wall/clock'), findsOneWidget);
-    await tester.tap(find.text('Wall / Weather'));
+    // The dashboard picker: the dashboard on the left, its views as tiles.
+    expect(find.text('Clock'), findsOneWidget);
+    expect(find.text('/weather'), findsOneWidget);
+    await tester.tap(find.text('Weather'));
     await tester.pumpAndSettle();
     expect(
       container.settings.get(defs.screensaverDashboardView),
       'wall/weather',
     );
-    expect(find.text('wall/weather'), findsOneWidget);
+    // The field names the pick by its dashboard and view.
+    expect(find.text('Wall / Weather'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

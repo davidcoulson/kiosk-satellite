@@ -89,8 +89,9 @@ try:
         expect(root.locator('.status.plugin .s-from')).to_have_text(msg('overviewPluginAttribution', name='<b>Original plugin</b>'))
         expect(root.locator('#shotFull')).to_have_attribute('aria-label', label('Full size'))
         expect(root.locator('#tileDnd')).to_contain_text(label('Do not disturb on'))
-        expect(root.locator('#viewJump option[value="raw-dashboard/raw-view"]')).to_have_text('Default view')
-        expect(root.locator('#viewJump option[value="generated"]')).to_have_text(label('Default view'))
+        # The dashboard field, empty while the kiosk shows no known view.
+        ha_ids = json.loads((APP / 'l10n/ha_text.json').read_text())
+        expect(root.locator('#viewJump.dp-field')).to_have_text(translated[ha_ids['Choose a view']])
         expect(root.locator('#attentionCard [data-key="fleet-invite"] .name')).to_have_text(msg('overviewInvitation', name='<b>Original leader</b>'))
         assert root.locator('b').count() == 0
         page.evaluate("window.originalInstall=document.querySelector('#attentionCard [data-key=update] button');window.originalPicker=document.querySelector('#viewJump');window.originalVolume=document.querySelector('#volumeRow input');")
@@ -102,10 +103,21 @@ try:
         expect(tile('ha')).to_contain_text(msg('overviewWatchingMany', count=7))
         assert len(commands) == before, commands[before:]
         assert page.evaluate("originalInstall===document.querySelector('#attentionCard [data-key=update] button') && originalPicker===document.querySelector('#viewJump') && originalVolume===document.querySelector('#volumeRow input')")
+        # Go to view opens the dashboard picker in go mode: a tap navigates,
+        # nothing is checked, and names from Home Assistant stay as they are.
+        # A double click shows one picker: not two on top of each other, and
+        # the second click does not close the first through its backdrop.
+        root.locator('#viewJump').dblclick()
+        modal = page.locator('.dash-picker-card')
+        expect(modal).to_have_count(1)
+        page.wait_for_timeout(600)
+        expect(modal).to_have_count(1)
+        expect(modal.locator('.dp-name')).to_have_text(label('Go to view'))
+        expect(modal.locator('.dp-tile.picked')).to_have_count(0)
         with page.expect_response('**/api/commands/haNavigate'):
-            root.locator('#viewJump').select_option('raw-dashboard/raw-view')
+            modal.locator('.dp-tile', has_text='Default view').click()
         assert ('haNavigate', dict(path='raw-dashboard/raw-view')) in commands
-        expect(root.locator('#viewJump')).to_have_value('')
+        expect(modal).to_have_count(0)
         with page.expect_response('**/api/commands/intercomSetDnd'): root.locator('#tileDnd').click()
         assert ('intercomSetDnd', dict(on=False)) in commands
         expect(root.locator('#tileDnd')).to_contain_text(label('Do not disturb'))

@@ -1022,6 +1022,150 @@ abstract class UiStrings {
   /// **'Select all'**
   String get commonSelectAll;
 
+  /// Search box hint in the dashboard view picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Search views'**
+  String get dashboardPickerSearch;
+
+  /// Search box hint where the picker lists dashboards first.
+  ///
+  /// In en, this message translates to:
+  /// **'Search dashboards and views'**
+  String get dashboardPickerSearchAll;
+
+  /// Heading over the view chosen now.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get dashboardPickerCurrent;
+
+  /// Heading over the list of Home Assistant dashboards.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboards'**
+  String get dashboardPickerDashboards;
+
+  /// Heading over a dashboard's subviews (views opened from a card, not the tabs).
+  ///
+  /// In en, this message translates to:
+  /// **'Subviews'**
+  String get dashboardPickerSubviews;
+
+  /// Tag on a view that is a Home Assistant subview.
+  ///
+  /// In en, this message translates to:
+  /// **'Subview'**
+  String get dashboardPickerSubview;
+
+  /// Choice for a dashboard that has no views of its own to pick.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole dashboard'**
+  String get dashboardPickerWhole;
+
+  /// Second line of a dashboard Home Assistant generates on the fly (a strategy dashboard).
+  ///
+  /// In en, this message translates to:
+  /// **'Builds its own views'**
+  String get dashboardPickerBuildsOwn;
+
+  /// Note under the Whole dashboard choice.
+  ///
+  /// In en, this message translates to:
+  /// **'This dashboard builds its own views, so the kiosk opens it whole.'**
+  String get dashboardPickerWholeHelp;
+
+  /// How many views a dashboard has, two or more.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} views'**
+  String dashboardPickerViewCount(String count);
+
+  /// A dashboard with a single view.
+  ///
+  /// In en, this message translates to:
+  /// **'1 view'**
+  String get dashboardPickerOneView;
+
+  /// Title when the dashboards cannot be listed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach Home Assistant'**
+  String get dashboardPickerOffline;
+
+  /// Message when the dashboards cannot be listed.
+  ///
+  /// In en, this message translates to:
+  /// **'The dashboards load once the connection is back.'**
+  String get dashboardPickerOfflineHelp;
+
+  /// Button that lists the dashboards again.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get dashboardPickerTryAgain;
+
+  /// Title when Home Assistant has no dashboards.
+  ///
+  /// In en, this message translates to:
+  /// **'No dashboards yet'**
+  String get dashboardPickerEmpty;
+
+  /// Message when Home Assistant has no dashboards.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboards you add in Home Assistant show up here.'**
+  String get dashboardPickerEmptyHelp;
+
+  /// Shown when a search finds nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No views match'**
+  String get dashboardPickerNoMatch;
+
+  /// How many views are picked for the rotation.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String dashboardPickerSelected(String count);
+
+  /// Button that keeps the picked views.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get dashboardPickerDone;
+
+  /// Tag on the view the kiosk shows right now.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing'**
+  String get dashboardPickerShowing;
+
+  /// Shown under a setting whose stored view no longer exists.
+  ///
+  /// In en, this message translates to:
+  /// **'This view is gone from Home Assistant. Choose another.'**
+  String get dashboardPickerMissing;
+
+  /// Row that opens the picker to add views to the rotation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add views'**
+  String get dashboardPickerAddViews;
+
+  /// Setting name: the view the kiosk shows when it starts.
+  ///
+  /// In en, this message translates to:
+  /// **'Default dashboard'**
+  String get dashboardPickerDefault;
+
+  /// Description of the Default dashboard setting.
+  ///
+  /// In en, this message translates to:
+  /// **'The view the kiosk shows when it starts.'**
+  String get dashboardPickerDefaultHelp;
+
   /// Playback failure caused by the device video decoder.
   ///
   /// In en, this message translates to:
@@ -2864,30 +3008,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Enter a full URI.'**
   String get gestureUriError;
-
-  /// Label or guidance in this section.
-  ///
-  /// In en, this message translates to:
-  /// **'No dashboards'**
-  String get gestureNoDashboards;
-
-  /// Label or guidance in this section.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not list dashboards'**
-  String get gestureDashboardsFailed;
-
-  /// Label or guidance in this section.
-  ///
-  /// In en, this message translates to:
-  /// **'Is Home Assistant connected?'**
-  String get gestureHaConnected;
-
-  /// Label or guidance in this section.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not list dashboards. Is Home Assistant connected?'**
-  String get gestureDashboardsHelp;
 
   /// Label or guidance in this section.
   ///
@@ -6573,36 +6693,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Go to view'**
   String get overviewGoView;
-
-  /// Translate the interface text. Keep external names, versions and technical details unchanged.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading views…'**
-  String get overviewLoadingViews;
-
-  /// Translate the interface text. Keep external names, versions and technical details unchanged.
-  ///
-  /// In en, this message translates to:
-  /// **'Pick a dashboard view…'**
-  String get overviewPickView;
-
-  /// Translate the interface text. Keep external names, versions and technical details unchanged.
-  ///
-  /// In en, this message translates to:
-  /// **'Default view'**
-  String get overviewDefaultView;
-
-  /// Translate the interface text. Keep external names, versions and technical details unchanged.
-  ///
-  /// In en, this message translates to:
-  /// **'No dashboards found'**
-  String get overviewNoDashboards;
-
-  /// Translate the interface text. Keep external names, versions and technical details unchanged.
-  ///
-  /// In en, this message translates to:
-  /// **'Views unavailable'**
-  String get overviewViewsUnavailable;
 
   /// Translate the visible message. Keep placeholders and any technical names unchanged.
   ///
@@ -12422,12 +12512,6 @@ abstract class UiStrings {
   /// Rotation subpage label, guidance or validation error.
   ///
   /// In en, this message translates to:
-  /// **'Default view'**
-  String get haDefaultView;
-
-  /// Rotation subpage label, guidance or validation error.
-  ///
-  /// In en, this message translates to:
   /// **'External pages'**
   String get haExternalPages;
 
@@ -12580,48 +12664,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Choose a view'**
   String get haChooseView;
-
-  /// Connection status, action or dashboard picker text.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading dashboards…'**
-  String get haLoadingDashboards;
-
-  /// Connection status, action or dashboard picker text.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not list dashboards'**
-  String get haListFailed;
-
-  /// Connection status, action or dashboard picker text.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to retry.'**
-  String get haRetryHint;
-
-  /// Connection status, action or dashboard picker text.
-  ///
-  /// In en, this message translates to:
-  /// **'Change view'**
-  String get haChangeView;
-
-  /// Connection status, action or dashboard picker text.
-  ///
-  /// In en, this message translates to:
-  /// **'No sub views'**
-  String get haNoViews;
-
-  /// Connection status, action or dashboard picker text.
-  ///
-  /// In en, this message translates to:
-  /// **'This dashboard has no selectable sub views.'**
-  String get haNoViewsHelp;
-
-  /// Connection status, action or dashboard picker text.
-  ///
-  /// In en, this message translates to:
-  /// **'No dashboards found'**
-  String get haNoDashboards;
 
   /// Card heading.
   ///
@@ -14440,6 +14482,42 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Let motion dismiss Now Playing like a regular screensaver. Off, only touch dismisses it, so a walk-past does not interrupt the music display. Ignored while Now Playing is shown alongside a screensaver.'**
   String get settingSendspinFullscreenMotionDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'After dismissing'**
+  String get settingSendspinFullscreenReturnTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'The dashboard view to show after Now Playing is dismissed. Default follows Return to home dashboard view.'**
+  String get settingSendspinFullscreenReturnDescription;
+
+  /// Option: go back to the dashboard view the kiosk showed before the screensaver started.
+  ///
+  /// In en, this message translates to:
+  /// **'Last view'**
+  String get mediaReturnLastView;
+
+  /// Option: go to a dashboard view picked below.
+  ///
+  /// In en, this message translates to:
+  /// **'Chosen view'**
+  String get mediaReturnChosenView;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard view'**
+  String get settingSendspinFullscreenReturnViewTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'The view to show after Now Playing is dismissed.'**
+  String get settingSendspinFullscreenReturnViewDescription;
 
   /// Setting label.
   ///
@@ -16846,12 +16924,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'The Home Assistant dashboard view the screensaver shows.'**
   String get settingScreensaverDashboardViewDescription;
-
-  /// Label, status or guidance in this section.
-  ///
-  /// In en, this message translates to:
-  /// **'Select dashboard'**
-  String get screensaverSelectDashboard;
 
   /// Label, status or guidance in this section.
   ///

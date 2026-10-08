@@ -488,11 +488,16 @@ class ControlBox extends StatelessWidget {
     required this.child,
     this.onTap,
     this.padding = const EdgeInsets.symmetric(horizontal: 12),
+    this.borderColor,
   });
 
   final Widget child;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry padding;
+
+  /// Replaces the hairline, 1.5 wide: the error color for a stored value
+  /// that no longer resolves.
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -503,7 +508,9 @@ class ControlBox extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest,
-        border: Border.all(color: scheme.outlineVariant),
+        border: borderColor == null
+            ? Border.all(color: scheme.outlineVariant)
+            : Border.all(color: borderColor!, width: 1.5),
         borderRadius: radius,
       ),
       child: child,

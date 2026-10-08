@@ -12,7 +12,6 @@
   "settingHaRotationFadeSecondsDescription": "页面淡出和淡入的总时长。加载下一页可能需要额外时间，尤其是首次打开时。",
   "haRotation": "仪表盘页面轮播",
   "haRotationHint": "页面轮播、停留时长和淡入淡出",
-  "haDefaultView": "默认页面",
   "haExternalPages": "外部页面",
   "haFadeError": "请选择 0.2 至 5 秒之间的淡入淡出时长。",
   "haPauseRemoteHelp": "触屏后，轮播会暂停设定时长；每次触屏都会重新计时。语音交互期间会一直暂停，直到交互结束。设为 0 时，触屏不会暂停轮播。"

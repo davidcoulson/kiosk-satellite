@@ -403,58 +403,6 @@
       ]
     }
   },
-  "gestureNoDashboards": "No dashboards",
-  "@gestureNoDashboards": {
-    "context": "Settings > Gestures > Add gesture > Choose an action",
-    "description": "Label or guidance in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Gestures > Add gesture > Choose an action"
-      ],
-      "remoteAdmin": [
-        "Gestures > Add gesture > Choose an action"
-      ]
-    }
-  },
-  "gestureDashboardsFailed": "Could not list dashboards",
-  "@gestureDashboardsFailed": {
-    "context": "Settings > Gestures > Add gesture > Choose an action",
-    "description": "Label or guidance in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Gestures > Add gesture > Choose an action"
-      ],
-      "remoteAdmin": [
-        "Gestures > Add gesture > Choose an action"
-      ]
-    }
-  },
-  "gestureHaConnected": "Is Home Assistant connected?",
-  "@gestureHaConnected": {
-    "context": "Settings > Gestures > Add gesture > Choose an action",
-    "description": "Label or guidance in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Gestures > Add gesture > Choose an action"
-      ],
-      "remoteAdmin": [
-        "Gestures > Add gesture > Choose an action"
-      ]
-    }
-  },
-  "gestureDashboardsHelp": "Could not list dashboards. Is Home Assistant connected?",
-  "@gestureDashboardsHelp": {
-    "context": "Settings > Gestures > Add gesture > Choose an action",
-    "description": "Label or guidance in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Gestures > Add gesture > Choose an action"
-      ],
-      "remoteAdmin": [
-        "Gestures > Add gesture > Choose an action"
-      ]
-    }
-  },
   "gestureCameraTitle": "Camera view",
   "@gestureCameraTitle": {
     "context": "Settings > Gestures > Add gesture > Choose an action",

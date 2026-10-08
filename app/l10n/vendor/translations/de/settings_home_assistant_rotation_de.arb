@@ -12,7 +12,6 @@
   "settingHaRotationFadeSecondsDescription": "Gesamtdauer für Aus- und Einblenden. Das Laden der nächsten Ansicht kann zusätzliche Zeit benötigen, insbesondere beim ersten Öffnen.",
   "haRotation": "Dashboard-Ansichtsrotation",
   "haRotationHint": "Durchläuft Ansichten, Anzeigedauer je Ansicht und Überblendungseffekt",
-  "haDefaultView": "Standardansicht",
   "haExternalPages": "Externe Seiten",
   "haFadeError": "Bitte eine Überblendungsdauer zwischen 0,2 und 5 Sekunden wählen.",
   "haPauseRemoteHelp": "Eine Bildschirmberührung pausiert die Rotation für diese Zeit. Jede weitere Berührung startet den Timer neu. Sprachinteraktionen pausieren die Rotation bis zu ihrem Ende. Bei 0 pausieren Berührungen die Rotation nicht."

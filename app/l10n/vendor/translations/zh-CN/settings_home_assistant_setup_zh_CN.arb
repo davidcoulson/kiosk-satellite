@@ -22,12 +22,5 @@
   "haProxyNotice": "此 Home Assistant 地址使用普通 http，浏览器会限制 http 页面使用麦克风等功能。Kiosk Satellite 会通过应用内安全代理加载仪表盘，让这些功能正常工作。你可能需要重新登录 Home Assistant。",
   "haProxyRemoteNotice": "此 Home Assistant 地址使用普通 http，浏览器会限制 http 页面使用麦克风等功能。Kiosk Satellite 会通过应用内安全代理加载仪表盘，让这些功能正常工作。你可能需要在平板上重新登录 Home Assistant。",
   "haDashboard": "仪表盘",
-  "haChooseView": "选择页面",
-  "haLoadingDashboards": "正在加载仪表盘…",
-  "haListFailed": "无法获取仪表盘列表",
-  "haRetryHint": "点击重试。",
-  "haChangeView": "更改页面",
-  "haNoViews": "没有子页面",
-  "haNoViewsHelp": "此仪表盘没有可选的子页面。",
-  "haNoDashboards": "未找到仪表盘"
+  "haChooseView": "选择页面"
 }

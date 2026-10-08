@@ -47,6 +47,5 @@
   "screensaverModeDashboard": "Tableau de bord Home Assistant",
   "settingScreensaverDashboardViewTitle": "Vue du tableau de bord",
   "settingScreensaverDashboardViewDescription": "La vue du tableau de bord Home Assistant affichée par l'économiseur d'écran.",
-  "screensaverSelectDashboard": "Choisir un tableau de bord",
   "screensaverDashboardSection": "Économiseur d'écran tableau de bord Home Assistant"
 }

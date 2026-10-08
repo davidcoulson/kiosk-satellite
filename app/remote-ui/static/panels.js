@@ -1,12 +1,13 @@
 import { cameraStreamsError } from './localization.js';
 import { overviewLabel, overviewMessageBox, overviewModalShell } from './overview_labels.js';
-import { mediaText, mediaError, deviceText, t, screenAudioText, screensaverText, immichError } from './localization.js';
+import { mediaText, mediaError, deviceText, t, screenAudioText, screensaverText, immichError, overviewText } from './localization.js';
 import { receiveUpdate, watchUpdates } from './live.js';
 import { $, api, cmd, state } from './core.js';
 import { readOnlyRow } from './device.js';
 import { hintRow, showToast } from './widgets.js';
 import { loadSettings } from './settings.js';
 import { radioRow } from './views.js';
+import { currentDashboardPath, dashboardField } from './dashboard_picker.js';
 import { messageBox, modalShell } from './widgets.js';
 
 /* Overlay grant notice: mirror of the device's row directly under
@@ -506,57 +507,27 @@ $('#brightness').addEventListener('input', (e) =>
 $('#brightness').addEventListener('change', (e) =>
   cmd('setBrightness', { level: e.target.value / 100 }));
 /* The free Load URL box this replaced let an admin point a locked kiosk at
-   any page on the internet; a picker over the instance's own dashboard
-   views navigates without opening that door. Same list, same paths, same
-   command as the rotation picker and the ESPHome Dashboard select. */
+   any page on the internet; the dashboard picker over the instance's own
+   views navigates without opening that door. The field shows the view on
+   screen and opens the picker in go mode: a tap navigates at once and the
+   view on screen reads Showing. */
+// Built on first use, not at module load, so nothing here runs before
+// the modules it imports are ready.
+let viewJump = null;
 export async function loadViewJump() {
-  const sel = $('#viewJump');
-  try {
-    if (!state.dashboardsCache) {
-      state.dashboardsCache = (await (await api('/api/commands/haListDashboards', {
-        method: 'POST', body: '{}' })).json()).data || [];
-    }
-    const dashboards = state.dashboardsCache;
-    sel.innerHTML = '';
-    const ph = document.createElement('option');
-    ph.value = '';
-    overviewLabel(ph, 'Pick a dashboard view…');
-    sel.appendChild(ph);
-    for (const d of dashboards) {
-      let views = [];
-      try {
-        const r = await (await api('/api/commands/haListDashboardViews', {
-          method: 'POST', body: JSON.stringify({ url_path: d.url_path }) })).json();
-        if (r.ok && Array.isArray(r.data) && r.data.length) views = r.data;
-      } catch (_) {}
-      // Auto-generated and strategy dashboards store no view list; their
-      // bare path resolves the default view, same as the rotation picker.
-      if (!views.length) views = [{ route: '' }];
-      const group = document.createElement('optgroup');
-      group.label = d.title || d.url_path;
-      for (const v of views) {
-        const o = document.createElement('option');
-        o.value = v.route ? `${d.url_path}/${v.route}` : d.url_path;
-        if (v.title || v.route) o.textContent = v.title || v.route;
-        else overviewLabel(o, 'Default view');
-        group.appendChild(o);
-      }
-      sel.appendChild(group);
-    }
-    sel.disabled = sel.options.length <= 1;
-    if (sel.disabled) overviewLabel(sel.options[0], 'No dashboards found');
-  } catch (_) {
-    overviewLabel(sel.options[0], 'Views unavailable');
+  const base = () => (state.settings || []).find((o) => o.key === 'ha.url')?.value || '';
+  if (!viewJump) {
+    viewJump = dashboardField({
+      title: overviewText('Go to view'),
+      mode: 'go',
+      showing: () => currentDashboardPath(base()),
+      onPick: (path) => cmd('haNavigate', { path }),
+    });
+    viewJump.el.id = 'viewJump';
+    $('#viewJump').replaceWith(viewJump.el);
   }
+  viewJump.setValue(await currentDashboardPath(base()));
 }
-$('#viewJump').addEventListener('change', async (e) => {
-  const path = e.target.value;
-  if (!path) return;
-  await cmd('haNavigate', { path });
-  // A jump control, not a state display: back to the placeholder so the
-  // row never claims a view the tablet may have since navigated away from.
-  e.target.value = '';
-});
 /* ---- Quick controls ----
    The screen, screensaver and camera view tiles are one tile each that
    reads by what the device is doing, so the dashboard offers the action
