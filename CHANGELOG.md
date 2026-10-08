@@ -2,7 +2,7 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
-## Unreleased
+## v2026.10.16 - 2026-10-08
 
 ### Added
 - **Adaptive brightness can follow a Home Assistant light sensor.** **Settings > Screen & Audio > Adaptive brightness** gains **Use Home Assistant entity**, which reveals **Light sensor entity** to pick an illuminance sensor that drives the brightness curve in place of the device's own sensor (#911). The picker lists only light level sensors, all of them as it opens. It suits a tablet without a light sensor, or a room with a better placed one, such as a motion sensor near the kiosk. The kiosk follows the entity over its own Home Assistant connection, ignores states that are not a number in lux and keeps the last reading across restarts. The entity's live reading shows on its row and on the brightness curve. Adaptive brightness and its **Adaptive brightness** switch entity in Home Assistant no longer require a light sensor on the device. On a device without one, a note under the switch says so.
