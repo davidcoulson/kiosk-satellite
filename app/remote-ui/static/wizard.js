@@ -3,7 +3,7 @@ import { WIZ_OPTIONAL, wizard } from './app.js';
 import { $, THEME_ICONS, api, cmd, saveToken, showView, state } from './core.js';
 import { readOnlyRow } from './device.js';
 import { askImportOptions } from './pickers.js';
-import { fetchViews, pickView, radioRow, viewPath } from './views.js';
+import { dashboardPicker, loadDashboards } from './dashboard_picker.js';
 import { openVsMigrationWizard } from './vs_native.js';
 
 // The wizard starts light (the product default) whatever an earlier
@@ -636,15 +636,14 @@ export function wizardSteps() {
             body: JSON.stringify({ 'browser.secure_proxy': true }) });
         }
       } catch (_) { /* not a parseable URL; validation already passed */ }
-      const dashboards = await (await api('/api/commands/haListDashboards', { method: 'POST', body: '{}' })).json();
-      wizard.dashboards = dashboards.data || [];
-      wizard.dashboard = wizard.dashboards[0]?.url_path || null;
+      // The kiosk lands on a single view: default to the first
+      // dashboard's first view, ready for the Dashboard step's picker.
+      const dashboards = await loadDashboards();
+      const first = dashboards?.[0];
+      wizard.dashboardPath ??= first
+        ? (first.views.length ? `${first.path}/${first.views[0].route}` : first.path)
+        : null;
       wizard.base = url.replace(/\/$/, '');
-      // The kiosk lands on a single view; default the chosen dashboard to its
-      // first, ready for the Dashboard step's "Change view".
-      wizard.dashboardViews = wizard.dashboard ? await fetchViews(wizard.dashboard) : null;
-      wizard.dashboardView = (wizard.dashboardViews && wizard.dashboardViews.length)
-        ? String(wizard.dashboardViews[0].route) : '';
     },
   });
   steps.push({
@@ -652,43 +651,15 @@ export function wizardSteps() {
     title: setupText('Choose a dashboard'),
     lead: setupText('This is what the kiosk will show when it starts.'),
     body: (b) => {
-      const list = wizardCard(b, true);
-      if (!wizard.dashboards.length) {
-        list.appendChild(readOnlyRow(setupText('No dashboards found'), '', ''));
-        return;
-      }
-      wizard.dashboards.forEach((d) => {
-        const selected = wizard.dashboard === d.url_path;
-        // The selected dashboard shows its chosen view (defaulting to the
-        // first) with a "Change view" button; the rest name the dashboard.
-        const sub = selected ? viewPath(d.url_path, wizard.dashboardView) : d.url_path;
-        const row = radioRow(d.title || d.url_path, sub, selected, async () => {
-          if (selected) return;
-          wizard.dashboard = d.url_path;
-          wizard.dashboardViews = await fetchViews(d.url_path);
-          wizard.dashboardView = (wizard.dashboardViews && wizard.dashboardViews.length)
-            ? String(wizard.dashboardViews[0].route) : '';
-          wizardRender();
-        });
-        if (selected && wizard.dashboardViews && wizard.dashboardViews.length) {
-          const btn = document.createElement('button');
-          btn.className = 'btn-ghost';
-          btn.textContent = setupText('Change view');
-          btn.style.cssText = 'margin-left:8px; flex-shrink:0;';
-          btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const route = await pickView(d.url_path, wizard.dashboardViews, wizard.dashboardView);
-            if (route == null) return;
-            wizard.dashboardView = route;
-            wizardRender();
-          });
-          row.appendChild(btn);
-        }
-        list.appendChild(row);
-      });
+      // The whole picker inline, searchable, the step's one task.
+      const card = wizardCard(b);
+      card.appendChild(dashboardPicker({
+        value: wizard.dashboardPath,
+        onPick: (path) => { wizard.dashboardPath = path; },
+      }));
     },
     next: async () => {
-      if (!wizard.dashboard) throw wizFail(setupText('Select a dashboard'),
+      if (!wizard.dashboardPath) throw wizFail(setupText('Select a dashboard'),
         setupText('Choose the dashboard the kiosk will display. You can change it later in Settings.'));
     },
   });
@@ -850,10 +821,7 @@ export function wizardSteps() {
       await api('/api/settings', { method: 'PATCH', body: JSON.stringify(chosen) });
       // Setting the start URL is what flips the device to configured; the
       // kiosk on the wall navigates to the chosen dashboard view on its own.
-      const route = wizard.dashboardView || '';
-      const startUrl = route
-        ? `${wizard.base}/${wizard.dashboard}/${route}`
-        : `${wizard.base}/${wizard.dashboard}`;
+      const startUrl = `${wizard.base}/${wizard.dashboardPath}`;
       await api('/api/settings', { method: 'PATCH',
         body: JSON.stringify({ 'browser.start_url': startUrl }) });
       location.reload();

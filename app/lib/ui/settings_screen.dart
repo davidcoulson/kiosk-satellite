@@ -8323,9 +8323,10 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
   );
 }
 
-/// The dashboard chooser: every Home Assistant dashboard as a radio row;
-/// the chosen one becomes the start URL. The kiosk navigates immediately —
-/// picking a dashboard and not seeing it would read as a failed tap.
+/// The dashboard chooser: one Default dashboard row whose field opens the
+/// dashboard picker; the chosen view becomes the start URL. The kiosk
+/// navigates immediately, since picking a view and not seeing it would
+/// read as a failed tap.
 class _DashboardPickerCard extends StatefulWidget {
   const _DashboardPickerCard({required this.container});
 
@@ -8336,186 +8337,39 @@ class _DashboardPickerCard extends StatefulWidget {
 }
 
 class _DashboardPickerCardState extends State<_DashboardPickerCard> {
-  late Future<List<Map<String, Object?>>?> _dashboards;
-
-  // Views of the currently selected dashboard, loaded lazily: listing every
-  // sub-view of every dashboard would be an unusable wall, so only the chosen
-  // dashboard's views are fetched, for its row and the "Change view" popup.
-  // `_viewsFor` is the url_path they belong to; a null list is a strategy
-  // dashboard whose view list cannot be read.
-  List<Map<String, Object?>>? _views;
-  String? _viewsFor;
-
   AppContainer get c => widget.container;
   String get _base => c.homeAssistant.baseUrl;
 
-  @override
-  void initState() {
-    super.initState();
-    _dashboards = c.homeAssistant.listDashboards();
-  }
-
-  /// The selected dashboard's url_path, matched against the stored start URL
-  /// by prefix (the URL also carries the view route, and maybe a ?kiosk).
-  String? _selectedDash(List<Map<String, Object?>> dashboards) {
-    final current = c.settings.get(startUrl);
-    for (final d in dashboards) {
-      final url = '$_base/${d['url_path']}';
-      if (current == url || current.startsWith('$url/')) {
-        return '${d['url_path']}';
-      }
-    }
-    return null;
-  }
-
-  /// The view route within [urlPath] the start URL points at, or '' for the
-  /// dashboard's default (first) view.
-  String _selectedRoute(String urlPath) {
-    final current = c.settings.get(startUrl);
-    final prefix = '$_base/$urlPath/';
-    return current.startsWith(prefix) ? current.substring(prefix.length) : '';
-  }
-
-  String _viewPath(String urlPath, String route) =>
-      route.isEmpty ? urlPath : '$urlPath/$route';
-
-  Future<void> _apply(String urlPath, String route) async {
-    final url = route.isEmpty ? '$_base/$urlPath' : '$_base/$urlPath/$route';
+  Future<void> _apply(String path) async {
+    final url = '$_base/$path';
     await c.settings.set(startUrl, url);
     await c.commands.execute('loadUrl', {'url': url});
     if (mounted) setState(() {});
   }
 
-  /// Select a dashboard: load its views and land on the first one.
-  Future<void> _pickDashboard(String urlPath) async {
-    final views = await c.homeAssistant.listDashboardViews(urlPath);
-    final route = (views != null && views.isNotEmpty)
-        ? '${views.first['route']}'
-        : '';
-    if (mounted) {
-      setState(() {
-        _views = views;
-        _viewsFor = urlPath;
-      });
-    }
-    await _apply(urlPath, route);
-  }
-
-  /// The "Change view" popup: the dashboard's views as a radio list.
-  Future<void> _changeView(String urlPath) async {
-    final views = _views;
-    if (views == null || views.isEmpty) return;
-    final current = _selectedRoute(urlPath);
-    final picked = await showRadioPicker<String>(
-      context,
-      title: haText(context, 'Choose a view'),
-      selected: current,
-      options: [
-        for (final v in views)
-          PickerOption(
-            '${v['route']}',
-            '${v['title']}',
-            detail: _viewPath(urlPath, '${v['route']}'),
-          ),
-      ],
-    );
-    if (picked != null && picked != current) await _apply(urlPath, picked);
-  }
-
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Map<String, Object?>>?>(
-      future: _dashboards,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return SettingsCard(
-            children: [
-              ListTile(
-                title: Text(haText(context, 'Loading dashboards…')),
-                trailing: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2.4),
-                ),
-              ),
-            ],
-          );
-        }
-        final dashboards = snapshot.data;
-        if (dashboards == null || dashboards.isEmpty) {
-          return SettingsCard(
-            children: [
-              ListTile(
-                title: Text(haText(context, 'Could not list dashboards')),
-                subtitle: Text(haText(context, 'Tap to retry.')),
-                trailing: Icon(Icons.refresh),
-                onTap: () => setState(() {
-                  _dashboards = c.homeAssistant.listDashboards();
-                }),
-              ),
-            ],
-          );
-        }
-        final selectedDash = _selectedDash(dashboards);
-        // Lazily load the selected dashboard's views so its row can show the
-        // chosen view and offer "Change view". Guard re-entry with _viewsFor.
-        if (selectedDash != null && _viewsFor != selectedDash) {
-          _viewsFor = selectedDash;
-          c.homeAssistant.listDashboardViews(selectedDash).then((v) {
-            if (mounted) setState(() => _views = v);
-          });
-        }
-        return SettingsCard(
-          children: [
-            for (final d in dashboards)
-              _dashRow(
-                context,
-                '${d['url_path']}',
-                '${d['title'] ?? d['url_path']}',
-                selectedDash,
-              ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _dashRow(
-    BuildContext context,
-    String urlPath,
-    String title,
-    String? selectedDash,
-  ) {
-    final theme = Theme.of(context);
-    final selected = selectedDash == urlPath;
-    // The selected row shows the chosen view's path (defaulting to the first
-    // view); the others just name the dashboard. Only the selected row can
-    // change its view.
-    final subtitle = selected
-        ? _viewPath(urlPath, _selectedRoute(urlPath))
-        : urlPath;
-    final hasViews = selected && _views != null && _views!.isNotEmpty;
-    return ListTile(
-      leading: Icon(
-        selected ? Icons.radio_button_checked : Icons.radio_button_off,
-        color: selected ? theme.colorScheme.primary : null,
-      ),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: selected
-          ? TextButton(
-              onPressed: hasViews ? () => _changeView(urlPath) : null,
-              child: Text(haText(context, 'Change view')),
-            )
-          : null,
-      onTap: selected ? null : () => _pickDashboard(urlPath),
+    final current = dashboardPathOfUrl(c.settings.get(startUrl), _base) ?? '';
+    return SettingsCard(
+      children: [
+        DashboardViewRow(
+          container: c,
+          title: haText(context, 'Default dashboard'),
+          description: haText(
+            context,
+            'The view the kiosk shows when it starts.',
+          ),
+          value: current,
+          onPick: _apply,
+        ),
+      ],
     );
   }
 }
 
-/// Dashboard view rotation: the enable toggle, then (once on) the user's
-/// dashboards as plain headers with a checkbox per view beneath each, and
-/// the dwell time. The selection is stored as a JSON array of navigation
+/// Dashboard view rotation: the enable toggle, the dwell time, then (once
+/// on) the picked views in order with an Add views row that opens the
+/// dashboard picker. The selection is stored as a JSON array of navigation
 /// paths ("url_path/view-route") in the hidden ha.rotation_dashboards
 /// setting; the rotation itself runs in HomeAssistantManager.
 class _RotationCard extends StatefulWidget {
@@ -8532,42 +8386,13 @@ class _RotationCard extends StatefulWidget {
 }
 
 class _RotationCardState extends State<_RotationCard> {
-  late Future<List<(String, String, List<Map<String, Object?>>)>?> _views;
-
   AppContainer get c => widget.container;
 
   @override
   void initState() {
     super.initState();
-    _views = _load();
-  }
-
-  /// Every dashboard with its views: (title, url_path, views). A dashboard
-  /// whose config cannot be read (auto-generated strategies) still rotates
-  /// as a whole via a single synthetic entry for its first view.
-  Future<List<(String, String, List<Map<String, Object?>>)>?> _load() async {
-    final dashboards = await c.homeAssistant.listDashboards();
-    if (dashboards == null) return null;
-    final views = await Future.wait([
-      for (final d in dashboards)
-        c.homeAssistant.listDashboardViews('${d['url_path']}'),
-    ]);
-    return [
-      for (final (i, d) in dashboards.indexed)
-        (
-          '${d['title'] ?? d['url_path']}',
-          '${d['url_path']}',
-          views[i] == null || views[i]!.isEmpty
-              // A dashboard whose views cannot be read (the auto "Overview"
-              // and other strategy dashboards) rotates as a whole via its
-              // bare path — an empty route, navigated as /<url_path>, which
-              // resolves the default view. A synthetic "/0" would spin.
-              ? [
-                  {'title': null, 'route': ''},
-                ]
-              : views[i]!,
-        ),
-    ];
+    // The rows name their views once the dashboards are known.
+    if (DashboardCatalog.current.value == null) DashboardCatalog.load(c);
   }
 
   List<String> _selected() {
@@ -8582,14 +8407,22 @@ class _RotationCardState extends State<_RotationCard> {
     }
   }
 
-  Future<void> _toggle(String path) async {
-    final selected = _selected();
-    selected.contains(path) ? selected.remove(path) : selected.add(path);
+  Future<void> _save(List<String> selected) async {
     await c.settings.setFromJson(
       haRotationDashboards.key,
       jsonEncode(selected),
     );
     if (mounted) setState(() {});
+  }
+
+  Future<void> _addViews() async {
+    final picked = await showDashboardMultiPicker(
+      context,
+      container: c,
+      title: haRotationDashboards.localizedTitle(context),
+      selected: _selected(),
+    );
+    if (picked != null) await _save(picked);
   }
 
   final _urlField = TextEditingController();
@@ -8633,7 +8466,7 @@ class _RotationCardState extends State<_RotationCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final enabled = c.settings.get(haRotationEnabled);
-    return SettingsCard(
+    final settings = SettingsCard(
       children: [
         SettingTile(
           container: c,
@@ -8665,121 +8498,85 @@ class _RotationCardState extends State<_RotationCard> {
               def: haRotationFadeSeconds,
               onChanged: () => setState(() {}),
             ),
-          FutureBuilder<List<(String, String, List<Map<String, Object?>>)>?>(
-            future: _views,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return ListTile(
-                  title: Text(haText(context, 'Loading dashboards…')),
-                  trailing: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2.4),
-                  ),
-                );
-              }
-              final dashboards = snapshot.data;
-              if (dashboards == null || dashboards.isEmpty) {
-                return ListTile(
-                  title: Text(haText(context, 'Could not list dashboards')),
-                  subtitle: Text(haText(context, 'Tap to retry.')),
-                  trailing: Icon(Icons.refresh),
-                  onTap: () => setState(() {
-                    _views = _load();
-                  }),
-                );
-              }
-              final selected = _selected();
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+        ],
+      ],
+    );
+    if (!enabled) return settings;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        settings,
+        // The picked views in rotation order, each with a remove button,
+        // then the row that opens the picker to add more.
+        SectionHeading(haRotationDashboards.localizedTitle(context)),
+        SettingsCard(
+          children: [
+            for (final path in _selected())
+              DashboardViewListRow(
+                value: path,
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: haText(context, 'Remove'),
+                  onPressed: () => _save(_selected()..remove(path)),
+                ),
+              ),
+            ListTile(
+              leading: Icon(
+                Icons.add_circle_outline,
+                color: theme.colorScheme.primary,
+              ),
+              title: Text(
+                haText(context, 'Add views'),
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onTap: _addViews,
+            ),
+          ],
+        ),
+        // External pages: shown in their own overlay during rotation, so
+        // the dashboard (and Voice Satellite) stays loaded underneath.
+        SectionHeading(haText(context, 'External pages')),
+        SettingsCard(
+          children: [
+            for (final url in _urls())
+              ListTile(
+                title: Text(url, maxLines: 1, overflow: TextOverflow.ellipsis),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: haText(context, 'Remove'),
+                  onPressed: () => _saveUrls(_urls()..remove(url)),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(Ks.inset, 12, 12, 12),
+              child: Row(
                 children: [
-                  for (final (title, urlPath, views) in dashboards) ...[
-                    // The dashboard is a plain header, not a choice — the
-                    // views beneath it are what rotate.
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(20, 14, 20, 2),
-                      child: Text(
-                        title,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  Expanded(
+                    child: TextField(
+                      controller: _urlField,
+                      keyboardType: TextInputType.url,
+                      autocorrect: false,
+                      onSubmitted: (_) => _addUrl(),
+                      // Border and fill come from the input theme.
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        hintText: 'https://example.com',
                       ),
                     ),
-                    for (final v in views)
-                      // Empty route = the dashboard's bare path.
-                      for (final path in [
-                        '${v['route']}'.isEmpty
-                            ? urlPath
-                            : '$urlPath/${v['route']}',
-                      ])
-                        CheckboxListTile(
-                          value: selected.contains(path),
-                          title: Text(
-                            v['title'] == null
-                                ? haText(context, 'Default view')
-                                : '${v['title']}',
-                          ),
-                          subtitle: Text(path),
-                          controlAffinity: ListTileControlAffinity.leading,
-                          contentPadding: EdgeInsets.only(left: 28, right: 20),
-                          onChanged: (_) => _toggle(path),
-                        ),
-                  ],
-                  SizedBox(height: 6),
-                ],
-              );
-            },
-          ),
-          // External pages: shown in their own overlay during rotation, so
-          // the dashboard (and Voice Satellite) stays loaded underneath.
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, 2),
-            child: Text(
-              haText(context, 'External pages'),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          for (final url in _urls())
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.only(left: 28, right: 12),
-              title: Text(url, style: theme.textTheme.bodyMedium),
-              trailing: IconButton(
-                icon: Icon(Icons.close, size: 20),
-                tooltip: haText(context, 'Remove'),
-                onPressed: () => _saveUrls(_urls()..remove(url)),
-              ),
-            ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(28, 4, 12, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _urlField,
-                    keyboardType: TextInputType.url,
-                    autocorrect: false,
-                    onSubmitted: (_) => _addUrl(),
-                    // Border and fill come from the input theme.
-                    decoration: InputDecoration(
-                      isDense: true,
-                      hintText: 'https://example.com',
-                    ),
                   ),
-                ),
-                SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _addUrl,
-                  child: Text(haText(context, 'Add')),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: _addUrl,
+                    child: Text(haText(context, 'Add')),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ],
     );
   }
@@ -11167,21 +10964,20 @@ class SettingTile extends StatelessWidget {
         if (def.key == screensaverWeatherEntity.key) {
           return WeatherMoodEntityRow(container: c);
         }
-        // The Home Assistant Dashboard screensaver's view is picked from
-        // the instance's dashboards, the same modal the Go to a dashboard
-        // view gesture uses, never typed.
-        if (def.key == screensaverDashboardView.key) {
-          return ListTile(
-            title: Text(def.localizedTitle(context)),
-            subtitle: Text(
-              display,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: TextButton(
-              onPressed: () => _pickDashboardView(context),
-              child: Text(screensaverText(context, 'Select dashboard')),
-            ),
+        // The Home Assistant Dashboard screensaver's view and Now Playing's
+        // chosen view are picked from the instance's dashboards in the
+        // dashboard picker, never typed.
+        if (def.key == screensaverDashboardView.key ||
+            def.key == sendspinFullscreenReturnView.key) {
+          return DashboardViewRow(
+            container: c,
+            title: def.localizedTitle(context),
+            description: def.localizedDescription(context),
+            value: c.settings.get(def as SettingDef<String>),
+            onPick: (path) async {
+              await c.settings.setFromJson(def.key, path);
+              onChanged();
+            },
           );
         }
         // The screensaver's media is picked from Home Assistant, not typed.
@@ -11389,29 +11185,6 @@ class SettingTile extends StatelessWidget {
       screensaverGlanceEntities.key,
       jsonEncode(saved),
     );
-    onChanged();
-  }
-
-  Future<void> _pickDashboardView(BuildContext context) async {
-    final entries = await listDashboardViewEntries(c);
-    if (!context.mounted) return;
-    if (entries.isEmpty) {
-      showToast(
-        context,
-        title: screensaverText(context, 'Could not list dashboards'),
-        message: screensaverText(context, 'Is Home Assistant connected?'),
-        kind: ToastKind.error,
-      );
-      return;
-    }
-    final picked = await showDashboardViewPicker(
-      context,
-      title: screensaverText(context, 'Select dashboard'),
-      entries: entries,
-      current: c.settings.get(screensaverDashboardView),
-    );
-    if (picked == null) return;
-    await c.settings.setFromJson(screensaverDashboardView.key, picked);
     onChanged();
   }
 

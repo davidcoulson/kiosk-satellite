@@ -79,10 +79,7 @@ void main() {
     originalVideo = VideoPlayerPlatform.instance;
     video = _Video();
     VideoPlayerPlatform.instance = video;
-    // openVideo asks the device whether to start on a platform view
-    // (Samsung Exynos, issue #894) before its first attempt; with no
-    // platform the unanswered channel call never settles inside the
-    // test's pumps, so answer it here like other device_details tests.
+    // openVideo asks whether the device wants a platform view first.
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('kiosk_satellite/device_details'),
@@ -90,11 +87,6 @@ void main() {
         );
   });
   tearDown(() async {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-          const MethodChannel('kiosk_satellite/device_details'),
-          null,
-        );
     VideoPlayerPlatform.instance = originalVideo;
     language.dispose();
     await container.settings.dispose();

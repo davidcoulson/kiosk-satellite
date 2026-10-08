@@ -526,6 +526,87 @@ class UiStringsEn extends UiStrings {
   String get commonSelectAll => 'Select all';
 
   @override
+  String get dashboardPickerSearch => 'Search views';
+
+  @override
+  String get dashboardPickerSearchAll => 'Search dashboards and views';
+
+  @override
+  String get dashboardPickerCurrent => 'Current';
+
+  @override
+  String get dashboardPickerDashboards => 'Dashboards';
+
+  @override
+  String get dashboardPickerSubviews => 'Subviews';
+
+  @override
+  String get dashboardPickerSubview => 'Subview';
+
+  @override
+  String get dashboardPickerWhole => 'Whole dashboard';
+
+  @override
+  String get dashboardPickerBuildsOwn => 'Builds its own views';
+
+  @override
+  String get dashboardPickerWholeHelp =>
+      'This dashboard builds its own views, so the kiosk opens it whole.';
+
+  @override
+  String dashboardPickerViewCount(String count) {
+    return '$count views';
+  }
+
+  @override
+  String get dashboardPickerOneView => '1 view';
+
+  @override
+  String get dashboardPickerOffline => 'Could not reach Home Assistant';
+
+  @override
+  String get dashboardPickerOfflineHelp =>
+      'The dashboards load once the connection is back.';
+
+  @override
+  String get dashboardPickerTryAgain => 'Try again';
+
+  @override
+  String get dashboardPickerEmpty => 'No dashboards yet';
+
+  @override
+  String get dashboardPickerEmptyHelp =>
+      'Dashboards you add in Home Assistant show up here.';
+
+  @override
+  String get dashboardPickerNoMatch => 'No views match';
+
+  @override
+  String dashboardPickerSelected(String count) {
+    return '$count selected';
+  }
+
+  @override
+  String get dashboardPickerDone => 'Done';
+
+  @override
+  String get dashboardPickerShowing => 'Showing';
+
+  @override
+  String get dashboardPickerMissing =>
+      'This view is gone from Home Assistant. Choose another.';
+
+  @override
+  String get dashboardPickerAddViews => 'Add views';
+
+  @override
+  String get dashboardPickerDefault => 'Default dashboard';
+
+  @override
+  String get dashboardPickerDefaultHelp =>
+      'The view the kiosk shows when it starts.';
+
+  @override
   String get dlnaCannotDecode => 'This device cannot decode this video.';
 
   @override
@@ -1574,19 +1655,6 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get gestureUriError => 'Enter a full URI.';
-
-  @override
-  String get gestureNoDashboards => 'No dashboards';
-
-  @override
-  String get gestureDashboardsFailed => 'Could not list dashboards';
-
-  @override
-  String get gestureHaConnected => 'Is Home Assistant connected?';
-
-  @override
-  String get gestureDashboardsHelp =>
-      'Could not list dashboards. Is Home Assistant connected?';
 
   @override
   String get gestureCameraTitle => 'Camera view';
@@ -3732,21 +3800,6 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get overviewGoView => 'Go to view';
-
-  @override
-  String get overviewLoadingViews => 'Loading views…';
-
-  @override
-  String get overviewPickView => 'Pick a dashboard view…';
-
-  @override
-  String get overviewDefaultView => 'Default view';
-
-  @override
-  String get overviewNoDashboards => 'No dashboards found';
-
-  @override
-  String get overviewViewsUnavailable => 'Views unavailable';
 
   @override
   String get screensaverNoPhotos =>
@@ -7145,9 +7198,6 @@ class UiStringsEn extends UiStrings {
   String get haRotationHint => 'Cycle through views, dwell time, fade';
 
   @override
-  String get haDefaultView => 'Default view';
-
-  @override
   String get haExternalPages => 'External pages';
 
   @override
@@ -7235,27 +7285,6 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get haChooseView => 'Choose a view';
-
-  @override
-  String get haLoadingDashboards => 'Loading dashboards…';
-
-  @override
-  String get haListFailed => 'Could not list dashboards';
-
-  @override
-  String get haRetryHint => 'Tap to retry.';
-
-  @override
-  String get haChangeView => 'Change view';
-
-  @override
-  String get haNoViews => 'No sub views';
-
-  @override
-  String get haNoViewsHelp => 'This dashboard has no selectable sub views.';
-
-  @override
-  String get haNoDashboards => 'No dashboards found';
 
   @override
   String get haStartPageTitle => 'Start page';
@@ -8296,6 +8325,26 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingSendspinFullscreenMotionDescription =>
       'Let motion dismiss Now Playing like a regular screensaver. Off, only touch dismisses it, so a walk-past does not interrupt the music display. Ignored while Now Playing is shown alongside a screensaver.';
+
+  @override
+  String get settingSendspinFullscreenReturnTitle => 'After dismissing';
+
+  @override
+  String get settingSendspinFullscreenReturnDescription =>
+      'The dashboard view to show after Now Playing is dismissed. Default follows Return to home dashboard view.';
+
+  @override
+  String get mediaReturnLastView => 'Last view';
+
+  @override
+  String get mediaReturnChosenView => 'Chosen view';
+
+  @override
+  String get settingSendspinFullscreenReturnViewTitle => 'Dashboard view';
+
+  @override
+  String get settingSendspinFullscreenReturnViewDescription =>
+      'The view to show after Now Playing is dismissed.';
 
   @override
   String get settingSendspinFullscreenShortcutTitle => 'Show in the kiosk menu';
@@ -9675,9 +9724,6 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingScreensaverDashboardViewDescription =>
       'The Home Assistant dashboard view the screensaver shows.';
-
-  @override
-  String get screensaverSelectDashboard => 'Select dashboard';
 
   @override
   String get screensaverDashboardSection =>

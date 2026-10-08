@@ -531,6 +531,87 @@ class UiStringsEs extends UiStrings {
   String get commonSelectAll => 'Seleccionar todo';
 
   @override
+  String get dashboardPickerSearch => 'Buscar vistas';
+
+  @override
+  String get dashboardPickerSearchAll => 'Buscar paneles y vistas';
+
+  @override
+  String get dashboardPickerCurrent => 'Actual';
+
+  @override
+  String get dashboardPickerDashboards => 'Paneles de control';
+
+  @override
+  String get dashboardPickerSubviews => 'Subvistas';
+
+  @override
+  String get dashboardPickerSubview => 'Subvista';
+
+  @override
+  String get dashboardPickerWhole => 'Panel completo';
+
+  @override
+  String get dashboardPickerBuildsOwn => 'Genera sus propias vistas';
+
+  @override
+  String get dashboardPickerWholeHelp =>
+      'Este panel genera sus propias vistas, así que el kiosko lo abre completo.';
+
+  @override
+  String dashboardPickerViewCount(String count) {
+    return '$count vistas';
+  }
+
+  @override
+  String get dashboardPickerOneView => '1 vista';
+
+  @override
+  String get dashboardPickerOffline => 'No se pudo conectar con Home Assistant';
+
+  @override
+  String get dashboardPickerOfflineHelp =>
+      'Los paneles se cargarán cuando vuelva la conexión.';
+
+  @override
+  String get dashboardPickerTryAgain => 'Reintentar';
+
+  @override
+  String get dashboardPickerEmpty => 'Aún no hay paneles';
+
+  @override
+  String get dashboardPickerEmptyHelp =>
+      'Los paneles que añadas en Home Assistant aparecerán aquí.';
+
+  @override
+  String get dashboardPickerNoMatch => 'Ninguna vista coincide';
+
+  @override
+  String dashboardPickerSelected(String count) {
+    return '$count seleccionadas';
+  }
+
+  @override
+  String get dashboardPickerDone => 'Hecho';
+
+  @override
+  String get dashboardPickerShowing => 'En pantalla';
+
+  @override
+  String get dashboardPickerMissing =>
+      'Esta vista ya no existe en Home Assistant. Elige otra.';
+
+  @override
+  String get dashboardPickerAddViews => 'Añadir vistas';
+
+  @override
+  String get dashboardPickerDefault => 'Panel de control predeterminado';
+
+  @override
+  String get dashboardPickerDefaultHelp =>
+      'La vista que muestra el kiosko al iniciar.';
+
+  @override
   String get dlnaCannotDecode =>
       'Este dispositivo no puede decodificar este video.';
 
@@ -1590,20 +1671,6 @@ class UiStringsEs extends UiStrings {
 
   @override
   String get gestureUriError => 'Introduce una URI completa.';
-
-  @override
-  String get gestureNoDashboards => 'No hay paneles de control';
-
-  @override
-  String get gestureDashboardsFailed =>
-      'No se pudieron obtener los paneles de control';
-
-  @override
-  String get gestureHaConnected => '¿Está conectado Home Assistant?';
-
-  @override
-  String get gestureDashboardsHelp =>
-      'No se pudieron obtener los paneles de control. ¿Está conectado Home Assistant?';
 
   @override
   String get gestureCameraTitle => 'Vista de cámaras';
@@ -3789,21 +3856,6 @@ class UiStringsEs extends UiStrings {
 
   @override
   String get overviewGoView => 'Ir a una vista';
-
-  @override
-  String get overviewLoadingViews => 'Cargando vistas…';
-
-  @override
-  String get overviewPickView => 'Elige una vista del panel de control…';
-
-  @override
-  String get overviewDefaultView => 'Vista predeterminada';
-
-  @override
-  String get overviewNoDashboards => 'No se encontraron paneles de control';
-
-  @override
-  String get overviewViewsUnavailable => 'Vistas no disponibles';
 
   @override
   String get screensaverNoPhotos =>
@@ -7281,9 +7333,6 @@ class UiStringsEs extends UiStrings {
       'Recorre las vistas, duración de cada vista y fundido';
 
   @override
-  String get haDefaultView => 'Vista predeterminada';
-
-  @override
   String get haExternalPages => 'Páginas externas';
 
   @override
@@ -7373,28 +7422,6 @@ class UiStringsEs extends UiStrings {
 
   @override
   String get haChooseView => 'Elegir una vista';
-
-  @override
-  String get haLoadingDashboards => 'Cargando paneles de control…';
-
-  @override
-  String get haListFailed => 'No se pudieron listar los paneles de control';
-
-  @override
-  String get haRetryHint => 'Toca para volver a intentarlo.';
-
-  @override
-  String get haChangeView => 'Cambiar vista';
-
-  @override
-  String get haNoViews => 'No hay vistas secundarias';
-
-  @override
-  String get haNoViewsHelp =>
-      'Este panel de control no tiene vistas secundarias seleccionables.';
-
-  @override
-  String get haNoDashboards => 'No se encontraron paneles de control';
 
   @override
   String get haStartPageTitle => 'Start page';
@@ -8455,6 +8482,27 @@ class UiStringsEs extends UiStrings {
   @override
   String get settingSendspinFullscreenMotionDescription =>
       'Permite cerrar Reproduciendo Ahora con movimiento, como un protector de pantalla normal. Si está desactivado, solo se cierra al tocar la pantalla, para que pasar cerca no interrumpa la vista de música. No se aplica cuando Reproduciendo Ahora se muestra junto al protector de pantalla.';
+
+  @override
+  String get settingSendspinFullscreenReturnTitle => 'Al cerrar';
+
+  @override
+  String get settingSendspinFullscreenReturnDescription =>
+      'La vista del panel de control que se muestra al cerrar Reproduciendo Ahora. Predeterminado sigue Volver a la vista de inicio del panel de control.';
+
+  @override
+  String get mediaReturnLastView => 'Última vista';
+
+  @override
+  String get mediaReturnChosenView => 'Vista elegida';
+
+  @override
+  String get settingSendspinFullscreenReturnViewTitle =>
+      'Vista del panel de control';
+
+  @override
+  String get settingSendspinFullscreenReturnViewDescription =>
+      'La vista que se muestra al cerrar Reproduciendo Ahora.';
 
   @override
   String get settingSendspinFullscreenShortcutTitle =>
@@ -9864,9 +9912,6 @@ class UiStringsEs extends UiStrings {
   @override
   String get settingScreensaverDashboardViewDescription =>
       'La vista del panel de control de Home Assistant que muestra el protector de pantalla.';
-
-  @override
-  String get screensaverSelectDashboard => 'Seleccionar panel de control';
 
   @override
   String get screensaverDashboardSection =>

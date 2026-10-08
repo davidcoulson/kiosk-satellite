@@ -47,6 +47,5 @@
   "screensaverModeDashboard": "Home Assistant 仪表盘",
   "settingScreensaverDashboardViewTitle": "仪表盘页面",
   "settingScreensaverDashboardViewDescription": "选择屏保显示的 Home Assistant 仪表盘页面。",
-  "screensaverSelectDashboard": "选择仪表盘",
   "screensaverDashboardSection": "Home Assistant 仪表盘屏保"
 }

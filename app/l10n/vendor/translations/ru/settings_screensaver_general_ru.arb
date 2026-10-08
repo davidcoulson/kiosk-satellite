@@ -47,6 +47,5 @@
   "screensaverModeDashboard": "Панель Home Assistant",
   "settingScreensaverDashboardViewTitle": "Вид панели",
   "settingScreensaverDashboardViewDescription": "Вид панели Home Assistant, который показывает заставка.",
-  "screensaverSelectDashboard": "Выберите панель",
   "screensaverDashboardSection": "Заставка «Панель Home Assistant»"
 }
