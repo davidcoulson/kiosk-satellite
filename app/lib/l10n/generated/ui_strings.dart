@@ -13973,6 +13973,12 @@ abstract class UiStrings {
   /// **'The floating close button can sit on top of Music Assistant\'s own controls, like the Now Playing menu. Without it, dismiss with the back button or by using the kiosk\'s drawer menu.'**
   String get settingSendspinMaHideCloseDescription;
 
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Scales the whole Music Assistant page.'**
+  String get settingSendspinMaZoomDescription;
+
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:

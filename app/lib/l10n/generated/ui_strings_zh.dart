@@ -7669,6 +7669,9 @@ class UiStringsZh extends UiStrings {
       '悬浮关闭按钮可能覆盖 Music Assistant 自身控件，例如“正在播放”菜单。隐藏后可用返回键或 Kiosk 抽屉菜单关闭。';
 
   @override
+  String get settingSendspinMaZoomDescription => '缩放整个 Music Assistant 页面。';
+
+  @override
   String get mediaMaHint => '服务器、令牌和 Kiosk 菜单快捷入口';
 
   @override
@@ -20177,6 +20180,9 @@ class UiStringsZhCn extends UiStringsZh {
   @override
   String get settingSendspinMaHideCloseDescription =>
       '悬浮关闭按钮可能覆盖 Music Assistant 自身控件，例如“正在播放”菜单。隐藏后可用返回键或 Kiosk 抽屉菜单关闭。';
+
+  @override
+  String get settingSendspinMaZoomDescription => '缩放整个 Music Assistant 页面。';
 
   @override
   String get mediaMaHint => '服务器、令牌和 Kiosk 菜单快捷入口';

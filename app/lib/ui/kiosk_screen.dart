@@ -21,6 +21,7 @@ import '../l10n/gesture_messages.dart';
 import 'screensaver_view.dart';
 import '../core/events.dart';
 import '../managers/browser/carousel_script.dart';
+import '../managers/browser/color_scheme_script.dart';
 import '../managers/browser/disable_suspend_script.dart';
 import '../managers/browser/dashboard_camera_script.dart';
 import '../managers/browser/ha_session_script.dart';
@@ -2431,6 +2432,43 @@ class _OverlayWebViewState extends State<_OverlayWebView> {
   /// error until the rotation moved on, a link overlay until dismissed).
   Timer? _retry;
 
+  /// Live updates for the Music Assistant page: the zoom level setting.
+  StreamSubscription<SettingChanged>? _settingsSub;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_isMusicAssistant) return;
+    widget.container.homeAssistant.dashboardDark.addListener(_darkChanged);
+    _settingsSub = widget.container.bus.on<SettingChanged>().listen((e) {
+      final controller = _controller;
+      if (controller != null && e.key == defs.sendspinMaZoom.key) {
+        unawaited(_applyMaZoom(controller));
+      }
+    });
+  }
+
+  /// The dashboard switched between light and dark with this page open.
+  void _darkChanged() {
+    final dark = widget.container.homeAssistant.dashboardDark.value;
+    if (dark == null) return;
+    unawaited(
+      _controller?.evaluateJavascript(source: colorSchemeSetJs(dark: dark)),
+    );
+  }
+
+  /// Music Assistant's zoom level, the dashboard's viewport scale
+  /// (viewport_zoom_script.dart). Re-asserted after every load: the
+  /// rewritten meta dies with each document.
+  Future<void> _applyMaZoom(InAppWebViewController controller) async {
+    await controller.evaluateJavascript(
+      source: viewportZoomJs(
+        zoom: widget.container.settings.get(defs.sendspinMaZoom),
+        pinch: false,
+      ),
+    );
+  }
+
   @override
   void didUpdateWidget(_OverlayWebView old) {
     super.didUpdateWidget(old);
@@ -2442,6 +2480,8 @@ class _OverlayWebViewState extends State<_OverlayWebView> {
   @override
   void dispose() {
     _retry?.cancel();
+    _settingsSub?.cancel();
+    widget.container.homeAssistant.dashboardDark.removeListener(_darkChanged);
     super.dispose();
   }
 
@@ -2478,20 +2518,29 @@ class _OverlayWebViewState extends State<_OverlayWebView> {
   UnmodifiableListView<UserScript>? get _seedScripts {
     final token = widget.container.settings.get(defs.sendspinMaToken).trim();
     if (_isMusicAssistant) {
-      if (token.isEmpty) return null;
+      // Music Assistant's Auto theme follows the dashboard's light or dark
+      // when the kiosk sets it (issue #907). Otherwise the page answers
+      // from Android, as before.
+      final dark = widget.container.homeAssistant.dashboardDark.value;
       return UnmodifiableListView([
-        UserScript(
-          source:
-              'try {'
-              'var t = ${jsonEncode(token)};'
-              'var cur = localStorage.getItem("ma_access_token");'
-              'if (!cur || cur === localStorage.getItem("ks_ma_seed")) {'
-              'localStorage.setItem("ma_access_token", t);'
-              'localStorage.setItem("ks_ma_seed", t);'
-              '}'
-              '} catch (e) {}',
-          injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
-        ),
+        if (dark != null)
+          UserScript(
+            source: colorSchemeJs(dark: dark),
+            injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+          ),
+        if (token.isNotEmpty)
+          UserScript(
+            source:
+                'try {'
+                'var t = ${jsonEncode(token)};'
+                'var cur = localStorage.getItem("ma_access_token");'
+                'if (!cur || cur === localStorage.getItem("ks_ma_seed")) {'
+                'localStorage.setItem("ma_access_token", t);'
+                'localStorage.setItem("ks_ma_seed", t);'
+                '}'
+                '} catch (e) {}',
+            injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+          ),
       ]);
     }
     final target = Uri.tryParse(widget.url);
@@ -2564,7 +2613,15 @@ class _OverlayWebViewState extends State<_OverlayWebView> {
         // (issue #224). The Music Assistant page is the app's own shortcut
         // and is left alone.
         onLoadStop: (controller, url) async {
-          if (_isMusicAssistant) return;
+          if (_isMusicAssistant) {
+            // The color scheme script carries the state from when this
+            // view was built: a reload after a flip catches up here.
+            _darkChanged();
+            if (widget.container.settings.get(defs.sendspinMaZoom) != 1) {
+              await _applyMaZoom(controller);
+            }
+            return;
+          }
           // A Home Assistant page here follows the dashboard's kiosk mode;
           // re-asserted per load because this view can outlive a toggle.
           final settings = widget.container.settings;

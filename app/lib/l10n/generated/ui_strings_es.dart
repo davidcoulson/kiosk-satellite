@@ -8184,6 +8184,10 @@ class UiStringsEs extends UiStrings {
       'El botón de cierre flotante puede cubrir controles de Music Assistant, como el menú de Reproduciendo Ahora. Sin él, cierra la página con el botón Atrás o con el menú lateral del kiosko.';
 
   @override
+  String get settingSendspinMaZoomDescription =>
+      'Cambia la escala de toda la página de Music Assistant.';
+
+  @override
   String get mediaMaHint =>
       'Servidor, token y acceso directo en el menú del kiosko';
 

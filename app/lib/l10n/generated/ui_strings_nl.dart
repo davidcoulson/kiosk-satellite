@@ -8128,6 +8128,10 @@ class UiStringsNl extends UiStrings {
       'De zwevende sluitknop kan bedieningselementen van Music Assistant bedekken, zoals het menu van Speelt nu. Zonder deze knop sluit je de pagina met de terugknop of via het kioskmenu.';
 
   @override
+  String get settingSendspinMaZoomDescription =>
+      'Past de schaal aan van de volledige Music Assistant-pagina.';
+
+  @override
   String get mediaMaHint => 'Server, token en snelkoppeling in het kioskmenu';
 
   @override

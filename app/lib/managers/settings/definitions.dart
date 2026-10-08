@@ -7685,6 +7685,25 @@ const sendspinMaHideClose = SettingDef<bool>(
   dependsOn: 'sendspin.ma_shortcut',
 );
 
+/// Music Assistant's own zoom level (issue #907): its layout reads
+/// differently from a dashboard, so the Browser zoom level does not carry
+/// over. The same viewport scale, applied to the Music Assistant page only.
+const sendspinMaZoom = SettingDef<num>(
+  key: 'sendspin.ma_zoom',
+  type: SettingType.number,
+  defaultValue: 1,
+  title: 'Zoom level',
+  description: 'Scales the whole Music Assistant page.',
+  category: 'Sendspin',
+  subpage: 'Music Assistant',
+  section: 'Kiosk menu',
+  dependsOn: 'sendspin.ma_shortcut',
+  min: 0.5,
+  max: 4,
+  step: 0.05,
+  unit: 'x',
+);
+
 // ── Floating Player (Sendspin section) ─────────────────────────────────
 // The small now-playing card over the dashboard, whichever player it
 // follows.
@@ -10595,6 +10614,7 @@ const List<SettingDef<Object>> allSettings = [
   sendspinMaOpenFullscreen,
   sendspinMaAutoClose,
   sendspinMaHideClose,
+  sendspinMaZoom,
   sendspinSonosGroupVolume,
   sendspinSonosInputs,
   sendspinSonosHosts,

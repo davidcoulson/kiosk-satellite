@@ -1020,6 +1020,10 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingSendspinMaHideCloseTitle",
     "description": "settingSendspinMaHideCloseDescription",
   },
+  "sendspin.ma_zoom": {
+    "title": "settingBrowserZoomTitle",
+    "description": "settingSendspinMaZoomDescription",
+  },
   "sendspin.sonos_group_volume": {
     "title": "settingSendspinSonosGroupVolumeTitle",
     "description": "settingSendspinSonosGroupVolumeDescription",

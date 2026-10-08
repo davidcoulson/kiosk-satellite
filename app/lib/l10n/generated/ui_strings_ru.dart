@@ -8085,6 +8085,10 @@ class UiStringsRu extends UiStrings {
       'Плавающая кнопка закрытия может попадать на собственные элементы Music Assistant, например меню «Сейчас играет». Без неё закрывайте кнопкой «Назад» или через меню киоска.';
 
   @override
+  String get settingSendspinMaZoomDescription =>
+      'Масштабирует всю страницу Music Assistant.';
+
+  @override
   String get mediaMaHint => 'Сервер, токен, пункт меню киоска';
 
   @override

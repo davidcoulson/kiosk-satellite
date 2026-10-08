@@ -30289,6 +30289,19 @@
       ]
     }
   },
+  "settingSendspinMaZoomDescription": "Past de schaal aan van de volledige Music Assistant-pagina.",
+  "@settingSendspinMaZoomDescription": {
+    "context": "Settings > Media Player > Music Assistant > Zoom level",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Music Assistant > Zoom level"
+      ],
+      "remoteAdmin": [
+        "Media Player > Music Assistant > Zoom level"
+      ]
+    }
+  },
   "mediaMaHint": "Server, token en snelkoppeling in het kioskmenu",
   "@mediaMaHint": {
     "context": "Settings > Media Player > Music Assistant",

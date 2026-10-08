@@ -1452,8 +1452,9 @@ class HomeAssistantManager extends Manager {
 
   /// The dark state last pushed to the page, so the minute tick only fires JS
   /// on an actual light↔dark transition. Cleared when the feature is off so
-  /// re-enabling always re-applies.
-  bool? _lastDark;
+  /// re-enabling always re-applies. Null means the dashboard picks its own
+  /// theme. The Music Assistant page follows it too (issue #907).
+  final dashboardDark = ValueNotifier<bool?>(null);
 
   /// Push the scheduled light/dark theme into the HA frontend when it changes.
   ///
@@ -1479,8 +1480,8 @@ class HomeAssistantManager extends Manager {
           await _settings.setFromJson(defs.uiTheme.key, want);
         }
       }
-      if (!force && pinned == _lastDark) return;
-      _lastDark = pinned;
+      if (!force && pinned == dashboardDark.value) return;
+      dashboardDark.value = pinned;
       await commands.execute('evalJs', {'code': _themeJs(pinned)});
       return;
     }
@@ -1498,8 +1499,8 @@ class HomeAssistantManager extends Manager {
         }
       }
       if (!matchApp) {
-        if (!force && dark == _lastDark) return;
-        _lastDark = dark;
+        if (!force && dark == dashboardDark.value) return;
+        dashboardDark.value = dark;
         await commands.execute('evalJs', {'code': _themeJs(dark)});
         return;
       }
@@ -1509,12 +1510,12 @@ class HomeAssistantManager extends Manager {
     // is System, which Android flips at its own sunset/sunrise.
     if (matchApp) {
       final dark = _effectiveAppDark();
-      if (!force && dark == _lastDark) return;
-      _lastDark = dark;
+      if (!force && dark == dashboardDark.value) return;
+      dashboardDark.value = dark;
       await commands.execute('evalJs', {'code': _themeJs(dark)});
       return;
     }
-    _lastDark = null;
+    dashboardDark.value = null;
   }
 
   /// Whether the app is effectively dark right now: the App theme setting,

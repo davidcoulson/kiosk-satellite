@@ -30289,6 +30289,19 @@
       ]
     }
   },
+  "settingSendspinMaZoomDescription": "Cambia la escala de toda la página de Music Assistant.",
+  "@settingSendspinMaZoomDescription": {
+    "context": "Settings > Media Player > Music Assistant > Zoom level",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Music Assistant > Zoom level"
+      ],
+      "remoteAdmin": [
+        "Media Player > Music Assistant > Zoom level"
+      ]
+    }
+  },
   "mediaMaHint": "Servidor, token y acceso directo en el menú del kiosko",
   "@mediaMaHint": {
     "context": "Settings > Media Player > Music Assistant",

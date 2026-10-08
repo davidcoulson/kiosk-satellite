@@ -2,6 +2,11 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
+## Unreleased
+
+### Added
+- **Music Assistant follows the dashboard's theme and has its own zoom.** The Music Assistant page opened from the kiosk menu now switches between light and dark with the Home Assistant dashboard, live while it is open (#907). It follows whenever Kiosk Satellite sets the dashboard's theme: a pinned **Theme**, **Match theme to time of day** or **Sync Home Assistant themes with Kiosk Satellite**. Music Assistant's own theme must stay on **Auto**, its default. **Settings > Media Player > Music Assistant** gains **Zoom level**, which scales the Music Assistant page the way the Web Browsing zoom scales the dashboard.
+
 ## v2026.10.15 - 2026-10-08
 
 ### Changed

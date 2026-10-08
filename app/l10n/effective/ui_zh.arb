@@ -30289,6 +30289,19 @@
       ]
     }
   },
+  "settingSendspinMaZoomDescription": "缩放整个 Music Assistant 页面。",
+  "@settingSendspinMaZoomDescription": {
+    "context": "Settings > Media Player > Music Assistant > Zoom level",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Music Assistant > Zoom level"
+      ],
+      "remoteAdmin": [
+        "Media Player > Music Assistant > Zoom level"
+      ]
+    }
+  },
   "mediaMaHint": "服务器、令牌和 Kiosk 菜单快捷入口",
   "@mediaMaHint": {
     "context": "Settings > Media Player > Music Assistant",

@@ -2416,6 +2416,8 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingSendspinMaHideCloseTitle,
       'settingSendspinMaHideCloseDescription' =>
         strings.settingSendspinMaHideCloseDescription,
+      'settingSendspinMaZoomDescription' =>
+        strings.settingSendspinMaZoomDescription,
       'mediaMaHint' => strings.mediaMaHint,
       'mediaKioskMenu' => strings.mediaKioskMenu,
       'mediaValidateConnection' => strings.mediaValidateConnection,

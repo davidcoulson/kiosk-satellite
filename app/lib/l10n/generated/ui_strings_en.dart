@@ -8032,6 +8032,10 @@ class UiStringsEn extends UiStrings {
       'The floating close button can sit on top of Music Assistant\'s own controls, like the Now Playing menu. Without it, dismiss with the back button or by using the kiosk\'s drawer menu.';
 
   @override
+  String get settingSendspinMaZoomDescription =>
+      'Scales the whole Music Assistant page.';
+
+  @override
   String get mediaMaHint => 'Server, token, kiosk menu shortcut';
 
   @override

@@ -8227,6 +8227,10 @@ class UiStringsDe extends UiStrings {
       'Die schwebende Schließen-Schaltfläche kann Bedienelemente von Music Assistant überdecken, beispielsweise das Menü von „Jetzt läuft“. Ohne diese Schaltfläche kann die Seite über die Zurück-Taste oder das seitliche Kiosk-Menü geschlossen werden.';
 
   @override
+  String get settingSendspinMaZoomDescription =>
+      'Ändert die Skalierung der gesamten Music-Assistant-Seite.';
+
+  @override
   String get mediaMaHint => 'Server, Token und Menüeintrag im Kiosk-Menü';
 
   @override

@@ -30289,6 +30289,19 @@
       ]
     }
   },
+  "settingSendspinMaZoomDescription": "Met à l'échelle l'ensemble de la page Music Assistant.",
+  "@settingSendspinMaZoomDescription": {
+    "context": "Settings > Media Player > Music Assistant > Zoom level",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Music Assistant > Zoom level"
+      ],
+      "remoteAdmin": [
+        "Media Player > Music Assistant > Zoom level"
+      ]
+    }
+  },
   "mediaMaHint": "Serveur, jeton, raccourci du menu du kiosque",
   "@mediaMaHint": {
     "context": "Settings > Media Player > Music Assistant",

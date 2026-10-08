@@ -8112,6 +8112,10 @@ class UiStringsUk extends UiStrings {
       'Плаваюча кнопка закриття може розміщуватися поверх власних елементів керування Music Assistant, як-от меню «Зараз грає». Без неї закривайте кнопкою «Назад» або через меню кіоска, що висувається.';
 
   @override
+  String get settingSendspinMaZoomDescription =>
+      'Масштабує всю сторінку Music Assistant.';
+
+  @override
   String get mediaMaHint => 'Сервер, токен, ярлик меню кіоска';
 
   @override

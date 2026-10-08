@@ -8180,6 +8180,10 @@ class UiStringsFr extends UiStrings {
       'Le bouton de fermeture flottant peut se superposer aux propres contrôles de Music Assistant, comme le menu Lecture en cours. Sans lui, fermez avec le bouton retour ou via le menu tiroir du kiosque.';
 
   @override
+  String get settingSendspinMaZoomDescription =>
+      'Met à l\'échelle l\'ensemble de la page Music Assistant.';
+
+  @override
   String get mediaMaHint => 'Serveur, jeton, raccourci du menu du kiosque';
 
   @override
