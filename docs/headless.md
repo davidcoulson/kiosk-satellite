@@ -64,7 +64,7 @@ adb shell 'settings put secure enabled_accessibility_services "$(settings get se
 adb shell settings put secure accessibility_enabled 1
 ```
 
-Each appearance of the dialog is answered once, and the log says so (`answered the power dialog with sleep`), or says that the answer could not be given, or that the dialog showed but had no view with that id. While a view id is the answer, the service reads that one app's windows to find the button; it reads nothing else on screen.
+Each appearance of the dialog is answered once, and the log says so (`answered the power dialog with sleep`), or says that the answer could not be given, or that the dialog showed but had no view with that id. While a package is set, the service reads that one app's windows; it reads nothing else on screen.
 
 ## Daily restart
 

@@ -48,14 +48,19 @@ import android.view.accessibility.AccessibilityNodeInfo
  * The settings are pushed from Dart ([RemoteKeysBridge]) and seeded from
  * the settings mirror when the service binds, so the dialog is answered
  * from boot before Dart has run. The service watches window-state
- * changes anyway; while a view id is the answer it also asks for
- * window-content changes ([KioskAccessibilityService.watchContent]),
- * since a dialog's buttons are not always inflated by the time its
- * window is announced. Each appearance is answered once: after an
- * answer, events from the dialog are ignored for a few seconds, so the
- * changes the answer itself causes do not answer it again. A dialog
- * whose button never turns up is logged, once, after the retries have
- * had their chance.
+ * changes anyway; while a package is set it also asks for window-content
+ * changes ([KioskAccessibilityService.watchContent]), for two reasons: a
+ * dialog's buttons are not always inflated by the time its window is
+ * announced, and the HY260's firmware clears the accessibility setting
+ * the instant the dialog launches (and again when it closes), so the
+ * service is unbound across the window-state event and rebound by
+ * [AccessibilityKeeper] a moment later - the dialog's countdown then
+ * announces itself every second through content changes, and the bind
+ * itself looks for the dialog among the windows. Each appearance is
+ * answered once: after an answer, events from the dialog are ignored for
+ * a few seconds, so the changes the answer itself causes do not answer
+ * it again. A dialog whose button never turns up is logged, once, after
+ * the retries have had their chance.
  */
 object PowerDialog {
     private const val TAG = "PowerDialog"
@@ -65,6 +70,7 @@ object PowerDialog {
     const val SLEEP = "sleep"
     const val DISMISS = "dismiss"
     const val DEFAULT_CHOICE = SLEEP
+    private const val BIND_PROBE_MS = 250L
 
     private val main = Handler(Looper.getMainLooper())
 
@@ -89,11 +95,20 @@ object PowerDialog {
     }
 
     /** The service bound: read the mirror if Dart has not spoken yet,
-     *  ask for content events if a view id wants them, and start
-     *  noticing the screen waking. */
+     *  ask for content events while a package is set, start noticing the
+     *  screen waking, and answer a dialog already up - the bind may be
+     *  the keeper's, after the dialog's own launch unbound the service. */
     fun serviceConnected(service: KioskAccessibilityService) {
         if (!configured) seed(service)
         service.watchContent(answerer.wantsContent())
+        main.postDelayed({
+            val pkg = answerer.packageName
+            if (pkg.isNotEmpty() && KioskAccessibilityService.instance === service &&
+                ServiceActions.dialogShowing(pkg)
+            ) {
+                answerer.onWindow(pkg, true) { dialogRoot(service, null, pkg) }
+            }
+        }, BIND_PROBE_MS)
         if (!watchingScreen) {
             watchingScreen = true
             // The application context outlives any one binding of the
@@ -146,11 +161,11 @@ object PowerDialog {
      */
     private fun dialogRoot(
         service: KioskAccessibilityService,
-        event: AccessibilityEvent,
+        event: AccessibilityEvent?,
         pkg: String,
     ): DialogNode? {
         val roots = sequence {
-            runCatching { event.source }.getOrNull()?.let { source ->
+            runCatching { event?.source }.getOrNull()?.let { source ->
                 var node: AccessibilityNodeInfo = source
                 while (true) node = node.parent ?: break
                 yield(node)
@@ -254,8 +269,9 @@ fun answerDialog(root: DialogNode, viewId: String): Boolean {
  * has landed [missAfterMs] later.
  *
  * A [PowerDialog.SLEEP] or [PowerDialog.DISMISS] answer: Back on the
- * window appearing, then [dismissAfterMs] later Home if the dialog is
- * still up, then, for sleep, the lock-screen action. Within
+ * first event from the dialog (its window appearing, or, when that was
+ * missed, any change in it), then [dismissAfterMs] later Home if the
+ * dialog is still up, then, for sleep, the lock-screen action. Within
  * [wakeGraceMs] of the screen coming on, sleep is downgraded to dismiss.
  */
 class PowerDialogAnswerer(
@@ -288,9 +304,8 @@ class PowerDialogAnswerer(
     private fun isGlobal(choice: String) =
         choice == PowerDialog.SLEEP || choice == PowerDialog.DISMISS
 
-    /** Whether the service should ask for window-content events at all:
-     *  only a view id has to be looked for in the dialog. */
-    fun wantsContent(): Boolean = packageName.isNotEmpty() && !isGlobal(choice)
+    /** Whether the service should ask for window-content events at all. */
+    fun wantsContent(): Boolean = packageName.isNotEmpty()
 
     fun concerns(pkg: String): Boolean = packageName.isNotEmpty() && pkg == packageName
 
@@ -305,7 +320,6 @@ class PowerDialogAnswerer(
         if (now() < answeredUntil) return false
         val choice = choice
         if (isGlobal(choice)) {
-            if (!appeared) return false
             answeredUntil = now() + answeredForMs
             val justWoke = now() - wokeAt < wakeGraceMs
             val sleep = choice == PowerDialog.SLEEP && !justWoke
