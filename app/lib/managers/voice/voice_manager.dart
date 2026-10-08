@@ -328,7 +328,9 @@ class VoiceManager extends Manager {
     _realtime = RealtimeSession(
       backend: _realtimeBackend,
       mic: _WakeMic(_wakeWord),
-      player: NativeRealtimePlayer(),
+      player: NativeRealtimePlayer(
+        log: (line) => log.info(name, 'realtime player: $line'),
+      ),
       chimes: _Player(commands),
       options: _realtimeOptions,
       onView: _onView,
@@ -547,7 +549,8 @@ class VoiceManager extends Manager {
                 'OpenAI: minimal, low, medium, high or xhigh. Gemini: '
                 'minimal, low, medium or high. Empty for the model\'s '
                 'default',
-            'search': 'Gemini only: true for its Google Search tool',
+            'search': 'Gemini and xAI: true for the provider\'s own web search',
+            'x_search': 'xAI only: true for its X search',
             'proactive':
                 'Gemini only: true for proactive audio (talk not meant '
                 'for it gets no answer)',
@@ -562,6 +565,7 @@ class VoiceManager extends Manager {
               voice: '${p['voice'] ?? ''}',
               reasoning: '${p['reasoning'] ?? ''}',
               search: p['search'] == true || p['search'] == 'true',
+              xSearch: p['x_search'] == true || p['x_search'] == 'true',
               proactive: p['proactive'] == true || p['proactive'] == 'true',
             ),
           ),
@@ -1797,6 +1801,7 @@ class VoiceManager extends Manager {
     SettingDef<String> voice,
     SettingDef<String>? reasoning,
     SettingDef<bool>? search,
+    SettingDef<bool>? xSearch,
     SettingDef<bool>? proactive,
     SettingDef<String> validated,
   })
@@ -1808,6 +1813,7 @@ class VoiceManager extends Manager {
       voice: defs.voiceRealtimeOpenAiVoice,
       reasoning: defs.voiceRealtimeOpenAiReasoning,
       search: null,
+      xSearch: null,
       proactive: null,
       validated: defs.voiceRealtimeOpenAiValidated,
     ),
@@ -1817,7 +1823,8 @@ class VoiceManager extends Manager {
       model: defs.voiceRealtimeXaiModel,
       voice: defs.voiceRealtimeXaiVoice,
       reasoning: null,
-      search: null,
+      search: defs.voiceRealtimeXaiSearch,
+      xSearch: defs.voiceRealtimeXaiXSearch,
       proactive: null,
       validated: defs.voiceRealtimeXaiValidated,
     ),
@@ -1828,6 +1835,7 @@ class VoiceManager extends Manager {
       voice: defs.voiceRealtimeGeminiVoice,
       reasoning: defs.voiceRealtimeGeminiReasoning,
       search: defs.voiceRealtimeGeminiSearch,
+      xSearch: null,
       proactive: defs.voiceRealtimeGeminiProactive,
       validated: defs.voiceRealtimeGeminiValidated,
     ),
@@ -2031,11 +2039,13 @@ class VoiceManager extends Manager {
     String? voice,
     String? reasoning,
     bool? search,
+    bool? xSearch,
     bool? proactive,
   }) {
     final d = _realtimeDefs(provider);
     final effort = d.reasoning;
     final searchDef = d.search;
+    final xSearchDef = d.xSearch;
     final proactiveDef = d.proactive;
     return RealtimeConfig(
       provider: provider,
@@ -2047,6 +2057,7 @@ class VoiceManager extends Manager {
       speed: _settings.get(defs.voiceRealtimeSpeed).toDouble(),
       reasoning: effort == null ? '' : reasoning ?? _settings.get(effort),
       search: searchDef != null && (search ?? _settings.get(searchDef)),
+      xSearch: xSearchDef != null && (xSearch ?? _settings.get(xSearchDef)),
       proactive:
           proactiveDef != null && (proactive ?? _settings.get(proactiveDef)),
     );
@@ -2070,7 +2081,11 @@ class VoiceManager extends Manager {
         if (base.isNotEmpty && token.isNotEmpty) {
           boxes.add(
             McpToolbox(
-              McpClient(url: Uri.parse('$base/api/mcp'), token: token),
+              McpClient(
+                url: Uri.parse('$base/api/mcp'),
+                token: token,
+                deviceId: _deviceId,
+              ),
               notFound: mcpMissing,
             ),
           );
@@ -2107,6 +2122,7 @@ class VoiceManager extends Manager {
     required String voice,
     String reasoning = '',
     bool search = false,
+    bool xSearch = false,
     bool proactive = false,
   }) async {
     final d = _realtimeDefs(provider);
@@ -2141,6 +2157,7 @@ class VoiceManager extends Manager {
         voice: voice,
         reasoning: reasoning,
         search: search,
+        xSearch: xSearch,
         proactive: proactive,
       ),
     );
@@ -2155,6 +2172,9 @@ class VoiceManager extends Manager {
     }
     if (d.search case final def?) {
       await _settings.set(def, search, source: 'voice');
+    }
+    if (d.xSearch case final def?) {
+      await _settings.set(def, xSearch, source: 'voice');
     }
     if (d.proactive case final def?) {
       await _settings.set(def, proactive, source: 'voice');
@@ -2670,16 +2690,16 @@ class VoiceManager extends Manager {
         _onTimerEvent(fields);
       case 'announce':
         if (!enabled) return;
+        final announcement = VoiceAnnouncement(
+          mediaId: '${fields['mediaId'] ?? ''}',
+          text: '${fields['text'] ?? ''}',
+          preannounceMediaId: '${fields['preannounceMediaId'] ?? ''}',
+          startConversation: fields['startConversation'] == true,
+        );
+        if (_openRealtime(announcement)) return;
         unawaited(
           _announceOverConversation().then(
-            (_) => _session.announce(
-              VoiceAnnouncement(
-                mediaId: '${fields['mediaId'] ?? ''}',
-                text: '${fields['text'] ?? ''}',
-                preannounceMediaId: '${fields['preannounceMediaId'] ?? ''}',
-                startConversation: fields['startConversation'] == true,
-              ),
-            ),
+            (_) => _session.announce(announcement),
           ),
         );
       case 'setConfiguration':
@@ -2695,6 +2715,40 @@ class VoiceManager extends Manager {
           ),
         );
     }
+  }
+
+  /// start_conversation with a provider on Assistant 1, the one Home
+  /// Assistant runs when no wake word started the turn: the realtime
+  /// conversation takes it, and the model says the start message in its
+  /// own voice instead of Home Assistant's speech. Home Assistant hears the
+  /// announcement finished once the line has played. Its extra system
+  /// prompt never reaches the kiosk and is not part of it. False leaves the
+  /// announcement to Assist: no provider, or no message to say (an
+  /// automation that plays its own media).
+  bool _openRealtime(VoiceAnnouncement announcement) {
+    if (!announcement.startConversation) return false;
+    final opening = announcement.text.trim();
+    final provider = _slotProvider(1);
+    if (opening.isEmpty || provider == null) return false;
+    unawaited(() async {
+      if (_realtime.busy) await _realtime.cancel();
+      if (_session.busy) await _session.cancel();
+      _activeProvider = provider;
+      unawaited(UsageCounters.bump(_settings, 'vs_turns_${provider.id}'));
+      // Home Assistant started it, not someone at the screen: the screen
+      // comes on as it does for an announcement.
+      unawaited(commands.execute('screenOn', const {}));
+      unawaited(
+        commands.execute('bringToFront', const {'voiceInteraction': true}),
+      );
+      await _realtime.wake(
+        '',
+        opening: opening,
+        announceChime: announcement.preannounceMediaId.isNotEmpty,
+        onOpened: () => unawaited(_esphome.voiceAnnounceFinished()),
+      );
+    }());
+    return true;
   }
 
   /// An announcement ends a realtime conversation first: the two would

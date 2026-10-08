@@ -505,9 +505,11 @@ class IntercomHangupKeyArmed extends AppEvent {
   final int keyCode;
 }
 
-/// The armed hang up button was pressed.
-class IntercomHangupKeyPressed extends AppEvent {
-  const IntercomHangupKeyPressed();
+/// The armed hang up button was pressed or a hang up gesture fired. Only
+/// a call being placed, a live call or an announcement ends: a ringing
+/// call is answered or declined on the screen.
+class IntercomHangupRequested extends AppEvent {
+  const IntercomHangupRequested();
 }
 
 /// The intercom wants the microphone the page holds, or is done with it.
@@ -969,6 +971,14 @@ class SelfRepaired extends AppEvent {
 class GestureDetected extends AppEvent {
   const GestureDetected({required this.id});
   final String id;
+}
+
+/// A running plugin fired one of its declared triggers (issue #888). The
+/// gestures manager runs every mapping bound to it.
+class PluginTriggerFired extends AppEvent {
+  const PluginTriggerFired({required this.pluginId, required this.trigger});
+  final String pluginId;
+  final String trigger;
 }
 
 /// A gesture's Home Assistant action (a service call, script, automation

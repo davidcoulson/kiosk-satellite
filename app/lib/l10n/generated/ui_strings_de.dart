@@ -1525,6 +1525,15 @@ class UiStringsDe extends UiStrings {
   String get gestureIntercomCall => 'Einen Kiosk anrufen';
 
   @override
+  String get gestureIntercomHangup => 'Gegensprechanruf beenden';
+
+  @override
+  String get gestureAlarmStop => 'Wecker stoppen';
+
+  @override
+  String get gestureAlarmSnooze => 'Wecker schlummern lassen';
+
+  @override
   String get gestureScreensaver => 'Bildschirmschoner starten';
 
   @override
@@ -2065,10 +2074,20 @@ class UiStringsDe extends UiStrings {
   String get gestureSequenceError => 'Füge mindestens zwei Ecken hinzu.';
 
   @override
+  String get gesturePluginTrigger => 'Plugin-Auslöser';
+
+  @override
   String get gestureRemoteKey => 'Remote key';
 
   @override
+  String get gesturePluginTriggerField => 'Auslöser';
+
+  @override
   String get gestureKey => 'Key';
+
+  @override
+  String get gesturePluginTriggerHelp =>
+      'Aktiviere zuerst ein Plugin mit Auslösern im Plugin-Manager.';
 
   @override
   String get gestureKeyNone => 'No key yet';
@@ -3315,6 +3334,13 @@ class UiStringsDe extends UiStrings {
   String pluginErrorInvalidField(String field) {
     return 'Das Feld $field ist ungültig';
   }
+
+  @override
+  String get pluginErrorTooManyTriggers => 'Zu viele Auslöser';
+
+  @override
+  String get pluginErrorTriggerId =>
+      'Die Auslöser-ID ist ungültig oder bereits vorhanden';
 
   @override
   String get remoteDisableTitle => 'Fernverwaltung deaktivieren?';
@@ -8631,6 +8657,10 @@ class UiStringsDe extends UiStrings {
       'Ein negativer Wert lässt dieses Gerät früher wiedergeben, um Lautsprecher auszugleichen, die gegenüber der Gruppe verzögert sind, beispielsweise Bluetooth-Lautsprecher. Nach Gehör anpassen. Wird sofort angewendet.';
 
   @override
+  String get settingSendspinGroupVolumeDescription =>
+      'Wenn dieses Gerät in einer Gruppe wiedergibt, steuert die Lautstärkeregelung die gesamte Gruppe. Ist diese Option deaktiviert, wird nur die Lautstärke dieses Geräts angepasst. Erfordert die Verbindung zu Music Assistant.';
+
+  @override
   String get mediaSendspinPage => 'Sendspin-Player';
 
   @override
@@ -9743,6 +9773,14 @@ class UiStringsDe extends UiStrings {
   @override
   String get settingScreensaverMenuDescription =>
       'Fügt dem Kiosk-Menü die Option „Bildschirmschoner starten“ hinzu.';
+
+  @override
+  String get settingScreensaverFollowAnimationScaleTitle =>
+      'Android-Animationseinstellungen folgen';
+
+  @override
+  String get settingScreensaverFollowAnimationScaleDescription =>
+      'Pausiert animierte Bildschirmschoner, wenn Android-Animationen ausgeschaltet sind.';
 
   @override
   String get settingScreensaverDimLevelTitle => 'Dimmstufe';
@@ -12395,6 +12433,20 @@ class UiStringsDe extends UiStrings {
   @override
   String get settingVoiceRealtimeGeminiProactiveDescription =>
       'Das Modell bleibt still, wenn das Gehörte nicht an es gerichtet ist. Bei Google experimentell.';
+
+  @override
+  String get settingVoiceRealtimeXaiWebSearchTitle => 'Websuche';
+
+  @override
+  String get settingVoiceRealtimeXaiWebSearchDescription =>
+      'Lässt das Modell im Web nachschlagen.';
+
+  @override
+  String get settingVoiceRealtimeXaiXSearchTitle => 'X-Suche';
+
+  @override
+  String get settingVoiceRealtimeXaiXSearchDescription =>
+      'Lässt das Modell Beiträge auf X durchsuchen.';
 
   @override
   String get voiceRealtimeReasoningDefault => 'Modellstandard';

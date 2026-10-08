@@ -30,11 +30,23 @@ export const localizationCredits = {
       "login": "rononline"
     }
   ],
+  "ru": [
+    {
+      "name": "Iaroslav Iadryshnikov",
+      "login": "MrYadro"
+    }
+  ],
   "uk": [
     {
       "name": "kdinya",
       "login": "kdinya"
     }
+  ],
+  "zh-CN": [
+    {
+      "name": "panda-star357",
+      "login": "panda-star357"
+    }
   ]
 };
-export const localizationLanguageNames = {"de": "Deutsch", "en": "English", "es": "Español", "fr": "Français", "nl": "Nederlands", "uk": "Українська"};
+export const localizationLanguageNames = {"de": "Deutsch", "en": "English", "es": "Español", "fr": "Français", "nl": "Nederlands", "ru": "Русский", "uk": "Українська", "zh-CN": "简体中文"};

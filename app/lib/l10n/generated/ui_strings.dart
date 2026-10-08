@@ -10,7 +10,9 @@ import 'ui_strings_en.dart';
 import 'ui_strings_es.dart';
 import 'ui_strings_fr.dart';
 import 'ui_strings_nl.dart';
+import 'ui_strings_ru.dart';
 import 'ui_strings_uk.dart';
+import 'ui_strings_zh.dart';
 
 // ignore_for_file: type=lint
 
@@ -102,7 +104,10 @@ abstract class UiStrings {
     Locale('es'),
     Locale('fr'),
     Locale('nl'),
+    Locale('ru'),
     Locale('uk'),
+    Locale('zh'),
+    Locale('zh', 'CN'),
   ];
 
   /// App information group heading.
@@ -2719,6 +2724,24 @@ abstract class UiStrings {
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
+  /// **'End the intercom call'**
+  String get gestureIntercomHangup;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the alarm'**
+  String get gestureAlarmStop;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze the alarm'**
+  String get gestureAlarmSnooze;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
   /// **'Start the screensaver'**
   String get gestureScreensaver;
 
@@ -3619,14 +3642,32 @@ abstract class UiStrings {
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
+  /// **'Plugin trigger'**
+  String get gesturePluginTrigger;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
   /// **'Remote key'**
   String get gestureRemoteKey;
 
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
+  /// **'Trigger'**
+  String get gesturePluginTriggerField;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
   /// **'Key'**
   String get gestureKey;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable a plugin with triggers in Plugin Manager first.'**
+  String get gesturePluginTriggerHelp;
 
   /// Label or guidance in this section.
   ///
@@ -5728,6 +5769,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Invalid {field}'**
   String pluginErrorInvalidField(String field);
+
+  /// Explain the failure. Keep technical identifiers, file names and product names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many triggers'**
+  String get pluginErrorTooManyTriggers;
+
+  /// Explain the failure. Keep technical identifiers, file names and product names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid or duplicate trigger ID'**
+  String get pluginErrorTriggerId;
 
   /// Translate the visible message. Keep placeholders and any technical names unchanged.
   ///
@@ -14652,6 +14705,12 @@ abstract class UiStrings {
   /// **'Negative plays this device earlier, for speakers that lag behind the group (Bluetooth). Tune by ear; applies live.'**
   String get settingSendspinSyncOffsetDescription;
 
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'While this device plays in a group, the volume slider sets the whole group\'s volume. Off, only this device\'s. Needs the Music Assistant connection.'**
+  String get settingSendspinGroupVolumeDescription;
+
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
@@ -16565,6 +16624,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Add a Start Screensaver entry to the kiosk menu.'**
   String get settingScreensaverMenuDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow Android animation settings'**
+  String get settingScreensaverFollowAnimationScaleTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause animated screensavers when Android animations are off.'**
+  String get settingScreensaverFollowAnimationScaleDescription;
 
   /// Setting label.
   ///
@@ -21081,6 +21152,30 @@ abstract class UiStrings {
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
   /// In en, this message translates to:
+  /// **'Web Search'**
+  String get settingVoiceRealtimeXaiWebSearchTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets the model look things up on the web.'**
+  String get settingVoiceRealtimeXaiWebSearchDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'X Search'**
+  String get settingVoiceRealtimeXaiXSearchTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets the model search posts on X.'**
+  String get settingVoiceRealtimeXaiXSearchDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
   /// **'Model default'**
   String get voiceRealtimeReasoningDefault;
 
@@ -23254,7 +23349,9 @@ class _UiStringsDelegate extends LocalizationsDelegate<UiStrings> {
     'es',
     'fr',
     'nl',
+    'ru',
     'uk',
+    'zh',
   ].contains(locale.languageCode);
 
   @override
@@ -23262,6 +23359,18 @@ class _UiStringsDelegate extends LocalizationsDelegate<UiStrings> {
 }
 
 UiStrings lookupUiStrings(Locale locale) {
+  // Lookup logic when language+country codes are specified.
+  switch (locale.languageCode) {
+    case 'zh':
+      {
+        switch (locale.countryCode) {
+          case 'CN':
+            return UiStringsZhCn();
+        }
+        break;
+      }
+  }
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
     case 'de':
@@ -23274,8 +23383,12 @@ UiStrings lookupUiStrings(Locale locale) {
       return UiStringsFr();
     case 'nl':
       return UiStringsNl();
+    case 'ru':
+      return UiStringsRu();
     case 'uk':
       return UiStringsUk();
+    case 'zh':
+      return UiStringsZh();
   }
 
   throw FlutterError(

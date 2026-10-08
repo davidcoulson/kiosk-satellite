@@ -420,6 +420,9 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'gestureLauncher' => strings.gestureLauncher,
       'gestureIntercomOpen' => strings.gestureIntercomOpen,
       'gestureIntercomCall' => strings.gestureIntercomCall,
+      'gestureIntercomHangup' => strings.gestureIntercomHangup,
+      'gestureAlarmStop' => strings.gestureAlarmStop,
+      'gestureAlarmSnooze' => strings.gestureAlarmSnooze,
       'gestureScreensaver' => strings.gestureScreensaver,
       'gestureScreensaverStop' => strings.gestureScreensaverStop,
       'gestureHoldMode' => strings.gestureHoldMode,
@@ -533,8 +536,11 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'gestureChangeHelp' => strings.gestureChangeHelp,
       'gestureChooseError' => strings.gestureChooseError,
       'gestureSequenceError' => strings.gestureSequenceError,
+      'gesturePluginTrigger' => strings.gesturePluginTrigger,
       'gestureRemoteKey' => strings.gestureRemoteKey,
+      'gesturePluginTriggerField' => strings.gesturePluginTriggerField,
       'gestureKey' => strings.gestureKey,
+      'gesturePluginTriggerHelp' => strings.gesturePluginTriggerHelp,
       'gestureKeyNone' => strings.gestureKeyNone,
       'gestureKeyCapture' => strings.gestureKeyCapture,
       'gestureKeyWaiting' => strings.gestureKeyWaiting,
@@ -876,6 +882,8 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'pluginErrorSelectionOption' => strings.pluginErrorSelectionOption,
       'pluginErrorSettingType' => strings.pluginErrorSettingType,
       'pluginErrorInvalidManifest' => strings.pluginErrorInvalidManifest,
+      'pluginErrorTooManyTriggers' => strings.pluginErrorTooManyTriggers,
+      'pluginErrorTriggerId' => strings.pluginErrorTriggerId,
       'remoteDisableTitle' => strings.remoteDisableTitle,
       'remoteDisableHelp' => strings.remoteDisableHelp,
       'remoteDisableConfirm' => strings.remoteDisableConfirm,
@@ -2568,6 +2576,8 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingSendspinSyncOffsetTitle,
       'settingSendspinSyncOffsetDescription' =>
         strings.settingSendspinSyncOffsetDescription,
+      'settingSendspinGroupVolumeDescription' =>
+        strings.settingSendspinGroupVolumeDescription,
       'mediaSendspinPage' => strings.mediaSendspinPage,
       'mediaSendspinHint' => strings.mediaSendspinHint,
       'mediaFlac' => strings.mediaFlac,
@@ -3013,6 +3023,10 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'settingScreensaverMenuTitle' => strings.settingScreensaverMenuTitle,
       'settingScreensaverMenuDescription' =>
         strings.settingScreensaverMenuDescription,
+      'settingScreensaverFollowAnimationScaleTitle' =>
+        strings.settingScreensaverFollowAnimationScaleTitle,
+      'settingScreensaverFollowAnimationScaleDescription' =>
+        strings.settingScreensaverFollowAnimationScaleDescription,
       'settingScreensaverDimLevelTitle' =>
         strings.settingScreensaverDimLevelTitle,
       'settingScreensaverDimLevelDescription' =>
@@ -4057,6 +4071,14 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingVoiceRealtimeGeminiProactiveTitle,
       'settingVoiceRealtimeGeminiProactiveDescription' =>
         strings.settingVoiceRealtimeGeminiProactiveDescription,
+      'settingVoiceRealtimeXaiWebSearchTitle' =>
+        strings.settingVoiceRealtimeXaiWebSearchTitle,
+      'settingVoiceRealtimeXaiWebSearchDescription' =>
+        strings.settingVoiceRealtimeXaiWebSearchDescription,
+      'settingVoiceRealtimeXaiXSearchTitle' =>
+        strings.settingVoiceRealtimeXaiXSearchTitle,
+      'settingVoiceRealtimeXaiXSearchDescription' =>
+        strings.settingVoiceRealtimeXaiXSearchDescription,
       'voiceRealtimeReasoningDefault' => strings.voiceRealtimeReasoningDefault,
       'voiceRealtimeReasoningMinimal' => strings.voiceRealtimeReasoningMinimal,
       'voiceRealtimeReasoningLow' => strings.voiceRealtimeReasoningLow,

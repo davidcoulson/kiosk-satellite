@@ -3889,6 +3889,19 @@ const screensaverMenu = SettingDef<bool>(
   category: 'Screensaver',
 );
 
+/// Off by default: an animated screensaver is meant to move, and kiosk
+/// setup guides often zero Android's animation scales for speed (#864).
+/// On, Weather Mood holds a still frame while Android's transition
+/// animation scale is off, which saves CPU on low-power devices (#870).
+const screensaverFollowAnimationScale = SettingDef<bool>(
+  key: 'screensaver.follow_animation_scale',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Follow Android animation settings',
+  description: 'Pause animated screensavers when Android animations are off.',
+  category: 'Screensaver',
+);
+
 // ── Camera Streams (mode: camera) ──
 // The views the screensaver cycles through, as a JSON array of view ids in
 // rotation order. Picked from the views configured under Camera Streams in
@@ -5760,6 +5773,33 @@ const voiceRealtimeXaiEndpoint = SettingDef<String>(
   dependsOn: 'voice.enabled',
 );
 
+/// xAI's own web search, next to the Home Assistant tools. xAI runs it
+/// and bills it as part of the conversation.
+const voiceRealtimeXaiSearch = SettingDef<bool>(
+  key: 'voice.realtime_xai_search',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Web Search',
+  description: 'Lets the model look things up on the web.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  dependsOn: 'voice.enabled',
+);
+
+/// xAI's own X search: posts, users and threads on X.
+const voiceRealtimeXaiXSearch = SettingDef<bool>(
+  key: 'voice.realtime_xai_x_search',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'X Search',
+  description: 'Lets the model search posts on X.',
+  category: 'Voice Satellite',
+  subpage: 'Realtime',
+  section: 'Providers',
+  dependsOn: 'voice.enabled',
+);
+
 /// What xAI's last successful Save & Validate checked: a hash of
 /// its endpoint and key. The Assistant selects offer it only while that
 /// still matches. Per device: each kiosk reaches the provider on its own.
@@ -5935,6 +5975,7 @@ const realtimeProviderSettings = <String, List<SettingDef<String>>>{
 /// The switches each provider's Configure dialog holds after the settings
 /// above, by provider id. Hidden from the page the same way.
 const realtimeProviderSwitches = <String, List<SettingDef<bool>>>{
+  'xai': [voiceRealtimeXaiSearch, voiceRealtimeXaiXSearch],
   'gemini': [voiceRealtimeGeminiSearch, voiceRealtimeGeminiProactive],
 };
 
@@ -7655,6 +7696,26 @@ const sendspinSyncOffset = SettingDef<num>(
   description:
       'Negative plays this device earlier, for speakers that lag behind '
       'the group (Bluetooth). Tune by ear; applies live.',
+  category: 'Sendspin',
+  subpage: 'Sendspin Player',
+  section: 'Sendspin Player',
+  dependsOn: 'sendspin.enabled',
+);
+
+/// Whether the Now Playing volume slider sets the whole group's volume
+/// while this device plays in a Music Assistant group (issue #867), the
+/// way Music Assistant's own group slider does, or only this device's.
+/// The group's level comes from Music Assistant's API, so the switch
+/// needs that connection.
+const sendspinGroupVolume = SettingDef<bool>(
+  key: 'sendspin.group_volume',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Adjust the group volume',
+  description:
+      'While this device plays in a group, the volume slider sets the '
+      "whole group's volume. Off, only this device's. Needs the Music "
+      'Assistant connection.',
   category: 'Sendspin',
   subpage: 'Sendspin Player',
   section: 'Sendspin Player',
@@ -10896,6 +10957,7 @@ const List<SettingDef<Object>> allSettings = [
   // Pixel shift sits with the general controls: it applies to every mode.
   screensaverPixelShift,
   screensaverMenu,
+  screensaverFollowAnimationScale,
   // The legacy small clock rows, hidden since the Widgets group took over;
   // registered so old backups still import (then migrate on startup).
   screensaverMiniClock,
@@ -11129,6 +11191,8 @@ const List<SettingDef<Object>> allSettings = [
   voiceRealtimeXaiModel,
   voiceRealtimeXaiVoice,
   voiceRealtimeXaiEndpoint,
+  voiceRealtimeXaiSearch,
+  voiceRealtimeXaiXSearch,
   voiceRealtimeXaiValidated,
   voiceRealtimeGeminiApiKey,
   voiceRealtimeGeminiModel,
@@ -11234,6 +11298,7 @@ const List<SettingDef<Object>> allSettings = [
   sendspinServer,
   sendspinCodec,
   sendspinSyncOffset,
+  sendspinGroupVolume,
   sendspinMaUrl,
   sendspinMaToken,
   sendspinMaShortcut,

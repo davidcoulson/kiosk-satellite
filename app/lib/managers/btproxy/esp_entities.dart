@@ -11,6 +11,7 @@ import '../../core/events.dart';
 import '../../core/logging.dart';
 import '../device/ip_addresses.dart';
 import '../gestures/remote_keys_manager.dart' show remoteKeyEventTypes;
+import '../intercom/intercom_sensors.dart';
 import 'dashboard_views.dart';
 import 'interaction_stamp.dart';
 import '../sendspin/music_assistant_api.dart';
@@ -403,6 +404,13 @@ class EspEntitySurface {
       'Media volume',
       'mdi:music-note',
       defs.mediaVolume,
+    ),
+    // Catalog-gated below on the intercom being on, like its answer mode
+    // (issue #869).
+    'intercom_volume': _percent(
+      'Intercom volume',
+      'mdi:phone-in-talk-outline',
+      defs.intercomVolume,
     ),
     'vs_answer_linger': (
       name: 'VS Answer linger',
@@ -1001,7 +1009,8 @@ class EspEntitySurface {
       },
       // ── Config ───────────────────────────────────────────────────────
       for (final e in _settingNumbers.entries)
-        if (!e.key.startsWith('vs_') || _voiceNative)
+        if ((e.key != 'intercom_volume' || intercomOn) &&
+            (!e.key.startsWith('vs_') || _voiceNative))
           {
             'type': 'number',
             'objectId': e.key,
@@ -2248,17 +2257,14 @@ class EspEntitySurface {
     _sendInitial();
   }
 
-  /// The intercom's three sensors from one status shape: the state word,
-  /// the other kiosk (the caller after a missed call, else nobody) and
-  /// whether Do not disturb holds.
+  /// The intercom's three sensors from one status shape. See
+  /// [intercomSensors].
   Future<void> _sendIntercom(Map<String, Object?> status) async {
     if (!_settings.get(defs.intercomEnabled)) return;
-    final call = status['call'];
-    final peer = call is Map ? call['peer'] : null;
-    final peerName = peer is Map ? '${peer['name'] ?? ''}' : '';
-    await _send('intercom', '${status['state'] ?? 'idle'}');
-    await _send('intercom_kiosk', peerName);
-    await _send('intercom_do_not_disturb', status['dnd'] == true);
+    final sensors = intercomSensors(status);
+    await _send('intercom', sensors['state']);
+    await _send('intercom_kiosk', sensors['kiosk']);
+    await _send('intercom_do_not_disturb', sensors['dnd']);
   }
 
   void detach() {

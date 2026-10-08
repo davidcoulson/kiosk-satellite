@@ -1516,6 +1516,15 @@ class UiStringsFr extends UiStrings {
   String get gestureIntercomCall => 'Appeler un kiosque';
 
   @override
+  String get gestureIntercomHangup => 'Terminer l\'appel d\'interphone';
+
+  @override
+  String get gestureAlarmStop => 'Arrêter l\'alarme';
+
+  @override
+  String get gestureAlarmSnooze => 'Reporter l\'alarme';
+
+  @override
   String get gestureScreensaver => 'Démarrer l\'économiseur d\'écran';
 
   @override
@@ -2056,10 +2065,20 @@ class UiStringsFr extends UiStrings {
   String get gestureSequenceError => 'Ajoutez au moins deux coins.';
 
   @override
+  String get gesturePluginTrigger => 'Déclencheur de plugin';
+
+  @override
   String get gestureRemoteKey => 'Remote key';
 
   @override
+  String get gesturePluginTriggerField => 'Déclencheur';
+
+  @override
   String get gestureKey => 'Key';
+
+  @override
+  String get gesturePluginTriggerHelp =>
+      'Activez d\'abord un plugin proposant des déclencheurs dans le Gestionnaire de plugins.';
 
   @override
   String get gestureKeyNone => 'No key yet';
@@ -3288,6 +3307,13 @@ class UiStringsFr extends UiStrings {
   String pluginErrorInvalidField(String field) {
     return '$field invalide';
   }
+
+  @override
+  String get pluginErrorTooManyTriggers => 'Trop de déclencheurs';
+
+  @override
+  String get pluginErrorTriggerId =>
+      'Identifiant de déclencheur invalide ou en double';
 
   @override
   String get remoteDisableTitle => 'Désactiver la gestion à distance ?';
@@ -8581,6 +8607,10 @@ class UiStringsFr extends UiStrings {
       'Une valeur négative fait jouer cet appareil plus tôt, pour les enceintes en retard sur le groupe (Bluetooth). Réglez à l\'oreille ; s\'applique en direct.';
 
   @override
+  String get settingSendspinGroupVolumeDescription =>
+      'Tant que cet appareil joue au sein d\'un groupe, le curseur de volume règle le volume de tout le groupe. Si l\'option est désactivée, seul le volume de cet appareil est modifié. Nécessite la connexion à Music Assistant.';
+
+  @override
   String get mediaSendspinPage => 'Lecteur Sendspin';
 
   @override
@@ -9693,6 +9723,14 @@ class UiStringsFr extends UiStrings {
   @override
   String get settingScreensaverMenuDescription =>
       'Ajoute une entrée Démarrer l\'économiseur d\'écran au menu du kiosque.';
+
+  @override
+  String get settingScreensaverFollowAnimationScaleTitle =>
+      'Suivre les paramètres d\'animation d\'Android';
+
+  @override
+  String get settingScreensaverFollowAnimationScaleDescription =>
+      'Met en pause les économiseurs d\'écran animés quand les animations d\'Android sont désactivées.';
 
   @override
   String get settingScreensaverDimLevelTitle => 'Niveau de tamisage';
@@ -12346,6 +12384,20 @@ class UiStringsFr extends UiStrings {
   @override
   String get settingVoiceRealtimeGeminiProactiveDescription =>
       'Le modèle reste silencieux quand ce qu\'il entend ne lui est pas adressé. Expérimental chez Google.';
+
+  @override
+  String get settingVoiceRealtimeXaiWebSearchTitle => 'Recherche web';
+
+  @override
+  String get settingVoiceRealtimeXaiWebSearchDescription =>
+      'Permet au modèle de chercher des informations sur le web.';
+
+  @override
+  String get settingVoiceRealtimeXaiXSearchTitle => 'Recherche X';
+
+  @override
+  String get settingVoiceRealtimeXaiXSearchDescription =>
+      'Permet au modèle de chercher des publications sur X.';
 
   @override
   String get voiceRealtimeReasoningDefault => 'Par défaut du modèle';

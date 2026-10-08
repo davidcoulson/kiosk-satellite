@@ -67,8 +67,10 @@ class KioskAccessibilityService : AccessibilityService() {
         var foregroundPackage: String? = null
             private set
 
-        /// The bound service, for switching key filtering on and off as
-        /// remote key mappings come and go. Main thread only.
+        /// The connected service: the host of the lockdown shield's
+        /// accessibility overlay on a Meta Portal (see [LockShieldOverlay]),
+        /// and what switches key filtering on and off as remote key
+        /// mappings come and go (main thread only).
         @Volatile
         var instance: KioskAccessibilityService? = null
             private set
@@ -94,12 +96,21 @@ class KioskAccessibilityService : AccessibilityService() {
         filteringKeys = on
     }
 
-    override fun onKeyEvent(event: KeyEvent): Boolean = RemoteKeys.onKey(event)
+    override fun onKeyEvent(event: KeyEvent): Boolean {
+        val consumed = RemoteKeys.onKey(event)
+        // Plugins observe hardware keys from MainActivity.dispatchKeyEvent
+        // (the device.key event). A key swallowed here never gets there, so
+        // it is handed to them from here instead; one that passes through
+        // reaches the Activity on its own, so it is not sent twice.
+        if (consumed) me.jxl.kiosk_satellite.plugins.PluginBridge.onKey(event)
+        return consumed
+    }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         running = true
         instance = this
+        LockShieldOverlay.rehost()
         RemoteKeys.serviceConnected(this)
         if (!guardShade && !guardRecents) {
             val prefs =
@@ -116,18 +127,21 @@ class KioskAccessibilityService : AccessibilityService() {
     }
 
     override fun onUnbind(intent: android.content.Intent?): Boolean {
-        released()
+        disconnected()
         return super.onUnbind(intent)
     }
 
     override fun onDestroy() {
-        released()
+        disconnected()
         super.onDestroy()
     }
 
-    private fun released() {
+    private fun disconnected() {
         running = false
-        if (instance === this) instance = null
+        if (instance === this) {
+            instance = null
+            LockShieldOverlay.rehost()
+        }
         filteringKeys = false
         RemoteKeys.serviceGone(applicationContext)
     }

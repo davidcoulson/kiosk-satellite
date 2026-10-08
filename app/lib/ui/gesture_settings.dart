@@ -44,6 +44,9 @@ const _actionGroups = <(String, List<(String, String, IconData)>)>[
       ('app_launcher', 'Open the app launcher', Icons.apps_outlined),
       ('intercom_open', 'Open Call a kiosk', Icons.speaker_phone_outlined),
       ('intercom_call', 'Call a kiosk', Icons.phone_outlined),
+      ('intercom_hangup', 'End the intercom call', Icons.call_end_outlined),
+      ('alarm_stop', 'Stop the alarm', Icons.alarm_off_outlined),
+      ('alarm_snooze', 'Snooze the alarm', Icons.snooze_outlined),
       ('screensaver', 'Start the screensaver', Icons.nightlight_outlined),
       ('screensaver_stop', 'Stop the screensaver', Icons.light_mode_outlined),
       ('hold_mode', 'Toggle hold mode', Icons.pause_circle_outline),
@@ -78,6 +81,7 @@ const _triggerTypes = <(String, String)>[
   ('corner_sequence', 'Corner sequence'),
   ('claps', 'Claps'),
   ('fingers', 'Show fingers'),
+  ('plugin', 'Plugin trigger'),
   ('remote_key', 'Remote key'),
 ];
 
@@ -146,6 +150,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                 leading: Icon(switch (mapping.triggerType) {
                   'claps' => Icons.sign_language_outlined,
                   'fingers' => Icons.waving_hand_outlined,
+                  'plugin' => Icons.extension_outlined,
                   'remote_key' => Icons.settings_remote_outlined,
                   _ => Icons.gesture,
                 }),
@@ -364,6 +369,25 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
         '$s',
     ];
     Map<String, Object?>? action = existing?.action;
+    // Running plugins' triggers, plus the saved one so a mapping whose
+    // plugin is off still opens with its trigger selected.
+    String pluginKey(Map<String, Object?> t) =>
+        '${t['pluginId']}/${t['trigger']}';
+    final pluginTriggers = <String, Map<String, Object?>>{
+      if (type == 'plugin') pluginKey(existing!.trigger): existing.trigger,
+      for (final t in c.plugins.triggers)
+        if (t['available'] == true)
+          pluginKey(t): {
+            'type': 'plugin',
+            'pluginId': t['pluginId'],
+            'trigger': t['trigger'],
+            'pluginName': t['pluginName'],
+            'title': t['title'],
+          },
+    };
+    String? pluginTrigger = type == 'plugin'
+        ? pluginKey(existing!.trigger)
+        : pluginTriggers.keys.firstOrNull;
 
     if (!cornerNames.containsKey(corner)) corner = 'tl';
 
@@ -375,6 +399,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
           final canSave =
               action != null &&
               (type != 'corner_sequence' || sequence.length >= 2) &&
+              (type != 'plugin' || pluginTrigger != null) &&
               (type != 'remote_key' || keyCode != null);
           return AlertDialog(
             title: Text(
@@ -604,6 +629,37 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
+                      if (type == 'plugin')
+                        pluginTriggers.isEmpty
+                            ? Text(
+                                gestureText(
+                                  context,
+                                  'Enable a plugin with triggers in Plugin '
+                                  'Manager first.',
+                                ),
+                                style: Theme.of(context).textTheme.bodySmall,
+                              )
+                            : LabeledField(
+                                label: gestureText(context, 'Trigger'),
+                                child: DropdownButtonFormField<String>(
+                                  isExpanded: true,
+                                  initialValue: pluginTrigger,
+                                  decoration: const InputDecoration(),
+                                  items: [
+                                    for (final entry in pluginTriggers.entries)
+                                      DropdownMenuItem(
+                                        value: entry.key,
+                                        child: Text(
+                                          describePluginTrigger(entry.value),
+                                        ),
+                                      ),
+                                  ],
+                                  onChanged: (value) => setDialogState(
+                                    () =>
+                                        pluginTrigger = value ?? pluginTrigger,
+                                  ),
+                                ),
+                              ),
                       if (type == 'remote_key') ...[
                         ListTile(
                           contentPadding: EdgeInsets.zero,
@@ -764,6 +820,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
     if (submitted != true || action == null) return;
 
     final trigger = <String, Object?>{
+      if (type == 'plugin') ...pluginTriggers[pluginTrigger]!,
       'type': type,
       if (type == 'corner_taps' || type == 'corner_hold') 'corner': corner,
       if (type == 'corner_taps') 'taps': taps,
@@ -880,6 +937,9 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
       'media_play_pause' ||
       'app_launcher' ||
       'intercom_open' ||
+      'intercom_hangup' ||
+      'alarm_stop' ||
+      'alarm_snooze' ||
       'screensaver' ||
       'screensaver_stop' ||
       'hold_mode' ||
