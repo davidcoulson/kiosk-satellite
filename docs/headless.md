@@ -53,6 +53,19 @@ An app cannot inject other keys (that needs a system permission), so anything el
 
 **Home app** names the app this box should normally show, such as `com.spocky.projengmenu`. **Open the home app at boot** starts it once the device has booted. **Return to the home app when idle** brings it back after that many minutes with no remote key pressed and nothing playing - the vendor launcher, a crashed player or a forgotten settings screen gets replaced by the app the box is for. It never interrupts playback. The app in front comes from the accessibility service's window events, so no Usage access is needed.
 
+## Answering the power dialog
+
+Some vendors answer the remote's power key with a dialog of their own rather than Android's power menu. The HY260 projector opens `com.htc.closedialog`, with Shutdown focused and a fifteen second countdown that shuts the projector down when nobody picks anything else, and a shutdown ends Kiosk Satellite until someone powers the box on again. **Power dialog app** names that dialog's Android package (`com.htc.closedialog` on an HY260); empty does nothing. **Power dialog answer** is the view id, without the package prefix, of the button Kiosk Satellite presses the moment the dialog appears: `rl_sleep` (the default) puts the HY260 to sleep instead of shutting it down, and `rl_reboot` or `rl_speaker` are its other rows. The ids of another vendor's dialog come from `adb shell uiautomator dump` with the dialog open.
+
+The press needs the accessibility service, and works from boot once the service is enabled: with `WRITE_SECURE_SETTINGS` granted (above) Kiosk Satellite turns it on by itself; otherwise enable it once over adb, appending Kiosk Satellite to whatever is already enabled, as [Remote keys](gestures.md#remote-keys) describes:
+
+```
+adb shell 'settings put secure enabled_accessibility_services "$(settings get secure enabled_accessibility_services):me.jxl.kiosk_satellite/me.jxl.kiosk_satellite.KioskAccessibilityService"'
+adb shell settings put secure accessibility_enabled 1
+```
+
+Each appearance of the dialog is answered once, and the log says so (`answered the power dialog with rl_sleep`), or says that the dialog showed but had no view with that id. While a package is set, the service reads that one app's windows to find the button; it reads nothing else on screen.
+
 ## Daily restart
 
 **Daily restart** restarts the device every day at the time given (24-hour `HH:MM`). Android lets an app restart the device only as the device owner or through a granted Shizuku connection, the same condition as the **Restart device** button; elsewhere the restart is refused and logged. It never runs within ten minutes of a boot.

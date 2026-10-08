@@ -181,5 +181,57 @@
         "Device > Headless"
       ]
     }
+  },
+  "settingPowerDialogPackageTitle": "Power dialog app",
+  "@settingPowerDialogPackageTitle": {
+    "context": "Settings > Device > Headless",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingPowerDialogPackageDescription": "The Android package of a vendor power-off dialog this device shows when its power key is pressed, such as com.htc.closedialog on an HY260 projector. Empty does nothing.",
+  "@settingPowerDialogPackageDescription": {
+    "context": "Settings > Device > Headless",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingPowerDialogChoiceTitle": "Power dialog answer",
+  "@settingPowerDialogChoiceTitle": {
+    "context": "Settings > Device > Headless",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingPowerDialogChoiceDescription": "The view id (without the package prefix) of the button Kiosk Satellite taps the moment that dialog appears, such as rl_sleep to put the device to sleep instead of letting its countdown shut it down. Needs the accessibility service.",
+  "@settingPowerDialogChoiceDescription": {
+    "context": "Settings > Device > Headless",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
   }
 }

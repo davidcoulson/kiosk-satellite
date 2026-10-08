@@ -1461,6 +1461,13 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'settingHotThresholdTitle' => strings.settingHotThresholdTitle,
       'settingHotThresholdDescription' =>
         strings.settingHotThresholdDescription,
+      'settingPowerDialogPackageTitle' =>
+        strings.settingPowerDialogPackageTitle,
+      'settingPowerDialogPackageDescription' =>
+        strings.settingPowerDialogPackageDescription,
+      'settingPowerDialogChoiceTitle' => strings.settingPowerDialogChoiceTitle,
+      'settingPowerDialogChoiceDescription' =>
+        strings.settingPowerDialogChoiceDescription,
       'deviceHardwarePage' => strings.deviceHardwarePage,
       'deviceWebViewPage' => strings.deviceWebViewPage,
       'deviceModel' => strings.deviceModel,

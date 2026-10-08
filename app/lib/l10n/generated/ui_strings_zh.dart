@@ -251,7 +251,7 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get androidAccessibilityHelp =>
-      'Kiosk 模式或锁定模式保护屏幕期间，打开的通知栏和最近任务界面会自动关闭。Kiosk Satellite 不会读取任何屏幕内容。';
+      'Closes the notification shade and the recents screen whenever they open while Kiosk Mode or Lockdown Mode is protecting the screen. Kiosk Satellite reads screen content only to answer a vendor power dialog named in its settings.';
 
   @override
   String get androidServiceChannelHelp =>
@@ -5008,6 +5008,20 @@ class UiStringsZh extends UiStrings {
   @override
   String get settingHotThresholdDescription =>
       'The Running hot sensor turns on while the CPU is hotter than this.';
+
+  @override
+  String get settingPowerDialogPackageTitle => 'Power dialog app';
+
+  @override
+  String get settingPowerDialogPackageDescription =>
+      'The Android package of a vendor power-off dialog this device shows when its power key is pressed, such as com.htc.closedialog on an HY260 projector. Empty does nothing.';
+
+  @override
+  String get settingPowerDialogChoiceTitle => 'Power dialog answer';
+
+  @override
+  String get settingPowerDialogChoiceDescription =>
+      'The view id (without the package prefix) of the button Kiosk Satellite taps the moment that dialog appears, such as rl_sleep to put the device to sleep instead of letting its countdown shut it down. Needs the accessibility service.';
 
   @override
   String get deviceHardwarePage => '硬件';
@@ -13036,7 +13050,7 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get androidAccessibilityHelp =>
-      'Kiosk 模式或锁定模式保护屏幕期间，打开的通知栏和最近任务界面会自动关闭。Kiosk Satellite 不会读取任何屏幕内容。';
+      'Closes the notification shade and the recents screen whenever they open while Kiosk Mode or Lockdown Mode is protecting the screen. Kiosk Satellite reads screen content only to answer a vendor power dialog named in its settings.';
 
   @override
   String get androidServiceChannelHelp =>
@@ -17793,6 +17807,20 @@ class UiStringsZhCn extends UiStringsZh {
   @override
   String get settingHotThresholdDescription =>
       'The Running hot sensor turns on while the CPU is hotter than this.';
+
+  @override
+  String get settingPowerDialogPackageTitle => 'Power dialog app';
+
+  @override
+  String get settingPowerDialogPackageDescription =>
+      'The Android package of a vendor power-off dialog this device shows when its power key is pressed, such as com.htc.closedialog on an HY260 projector. Empty does nothing.';
+
+  @override
+  String get settingPowerDialogChoiceTitle => 'Power dialog answer';
+
+  @override
+  String get settingPowerDialogChoiceDescription =>
+      'The view id (without the package prefix) of the button Kiosk Satellite taps the moment that dialog appears, such as rl_sleep to put the device to sleep instead of letting its countdown shut it down. Needs the accessibility service.';
 
   @override
   String get deviceHardwarePage => '硬件';

@@ -3,7 +3,7 @@
 <resources>
     <string name="ks_service_title" formatted="false">"Kiosk Satellite 服务"</string>
     <string name="ks_service_channel_help" formatted="false">"屏幕关闭或切换到其他应用后，此服务会让 Kiosk Satellite 继续运行，并显示这条通知。"</string>
-    <string name="ui_guard_description" formatted="false">"Kiosk 模式或锁定模式保护屏幕期间，打开的通知栏和最近任务界面会自动关闭。Kiosk Satellite 不会读取任何屏幕内容。"</string>
+    <string name="ui_guard_description" formatted="false">"Closes the notification shade and the recents screen whenever they open while Kiosk Mode or Lockdown Mode is protecting the screen. Kiosk Satellite reads screen content only to answer a vendor power dialog named in its settings."</string>
     <string name="ks_service_listening" formatted="false">"正在监听唤醒词"</string>
     <string name="ks_service_rtsp_audio" formatted="false">"已启用 RTSP 麦克风音频"</string>
     <string name="ks_service_esphome" formatted="false">"ESPHome 服务运行中"</string>

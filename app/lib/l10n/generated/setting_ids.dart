@@ -1708,6 +1708,14 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingHotThresholdTitle",
     "description": "settingHotThresholdDescription",
   },
+  "device.power_dialog_package": {
+    "title": "settingPowerDialogPackageTitle",
+    "description": "settingPowerDialogPackageDescription",
+  },
+  "device.power_dialog_choice": {
+    "title": "settingPowerDialogChoiceTitle",
+    "description": "settingPowerDialogChoiceDescription",
+  },
   "wake_word.diagnostics": {
     "title": "voiceDiagnosticsTitle",
     "description": "voiceDiagnosticsDescription",

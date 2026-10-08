@@ -943,7 +943,7 @@
       ]
     }
   },
-  "androidAccessibilityHelp": "Закрывает шторку уведомлений и экран недавних приложений, когда они открываются, пока экран защищает режим киоска или режим блокировки. Kiosk Satellite не читает содержимое экрана.",
+  "androidAccessibilityHelp": "Closes the notification shade and the recents screen whenever they open while Kiosk Mode or Lockdown Mode is protecting the screen. Kiosk Satellite reads screen content only to answer a vendor power dialog named in its settings.",
   "@androidAccessibilityHelp": {
     "context": "Android Settings > Accessibility > Kiosk Satellite",
     "description": "Service description displayed by Android in its own language.",
@@ -19685,6 +19685,58 @@
   },
   "settingHotThresholdDescription": "The Running hot sensor turns on while the CPU is hotter than this.",
   "@settingHotThresholdDescription": {
+    "context": "Settings > Device > Headless",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingPowerDialogPackageTitle": "Power dialog app",
+  "@settingPowerDialogPackageTitle": {
+    "context": "Settings > Device > Headless",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingPowerDialogPackageDescription": "The Android package of a vendor power-off dialog this device shows when its power key is pressed, such as com.htc.closedialog on an HY260 projector. Empty does nothing.",
+  "@settingPowerDialogPackageDescription": {
+    "context": "Settings > Device > Headless",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingPowerDialogChoiceTitle": "Power dialog answer",
+  "@settingPowerDialogChoiceTitle": {
+    "context": "Settings > Device > Headless",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Headless"
+      ],
+      "remoteAdmin": [
+        "Device > Headless"
+      ]
+    }
+  },
+  "settingPowerDialogChoiceDescription": "The view id (without the package prefix) of the button Kiosk Satellite taps the moment that dialog appears, such as rl_sleep to put the device to sleep instead of letting its countdown shut it down. Needs the accessibility service.",
+  "@settingPowerDialogChoiceDescription": {
     "context": "Settings > Device > Headless",
     "description": "Help below this setting.",
     "x-locations": {

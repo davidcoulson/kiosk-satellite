@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "androidAccessibilityHelp": "Closes the notification shade and the recents screen whenever they open while Kiosk Mode or Lockdown Mode is protecting the screen. Kiosk Satellite does not read any screen content.",
+  "androidAccessibilityHelp": "Closes the notification shade and the recents screen whenever they open while Kiosk Mode or Lockdown Mode is protecting the screen. Kiosk Satellite reads screen content only to answer a vendor power dialog named in its settings.",
   "@androidAccessibilityHelp": {
     "context": "Android Settings > Accessibility > Kiosk Satellite",
     "description": "Service description displayed by Android in its own language.",

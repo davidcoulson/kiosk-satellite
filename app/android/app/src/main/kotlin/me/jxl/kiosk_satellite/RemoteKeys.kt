@@ -363,6 +363,13 @@ class RemoteKeysBridge(
                         call.argument<Boolean>("enabled") ?: true,
                         call.argument<List<Int>>("report") ?: emptyList(),
                     )
+                    // The vendor power dialog to answer, riding the same
+                    // push: absent means none.
+                    val dialog = call.argument<Map<String, Any?>>("powerDialog")
+                    PowerDialog.configure(
+                        dialog?.get("package") as? String,
+                        dialog?.get("choice") as? String,
+                    )
                     result.success(null)
                 }
                 "capture" -> {
@@ -391,6 +398,7 @@ class RemoteKeysBridge(
             }
         }
         RemoteKeys.attach(this, context)
+        PowerDialog.attach(this)
         AccessibilityKeeper.onRepaired = { repaired(it) }
     }
 
@@ -412,5 +420,11 @@ class RemoteKeysBridge(
 
     fun captured(keyCode: Int, name: String) {
         channel.invokeMethod("captured", mapOf("keyCode" to keyCode, "name" to name))
+    }
+
+    /** The power dialog appeared: [found] when its button was pressed,
+     *  else it had no view with that id. Dart logs it either way. */
+    fun powerDialog(choice: String, found: Boolean) {
+        channel.invokeMethod("powerDialog", mapOf("choice" to choice, "found" to found))
     }
 }

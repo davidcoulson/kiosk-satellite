@@ -26,10 +26,12 @@ import android.view.accessibility.AccessibilityEvent
  * pinning it shows nobody a consent dialog: the owner enables
  * the service once in Android's Accessibility settings and it stays.
  *
- * The service reads no window content ([canRetrieveWindowContent] is off in
- * its XML config) and reacts only to window-state changes: SystemUI showing
- * a window while the shade guard is armed, or a recents surface appearing
- * while the recents guard is.
+ * The service reacts to window-state changes: SystemUI showing a window
+ * while the shade guard is armed, or a recents surface appearing while the
+ * recents guard is. It may retrieve window content (the XML config allows
+ * it), but reads a window only when it is a vendor power dialog named in
+ * device.power_dialog_package, to press one of its buttons ([PowerDialog]);
+ * every other window's content goes unread.
  *
  * Arming rides the same flag push as every other kiosk protection
  * (KioskLock forwards it from the Dart bundle into the statics below — the
@@ -42,6 +44,9 @@ import android.view.accessibility.AccessibilityEvent
  * remote_key gesture configured it asks Android for key events
  * ([filterKeys]) and swallows the mapped keys before the focused app sees
  * them. Only then - a device with no remote keys routes no key through it.
+ * Window-content events work the same way ([watchContent]): asked for only
+ * while a power dialog package is configured, since they are the chatty
+ * ones.
  */
 class KioskAccessibilityService : AccessibilityService() {
     companion object {
@@ -96,6 +101,23 @@ class KioskAccessibilityService : AccessibilityService() {
         filteringKeys = on
     }
 
+    /**
+     * Ask for window-content changes too, or stop. The XML asks for
+     * window-state changes only; content changes fire for every scroll
+     * and progress bar on screen, so they are requested only while a
+     * power dialog is to be answered ([PowerDialog]), whose buttons may
+     * inflate after its window is announced.
+     */
+    fun watchContent(on: Boolean) {
+        val info = serviceInfo ?: return
+        val type = AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+        if ((info.eventTypes and type != 0) != on) {
+            info.eventTypes =
+                if (on) info.eventTypes or type else info.eventTypes and type.inv()
+            serviceInfo = info
+        }
+    }
+
     override fun onKeyEvent(event: KeyEvent): Boolean {
         val consumed = RemoteKeys.onKey(event)
         // Plugins observe hardware keys from MainActivity.dispatchKeyEvent
@@ -112,6 +134,7 @@ class KioskAccessibilityService : AccessibilityService() {
         instance = this
         LockShieldOverlay.rehost()
         RemoteKeys.serviceConnected(this)
+        PowerDialog.serviceConnected(this)
         if (!guardShade && !guardRecents) {
             val prefs =
                 getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE)
@@ -151,6 +174,10 @@ class KioskAccessibilityService : AccessibilityService() {
     private var burstUntil = 0L
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
+        // The power dialog is answered on its window appearing and, while
+        // its buttons are still inflating, on its content changing: the
+        // one reason content events are ever requested.
+        PowerDialog.onEvent(this, event)
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             return
         }
