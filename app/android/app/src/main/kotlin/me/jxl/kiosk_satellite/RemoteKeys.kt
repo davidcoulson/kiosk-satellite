@@ -422,9 +422,14 @@ class RemoteKeysBridge(
         channel.invokeMethod("captured", mapOf("keyCode" to keyCode, "name" to name))
     }
 
-    /** The power dialog appeared: [found] when its button was pressed,
-     *  else it had no view with that id. Dart logs it either way. */
-    fun powerDialog(choice: String, found: Boolean) {
-        channel.invokeMethod("powerDialog", mapOf("choice" to choice, "found" to found))
+    /** The power dialog appeared: [found] when the answer was given (a
+     *  button pressed, or the dialog closed and the box asleep), else it
+     *  could not be. [detail] says why an answer differed from the
+     *  setting. Dart logs it either way. */
+    fun powerDialog(choice: String, found: Boolean, detail: String) {
+        channel.invokeMethod(
+            "powerDialog",
+            mapOf("choice" to choice, "found" to found, "detail" to detail),
+        )
     }
 }

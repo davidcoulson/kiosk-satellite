@@ -262,10 +262,14 @@ class RemoteKeysManager extends Manager {
         // The service pressed the configured button on the vendor's power
         // dialog, or looked for it and found no such view.
         final choice = '${args['choice'] ?? ''}';
+        final detail = '${args['detail'] ?? ''}';
+        final suffix = detail.isEmpty ? '' : ' ($detail)';
         if (args['found'] == true) {
-          log.info(name, 'answered the power dialog with $choice');
+          log.info(name, 'answered the power dialog with $choice$suffix');
+        } else if (choice == 'sleep' || choice == 'dismiss') {
+          log.warn(name, 'could not answer the power dialog with $choice$suffix');
         } else {
-          log.warn(name, 'power dialog shown but $choice not found');
+          log.warn(name, 'power dialog shown but $choice not found$suffix');
         }
       case 'captured':
         final pending = _capture;

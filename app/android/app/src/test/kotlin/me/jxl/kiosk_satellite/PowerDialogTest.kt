@@ -106,18 +106,38 @@ class PowerDialogTest {
     private var now = 10_000L
     private var timer: Runnable? = null
     private val reports = mutableListOf<Pair<String, Boolean>>()
+    private val details = mutableListOf<String>()
+
+    /** The screen as a whole: what was asked of it, and whether the
+     *  dialog is still up when asked. */
+    private class Screen(
+        var showing: Boolean = true,
+        var lockWorks: Boolean = true,
+    ) : GlobalActions {
+        val done = mutableListOf<String>()
+        override fun back(): Boolean { done.add("back"); return true }
+        override fun home(): Boolean { done.add("home"); showing = false; return true }
+        override fun lockScreen(): Boolean { done.add("lock"); return lockWorks }
+        override fun dialogShowing(pkg: String) = showing
+    }
+
+    private val screen = Screen()
     private val answerer = PowerDialogAnswerer(
         now = { now },
         schedule = { _, run -> timer = run },
         cancel = { run -> if (timer === run) timer = null },
-        report = { choice, found -> reports.add(choice to found) },
-    ).apply { packageName = pkg }
+        report = { choice, found, detail -> reports.add(choice to found); details.add(detail) },
+        actions = screen,
+    ).apply { packageName = pkg; choice = "rl_sleep" }
 
     private fun elapseMiss() {
         val run = timer
         timer = null
         run?.run()
     }
+
+    /** The dismissal's follow-up, half a second after Back. */
+    private fun elapseFollow() = elapseMiss()
 
     @Test
     fun `nothing is read while no package is configured`() {
@@ -195,5 +215,94 @@ class PowerDialogTest {
         assertFalse(answerer.onWindow(pkg, true) { null })
         elapseMiss()
         assertEquals(listOf("rl_sleep" to false), reports)
+    }
+
+    // ── Sleep and dismiss ────────────────────────────────────────────
+
+    @Test
+    fun `sleep is the default and needs no content events`() {
+        val fresh = PowerDialogAnswerer({ now }, { _, _ -> }, {}, { _, _, _ -> }, screen)
+        assertEquals("sleep", fresh.choice)
+        fresh.packageName = pkg
+        assertFalse(fresh.wantsContent())
+        fresh.choice = "rl_reboot"
+        assertTrue(fresh.wantsContent())
+    }
+
+    @Test
+    fun `sleep closes the dialog and then locks the screen`() {
+        answerer.choice = "sleep"
+        var read = false
+        screen.showing = false // Back took
+        assertTrue(answerer.onWindow(pkg, true) { read = true; hy260() })
+        assertFalse(read) // no view is looked for
+        assertEquals(listOf("back"), screen.done)
+        assertTrue(reports.isEmpty())
+        elapseFollow()
+        assertEquals(listOf("back", "lock"), screen.done)
+        assertEquals(listOf("sleep" to true), reports)
+        assertEquals(listOf(""), details)
+    }
+
+    @Test
+    fun `a dialog Back did not close gets Home first`() {
+        answerer.choice = "sleep"
+        assertTrue(answerer.onWindow(pkg, true) { hy260() })
+        elapseFollow()
+        assertEquals(listOf("back", "home", "lock"), screen.done)
+        assertEquals(listOf("sleep" to true), reports)
+    }
+
+    @Test
+    fun `a refused lock is reported as not answered`() {
+        answerer.choice = "sleep"
+        screen.showing = false
+        screen.lockWorks = false
+        assertTrue(answerer.onWindow(pkg, true) { hy260() })
+        elapseFollow()
+        assertEquals(listOf("sleep" to false), reports)
+    }
+
+    @Test
+    fun `dismiss only closes the dialog`() {
+        answerer.choice = "dismiss"
+        screen.showing = false
+        assertTrue(answerer.onWindow(pkg, true) { hy260() })
+        elapseFollow()
+        assertEquals(listOf("back"), screen.done)
+        assertEquals(listOf("dismiss" to true), reports)
+    }
+
+    @Test
+    fun `right after the screen wakes, sleep only dismisses`() {
+        answerer.choice = "sleep"
+        screen.showing = false
+        answerer.screenOn()
+        now += 2000
+        assertTrue(answerer.onWindow(pkg, true) { hy260() })
+        elapseFollow()
+        assertEquals(listOf("back"), screen.done)
+        assertEquals(listOf("dismiss" to true), reports)
+        assertEquals(listOf("the screen just woke, so no sleep"), details)
+        // Six seconds on, the power key means sleep again.
+        now += 6000
+        assertTrue(answerer.onWindow(pkg, true) { hy260() })
+        elapseFollow()
+        assertEquals(listOf("back", "back", "lock"), screen.done)
+        assertEquals("sleep" to true, reports.last())
+    }
+
+    @Test
+    fun `content events never answer sleep, and one appearance sleeps once`() {
+        answerer.choice = "sleep"
+        screen.showing = false
+        assertFalse(answerer.onWindow(pkg, false) { hy260() })
+        assertTrue(screen.done.isEmpty())
+        assertTrue(answerer.onWindow(pkg, true) { hy260() })
+        now += 300
+        assertFalse(answerer.onWindow(pkg, true) { hy260() })
+        elapseFollow()
+        assertEquals(listOf("back", "lock"), screen.done)
+        assertEquals(1, reports.size)
     }
 }

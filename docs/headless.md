@@ -55,7 +55,7 @@ An app cannot inject other keys (that needs a system permission), so anything el
 
 ## Answering the power dialog
 
-Some vendors answer the remote's power key with a dialog of their own rather than Android's power menu. The HY260 projector opens `com.htc.closedialog`, with Shutdown focused and a fifteen second countdown that shuts the projector down when nobody picks anything else, and a shutdown ends Kiosk Satellite until someone powers the box on again. **Power dialog app** names that dialog's Android package (`com.htc.closedialog` on an HY260); empty does nothing. **Power dialog answer** is the view id, without the package prefix, of the button Kiosk Satellite presses the moment the dialog appears: `rl_sleep` (the default) puts the HY260 to sleep instead of shutting it down, and `rl_reboot` or `rl_speaker` are its other rows. The ids of another vendor's dialog come from `adb shell uiautomator dump` with the dialog open.
+Some vendors answer the remote's power key with a dialog of their own rather than Android's power menu. The HY260 projector opens `com.htc.closedialog`, with Shutdown focused and a fifteen second countdown that shuts the projector down when nobody picks anything else, and a shutdown ends Kiosk Satellite until someone powers the box on again. **Power dialog app** names that dialog's Android package (`com.htc.closedialog` on an HY260); empty does nothing. **Power dialog answer** is what Kiosk Satellite does the moment the dialog appears. `sleep` (the default) closes the dialog and puts the box to sleep through the accessibility service's lock-screen action, which is what a Sleep row does on the firmwares that show one; the HY260's dialog has a Sleep row in its layout that is never made visible, so this is the only way to sleep it, and on the HY260 sleep is a full suspend: the lamp goes off and the box is off the network until the remote wakes it. `dismiss` only closes the dialog, so the power key does nothing. Anything else is the view id, without the package prefix, of a button to press, such as `rl_reboot` on the HY260; the ids of a vendor's dialog come from `adb shell uiautomator dump` with the dialog open. A dialog that appears within five seconds of the screen waking is the wake-up press itself on a firmware that shows the dialog then, and is only dismissed, so a sleeping box never falls straight back asleep when someone wakes it. Sleep needs Android 9 or later.
 
 The press needs the accessibility service, and works from boot once the service is enabled: with `WRITE_SECURE_SETTINGS` granted (above) Kiosk Satellite turns it on by itself; otherwise enable it once over adb, appending Kiosk Satellite to whatever is already enabled, as [Remote keys](gestures.md#remote-keys) describes:
 
@@ -64,7 +64,7 @@ adb shell 'settings put secure enabled_accessibility_services "$(settings get se
 adb shell settings put secure accessibility_enabled 1
 ```
 
-Each appearance of the dialog is answered once, and the log says so (`answered the power dialog with rl_sleep`), or says that the dialog showed but had no view with that id. While a package is set, the service reads that one app's windows to find the button; it reads nothing else on screen.
+Each appearance of the dialog is answered once, and the log says so (`answered the power dialog with sleep`), or says that the answer could not be given, or that the dialog showed but had no view with that id. While a view id is the answer, the service reads that one app's windows to find the button; it reads nothing else on screen.
 
 ## Daily restart
 
