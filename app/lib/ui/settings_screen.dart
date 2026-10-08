@@ -8278,7 +8278,7 @@ class _RotationCardState extends State<_RotationCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final enabled = c.settings.get(haRotationEnabled);
-    return SettingsCard(
+    final settings = SettingsCard(
       children: [
         SettingTile(
           container: c,
@@ -8310,90 +8310,85 @@ class _RotationCardState extends State<_RotationCard> {
               def: haRotationFadeSeconds,
               onChanged: () => setState(() {}),
             ),
-          // The picked views in rotation order, each with a remove button,
-          // then the row that opens the picker to add more.
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, 14, 20, 6),
-            child: Text(
-              haRotationDashboards.localizedTitle(context),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
+        ],
+      ],
+    );
+    if (!enabled) return settings;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        settings,
+        // The picked views in rotation order, each with a remove button,
+        // then the row that opens the picker to add more.
+        SectionHeading(haRotationDashboards.localizedTitle(context)),
+        SettingsCard(
+          children: [
+            for (final path in _selected())
+              DashboardViewListRow(
+                value: path,
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: haText(context, 'Remove'),
+                  onPressed: () => _save(_selected()..remove(path)),
+                ),
               ),
-            ),
-          ),
-          for (final path in _selected())
-            DashboardViewListRow(
-              value: path,
-              trailing: IconButton(
-                icon: Icon(Icons.delete_outline),
-                tooltip: haText(context, 'Remove'),
-                onPressed: () => _save(_selected()..remove(path)),
-              ),
-            ),
-          ListTile(
-            leading: Icon(
-              Icons.add_circle_outline,
-              color: theme.colorScheme.primary,
-            ),
-            title: Text(
-              haText(context, 'Add views'),
-              style: TextStyle(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            onTap: _addViews,
-          ),
-          // External pages: shown in their own overlay during rotation, so
-          // the dashboard (and Voice Satellite) stays loaded underneath.
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, 2),
-            child: Text(
-              haText(context, 'External pages'),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          for (final url in _urls())
             ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.only(left: 28, right: 12),
-              title: Text(url, style: theme.textTheme.bodyMedium),
-              trailing: IconButton(
-                icon: Icon(Icons.close, size: 20),
-                tooltip: haText(context, 'Remove'),
-                onPressed: () => _saveUrls(_urls()..remove(url)),
+              leading: Icon(
+                Icons.add_circle_outline,
+                color: theme.colorScheme.primary,
               ),
+              title: Text(
+                haText(context, 'Add views'),
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onTap: _addViews,
             ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(28, 4, 12, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _urlField,
-                    keyboardType: TextInputType.url,
-                    autocorrect: false,
-                    onSubmitted: (_) => _addUrl(),
-                    // Border and fill come from the input theme.
-                    decoration: InputDecoration(
-                      isDense: true,
-                      hintText: 'https://example.com',
+          ],
+        ),
+        // External pages: shown in their own overlay during rotation, so
+        // the dashboard (and Voice Satellite) stays loaded underneath.
+        SectionHeading(haText(context, 'External pages')),
+        SettingsCard(
+          children: [
+            for (final url in _urls())
+              ListTile(
+                title: Text(url, maxLines: 1, overflow: TextOverflow.ellipsis),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: haText(context, 'Remove'),
+                  onPressed: () => _saveUrls(_urls()..remove(url)),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(Ks.inset, 12, 12, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _urlField,
+                      keyboardType: TextInputType.url,
+                      autocorrect: false,
+                      onSubmitted: (_) => _addUrl(),
+                      // Border and fill come from the input theme.
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        hintText: 'https://example.com',
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _addUrl,
-                  child: Text(haText(context, 'Add')),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: _addUrl,
+                    child: Text(haText(context, 'Add')),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ],
     );
   }

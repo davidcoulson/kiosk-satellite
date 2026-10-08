@@ -1944,20 +1944,34 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
       // rotation).
       let renderReturnCard = () => {};
 
-      // Dashboard view rotation: toggle, then each dashboard as a plain
-      // header with a checkbox per view beneath it, and the dwell time,
-      // mirroring the device's card. Selection entries are navigation
+      // Dashboard view rotation: the settings card, then Views to rotate
+      // (the picked views and Add views) and External pages, each under its
+      // own heading, mirroring the device. Selection entries are navigation
       // paths ("url_path/view-route").
       const rotEnabled = byKey['ha.rotation_enabled'];
       if (rotEnabled) {
         const rcard = document.createElement('div');
         rcard.className = 'card';
         panelFor('Dashboard View Rotation').appendChild(rcard);
+        // Views to rotate and External pages: each its own heading and
+        // card under the settings, the device's layout.
+        const rlists = document.createElement('div');
+        panelFor('Dashboard View Rotation').appendChild(rlists);
         // The card re-renders itself in place on toggle, like the Theme
         // and Return-home cards: the shared settingRow save would reload
         // the whole tab.
         const renderRotationCard = async () => {
         rcard.innerHTML = '';
+        rlists.replaceChildren();
+        const section = (title) => {
+          const h = document.createElement('h2');
+          h.className = 'card-title';
+          h.textContent = title;
+          const card = document.createElement('div');
+          card.className = 'card';
+          rlists.append(h, card);
+          return card;
+        };
         rcard.appendChild(toggleRow(rotEnabled.title, rotEnabled.description,
           rotEnabled.value === true, async (on) => {
             rotEnabled.value = on;
@@ -2048,14 +2062,8 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
           const saveSel = (next) => { sel = next; return api('/api/settings',
             { method: 'PATCH',
               body: JSON.stringify({ 'ha.rotation_dashboards': JSON.stringify(next) }) }); };
-          const vhdr = document.createElement('div');
-          vhdr.style.cssText = 'padding:12px 0 2px; font-size:13px; font-weight:600;'
-            + 'color:var(--primary)';
           const rotDef = byKey['ha.rotation_dashboards'];
-          vhdr.textContent = rotDef?.title || haText('Views to rotate');
-          rcard.appendChild(vhdr);
-          const vlist = document.createElement('div');
-          rcard.appendChild(vlist);
+          const vlist = section(rotDef?.title || haText('Views to rotate'));
           const renderSel = () => {
             vlist.replaceChildren();
             sel.forEach((path) => {
@@ -2093,19 +2101,14 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
           const saveUrls = (next) => { urls = next; return api('/api/settings',
             { method: 'PATCH',
               body: JSON.stringify({ 'ha.rotation_urls': JSON.stringify(next) }) }); };
-          const uhdr = document.createElement('div');
-          uhdr.style.cssText = 'padding:12px 0 2px; font-size:13px; font-weight:600;'
-            + 'color:var(--primary)';
-          uhdr.textContent = haText('External pages');
-          rcard.appendChild(uhdr);
+          const ucard = section(haText('External pages'));
           const ulist = document.createElement('div');
-          rcard.appendChild(ulist);
+          ucard.appendChild(ulist);
           const renderUrls = () => {
             ulist.innerHTML = '';
             urls.forEach((u) => {
               const row = readOnlyRow(u, '', '', false);
               row.querySelector('span').remove();
-              row.style.paddingLeft = '14px';
               const rm = cameraAction(haText('Remove'), async () => {
                 await saveUrls(urls.filter((x) => x !== u));
                 renderUrls();
@@ -2115,15 +2118,14 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
             });
           };
           renderUrls();
+          // The field and its button are one control, so a phone row
+          // keeps them side by side instead of stacking them over each other.
           const addRow = document.createElement('div');
-          addRow.className = 'row';
-          addRow.style.paddingLeft = '14px';
+          addRow.className = 'row rotation-url-add';
           const inp = document.createElement('input');
           inp.type = 'url';
+          inp.className = 'field';
           inp.placeholder = 'https://example.com';
-          inp.style.cssText = 'flex:1; background:var(--surface-2);'
-            + 'border:1px solid var(--border); border-radius:var(--radius-sm);'
-            + 'color:var(--text); padding:9px 12px; margin-right:8px';
           const add = document.createElement('button');
           add.className = 'btn-ghost'; add.textContent = haText('Add');
           const doAdd = async () => {
@@ -2135,8 +2137,11 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
           };
           add.addEventListener('click', doAdd);
           inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdd(); });
-          addRow.append(inp, add);
-          rcard.appendChild(addRow);
+          const controls = document.createElement('div');
+          controls.className = 'rotation-url-controls';
+          controls.append(inp, add);
+          addRow.appendChild(controls);
+          ucard.appendChild(addRow);
         }
         };
         await renderRotationCard();

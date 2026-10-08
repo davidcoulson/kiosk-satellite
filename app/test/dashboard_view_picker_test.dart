@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_satellite/app_container.dart';
 import 'package:kiosk_satellite/core/command_registry.dart';
+import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
 import 'package:kiosk_satellite/ui/dashboard_view_picker.dart';
+import 'package:kiosk_satellite/ui/kit.dart';
+import 'package:kiosk_satellite/ui/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _home = HaDashboard(
@@ -286,5 +289,48 @@ void main() {
       find.text('This view is gone from Home Assistant. Choose another.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('the rotation lists sit under headings, outside the cards', (
+    tester,
+  ) async {
+    final c = await _container();
+    await c.settings.set(defs.haRotationEnabled, true);
+    await c.settings.setFromJson(
+      defs.haRotationDashboards.key,
+      '["wall/clock"]',
+    );
+    tester.view.physicalSize = const Size(1000, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SubpageSettingsScreen(
+          container: c,
+          category: 'Home Assistant',
+          subpage: 'Dashboard View Rotation',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    for (final title in [defs.haRotationDashboards.title, 'External pages']) {
+      final heading = find.text(title);
+      expect(heading, findsOneWidget);
+      expect(
+        find.ancestor(of: heading, matching: find.byType(SectionHeading)),
+        findsOneWidget,
+      );
+      expect(
+        find.ancestor(of: heading, matching: find.byType(Card)),
+        findsNothing,
+      );
+      // On the column's inset, level with the row text, not centered.
+      expect(
+        tester.getTopLeft(heading).dx,
+        tester.getTopLeft(find.byType(Card).first).dx + 20,
+      );
+    }
+    expect(find.text('Clock'), findsOneWidget);
+    expect(find.text('Add views'), findsOneWidget);
   });
 }

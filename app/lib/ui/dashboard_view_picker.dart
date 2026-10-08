@@ -1841,7 +1841,7 @@ class DashboardViewListRow extends StatelessWidget {
           );
         }
         return Padding(
-          padding: const EdgeInsets.fromLTRB(Ks.inset, 6, 8, 6),
+          padding: const EdgeInsets.fromLTRB(Ks.inset, 10, 8, 10),
           child: Row(
             children: [
               lead,
