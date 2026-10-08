@@ -3,6 +3,12 @@
 /// lifecycle, closing WebRTC and HLS connections. Restoring the template creates
 /// fresh players. The page's visibility, microphone and other media stay live.
 ///
+/// Restoring also asks HA to detect the camera's stream types again. HA records
+/// a failed HLS or WebRTC attempt on the camera component, not the player, and
+/// never retries it: one failed start after a screensaver left the camera on
+/// its MJPEG fallback for good, a still every second or so. Detecting again
+/// clears that record, and picks up WebRTC once HA can offer it again.
+///
 /// An emptied player collapses to nothing, which reads as a broken card rather
 /// than a paused one. So a released camera keeps the card's shape and shows its
 /// last still, blurred and dimmed: recognisably that camera, plainly not live.
@@ -17,11 +23,29 @@ const dashboardCameraScript = r'''
   var patched = new WeakSet();
   var STILL_ID = 'ks-camera-still';
 
-  function refresh(root) {
+  // HA's own capability fetch, which also clears the recorded stream results.
+  // A fetch that fails (the socket still reconnecting after a wake) leaves the
+  // camera blank, so it tries again a few times while the cameras stay live.
+  function redetect(el, attempt) {
+    Promise.resolve(el._getCapabilities()).catch(function () {
+      if (attempt >= 3) return;
+      setTimeout(function () {
+        if (!paused && el.isConnected) redetect(el, attempt + 1);
+      }, 5000);
+    });
+  }
+
+  function refresh(root, resuming) {
     root.querySelectorAll('*').forEach(function (el) {
-      if (el.localName === 'ha-camera-stream' &&
-          typeof el.requestUpdate === 'function') el.requestUpdate();
-      if (el.shadowRoot) refresh(el.shadowRoot);
+      if (el.localName === 'ha-camera-stream') {
+        if (resuming && el.muted === true && el.stateObj &&
+            typeof el._getCapabilities === 'function') {
+          redetect(el, 1);
+        } else if (typeof el.requestUpdate === 'function') {
+          el.requestUpdate();
+        }
+      }
+      if (el.shadowRoot) refresh(el.shadowRoot, resuming);
     });
   }
 
@@ -31,7 +55,7 @@ const dashboardCameraScript = r'''
       value = !!value;
       if (paused === value) return;
       paused = value;
-      if (ready) refresh(document);
+      if (ready) refresh(document, !value);
     },
     get paused() { return paused; },
     get supported() { return ready; }

@@ -1516,6 +1516,16 @@ class UiStringsEs extends UiStrings {
   String get gestureIntercomCall => 'Llamar a un kiosko';
 
   @override
+  String get gestureIntercomHangup =>
+      'Finalizar la llamada del intercomunicador';
+
+  @override
+  String get gestureAlarmStop => 'Detener la alarma';
+
+  @override
+  String get gestureAlarmSnooze => 'Posponer la alarma';
+
+  @override
   String get gestureScreensaver => 'Iniciar el protector de pantalla';
 
   @override
@@ -2057,10 +2067,20 @@ class UiStringsEs extends UiStrings {
   String get gestureSequenceError => 'Añade al menos dos esquinas.';
 
   @override
+  String get gesturePluginTrigger => 'Disparador de plugin';
+
+  @override
   String get gestureRemoteKey => 'Remote key';
 
   @override
+  String get gesturePluginTriggerField => 'Disparador';
+
+  @override
   String get gestureKey => 'Key';
+
+  @override
+  String get gesturePluginTriggerHelp =>
+      'Primero activa un plugin con disparadores en el administrador de plugins.';
 
   @override
   String get gestureKeyNone => 'No key yet';
@@ -3290,6 +3310,13 @@ class UiStringsEs extends UiStrings {
   String pluginErrorInvalidField(String field) {
     return 'El campo $field no es válido';
   }
+
+  @override
+  String get pluginErrorTooManyTriggers => 'Demasiados disparadores';
+
+  @override
+  String get pluginErrorTriggerId =>
+      'El ID del disparador no es válido o está duplicado';
 
   @override
   String get remoteDisableTitle => '¿Desactivar la administración remota?';
@@ -8587,6 +8614,10 @@ class UiStringsEs extends UiStrings {
       'Un valor negativo hace que este dispositivo reproduzca antes, para compensar altavoces que se retrasan respecto al grupo, como los Bluetooth. Ajusta de oído. Se aplica de inmediato.';
 
   @override
+  String get settingSendspinGroupVolumeDescription =>
+      'Cuando este dispositivo reproduce en un grupo, el control de volumen ajusta todo el grupo. Si está desactivado, solo ajusta este dispositivo. Necesita la conexión con Music Assistant.';
+
+  @override
   String get mediaSendspinPage => 'Reproductor Sendspin';
 
   @override
@@ -9700,6 +9731,14 @@ class UiStringsEs extends UiStrings {
   @override
   String get settingScreensaverMenuDescription =>
       'Añade la opción Iniciar protector de pantalla al menú del kiosko.';
+
+  @override
+  String get settingScreensaverFollowAnimationScaleTitle =>
+      'Seguir los ajustes de animación de Android';
+
+  @override
+  String get settingScreensaverFollowAnimationScaleDescription =>
+      'Pausa los protectores de pantalla animados cuando las animaciones de Android están desactivadas.';
 
   @override
   String get settingScreensaverDimLevelTitle => 'Nivel de atenuación';
@@ -12354,6 +12393,20 @@ class UiStringsEs extends UiStrings {
   @override
   String get settingVoiceRealtimeGeminiProactiveDescription =>
       'El modelo se queda callado cuando lo que oye no va dirigido a él. Experimental en Google.';
+
+  @override
+  String get settingVoiceRealtimeXaiWebSearchTitle => 'Búsqueda web';
+
+  @override
+  String get settingVoiceRealtimeXaiWebSearchDescription =>
+      'Permite que el modelo busque información en la web.';
+
+  @override
+  String get settingVoiceRealtimeXaiXSearchTitle => 'Búsqueda en X';
+
+  @override
+  String get settingVoiceRealtimeXaiXSearchDescription =>
+      'Permite que el modelo busque publicaciones en X.';
 
   @override
   String get voiceRealtimeReasoningDefault => 'Predeterminado del modelo';

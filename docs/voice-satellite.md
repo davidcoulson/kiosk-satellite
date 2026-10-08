@@ -66,7 +66,7 @@ When Home Assistant runs the integration, onboarding offers the same migration i
 | | Talk right after the wake word | Skips the wake sound and keeps what you say right after the wake word. |
 | | Follow-up delay, Chime before a follow-up | A pause and a chime before listening for the answer to a question. |
 | | Play sounds on, Play as | Where answers and chimes play. See [below](#play-sounds-on-a-media-player). |
-| Realtime | Providers | A row per provider with its status. **Configure** opens its API key, model, voice and endpoint, plus **Reasoning effort** for OpenAI and Gemini and Gemini's **Google Search** and **Ignore talk not meant for it** switches, and **Save & Validate** stores them once the provider connects. |
+| Realtime | Providers | A row per provider with its status. **Configure** opens its API key, model, voice and endpoint, plus **Reasoning effort** for OpenAI and Gemini, xAI's **Web Search** and **X Search** switches and Gemini's **Google Search** and **Ignore talk not meant for it** switches, and **Save & Validate** stores them once the provider connects. |
 | | Instructions, End after silence, Speech speed, Session duration, Talk over answers | How the conversation behaves, sounds, ends and carries over, for every provider. |
 | | Tools | What the model can control. See [Realtime conversations](#realtime-conversations). |
 | Wake Word | Wake word engine | vsWakeWord (default), microWakeWord or openWakeWord. All models ship with the app. |
@@ -112,13 +112,17 @@ A wake word answered by a realtime provider starts a conversation with a speech 
 
 **Getting a Gemini API key.** Sign in to [Google AI Studio](https://aistudio.google.com/apikey) with a Google account, click **Create API key**, pick or create a Google Cloud project and copy the key into the Gemini provider's **API key**. The free tier covers the Live models with lower rate limits, so you can try realtime conversations without a billing account. Google may use what is sent on the free tier to improve its products. Turn on billing for the project to lift the limits and keep your conversations out of that. **Model** defaults to `gemini-3.8-live`.
 
-**Controlling your home.** With **Tools** on **Home Assistant**, the model uses Home Assistant's **Model Context Protocol Server** integration. Add it under **Settings > Devices & services** in Home Assistant. The model can use the entities exposed to Assist, and the scripts exposed to Assist become tools too. **Custom MCP server** points at another server that speaks Streamable HTTP. **None** leaves the tools to a relay that adds its own.
+**Controlling your home.** With **Tools** on **Home Assistant**, the model uses Home Assistant's **Model Context Protocol Server** integration. Add it under **Settings > Devices & services** in Home Assistant. The model can use the entities exposed to Assist, and the scripts exposed to Assist become tools too. Timers work as they do with Assist on Home Assistant 2026.10 or later. Older versions leave the timer tools out of realtime conversations. **Custom MCP server** points at another server that speaks Streamable HTTP. **None** leaves the tools to a relay that adds its own.
 
 **Which room.** Each conversation starts with the kiosk's name and its area in Home Assistant, so "turn on the lights" means the lights in the kiosk's area unless you name another one. Set the area on the kiosk's device in Home Assistant. The Assist satellite entity stays idle during a conversation, so automations that need to know which kiosk is talking should check the kiosk's [Voice Satellite](#home-assistant-entities-and-actions) sensor.
 
 **Picking up where you left off.** **Session duration** keeps what was said for 30 minutes up to 12 hours and gives it to the next conversation, so you can refer back to something after a conversation ended. Older exchanges are dropped, and nothing is kept across an app restart.
 
+**Started from Home Assistant.** With a provider on **Assistant 1**, `assist_satellite.start_conversation` opens a realtime conversation instead of an Assist turn. The model says the `start_message` in its own voice, word for word, and then listens for the reply. Home Assistant's own speech of the message is not played. `extra_system_prompt` does not reach the model, because Home Assistant does not send it to the kiosk. An automation that plays `start_media_id` with no message still gets an Assist turn.
+
 **Kiosks without internet access.** Set a provider's **Endpoint** to a relay on your network that speaks its realtime protocol. The kiosk only talks to the relay, and the API key can live there instead of on the kiosk.
+
+**OpenAI on Azure.** The bubble shows what you said through a separate transcription model, `gpt-4o-mini-transcribe`. On Azure it needs its own deployment, named exactly that, in the same resource as the realtime model. Without it the model still hears you and answers, but your words never show and the kiosk logs `transcription failed: DeploymentNotFound`.
 
 **On screen.** A conversation docks at the bottom of the screen in a bubble with the current exchange and the skin's bar along its bottom edge. It stays up until the conversation ends, and the dashboard stays visible and usable underneath. The bar drains in the last seconds before **End after silence** ends the conversation. Saying goodbye ends it too, and so does the close button. "Stop" cuts off an answer and keeps the conversation going.
 
@@ -127,6 +131,8 @@ A wake word answered by a realtime provider starts a conversation with a speech 
 **Speech speed** sets how fast the model talks, from 0.5x to 1.5x. OpenAI does not go faster than 1.5x. Gemini has no such setting and always talks at its own pace.
 
 **Google Search** (Gemini only) lets the model look things up on the web, next to the Home Assistant tools. It needs billing turned on for the key's Google Cloud project: on the free tier, Save & Validate fails with "You exceeded your current quota".
+
+**Web Search** and **X Search** (xAI only) let the model look things up on the web and in posts on X, next to the Home Assistant tools. xAI runs the searches itself and bills them as part of the conversation, with no extra setup on the key.
 
 **Ignore talk not meant for it** (Gemini only) turns on Gemini's proactive audio: the model stays quiet when what it hears is not addressed to it, such as a TV or people talking to each other. Google offers it only on its experimental API, which the kiosk connects to while the switch is on, so it may change or go away.
 
@@ -157,7 +163,7 @@ These come from Home Assistant through the kiosk's satellite entity, as they do 
 | --- | --- |
 | Timers | Ask for one by voice. Pills show while it runs and an alert when it ends. Tap a pill to pause it, double tap to cancel. |
 | Announcements | `assist_satellite.announce` on the kiosk's satellite. |
-| Start a conversation | `assist_satellite.start_conversation`: the kiosk speaks, then listens for the reply. |
+| Start a conversation | `assist_satellite.start_conversation`: the kiosk speaks, then listens for the reply. With a realtime provider on Assistant 1, the provider takes the conversation. See [Realtime conversations](#realtime-conversations). |
 | Ask a question | `assist_satellite.ask_question`: the kiosk speaks, listens and hands the reply to Home Assistant, as a Voice PE does. |
 
 Double tap the overlay to end a turn or close what lingers. With **Stop word interruption** on, "stop" does the same while an answer, alert, announcement or result panel is up.

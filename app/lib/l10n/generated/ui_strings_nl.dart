@@ -1511,6 +1511,15 @@ class UiStringsNl extends UiStrings {
   String get gestureIntercomCall => 'Bel een kiosk';
 
   @override
+  String get gestureIntercomHangup => 'Intercomgesprek beëindigen';
+
+  @override
+  String get gestureAlarmStop => 'Stop het alarm';
+
+  @override
+  String get gestureAlarmSnooze => 'Laat het alarm sluimeren';
+
+  @override
   String get gestureScreensaver => 'Start de schermbeveiliging';
 
   @override
@@ -2048,10 +2057,20 @@ class UiStringsNl extends UiStrings {
   String get gestureSequenceError => 'Voeg minstens twee hoeken toe.';
 
   @override
+  String get gesturePluginTrigger => 'Plug-intrigger';
+
+  @override
   String get gestureRemoteKey => 'Remote key';
 
   @override
+  String get gesturePluginTriggerField => 'Trigger';
+
+  @override
   String get gestureKey => 'Key';
+
+  @override
+  String get gesturePluginTriggerHelp =>
+      'Schakel eerst een plug-in met triggers in via Plug-inbeheer.';
 
   @override
   String get gestureKeyNone => 'No key yet';
@@ -3275,6 +3294,12 @@ class UiStringsNl extends UiStrings {
   String pluginErrorInvalidField(String field) {
     return 'Ongeldige $field';
   }
+
+  @override
+  String get pluginErrorTooManyTriggers => 'Te veel triggers';
+
+  @override
+  String get pluginErrorTriggerId => 'Ongeldige of dubbele trigger-ID';
 
   @override
   String get remoteDisableTitle => 'Beheer op afstand uitschakelen?';
@@ -8526,6 +8551,10 @@ class UiStringsNl extends UiStrings {
       'Een negatieve waarde laat dit apparaat eerder afspelen, voor luidsprekers die achterlopen op de groep, bijvoorbeeld via Bluetooth. Stel dit op gehoor af; wijzigingen worden direct toegepast.';
 
   @override
+  String get settingSendspinGroupVolumeDescription =>
+      'Wanneer dit apparaat in een groep afspeelt, regelt de volumeschuif het volume van de hele groep. Als dit uitstaat, wordt alleen het volume van dit apparaat aangepast. Vereist de verbinding met Music Assistant.';
+
+  @override
   String get mediaSendspinPage => 'Sendspin-speler';
 
   @override
@@ -9634,6 +9663,14 @@ class UiStringsNl extends UiStrings {
   @override
   String get settingScreensaverMenuDescription =>
       'Voeg de optie \'Schermbeveiliging starten\' toe aan het kioskmenu.';
+
+  @override
+  String get settingScreensaverFollowAnimationScaleTitle =>
+      'Android-animatie-instellingen volgen';
+
+  @override
+  String get settingScreensaverFollowAnimationScaleDescription =>
+      'Pauzeer geanimeerde schermbeveiligingen wanneer Android-animaties uit staan.';
 
   @override
   String get settingScreensaverDimLevelTitle => 'Dimniveau';
@@ -12263,6 +12300,20 @@ class UiStringsNl extends UiStrings {
   @override
   String get settingVoiceRealtimeGeminiProactiveDescription =>
       'Het model blijft stil wanneer wat het hoort niet tot het model gericht is. Experimenteel bij Google.';
+
+  @override
+  String get settingVoiceRealtimeXaiWebSearchTitle => 'Zoeken op het web';
+
+  @override
+  String get settingVoiceRealtimeXaiWebSearchDescription =>
+      'Laat het model dingen opzoeken op het web.';
+
+  @override
+  String get settingVoiceRealtimeXaiXSearchTitle => 'Zoeken op X';
+
+  @override
+  String get settingVoiceRealtimeXaiXSearchDescription =>
+      'Laat het model berichten op X doorzoeken.';
 
   @override
   String get voiceRealtimeReasoningDefault => 'Standaard van het model';

@@ -1503,6 +1503,15 @@ class UiStringsEn extends UiStrings {
   String get gestureIntercomCall => 'Call a kiosk';
 
   @override
+  String get gestureIntercomHangup => 'End the intercom call';
+
+  @override
+  String get gestureAlarmStop => 'Stop the alarm';
+
+  @override
+  String get gestureAlarmSnooze => 'Snooze the alarm';
+
+  @override
   String get gestureScreensaver => 'Start the screensaver';
 
   @override
@@ -2036,10 +2045,20 @@ class UiStringsEn extends UiStrings {
   String get gestureSequenceError => 'Add at least two corners.';
 
   @override
+  String get gesturePluginTrigger => 'Plugin trigger';
+
+  @override
   String get gestureRemoteKey => 'Remote key';
 
   @override
+  String get gesturePluginTriggerField => 'Trigger';
+
+  @override
   String get gestureKey => 'Key';
+
+  @override
+  String get gesturePluginTriggerHelp =>
+      'Enable a plugin with triggers in Plugin Manager first.';
 
   @override
   String get gestureKeyNone => 'No key yet';
@@ -3238,6 +3257,12 @@ class UiStringsEn extends UiStrings {
   String pluginErrorInvalidField(String field) {
     return 'Invalid $field';
   }
+
+  @override
+  String get pluginErrorTooManyTriggers => 'Too many triggers';
+
+  @override
+  String get pluginErrorTriggerId => 'Invalid or duplicate trigger ID';
 
   @override
   String get remoteDisableTitle => 'Turn off remote management?';
@@ -8426,6 +8451,10 @@ class UiStringsEn extends UiStrings {
       'Negative plays this device earlier, for speakers that lag behind the group (Bluetooth). Tune by ear; applies live.';
 
   @override
+  String get settingSendspinGroupVolumeDescription =>
+      'While this device plays in a group, the volume slider sets the whole group\'s volume. Off, only this device\'s. Needs the Music Assistant connection.';
+
+  @override
   String get mediaSendspinPage => 'Sendspin Player';
 
   @override
@@ -9517,6 +9546,14 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingScreensaverMenuDescription =>
       'Add a Start Screensaver entry to the kiosk menu.';
+
+  @override
+  String get settingScreensaverFollowAnimationScaleTitle =>
+      'Follow Android animation settings';
+
+  @override
+  String get settingScreensaverFollowAnimationScaleDescription =>
+      'Pause animated screensavers when Android animations are off.';
 
   @override
   String get settingScreensaverDimLevelTitle => 'Dim level';
@@ -12111,6 +12148,20 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingVoiceRealtimeGeminiProactiveDescription =>
       'The model stays quiet when what it hears is not addressed to it. Experimental at Google.';
+
+  @override
+  String get settingVoiceRealtimeXaiWebSearchTitle => 'Web Search';
+
+  @override
+  String get settingVoiceRealtimeXaiWebSearchDescription =>
+      'Lets the model look things up on the web.';
+
+  @override
+  String get settingVoiceRealtimeXaiXSearchTitle => 'X Search';
+
+  @override
+  String get settingVoiceRealtimeXaiXSearchDescription =>
+      'Lets the model search posts on X.';
 
   @override
   String get voiceRealtimeReasoningDefault => 'Model default';

@@ -27,6 +27,10 @@
 /// proposes hands; HandLandmarker.kt judges them and counts fingers):
 ///  - fingers:         fingers (1..5): a hand showing that many
 ///
+/// One comes from a plugin (PluginBridge.kt relays host.fireTrigger, issue
+/// #888). The names are display copies of the manifest's:
+///  - plugin:          pluginId, trigger, pluginName, title
+///
 /// One is a hardware key, caught by the accessibility service whatever app
 /// is in front (RemoteKeys.kt, RemoteKeysManager), and swallowed there:
 ///  - remote_key:      keyCode (Android KeyEvent code), longPress (bool),
@@ -46,6 +50,9 @@
 ///  - app_launcher:     open the app launcher overlay (issue #318)
 ///  - intercom_open:    open the intercom's Call a kiosk sheet
 ///  - intercom_call:    kioskId, kioskName: call that kiosk straight away
+///  - intercom_hangup:  end the intercom call, like the hang up button
+///  - alarm_stop:       stop the ringing, snoozed or sunrise alarm (#872)
+///  - alarm_snooze:     snooze the ringing alarm
 ///  - screensaver:      start the screensaver
 ///  - screensaver_stop: stop it (redundant for touch, made for claps)
 ///  - hold_mode:        toggle hold mode (pin the current view, issue #266)
@@ -74,6 +81,10 @@ class GestureMapping {
 
   String get triggerType => '${trigger['type'] ?? ''}';
   String get actionType => '${action['type'] ?? ''}';
+
+  /// Plugins are installed per kiosk, so these mappings never sync.
+  bool get usesPlugin =>
+      triggerType == 'plugin' || actionType == 'plugin_action';
 
   Map<String, Object?> toJson() => {
     'id': id,
@@ -111,8 +122,9 @@ List<GestureMapping> decodeGestureMappings(String json) {
 }
 
 /// The trigger types GestureEngine never sees: claps are heard, hands are
-/// seen, and remote keys go to the accessibility service instead.
-const _notTouch = {'claps', 'fingers', 'remote_key'};
+/// seen, plugin triggers are fired by a plugin, and remote keys go to the
+/// accessibility service instead.
+const _notTouch = {'claps', 'fingers', 'plugin', 'remote_key'};
 
 /// The flat trigger list KioskLock pushes to GestureEngine.configure.
 /// Only touch triggers reach the native engine.
@@ -177,6 +189,8 @@ String describeGestureTrigger(Map<String, Object?> trigger) {
       return n == 5
           ? 'Show an open hand'
           : 'Show $n finger${n == 1 ? '' : 's'}';
+    case 'plugin':
+      return describePluginTrigger(trigger);
     case 'remote_key':
       final key = remoteKeyName(trigger);
       return trigger['longPress'] == true
@@ -185,6 +199,12 @@ String describeGestureTrigger(Map<String, Object?> trigger) {
   }
   return 'Gesture';
 }
+
+/// "Hello World: Hardware key": both names come from the plugin's manifest
+/// and read the same in every language, like a plugin action's.
+String describePluginTrigger(Map<String, Object?> trigger) =>
+    '${trigger['pluginName'] ?? trigger['pluginId']}: '
+    '${trigger['title'] ?? trigger['trigger']}';
 
 /// A remote key's display name: the one captured with it, else its code.
 String remoteKeyName(Map<String, Object?> trigger) {
@@ -240,6 +260,12 @@ String describeGestureAction(Map<String, Object?> action) {
       return 'Open Call a kiosk';
     case 'intercom_call':
       return 'Call ${action['kioskName'] ?? action['kioskId']}';
+    case 'intercom_hangup':
+      return 'End the intercom call';
+    case 'alarm_stop':
+      return 'Stop the alarm';
+    case 'alarm_snooze':
+      return 'Snooze the alarm';
     case 'screensaver':
       return 'Start the screensaver';
     case 'screensaver_stop':

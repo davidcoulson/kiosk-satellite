@@ -412,6 +412,10 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingScreensaverMenuTitle",
     "description": "settingScreensaverMenuDescription",
   },
+  "screensaver.follow_animation_scale": {
+    "title": "settingScreensaverFollowAnimationScaleTitle",
+    "description": "settingScreensaverFollowAnimationScaleDescription",
+  },
   "screensaver.dim_level": {
     "title": "settingScreensaverDimLevelTitle",
     "description": "settingScreensaverDimLevelDescription",
@@ -987,6 +991,10 @@ const settingMessageIds = <String, Map<String, String>>{
   "sendspin.sync_offset_ms": {
     "title": "settingSendspinSyncOffsetTitle",
     "description": "settingSendspinSyncOffsetDescription",
+  },
+  "sendspin.group_volume": {
+    "title": "settingSendspinSonosGroupVolumeTitle",
+    "description": "settingSendspinGroupVolumeDescription",
   },
   "sendspin.ma_url": {
     "title": "settingSendspinMaUrlTitle",
@@ -1979,6 +1987,14 @@ const settingMessageIds = <String, Map<String, String>>{
   "voice.realtime_xai_voice": {
     "title": "settingVoiceRealtimeVoiceTitle",
     "description": "settingVoiceRealtimeVoiceDescription",
+  },
+  "voice.realtime_xai_search": {
+    "title": "settingVoiceRealtimeXaiWebSearchTitle",
+    "description": "settingVoiceRealtimeXaiWebSearchDescription",
+  },
+  "voice.realtime_xai_x_search": {
+    "title": "settingVoiceRealtimeXaiXSearchTitle",
+    "description": "settingVoiceRealtimeXaiXSearchDescription",
   },
   "voice.realtime_gemini_api_key": {
     "title": "settingVoiceRealtimeApiKeyTitle",

@@ -539,6 +539,19 @@
       ]
     }
   },
+  "gesturePluginTrigger": "Plugin trigger",
+  "@gesturePluginTrigger": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
   "gestureRemoteKey": "Remote key",
   "@gestureRemoteKey": {
     "context": "Settings > Gestures > Add gesture",
@@ -552,8 +565,34 @@
       ]
     }
   },
+  "gesturePluginTriggerField": "Trigger",
+  "@gesturePluginTriggerField": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
   "gestureKey": "Key",
   "@gestureKey": {
+    "context": "Settings > Gestures > Add gesture",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gesturePluginTriggerHelp": "Enable a plugin with triggers in Plugin Manager first.",
+  "@gesturePluginTriggerHelp": {
     "context": "Settings > Gestures > Add gesture",
     "description": "Label or guidance in this section.",
     "x-locations": {

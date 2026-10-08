@@ -34,6 +34,7 @@ export const GESTURE_TRIGGERS = [
   ['corner_sequence', 'Corner sequence'],
   ['claps', 'Claps'],
   ['fingers', 'Show fingers'],
+  ['plugin', 'Plugin trigger'],
   ['remote_key', 'Remote key'],
 ];
 
@@ -56,6 +57,9 @@ export const GESTURE_ACTION_GROUPS = [
     ['app_launcher', 'Open the app launcher', 'apps'],
     ['intercom_open', 'Open Call a kiosk', 'speaker'],
     ['intercom_call', 'Call a kiosk', 'speaker'],
+    ['intercom_hangup', 'End the intercom call', 'callEnd'],
+    ['alarm_stop', 'Stop the alarm', 'alarmOff'],
+    ['alarm_snooze', 'Snooze the alarm', 'snooze'],
     ['screensaver', 'Start the screensaver', 'moon'],
     ['screensaver_stop', 'Stop the screensaver', 'sun'],
     ['hold_mode', 'Toggle hold mode', 'pauseCircle'],
@@ -80,6 +84,11 @@ export function gestureCorner(corner) {
   return name ? gestureText(name[0].toUpperCase() + name.slice(1) + ' corner') : corner;
 }
 
+// Both names come from the plugin's manifest, like a plugin action's.
+export function describePluginTrigger(trigger) {
+  return `${trigger.pluginName || trigger.pluginId}: ${trigger.title || trigger.trigger}`;
+}
+
 export function describeGestureTrigger(trigger) {
   const corner = gestureText(GESTURE_CORNERS[trigger.corner] || '');
   const seconds = () => {
@@ -97,6 +106,7 @@ export function describeGestureTrigger(trigger) {
       const count = Number(trigger.fingers) || 5;
       return count === 5 ? gestureText('Show an open hand') : t(count === 1 ? 'gestureDescribeOneFinger' : 'gestureDescribeFingers', {count});
     }
+    case 'plugin': return describePluginTrigger(trigger);
     case 'remote_key':
       return t(trigger.longPress === true ? 'gestureDescribeRemoteKeyLong' : 'gestureDescribeRemoteKey',
         {key: remoteKeyName(trigger)});
@@ -125,6 +135,9 @@ export function describeGestureAction(a) {
     case 'app_launcher': return gestureText('Open the app launcher');
     case 'intercom_open': return gestureText('Open Call a kiosk');
     case 'intercom_call': return t('gestureCall', {value: a.kioskName || a.kioskId});
+    case 'intercom_hangup': return gestureText('End the intercom call');
+    case 'alarm_stop': return gestureText('Stop the alarm');
+    case 'alarm_snooze': return gestureText('Snooze the alarm');
     case 'screensaver': return gestureText('Start the screensaver');
     case 'screensaver_stop': return gestureText('Stop the screensaver');
     case 'hold_mode': return gestureText('Toggle hold mode');
@@ -470,7 +483,8 @@ export async function pickGestureAction(current) {
     case 'android_settings': case 'sendspin_player': case 'app_launcher':
     case 'screensaver': case 'screensaver_stop': case 'hold_mode':
     case 'ha_kiosk': case 'now_playing': case 'music_assistant':
-    case 'media_play_pause': case 'intercom_open':
+    case 'media_play_pause': case 'intercom_open': case 'intercom_hangup':
+    case 'alarm_stop': case 'alarm_snooze':
       return { type };
     case 'navigate': return configureGestureNavigate(carried);
     case 'url': return configureGestureText(carried, {
@@ -561,6 +575,25 @@ export async function editGesture(existing) {
   palmNote.textContent = handsOk
     ? gestureText('Requires the camera enabled and a well lit environment.')
     : gestureText(cameraText(state.visionSupport.hint || 'Not available on this device.'));
+
+  // Running plugins' triggers, plus the saved one so a mapping whose plugin
+  // is off still opens with its trigger selected.
+  const pluginKey = (trigger) => `${trigger.pluginId}/${trigger.trigger}`;
+  const pluginTriggers = new Map();
+  if (triggerValue.type === 'plugin') pluginTriggers.set(pluginKey(triggerValue), triggerValue);
+  const listed = await cmd('getPluginTriggers').catch(() => null);
+  for (const item of (listed?.ok ? listed.data || [] : []).filter((item) => item.available)) {
+    pluginTriggers.set(pluginKey(item), {
+      type: 'plugin', pluginId: item.pluginId, trigger: item.trigger,
+      pluginName: item.pluginName, title: item.title,
+    });
+  }
+  const pluginSel = cameraSelectField(gestureText('Trigger'),
+    [...pluginTriggers].map(([value, trigger]) => ({ value, label: describePluginTrigger(trigger) })),
+    triggerValue.type === 'plugin' ? pluginKey(triggerValue) : pluginTriggers.keys().next().value);
+  const pluginNote = document.createElement('span');
+  pluginNote.className = 'desc';
+  pluginNote.textContent = gestureText('Enable a plugin with triggers in Plugin Manager first.');
 
   const holdWrap = document.createElement('label');
   holdWrap.className = 'form-field';
@@ -676,7 +709,7 @@ export async function editGesture(existing) {
 
   body.append(typeSel.wrap, cornerSel.wrap, tapsSel.wrap, fingersSel.wrap,
     fingerTapsSel.wrap, clapsSel.wrap, clapsNote, fingerCountSel.wrap,
-    holdWrap, palmNote, seqWrap, keyRow, longWrap, actionRow);
+    holdWrap, palmNote, pluginSel.wrap, pluginNote, seqWrap, keyRow, longWrap, actionRow);
   const update = () => {
     const type = typeSel.select.value;
     cornerSel.wrap.style.display =
@@ -692,6 +725,8 @@ export async function editGesture(existing) {
     holdWrap.style.display =
       type === 'corner_hold' || type === 'finger_hold' ? '' : 'none';
     seqWrap.style.display = type === 'corner_sequence' ? '' : 'none';
+    pluginSel.wrap.style.display = type === 'plugin' && pluginTriggers.size ? '' : 'none';
+    pluginNote.style.display = type === 'plugin' && !pluginTriggers.size ? '' : 'none';
     keyRow.style.display = type === 'remote_key' ? '' : 'none';
     longWrap.style.display = type === 'remote_key' ? '' : 'none';
   };
@@ -707,10 +742,13 @@ export async function editGesture(existing) {
       if (type === 'corner_sequence' && sequence.length < 2) {
         return { ok: false, error: gestureText('Add at least two corners.') };
       }
+      if (type === 'plugin' && !pluginTriggers.has(pluginSel.select.value)) {
+        return { ok: false, error: gestureText('Enable a plugin with triggers in Plugin Manager first.') };
+      }
       if (type === 'remote_key' && !key) {
         return { ok: false, error: gestureText('Capture a key first.') };
       }
-      const trigger = { type };
+      const trigger = type === 'plugin' ? { ...pluginTriggers.get(pluginSel.select.value) } : { type };
       if (type === 'corner_taps' || type === 'corner_hold') {
         trigger.corner = cornerSel.select.value;
       }
@@ -798,7 +836,7 @@ export async function loadGestures() {
         }, false, 'delete'),
       ],
       {
-        icon: { claps: 'clap', fingers: 'hand', remote_key: 'remote' }[mapping.trigger?.type] || 'gesture',
+        icon: { claps: 'clap', fingers: 'hand', plugin: 'extension', remote_key: 'remote' }[mapping.trigger?.type] || 'gesture',
         onClick: async () => {
           if (await editGesture(mapping)) refresh();
         },
