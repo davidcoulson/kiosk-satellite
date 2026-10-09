@@ -157,6 +157,8 @@ void main() {
           'toggle': {'name': 'Toggle'},
         },
         'homeassistant': {'reload_all': {}},
+        'script': {'good_morning': {}},
+        'automation': {'trigger': {}},
       },
       names: {'light.toggle': 'Umschalten'},
       titles: {'light': 'Licht'},
@@ -169,6 +171,9 @@ void main() {
     expect(byId['light.toggle']!['entity_domains'], isNull);
     expect(byId['homeassistant.reload_all']!['name'], 'Reload all');
     expect(byId['homeassistant.reload_all']!['domain_title'], 'Homeassistant');
+    // Scripts and automations have gestures of their own.
+    expect(byId.keys.where((id) => '$id'.startsWith('script.')), isEmpty);
+    expect(byId.keys.where((id) => '$id'.startsWith('automation.')), isEmpty);
   });
 
   test('a last used timestamp is not listed as a state', () {

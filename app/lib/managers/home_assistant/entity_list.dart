@@ -208,6 +208,10 @@ List<String>? serviceEntityDomains(Map<Object?, Object?> service) {
   return domains.toList();
 }
 
+/// Scripts and automations have gestures of their own (Run a script,
+/// Trigger an automation), so the service picker leaves them out.
+const _ownGestureDomains = {'automation', 'script'};
+
 /// Home Assistant's services as the service picker lists them, from
 /// `get_services`: one row per service with its name from [names] (Home
 /// Assistant's translation, keyed `domain.service`), the one the server
@@ -218,7 +222,7 @@ List<Map<String, Object?>> serviceRows(
   Map<String, String> titles = const {},
 }) => [
   for (final d in services.entries)
-    if (d.value is Map)
+    if (d.value is Map && !_ownGestureDomains.contains(d.key))
       for (final s in (d.value as Map).entries)
         _serviceRow(
           '${d.key}',
