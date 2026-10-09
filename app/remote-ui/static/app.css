@@ -594,7 +594,10 @@
   /* Quiet text anywhere (a field label, a note under a control) is 12.5
      muted; inside a row it is the 13 description. */
   .desc { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
-  .row .info .desc { font-size: 13px; line-height: 1.35; margin-top: 3px; }
+  /* A long unbroken value (an entity ID) breaks rather than pushing the
+     row past the screen's edge. */
+  .row .info .desc { font-size: 13px; line-height: 1.35; margin-top: 3px;
+    overflow-wrap: anywhere; }
   /* A value picked in a modal beside the button that opens it. */
   .picker-controls { display: flex; gap: 10px; align-items: center;
     min-width: 0; max-width: 60%; flex: 0 1 auto; }
@@ -1422,8 +1425,12 @@
 .dash-picker-card .modal-foot { border-top: 1px solid var(--divider); margin-top: 14px;
   padding-top: 14px; }
 @media (max-width: 640px) {
-  .dash-picker-back { padding: 0; }
-  .modal-card.dash-picker-card { max-width: none; height: 100%; max-height: none;
+  /* A flex backdrop, so the card's full height is the screen's and the
+     list inside scrolls. In the centered grid, 100% was the card's own
+     content and nothing could scroll. */
+  .dash-picker-back { padding: 0; display: flex; }
+  .modal-card.dash-picker-card { flex: 1 1 auto; width: 100%; min-width: 0;
+    max-width: none; height: 100%; max-height: none;
     border-radius: 0; padding: 8px 12px 14px; }
 }
 .dp { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
@@ -1583,6 +1590,8 @@
 .picked .ep-disc { background: var(--surface); color: var(--primary); }
 .ep-row .dp-mono { display: block; }
 .ep-row.dim { opacity: .5; }
+/* A phone keeps the width for the names: no icon disc on the rows. */
+.dp.narrow .ep-row .ep-disc { display: none; }
 .ep-row:disabled { cursor: default; }
 .ep-state { flex: none; max-width: 34%; font-size: 13px; color: var(--muted); text-align: right;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

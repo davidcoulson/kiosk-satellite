@@ -767,6 +767,7 @@ class _ItemPickerState extends State<ItemPicker> {
             multiple: widget.multiple,
             disabled: widget.multiple && !picked && _full,
             query: _query,
+            icon: wide,
             onTap: () => _tap(item),
           );
         },
@@ -1018,6 +1019,7 @@ class _ItemRow extends StatelessWidget {
     this.multiple = false,
     this.disabled = false,
     this.query = '',
+    this.icon = true,
   });
 
   static const double height = 58;
@@ -1028,6 +1030,9 @@ class _ItemRow extends StatelessWidget {
   final bool disabled;
   final String query;
   final VoidCallback onTap;
+
+  /// False on a phone: the width goes to the names.
+  final bool icon;
 
   @override
   Widget build(BuildContext context) {
@@ -1055,8 +1060,10 @@ class _ItemRow extends StatelessWidget {
                     ),
                     const SizedBox(width: 2),
                   ],
-                  _disc(context, item.icon, picked: picked),
-                  const SizedBox(width: 14),
+                  if (icon) ...[
+                    _disc(context, item.icon, picked: picked),
+                    const SizedBox(width: 14),
+                  ],
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

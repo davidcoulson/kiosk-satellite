@@ -67,6 +67,9 @@ def api(route):
                 {'entity_id': 'sensor.original', 'name': 'Weather', 'state': '42', 'domain': 'sensor'},
                 {'entity_id': 'sensor.raw', 'name': 'Weather', 'state': '51 %', 'domain': 'sensor'},
                 {'entity_id': 'sensor.second', 'name': 'State', 'state': 'On', 'domain': 'sensor'}]
+        # Enough rows to need scrolling on a phone.
+        data += [{'entity_id': f'light.filler_{i}', 'name': f'Filler light {i}', 'state': 'Unavailable',
+                  'domain': 'light'} for i in range(40)]
     else:
         data = {'haEntityAttributes': {'humidity': 51, 'friendly_name': 'Weather'},
                 'listPlugins': [], 'listFiles': [],
@@ -183,6 +186,26 @@ try:
         root.get_by_text('TEST Add entities', exact=True).click()
         page.locator('.dash-picker-card').get_by_role('button', name='TEST Cancel', exact=True).click()
         assert len(requests) == before
+        # On a phone the picker fills the screen and its list scrolls inside
+        # it, each row fitting the width without its icon.
+        page.set_viewport_size({'width': 380, 'height': 700})
+        root.get_by_text('TEST Add entities', exact=True).click()
+        card = page.locator('.dash-picker-card')
+        expect(card.locator('.ep-row').first).to_be_visible()
+        box = card.bounding_box()
+        assert (round(box['width']), round(box['height'])) == (380, 700), box
+        metrics = page.evaluate('''() => {
+          const list = document.querySelector('.dash-picker-card .dp-list');
+          const row = list.querySelector('.ep-row');
+          list.scrollTop = 300;
+          return { scrolled: list.scrollTop, rowRight: row.getBoundingClientRect().right,
+            listRight: list.getBoundingClientRect().right, wide: document.documentElement.scrollWidth };
+        }''')
+        assert metrics['scrolled'] > 0, metrics
+        assert metrics['rowRight'] <= metrics['listRight'] + 0.5, metrics
+        assert metrics['wide'] <= 380, metrics
+        expect(card.locator('.ep-row .ep-disc').first).to_be_hidden()
+        card.get_by_role('button', name='TEST Cancel', exact=True).click()
         assert not errors, errors
         browser.close()
 finally:
