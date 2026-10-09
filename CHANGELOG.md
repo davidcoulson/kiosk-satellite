@@ -4,6 +4,9 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ## Unreleased
 
+### Added
+- **The adaptive brightness curve can run the other way.** Dragging the curve's dark room point above its bright room point, or typing it higher, now turns the curve over so the screen dims as the room gets brighter, for a screen that should glow in the dark such as an e-ink reader's backlight (#923). The dark room then sits at **Maximum brightness** and the bright room at **Minimum brightness**, so the Screen light in Home Assistant still turns the top of the curve. Moving an end now takes the middle points with it, on the device and in the remote admin.
+
 ### Changed
 - **Entity states read the way Home Assistant words them.** At a Glance and the screensaver **Entity** widget showed the raw state, so a window sensor read **Off** instead of **Closed**, always in English (#919). States now use Home Assistant's own wording for the entity's device class and integration, in Home Assistant's language, the same as its dashboards. Numbers keep their units and rounding.
 

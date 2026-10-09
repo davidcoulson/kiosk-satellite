@@ -2125,6 +2125,7 @@ void main() {
       defs.adaptivePoint2Level,
       defs.adaptivePoint3Position,
       defs.adaptivePoint3Level,
+      defs.adaptiveInverted,
     ];
     // Screen & Audio with the default exclusions: the ends stay per room,
     // and so do the middle points.

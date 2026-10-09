@@ -237,6 +237,58 @@ void main() {
     expect(container.settings.get(adaptiveBrightLux), 300);
   });
 
+  // Issue #923: an e-ink reader's backlight wants the screen on in the
+  // dark and off in daylight. Dragging one end past the other turns the
+  // curve over; Minimum and Maximum stay the low and high levels.
+  testWidgets('dragging the dark point above the bright one inverts the '
+      'curve', (tester) async {
+    final container = await open(tester, {
+      'ks.screen.adaptive_brightness': true,
+    });
+    await tab(tester, 'Screen & Audio');
+    await tab(tester, 'Adaptive brightness');
+    final chart = find.descendant(
+      of: find.byType(BrightnessCurveEditor),
+      matching: find.byType(CustomPaint),
+    );
+    final box = tester.getRect(chart.first);
+    final x = box.left + 40 + log(5) / log(1000) * (box.width - 50);
+    final y = box.top + 184 - 0.15 * 170;
+    await tester.dragFrom(Offset(x, y), Offset(0, -0.85 * 170 - 10));
+    await tester.pumpAndSettle();
+    final s = container.settings;
+    expect(s.get(adaptiveInverted), isTrue);
+    expect(s.get(adaptiveMinBrightness), 0.8);
+    expect(s.get(adaptiveMaxBrightness), 1.0);
+    expect(s.get(adaptiveDarkLux), 5);
+    expect(s.get(adaptiveBrightLux), 300);
+    // The middle points kept their places along the way down.
+    expect(s.get(adaptivePoint2Level), closeTo(1 / 3, 1e-3));
+    expect(s.get(adaptivePoint3Level), closeTo(2 / 3, 1e-3));
+    expect(find.text('100%'), findsWidgets);
+  });
+
+  testWidgets('a bright point typed under the dark one inverts the curve', (
+    tester,
+  ) async {
+    final container = await open(tester, {
+      'ks.screen.adaptive_brightness': true,
+    });
+    await tab(tester, 'Screen & Audio');
+    await tab(tester, 'Adaptive brightness');
+    await tester.tap(find.text('300 lx'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(1), '0');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final s = container.settings;
+    expect(s.get(adaptiveInverted), isTrue);
+    expect(s.get(adaptiveMinBrightness), 0);
+    expect(s.get(adaptiveMaxBrightness), 0.15);
+    // Point 2 sits a third of the way down: 10%.
+    expect(find.text('10%'), findsOneWidget);
+  });
+
   testWidgets('without the sensor the reading says so and the switch '
       'still works', (tester) async {
     await open(tester, {'ks.screen.adaptive_brightness': true}, sensor: false);
