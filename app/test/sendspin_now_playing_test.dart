@@ -918,6 +918,45 @@ void main() {
       },
     );
 
+    test('a resume runs the paused position on from the music start', () async {
+      await build(
+        extra: {
+          'ks.sendspin.player': '',
+          'ks.sendspin.player_source': '',
+          'ks.sendspin.enabled': true,
+          'ks.sendspin.client_id': 'abc123',
+        },
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(channel, (call) async => true);
+      const codec = StandardMethodCodec();
+      Future<void> fromNative(String method, Map<String, Object?> args) =>
+          messenger.handlePlatformMessage(
+            channel.name,
+            codec.encodeMethodCall(MethodCall(method, args)),
+            (_) {},
+          );
+      await fromNative('metadataChanged', {
+        'title': 'Song',
+        'positionMs': 30000,
+        'durationMs': 180000,
+      });
+      await fromNative('playingChanged', {'playing': true});
+      await fromNative('playingChanged', {'playing': false});
+      // Paused at 30 s.
+      await fromNative('metadataChanged', {'positionMs': 30000});
+      final pausedAt = sendspin.nowPlaying.value?['receivedAt'] as int?;
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await fromNative('playingChanged', {'playing': true});
+      final now = sendspin.nowPlaying.value!;
+      expect(now['positionMs'], 30000);
+      // Stamped at the start of playback, not at the paused report, so
+      // the bar does not jump by the time it stood still.
+      expect(now['receivedAt'] as int, greaterThan(pausedAt! + 250));
+    });
+
     test(
       'local chapter metadata follows the audible book and clears on a song',
       () async {
@@ -1363,6 +1402,8 @@ void main() {
       final seek = calls.singleWhere((c) => c.arguments['command'] == 'seek');
       final ms = seek.arguments['value'] as int;
       expect(ms, inInclusiveRange(140000, 160000));
+      // Whole seconds: Music Assistant drops the fraction.
+      expect(ms % 1000, 0);
       // The bar shows the target before the server reports back.
       expect(find.textContaining(RegExp(r'^2:[2-3]\d$')), findsOneWidget);
     });

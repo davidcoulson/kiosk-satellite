@@ -7,6 +7,7 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 ### Fixed
 - **The remote admin loads again with a dashboard view picked.** Since 2026.10.17 the remote admin stopped after the password screen with `i.repaint is not a function` on a kiosk whose screensaver is **Home Assistant Dashboard** or whose Now Playing **After dismissing** is **Chosen view** (#920). The **Dashboard view** row now loads like the other pickers.
 - **The Sendspin progress bar follows Previous and seeks.** On the device's own player, **Previous** restarted the song while the bar kept counting from where it was, even past the song's end (#915). After a seek on the bar, it could also jump back to the seek point every 5 seconds while the music played on. The bar now starts over with the song and moves on from a seek. This mostly showed without a Music Assistant token, which otherwise corrected the bar every few seconds.
+- **The Sendspin progress bar waits for the music after a seek, a Previous or a resume.** Each restart opens with about a second of silence before the music, and the bar counted through it, so it ran a second or two ahead of the song. It now holds still until the music plays. Seeks from the bar also land on the whole second Music Assistant plays from.
 
 ## v2026.10.17 - 2026-10-08
 

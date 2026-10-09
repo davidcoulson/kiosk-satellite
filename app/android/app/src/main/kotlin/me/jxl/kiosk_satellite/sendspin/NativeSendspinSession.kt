@@ -62,6 +62,10 @@ class NativeSendspinSession(
         private const val FEEDBACK_INTERVAL_MS = 5L
         private const val POSITION_PUSH_INTERVAL_MS = 5_000L
 
+        // How long a stream start waits for its music to play, and a seek
+        // for its stream to restart, before the position runs regardless.
+        private const val AUDIO_START_TIMEOUT_MS = 5_000L
+
         // Shell-level reconnect: the library reports the connected edge but
         // does not redial on its own.
         private val RECONNECT_DELAYS_MS = longArrayOf(1_000, 2_000, 4_000, 8_000, 15_000, 30_000)
@@ -214,13 +218,82 @@ class NativeSendspinSession(
     /** The current track's duration from the last metadata report, 0 when unknown. */
     @Volatile private var durationMs = 0L
 
+    /**
+     * Whether the current stream's music has started playing. A stream
+     * opens with the engine's silence until its first chunk's server
+     * timestamp, a second or two after a seek or a restart, and an adopted
+     * position only runs from the music on.
+     */
+    private val audible = AtomicBoolean(false)
+
+    /** When a seek was sent, while its stream restart is still to come; 0 otherwise. */
+    @Volatile private var seekSentAt = 0L
+
+    private val audioStartTimeout = Runnable { onAudioStartTimeout() }
+
+    /** When the current stream started, for the log of how long its music took. */
+    @Volatile private var streamStartedAt = 0L
+
     /** [arg] is the command's value where it takes one: the seek position in ms. */
     fun sendCommand(command: String, arg: Long = 0L): Boolean {
         if (handle == 0L) return false
         val sent = NativeSendspin.nativeSendCommand(handle, command, arg)
-        if (sent && command == "seek") rebasePosition(arg)
+        if (sent && command == "seek") seekSent(arg)
         if (sent && command == "previous") anchor.previousSent(SystemClock.elapsedRealtime())
         return sent
+    }
+
+    /**
+     * Music Assistant answers a seek with a stream restart at the target.
+     * The target stands still until the new stream's music plays, and only
+     * then goes to the UI, so the bar does not run ahead through the
+     * silence before it.
+     */
+    private fun seekSent(positionMs: Long) {
+        val now = SystemClock.elapsedRealtime()
+        anchor.set(positionMs, now, running = false)
+        seekSentAt = now
+        armAudioStartTimeout()
+    }
+
+    private fun armAudioStartTimeout() {
+        controlHandler.removeCallbacks(audioStartTimeout)
+        controlHandler.postDelayed(audioStartTimeout, AUDIO_START_TIMEOUT_MS)
+    }
+
+    /** Playback reached the stream's first music, at [at] (elapsed realtime). */
+    private fun onAudible(at: Long) {
+        if (!streamActive || !audible.compareAndSet(false, true)) return
+        controlHandler.removeCallbacks(audioStartTimeout)
+        Log.i(TAG, "Music started ${at - streamStartedAt}ms after the stream start")
+        seekSentAt = 0L
+        anchor.setRunning(true, at)
+        events.onStreamActiveChanged(true)
+        anchor.current(at, durationMs)?.let { events.onPositionUpdate(it) }
+    }
+
+    /**
+     * No music marker came, or no restart after a seek: run the position
+     * anyway rather than hold it forever. A seek the server carried out
+     * within the running stream counts from when it was sent.
+     */
+    private fun onAudioStartTimeout() {
+        if (!streamActive) {
+            seekSentAt = 0L
+            return
+        }
+        val now = SystemClock.elapsedRealtime()
+        if (!audible.get()) {
+            Log.w(TAG, "No music marker within ${AUDIO_START_TIMEOUT_MS}ms of the stream start")
+            onAudible(now)
+            return
+        }
+        val sentAt = seekSentAt
+        if (sentAt == 0L) return
+        seekSentAt = 0L
+        val target = anchor.current(now, 0L) ?: return
+        anchor.set(target + (now - sentAt), now, running = true)
+        events.onPositionUpdate(displayedProgressMs())
     }
 
     /**
@@ -231,7 +304,7 @@ class NativeSendspinSession(
      */
     fun rebasePosition(positionMs: Long) {
         if (handle == 0L) return
-        anchor.set(positionMs, SystemClock.elapsedRealtime(), streamActive)
+        anchor.set(positionMs, SystemClock.elapsedRealtime(), streamActive && audible.get())
         events.onPositionUpdate(positionMs)
     }
 
@@ -296,6 +369,10 @@ class NativeSendspinSession(
                 val h = handle
                 if (h != 0L && output.isStarted) {
                     val progress = output.takePresentedFramesDelta()
+                    if (output.takeAudioStarted()) {
+                        val at = SystemClock.elapsedRealtime()
+                        controlHandler.post { onAudible(at) }
+                    }
                     if (progress != null) {
                         NativeSendspin.nativeNotifyAudioPlayed(
                             h,
@@ -319,7 +396,9 @@ class NativeSendspinSession(
 
     private fun pushPosition() {
         if (destroyed.get()) return
-        if (streamActive && handle != 0L) {
+        // Before the music plays, the position would only start the UI
+        // counting through the silence.
+        if (streamActive && audible.get() && seekSentAt == 0L && handle != 0L) {
             events.onPositionUpdate(displayedProgressMs())
         }
         controlHandler.postDelayed(::pushPosition, POSITION_PUSH_INTERVAL_MS)
@@ -332,22 +411,26 @@ class NativeSendspinSession(
         override fun onAudioWrite(buffer: ByteBuffer, length: Int, timeoutMs: Int): Int =
             output.write(buffer, length, timeoutMs)
 
+        override fun onAudioStart() = output.markAudioStart()
+
         override fun onStreamStart(sampleRate: Int, channels: Int, bitDepth: Int) {
             Log.i(TAG, "Stream start sr=$sampleRate ch=$channels bd=$bitDepth")
             output.start(sampleRate, channels, bitDepth)
+            audible.set(false)
             streamActive = true
-            val now = SystemClock.elapsedRealtime()
-            anchor.setRunning(true, now)
-            if (anchor.onStreamStart(now)) {
+            streamStartedAt = SystemClock.elapsedRealtime()
+            if (anchor.onStreamStart(streamStartedAt)) {
                 Log.i(TAG, "Previous restarted the track: position reset to 0")
-                events.onPositionUpdate(0L)
             }
-            events.onStreamActiveChanged(true)
+            // Playing as far as everything else is concerned once the
+            // music does, so no surface counts through the silence.
+            controlHandler.post { armAudioStartTimeout() }
         }
 
         override fun onStreamEnd() {
             Log.i(TAG, "Stream end")
             streamActive = false
+            audible.set(false)
             anchor.setRunning(false, SystemClock.elapsedRealtime())
             output.pause()
             events.onStreamActiveChanged(false)
@@ -411,6 +494,7 @@ class NativeSendspinSession(
                 controlHandler.removeCallbacks(reconnectRunnable)
             } else {
                 streamActive = false
+                audible.set(false)
                 anchor.setRunning(false, SystemClock.elapsedRealtime())
                 output.pause()
                 events.onStreamActiveChanged(false)

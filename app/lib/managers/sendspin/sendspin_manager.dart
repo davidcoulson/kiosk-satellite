@@ -978,6 +978,15 @@ class SendspinManager extends Manager {
           final playing = map['playing'] == true;
           if (playing != _playing) {
             _playing = playing;
+            // The position stood still while nothing played, and the
+            // native side reports playing once the music starts, so it
+            // runs on from here rather than from when it was stamped.
+            if (playing) {
+              _status = {
+                ..._status,
+                'receivedAt': DateTime.now().millisecondsSinceEpoch,
+              };
+            }
             _syncQueuePoll();
             if (!playing) unawaited(_watcher?.refresh());
             // Announce local playback outside full-screen player mode.
@@ -2688,6 +2697,13 @@ class SendspinManager extends Manager {
     return true;
   }
 
+  /// Where a seek to [positionMs] lands. Music Assistant seeks its queue
+  /// in whole seconds and drops the fraction of the local player's
+  /// milliseconds, so a local seek goes whole and the bar shows the place
+  /// the music plays from.
+  int seekTarget(int positionMs) =>
+      _remote == null ? positionMs ~/ 1000 * 1000 : positionMs;
+
   /// Jump the playing track to [positionMs]: the Now Playing view's
   /// progress bar. Locally the controller role's seek command, which the
   /// server advertises like any other; for a followed player Music
@@ -2698,7 +2714,7 @@ class SendspinManager extends Manager {
     try {
       return await _channel.invokeMethod<bool>('control', {
             'command': 'seek',
-            'value': positionMs,
+            'value': seekTarget(positionMs),
           }) ??
           false;
     } catch (e) {

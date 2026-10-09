@@ -68,6 +68,13 @@ bool clear_exception(JNIEnv* env) {
     return false;
 }
 
+bool all_zero(const uint8_t* data, size_t length) {
+    for (size_t i = 0; i < length; ++i) {
+        if (data[i] != 0) return false;
+    }
+    return true;
+}
+
 // ---------------------------------------------------------------------------
 // stderr -> logcat pump. sendspin-cpp's host logging writes to stderr, which
 // Android discards; a pipe spliced over fd 2 recovers it. Process-wide, started
@@ -168,6 +175,7 @@ public:
     jobject callbacks = nullptr;  // global ref
 
     jmethodID mid_audio_write = nullptr;
+    jmethodID mid_audio_start = nullptr;
     jmethodID mid_stream_start = nullptr;
     jmethodID mid_stream_end = nullptr;
     jmethodID mid_volume_changed = nullptr;
@@ -191,6 +199,16 @@ public:
     std::atomic<bool> time_synced{false};
     std::atomic<int> progress_ms{0};
     std::atomic<int> duration_ms{0};
+
+    // The stream's first music, as opposed to the library's silence. Each
+    // stream opens with priming zeros and gap fill until its first chunk's
+    // server timestamp, all written from one static silence buffer, while
+    // the music comes from the decode buffer. So the first write after a
+    // stream start is silence, and the first write from any other buffer
+    // is where the music begins. Touched only on the sync task's thread,
+    // after on_stream_start re-arms it.
+    std::atomic<bool> audio_start_pending{false};
+    const uint8_t* silence_buffer = nullptr;
 
     // The server's latest progress report, with Music Assistant's resume skew
     // taken out. Music Assistant 2.10 falls back to a stop on pause and, on
@@ -325,6 +343,15 @@ public:
     size_t on_audio_write(uint8_t* data, size_t length, uint32_t timeout_ms) override {
         JNIEnv* env = get_env();
         if (env == nullptr) return 0;
+        if (this->audio_start_pending.load(std::memory_order_acquire)) {
+            if (this->silence_buffer == nullptr && all_zero(data, length)) {
+                this->silence_buffer = data;
+            } else if (data != this->silence_buffer) {
+                this->audio_start_pending.store(false, std::memory_order_release);
+                env->CallVoidMethod(this->callbacks, this->mid_audio_start);
+                clear_exception(env);
+            }
+        }
         jobject buffer = env->NewDirectByteBuffer(data, static_cast<jlong>(length));
         if (buffer == nullptr) {
             clear_exception(env);
@@ -340,6 +367,8 @@ public:
 
     void on_stream_start() override {
         const auto& params = this->player->get_current_stream_params();
+        this->silence_buffer = nullptr;
+        this->audio_start_pending.store(true, std::memory_order_release);
         JNIEnv* env = get_env();
         if (env == nullptr) return;
         env->CallVoidMethod(this->callbacks, this->mid_stream_start,
@@ -527,6 +556,7 @@ Java_me_jxl_kiosk_1satellite_sendspin_NativeSendspin_nativeCreate(
 
     jclass cls = env->GetObjectClass(callbacks);
     bridge->mid_audio_write = require_method(env, cls, "onAudioWrite", "(Ljava/nio/ByteBuffer;II)I");
+    bridge->mid_audio_start = require_method(env, cls, "onAudioStart", "()V");
     bridge->mid_stream_start = require_method(env, cls, "onStreamStart", "(III)V");
     bridge->mid_stream_end = require_method(env, cls, "onStreamEnd", "()V");
     bridge->mid_volume_changed = require_method(env, cls, "onVolumeChanged", "(I)V");

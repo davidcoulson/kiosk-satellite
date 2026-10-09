@@ -9,7 +9,7 @@ package me.jxl.kiosk_satellite.sendspin
  * Music Assistant restarts the stream for a seek or a previous without a
  * fresh progress report, so the engine keeps counting from the report
  * before. The anchor holds its own position and moves it on the clock
- * while the stream plays. It must not ride on the engine's progress: the
+ * while the music plays. It must not ride on the engine's progress: the
  * engine stops counting at the track's duration, and a position tied to it
  * would stop with it and send the same value with every push.
  *
@@ -69,16 +69,16 @@ class PositionAnchor {
 
     /**
      * A stream started at [now]. True when it is the restart a previous
-     * command just asked for, which puts the anchor at the track's start.
-     * When the previous moved to another track instead, that track's
-     * metadata clears the anchor again.
+     * command just asked for, which puts the anchor at the track's start,
+     * still until the music plays. When the previous moved to another
+     * track instead, that track's metadata clears the anchor again.
      */
     @Synchronized
     fun onStreamStart(now: Long): Boolean {
         val sent = previousSentAt
         previousSentAt = -1L
         if (sent < 0 || now - sent > PREVIOUS_RESTART_WINDOW_MS) return false
-        set(0L, now, running = true)
+        set(0L, now, running = false)
         return true
     }
 }

@@ -57,7 +57,10 @@ class PositionAnchorTest {
         anchor.set(145_000, now = 0, running = true)
         anchor.previousSent(now = 20_000)
         assertTrue(anchor.onStreamStart(now = 21_000))
-        assertEquals(4_000L, anchor.current(now = 25_000, durationMs = 290_000))
+        // Still through the silence before the music, then running.
+        assertEquals(0L, anchor.current(now = 22_500, durationMs = 290_000))
+        anchor.setRunning(true, now = 23_000)
+        assertEquals(2_000L, anchor.current(now = 25_000, durationMs = 290_000))
         // Only the first start after the command counts.
         assertFalse(anchor.onStreamStart(now = 22_000))
     }

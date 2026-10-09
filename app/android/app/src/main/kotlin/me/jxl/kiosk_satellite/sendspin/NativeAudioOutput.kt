@@ -8,6 +8,7 @@ import android.media.AudioTrack
 import android.os.SystemClock
 import android.util.Log
 import java.nio.ByteBuffer
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import me.jxl.kiosk_satellite.TrackTap
 
@@ -57,6 +58,10 @@ class NativeAudioOutput {
     private val framesWritten = AtomicLong(0)
     private var lastReportedFrames = 0L
     private var lastFeedbackNs = 0L
+
+    /** The written frame where the stream's music begins, -1 when not waiting for it. */
+    private var audioStartFrame = -1L
+    private val audioStarted = AtomicBoolean(false)
 
     @Volatile private var halBufferUs = 0L
     @Volatile private var sinkLatencyUs = 0L
@@ -256,6 +261,10 @@ class NativeAudioOutput {
             if (!started) return null
             val sampledAtNs = System.nanoTime()
             val presented = presentedFramesLocked(sampledAtNs)
+            if (audioStartFrame >= 0 && presented >= audioStartFrame) {
+                audioStartFrame = -1
+                audioStarted.set(true)
+            }
             val delta = (presented - lastReportedFrames).coerceAtLeast(0)
             if (delta <= 0) return null
             lastReportedFrames = presented
@@ -263,6 +272,17 @@ class NativeAudioOutput {
             return Progress(delta, sampledAtNs / 1000)
         }
     }
+
+    /**
+     * The next write is the stream's first music, after the silence the
+     * engine fills in until the first chunk's server timestamp.
+     */
+    fun markAudioStart() {
+        synchronized(lock) { audioStartFrame = framesWritten.get() }
+    }
+
+    /** True once, when playback reaches the music [markAudioStart] marked. */
+    fun takeAudioStarted(): Boolean = audioStarted.getAndSet(false)
 
     /** Written-but-unpresented depth in ms, for diagnostics. */
     fun outputQueueMs(): Long {
@@ -382,6 +402,8 @@ class NativeAudioOutput {
         presentationClock.reset(System.nanoTime(), sinkLatencyUs)
         lastReportedFrames = 0
         lastFeedbackNs = 0
+        audioStartFrame = -1
+        audioStarted.set(false)
     }
 
     /**
