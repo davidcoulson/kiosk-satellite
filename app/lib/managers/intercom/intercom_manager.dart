@@ -337,6 +337,10 @@ class IntercomManager extends Manager {
   /// A broadcast's card closes this long after the sender is done.
   Duration broadcastHold = const Duration(seconds: 5);
 
+  /// How much of a picked ring sound a short ring plays: enough to know
+  /// the sound, then out of the way of an announcement.
+  Duration shortRingSound = const Duration(seconds: 2);
+
   /// The state sensor reads missed for this long.
   Duration missedHold = const Duration(minutes: 1);
 
@@ -454,6 +458,16 @@ class IntercomManager extends Manager {
   Timer? _connectTimer;
   Timer? _missedTimer;
   Timer? _injectTimer;
+
+  /// The picked ring sound plays under this id, so the cadence finds it
+  /// still going and the end of the ringing can stop it.
+  static const _ringSoundId = 'intercom-ring';
+  bool _ringSoundPlaying = false;
+
+  /// Bumped by every stop, so a ring still looking up its file when the
+  /// call is answered stays quiet.
+  int _ringGeneration = 0;
+  Timer? _ringSoundCut;
   Timer? _limitTimer;
 
   /// The key code last handed to the kiosk manager for the hang up button.
@@ -520,6 +534,11 @@ class IntercomManager extends Manager {
     );
     rosterVisible.addListener(_syncScreenShown);
     _subs.add(bus.on<FleetChanged>().listen((_) => _readFleet()));
+    _subs.add(
+      bus.on<SoundEnded>().listen((e) {
+        if (e.id == _ringSoundId) _ringSoundPlaying = false;
+      }),
+    );
     _subs.add(
       bus.on<TlsIdentityChanged>().listen((_) {
         _certificateChanged = true;
@@ -2014,7 +2033,7 @@ class IntercomManager extends Manager {
       return const CommandResult.fail('nothing is ringing');
     }
     _cancelTimers();
-    await audio.stopRing();
+    await _stopRing();
     if (!await _openMic()) {
       // Answer anyway: listening is still worth it, the card says why
       // nothing goes out.
@@ -2321,16 +2340,34 @@ class IntercomManager extends Manager {
 
   /// The ring: the picked sound file through the chime player, else the
   /// built-in telephone ring the native sink synthesizes (no asset). A
-  /// short ring is one burst: Answer automatically and a broadcast.
+  /// short ring is one burst: Answer automatically and a broadcast, which
+  /// cut a picked sound off after [shortRingSound]. A picked sound longer
+  /// than the cadence is left to finish before the next ring starts it
+  /// again.
   Future<void> _ring({bool short = false}) async {
+    final generation = _ringGeneration;
     final volume = _settings
         .get(defs.notificationsVolume)
         .toDouble()
         .clamp(0.0, 1.0);
     final sound = _settings.get(defs.intercomRingSound).trim();
     final path = sound.isEmpty ? null : await NotificationSounds.resolve(sound);
+    if (generation != _ringGeneration) return;
     if (path != null) {
-      await commands.execute('playChime', {'source': path, 'volume': volume});
+      if (_ringSoundPlaying) return;
+      _ringSoundPlaying = true;
+      final r = await commands.execute('playChime', {
+        'source': path,
+        'volume': volume,
+        'id': _ringSoundId,
+      });
+      if (!r.ok) {
+        _ringSoundPlaying = false;
+      } else if (short) {
+        _ringSoundCut = Timer(shortRingSound, () {
+          if (generation == _ringGeneration) unawaited(_stopRing());
+        });
+      }
       return;
     }
     final err = await audio.ring(volume: volume, short: short);
@@ -2339,6 +2376,17 @@ class IntercomManager extends Manager {
     } else {
       log.debug(name, 'ring${short ? ' (short)' : ''} at $volume');
     }
+  }
+
+  /// Silences the ring, whichever player has it.
+  Future<void> _stopRing() async {
+    _ringGeneration++;
+    _ringSoundCut?.cancel();
+    _ringSoundCut = null;
+    await audio.stopRing();
+    if (!_ringSoundPlaying) return;
+    _ringSoundPlaying = false;
+    await commands.execute('stopSound', const {'id': _ringSoundId});
   }
 
   static double _level(Uint8List pcm) {
@@ -2406,7 +2454,7 @@ class IntercomManager extends Manager {
     _connectTimer?.cancel();
     _injectTimer?.cancel();
     _injectTimer = null;
-    await audio.stopRing();
+    await _stopRing();
     for (final l in _links.values.toList()) {
       await l.close();
     }

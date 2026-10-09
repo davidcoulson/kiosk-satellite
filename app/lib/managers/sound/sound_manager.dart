@@ -497,6 +497,9 @@ class SoundManager extends Manager {
                 'the bundled chime; empty or missing falls through',
             'fallback': 'a second such path, tried when the first is missing',
             'volume': '0..1, absolute (default 1)',
+            'id':
+                'a fixed id for stopSound; a chime still playing under it '
+                'is replaced (default: a fresh one)',
           },
           handler: (p) async {
             final String source;
@@ -505,14 +508,16 @@ class SoundManager extends Manager {
             } catch (e) {
               return CommandResult.fail('chime unavailable: $e');
             }
+            final given = '${p['id'] ?? ''}';
+            final id = given.isEmpty ? 'chime${++_nextId}' : given;
             final ok = await _channel.invokeMethod<bool>('play', {
-              'id': 'chime${++_nextId}',
+              'id': id,
               'source': source,
               'volume': (p['volume'] as num?)?.toDouble() ?? 1.0,
               'absolute': true,
             });
             return ok == true
-                ? const CommandResult.ok()
+                ? CommandResult.ok({'id': id})
                 : const CommandResult.fail('native playback failed');
           },
         ),
