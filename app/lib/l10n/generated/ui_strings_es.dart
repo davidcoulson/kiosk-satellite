@@ -903,6 +903,16 @@ class UiStringsEs extends UiStrings {
   String get filesUploaded => 'Archivo subido';
 
   @override
+  String filesUploadingProgress(String current, String total) {
+    return 'Subiendo $current de $total…';
+  }
+
+  @override
+  String filesUploadedCount(String count) {
+    return '$count archivos subidos';
+  }
+
+  @override
   String get filesPermissionMissing =>
       'Falta el permiso de acceso a todos los archivos';
 

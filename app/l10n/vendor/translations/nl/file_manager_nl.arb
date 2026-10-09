@@ -4,6 +4,8 @@
   "filesUploading": "Uploaden…",
   "filesUploadFailed": "Uploaden mislukt",
   "filesUploaded": "Geüpload",
+  "filesUploadingProgress": "Uploaden {current} van {total}…",
+  "filesUploadedCount": "{count} bestanden geüpload",
   "filesPermissionMissing": "Toestemming voor toegang tot alle bestanden ontbreekt",
   "filesPermissionHelp": "Zonder deze toestemming kan alleen door de appmap worden gebladerd. Het toestemmingsscherm wordt op de tablet geopend.",
   "filesGrant": "Toestaan op apparaat",

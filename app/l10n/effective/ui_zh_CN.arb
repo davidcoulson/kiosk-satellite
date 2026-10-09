@@ -3467,6 +3467,41 @@
       ]
     }
   },
+  "filesUploadingProgress": "正在上传 {current}/{total}…",
+  "@filesUploadingProgress": {
+    "context": "File Manager > folders, uploads and file actions",
+    "description": "Translate the visible message. Keep placeholders and any technical names unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "File Manager > folders, uploads and file actions"
+      ]
+    },
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "filesUploadedCount": "已上传 {count} 个文件",
+  "@filesUploadedCount": {
+    "context": "File Manager > folders, uploads and file actions",
+    "description": "Translate the visible message. Keep placeholders and any technical names unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "File Manager > folders, uploads and file actions"
+      ]
+    },
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "filesPermissionMissing": "缺少“所有文件访问权限”",
   "@filesPermissionMissing": {
     "context": "File Manager > folders, uploads and file actions",

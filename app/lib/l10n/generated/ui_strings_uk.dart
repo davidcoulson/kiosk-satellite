@@ -898,6 +898,16 @@ class UiStringsUk extends UiStrings {
   String get filesUploaded => 'Завантажено';
 
   @override
+  String filesUploadingProgress(String current, String total) {
+    return 'Завантаження $current з $total…';
+  }
+
+  @override
+  String filesUploadedCount(String count) {
+    return 'Завантажено файлів: $count';
+  }
+
+  @override
   String get filesPermissionMissing =>
       'Відсутній дозвіл \"Доступ до всіх файлів\"';
 

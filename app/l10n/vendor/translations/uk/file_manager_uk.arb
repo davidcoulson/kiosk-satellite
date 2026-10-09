@@ -4,6 +4,8 @@
   "filesUploading": "Завантаження…",
   "filesUploadFailed": "Помилка завантаження",
   "filesUploaded": "Завантажено",
+  "filesUploadingProgress": "Завантаження {current} з {total}…",
+  "filesUploadedCount": "Завантажено файлів: {count}",
   "filesPermissionMissing": "Відсутній дозвіл \"Доступ до всіх файлів\"",
   "filesPermissionHelp": "Без нього можна переглядати лише теку програми. Екран надання дозволу відкриється на планшеті.",
   "filesGrant": "Надати на пристрої",

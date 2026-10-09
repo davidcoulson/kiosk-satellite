@@ -4,6 +4,9 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ## Unreleased
 
+### Changed
+- **The File Manager uploads several files at once.** The remote admin's **File Manager** took one file per upload, so adding a folder of screensaver photos meant one pick per photo (#930). **Upload file** now takes any number of files, sends them one after another into the open folder and shows how far along it is. One message at the end confirms the count or names the files that failed.
+
 ### Fixed
 - **A kiosk joins fleet lists once it can accept an invite.** A kiosk still on the welcome screen already showed up in the fleet leader's list, but the invite prompt only appears after onboarding, so an invite sent to it went nowhere (#929). A kiosk now stays out of fleet lists until onboarding is done and appears as soon as it finishes.
 

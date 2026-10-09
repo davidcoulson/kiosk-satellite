@@ -905,6 +905,16 @@ class UiStringsDe extends UiStrings {
   String get filesUploaded => 'Datei hochgeladen';
 
   @override
+  String filesUploadingProgress(String current, String total) {
+    return 'Wird hochgeladen: $current von $total...';
+  }
+
+  @override
+  String filesUploadedCount(String count) {
+    return '$count Dateien hochgeladen';
+  }
+
+  @override
   String get filesPermissionMissing =>
       'Die Berechtigung zum Zugriff auf alle Dateien fehlt';
 
