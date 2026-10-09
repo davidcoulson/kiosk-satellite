@@ -2597,7 +2597,7 @@ class SendspinManager extends Manager {
       'current': id.isNotEmpty && id == currentId,
       'played': index < currentIndex,
       // A row's thumbnail: the item's own image, small, through the
-      // server's proxy where it is not a plain URL.
+      // server's proxy.
       ...switch (queueImageUrl(
         it['image'] ??
             media['image'] ??
@@ -2605,7 +2605,7 @@ class SendspinManager extends Manager {
                 ? (media['metadata'] as Map)['images']
                 : null),
         webBase,
-        size: 128,
+        size: 160,
       )) {
         final url? => {'artworkUrl': url},
         null => const <String, Object?>{},
