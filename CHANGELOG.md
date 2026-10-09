@@ -10,7 +10,8 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ### Fixed
 - **Picking Play sounds on no longer reloads the remote admin page.** Choosing a player for Voice Satellite's **Play sounds on** redrew the whole remote admin page. **Play as** now comes and goes in place.
-- **Long entity IDs wrap on a phone.** In the remote admin on a narrow screen, a description with no spaces, such as the satellite's entity ID on Voice Satellite's **Home Assistant** row, ran past the right edge. It now wraps inside the row.
+- **Installed plugins read well on a phone.** In **Plugin Manager > Installed plugins**, the switch, the update, about and uninstall buttons and the chevron left the plugin's name and repository a sliver a word wide. On a narrow screen the buttons now sit on a line of their own under the name, on the device and in the remote admin.
+- **Long entity IDs wrap on a phone.** In the remote admin on a narrow screen, text with no spaces, such as the satellite's entity ID on Voice Satellite's **Home Assistant** row, ran past the right edge, and in a dialog such as **Watched entities** it pushed the whole dialog off the screen. It now wraps inside the row and dialogs stay within the screen.
 - **Multi-line fields in the remote admin have room at the top.** Text areas, such as a gesture's **Service data (optional)**, drew their first line against the top border.
 
 ## v2026.10.16 - 2026-10-08

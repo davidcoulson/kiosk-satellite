@@ -325,8 +325,10 @@ function render(root, state) {
         }
       }, check);
     };
-    row.insertBefore(check, row.lastChild);
-    row.insertBefore(about, row.lastChild); row.insertBefore(remove, row.lastChild);
+    // One group, so a phone can give it a line of its own under the name.
+    const actions = element('span', undefined, 'plugin-entry-actions');
+    actions.append(check, about, remove);
+    row.insertBefore(actions, row.lastChild);
     list.append(row);
     const page = element('div', undefined, 'subpage'); page.dataset.subpage = plugin.id; page.dataset.title = plugin.name;
     const description = element('div', undefined, 'card');

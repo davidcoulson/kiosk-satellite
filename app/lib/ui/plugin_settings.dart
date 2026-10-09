@@ -460,40 +460,13 @@ class _PluginSettingsPanelState extends State<PluginSettingsPanel> {
                     ),
                   ),
                 for (final plugin in plugins)
-                  SettingsRow(
-                    leading: Switch(
-                      value: plugin['enabled'] == true,
-                      onChanged: _busy || !enabled
-                          ? null
-                          : (value) => _run(
-                              () => widget.plugins.update(
-                                value ? 'enable' : 'disable',
-                                {'id': plugin['id']},
-                              ),
-                              id: plugin['id'] as String,
-                            ),
-                    ),
-                    title: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('${plugin['name']}'),
-                        Text(
-                          _pluginEntryHint(plugin),
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      ],
-                    ),
-                    onTap: _busy
-                        ? null
-                        : () => widget.onOpen(plugin['id'] as String),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                  // A phone gives the name and repository the row beside
+                  // the switch, and the update, about and uninstall
+                  // buttons a line of their own under them.
+                  LayoutBuilder(
+                    builder: (context, box) {
+                      final narrow = box.maxWidth < 520;
+                      final actions = [
                         IconButton(
                           tooltip: l10n(context).pluginCheckForUpdatesForName(
                             (plugin['name']).toString(),
@@ -527,11 +500,57 @@ class _PluginSettingsPanelState extends State<PluginSettingsPanel> {
                                   id: plugin['id'] as String,
                                 ),
                         ),
-                        _busy && _busyId == plugin['id']
-                            ? const _PluginProgress()
-                            : const Icon(Icons.chevron_right),
-                      ],
-                    ),
+                      ];
+                      return SettingsRow(
+                        leading: Switch(
+                          value: plugin['enabled'] == true,
+                          onChanged: _busy || !enabled
+                              ? null
+                              : (value) => _run(
+                                  () => widget.plugins.update(
+                                    value ? 'enable' : 'disable',
+                                    {'id': plugin['id']},
+                                  ),
+                                  id: plugin['id'] as String,
+                                ),
+                        ),
+                        title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${plugin['name']}'),
+                            Text(
+                              _pluginEntryHint(plugin),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                            if (narrow)
+                              Align(
+                                alignment: AlignmentDirectional.centerEnd,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: actions,
+                                ),
+                              ),
+                          ],
+                        ),
+                        onTap: _busy
+                            ? null
+                            : () => widget.onOpen(plugin['id'] as String),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (!narrow) ...actions,
+                            _busy && _busyId == plugin['id']
+                                ? const _PluginProgress()
+                                : const Icon(Icons.chevron_right),
+                          ],
+                        ),
+                      );
+                    },
                   ),
               ],
             ),

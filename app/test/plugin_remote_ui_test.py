@@ -320,8 +320,12 @@ try:
         title_bounds = row.locator('.info').bounding_box()
         about_bounds = row.get_by_role('button', name='About Hello World').bounding_box()
         delete_bounds = row.get_by_role('button', name='Uninstall Hello World').bounding_box()
-        assert toggle_bounds['x'] < title_bounds['x'] < about_bounds['x'] < delete_bounds['x']
-        assert abs(toggle_bounds['y'] + toggle_bounds['height']/2 - delete_bounds['y'] - delete_bounds['height']/2) < 2
+        row_bounds = row.bounding_box()
+        # On a phone the name and repository keep the row beside the switch
+        # and the buttons take a line of their own under them.
+        assert toggle_bounds['x'] < title_bounds['x'] and about_bounds['x'] < delete_bounds['x']
+        assert title_bounds['width'] > row_bounds['width'] * 0.55, (title_bounds, row_bounds)
+        assert delete_bounds['y'] >= title_bounds['y'] + title_bounds['height'] - 1, (delete_bounds, title_bounds)
         page.screenshot(path='/tmp/kiosk-plugin-row-mobile.png', full_page=True)
         row.get_by_role('button', name='About Hello World').click()
         expect(modal.get_by_role('heading', name='Reviewed README')).to_be_visible()
