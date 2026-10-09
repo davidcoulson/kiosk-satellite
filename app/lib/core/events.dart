@@ -224,6 +224,24 @@ class LightLevelChanged extends AppEvent {
   final double lux;
 }
 
+/// The light level adaptive brightness follows moved, or its source did
+/// (issue #911): the device's own sensor, or a Home Assistant entity in
+/// its place. [lux] is null while the source has nothing to report yet,
+/// [live] false while it is the last session's reading. Internal-only.
+class AdaptiveLightChanged extends AppEvent {
+  const AdaptiveLightChanged({
+    required this.source,
+    required this.lux,
+    required this.live,
+  });
+
+  /// `sensor`, `entity` or `none` (the device sensor picked on a device
+  /// without one).
+  final String source;
+  final double? lux;
+  final bool live;
+}
+
 /// A GPS fix arrived (issue #363): the location manager relays the native
 /// receiver's reading while Report location is on. Internal-only; the
 /// ESPHome surface mirrors it into the location sensors.
@@ -366,6 +384,21 @@ class BluetoothLinksChanged extends AppEvent {
 class MicLevelSample extends AppEvent {
   const MicLevelSample({required this.rms});
   final double rms;
+}
+
+/// The room's noise level moved by 2 dB or more, froze, thawed, came or went
+/// (issue #910). [dbfs] is a whole number averaged over 5 seconds, null
+/// while unavailable. [held] keeps the last value through a voice turn or
+/// the kiosk's own sound. Internal: the ESPHome sensor and plugins read it.
+class NoiseLevelChanged extends AppEvent {
+  const NoiseLevelChanged({
+    required this.available,
+    required this.dbfs,
+    required this.held,
+  });
+  final bool available;
+  final int? dbfs;
+  final bool held;
 }
 
 /// A playback level sample from a native sound (mean |amplitude|, 0..1, at

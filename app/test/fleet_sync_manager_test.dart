@@ -922,7 +922,7 @@ void main() {
             'categories': [],
             'credentials': ['ha.token', 'bogus'],
           })!.describe(),
-          'Categories: 0 of 18. Credentials: 1 of 8. Excluded: 34.',
+          'Categories: 0 of 18. Credentials: 1 of 8. Excluded: 36.',
         );
         expect(
           withCreds['browser.start_url'],
@@ -2157,11 +2157,14 @@ void main() {
       expect(former.containsAll(previous), isTrue);
       previous = former;
     }
-    // Voice Satellite's mute and speaker joined last: the newest former
-    // list is the current one without them.
+    // Adaptive brightness's light source joined last (issue #911): the
+    // newest former list is the current one without it.
     expect(
       defs.fleetFormerDefaultExcluded.last,
-      defs.fleetDefaultExcluded.difference({'voice.mute', 'voice.tts_output'}),
+      defs.fleetDefaultExcluded.difference({
+        'screen.adaptive_use_entity',
+        'screen.adaptive_light_entity',
+      }),
     );
   });
 

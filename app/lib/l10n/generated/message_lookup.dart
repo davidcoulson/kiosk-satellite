@@ -201,6 +201,15 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'drawerUpdateFailed' => strings.drawerUpdateFailed,
       'drawerUpdates' => strings.drawerUpdates,
       'drawerNoReleaseNotes' => strings.drawerNoReleaseNotes,
+      'entityPickerNoArea' => strings.entityPickerNoArea,
+      'entityPickerAll' => strings.entityPickerAll,
+      'entityPickerChoose' => strings.entityPickerChoose,
+      'entityPickerNoMatch' => strings.entityPickerNoMatch,
+      'entityPickerOfflineHelp' => strings.entityPickerOfflineHelp,
+      'entityPickerMissing' => strings.entityPickerMissing,
+      'entityPickerOrderHint' => strings.entityPickerOrderHint,
+      'entityPickerFull' => strings.entityPickerFull,
+      'entityPickerAdd' => strings.entityPickerAdd,
       'esphomeAllExposed' => strings.esphomeAllExposed,
       'esphomeEntitySearch' => strings.esphomeEntitySearch,
       'esphomeEntityLoading' => strings.esphomeEntityLoading,
@@ -484,17 +493,18 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'gestureValidationFailed' => strings.gestureValidationFailed,
       'gestureScriptEntity' => strings.gestureScriptEntity,
       'gestureAutomationEntity' => strings.gestureAutomationEntity,
-      'gestureDomain' => strings.gestureDomain,
       'gestureEntityOptional' => strings.gestureEntityOptional,
       'gestureServiceData' => strings.gestureServiceData,
       'gestureServiceTitle' => strings.gestureServiceTitle,
-      'gestureServiceRequired' => strings.gestureServiceRequired,
       'gestureServiceJson' => strings.gestureServiceJson,
       'gestureEventType' => strings.gestureEventType,
       'gestureEventData' => strings.gestureEventData,
       'gestureEventTitle' => strings.gestureEventTitle,
       'gestureEventRequired' => strings.gestureEventRequired,
       'gestureEventJson' => strings.gestureEventJson,
+      'gestureServiceSearch' => strings.gestureServiceSearch,
+      'gestureServiceChoose' => strings.gestureServiceChoose,
+      'gestureServiceNoEntity' => strings.gestureServiceNoEntity,
       'gestureTester' => strings.gestureTester,
       'gestureOpenTester' => strings.gestureOpenTester,
       'gestureCameraFirst' => strings.gestureCameraFirst,
@@ -732,7 +742,6 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'pluginExposeToHomeAssistant' => strings.pluginExposeToHomeAssistant,
       'pluginAddsAButtonToTheKioskEsphomeDeviceRequires' =>
         strings.pluginAddsAButtonToTheKioskEsphomeDeviceRequires,
-      'pluginSelectAnEntity' => strings.pluginSelectAnEntity,
       'pluginPlugin' => strings.pluginPlugin,
       'pluginEnablePlugins' => strings.pluginEnablePlugins,
       'pluginPluginsAddAdditionalCommunityDevelopedFeaturesToKioskSatellite' =>
@@ -2487,6 +2496,8 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingSendspinMaHideCloseTitle,
       'settingSendspinMaHideCloseDescription' =>
         strings.settingSendspinMaHideCloseDescription,
+      'settingSendspinMaZoomDescription' =>
+        strings.settingSendspinMaZoomDescription,
       'mediaMaHint' => strings.mediaMaHint,
       'mediaKioskMenu' => strings.mediaKioskMenu,
       'mediaValidateConnection' => strings.mediaValidateConnection,
@@ -2700,6 +2711,13 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingAdaptiveBrightnessTitle,
       'settingAdaptiveBrightnessDescription' =>
         strings.settingAdaptiveBrightnessDescription,
+      'settingAdaptiveUseEntityTitle' => strings.settingAdaptiveUseEntityTitle,
+      'settingAdaptiveUseEntityDescription' =>
+        strings.settingAdaptiveUseEntityDescription,
+      'settingAdaptiveLightEntityTitle' =>
+        strings.settingAdaptiveLightEntityTitle,
+      'settingAdaptiveLightEntityDescription' =>
+        strings.settingAdaptiveLightEntityDescription,
       'settingAdaptiveMinBrightnessTitle' =>
         strings.settingAdaptiveMinBrightnessTitle,
       'settingAdaptiveMinBrightnessDescription' =>
@@ -2979,11 +2997,6 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'screensaverOverlayState' => strings.screensaverOverlayState,
       'screensaverOverlayEntityRequired' =>
         strings.screensaverOverlayEntityRequired,
-      'screensaverOverlaySearchHint' => strings.screensaverOverlaySearchHint,
-      'screensaverOverlaySearchHintRemote' =>
-        strings.screensaverOverlaySearchHintRemote,
-      'screensaverOverlaySearchEmpty' => strings.screensaverOverlaySearchEmpty,
-      'screensaverOverlayNoMatches' => strings.screensaverOverlayNoMatches,
       'screensaverOverlaySearching' => strings.screensaverOverlaySearching,
       'screensaverOverlayUnreachable' => strings.screensaverOverlayUnreachable,
       'screensaverOverlayNoAnswer' => strings.screensaverOverlayNoAnswer,
@@ -3140,9 +3153,6 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'settingScreensaverGlanceNowPlayingDescription' =>
         strings.settingScreensaverGlanceNowPlayingDescription,
       'screensaverOverlayShowing' => strings.screensaverOverlayShowing,
-      'screensaverOverlayReorder' => strings.screensaverOverlayReorder,
-      'screensaverOverlayFull' => strings.screensaverOverlayFull,
-      'screensaverOverlayPickerTitle' => strings.screensaverOverlayPickerTitle,
       'screensaverOverlayNone' => strings.screensaverOverlayNone,
       'screensaverOverlayGlancePage' => strings.screensaverOverlayGlancePage,
       'screensaverOverlayGlanceHint' => strings.screensaverOverlayGlanceHint,
@@ -3725,6 +3735,9 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'screensaverOverlayShowName' => strings.screensaverOverlayShowName,
       'screensaverOverlayShowNameHelp' =>
         strings.screensaverOverlayShowNameHelp,
+      'screensaverOverlayShowIcon' => strings.screensaverOverlayShowIcon,
+      'screensaverOverlayShowIconHelp' =>
+        strings.screensaverOverlayShowIconHelp,
       'screensaverOverlayFontSystem' => strings.screensaverOverlayFontSystem,
       'screensaverOverlayFontSerif' => strings.screensaverOverlayFontSerif,
       'screensaverOverlayFontCondensed' =>
@@ -3736,10 +3749,6 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'screensaverOverlayColor' => strings.screensaverOverlayColor,
       'screensaverOverlayWeatherEntity' =>
         strings.screensaverOverlayWeatherEntity,
-      'screensaverOverlayNoWeather' => strings.screensaverOverlayNoWeather,
-      'screensaverOverlayNoWeatherHelp' =>
-        strings.screensaverOverlayNoWeatherHelp,
-      'screensaverOverlayPickWeather' => strings.screensaverOverlayPickWeather,
       'screensaverOverlayWeatherRequired' =>
         strings.screensaverOverlayWeatherRequired,
       'screensaverOverlayLocationName' =>

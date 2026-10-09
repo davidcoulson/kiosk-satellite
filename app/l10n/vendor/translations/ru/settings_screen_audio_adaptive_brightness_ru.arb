@@ -27,5 +27,9 @@
   "screenAudioCurveLightLevel": "Уровень света (лк)",
   "screenAudioCurveBrightness": "Яркость (%)",
   "screenAudioCurveLuxRange": "Введите уровень света от {low} до {high} лк",
-  "screenAudioCurveLevelRange": "Введите яркость от {low}% до {high}%"
+  "screenAudioCurveLevelRange": "Введите яркость от {low}% до {high}%",
+  "settingAdaptiveUseEntityTitle": "Использовать сущность Home Assistant",
+  "settingAdaptiveUseEntityDescription": "Получать освещённость комнаты от датчика Home Assistant.",
+  "settingAdaptiveLightEntityTitle": "Сущность датчика освещённости",
+  "settingAdaptiveLightEntityDescription": "Датчик Home Assistant, сообщающий освещённость в люксах."
 }

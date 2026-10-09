@@ -13,7 +13,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// (issue #343): Default brightness stands down with the reason while the
 /// switch is on, the screensaver's brightness sliders carry the
 /// bright-room hint, the page shows the live reading, and a device without
-/// the sensor gets a disabled switch with the reason.
+/// the sensor says so under the switch, which keeps working since a Home
+/// Assistant entity can stand in (issue #911).
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -39,6 +40,7 @@ void main() {
     container.homeAssistant.connectionOk.value = true;
     container.device.hasLightSensor = sensor;
     container.device.lightLux = 12;
+    container.adaptiveLight.seedSensor(present: sensor, lux: 12);
     // Tall enough that a page renders whole: off-screen rows do not exist.
     tester.view.physicalSize = const Size(500, 6000);
     tester.view.devicePixelRatio = 1.0;
@@ -235,12 +237,50 @@ void main() {
     expect(container.settings.get(adaptiveBrightLux), 300);
   });
 
-  testWidgets('without the sensor the switch is disabled with the reason, '
-      'and Default brightness keeps working', (tester) async {
+  testWidgets('without the sensor the reading says so and the switch '
+      'still works', (tester) async {
     await open(tester, {'ks.screen.adaptive_brightness': true}, sensor: false);
     await tab(tester, 'Screen & Audio');
-    expect(find.text(owns), findsNothing);
+    expect(find.text(owns), findsOneWidget);
     await tab(tester, 'Adaptive brightness');
     expect(find.text(noSensor), findsOneWidget);
+    final toggle = find.widgetWithText(SwitchListTile, 'Adaptive brightness');
+    expect(tester.widget<SwitchListTile>(toggle).onChanged, isNotNull);
+  });
+
+  testWidgets('the entity switch reveals the entity row, which shows the '
+      "entity's reading", (tester) async {
+    final container = await open(tester, {
+      'ks.screen.adaptive_brightness': true,
+    });
+    await tab(tester, 'Screen & Audio');
+    await tab(tester, 'Adaptive brightness');
+    expect(find.text('Use Home Assistant entity'), findsOneWidget);
+    expect(find.text('Light sensor entity'), findsNothing);
+    await container.settings.setFromJson('screen.adaptive_use_entity', true);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 120));
+    }
+    expect(find.text('Light sensor entity'), findsOneWidget);
+    expect(
+      find.text(
+        'The Home Assistant sensor that reports the light level in lux.',
+      ),
+      findsOneWidget,
+    );
+    // The Ambient light row stays the device sensor's.
+    expect(find.text('12 lx (last known)'), findsOneWidget);
+    await container.settings.setFromJson(
+      'screen.adaptive_light_entity',
+      'sensor.hallway_illuminance',
+    );
+    container.adaptiveLight.seedEntity(lux: 40, live: true);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 120));
+    }
+    // The entity sits in the field, its reading on the line under it.
+    expect(find.text('sensor.hallway_illuminance'), findsOneWidget);
+    expect(find.text('40 lx'), findsOneWidget);
+    expect(find.text('12 lx (last known)'), findsOneWidget);
   });
 }

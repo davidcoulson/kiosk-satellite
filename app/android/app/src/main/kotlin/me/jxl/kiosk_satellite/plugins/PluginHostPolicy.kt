@@ -12,6 +12,7 @@ internal object PluginHostPolicy {
         "detection.motion", "detection.face", "detection.proximity",
         "detection.person", "detection.presence", "voice.interaction", "voice.state", "intercom.state",
         "wakeword.state", "wakeword.detected", "stopword.detected", "camera.view", "browser.state",
+        "audio.noise",
     )
 
     /**

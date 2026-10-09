@@ -94,8 +94,9 @@ def api(route):
                    'pluginId': 'hello-world', 'pluginName': 'Hello World'}] if plugins_enabled and installed and installed[0]['running'] else []
     elif name == 'getPluginReadings':
         result = readings
-    elif name == 'haSearchEntities':
-        result = [{'entity_id': 'sensor.room', 'name': 'Room temperature', 'state': '21'}]
+    elif name == 'haListEntities':
+        result = [{'entity_id': 'sensor.room', 'name': 'Room temperature', 'state': '21 °C', 'domain': 'sensor'},
+                  {'entity_id': 'light.porch', 'name': 'Porch light', 'state': 'On', 'domain': 'light'}]
     elif name == 'checkPluginUpdate':
         assert params == {'id': 'hello-world'}
         result = {**preview, 'installedVersion': installed[0]['version'], 'updateAvailable': update_available, 'compatible': compatible, 'compatibilityError': 'Unsupported SDK' if not compatible else ''}
@@ -196,15 +197,18 @@ try:
         expect(page.locator('#statusGrid .status.plugin')).to_have_count(0)
         installed[0]['running'] = True
         page.evaluate("async () => (await import('/static/tabs.js')).showTab('plugins/hello-world', {refresh:false})")
-        root.get_by_role('button', name='Choose Home Assistant entity').click()
-        modal = page.locator('.modal-card')
-        modal.get_by_placeholder('Search by name or entity id').fill('room')
+        # The entity field opens the entity picker; Clear empties it.
+        field = root.locator('[data-plugin-setting="entity"] .ep-field, .row:has-text("Home Assistant entity") .ep-field').first
+        field.click()
+        modal = page.locator('.dash-picker-card')
+        modal.locator('.dp-search').fill('room')
+        expect(modal.get_by_text('Porch light', exact=True)).to_have_count(0)
         modal.get_by_text('Room temperature', exact=True).click()
-        expect(root.get_by_text('sensor.room', exact=True)).to_be_visible()
+        expect(field).to_contain_text('Room temperature')
         assert installed[0]['values']['entity'] == 'sensor.room'
-        root.get_by_role('button', name='Choose Home Assistant entity').click()
-        page.locator('.modal-card').get_by_role('button', name='Clear', exact=True).click()
-        expect(root.get_by_text('sensor.room', exact=True)).to_have_count(0)
+        field.click()
+        page.locator('.dash-picker-card').get_by_role('button', name='Clear', exact=True).click()
+        expect(field).not_to_contain_text('Room temperature')
         assert installed[0]['values']['entity'] == ''
         root.get_by_role('textbox', name='Greeting').fill('Changed on the subpage')
         root.get_by_role('textbox', name='Greeting').press('Tab')
@@ -316,8 +320,12 @@ try:
         title_bounds = row.locator('.info').bounding_box()
         about_bounds = row.get_by_role('button', name='About Hello World').bounding_box()
         delete_bounds = row.get_by_role('button', name='Uninstall Hello World').bounding_box()
-        assert toggle_bounds['x'] < title_bounds['x'] < about_bounds['x'] < delete_bounds['x']
-        assert abs(toggle_bounds['y'] + toggle_bounds['height']/2 - delete_bounds['y'] - delete_bounds['height']/2) < 2
+        row_bounds = row.bounding_box()
+        # On a phone the name and repository keep the row beside the switch
+        # and the buttons take a line of their own under them.
+        assert toggle_bounds['x'] < title_bounds['x'] and about_bounds['x'] < delete_bounds['x']
+        assert title_bounds['width'] > row_bounds['width'] * 0.55, (title_bounds, row_bounds)
+        assert delete_bounds['y'] >= title_bounds['y'] + title_bounds['height'] - 1, (delete_bounds, title_bounds)
         page.screenshot(path='/tmp/kiosk-plugin-row-mobile.png', full_page=True)
         row.get_by_role('button', name='About Hello World').click()
         expect(modal.get_by_role('heading', name='Reviewed README')).to_be_visible()

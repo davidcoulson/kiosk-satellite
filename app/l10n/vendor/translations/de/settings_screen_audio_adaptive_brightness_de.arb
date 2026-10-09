@@ -27,5 +27,9 @@
   "screenAudioCurveLightLevel": "Lichtstärke (lx)",
   "screenAudioCurveBrightness": "Helligkeit (%)",
   "screenAudioCurveLuxRange": "Gib eine Lichtstärke zwischen {low} und {high} lx ein",
-  "screenAudioCurveLevelRange": "Gib eine Helligkeit von {low} % bis {high} % ein"
+  "screenAudioCurveLevelRange": "Gib eine Helligkeit von {low} % bis {high} % ein",
+  "settingAdaptiveUseEntityTitle": "Home Assistant-Entität verwenden",
+  "settingAdaptiveUseEntityDescription": "Liest die Lichtstärke des Raums von einem Home Assistant-Sensor.",
+  "settingAdaptiveLightEntityTitle": "Lichtsensor-Entität",
+  "settingAdaptiveLightEntityDescription": "Der Home Assistant-Sensor, der die Lichtstärke in Lux meldet."
 }

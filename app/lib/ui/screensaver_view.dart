@@ -2198,8 +2198,9 @@ class _EntityWidgetOverlayState extends State<EntityWidgetOverlay> {
     final right = corner.x > 0;
     final gap = SizedBox(width: 10 * scale);
     // Show name off: the value and its icon alone, for a corner that
-    // explains itself.
+    // explains itself. Show icon off: the value and its name alone.
     final showName = widget.spec.config['show_name'] != false;
+    final showIcon = widget.spec.config['show_icon'] != false;
     return IgnorePointer(
       child: Stack(
         fit: StackFit.expand,
@@ -2226,9 +2227,13 @@ class _EntityWidgetOverlayState extends State<EntityWidgetOverlay> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          if (right) ...[Flexible(child: value), gap],
-                          glyph,
-                          if (!right) ...[gap, Flexible(child: value)],
+                          if (!showIcon)
+                            Flexible(child: value)
+                          else ...[
+                            if (right) ...[Flexible(child: value), gap],
+                            glyph,
+                            if (!right) ...[gap, Flexible(child: value)],
+                          ],
                         ],
                       ),
                       if (showName) label,

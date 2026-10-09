@@ -20,6 +20,8 @@
   "screensaverOverlayLowHelp": "Wird ausgeblendet, bis der Akkustand auf 20 Prozent sinkt.",
   "screensaverOverlayShowName": "Namen anzeigen",
   "screensaverOverlayShowNameHelp": "Zeigt den Namen unter dem Wert an.",
+  "screensaverOverlayShowIcon": "Symbol anzeigen",
+  "screensaverOverlayShowIconHelp": "Zeigt das Symbol neben dem Wert an.",
   "screensaverOverlayFontSystem": "System",
   "screensaverOverlayFontSerif": "Serifen",
   "screensaverOverlayFontCondensed": "Schmal",

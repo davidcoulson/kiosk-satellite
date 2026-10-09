@@ -1,0 +1,263 @@
+{
+  "@@locale": "en",
+  "entityPickerNoArea": "No area",
+  "@entityPickerNoArea": {
+    "context": "Entity picker",
+    "description": "Heading over entities that are in no Home Assistant area.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerAll": "All",
+  "@entityPickerAll": {
+    "context": "Entity picker",
+    "description": "Filter chip that shows every kind of entity or every source.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerChoose": "Choose an entity",
+  "@entityPickerChoose": {
+    "context": "Entity picker",
+    "description": "Empty value of a setting that stores a Home Assistant entity.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerNoMatch": "Nothing matches",
+  "@entityPickerNoMatch": {
+    "context": "Entity picker",
+    "description": "Shown when a search or filter finds nothing.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerOfflineHelp": "The entities load once the connection is back.",
+  "@entityPickerOfflineHelp": {
+    "context": "Entity picker",
+    "description": "Message when Home Assistant's entities cannot be listed.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerMissing": "This entity is gone from Home Assistant. Choose another.",
+  "@entityPickerMissing": {
+    "context": "Entity picker",
+    "description": "Shown under a setting whose stored entity no longer exists.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerOrderHint": "Drag or use the arrows to change the order.",
+  "@entityPickerOrderHint": {
+    "context": "Entity picker",
+    "description": "Note under the picked entities, which can be reordered.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerFull": "Remove one to add another.",
+  "@entityPickerFull": {
+    "context": "Entity picker",
+    "description": "Shown when the most entities that can be picked are picked.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerAdd": "Add entities",
+  "@entityPickerAdd": {
+    "context": "Entity picker",
+    "description": "Row that opens the picker to add entities.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerShowing": "Showing {count} of {max}",
+  "@entityPickerShowing": {
+    "context": "Entity picker",
+    "description": "How many entities are picked out of the most allowed.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    },
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "description": "Number picked."
+      },
+      "max": {
+        "type": "String",
+        "description": "Most that can be picked."
+      }
+    }
+  }
+}

@@ -11,7 +11,8 @@ import 'package:kiosk_satellite/managers/camera/models.dart';
 import 'package:kiosk_satellite/managers/device_camera/camera_resolutions.dart';
 import 'package:kiosk_satellite/ui/camera_views_picker.dart';
 import 'package:kiosk_satellite/ui/camera_settings.dart';
-import 'package:kiosk_satellite/ui/glance_entity_picker.dart';
+import 'package:kiosk_satellite/ui/entity_picker.dart';
+import 'package:kiosk_satellite/ui/glance_rows.dart';
 import 'package:kiosk_satellite/l10n/generated/ui_strings.dart';
 import 'package:kiosk_satellite/l10n/generated/ui_strings_en.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
@@ -732,41 +733,52 @@ void main() {
     tester,
   ) async {
     final container = await containerFor(tester, const Size(800, 1400));
-    container.commands.register(
-      Command(
-        name: 'haEntityAttributes',
-        description: 'Test attributes',
-        handler: (_) async =>
-            const CommandResult.ok({'humidity': 51, 'friendly_name': 'State'}),
-      ),
+    PickCatalog.reset();
+    container.commands
+      ..register(
+        Command(
+          name: 'haListEntities',
+          description: 'Test entities',
+          handler: (_) async => const CommandResult.ok([
+            {
+              'entity_id': 'sensor.original',
+              'name': 'State',
+              'state': '51 %',
+              'domain': 'sensor',
+              'icon': 'mdi:water-percent',
+            },
+          ]),
+        ),
+      )
+      ..register(
+        Command(
+          name: 'haEntityAttributes',
+          description: 'Test attributes',
+          handler: (_) async => const CommandResult.ok({
+            'humidity': 51,
+            'friendly_name': 'State',
+          }),
+        ),
+      );
+    await container.settings.setFromJson(
+      defs.screensaverGlanceEntities.key,
+      jsonEncode([
+        {'entity_id': 'sensor.original', 'name': 'State'},
+      ]),
     );
-    List<Map<String, Object?>>? result;
     await tester.pumpWidget(
       localized(
         Scaffold(
-          body: Builder(
-            builder: (context) => TextButton(
-              onPressed: () async {
-                result = await Navigator.of(context)
-                    .push<List<Map<String, Object?>>>(
-                      MaterialPageRoute(
-                        builder: (_) => GlanceEntityPicker(
-                          container: container,
-                          initial: [
-                            {'entity_id': 'sensor.original', 'name': 'State'},
-                          ],
-                        ),
-                      ),
-                    );
-              },
-              child: const Text('Open picker'),
-            ),
+          body: GlanceRows(
+            container: container,
+            def: defs.screensaverGlanceEntities,
+            onChanged: () {},
           ),
         ),
       ),
     );
-    await tester.tap(find.text('Open picker'));
     await tester.pumpAndSettle();
+    // The supplied name stays as it is; tapping the pick edits it.
     await tester.tap(find.text('State'));
     await tester.pumpAndSettle();
     expect(find.text('TEST displayed value'), findsOneWidget);
@@ -776,15 +788,13 @@ void main() {
       matching: find.byType(TextField),
     );
     await tester.enterText(nameField, 'My name');
-    await tester.tap(find.text('TEST choose'));
+    await tester.tap(find.text('TEST state'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('humidity'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('TEST save').last);
-    await tester.pumpAndSettle();
     await tester.tap(find.text('TEST save'));
     await tester.pumpAndSettle();
-    expect(result, [
+    expect(jsonDecode(container.settings.get(defs.screensaverGlanceEntities)), [
       {
         'entity_id': 'sensor.original',
         'name': 'State',
@@ -940,11 +950,13 @@ void main() {
       ),
     );
     await tester.pump();
+    // No sensor: the Ambient light row says so, and the switch stays
+    // usable since a Home Assistant entity can stand in (issue #911).
     expect(find.text('TEST no sensor'), findsOneWidget);
     final toggle = tester.widget<SwitchListTile>(
       find.byType(SwitchListTile).first,
     );
-    expect(toggle.onChanged, isNull);
+    expect(toggle.onChanged, isNotNull);
     expect(toggle.value, isFalse);
     expect(
       tester

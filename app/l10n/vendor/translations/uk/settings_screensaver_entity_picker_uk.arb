@@ -7,12 +7,7 @@
   "screensaverOverlayValue": "Відображуване значення",
   "screensaverOverlayState": "Стан",
   "screensaverOverlayEntityRequired": "Оберіть сутність.",
-  "screensaverOverlaySearchHint": "Назва або entity id",
-  "screensaverOverlaySearchHintRemote": "Пошук за назвою або entity id",
-  "screensaverOverlaySearchEmpty": "Почніть вводити для пошуку сутностей.",
-  "screensaverOverlayNoMatches": "Нічого не знайдено.",
   "screensaverOverlaySearching": "Пошук…",
   "screensaverOverlayUnreachable": "Не вдалося зв'язатися з Home Assistant",
-  "screensaverOverlayNoAnswer": "Пристрій не відповідає.",
-  "screensaverOverlaySearchError": "Не вдалося виконати пошук сутностей: {error}"
+  "screensaverOverlayNoAnswer": "Пристрій не відповідає."
 }

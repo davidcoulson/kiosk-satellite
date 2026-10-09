@@ -1,5 +1,6 @@
 import { t, voiceText, voiceVadOption } from './localization.js';
 import { api, cmd, state } from './core.js';
+import { pickRow, playerSpec } from './entity_picker.js';
 import { readOnlyRow } from './device.js';
 import { banner, messageBox, modalShell, showToast } from './widgets.js';
 import { vsSelectRow } from './vs.js';
@@ -113,41 +114,31 @@ async function paintStatus(card, byKey) {
 async function ttsOutputRow(row, current) {
   const title = row.querySelector('.name')?.textContent || 'Play sounds on';
   const desc = row.querySelector('.desc')?.textContent || '';
-  let players = [];
-  try {
-    // Music Assistant's own entities stay in: any of them plays sounds.
-    const r = await cmd('mediaPlayers', { source: 'ha', speakers: true });
-    const list = r.ok ? r.data?.players : null;
-    players = (Array.isArray(list) ? list : []).filter((p) => p.group === 'ha');
-  } catch (_) {}
-  if (!row.isConnected) return;
-  const options = [{ value: '', label: voiceText('This kiosk') },
-    // The list's ids carry their source; the setting keeps the entity.
-    ...players.map((p) => ({ value: `${p.id}`.replace(/^ha:/, ''), label: `${p.name}` }))];
-  // A player Home Assistant no longer lists still shows as picked.
-  if (current && !options.some((o) => o.value === current)) {
-    options.push({ value: current, label: current });
-  }
-  const picker = vsSelectRow(title, desc, options, current, (value) => {
-    api('/api/settings', { method: 'PATCH', body: JSON.stringify({ 'voice.tts_output': value }) })
-      .catch(() => null);
+  // The entity picker over Home Assistant's media players, Music
+  // Assistant's own entities kept: any of them plays sounds. The list's
+  // ids carry their source; the setting keeps the entity. Clear is this
+  // kiosk.
+  const picker = pickRow({
+    name: title, desc,
+    spec: playerSpec('ha', { speakers: true }),
+    value: current ? `ha:${current}` : '',
+    placeholder: voiceText('This kiosk'),
+    allowClear: true,
+    flagMissing: false,
+    onPick: (id) => {
+      api('/api/settings', { method: 'PATCH',
+        body: JSON.stringify({ 'voice.tts_output': `${id ?? ''}`.replace(/^ha:/, '') }) })
+        .catch(() => null);
+    },
   });
-  picker.dataset.key = 'voice.tts_output';
+  picker.el.dataset.key = 'voice.tts_output';
   // An echo of the pick, or a change from the device, lands in place.
-  picker.updateSetting = () => {
+  picker.el.updateSetting = () => {
     const value = `${settingValue('voice.tts_output') ?? ''}`;
-    const select = picker.querySelector('select');
-    if (!select) return false;
-    if (![...select.options].some((o) => o.value === value)) {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = value;
-      select.appendChild(option);
-    }
-    select.value = value;
+    picker.setValue(value ? `ha:${value}` : '');
     return true;
   };
-  row.replaceWith(picker);
+  row.replaceWith(picker.el);
 }
 
 function settingValue(key) {

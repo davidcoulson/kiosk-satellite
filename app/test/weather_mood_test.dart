@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kiosk_satellite/ui/entity_picker.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kiosk_satellite/app_container.dart';
 import 'package:kiosk_satellite/core/app_locales.dart';
@@ -356,33 +357,41 @@ void main() {
     },
   );
 
-  testWidgets('weather entity uses the announcement-style control and picker', (
+  testWidgets('weather entity uses the entity picker, weather only', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({
       'ks.screensaver.weather_entity': 'weather.home',
     });
+    PickCatalog.reset();
     final container = AppContainer();
     await container.settings.init();
-    var failSearch = false;
     container.commands.register(
       Command(
-        name: 'haSearchEntities',
-        description: 'Test entity search',
-        handler: (params) async {
-          expect(params['query'], 'weather.');
-          if (failSearch) return const CommandResult.fail('Unavailable');
-          return const CommandResult.ok([
-            {'entity_id': 'weather.home', 'name': 'Garden weather'},
-            {'entity_id': 'weather.coast', 'name': 'Coastal weather'},
-            {
-              'entity_id': 'sensor.weather_temperature',
-              'name': 'Excluded sensor',
-            },
-          ]);
-        },
+        name: 'haListEntities',
+        description: 'Test entity list',
+        handler: (_) async => const CommandResult.ok([
+          {
+            'entity_id': 'weather.home',
+            'name': 'Garden weather',
+            'domain': 'weather',
+          },
+          {
+            'entity_id': 'weather.coast',
+            'name': 'Coastal weather',
+            'domain': 'weather',
+          },
+          {
+            'entity_id': 'sensor.weather_temperature',
+            'name': 'Excluded sensor',
+            'domain': 'sensor',
+          },
+        ]),
       ),
     );
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -402,7 +411,7 @@ void main() {
     );
     await tester.tap(control);
     await tester.pumpAndSettle();
-    expect(find.byType(SimpleDialog), findsOneWidget);
+    expect(find.byType(ItemPicker), findsOneWidget);
     expect(find.text('weather.home'), findsOneWidget);
     expect(find.text('Excluded sensor'), findsNothing);
     await tester.tap(find.text('Coastal weather'));
@@ -411,25 +420,17 @@ void main() {
       container.settings.get(defs.screensaverWeatherEntity),
       'weather.coast',
     );
-    expect(find.text('Coastal weather'), findsOneWidget);
-    expect(find.text('weather.coast'), findsNothing);
-    failSearch = true;
-    await tester.tap(control);
-    await tester.pumpAndSettle();
-    expect(find.byType(SimpleDialog), findsNothing);
-    expect(find.text('Coastal weather'), findsOneWidget);
     expect(
-      container.settings.get(defs.screensaverWeatherEntity),
-      'weather.coast',
+      find.descendant(of: control, matching: find.text('Coastal weather')),
+      findsOneWidget,
     );
-    await tester.pump(const Duration(seconds: 4));
-    failSearch = false;
+    // Clear empties the setting.
     await tester.tap(control);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Not set'));
+    await tester.tap(find.text('Clear'));
     await tester.pumpAndSettle();
     expect(container.settings.get(defs.screensaverWeatherEntity), '');
-    expect(find.text('Pick a weather entity…'), findsOneWidget);
+    expect(find.text('Choose an entity'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

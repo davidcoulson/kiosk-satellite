@@ -185,6 +185,10 @@
     background: var(--surface-2); border: 1px solid var(--border);
     border-radius: var(--radius-sm); color: var(--text); font-size: 15px; }
   .field { width: 100%; margin-bottom: 12px; }
+  /* A multi-line field grows with its rows and keeps the side padding
+     on top and bottom too, so the first line clears the border. */
+  textarea.field { height: auto; min-height: 88px; padding: 11px 12px;
+    line-height: 1.45; resize: vertical; }
   .field:focus, .row input:focus, .row select:focus, .row textarea:focus {
     outline: none; border-color: var(--primary);
     box-shadow: 0 0 0 .5px var(--primary); }
@@ -621,7 +625,11 @@
   /* Quiet text anywhere (a field label, a note under a control) is 12.5
      muted; inside a row it is the 13 description. */
   .desc { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
-  .row .info .desc { font-size: 13px; line-height: 1.35; margin-top: 3px; }
+  /* A long unbroken value (an entity ID) breaks rather than pushing the
+     row past the screen's edge. */
+  .row .info .desc { font-size: 13px; line-height: 1.35; margin-top: 3px;
+    overflow-wrap: anywhere; }
+  .row .info .name { overflow-wrap: anywhere; }
   /* A value picked in a modal beside the button that opens it. */
   .picker-controls { display: flex; gap: 10px; align-items: center;
     min-width: 0; max-width: 60%; flex: 0 1 auto; }
@@ -1004,6 +1012,10 @@
       flex-basis: calc(100% - 36px); }
     .row.subpage-entry .info .name { flex-basis: 0; }
     .row.shizuku-action .info .name { flex-basis: 0; }
+    /* A switch stays at the right of its row: a long title wraps its
+       words instead of pushing the switch onto a line of its own. */
+    .row:has(> .switch) .info .name { flex-basis: 0; }
+    .row > .switch { flex: none; }
     .row.shizuku-action > button { flex: none; }
     /* A control wider than that stacks: it takes the next line and
        stretches across the row, on the name's left edge, the way dropdown
@@ -1030,8 +1042,11 @@
      a body that scrolls its overflow, and a fixed footer for the actions,
      so long content never pushes the buttons off screen. The button floor
      keeps Save/Cancel pairs balanced, matching the app's dialogs. */
+  /* The one column never grows past the screen: in an auto column a long
+     row widened the card off the right edge. */
   .modal-back { position: fixed; inset: 0; background: rgba(0, 0, 0, .6);
-    display: grid; place-items: center; z-index: 1000; padding: 16px; }
+    display: grid; grid-template-columns: minmax(0, 1fr); place-items: center;
+    z-index: 1000; padding: 16px; }
   .modal-card { width: 100%; max-width: 440px;
     max-height: min(88vh, 760px);
     display: flex; flex-direction: column; margin: 0;
@@ -1355,6 +1370,14 @@
 #tab-plugins .subpage-entry .info .desc { margin-left: 0; }
 #tab-plugins .subpage-entry .icon-btn { flex-shrink: 0; }
 #tab-plugins .subpage-entry .switch { flex-shrink: 0; }
+#tab-plugins .plugin-entry-actions { display: flex; flex: none; align-items: center; gap: 8px; }
+/* A phone gives the name and repository the row beside the switch, and
+   the update, about and uninstall buttons a line of their own under them. */
+@media (max-width: 640px) {
+  #tab-plugins .subpage-entry { flex-wrap: wrap; row-gap: 4px; }
+  #tab-plugins .subpage-entry .plugin-entry-actions { order: 2; flex-basis: 100%;
+    justify-content: flex-end; }
+}
 
 .plugin-add-row { cursor: pointer; }
 .plugin-guide-row { color: inherit; text-decoration: none; }
@@ -1452,8 +1475,12 @@
 .dash-picker-card .modal-foot { border-top: 1px solid var(--divider); margin-top: 14px;
   padding-top: 14px; }
 @media (max-width: 640px) {
-  .dash-picker-back { padding: 0; }
-  .modal-card.dash-picker-card { max-width: none; height: 100%; max-height: none;
+  /* A flex backdrop, so the card's full height is the screen's and the
+     list inside scrolls. In the centered grid, 100% was the card's own
+     content and nothing could scroll. */
+  .dash-picker-back { padding: 0; display: flex; }
+  .modal-card.dash-picker-card { flex: 1 1 auto; width: 100%; min-width: 0;
+    max-width: none; height: 100%; max-height: none;
     border-radius: 0; padding: 8px 12px 14px; }
 }
 .dp { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
@@ -1600,3 +1627,63 @@
 .row.rotation-url-add .rotation-url-controls input.field { flex: 1 1 0; width: auto;
   min-width: 0; max-width: none; margin: 0; }
 .rotation-url-controls button { flex: none; }
+
+/* The entity picker (entity_picker.js): the dashboard picker's frame and
+   rows, with a round icon disc, the state on the right, domain chips and,
+   when picking several, the picks in order on the right. Every row fits a
+   360 phone: name and id cut off, the state capped at a third. */
+.ep-disc { flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--surface-2);
+  color: var(--muted); display: grid; place-items: center; }
+.ep-disc.small { width: 32px; height: 32px; background: var(--primary-soft); color: var(--primary); }
+.ep-disc.small svg { width: 18px; height: 18px; }
+.ep-disc.error { color: var(--error); }
+.picked .ep-disc { background: var(--surface); color: var(--primary); }
+.ep-row .dp-mono { display: block; }
+.ep-row.dim { opacity: .5; }
+/* A phone keeps the width for the names: no icon disc on the rows. */
+.dp.narrow .ep-row .ep-disc { display: none; }
+.ep-row:disabled { cursor: default; }
+.ep-state { flex: none; max-width: 34%; font-size: 13px; color: var(--muted); text-align: right;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ep-chips { flex: none; display: flex; gap: 8px; overflow-x: auto; padding: 0 0 10px;
+  scrollbar-width: none; }
+.ep-chips[hidden] { display: none; }
+.ep-chips::-webkit-scrollbar { display: none; }
+.dp.narrow .ep-chips { padding: 0 4px 8px; }
+.ep-chip { flex: none; height: 32px; padding: 0 14px; border-radius: 999px; font: inherit;
+  font-size: 13.5px; font-weight: 600; white-space: nowrap; cursor: pointer;
+  background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.ep-chip.active { background: var(--primary-soft); color: var(--primary); border-color: transparent; }
+.ep-columns { flex: 1 1 auto; min-height: 0; display: flex; }
+.ep-columns > .dp-content { flex: 1 1 0; min-width: 0; }
+.ep-showing { flex: none; width: 290px; margin-left: 16px; padding-left: 16px;
+  border-left: 1px solid var(--divider); overflow-y: auto; }
+.ep-showing[hidden] { display: none; }
+.ep-showing .dp-subhead { padding: 4px 0 8px; }
+.ep-showing-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: grab; }
+.ep-grip { flex: none; display: inline-flex; color: var(--outline); }
+.ep-showing-name { flex: 1 1 0; min-width: 0; font-size: 14px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ep-arrow { width: 32px; height: 32px; }
+.ep-arrow:disabled { opacity: .35; }
+.ep-hint { padding: 10px 2px 0; font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+.ep-heading { display: flex; gap: 8px; }
+.ep-count { font-weight: 400; color: var(--outline); }
+.ep .dp-foot .dp-count { flex: 1 1 0; }
+.ep-field-state { flex: none; max-width: 30%; font-size: 13px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ep-field .dp-field-text { color: var(--text); }
+.ep-field:disabled { opacity: .45; cursor: default; }
+/* A field inside an editor dialog spans the dialog. */
+.modal-form .ep-field, .camera-editor .ep-field { width: 100%; }
+.ep-pick { display: flex; align-items: center; gap: 4px; padding: 4px 0; min-width: 0; }
+.ep-pick + .ep-pick, .ep-pick + .dp-add-row { border-top: 1px solid var(--divider); }
+.ep-pick .dp-sub .dp-mono { font-size: 11.5px; }
+.ep-pick-main { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 14px;
+  padding: 6px 0; border: none; background: transparent; color: var(--text); font: inherit;
+  text-align: left; cursor: pointer; }
+.ep-pick-main .dp-text { min-width: 0; }
+.ep-value-card { max-width: 560px; }
+.ep-value-entity { cursor: default; padding-bottom: 12px; }
+.ep-option input[type=radio] { flex: none; pointer-events: none; }
+.ep-option .ep-option-name { flex: 1 1 0; min-width: 0; }

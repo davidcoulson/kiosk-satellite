@@ -27,6 +27,9 @@ setting('screen.orientation', 'auto', 'select', section='Screen',
  options=['auto','reverse_portrait'], optionLabels={'auto':'Automatic','reverse_portrait':'Reverse portrait'},
  optionMessageIds={'auto':'screenAudioAutomatic','reverse_portrait':'screenAudioReversePortrait'})
 setting('screen.adaptive_brightness', True, subpage='Adaptive brightness', titleMessageId='settingAdaptiveBrightnessTitle')
+setting('screen.adaptive_use_entity', True, subpage='Adaptive brightness', dependsOn='screen.adaptive_brightness')
+setting('screen.adaptive_light_entity', 'sensor.hallway_illuminance', 'string', subpage='Adaptive brightness',
+ dependsOn='screen.adaptive_use_entity')
 setting('screen.default_brightness', .5, 'number', section='Screen', min=0, max=1)
 setting('audio.media_volume', .5, 'number', section='Audio Volume', min=0, max=1)
 setting('audio.mic_gain_db', 0, 'number', 'Microphone settings', min=-24, max=24, step=1, unit=' dB')
@@ -45,6 +48,7 @@ def api(route):
   return route.fulfill(json={'settings':settings,'subpageHints':{}})
  name=path.removeprefix('commands/');args=route.request.post_data_json or {};requests.append((name,args))
  data={'getVolume':50, 'getLightLevel':{'present':True,'lux':12,'live':False},
+ 'getAdaptiveLight':{'source':'entity','entity':'sensor.hallway_illuminance','lux':40,'live':True},
  'getAmbientDisplay':True,'getSystemPermissions':{'writeSettings':False},
  'getAudioDevices':{'inputs':[{'selector':'11|1|Microphone','label':'Automatic','channels':2}],
  'outputs':[], 'micSelected':'11|1|Microphone','speakerSelected':'11|2|Speaker'},
@@ -102,11 +106,26 @@ try:
         expect(page.locator('#pageTitle')).to_contain_text('TEST adaptive')
         expect(root.get_by_text('12 TEST last lux',exact=True)).to_be_visible()
         assert page.evaluate("(async () => (await import('/static/search.js')).searchSettingsIndex('TEST microphone settings').some(row => row.entry === 'Microphone settings'))()")
+        # The entity's reading sits in its own row; Ambient light stays the
+        # device sensor's (issue #911).
+        entity=root.locator('[data-key="screen.adaptive_light_entity"]')
+        # The entity sits in its field, the reading on the line under it.
+        expect(entity.locator('.ep-field')).to_contain_text('sensor.hallway_illuminance')
+        expect(entity.get_by_text('40 lx',exact=True)).to_be_visible()
+        expect(entity.locator('button')).to_have_count(1)
+        expect(root.locator('.ambient-light-value')).to_have_text('12 TEST last lux')
+        page.evaluate("""async () => {
+          (await import('/static/notices.js')).showAdaptiveLight({source:'entity',lux:55,live:true});
+        }""")
+        expect(entity.get_by_text('55 lx',exact=True)).to_be_visible()
+        # No sensor: a note under the switch, which stays usable.
         page.evaluate("""async () => {
           (await import('/static/core.js')).state.lightSensor=false;
           await (await import('/static/notices.js')).updateAdaptiveBrightnessRows();
         }""")
         expect(root.get_by_text('TEST no sensor',exact=True)).to_be_visible()
+        expect(root.locator('.ambient-light-value')).to_have_count(0)
+        expect(root.locator('[data-key="screen.adaptive_brightness"] .switch input')).to_be_enabled()
         assert not errors, errors
         browser.close()
 finally:

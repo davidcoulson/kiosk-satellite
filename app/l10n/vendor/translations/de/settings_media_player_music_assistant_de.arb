@@ -12,6 +12,7 @@
   "settingSendspinMaAutoCloseDescription": "Kehrt zum Dashboard zurück, wenn die Music-Assistant-Seite für diese Zeit nicht berührt wurde. Bei 0 bleibt sie geöffnet, bis sie manuell geschlossen wird.",
   "settingSendspinMaHideCloseTitle": "Schließen-Schaltfläche ausblenden",
   "settingSendspinMaHideCloseDescription": "Die schwebende Schließen-Schaltfläche kann Bedienelemente von Music Assistant überdecken, beispielsweise das Menü von „Jetzt läuft“. Ohne diese Schaltfläche kann die Seite über die Zurück-Taste oder das seitliche Kiosk-Menü geschlossen werden.",
+  "settingSendspinMaZoomDescription": "Ändert die Skalierung der gesamten Music-Assistant-Seite.",
   "mediaMaHint": "Server, Token und Menüeintrag im Kiosk-Menü",
   "mediaKioskMenu": "Kiosk-Menü",
   "mediaValidateConnection": "Verbindung prüfen",

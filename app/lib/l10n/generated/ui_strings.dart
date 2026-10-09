@@ -1478,6 +1478,66 @@ abstract class UiStrings {
   /// **'No release notes.'**
   String get drawerNoReleaseNotes;
 
+  /// Heading over entities that are in no Home Assistant area.
+  ///
+  /// In en, this message translates to:
+  /// **'No area'**
+  String get entityPickerNoArea;
+
+  /// Filter chip that shows every kind of entity or every source.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get entityPickerAll;
+
+  /// Empty value of a setting that stores a Home Assistant entity.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an entity'**
+  String get entityPickerChoose;
+
+  /// Shown when a search or filter finds nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches'**
+  String get entityPickerNoMatch;
+
+  /// Message when Home Assistant's entities cannot be listed.
+  ///
+  /// In en, this message translates to:
+  /// **'The entities load once the connection is back.'**
+  String get entityPickerOfflineHelp;
+
+  /// Shown under a setting whose stored entity no longer exists.
+  ///
+  /// In en, this message translates to:
+  /// **'This entity is gone from Home Assistant. Choose another.'**
+  String get entityPickerMissing;
+
+  /// Note under the picked entities, which can be reordered.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag or use the arrows to change the order.'**
+  String get entityPickerOrderHint;
+
+  /// Shown when the most entities that can be picked are picked.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove one to add another.'**
+  String get entityPickerFull;
+
+  /// Row that opens the picker to add entities.
+  ///
+  /// In en, this message translates to:
+  /// **'Add entities'**
+  String get entityPickerAdd;
+
+  /// How many entities are picked out of the most allowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {count} of {max}'**
+  String entityPickerShowing(String count, String max);
+
   /// Summary when no entities are excluded.
   ///
   /// In en, this message translates to:
@@ -3264,12 +3324,6 @@ abstract class UiStrings {
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
-  /// **'Domain'**
-  String get gestureDomain;
-
-  /// Label or guidance in this section.
-  ///
-  /// In en, this message translates to:
   /// **'Entity (optional)'**
   String get gestureEntityOptional;
 
@@ -3284,12 +3338,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Call a Home Assistant service'**
   String get gestureServiceTitle;
-
-  /// Label or guidance in this section.
-  ///
-  /// In en, this message translates to:
-  /// **'Domain and service are required.'**
-  String get gestureServiceRequired;
 
   /// Label or guidance in this section.
   ///
@@ -3326,6 +3374,24 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Event data must be a JSON object.'**
   String get gestureEventJson;
+
+  /// Hint in the search box of the service picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Search services'**
+  String get gestureServiceSearch;
+
+  /// Empty value of the Service field, and the message when the gesture is saved without one.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a service'**
+  String get gestureServiceChoose;
+
+  /// Shown in the Entity field when the picked service acts on no entity.
+  ///
+  /// In en, this message translates to:
+  /// **'Not used by this service'**
+  String get gestureServiceNoEntity;
 
   /// Label or guidance in this section.
   ///
@@ -4910,18 +4976,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Adds a button to the kiosk ESPHome device. Requires ESPHome and native entities.'**
   String get pluginAddsAButtonToTheKioskEsphomeDeviceRequires;
-
-  /// Visible label, help or status in this section.
-  ///
-  /// In en, this message translates to:
-  /// **'Select an entity'**
-  String get pluginSelectAnEntity;
-
-  /// Visible label, help or status in this section.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose {name}'**
-  String pluginChooseName(String name);
 
   /// Visible label, help or status in this section.
   ///
@@ -14333,6 +14387,12 @@ abstract class UiStrings {
   /// **'The floating close button can sit on top of Music Assistant\'s own controls, like the Now Playing menu. Without it, dismiss with the back button or by using the kiosk\'s drawer menu.'**
   String get settingSendspinMaHideCloseDescription;
 
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Scales the whole Music Assistant page.'**
+  String get settingSendspinMaZoomDescription;
+
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
@@ -15340,6 +15400,30 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Dim the screen as the room gets darker, using the ambient light sensor.'**
   String get settingAdaptiveBrightnessDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Home Assistant entity'**
+  String get settingAdaptiveUseEntityTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the room\'s light level from a Home Assistant sensor.'**
+  String get settingAdaptiveUseEntityDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Light sensor entity'**
+  String get settingAdaptiveLightEntityTitle;
+
+  /// Help below the setting, shown until an entity is picked.
+  ///
+  /// In en, this message translates to:
+  /// **'The Home Assistant sensor that reports the light level in lux.'**
+  String get settingAdaptiveLightEntityDescription;
 
   /// Setting label.
   ///
@@ -16484,30 +16568,6 @@ abstract class UiStrings {
   /// Label or guidance in this editor.
   ///
   /// In en, this message translates to:
-  /// **'Name or entity id'**
-  String get screensaverOverlaySearchHint;
-
-  /// Label or guidance in this editor.
-  ///
-  /// In en, this message translates to:
-  /// **'Search by name or entity id'**
-  String get screensaverOverlaySearchHintRemote;
-
-  /// Label or guidance in this editor.
-  ///
-  /// In en, this message translates to:
-  /// **'Type to search entities.'**
-  String get screensaverOverlaySearchEmpty;
-
-  /// Label or guidance in this editor.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing matched.'**
-  String get screensaverOverlayNoMatches;
-
-  /// Label or guidance in this editor.
-  ///
-  /// In en, this message translates to:
   /// **'Searching…'**
   String get screensaverOverlaySearching;
 
@@ -16522,12 +16582,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'The device did not answer.'**
   String get screensaverOverlayNoAnswer;
-
-  /// Label or guidance in this editor.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not search entities: {error}'**
-  String screensaverOverlaySearchError(String error);
 
   /// Setting label.
   ///
@@ -17078,38 +17132,8 @@ abstract class UiStrings {
   /// Label or guidance in this editor.
   ///
   /// In en, this message translates to:
-  /// **'Showing (drag to reorder)'**
-  String get screensaverOverlayReorder;
-
-  /// Label or guidance in this editor.
-  ///
-  /// In en, this message translates to:
-  /// **'That is the most the row can show. Remove one to add another.'**
-  String get screensaverOverlayFull;
-
-  /// Label or guidance in this editor.
-  ///
-  /// In en, this message translates to:
-  /// **'At a glance entities'**
-  String get screensaverOverlayPickerTitle;
-
-  /// Label or guidance in this editor.
-  ///
-  /// In en, this message translates to:
-  /// **'None yet. Up to {count} entities.'**
-  String screensaverOverlayGlanceEmpty(String count);
-
-  /// Label or guidance in this editor.
-  ///
-  /// In en, this message translates to:
   /// **'None yet'**
   String get screensaverOverlayNone;
-
-  /// Label or guidance in this editor.
-  ///
-  /// In en, this message translates to:
-  /// **'Up to {count} entities.'**
-  String screensaverOverlayLimit(String count);
 
   /// Subpage navigation title or summary.
   ///
@@ -19433,6 +19457,18 @@ abstract class UiStrings {
   /// **'The name under the value.'**
   String get screensaverOverlayShowNameHelp;
 
+  /// Label or guidance in this editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Show icon'**
+  String get screensaverOverlayShowIcon;
+
+  /// Label or guidance in this editor.
+  ///
+  /// In en, this message translates to:
+  /// **'The icon beside the value.'**
+  String get screensaverOverlayShowIconHelp;
+
   /// Generic font family option. Font brand names stay unchanged.
   ///
   /// In en, this message translates to:
@@ -19480,24 +19516,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Weather entity'**
   String get screensaverOverlayWeatherEntity;
-
-  /// Label or guidance in this editor.
-  ///
-  /// In en, this message translates to:
-  /// **'No weather entities'**
-  String get screensaverOverlayNoWeather;
-
-  /// Label or guidance in this editor.
-  ///
-  /// In en, this message translates to:
-  /// **'Home Assistant reported none.'**
-  String get screensaverOverlayNoWeatherHelp;
-
-  /// Label or guidance in this editor.
-  ///
-  /// In en, this message translates to:
-  /// **'Pick a weather entity…'**
-  String get screensaverOverlayPickWeather;
 
   /// Label or guidance in this editor.
   ///

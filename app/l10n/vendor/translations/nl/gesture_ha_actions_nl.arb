@@ -8,15 +8,16 @@
   "gestureEntityRequired": "Voer een {domain}.* entiteit in.",
   "gestureScriptEntity": "Script-entiteit",
   "gestureAutomationEntity": "Automatiseringsentiteit",
-  "gestureDomain": "Domein",
   "gestureEntityOptional": "Entiteit (optioneel)",
   "gestureServiceData": "Servicegegevens (optioneel)",
   "gestureServiceTitle": "Een Home Assistant-service aanroepen",
-  "gestureServiceRequired": "Domein en service zijn vereist.",
   "gestureServiceJson": "Servicegegevens moeten een JSON-object zijn.",
   "gestureEventType": "Gebeurtenistype",
   "gestureEventData": "Gebeurtenisgegevens (optioneel)",
   "gestureEventTitle": "Een Home Assistant-gebeurtenis activeren",
   "gestureEventRequired": "Gebeurtenistype is vereist.",
-  "gestureEventJson": "Gebeurtenisgegevens moeten een JSON-object zijn."
+  "gestureEventJson": "Gebeurtenisgegevens moeten een JSON-object zijn.",
+  "gestureServiceSearch": "Services zoeken",
+  "gestureServiceChoose": "Kies een service",
+  "gestureServiceNoEntity": "Niet gebruikt door deze service"
 }

@@ -1,9 +1,6 @@
 {
   "@@locale": "fr",
   "screensaverOverlayWeatherEntity": "Entité météo",
-  "screensaverOverlayNoWeather": "Aucune entité météo",
-  "screensaverOverlayNoWeatherHelp": "Home Assistant n'en a signalé aucune.",
-  "screensaverOverlayPickWeather": "Choisir une entité météo…",
   "screensaverOverlayWeatherRequired": "Choisissez une entité météo.",
   "screensaverOverlayLocationName": "Nom du lieu",
   "screensaverOverlayLocationHelp": "Laissez vide pour masquer la ligne du lieu.",

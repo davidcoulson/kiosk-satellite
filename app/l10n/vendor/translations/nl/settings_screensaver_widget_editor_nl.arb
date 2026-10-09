@@ -20,6 +20,8 @@
   "screensaverOverlayLowHelp": "Blijf verborgen totdat de batterij minder dan 20 procent lading heeft.",
   "screensaverOverlayShowName": "Naam tonen",
   "screensaverOverlayShowNameHelp": "De naam onder de waarde.",
+  "screensaverOverlayShowIcon": "Pictogram tonen",
+  "screensaverOverlayShowIconHelp": "Het pictogram naast de waarde.",
   "screensaverOverlayFontSystem": "Systeemlettertype",
   "screensaverOverlayFontSerif": "Schreefletter",
   "screensaverOverlayFontCondensed": "Gecondenseerd",

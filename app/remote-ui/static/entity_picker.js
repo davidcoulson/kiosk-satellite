@@ -1,0 +1,767 @@
+import { gestureText, haText, mediaError, mediaText, screensaverText, t } from './localization.js';
+import { cmd } from './core.js';
+import { modalShell, queueEdgeFades } from './widgets.js';
+
+/* The entity picker, the device's ItemPicker in the browser: a source's
+   rows (Home Assistant's entities, one source's media players) grouped
+   under their headings, a search and chips on top, Cancel and Clear
+   below. Under 520 it fills the screen. Entity icons arrive from the
+   device as SVG path data (icon_path); players draw a speaker. */
+
+const SVG = 'http://www.w3.org/2000/svg';
+const ICONS = {
+  generic: 'M11,13.5V21.5H3V13.5H11M9,15.5H5V19.5H9V15.5M12,2L17.5,11H6.5L12,2M12,5.86L10.08,9H13.92L12,5.86M17.5,13C20,13 22,15 22,17.5C22,20 20,22 17.5,22C15,22 13,20 13,17.5C13,15 15,13 17.5,13M17.5,15A2.5,2.5 0 0,0 15,17.5A2.5,2.5 0 0,0 17.5,20A2.5,2.5 0 0,0 20,17.5A2.5,2.5 0 0,0 17.5,15Z',
+  speaker: 'M12,12A3,3 0 0,0 9,15A3,3 0 0,0 12,18A3,3 0 0,0 15,15A3,3 0 0,0 12,12M12,20A5,5 0 0,1 7,15A5,5 0 0,1 12,10A5,5 0 0,1 17,15A5,5 0 0,1 12,20M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8C10.89,8 10,7.1 10,6C10,4.89 10.89,4 12,4M17,2H7C5.89,2 5,2.89 5,4V20A2,2 0 0,0 7,22H17A2,2 0 0,0 19,20V4C19,2.89 18.1,2 17,2Z',
+  speakers: 'M14,10A3,3 0 0,0 11,13A3,3 0 0,0 14,16A3,3 0 0,0 17,13A3,3 0 0,0 14,10M14,18A5,5 0 0,1 9,13A5,5 0 0,1 14,8A5,5 0 0,1 19,13A5,5 0 0,1 14,18M14,2A2,2 0 0,1 16,4A2,2 0 0,1 14,6A2,2 0 0,1 12,4A2,2 0 0,1 14,2M19,0H9A2,2 0 0,0 7,2V18A2,2 0 0,0 9,20H19A2,2 0 0,0 21,18V2A2,2 0 0,0 19,0M5,22H17V24H5A2,2 0 0,1 3,22V4H5',
+  session: 'M19.1,8.7C20.9,10.5 20.9,13.3 19.1,15.2L20.1,16.2C22.6,13.9 22.6,10.1 20.1,7.7L19.1,8.7M18,9.8L17,10.8C17.5,11.5 17.5,12.4 17,13.1L18,14.1C19.2,12.9 19.2,11.1 18,9.8M14,1H4A2,2 0 0,0 2,3V21A2,2 0 0,0 4,23H14A2,2 0 0,0 16,21V3A2,2 0 0,0 14,1M14,20H4V4H14V20Z',
+  warn: 'M13,14H11V10H13M13,18H11V16H13M1,21H23L12,2L1,21Z',
+  chevron: 'M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z',
+  back: 'M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z',
+  up: 'M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z',
+  down: 'M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z',
+  drag: 'M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19Z',
+};
+
+/* ------------------------------------------------------------ catalogs */
+
+const lists = new Map();
+const pending = new Map();
+const listeners = new Map();
+
+export function cachedList(key) { return lists.get(key) || null; }
+
+// Loads [spec]'s list, one load at a time per key. Null when the source
+// cannot be reached; the last good list stays cached.
+export function loadList(spec) {
+  if (!pending.has(spec.key)) {
+    pending.set(spec.key, (async () => {
+      try {
+        const list = await spec.loader();
+        if (list) {
+          lists.set(spec.key, list);
+          (listeners.get(spec.key) || new Set()).forEach((fn) => fn());
+        }
+        return list;
+      } catch (_) {
+        return null;
+      } finally {
+        pending.delete(spec.key);
+      }
+    })());
+  }
+  return pending.get(spec.key);
+}
+
+// Repaints [node] whenever [key]'s list loads, until it leaves the page.
+function follow(key, node, paint) {
+  if (!listeners.has(key)) listeners.set(key, new Set());
+  let seen = false;
+  const fn = () => {
+    if (node.isConnected) { seen = true; paint(); } else if (seen) listeners.get(key).delete(fn);
+  };
+  listeners.get(key).add(fn);
+}
+
+const findIn = (list, id) => (list ? list.items.find((i) => i.id === id) || null : null);
+
+/* ------------------------------------------------------------ sources */
+
+// Home Assistant's entities, all of them, filtered here per picker. One
+// list serves every entity picker.
+export function entitySpec({ domains = [], deviceClass = null } = {}) {
+  return {
+    key: 'entities',
+    loader: loadEntities,
+    searchHint: haText('Search entities'),
+    noGroup: haText('No area'),
+    chips: domains.length !== 1,
+    headings: true,
+    byGroupName: true,
+    keep: (!domains.length && !deviceClass) ? null : (item) =>
+      (!domains.length || domains.includes(item.raw.domain))
+      && (!deviceClass || (deviceClass === 'illuminance'
+        ? item.raw.device_class === 'illuminance' || item.raw.unit === 'lx'
+        : item.raw.device_class === deviceClass)),
+  };
+}
+
+export function loadEntityList() { return loadList(entitySpec()); }
+
+async function loadEntities() {
+  const r = await cmd('haListEntities', { icons: true }, { timeoutMs: 20000 });
+  if (!r?.ok || !Array.isArray(r.data)) return null;
+  return {
+    items: r.data.map((e) => ({
+      id: String(e.entity_id),
+      name: e.name || e.entity_id,
+      sub: String(e.entity_id),
+      subMono: true,
+      state: e.state == null ? null : String(e.state),
+      iconPath: e.icon_path || null,
+      group: e.area || '',
+      chip: e.domain_title || null,
+      available: true,
+      raw: e,
+    })),
+    notes: {},
+  };
+}
+
+// Home Assistant's services under their domains' titles, for a gesture
+// that calls one. Each row keeps the entity domains the service acts on
+// (entity_domains: null for none, empty for any).
+export function serviceSpec() {
+  return {
+    key: 'services',
+    loader: loadServices,
+    searchHint: gestureText('Search services'),
+    noGroup: '', chips: false, headings: true, byGroupName: true, keep: null,
+  };
+}
+
+async function loadServices() {
+  const r = await cmd('haListServices', { icons: true }, { timeoutMs: 20000 });
+  if (!r?.ok || !Array.isArray(r.data)) return null;
+  const rows = [...r.data].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  return {
+    items: rows.map((e) => ({
+      id: String(e.id),
+      name: e.name || e.id,
+      sub: String(e.id),
+      subMono: true,
+      state: null,
+      iconPath: e.icon_path || null,
+      group: e.domain_title || e.domain || '',
+      chip: null,
+      available: true,
+      raw: e,
+    })),
+    notes: {},
+  };
+}
+
+// The entity domains [serviceId] acts on, from the loaded services: null
+// when it takes no entity, empty when it takes any. Before the list loads
+// (or for a service it lacks) the service's own domain.
+export function serviceEntityDomains(serviceId) {
+  if (!serviceId) return null;
+  const item = findIn(cachedList('services'), serviceId);
+  if (!item) return [serviceId.split('.')[0]];
+  return Array.isArray(item.raw.entity_domains) ? item.raw.entity_domains.map(String) : null;
+}
+
+// Calls [paint] each time [key]'s list loads, while [node] is on the page.
+export function onListLoaded(key, node, paint) { follow(key, node, paint); }
+
+// One source's players ('ma', 'ha', 'sonos') from mediaPlayers. The
+// source's note (not reachable, not set up) shows above its rows.
+export function playerSpec(source, { speakers = false } = {}) {
+  return {
+    key: `players:${source}:${speakers}`,
+    loader: () => loadPlayers(source, speakers),
+    searchHint: mediaText('Search players'),
+    noGroup: '', chips: false, headings: false, byGroupName: false, keep: null,
+    noteText: mediaError,
+  };
+}
+
+// A fixed list of players: this device's own.
+export function fixedPlayerSpec(key, items) {
+  return {
+    key,
+    loader: async () => ({ items, notes: {} }),
+    searchHint: mediaText('Search players'),
+    noGroup: '', chips: false, headings: false, byGroupName: false, keep: null,
+  };
+}
+
+export const PLAYER_ICONS = { speaker: ICONS.speaker, session: ICONS.session };
+
+async function loadPlayers(source, speakers) {
+  const r = await cmd('mediaPlayers', { source, ...(speakers ? { speakers: true } : {}) },
+    { timeoutMs: 15000 });
+  if (!r?.ok) return { items: [], notes: { [source]: r?.error || '' } };
+  const players = Array.isArray(r.data?.players) ? r.data.players : [];
+  const notes = r.data?.notes || {};
+  const items = players.filter((p) => p.group === source).map((p) => {
+    const id = String(p.id);
+    const ha = id.startsWith('ha:');
+    const available = p.available !== false;
+    return {
+      id,
+      name: p.name || id,
+      sub: p.sub != null ? String(p.sub) : (ha ? id.slice(3) : null),
+      subMono: p.sub == null && ha,
+      // Offline is drawn, not stored: the list outlives a language switch.
+      state: null,
+      iconPath: String(p.sub || '').includes(',') ? ICONS.speakers : ICONS.speaker,
+      group: source,
+      available,
+      raw: p,
+    };
+  });
+  return { items, notes: notes[source] != null ? { [source]: String(notes[source]) } : {} };
+}
+
+/* ------------------------------------------------------------ pieces */
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function svgPath(d, size) {
+  const svg = document.createElementNS(SVG, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', size);
+  svg.setAttribute('height', size);
+  svg.setAttribute('aria-hidden', 'true');
+  const p = document.createElementNS(SVG, 'path');
+  p.setAttribute('fill', 'currentColor');
+  p.setAttribute('d', d);
+  svg.appendChild(p);
+  return svg;
+}
+
+function disc(item, cls = 'ep-disc') {
+  const d = el('span', cls);
+  d.appendChild(svgPath(item?.iconPath || ICONS.generic, 22));
+  return d;
+}
+
+function highlighted(text, query, cls) {
+  const span = el('span', cls);
+  const i = query ? text.toLowerCase().indexOf(query.toLowerCase()) : -1;
+  if (i < 0) { span.textContent = text; return span; }
+  span.append(text.slice(0, i), el('mark', 'dp-mark', text.slice(i, i + query.length)),
+    text.slice(i + query.length));
+  return span;
+}
+
+// What shows on the right: the state, or Offline for a player that is.
+function itemState(item) {
+  return item.state || (item.available === false ? mediaText('Offline') : null);
+}
+
+function itemRow(item, { picked, multiple, disabled, query, onClick }) {
+  const b = el('button', 'dp-row ep-row' + (picked ? ' picked' : '') + (disabled || !item.available ? ' dim' : ''));
+  b.type = 'button';
+  if (disabled) b.disabled = true;
+  if (multiple) {
+    const cb = el('input');
+    cb.type = 'checkbox';
+    cb.checked = picked;
+    cb.tabIndex = -1;
+    b.appendChild(cb);
+  }
+  b.appendChild(disc(item));
+  const text = el('span', 'dp-text');
+  text.appendChild(highlighted(item.name, query, 'dp-title'));
+  if (item.sub) text.appendChild(highlighted(item.sub, query, item.subMono ? 'dp-mono' : 'dp-sub'));
+  b.appendChild(text);
+  const state = itemState(item);
+  if (state) b.appendChild(el('span', 'ep-state', state));
+  if (picked && !multiple) b.appendChild(el('span', 'dp-tick'));
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+function stateMessage(title, message, action) {
+  const box = el('div', 'dp-state');
+  box.appendChild(el('div', 'dp-state-title', title));
+  if (message) box.appendChild(el('div', 'dp-state-text', message));
+  if (action) box.appendChild(action);
+  return box;
+}
+
+/* ------------------------------------------------------------ the picker */
+
+function buildPicker({ title, spec, selected = [], multiple = false, max = null,
+  allowClear = false, onPick, onClear, onDone, onClose }) {
+  const st = {
+    list: cachedList(spec.key), failed: false, query: '', chip: null,
+    picked: [...selected], wide: true, scrolled: false,
+  };
+  const root = el('div', 'dp ep');
+  const head = el('div', 'dp-head');
+  const bar = el('div', 'dp-bar');
+  const back = el('button', 'icon-btn dp-back');
+  back.type = 'button';
+  back.setAttribute('aria-label', haText('Back'));
+  back.appendChild(svgPath(ICONS.back, 22));
+  back.addEventListener('click', () => onClose?.());
+  const heading = el('div', 'dp-heading');
+  heading.appendChild(el('div', 'dp-name modal-title', title));
+  bar.append(back, heading);
+  const search = el('input', 'dp-search');
+  search.type = 'search';
+  search.autocomplete = 'off';
+  search.placeholder = spec.searchHint;
+  search.addEventListener('input', () => { st.query = search.value.trim(); render(); });
+  head.append(bar, search);
+  const chipsRow = el('div', 'ep-chips edge-fade-x');
+  const content = el('div', 'dp-content');
+  const columns = el('div', 'ep-columns');
+  const showing = el('div', 'ep-showing');
+  columns.append(content, showing);
+  const foot = el('div', 'dp-foot');
+  root.append(head, chipsRow, columns, foot);
+
+  const kept = () => {
+    const items = st.list?.items || [];
+    return spec.keep ? items.filter(spec.keep) : items;
+  };
+  const full = () => multiple && max != null && st.picked.length >= max;
+
+  function tap(item) {
+    if (!multiple) { onPick?.(item.id); return; }
+    if (st.picked.includes(item.id)) st.picked = st.picked.filter((p) => p !== item.id);
+    else if (!full()) st.picked.push(item.id);
+    render();
+  }
+
+  function entries(items) {
+    let rows = st.chip ? items.filter((i) => i.chip === st.chip) : items;
+    const q = st.query.toLowerCase();
+    if (q) {
+      const hits = [];
+      for (const i of rows) {
+        const name = i.name.toLowerCase();
+        const sub = (i.sub || '').toLowerCase();
+        const group = (i.group || '').toLowerCase();
+        if (!name.includes(q) && !sub.includes(q) && !group.includes(q)) continue;
+        const rank = name.startsWith(q) || sub.split('.').pop().startsWith(q) ? 0 : name.includes(q) ? 1 : 2;
+        hits.push([rank, i]);
+      }
+      hits.sort((a, b) => a[0] - b[0] || a[1].name.localeCompare(b[1].name));
+      return hits.map(([, i]) => ({ item: i }));
+    }
+    const groups = new Map();
+    for (const i of rows) {
+      if (!groups.has(i.group)) groups.set(i.group, []);
+      groups.get(i.group).push(i);
+    }
+    const notes = st.chip ? {} : (st.list?.notes || {});
+    for (const g of Object.keys(notes)) if (!groups.has(g)) groups.set(g, []);
+    let order = [...groups.keys()];
+    if (spec.byGroupName) {
+      order.sort((a, b) => (!a !== !b ? (a ? -1 : 1) : a.localeCompare(b)));
+      for (const g of order) groups.get(g).sort((a, b) => a.name.localeCompare(b.name));
+    }
+    const out = [];
+    for (const g of order) {
+      if (spec.headings && (order.length > 1 || g)) {
+        out.push({ heading: g || spec.noGroup, count: groups.get(g).length });
+      }
+      if (notes[g] != null) out.push({ note: spec.noteText ? spec.noteText(notes[g]) : notes[g] });
+      for (const i of groups.get(g)) out.push({ item: i });
+    }
+    return out;
+  }
+
+  function renderChips(items) {
+    chipsRow.replaceChildren();
+    const chips = [...new Set(items.map((i) => i.chip).filter(Boolean))].sort();
+    chipsRow.hidden = !spec.chips || chips.length < 2;
+    if (chipsRow.hidden) return;
+    const chip = (label, value) => {
+      const b = el('button', 'ep-chip' + (st.chip === value ? ' active' : ''), label);
+      b.type = 'button';
+      b.addEventListener('click', () => { st.chip = value; render(); });
+      chipsRow.appendChild(b);
+    };
+    chip(haText('All'), null);
+    chips.forEach((c) => chip(c, c));
+  }
+
+  function renderShowing() {
+    showing.replaceChildren();
+    showing.hidden = !multiple || !st.wide;
+    if (showing.hidden) return;
+    showing.appendChild(el('div', 'dp-subhead', max == null
+      ? t('dashboardPickerSelected', { count: String(st.picked.length) })
+      : t('entityPickerShowing', { count: String(st.picked.length), max: String(max) })));
+    st.picked.forEach((id, i) => {
+      const item = findIn(st.list, id);
+      const row = el('div', 'ep-showing-row');
+      row.draggable = true;
+      row.dataset.index = String(i);
+      const grip = el('span', 'ep-grip');
+      grip.appendChild(svgPath(ICONS.drag, 18));
+      row.appendChild(grip);
+      row.appendChild(disc(item, 'ep-disc small'));
+      row.appendChild(el('span', 'ep-showing-name', item?.name || id));
+      const move = (to) => {
+        st.picked.splice(to, 0, st.picked.splice(i, 1)[0]);
+        render();
+      };
+      const arrow = (icon, label, to, off) => {
+        const b = el('button', 'icon-btn ep-arrow');
+        b.type = 'button';
+        b.setAttribute('aria-label', label);
+        b.appendChild(svgPath(icon, 18));
+        b.disabled = off;
+        b.addEventListener('click', () => move(to));
+        row.appendChild(b);
+      };
+      arrow(ICONS.up, screensaverText('Move up'), i - 1, i === 0);
+      arrow(ICONS.down, screensaverText('Move down'), i + 1, i === st.picked.length - 1);
+      row.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', String(i)); });
+      row.addEventListener('dragover', (e) => e.preventDefault());
+      row.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const from = Number(e.dataTransfer.getData('text/plain'));
+        if (Number.isNaN(from) || from === i) return;
+        st.picked.splice(i, 0, st.picked.splice(from, 1)[0]);
+        render();
+      });
+      showing.appendChild(row);
+    });
+    if (st.picked.length > 1) {
+      showing.appendChild(el('div', 'ep-hint', haText('Drag or use the arrows to change the order.')));
+    }
+  }
+
+  function renderFoot() {
+    foot.replaceChildren();
+    if (allowClear) {
+      const clear = el('button', 'btn-text', haText('Clear'));
+      clear.type = 'button';
+      clear.addEventListener('click', () => onClear?.());
+      foot.appendChild(clear);
+    }
+    const note = el('span', 'dp-count');
+    if (multiple) {
+      note.textContent = full() ? haText('Remove one to add another.')
+        : t('dashboardPickerSelected', { count: String(st.picked.length) });
+    }
+    foot.appendChild(note);
+    const cancel = el('button', 'btn-text', haText('Cancel'));
+    cancel.type = 'button';
+    cancel.addEventListener('click', () => onClose?.());
+    foot.appendChild(cancel);
+    if (multiple) {
+      const done = el('button', 'btn-primary', haText('Done'));
+      done.type = 'button';
+      done.addEventListener('click', () => onDone?.([...st.picked]));
+      foot.appendChild(done);
+    }
+  }
+
+  function render() {
+    root.classList.toggle('narrow', !st.wide);
+    search.hidden = !(st.list && st.list.items.length);
+    back.hidden = st.wide;
+    const items = kept();
+    renderChips(items);
+    renderShowing();
+    renderFoot();
+    let node;
+    if (!st.list) {
+      if (st.failed) {
+        const retry = el('button', 'btn-ghost', haText('Try again'));
+        retry.type = 'button';
+        retry.addEventListener('click', reload);
+        node = stateMessage(haText('Could not reach Home Assistant'),
+          haText('The entities load once the connection is back.'), retry);
+      } else {
+        node = el('div', 'dp-skeleton');
+        const rows = el('div', 'dp-skel-rows');
+        for (let i = 0; i < 6; i++) rows.appendChild(el('div', 'dp-skel-row'));
+        node.appendChild(rows);
+      }
+    } else {
+      const list = entries(items);
+      if (!list.length) {
+        node = stateMessage(haText('Nothing matches'));
+      } else {
+        node = el('div', 'dp-list edge-fade');
+        let firstPick = null;
+        for (const e of list) {
+          if (e.heading != null) {
+            const h = el('div', 'dp-subhead ep-heading');
+            h.append(el('span', null, e.heading));
+            if (e.count) h.append(el('span', 'ep-count', String(e.count)));
+            node.appendChild(h);
+          } else if (e.note != null) {
+            node.appendChild(el('div', 'dp-note', e.note));
+          } else {
+            const picked = st.picked.includes(e.item.id);
+            const row = itemRow(e.item, {
+              picked, multiple, query: st.query,
+              disabled: multiple && !picked && full(),
+              onClick: () => tap(e.item),
+            });
+            if (picked && !firstPick) firstPick = row;
+            node.appendChild(row);
+          }
+        }
+        if (firstPick && !st.scrolled && !st.query) {
+          st.scrolled = true;
+          requestAnimationFrame(() => firstPick.scrollIntoView({ block: 'center' }));
+        }
+      }
+    }
+    const prev = content.querySelector('.dp-list');
+    const top = prev ? prev.scrollTop : 0;
+    content.replaceChildren(node);
+    if (st.scrolled && node.classList?.contains('dp-list') && prev) node.scrollTop = top;
+    queueEdgeFades();
+  }
+
+  async function reload() {
+    st.failed = false;
+    if (!st.list) render();
+    const list = await loadList(spec);
+    if (list) st.list = list; else if (!st.list) st.failed = true;
+    render();
+  }
+
+  const observer = new ResizeObserver(() => {
+    const wide = root.clientWidth >= 520;
+    if (wide !== st.wide) { st.wide = wide; render(); }
+  });
+  observer.observe(root);
+  render();
+  reload();
+  return { root, destroy() { observer.disconnect(); } };
+}
+
+// One picker at a time: a click while one is open, or opening, gets null.
+let pickerOpen = false;
+
+function openPicker(options, resolveWith) {
+  if (pickerOpen) return Promise.resolve(null);
+  pickerOpen = true;
+  return new Promise((resolve) => {
+    let picker = null;
+    const openedAt = Date.now();
+    const shell = modalShell({ title: '', width: 760,
+      onDismiss: () => { if (Date.now() - openedAt > 500) finish(null); } });
+    const finish = (value) => {
+      pickerOpen = false;
+      picker?.destroy();
+      shell.back.remove();
+      resolve(value);
+    };
+    shell.card.classList.add('dash-picker-card');
+    shell.head.remove();
+    shell.body.classList.remove('edge-fade');
+    shell.back.classList.add('dash-picker-back');
+    shell.foot.remove();
+    picker = buildPicker({ ...options, ...resolveWith(finish) });
+    shell.body.appendChild(picker.root);
+  });
+}
+
+// A single pick. Resolves to { id } (id null when Clear was pressed), or
+// null when dismissed.
+export function pickItem({ title, spec, selected = null, allowClear = false }) {
+  return openPicker({ title, spec, selected: selected == null ? [] : [selected], allowClear },
+    (finish) => ({
+      onPick: (id) => finish({ id }),
+      onClear: () => finish({ id: null }),
+      onClose: () => finish(null),
+    }));
+}
+
+// Several at once, at most [max], in order. Resolves to the ids, or null.
+export function pickItems({ title, spec, selected = [], max = null }) {
+  return openPicker({ title, spec, selected, multiple: true, max },
+    (finish) => ({ onDone: (ids) => finish(ids), onClose: () => finish(null) }));
+}
+
+export function pickEntity({ title, selected = null, domains = [], deviceClass = null, allowClear = false }) {
+  return pickItem({ title, spec: entitySpec({ domains, deviceClass }), selected, allowClear });
+}
+
+/* ------------------------------------------------------------ the value step */
+
+// What an entity displays: its state or one of its attributes, each with
+// its current value. Resolves to the attribute, '' for the state, null.
+export function pickEntityValue({ entityId, current = '' }) {
+  if (pickerOpen) return Promise.resolve(null);
+  pickerOpen = true;
+  return new Promise((resolve) => {
+    const shell = modalShell({ title: screensaverText('Displayed value'), width: 560,
+      onDismiss: () => finish(null) });
+    const finish = (value) => { pickerOpen = false; shell.back.remove(); resolve(value); };
+    shell.card.classList.add('ep-value-card');
+    const item = findIn(cachedList('entities'), entityId);
+    const top = el('div', 'dp-row ep-row ep-value-entity');
+    top.appendChild(disc(item));
+    const text = el('span', 'dp-text');
+    text.append(el('span', 'dp-title', item?.name || entityId), el('span', 'dp-mono', entityId));
+    top.appendChild(text);
+    const list = el('div', 'dp-list');
+    shell.body.append(top, list);
+    const cancel = el('button', 'btn-text', haText('Cancel'));
+    cancel.type = 'button';
+    cancel.addEventListener('click', () => finish(null));
+    shell.foot.appendChild(cancel);
+    const hidden = ['friendly_name', 'icon', 'entity_picture', 'supported_features', 'attribution'];
+    const option = (value, label, reading, on) => {
+      const b = el('button', 'dp-row ep-row ep-option' + (on ? ' picked' : ''));
+      b.type = 'button';
+      const r = el('input');
+      r.type = 'radio';
+      r.checked = on;
+      r.tabIndex = -1;
+      b.appendChild(r);
+      b.appendChild(el('span', 'dp-title ep-option-name', label));
+      if (reading != null) b.appendChild(el('span', 'ep-state', reading));
+      b.addEventListener('click', () => finish(value));
+      return b;
+    };
+    (async () => {
+      let attributes = null;
+      try {
+        const r = await cmd('haEntityAttributes', { entity_id: entityId });
+        if (r?.ok) attributes = r.data || {};
+      } catch (_) {}
+      if (!attributes) {
+        list.appendChild(stateMessage(haText('Could not reach Home Assistant')));
+        return;
+      }
+      const names = Object.keys(attributes).filter((k) => !hidden.includes(k)
+        && (attributes[k] === null || typeof attributes[k] !== 'object')).sort();
+      const now = current && names.includes(current) ? current : '';
+      list.appendChild(option('', screensaverText('State'), item?.state ?? null, now === ''));
+      names.forEach((n) => list.appendChild(option(n, n, String(attributes[n]), now === n)));
+    })();
+  });
+}
+
+/* ------------------------------------------------------------ the field */
+
+// A stored pick at rest: the control box with the item's icon, its name
+// and its state. Empty reads [placeholder]. A pick the loaded list lacks
+// shows its id with an error border. Returns { el, setValue }.
+export function pickField({ spec, value = '', placeholder = null, detail = null,
+  fallbackLabel = null, flagMissing = true, enabled = true, onClick }) {
+  const box = el('button', 'dp-field ep-field');
+  box.type = 'button';
+  let current = value;
+  const paint = () => {
+    box.replaceChildren();
+    const list = cachedList(spec.key);
+    const item = current ? findIn(list, current) : null;
+    const missing = flagMissing && !!current && !!list && !item;
+    box.classList.toggle('missing', missing);
+    const lead = el('span', 'dp-field-icon');
+    const text = el('span', 'dp-field-text');
+    let trailing = null;
+    if (!current) {
+      lead.appendChild(svgPath(ICONS.generic, 20));
+      text.classList.add('placeholder');
+      text.textContent = placeholder || haText('Choose an entity');
+    } else if (!item && fallbackLabel && !missing) {
+      lead.appendChild(svgPath(ICONS.generic, 20));
+      text.textContent = fallbackLabel;
+    } else if (!item) {
+      lead.appendChild(svgPath(missing ? ICONS.warn : ICONS.generic, 20));
+      lead.classList.toggle('error', missing);
+      text.appendChild(el('span', 'dp-mono', current));
+    } else {
+      lead.appendChild(svgPath(item.iconPath || ICONS.generic, 20));
+      lead.classList.add('primary');
+      text.append(item.name);
+      if (detail) text.append(el('span', 'dp-sep', ' · '), el('span', 'dp-field-dash', detail));
+      else trailing = itemState(item);
+    }
+    const chev = el('span', 'dp-field-chev');
+    chev.appendChild(svgPath(ICONS.chevron, 20));
+    box.append(lead, text);
+    if (trailing) box.appendChild(el('span', 'ep-field-state', trailing));
+    box.appendChild(chev);
+    box.dispatchEvent(new CustomEvent('dp-painted', { detail: { missing } }));
+  };
+  box.addEventListener('click', () => onClick?.());
+  box.disabled = !enabled;
+  follow(spec.key, box, paint);
+  paint();
+  if (!cachedList(spec.key)) loadList(spec);
+  return { el: box, setValue: (v) => { current = v || ''; paint(); }, repaint: paint,
+    setEnabled: (on) => { box.disabled = !on; },
+    setPlaceholder: (text) => { placeholder = text; paint(); } };
+}
+
+// A settings row whose value is a pick: the name, the field and the
+// description, with a line in error color when the stored pick is gone.
+// onPick gets the id, null for Clear. Returns { el, setValue }.
+export function pickRow({ name, desc = '', spec, value = '', onPick, dialogTitle = null,
+  allowClear = false, placeholder = null, fallbackLabel = null, flagMissing = true,
+  emptyIsPick = false, missingText = null }) {
+  const row = el('div', 'row dp-field-row');
+  const info = el('div', 'info');
+  const missingEl = el('div', 'desc dp-missing',
+    missingText || haText('This entity is gone from Home Assistant. Choose another.'));
+  missingEl.hidden = true;
+  info.append(el('div', 'name', name), missingEl);
+  if (desc) info.appendChild(el('div', 'desc', desc));
+  let current = value;
+  const field = pickField({
+    spec, value, placeholder, fallbackLabel, flagMissing,
+    onClick: async () => {
+      const out = await pickItem({
+        title: dialogTitle || name, spec,
+        selected: current || emptyIsPick ? current : null, allowClear,
+      });
+      if (!out || out.id === current) return;
+      current = out.id ?? '';
+      field.setValue(current);
+      onPick(out.id);
+    },
+  });
+  field.el.addEventListener('dp-painted', (e) => { missingEl.hidden = !e.detail.missing; });
+  // Once more now that someone listens: the first paint went unheard.
+  field.repaint();
+  row.append(info, field.el);
+  return { el: row, setValue: (v) => { current = v || ''; field.setValue(current); } };
+}
+
+// One stored pick in a list (At a Glance): icon, name, then the displayed
+// value and id. The id stands in until the list loads.
+export function pickListRow({ specKey = 'entities', value, name = null, detail = null,
+  trailing = [], onClick = null }) {
+  const row = el('div', 'ep-pick');
+  const paint = () => {
+    row.replaceChildren();
+    const list = cachedList(specKey);
+    const item = findIn(list, value);
+    const gone = !!list && !item;
+    const main = el(onClick ? 'button' : 'div', 'ep-pick-main');
+    if (onClick) { main.type = 'button'; main.addEventListener('click', onClick); }
+    const d = el('span', 'ep-disc' + (gone ? ' error' : ''));
+    d.appendChild(svgPath(gone ? ICONS.warn : (item?.iconPath || ICONS.generic), 22));
+    main.appendChild(d);
+    const text = el('span', 'dp-text');
+    text.appendChild(el('span', 'dp-title', name || item?.name || value));
+    const second = detail || item?.state || '';
+    const sub = el('span', 'dp-sub');
+    if (second) sub.append(second, el('span', 'dp-sep', ' · '));
+    sub.appendChild(el('span', 'dp-mono', value));
+    text.appendChild(sub);
+    main.appendChild(text);
+    row.appendChild(main);
+    trailing.forEach((t2) => row.appendChild(t2));
+  };
+  follow(specKey, row, paint);
+  paint();
+  return row;
+}
+
+// A plain choice in the control box: the Displayed value.
+export function choiceBox(text, onClick) {
+  const box = el('button', 'dp-field ep-field');
+  box.type = 'button';
+  const label = el('span', 'dp-field-text', text);
+  const chev = el('span', 'dp-field-chev');
+  chev.appendChild(svgPath(ICONS.chevron, 20));
+  box.append(label, chev);
+  box.disabled = !onClick;
+  if (onClick) box.addEventListener('click', onClick);
+  return { el: box, setText: (v) => { label.textContent = v; } };
+}

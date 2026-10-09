@@ -7,6 +7,7 @@ import '../l10n/messages.dart';
 import '../core/events.dart';
 import '../managers/camera/models.dart';
 import '../managers/settings/definitions.dart' as defs;
+import 'entity_picker.dart';
 import 'kit.dart';
 import 'toast.dart';
 import 'settings_search.dart';
@@ -691,13 +692,41 @@ class _CameraSettingsPanelState extends State<CameraSettingsPanel> {
                       ),
                     ),
                     if (kind == 'ha') ...[
+                      // Picked from Home Assistant's cameras, not typed.
                       LabeledField(
                         label: cameraStreamsText(context, 'Camera entity'),
-                        child: TextField(
-                          controller: entity,
-                          decoration: const InputDecoration(
-                            hintText: 'camera.front_door',
+                        child: PickFieldBox(
+                          spec: entitySpec(
+                            context,
+                            widget.container.commands,
+                            domains: const ['camera'],
                           ),
+                          value: entity.text,
+                          onTap: () async {
+                            final picked = await showEntityPicker(
+                              context,
+                              widget.container,
+                              title: cameraStreamsText(
+                                context,
+                                'Camera entity',
+                              ),
+                              selected: entity.text,
+                              domains: const ['camera'],
+                            );
+                            final id = picked?.id;
+                            if (id == null) return;
+                            setDialogState(() {
+                              entity.text = id;
+                              // A new camera takes the entity's name.
+                              if (name.text.trim().isEmpty) {
+                                name.text =
+                                    PickCatalog.of(
+                                      'entities',
+                                    ).value?.find(id)?.name ??
+                                    '';
+                              }
+                            });
+                          },
                         ),
                       ),
                       LabeledField(

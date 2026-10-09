@@ -223,6 +223,8 @@ void main() {
       // The name under the value reads by default; a corner that explains
       // itself can turn it off.
       expect(defaults['show_name'], isTrue);
+      // The icon beside the value too; a text-only corner turns it off.
+      expect(defaults['show_icon'], isTrue);
       expect(defaults['color'], '250,250,250');
     });
 

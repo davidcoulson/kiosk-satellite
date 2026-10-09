@@ -91,38 +91,6 @@
       ]
     }
   },
-  "pluginSelectAnEntity": "Select an entity",
-  "@pluginSelectAnEntity": {
-    "context": "Settings > Plugin Manager > a plugin > Actions",
-    "description": "Visible label, help or status in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Plugin Manager > a plugin > Actions"
-      ],
-      "remoteAdmin": [
-        "Plugin Manager > a plugin > Actions"
-      ]
-    }
-  },
-  "pluginChooseName": "Choose {name}",
-  "@pluginChooseName": {
-    "context": "Settings > Plugin Manager > a plugin > Actions",
-    "description": "Visible label, help or status in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Plugin Manager > a plugin > Actions"
-      ],
-      "remoteAdmin": [
-        "Plugin Manager > a plugin > Actions"
-      ]
-    },
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    },
-    "x-notes": "Keep placeholders unchanged. Names and technical values are supplied by the app."
-  },
   "pluginConfigureName": "Configure {name}",
   "@pluginConfigureName": {
     "context": "Settings > Plugin Manager > a plugin > Actions",

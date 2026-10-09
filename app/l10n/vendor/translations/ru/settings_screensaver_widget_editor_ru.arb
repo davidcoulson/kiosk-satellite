@@ -20,6 +20,8 @@
   "screensaverOverlayLowHelp": "Скрываться, пока заряд не упадёт до 20 процентов.",
   "screensaverOverlayShowName": "Показывать название",
   "screensaverOverlayShowNameHelp": "Название под значением.",
+  "screensaverOverlayShowIcon": "Показывать значок",
+  "screensaverOverlayShowIconHelp": "Значок рядом со значением.",
   "screensaverOverlayFontSystem": "Системный",
   "screensaverOverlayFontSerif": "С засечками",
   "screensaverOverlayFontCondensed": "Узкий",

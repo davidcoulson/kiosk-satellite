@@ -10,13 +10,21 @@ import {
   cameraListRow,
   cameraSelectField,
   cameraToggle,
-  entitySearchPicker,
-  glanceEntityPicker,
+  glanceEntityEditor,
 } from './cameras.js';
 import { api, depSatisfied, gatedOn, state } from './core.js';
 import { readOnlyRow } from './device.js';
 import { openEspHomeEntityPicker } from './esphome.js';
-import { updateAdaptiveBrightnessRows, updateFaceRows, syncScreenOffAdminNotice } from './notices.js';
+import {
+  cachedList, choiceBox, entitySpec, loadEntityList, pickEntityValue, pickField, pickItem,
+  pickItems, pickListRow,
+} from './entity_picker.js';
+import {
+  entityLightReading,
+  updateAdaptiveBrightnessRows,
+  updateFaceRows,
+  syncScreenOffAdminNotice,
+} from './notices.js';
 import {
   openImmichNamesPicker,
   openLauncherAppsPicker,
@@ -195,6 +203,17 @@ function albumArtCacheRow() {
   return row;
 }
 
+// A labeled control in an editor dialog, the device's LabeledField.
+function formField(label, control) {
+  const wrap = document.createElement('div');
+  wrap.className = 'form-field';
+  const title = document.createElement('span');
+  title.className = 'desc';
+  title.textContent = label;
+  wrap.append(title, control);
+  return wrap;
+}
+
 export function settingRow(s) {
   const row = document.createElement('div'); row.className = 'row';
   // Lets a saved row find another row without a re-render (see save()).
@@ -287,6 +306,10 @@ export function settingRow(s) {
     // adaptive brightness switch (issue #343). After the gated sync, so
     // the curve rows the switch reveals are in place first.
     if (s.key === 'screen.adaptive_brightness') updateAdaptiveBrightnessRows();
+    // The Ambient light row follows the reading's source (issue #911).
+    if (s.key === 'screen.adaptive_use_entity' || s.key === 'screen.adaptive_light_entity') {
+      updateAdaptiveBrightnessRows({ reprobe: true });
+    }
     // The real-MAC status row and its field answer for the switch and the
     // typed address as they are now (issues #252, #300). After the gated
     // sync: the field is a hidden definition gated on the switch, which
@@ -345,39 +368,55 @@ export function settingRow(s) {
     return row;
   }
 
-  // Weather Mood uses the same weather entity search as the widget editor.
+  // An entity setting, mirroring the device's PickRow: the field shows the
+  // stored entity and opens the entity picker, narrowed to what the setting
+  // takes. A stored entity gone from Home Assistant gets a line in error.
+  const entityRow = (spec, { allowClear = false, placeholder = null } = {}) => {
+    const current = () => (state.settings || []).find((o) => o.key === s.key)?.value ?? s.value ?? '';
+    const missing = document.createElement('div');
+    missing.className = 'desc dp-missing';
+    missing.textContent = haText('This entity is gone from Home Assistant. Choose another.');
+    missing.hidden = true;
+    row.querySelector('.info .name').after(missing);
+    const field = pickField({
+      spec, value: current(), placeholder,
+      onClick: async () => {
+        const out = await pickItem({ title: s.title, spec, selected: current() || null, allowClear });
+        if (!out || (out.id ?? '') === current()) return;
+        await save(out.id ?? '');
+        field.setValue(current());
+      },
+    });
+    field.el.addEventListener('dp-painted', (e) => { missing.hidden = !e.detail.missing; });
+    // Once more now that someone listens: the first paint went unheard.
+    field.repaint();
+    bindUpdate(field.el, () => field.setValue(current()));
+    row.classList.add('dp-field-row');
+    row.appendChild(field.el);
+    return field;
+  };
+  // Weather Mood's weather entity: weather only.
   if (s.key === 'screensaver.weather_entity') {
-    const select = document.createElement('select');
+    entityRow(entitySpec({ domains: ['weather'] }), { allowClear: true });
+    return row;
+  }
+  // Adaptive brightness's light sensor entity (issue #911), mirroring the
+  // device's row: light level sensors only, and once one is picked its
+  // live reading stands in for the description.
+  if (s.key === 'screen.adaptive_light_entity') {
+    const desc = info.querySelector('.desc');
+    const current = () => (state.settings || []).find((o) => o.key === s.key)?.value ?? s.value ?? '';
     const paint = () => {
-      if (![...select.options].some(option => option.value === (s.value || ''))) {
-        select.add(new Option(s.value || screensaverText('Pick a weather entity…'), s.value || ''));
-      }
-      select.value = s.value || '';
+      desc.textContent = current() ? entityLightReading() : s.description;
     };
     paint();
-    select.addEventListener('change', () => save(select.value));
-    row.appendChild(select);
-    bindUpdate(select, paint);
-    const load = async () => {
-      try {
-        const response = await api('/api/commands/haSearchEntities', {
-          method: 'POST', body: JSON.stringify({ query: 'weather.' }),
-        });
-        const result = await response.json();
-        if (!response.ok || !result.ok || !Array.isArray(result.data)) {
-          throw new Error(screensaverText('Could not reach Home Assistant'));
-        }
-        const entities = result.data.filter(entity => String(entity.entity_id || '').startsWith('weather.'));
-        select.replaceChildren(new Option(screensaverText('Pick a weather entity…'), ''));
-        for (const entity of entities) select.add(new Option(entity.name || entity.entity_id, entity.entity_id));
-        paint();
-        clearRowError(row);
-        if (!entities.length) showRowError(row, screensaverText('No weather entities'), load);
-      } catch (_) {
-        showRowError(row, screensaverText('Could not reach Home Assistant'), load);
-      }
+    const repaint = () => {
+      if (row.isConnected) paint();
+      else document.removeEventListener('ks-adaptivelight', repaint);
     };
-    load();
+    document.addEventListener('ks-adaptivelight', repaint);
+    const field = entityRow(entitySpec({ deviceClass: 'illuminance' }), { allowClear: true });
+    row.updateSetting = () => { paint(); field.setValue(current()); return true; };
     return row;
   }
   // The Home Assistant Dashboard screensaver's view and Now Playing's
@@ -397,6 +436,8 @@ export function settingRow(s) {
       onPick: (path) => save(path),
     });
     field.el.addEventListener('dp-painted', (e) => { missing.hidden = !e.detail.missing; });
+    // Once more now that someone listens: the first paint went unheard.
+    field.repaint();
     bindUpdate(field.el, () => field.setValue(current()));
     row.classList.add('dp-field-row');
     row.appendChild(field.el);
@@ -879,7 +920,7 @@ export function settingRow(s) {
       battery: { color: '250,250,250', scale: 0, font: 'default',
         font_weight: 'default', percent: true, low: false },
       entity: { entity: '', name: '', label: '', attribute: '',
-        show_name: true, color: '250,250,250', scale: 0, font: 'default',
+        show_name: true, show_icon: true, color: '250,250,250', scale: 0, font: 'default',
         font_weight: 'default' },
       alarm: { color: '250,250,250', scale: 0, font: 'default',
         font_weight: 'default' },
@@ -1044,71 +1085,39 @@ export function settingRow(s) {
           // The entity everything is read from, picked by search the way
           // the At a Glance row's are; the friendly name is cached in the
           // config so both editors can show it without a round trip.
-          const entityRow = document.createElement('div');
-          entityRow.className = 'row';
-          const info = document.createElement('div');
-          info.className = 'info';
-          const name = document.createElement('div');
-          name.className = 'name';
-          name.textContent = screensaverText('Entity');
-          const desc = document.createElement('div');
-          desc.className = 'desc';
-          desc.textContent = config.name || config.entity || screensaverText('Not set');
-          info.append(name, desc);
-          refs.attribute = cameraSelectField(screensaverText('Displayed value'),
-            [{ value: '', label: screensaverText('State') },
-              ...(config.attribute
-                ? [{ value: config.attribute, label: config.attribute }] : [])],
-            config.attribute || '');
-          // What the widget displays: the state (the default) or one of
-          // the entity's attributes, offered from its live attributes with
-          // their current values (the At a Glance dialog's choice).
-          const hidden = ['friendly_name', 'icon', 'entity_picture',
-            'supported_features', 'attribution'];
-          const loadAttributes = async () => {
-            refs.attribute.select.disabled = !config.entity;
+          const spec = entitySpec();
+          const valueBox = choiceBox(config.attribute || screensaverText('State'), async () => {
             if (!config.entity) return;
-            try {
-              const res = await (await api('/api/commands/haEntityAttributes', {
-                method: 'POST',
-                body: JSON.stringify({ entity_id: config.entity }) })).json();
-              if (!res.ok) return;
-              const attributes = res.data || {};
-              const names = Object.keys(attributes).filter((k) =>
-                !hidden.includes(k)
-                && (attributes[k] === null || typeof attributes[k] !== 'object'))
-                .sort();
-              const current = refs.attribute.select.value;
-              refs.attribute.select.innerHTML = '';
-              const state = document.createElement('option');
-              state.value = '';
-              state.textContent = screensaverText('State');
-              refs.attribute.select.appendChild(state);
-              for (const n of names) {
-                const o = document.createElement('option');
-                o.value = n;
-                o.textContent = `${n} \u00b7 ${attributes[n]}`;
-                o.selected = n === current;
-                refs.attribute.select.appendChild(o);
-              }
-            } catch (_) {}
-          };
-          const choose = cameraAction(t('commonChoose'), async () => {
-            const picked = await entitySearchPicker();
-            if (!picked) return;
-            // Another entity has other attributes: back to its state.
-            if (picked.entity_id !== config.entity) {
-              config.attribute = '';
-              refs.attribute.select.value = '';
-            }
-            config.entity = picked.entity_id;
-            config.name = picked.name;
-            desc.textContent = config.name;
-            refs.label.input.placeholder = config.name;
-            loadAttributes();
+            const picked = await pickEntityValue({ entityId: config.entity,
+              current: config.attribute || '' });
+            if (picked == null) return;
+            config.attribute = picked;
+            valueBox.setText(picked || screensaverText('State'));
           });
-          entityRow.append(info, choose);
-          refs.entity = { wrap: entityRow };
+          valueBox.el.disabled = !config.entity;
+          const entityField = pickField({
+            spec, value: config.entity || '',
+            onClick: async () => {
+              const out = await pickItem({ title: screensaverText('Entity'), spec,
+                selected: config.entity || null });
+              if (!out?.id) return;
+              // Another entity has other attributes: back to its state.
+              if (out.id !== config.entity) {
+                config.attribute = '';
+                valueBox.setText(screensaverText('State'));
+              }
+              config.entity = out.id;
+              config.name = cachedList(spec.key)?.items.find((i) => i.id === out.id)?.name || out.id;
+              entityField.setValue(out.id);
+              refs.label.input.placeholder = config.name;
+              valueBox.el.disabled = false;
+            },
+          });
+          refs.entity = { wrap: formField(screensaverText('Entity'), entityField.el) };
+          // What the widget displays: the state (the default) or one of
+          // the entity's attributes, from the value step.
+          refs.attribute = { wrap: formField(screensaverText('Displayed value'), valueBox.el),
+            select: { get value() { return config.attribute || ''; } } };
           refs.label = (() => {
             const wrap = document.createElement('label');
             wrap.className = 'form-field';
@@ -1127,42 +1136,35 @@ export function settingRow(s) {
           })();
           refs.showName = cameraToggle(screensaverText('Show name'),
             config.show_name !== false, screensaverText('The name under the value.'));
+          refs.showIcon = cameraToggle(screensaverText('Show icon'),
+            config.show_icon !== false, screensaverText('The icon beside the value.'));
           typeBlock.append(refs.entity.wrap, refs.label.wrap,
             refs.attribute.wrap, refs.color.wrap, refs.scale.wrap,
-            refs.font.wrap, refs.weight.wrap, refs.showName.wrap);
-          loadAttributes();
+            refs.font.wrap, refs.weight.wrap, refs.showName.wrap, refs.showIcon.wrap);
           return;
         }
         // Weather: the entity everything is read from, then the line
         // toggles. The temperature always shows; each other line also
         // needs the entity to actually carry the reading.
-        refs.entity = cameraSelectField(screensaverText('Weather entity'),
-          config.entity
-            ? [{ value: config.entity, label: config.name || config.entity }]
-            : [{ value: '', label: screensaverText('Pick a weather entity…') }],
-          config.entity || '');
-        (async () => {
-          try {
-            const res = await (await api('/api/commands/haSearchEntities', {
-              method: 'POST', body: JSON.stringify({ query: 'weather.' }) })).json();
-            if (!res.ok) return;
-            const found = (res.data || [])
-              .filter((e) => String(e.entity_id || '').startsWith('weather.'));
-            if (!found.length) return;
-            refs.entity.select.innerHTML = '';
-            if (!config.entity) {
-              const blank = document.createElement('option');
-              blank.value = ''; blank.textContent = screensaverText('Pick a weather entity…');
-              refs.entity.select.appendChild(blank);
-            }
-            for (const e of found) {
-              const o = document.createElement('option');
-              o.value = e.entity_id; o.textContent = e.name || e.entity_id;
-              o.selected = e.entity_id === config.entity;
-              refs.entity.select.appendChild(o);
-            }
-          } catch (_) {}
-        })();
+        {
+          const spec = entitySpec({ domains: ['weather'] });
+          const field = pickField({
+            spec, value: config.entity || '',
+            onClick: async () => {
+              const out = await pickItem({ title: screensaverText('Weather entity'), spec,
+                selected: config.entity || null });
+              if (!out?.id) return;
+              config.entity = out.id;
+              config.name = cachedList(spec.key)?.items.find((i) => i.id === out.id)?.name || out.id;
+              field.setValue(out.id);
+            },
+          });
+          refs.entity = { wrap: formField(screensaverText('Weather entity'), field.el),
+            select: {
+              get value() { return config.entity || ''; },
+              get selectedOptions() { return [{ textContent: config.name || config.entity }]; },
+            } };
+        }
         // Weather entities carry no city attribute, so the place shown
         // over the temperature is named by hand.
         refs.label = (() => {
@@ -1238,7 +1240,8 @@ export function settingRow(s) {
               name: config.name || config.entity,
               label: refs.label.input.value.trim(),
               attribute: refs.attribute.select.value,
-              show_name: refs.showName.input.checked, color, scale, font,
+              show_name: refs.showName.input.checked,
+              show_icon: refs.showIcon.input.checked, color, scale, font,
               font_weight };
           } else {
             const entity = refs.entity.select.value;
@@ -1309,62 +1312,68 @@ export function settingRow(s) {
     return frag;
   }
 
+  // At a Glance, mirroring the device's rows: the picks in order under the
+  // Entities heading, each with up, down and remove (a click edits its
+  // name and displayed value), then Add entities, which opens the entity
+  // picker for several. The card holds just the list, like Views to rotate.
   if (s.key === 'screensaver.glance_entities') {
     let chosen = [];
     try { chosen = JSON.parse(s.value || '[]') || []; } catch (_) { chosen = []; }
-    const btn = document.createElement('button');
-    btn.className = 'btn-ghost';
-    btn.textContent = t('commonChoose');
-    btn.style.cssText = 'flex-shrink:0;';
-    row.appendChild(btn);
-
-    // Real siblings, not a wrapper: the card's dividers are drawn between
-    // adjacent .row elements, and a wrapping element would break the chain.
-    // The caller appends whatever is returned, so a fragment delivers them
-    // all into the same card.
-    const frag = document.createDocumentFragment();
-    frag.appendChild(row);
-    let entityRows = [];
-    const build = () => {
-      if (!chosen.length) {
-        return [readOnlyRow(screensaverText('None yet'), t('screensaverOverlayLimit', {count: String(GLANCE_MAX)}), '')];
-      }
-      // Numbered so the display order is readable without opening the modal.
-      return chosen.map((entity, index) => readOnlyRow(
-        entity.custom_name || entity.name || entity.entity_id,
-        entity.attribute
-          ? `${entity.entity_id} · ${entity.attribute}`
-          : entity.entity_id,
-        `${index + 1}`));
-    };
-    const repaint = () => {
-      const parent = row.parentNode;
-      const fresh = build();
-      if (!parent) {
-        entityRows.forEach((el) => el.remove());
-        fresh.forEach((el) => frag.appendChild(el));
-      } else {
-        entityRows.forEach((el) => el.remove());
-        let after = row;
-        fresh.forEach((el) => {
-          after.insertAdjacentElement('afterend', el);
-          after = el;
-        });
-      }
-      entityRows = fresh;
-    };
-    repaint();
-
-    btn.addEventListener('click', async () => {
-      const picked = await glanceEntityPicker(chosen);
-      if (!picked) return;
-      chosen = picked;
-      repaint();
+    if (!Array.isArray(chosen)) chosen = [];
+    const list = document.createElement('div');
+    list.className = 'ep-pick-list';
+    list.dataset.key = s.key;
+    const persist = async () => {
+      paint();
       await api('/api/settings', { method: 'PATCH', body: JSON.stringify({
         'screensaver.glance_entities': JSON.stringify(chosen),
       }) });
-    });
-    return frag;
+    };
+    const paint = () => {
+      list.replaceChildren();
+      chosen.forEach((entity, index) => {
+        const move = (delta) => {
+          const to = index + delta;
+          if (to < 0 || to >= chosen.length) return;
+          chosen.splice(to, 0, chosen.splice(index, 1)[0]);
+          persist();
+        };
+        const up = cameraAction(screensaverText('Move up'), () => move(-1), false, 'up', index === 0);
+        const down = cameraAction(screensaverText('Move down'), () => move(1), false, 'down',
+          index === chosen.length - 1);
+        const remove = cameraAction(screensaverText('Remove'), () => {
+          chosen.splice(index, 1);
+          persist();
+        }, false, 'delete');
+        list.appendChild(pickListRow({
+          value: entity.entity_id,
+          name: entity.custom_name || entity.name || null,
+          detail: entity.attribute || null,
+          trailing: [up, down, remove],
+          onClick: async () => { if (await glanceEntityEditor(entity)) persist(); },
+        }));
+      });
+      if (chosen.length < GLANCE_MAX) {
+        const add = document.createElement('button');
+        add.className = 'dp-add-row';
+        add.type = 'button';
+        add.textContent = haText('Add entities');
+        add.addEventListener('click', async () => {
+          const ids = await pickItems({ title: s.title, spec: entitySpec(),
+            selected: chosen.map((e) => e.entity_id), max: GLANCE_MAX });
+          if (!ids) return;
+          // Kept picks keep their own name and value; new ones start plain.
+          chosen = ids.map((id) => chosen.find((e) => e.entity_id === id)
+            || { entity_id: id,
+              name: cachedList('entities')?.items.find((i) => i.id === id)?.name || id });
+          persist();
+        });
+        list.appendChild(add);
+      }
+    };
+    paint();
+    loadEntityList();
+    return list;
   }
 
   // The camera screensaver's views come from the ones configured under

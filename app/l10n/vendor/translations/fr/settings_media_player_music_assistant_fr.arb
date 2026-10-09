@@ -12,6 +12,7 @@
   "settingSendspinMaAutoCloseDescription": "Revenir au tableau de bord quand personne n'a touché la page Music Assistant pendant cette durée. Zéro la laisse ouverte jusqu'à sa fermeture.",
   "settingSendspinMaHideCloseTitle": "Masquer le bouton de fermeture",
   "settingSendspinMaHideCloseDescription": "Le bouton de fermeture flottant peut se superposer aux propres contrôles de Music Assistant, comme le menu Lecture en cours. Sans lui, fermez avec le bouton retour ou via le menu tiroir du kiosque.",
+  "settingSendspinMaZoomDescription": "Met à l'échelle l'ensemble de la page Music Assistant.",
   "mediaMaHint": "Serveur, jeton, raccourci du menu du kiosque",
   "mediaKioskMenu": "Menu du kiosque",
   "mediaValidateConnection": "Valider la connexion",

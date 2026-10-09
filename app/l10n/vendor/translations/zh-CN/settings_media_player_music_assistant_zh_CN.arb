@@ -12,6 +12,7 @@
   "settingSendspinMaAutoCloseDescription": "Music Assistant 页面在设定时长内无人触摸时，会返回仪表盘。设为 0 时，页面会保持打开，直到手动关闭。",
   "settingSendspinMaHideCloseTitle": "隐藏关闭按钮",
   "settingSendspinMaHideCloseDescription": "悬浮关闭按钮可能覆盖 Music Assistant 自身控件，例如“正在播放”菜单。隐藏后可用返回键或 Kiosk 抽屉菜单关闭。",
+  "settingSendspinMaZoomDescription": "缩放整个 Music Assistant 页面。",
   "mediaMaHint": "服务器、令牌和 Kiosk 菜单快捷入口",
   "mediaKioskMenu": "Kiosk 菜单",
   "mediaValidateConnection": "验证连接",

@@ -7,7 +7,5 @@
   "pluginAlsoAvailableWhileLockedIfTheKioskDrawerIs": "También está disponible durante el bloqueo si se permite el menú del kiosko.",
   "pluginExposeToHomeAssistant": "Publicar en Home Assistant",
   "pluginAddsAButtonToTheKioskEsphomeDeviceRequires": "Añade un botón al dispositivo ESPHome del kiosko. Requiere ESPHome y entidades nativas.",
-  "pluginSelectAnEntity": "Seleccionar una entidad",
-  "pluginChooseName": "Elegir {name}",
   "pluginConfigureName": "Configurar {name}"
 }

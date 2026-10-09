@@ -84,6 +84,12 @@ class PluginHostApi {
     'reload',
   ];
 
+  /// The room's noise level, for sessions that also declare the noise
+  /// capability (issue #910): a plugin that reads how loud the room is says
+  /// so in its manifest.
+  static const noiseCommandNames = ['getNoiseLevel'];
+  static const noiseEventNames = ['audio.noise'];
+
   static bool _volumeChannel(Map params) =>
       !params.containsKey('channel') ||
       const [
@@ -192,6 +198,7 @@ class PluginHostApi {
   ];
   static const _fields = {
     'getLightLevel': ['present', 'lux', 'live'],
+    'getNoiseLevel': ['available', 'dbfs', 'held', 'updated'],
     'getStats': ['battery', 'charging', 'cpu', 'temp', 'memFree', 'memTotal'],
     'getUptime': ['app', 'network'],
     'getDeviceInfo': [
@@ -261,6 +268,7 @@ class PluginHostApi {
       token,
       capabilities.contains('host.read'),
       capabilities.contains('host.control'),
+      canNoise: capabilities.contains('noise'),
     );
   }
 
@@ -297,7 +305,9 @@ class PluginHostApi {
     if (session == null ||
         !session.canRead ||
         name is! String ||
-        (!eventNames.contains(name) && entityEventId(name) == null)) {
+        (!eventNames.contains(name) &&
+            !(session.canNoise && noiseEventNames.contains(name)) &&
+            entityEventId(name) == null)) {
       return;
     }
     final entityId = entityEventId(name);
@@ -344,6 +354,9 @@ class PluginHostApi {
     if (name is! String ||
         (name != 'getHostApi' &&
             !(session.canRead && commandNames.contains(name)) &&
+            !(session.canRead &&
+                session.canNoise &&
+                noiseCommandNames.contains(name)) &&
             !(session.canControl && isControl))) {
       return const CommandResult.fail(
         'Command is not available through this plugin session',
@@ -364,13 +377,18 @@ class PluginHostApi {
         'capabilities': [
           if (session.canRead) 'host.read',
           if (session.canControl) 'host.control',
+          if (session.canRead && session.canNoise) 'noise',
         ],
         'commands': [
           'getHostApi',
           if (session.canRead) ...commandNames.skip(1),
+          if (session.canRead && session.canNoise) ...noiseCommandNames,
           if (session.canControl) ...controlNames,
         ],
-        'events': session.canRead ? eventNames : <String>[],
+        'events': [
+          if (session.canRead) ...eventNames,
+          if (session.canRead && session.canNoise) ...noiseEventNames,
+        ],
       }).toJson();
     }
     try {
@@ -515,6 +533,10 @@ class PluginHostApi {
             e.key == defs.intercomVolume.key =>
       ('device.volume', {}),
     LightLevelChanged e => ('device.light', {'lux': e.lux}),
+    NoiseLevelChanged e => (
+      'audio.noise',
+      {'available': e.available, 'dbfs': e.dbfs, 'held': e.held},
+    ),
     MotionDetected _ => ('detection.motion', {}),
     FaceDetected _ => ('detection.face', {}),
     ProximityDetected e => ('detection.proximity', {'held': e.held}),
@@ -636,9 +658,16 @@ class PluginHostApi {
 }
 
 class _HostSession {
-  _HostSession(this.id, this.token, this.canRead, this.canControl);
+  _HostSession(
+    this.id,
+    this.token,
+    this.canRead,
+    this.canControl, {
+    this.canNoise = false,
+  });
   final bool canRead;
   final bool canControl;
+  final bool canNoise;
   final String id;
   final String token;
   String get owner => '$id:$token';

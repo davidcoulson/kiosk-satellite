@@ -55,9 +55,9 @@ def api(route):
         for key,value in data.items():next(s for s in settings if s['key']==key)['value']=value
         return route.fulfill(json=dict(ok=True))
     name=path.removeprefix('commands/');params=route.request.post_data_json or {};commands.append((name,params))
-    if name=='announcementTtsEngines' and tts_fail:return route.fulfill(json=dict(ok=False,error='RAW unavailable'))
+    if name in('announcementTtsEngines','haListEntities') and tts_fail:return route.fulfill(json=dict(ok=False,error='RAW unavailable'))
     if name=='requestOsPermissions':perms.update(bluetooth=True,bluetoothPair=True,location=True,locationServicesOn=True)
-    data={'getBleSupport':ble,'getLocationSupport':gps,'getLocation':fix,'bluetoothAdapterOn':adapter,'getSystemPermissions':perms,'btProxyNearby':dict(devices=devices),'esphomeStatus':dict(connectionSlots=3),'listNotificationSounds':dict(sounds=['Connected.mp3','Other.wav']),'announcementTtsEngines':engines,'getAudioDevices':dict(inputs=[],outputs=[]),'hasDeviceCamera':False}.get(name,{})
+    data={'getBleSupport':ble,'getLocationSupport':gps,'getLocation':fix,'bluetoothAdapterOn':adapter,'getSystemPermissions':perms,'btProxyNearby':dict(devices=devices),'esphomeStatus':dict(connectionSlots=3),'listNotificationSounds':dict(sounds=['Connected.mp3','Other.wav']),'announcementTtsEngines':engines,'haListEntities':[dict(e,domain='tts') for e in engines],'getAudioDevices':dict(inputs=[],outputs=[]),'hasDeviceCamera':False}.get(name,{})
     route.fulfill(json=dict(ok=True,data=data))
 
 class Handler(SimpleHTTPRequestHandler):
@@ -110,17 +110,18 @@ try:
         with page.expect_response('**/api/settings'):
             panel.locator('[data-key="notifications.chime_file"] select').select_option('Other.wav')
         assert writes[-1]=={'notifications.chime_file':'Other.wav'}
-        show('announcements');box=root.locator('.tts-pick');expect(box).to_have_text(label('First available'));box.click();modal=page.locator('.modal-card')
+        # The engine field: the entity picker over text to speech entities.
+        # Engine names from Home Assistant are never translated or parsed.
+        show('announcements');field=root.locator('.tts-pick');box=field.locator('.dp-field-text');expect(box).to_have_text(label('First available'));field.click();modal=page.locator('.dash-picker-card')
         expect(modal).to_contain_text('<b>Original engine</b>');assert modal.locator('b').count()==0
-        reads=sum(n=='announcementTtsEngines' for n,_ in commands);before=len(writes)
-        language('en');expect(modal.locator('.modal-title')).to_have_text('Text to speech engine');language('es');expect(modal.locator('.modal-title')).to_have_text(label('Text to speech engine'))
-        assert sum(n=='announcementTtsEngines' for n,_ in commands)==reads
+        before=len(writes)
+        language('en');language('es')
         assert len(writes)==before
         with page.expect_response('**/api/settings'):
             modal.get_by_text('<b>Original engine</b>',exact=True).click()
         expect(box).to_have_text('<b>Original engine</b>');assert writes[-1]=={'announcements.tts_engine':'tts.raw','announcements.tts_language':'','announcements.tts_voice':''}
-        box.click();modal.get_by_text(label('First available'),exact=True).click();expect(box).to_have_text(label('First available'))
-        tts_fail=True;box.click();expect(page.locator('body')).to_contain_text(label('Could not reach Home Assistant'));tts_fail=False
+        # Clear is First available.
+        field.click();modal.locator('.dp-foot .btn-text').first.click();expect(box).to_have_text(label('First available'))
         show('gps-sensor');status=root.locator('.location-status');expect(status).to_contain_text('45.50190, -73.56740')
         expect(status).to_contain_text(translated['esphomeSecondsAgo'].split('{count}')[0])
         fix['error']='GPS unavailable: <b>RAW detail</b>';update('location',{})

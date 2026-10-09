@@ -8,7 +8,7 @@ export function endLiveRender() {
   rendering = Math.max(0, rendering - 1);
   if (!rendering) syncSubscriptions();
 }
-const baseTopics = ['settings', 'events', 'brightness', 'lightlevel', 'wakeword-state'];
+const baseTopics = ['settings', 'events', 'brightness', 'lightlevel', 'adaptivelight', 'wakeword-state'];
 
 // Each visible panel owns its subscriptions. Detached panels are discarded
 // after rendering, and returning to a page always reads a fresh snapshot.

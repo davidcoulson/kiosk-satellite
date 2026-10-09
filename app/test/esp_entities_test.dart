@@ -3022,4 +3022,59 @@ void main() {
       expect(names, containsAll(['send_key', 'media_control']));
     });
   });
+
+  group('the Ambient noise sensor (issue #910)', () {
+    List<Object?> noise() => [
+      for (final p in pushed)
+        if (p.$1 == 'ambient_noise') p.$2,
+    ];
+
+    test('is listed on every kiosk', () async {
+      final catalog = await surface.build();
+      final sensor = catalog.firstWhere(
+        (e) => e['objectId'] == 'ambient_noise',
+      );
+      expect(sensor['name'], 'Ambient noise');
+      expect(sensor['unit'], 'dBFS');
+      expect(sensor['stateClass'], 1);
+    });
+
+    test('follows the meter and goes unknown when it stops', () {
+      fakeAsync((async) {
+        commands.register(
+          Command(
+            name: 'getNoiseLevel',
+            description: 'stub',
+            handler: (_) async =>
+                const CommandResult.ok({'available': true, 'dbfs': -50}),
+          ),
+        );
+        surface.build();
+        async.flushMicrotasks();
+        surface.attach(
+          (objectId, value) async => pushed.add((objectId, value)),
+          (objectId, jpeg) async => images.add((objectId, jpeg)),
+        );
+        async.elapse(const Duration(seconds: 1));
+        expect(noise(), [-50]);
+        bus.publish(
+          const NoiseLevelChanged(available: true, dbfs: -38, held: false),
+        );
+        async.flushMicrotasks();
+        expect(noise(), [-50, -38]);
+        bus.publish(
+          const NoiseLevelChanged(available: false, dbfs: null, held: false),
+        );
+        async.flushMicrotasks();
+        expect(noise(), [-50, -38, null]);
+        // Back again: a first reading, never held by the bucket.
+        bus.publish(
+          const NoiseLevelChanged(available: true, dbfs: -38, held: false),
+        );
+        async.flushMicrotasks();
+        expect(noise().last, -38);
+        surface.detach();
+      });
+    });
+  });
 }

@@ -1,0 +1,13 @@
+{
+  "@@locale": "ru",
+  "entityPickerNoArea": "Без пространства",
+  "entityPickerAll": "Все",
+  "entityPickerChoose": "Выберите сущность",
+  "entityPickerNoMatch": "Ничего не найдено",
+  "entityPickerOfflineHelp": "Сущности загрузятся, когда соединение восстановится.",
+  "entityPickerMissing": "Этой сущности больше нет в Home Assistant. Выберите другую.",
+  "entityPickerOrderHint": "Перетащите или используйте стрелки, чтобы изменить порядок.",
+  "entityPickerFull": "Уберите одну, чтобы добавить другую.",
+  "entityPickerAdd": "Добавить сущности",
+  "entityPickerShowing": "Показано: {count} из {max}"
+}
