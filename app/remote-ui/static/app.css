@@ -981,6 +981,10 @@
       flex-basis: calc(100% - 36px); }
     .row.subpage-entry .info .name { flex-basis: 0; }
     .row.shizuku-action .info .name { flex-basis: 0; }
+    /* A switch stays at the right of its row: a long title wraps its
+       words instead of pushing the switch onto a line of its own. */
+    .row:has(> .switch) .info .name { flex-basis: 0; }
+    .row > .switch { flex: none; }
     .row.shizuku-action > button { flex: none; }
     /* A control wider than that stacks: it takes the next line and
        stretches across the row, on the name's left edge, the way dropdown
