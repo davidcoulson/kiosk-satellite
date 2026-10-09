@@ -379,6 +379,7 @@ The **At a glance** feature displays a live status row containing up to four Hom
 
 When ESPHome **Expose kiosk entities** is enabled, the screensaver provides comprehensive remote entity controls:
 * **Screensaver** master switch
+* **Screensaver schedule** switch (turns scheduled screensavers on or off)
 * **Screensaver active** switch (start/dismiss)
 * **Postpone screensaver** button (resets idle clock from external automations)
 * **Screensaver mode** and **Clock style** select dropdowns

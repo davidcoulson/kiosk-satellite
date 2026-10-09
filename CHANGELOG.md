@@ -4,6 +4,9 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ## Unreleased
 
+### Added
+- **Scheduled screensavers have an ESPHome switch.** A new **Screensaver schedule** switch turns scheduled screensavers on or off from Home Assistant, so an automation can pause the schedule for a party or a vacation and bring it back after.
+
 ### Changed
 - **Music Assistant covers load through Music Assistant.** Now Playing, the floating card, the queue panel and the paused track restored from Music Assistant loaded a streaming service's cover straight from the service, so a kiosk that reaches Music Assistant but not the internet showed no cover (#931). Covers now come through Music Assistant's image proxy whenever it offers one. Queue thumbnails also ask for a size Music Assistant 2.10 accepts, so a library track's thumbnail no longer fails to load.
 - **The File Manager uploads several files at once.** The remote admin's **File Manager** took one file per upload, so adding a folder of screensaver photos meant one pick per photo (#930). **Upload file** now takes any number of files, sends them one after another into the open folder and shows how far along it is. One message at the end confirms the count or names the files that failed.
