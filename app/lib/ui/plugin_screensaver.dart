@@ -51,7 +51,55 @@ Uri? pluginScreensaverAssetUrl(Map<String, Object?> renderer) {
       .replace(fragment: renderer['dataJson'] as String? ?? '{}');
 }
 
-class PluginScreensaver extends StatelessWidget {
+/// One rendering document and the renderer publication it shows.
+typedef PluginDocument = ({Object key, Map<String, Object?> renderer});
+
+/// The documents a plugin screensaver keeps mounted. Inline HTML updates load
+/// into the live WebView. Anything else that changes the document's origin or
+/// options needs a new one, which loads beneath the shown document and only
+/// replaces it once it has painted. A fresh WebView has nothing to draw until
+/// then, so swapping right away blanked the screensaver on every asset
+/// publication (#918).
+class PluginDocuments {
+  PluginDocument? shown;
+  PluginDocument? next;
+
+  static Object keyOf(Map<String, Object?> renderer) => (
+    renderer['entry'],
+    renderer['assetOrigin'],
+    renderer['assetDirectory'],
+    renderer['dataJson'],
+  );
+
+  /// Applies a publication, or its removal. Returns true when it starts
+  /// loading a new replacement document.
+  bool publish(Map<String, Object?>? renderer) {
+    if (renderer == null) {
+      shown = next = null;
+      return false;
+    }
+    final key = keyOf(renderer);
+    final document = (key: key, renderer: renderer);
+    if (shown == null || shown!.key == key) {
+      shown = document;
+      next = null;
+      return false;
+    }
+    final fresh = next?.key != key;
+    next = document;
+    return fresh;
+  }
+
+  /// The replacement with [key] has painted. Returns true when it took over.
+  bool ready(Object key) {
+    if (next?.key != key) return false;
+    shown = next;
+    next = null;
+    return true;
+  }
+}
+
+class PluginScreensaver extends StatefulWidget {
   const PluginScreensaver({
     super.key,
     required this.container,
@@ -61,33 +109,96 @@ class PluginScreensaver extends StatelessWidget {
   final String mode;
 
   @override
-  Widget build(BuildContext context) =>
-      ValueListenableBuilder<Map<String, Map<String, Object?>>>(
-        valueListenable: container.plugins.screensavers,
-        builder: (context, renderers, _) {
-          final renderer = renderers[mode];
-          if (renderer == null) return const ColoredBox(color: Colors.black);
-          return _Document(
-            // Inline HTML updates load into the live WebView. Anything else
-            // that changes the document's origin or options rebuilds it.
-            key: ValueKey((
-              mode,
-              renderer['entry'],
-              renderer['assetOrigin'],
-              renderer['assetDirectory'],
-              renderer['dataJson'],
-            )),
-            container: container,
-            renderer: renderer,
-          );
-        },
-      );
+  State<PluginScreensaver> createState() => _PluginScreensaverState();
+}
+
+class _PluginScreensaverState extends State<PluginScreensaver> {
+  final _documents = PluginDocuments();
+  Timer? _fallback;
+
+  ValueNotifier<Map<String, Map<String, Object?>>> get _renderers =>
+      widget.container.plugins.screensavers;
+
+  @override
+  void initState() {
+    super.initState();
+    _renderers.addListener(_publish);
+    _documents.publish(_renderers.value[widget.mode]);
+  }
+
+  @override
+  void didUpdateWidget(covariant PluginScreensaver oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mode != widget.mode) {
+      _fallback?.cancel();
+      _documents.publish(null);
+      _documents.publish(_renderers.value[widget.mode]);
+    }
+  }
+
+  void _publish() {
+    if (!mounted) return;
+    setState(() {
+      if (_documents.publish(_renderers.value[widget.mode])) {
+        // Swaps anyway when the replacement never reports its first paint,
+        // such as one loading while the screen is off.
+        _fallback?.cancel();
+        final key = _documents.next!.key;
+        _fallback = Timer(const Duration(seconds: 3), () => _ready(key));
+      }
+    });
+  }
+
+  void _ready(Object key) {
+    if (!mounted || _documents.next?.key != key) return;
+    _fallback?.cancel();
+    setState(() => _documents.ready(key));
+  }
+
+  @override
+  void dispose() {
+    _renderers.removeListener(_publish);
+    _fallback?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shown = _documents.shown;
+    if (shown == null) return const ColoredBox(color: Colors.black);
+    final next = _documents.next;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (next != null)
+          _Document(
+            key: ValueKey((widget.mode, next.key)),
+            container: widget.container,
+            renderer: next.renderer,
+            onReady: () => _ready(next.key),
+          ),
+        _Document(
+          key: ValueKey((widget.mode, shown.key)),
+          container: widget.container,
+          renderer: shown.renderer,
+        ),
+      ],
+    );
+  }
 }
 
 class _Document extends StatefulWidget {
-  const _Document({super.key, required this.container, required this.renderer});
+  const _Document({
+    super.key,
+    required this.container,
+    required this.renderer,
+    this.onReady,
+  });
   final AppContainer container;
   final Map<String, Object?> renderer;
+
+  /// Called once the document has loaded and painted.
+  final VoidCallback? onReady;
   @override
   State<_Document> createState() => _DocumentState();
 }
@@ -102,7 +213,12 @@ class _DocumentState extends State<_Document> with WidgetsBindingObserver {
   bool _foreground = true;
   bool _failed = false;
   bool _loaded = false;
+  bool _visible = false;
   String? _html;
+
+  void _checkReady() {
+    if (_loaded && _visible) widget.onReady?.call();
+  }
 
   @override
   void initState() {
@@ -230,6 +346,9 @@ class _DocumentState extends State<_Document> with WidgetsBindingObserver {
                             ),
                           ),
                     initialSettings: InAppWebViewSettings(
+                      // The black ColoredBox shows through until the page
+                      // paints, instead of the WebView's default white.
+                      transparentBackground: true,
                       webViewAssetLoader: assetUrl == null
                           ? null
                           : WebViewAssetLoader(
@@ -277,12 +396,18 @@ class _DocumentState extends State<_Document> with WidgetsBindingObserver {
                       _controller = controller;
                       unawaited(_activity());
                     },
+                    onPageCommitVisible: (_, _) {
+                      _visible = true;
+                      _checkReady();
+                    },
                     onLoadStop: (_, _) {
                       _loaded = true;
                       unawaited(_updateDocument());
+                      _checkReady();
                     },
                     onRenderProcessGone: (_, detail) {
                       if (mounted) setState(() => _failed = true);
+                      widget.onReady?.call();
                     },
                   ),
                 ),
