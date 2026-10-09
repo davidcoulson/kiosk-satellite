@@ -194,6 +194,7 @@ class HomeAssistantManager extends Manager {
         // Another server may speak another language.
         _language = null;
         _stateTranslations.clear();
+        _stateLabels.clear();
       }
     });
     commands
@@ -1724,12 +1725,18 @@ class HomeAssistantManager extends Manager {
   /// the run (issue #900). Riding the subscription means every reconnect
   /// retries until it lands. Empty means an English server: the built-in
   /// labels already speak it.
+  ///
+  /// [onStateLabels] receives Home Assistant's wording for the entities'
+  /// states, in the server's language, so a window sensor reads "Closed"
+  /// rather than "Off" (issue #919). English is fetched too: device class
+  /// wording is a translation even there.
   Future<GlanceSubscription?> subscribeEntities(
     List<String> entityIds,
     void Function(String entityId, Map<String, Object?> state) onState, {
     void Function(Map<String, int> precisions)? onPrecision,
     String? translationDomain,
     void Function(Map<String, String> translations)? onTranslations,
+    void Function(EntityStateLabels labels)? onStateLabels,
   }) async {
     if (!configured || entityIds.isEmpty) return null;
     final wsBase = baseUrl
@@ -1761,6 +1768,82 @@ class HomeAssistantManager extends Manager {
         );
       }
 
+      // State labels need the registry (which integration and translation
+      // key each entity has) and the language before they can be asked
+      // for. Whatever is already cached is not asked again.
+      Map<String, (String, String)>? labelEntries;
+      String? labelLanguage;
+      // What each lookup asked for, so an integration with no wording at
+      // all still caches as empty instead of being asked every time.
+      final labelsAsked = <int, List<String>>{};
+      void deliverLabels() {
+        if (labelsAsked.isNotEmpty) return;
+        final resources = <String, String>{};
+        for (final id in entityIds) {
+          final cached =
+              _stateLabels['$labelLanguage/entity_component/${id.split('.').first}'];
+          if (cached != null) resources.addAll(cached);
+        }
+        for (final (platform, _) in labelEntries!.values) {
+          final cached = _stateLabels['$labelLanguage/entity/$platform'];
+          if (cached != null) resources.addAll(cached);
+        }
+        onStateLabels!(EntityStateLabels(resources, labelEntries!));
+      }
+
+      void askLabels() {
+        if (onStateLabels == null) return;
+        final language = labelLanguage;
+        if (language == null || labelEntries == null) return;
+        final domains = {for (final id in entityIds) id.split('.').first}
+            .where(
+              (d) => !_stateLabels.containsKey('$language/entity_component/$d'),
+            )
+            .toList();
+        final platforms = {for (final (p, _) in labelEntries!.values) p}
+            .where((p) => !_stateLabels.containsKey('$language/entity/$p'))
+            .toList();
+        for (final (id, category, integrations) in [
+          (5, 'entity_component', domains),
+          (6, 'entity', platforms),
+        ]) {
+          if (integrations.isEmpty) continue;
+          labelsAsked[id] = integrations;
+          channel.sink.add(
+            jsonEncode({
+              'id': id,
+              'type': 'frontend/get_translations',
+              'language': language,
+              'category': category,
+              'integration': integrations,
+            }),
+          );
+        }
+        deliverLabels();
+      }
+
+      void labelsArrived(int id, Object? result) {
+        final category = id == 5 ? 'entity_component' : 'entity';
+        final language = labelLanguage;
+        final integrations = labelsAsked.remove(id) ?? const [];
+        if (result != null && language != null) {
+          final parsed = parseStateLabels(result);
+          for (final integration in integrations) {
+            _stateLabels['$language/$category/$integration'] =
+                parsed[integration] ?? const {};
+          }
+        }
+        deliverLabels();
+      }
+
+      void languageKnown(String language) {
+        if (domain != null && !_stateTranslations.containsKey(domain)) {
+          askTranslations(language);
+        }
+        labelLanguage = language;
+        askLabels();
+      }
+
       channel.stream.listen(
         (raw) {
           try {
@@ -1781,7 +1864,7 @@ class HomeAssistantManager extends Manager {
                     'entity_ids': entityIds,
                   }),
                 );
-                if (onPrecision != null) {
+                if (onPrecision != null || onStateLabels != null) {
                   channel.sink.add(
                     jsonEncode({
                       'id': 2,
@@ -1790,13 +1873,15 @@ class HomeAssistantManager extends Manager {
                     }),
                   );
                 }
-                if (domain != null) {
-                  final cached = _stateTranslations[domain];
+                final cached = domain != null
+                    ? _stateTranslations[domain]
+                    : null;
+                if (cached != null) onTranslations!(cached);
+                if ((domain != null && cached == null) ||
+                    onStateLabels != null) {
                   final language = _language;
-                  if (cached != null) {
-                    onTranslations!(cached);
-                  } else if (language != null) {
-                    askTranslations(language);
+                  if (language != null) {
+                    languageKnown(language);
                   } else {
                     channel.sink.add(
                       jsonEncode({'id': 3, 'type': 'get_config'}),
@@ -1813,18 +1898,33 @@ class HomeAssistantManager extends Manager {
                 // states unrounded, which is what the row always did. A
                 // failed translation lookup caches nothing, so the next
                 // connection asks again.
-                if (msg['success'] != true) break;
+                if (msg['success'] != true) {
+                  // Without the registry the labels still come, by device
+                  // class and domain. A failed label lookup delivers what
+                  // the other one brought.
+                  if (msg['id'] == 2 && onStateLabels != null) {
+                    labelEntries = const {};
+                    askLabels();
+                  } else if (msg['id'] == 5 || msg['id'] == 6) {
+                    labelsArrived(msg['id'] as int, null);
+                  }
+                  break;
+                }
                 switch (msg['id']) {
                   case 1:
                     subscription._startHeartbeat();
                   case 2:
                     onPrecision?.call(_displayPrecisions(msg['result']));
+                    if (onStateLabels != null) {
+                      labelEntries = _translationKeys(msg['result']);
+                      askLabels();
+                    }
                   case 3:
                     final config = msg['result'];
                     final language = config is Map
                         ? '${config['language'] ?? ''}'.trim()
                         : '';
-                    askTranslations(
+                    languageKnown(
                       _language = language.isEmpty ? 'en' : language,
                     );
                   case 4:
@@ -1834,6 +1934,8 @@ class HomeAssistantManager extends Manager {
                         domain,
                       ),
                     );
+                  case 5 || 6:
+                    labelsArrived(msg['id'] as int, msg['result']);
                 }
               case 'pong':
                 subscription._pong();
@@ -1913,6 +2015,25 @@ class HomeAssistantManager extends Manager {
       if (precision is int) precisions['${entry.key}'] = precision;
     }
     return precisions;
+  }
+
+  /// Each entity's integration and translation key out of a `get_entries`
+  /// reply, for the entities that have a translation key. Those are the
+  /// ones whose states the integration words itself ("idle" on a backup
+  /// sensor reads "Leerlauf").
+  static Map<String, (String, String)> _translationKeys(Object? result) {
+    final keys = <String, (String, String)>{};
+    if (result is! Map) return keys;
+    for (final entry in result.entries) {
+      final value = entry.value;
+      if (value is! Map) continue;
+      final platform = value['platform'];
+      final key = value['translation_key'];
+      if (platform is String && key is String && key.isNotEmpty) {
+        keys['${entry.key}'] = (platform, key);
+      }
+    }
+    return keys;
   }
 
   /// Entities matching [query], for the At a Glance picker.
@@ -2943,6 +3064,11 @@ class HomeAssistantManager extends Manager {
   /// the server lands here, never a failed lookup.
   final _stateTranslations = <String, Map<String, String>>{};
 
+  /// State wording for the At a Glance entities (issue #919), keyed
+  /// `language/category/integration`. An empty map is a cached "nothing to
+  /// translate", the same as above.
+  final _stateLabels = <String, Map<String, String>>{};
+
   Future<Object?> _wsCommand(Map<String, Object?> command) async {
     final wsBase = baseUrl
         .replaceFirst('https://', 'wss://')
@@ -3027,6 +3153,61 @@ Map<String, String> parseStateTranslations(Object? result, String domain) {
   return out;
 }
 
+/// The state wording out of a `frontend/get_translations` reply, split by
+/// the integration each key belongs to so each one caches on its own.
+/// Attribute states (`state_attributes`) are left out: the row shows the
+/// state.
+Map<String, Map<String, String>> parseStateLabels(Object? result) {
+  final resources = result is Map ? result['resources'] : null;
+  final out = <String, Map<String, String>>{};
+  if (resources is! Map) return out;
+  for (final entry in resources.entries) {
+    final key = '${entry.key}';
+    final value = entry.value;
+    if (value is! String || value.isEmpty) continue;
+    if (!key.contains('.state.') || key.contains('.state_attributes.')) {
+      continue;
+    }
+    final parts = key.split('.');
+    if (parts.length < 2 || parts[0] != 'component') continue;
+    (out[parts[1]] ??= {})[key] = value;
+  }
+  return out;
+}
+
+/// Home Assistant's own wording for entity states (issue #919), picked the
+/// way its frontend picks it: the integration's wording for the entity's
+/// translation key first, then the domain's for its device class, then the
+/// domain's own. "off" on a window sensor reads "Closed".
+class EntityStateLabels {
+  const EntityStateLabels(this._resources, this._keys);
+
+  /// The translations, dotted the way Home Assistant sends them.
+  final Map<String, String> _resources;
+
+  /// Each entity's integration and translation key, for the entities that
+  /// have one.
+  final Map<String, (String, String)> _keys;
+
+  /// The wording for [state], or null when Home Assistant has none, which
+  /// is the case for every number.
+  String? label(String entityId, String? deviceClass, String state) {
+    final domain = entityId.split('.').first;
+    final key = _keys[entityId];
+    if (key != null) {
+      final text =
+          _resources['component.${key.$1}.entity.$domain.${key.$2}.state.$state'];
+      if (text != null) return text;
+    }
+    if (deviceClass != null && deviceClass.isNotEmpty) {
+      final text =
+          _resources['component.$domain.entity_component.$deviceClass.state.$state'];
+      if (text != null) return text;
+    }
+    return _resources['component.$domain.entity_component._.state.$state'];
+  }
+}
+
 /// An error Home Assistant itself answered with (a `result` frame carrying
 /// `success: false`), as opposed to transport failures (socket down,
 /// timeout), which keep their own exception types. The distinction lets
@@ -3079,9 +3260,9 @@ class GlanceSubscription {
   final WebSocketChannel _channel;
   bool _closed = false;
   Timer? _heartbeat, _deadline, _connecting;
-  // Ids 1 to 4 are the subscribe, registry, config and translation
+  // Ids 1 to 6 are the subscribe, registry, config and translation
   // commands.
-  int _pingId = 5;
+  int _pingId = 7;
 
   bool get isClosed => _closed;
 

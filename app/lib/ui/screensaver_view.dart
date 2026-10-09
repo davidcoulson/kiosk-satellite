@@ -2039,6 +2039,9 @@ class _EntityWidgetOverlayState extends State<EntityWidgetOverlay> {
       [id],
       _onState,
       onPrecision: _onPrecision,
+      onStateLabels: (labels) {
+        if (mounted) setState(() => _entity = _entity.merge(labels: labels));
+      },
     );
     if (!mounted) {
       unawaited(live?.close());
@@ -2130,6 +2133,7 @@ class _EntityWidgetOverlayState extends State<EntityWidgetOverlay> {
         deviceClass: _entity.deviceClass,
         unit: _entity.unit,
         precision: _entity.precision,
+        labels: _entity.labels,
       );
     }
   }

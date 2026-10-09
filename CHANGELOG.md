@@ -4,6 +4,9 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ## Unreleased
 
+### Changed
+- **Entity states read the way Home Assistant words them.** At a Glance and the screensaver **Entity** widget showed the raw state, so a window sensor read **Off** instead of **Closed**, always in English (#919). States now use Home Assistant's own wording for the entity's device class and integration, in Home Assistant's language, the same as its dashboards. Numbers keep their units and rounding.
+
 ### Fixed
 - **The remote admin loads again with a dashboard view picked.** Since 2026.10.17 the remote admin stopped after the password screen with `i.repaint is not a function` on a kiosk whose screensaver is **Home Assistant Dashboard** or whose Now Playing **After dismissing** is **Chosen view** (#920). The **Dashboard view** row now loads like the other pickers.
 - **The Sendspin progress bar follows Previous and seeks.** On the device's own player, **Previous** restarted the song while the bar kept counting from where it was, even past the song's end (#915). After a seek on the bar, it could also jump back to the seek point every 5 seconds while the music played on. The bar now starts over with the song and moves on from a seek. This mostly showed without a Music Assistant token, which otherwise corrected the bar every few seconds.

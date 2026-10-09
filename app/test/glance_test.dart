@@ -31,6 +31,7 @@ class _RecordingHa extends HomeAssistantManager {
     void Function(Map<String, int> precisions)? onPrecision,
     String? translationDomain,
     void Function(Map<String, String> translations)? onTranslations,
+    void Function(EntityStateLabels labels)? onStateLabels,
   }) async {
     attempts.add(List.of(entityIds));
     return null;

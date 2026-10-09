@@ -681,6 +681,15 @@ String glanceStateText(GlanceEntity entity, {UiStrings? strings}) {
     return _pretty(value);
   }
   if (state == 'unknown') return strings?.glanceUnknown ?? 'Unknown';
+  // Home Assistant's own wording when it has one (issue #919): "Closed"
+  // for a window that is "off", in the server's language. Numbers never
+  // have one and fall through to the rounding below.
+  final label = entity.labels?.label(
+    entity.entityId,
+    entity.deviceClass,
+    state,
+  );
+  if (label != null) return label;
   final unit = entity.unit;
   // A numeric state rounds to the entity's Display precision, padded the
   // same way Home Assistant's own cards pad it, so the row and the
