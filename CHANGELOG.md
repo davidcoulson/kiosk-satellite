@@ -2,6 +2,11 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
+## Unreleased
+
+### Fixed
+- **A kiosk joins fleet lists once it can accept an invite.** A kiosk still on the welcome screen already showed up in the fleet leader's list, but the invite prompt only appears after onboarding, so an invite sent to it went nowhere (#929). A kiosk now stays out of fleet lists until onboarding is done and appears as soon as it finishes.
+
 ## v2026.10.18 - 2026-10-09
 
 ### Added
@@ -18,7 +23,6 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 - **Plugin screensavers no longer flash white when their data changes.** A plugin screensaver built from bundled files, such as a clock showing a Home Assistant temperature, flashed white each time the plugin published new data (#918). Each update builds a new page, and the old page left the screen before the new one could paint. The old page now stays up until the new one has painted.
 - **At a Glance stays clear of the Immich photo details.** On a small screen the At a Glance row ran into the photo details in the bottom corners of the Immich screensaver, with one photo or a pair (#916). The row now measures the details and wraps into the space between them when two chips fit there. Otherwise it moves up above the details.
 - **Screensaver videos no longer silence music.** The Immich and Local Media screensavers play videos muted, but each video still claimed Android's audio focus, so music playing on the device went quiet for as long as a video was on screen (#924). Screensaver videos now play alongside other sound. A video cast over DLNA still takes audio focus as before.
-- **A kiosk joins fleet lists once it can accept an invite.** A kiosk still on the welcome screen already showed up in the fleet leader's list, but the invite prompt only appears after onboarding, so an invite sent to it went nowhere (#929). A kiosk now stays out of fleet lists until onboarding is done and appears as soon as it finishes.
 
 ## v2026.10.17 - 2026-10-08
 
