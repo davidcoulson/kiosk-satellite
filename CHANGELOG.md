@@ -2,6 +2,11 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
+## Unreleased
+
+### Fixed
+- **The remote admin loads again with a dashboard view picked.** Since 2026.10.17 the remote admin stopped after the password screen with `i.repaint is not a function` on a kiosk whose screensaver is **Home Assistant Dashboard** or whose Now Playing **After dismissing** is **Chosen view** (#920). The **Dashboard view** row now loads like the other pickers.
+
 ## v2026.10.17 - 2026-10-08
 
 ### Changed

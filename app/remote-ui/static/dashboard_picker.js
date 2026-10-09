@@ -571,7 +571,7 @@ export function dashboardPicker({ value, onPick }) {
 // A stored view at rest: the control box with the view's icon, the
 // dashboard muted, a slash and the view. Empty reads Choose a view. A view
 // gone from Home Assistant shows its path with an error border. Before the
-// dashboards load, the path stands in. Returns { el, setValue }.
+// dashboards load, the path stands in. Returns { el, setValue, repaint }.
 //
 // mode 'go' (the Overview's Go to view) shows the view on screen instead of
 // a stored one: [showing] reads it fresh on every open, a page that is not
@@ -630,7 +630,7 @@ export function dashboardField({ value = '', title, onPick, mode = 'select', sho
   follow(box, paint);
   paint();
   if (!catalog) loadDashboards();
-  return { el: box, setValue: (v) => { current = v || ''; paint(); } };
+  return { el: box, setValue: (v) => { current = v || ''; paint(); }, repaint: paint };
 }
 
 // A settings row whose value is a dashboard view: the name, the field and
