@@ -21,6 +21,7 @@ import {
   pointBounds,
   snapLevel,
   snapLux,
+  withCurvePoint,
 } from './adaptive_curve.js';
 
 const CURVE_HINT = 'Drag a point, or tap it to type exact values. The Screen '
@@ -56,6 +57,7 @@ function settingValues() {
     p2Level: num(CURVE_KEYS.p2Level, 1 / 3),
     p3Position: num(CURVE_KEYS.p3Position, 2 / 3),
     p3Level: num(CURVE_KEYS.p3Level, 2 / 3),
+    inverted: byKey[CURVE_KEYS.inverted]?.value === true,
   };
 }
 
@@ -148,9 +150,11 @@ export function brightnessCurveRow(row, { showError, clearError }) {
   };
 
   // One chip per point: its light level over its brightness. The chips
-  // carry the curve's keys for the live updates and the search.
+  // carry the curve's keys for the live updates and the search. Minimum
+  // brightness is the row's own key, so the first chip's brightness
+  // carries the curve's direction instead.
   const chipKeys = [
-    [CURVE_KEYS.dark, null],
+    [CURVE_KEYS.dark, CURVE_KEYS.inverted],
     [CURVE_KEYS.p2Position, CURVE_KEYS.p2Level],
     [CURVE_KEYS.p3Position, CURVE_KEYS.p3Level],
     [CURVE_KEYS.bright, CURVE_KEYS.max],
@@ -317,7 +321,7 @@ export function brightnessCurveRow(row, { showError, clearError }) {
         lux: snapLux(gm.luxAt(at.x + drag.grab.x)),
         level: snapLevel(gm.levelAtY(at.y + drag.grab.y)),
       }, drag.domain);
-      drag.points = drag.points.map((p, i) => (i === drag.index ? moved : p));
+      drag.points = withCurvePoint(drag.points, drag.index, moved);
       schedule();
     };
     const end = async (ev) => {
@@ -353,14 +357,14 @@ export function brightnessCurveRow(row, { showError, clearError }) {
     const points = target.map((p) => ({ ...p }));
     const p = points[index];
     const lux = step[0] ? snapLux(p.lux * (step[0] > 0 ? 1.1 : 1 / 1.1)) : p.lux;
-    points[index] = clampPoint(points, index, { lux, level: snapLevel(p.level + step[1]) },
+    const moved = clampPoint(points, index, { lux, level: snapLevel(p.level + step[1]) },
       curveDomain(target));
-    await commit(points);
+    await commit(withCurvePoint(points, index, moved));
     retarget({ animate: false });
   }
 
   // Write a whole curve in one request: the device checks the settings
-  // together, so the ends may pass each other's old values in one move.
+  // together, so the ends may pass each other in one move.
   async function commit(points) {
     const values = curveSettings(points);
     try {
@@ -408,8 +412,8 @@ export function brightnessCurveRow(row, { showError, clearError }) {
           return { ok: false, error: t('screenAudioCurveLevelRange',
             { low: String(Math.round(b.levelLo * 100)), high: String(Math.round(b.levelHi * 100)) }) };
         }
-        points[index] = { lux, level: Math.round(level) / 100 };
-        const ok = await commit(points);
+        const ok = await commit(withCurvePoint(points, index,
+          { lux, level: Math.round(level) / 100 }));
         retarget({ animate: false });
         return ok ? { ok: true } : { ok: false, error: row.querySelector('.row-error')?.textContent };
       },

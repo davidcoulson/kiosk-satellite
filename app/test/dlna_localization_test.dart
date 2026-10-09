@@ -63,6 +63,9 @@ class _Video extends VideoPlayerPlatform {
     creates++;
     return creates;
   }
+
+  @override
+  Future<void> setMixWithOthers(bool mixWithOthers) async {}
 }
 
 void main() {

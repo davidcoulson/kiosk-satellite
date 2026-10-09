@@ -43,6 +43,7 @@ final _curveKeys = {
   adaptivePoint2Level.key,
   adaptivePoint3Position.key,
   adaptivePoint3Level.key,
+  adaptiveInverted.key,
 };
 
 class _BrightnessCurveEditorState extends State<BrightnessCurveEditor>
@@ -124,6 +125,7 @@ class _BrightnessCurveEditorState extends State<BrightnessCurveEditor>
       point2Level: s.get(adaptivePoint2Level).toDouble(),
       point3Position: s.get(adaptivePoint3Position).toDouble(),
       point3Level: s.get(adaptivePoint3Level).toDouble(),
+      inverted: s.get(adaptiveInverted),
     ).points;
   }
 
@@ -199,7 +201,7 @@ class _BrightnessCurveEditorState extends State<BrightnessCurveEditor>
     ), g.domain);
     if (moved == drag[index]) return;
     // A fresh list, so the painter sees the change.
-    setState(() => _drag = [...drag]..[index] = moved);
+    setState(() => _drag = withCurvePoint(drag, index, moved));
   }
 
   Future<void> _dragEnd() async {
@@ -225,8 +227,8 @@ class _BrightnessCurveEditorState extends State<BrightnessCurveEditor>
     });
   }
 
-  /// Write a whole curve. The settings are checked together (Minimum and
-  /// Maximum, Dark room and Bright room may pass each other in one move),
+  /// Write a whole curve. The settings are checked together (the ends may
+  /// pass each other's old values in one move),
   /// then stored; only what changed is written. Returns why it was
   /// refused, or null.
   Future<String?> _commit(List<CurvePoint> p) async {
@@ -265,8 +267,7 @@ class _BrightnessCurveEditorState extends State<BrightnessCurveEditor>
       ),
     );
     if (saved == null || !mounted) return;
-    points[index] = saved;
-    final refused = await _commit(points);
+    final refused = await _commit(withCurvePoint(points, index, saved));
     if (refused != null && mounted) {
       showToast(
         context,
@@ -482,8 +483,10 @@ class _PointDialogState extends State<_PointDialog> {
 }
 
 /// The settings a curve writes: the ends as they are, the middle points as
-/// shares of the span between them (see [adaptivePoint2Position]).
-Map<SettingDef<num>, num> curveSettings(List<CurvePoint> p) {
+/// shares of the span between them (see [adaptivePoint2Position]). A Dark
+/// room end above the Bright room end is an inverted curve (issue #923):
+/// Minimum and Maximum stay the lower and higher of the two.
+Map<SettingDef<Object>, Object> curveSettings(List<CurvePoint> p) {
   num level(double v) => (v * 100).round() / 100;
   num lux(double v) {
     final r = (v * 10).round() / 10;
@@ -491,28 +494,57 @@ Map<SettingDef<num>, num> curveSettings(List<CurvePoint> p) {
   }
 
   num share(double v) => double.parse(v.toStringAsFixed(6));
-  final min = level(p[0].level);
-  final max = level(p[3].level);
+  final darkLevel = level(p[0].level);
+  final brightLevel = level(p[3].level);
+  final inverted = darkLevel > brightLevel;
   final dark = lux(p[0].lux);
   final bright = lux(p[3].lux);
   return {
-    adaptiveMinBrightness: min,
-    adaptiveMaxBrightness: max,
+    adaptiveMinBrightness: inverted ? brightLevel : darkLevel,
+    adaptiveMaxBrightness: inverted ? darkLevel : brightLevel,
     adaptiveDarkLux: dark,
     adaptiveBrightLux: bright,
     adaptivePoint2Position: share(
       AdaptiveCurve.positionFor(p[1].lux, dark.toDouble(), bright.toDouble()),
     ),
     adaptivePoint2Level: share(
-      AdaptiveCurve.shareFor(p[1].level, min.toDouble(), max.toDouble()),
+      AdaptiveCurve.shareFor(
+        p[1].level,
+        darkLevel.toDouble(),
+        brightLevel.toDouble(),
+      ),
     ),
     adaptivePoint3Position: share(
       AdaptiveCurve.positionFor(p[2].lux, dark.toDouble(), bright.toDouble()),
     ),
     adaptivePoint3Level: share(
-      AdaptiveCurve.shareFor(p[2].level, min.toDouble(), max.toDouble()),
+      AdaptiveCurve.shareFor(
+        p[2].level,
+        darkLevel.toDouble(),
+        brightLevel.toDouble(),
+      ),
     ),
+    adaptiveInverted: inverted,
   };
+}
+
+/// The curve with point [i] moved to [moved]. An end that moves takes the
+/// middle points with it: they keep their shares of the way from the Dark
+/// room level to the Bright room level, so dragging one end past the other
+/// turns the whole curve over (issue #923) instead of pinning the end on
+/// the middle.
+List<CurvePoint> withCurvePoint(List<CurvePoint> p, int i, CurvePoint moved) {
+  final last = p.length - 1;
+  final next = [...p]..[i] = moved;
+  if (i != 0 && i != last) return next;
+  for (var k = 1; k < last; k++) {
+    final share = AdaptiveCurve.shareFor(p[k].level, p[0].level, p[last].level);
+    next[k] = (
+      lux: p[k].lux,
+      level: next[0].level + share * (next[last].level - next[0].level),
+    );
+  }
+  return next;
 }
 
 /// A light level for a label: one decimal at most, none when whole.
@@ -532,9 +564,19 @@ double _snapLux(double lux) {
 
 double _snapLevel(double level) => (level * 100).round() / 100;
 
+/// An end never lands on the other end's brightness: a flat curve has no
+/// direction. One crossing it hops a step further, or stays put at the
+/// edge of the chart.
+double _pastOtherEnd(double level, double from, double other) {
+  if ((level - other).abs() >= 0.005) return level;
+  final hop = _snapLevel(other + (level >= from ? 0.01 : -0.01));
+  return hop < 0 || hop > 1 ? from : hop;
+}
+
 /// Where a point may go: between its neighbors in light (a drag keeps a
-/// little room, a typed value only has to differ) and between their
-/// brightness. The ends also keep Minimum under Maximum.
+/// little room, a typed value only has to differ). A middle point stays
+/// between their brightness, whichever way the curve runs. The ends go
+/// anywhere, past each other too, which inverts the curve.
 _Bounds _bounds(
   List<CurvePoint> p,
   int i,
@@ -542,10 +584,9 @@ _Bounds _bounds(
   double gap = 1.12,
 }) {
   final last = p.length - 1;
-  var levelLo = i == 0 ? 0.0 : p[i - 1].level;
-  var levelHi = i == last ? 1.0 : p[i + 1].level;
-  if (i == 0) levelHi = math.min(levelHi, p[last].level - 0.01);
-  if (i == last) levelLo = math.max(levelLo, p[0].level + 0.01);
+  final end = i == 0 || i == last;
+  final levelLo = end ? 0.0 : math.min(p[i - 1].level, p[i + 1].level);
+  final levelHi = end ? 1.0 : math.max(p[i - 1].level, p[i + 1].level);
   return (
     luxLo: i == 0 ? (domain?.lo ?? 0) : p[i - 1].lux * gap,
     luxHi: i == last ? (domain?.hi ?? 200000) : p[i + 1].lux / gap,
@@ -562,10 +603,14 @@ CurvePoint _clampPoint(
 ) {
   final b = _bounds(p, i, domain);
   final lux = b.luxLo <= b.luxHi ? want.lux.clamp(b.luxLo, b.luxHi) : p[i].lux;
-  final level = b.levelLo <= b.levelHi
-      ? want.level.clamp(b.levelLo, b.levelHi)
+  var level = b.levelLo <= b.levelHi
+      ? want.level.clamp(b.levelLo, b.levelHi).toDouble()
       : p[i].level;
-  return (lux: lux.toDouble(), level: level.toDouble());
+  final last = p.length - 1;
+  if (i == 0 || i == last) {
+    level = _pastOtherEnd(level, p[i].level, p[last - i].level);
+  }
+  return (lux: lux.toDouble(), level: level);
 }
 
 /// The chart's light range: whole decades around the curve's ends, with

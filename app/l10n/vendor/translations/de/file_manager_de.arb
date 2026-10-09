@@ -4,6 +4,8 @@
   "filesUploading": "Wird hochgeladen...",
   "filesUploadFailed": "Die Datei konnte nicht hochgeladen werden",
   "filesUploaded": "Datei hochgeladen",
+  "filesUploadingProgress": "Wird hochgeladen: {current} von {total}...",
+  "filesUploadedCount": "{count} Dateien hochgeladen",
   "filesPermissionMissing": "Die Berechtigung zum Zugriff auf alle Dateien fehlt",
   "filesPermissionHelp": "Ohne diese Berechtigung kannst du nur den Anwendungsordner durchsuchen. Die Berechtigungsseite wird auf dem Tablet geöffnet.",
   "filesGrant": "Auf dem Gerät erteilen",

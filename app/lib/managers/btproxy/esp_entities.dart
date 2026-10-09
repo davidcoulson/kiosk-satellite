@@ -251,6 +251,11 @@ class EspEntitySurface {
           defs.adaptiveBrightness,
         ),
         'screensaver': ('Screensaver', 'mdi:sleep', defs.screensaverEnabled),
+        'screensaver_schedule': (
+          'Screensaver schedule',
+          'mdi:calendar-clock',
+          defs.screensaverScheduleEnabled,
+        ),
         'hold_mode': ('Hold mode', 'mdi:pause-circle-outline', defs.haHoldMode),
         'camera_enabled': (
           'Camera enabled',

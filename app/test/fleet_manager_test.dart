@@ -91,6 +91,8 @@ void main() {
     'ks.remote.password': 'secret',
     'ks.remote.port': 2324,
     'ks.device.name': 'Living Room',
+    // Onboarding done: the fleet part waits for it.
+    'ks.browser.start_url': 'http://ha.local:8123/lovelace',
   };
 
   const self = {
@@ -224,6 +226,32 @@ void main() {
     expect(calls.last.method, 'start');
     expect(calls.last.arguments['fleet'], isTrue);
     expect(fleet.running, isTrue);
+  });
+
+  test('an agent announces the fleet without a start URL', () async {
+    await build({
+      ...serving,
+      'ks.browser.start_url': '',
+      'ks.device.agent_mode': true,
+    });
+    final start = calls.singleWhere((c) => c.method == 'start');
+    expect(start.arguments['fleet'], isTrue);
+    expect(fleet.enabled, isTrue);
+  });
+
+  test('the fleet waits for onboarding, the hostname does not', () async {
+    await build({...serving, 'ks.browser.start_url': ''});
+    final start = calls.singleWhere((c) => c.method == 'start');
+    expect(start.arguments['hostname'], 'ks-living-room');
+    expect(start.arguments['fleet'], isFalse);
+    expect(fleet.enabled, isFalse);
+
+    // The wizard's last step sets the start URL.
+    await settings.set(defs.startUrl, 'http://ha.local:8123/lovelace');
+    await pump();
+    expect(calls.last.method, 'start');
+    expect(calls.last.arguments['fleet'], isTrue);
+    expect(fleet.enabled, isTrue);
   });
 
   test('the switch stops it outright with nothing to answer to', () async {

@@ -1548,9 +1548,10 @@ const adaptiveBrightLux = SettingDef<num>(
 // UIs draws and writes them. Stored as shares of the span between the
 // ends, not as absolute values: a position is the point's light level
 // along the log scale from Dark room to Bright room, a level its
-// brightness between Minimum and Maximum. That way Home Assistant's
-// Screen light, which turns Maximum brightness, stretches the curve
-// rather than pushing its top under the middle. A third and two thirds
+// brightness on the way from the Dark room end's to the Bright room
+// end's. That way Home Assistant's Screen light, which turns Maximum
+// brightness, stretches the curve rather than pushing its top under the
+// middle, and an inverted curve keeps its shape. A third and two thirds
 // on both axes is the straight line the curve was before these existed.
 const adaptivePoint2Position = SettingDef<num>(
   key: 'screen.adaptive_point2_position',
@@ -1573,7 +1574,9 @@ const adaptivePoint2Level = SettingDef<num>(
   type: SettingType.number,
   defaultValue: 1 / 3,
   title: 'Curve point 2 brightness',
-  description: 'Share of the way from Minimum to Maximum brightness.',
+  description:
+      'Share of the way from the Dark room brightness to the Bright room '
+      'brightness.',
   category: 'Screen & Audio',
   subpage: 'Adaptive brightness',
   section: 'Brightness curve',
@@ -1603,13 +1606,34 @@ const adaptivePoint3Level = SettingDef<num>(
   type: SettingType.number,
   defaultValue: 2 / 3,
   title: 'Curve point 3 brightness',
-  description: 'Share of the way from Minimum to Maximum brightness.',
+  description:
+      'Share of the way from the Dark room brightness to the Bright room '
+      'brightness.',
   category: 'Screen & Audio',
   subpage: 'Adaptive brightness',
   section: 'Brightness curve',
   hidden: true,
   validator: validateCurveShare,
   crossValidator: validatePoint3Level,
+);
+
+// Which way the curve runs (issue #923), hidden: the editors on both UIs
+// set it when the Dark room point is dragged above the Bright room point.
+// Off, the screen brightens with the room. On, Dark room sits at Maximum
+// brightness and Bright room at Minimum, so the screen dims as the room
+// gets brighter (an e-ink reader's backlight). Minimum and Maximum stay
+// the curve's lowest and highest levels either way, so Home Assistant's
+// Screen light still turns the top of the curve.
+const adaptiveInverted = SettingDef<bool>(
+  key: 'screen.adaptive_inverted',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Curve inverted',
+  description: 'The screen dims as the room gets brighter.',
+  category: 'Screen & Audio',
+  subpage: 'Adaptive brightness',
+  section: 'Brightness curve',
+  hidden: true,
 );
 
 /// A middle point sits strictly between the ends: at either one it would
@@ -1631,7 +1655,8 @@ String? validateCurveShare(Object? value) {
 }
 
 /// The middle points keep their order: point 2 below point 3 in light,
-/// and never brighter than it.
+/// and never further than it on the way from the Dark room brightness to
+/// the Bright room brightness.
 String? validatePoint2Position(
   Object? value,
   Object? Function(String key) read,
@@ -1656,14 +1681,14 @@ String? validatePoint2Level(Object? value, Object? Function(String key) read) {
   final own = _asNum(value);
   final other = _asNum(read(adaptivePoint3Level.key));
   if (own == null || other == null || own <= other) return null;
-  return 'Point 2 must not be brighter than point 3';
+  return 'Point 2 must sit between the Dark room point and point 3';
 }
 
 String? validatePoint3Level(Object? value, Object? Function(String key) read) {
   final own = _asNum(value);
   final other = _asNum(read(adaptivePoint2Level.key));
   if (own == null || other == null || own >= other) return null;
-  return 'Point 3 must not be dimmer than point 2';
+  return 'Point 3 must sit between point 2 and the Bright room point';
 }
 
 /// A light level the curve can take a log of: a positive number.
@@ -10273,6 +10298,7 @@ const fleetFollowsKey = {
   'screen.adaptive_point2_level': 'screen.adaptive_min_brightness',
   'screen.adaptive_point3_position': 'screen.adaptive_min_brightness',
   'screen.adaptive_point3_level': 'screen.adaptive_min_brightness',
+  'screen.adaptive_inverted': 'screen.adaptive_min_brightness',
 };
 
 /// What a new follower gets unless the leader says otherwise.
@@ -11093,6 +11119,7 @@ const List<SettingDef<Object>> allSettings = [
   adaptivePoint2Level,
   adaptivePoint3Position,
   adaptivePoint3Level,
+  adaptiveInverted,
   mediaVolume,
   intercomVolume,
   assistantVolume,

@@ -163,18 +163,24 @@ void main() {
       expect(snap['positionMs'], 12500);
       expect(snap['positionAtMs'], 1700000000000);
       expect(snap['state'], 'playing');
-      // Remotely accessible artwork is used as-is, not proxied.
-      expect(snap['artworkUrl'], 'https://img.example/cover.jpg');
+      // Remotely accessible artwork goes through the server's proxy too,
+      // so a kiosk without internet access still loads a streaming
+      // service's cover.
+      expect(
+        snap['artworkUrl'],
+        'https://ma.local:8095/imageproxy/abc?size=512&fmt=jpg',
+      );
     });
 
-    test('proxies artwork that is not remotely accessible', () {
+    test('uses a plain web image as it is with no proxy route', () {
       final queue = _queue();
-      ((queue['current_item'] as Map)['image'] as Map)['remotely_accessible'] =
-          false;
+      ((queue['current_item'] as Map)['image'] as Map).remove('proxy_id');
       final snap = queueTrackSnapshot(queue, webBase: 'https://ma.local:8095');
+      expect(snap!['artworkUrl'], 'https://img.example/cover.jpg');
+      // Nor without a server address to proxy through.
       expect(
-        snap!['artworkUrl'],
-        'https://ma.local:8095/imageproxy/abc?size=512&fmt=jpg',
+        queueTrackSnapshot(_queue())!['artworkUrl'],
+        'https://img.example/cover.jpg',
       );
     });
 
@@ -738,9 +744,10 @@ void main() {
       expect(row['current'], isTrue);
       expect(
         row['artworkUrl'],
-        'https://ma.local:8095/imageproxy/abc?size=128&fmt=jpg',
+        'https://ma.local:8095/imageproxy/abc?size=160&fmt=jpg',
       );
-      // A plain web image is used as it is; no image is no key.
+      // A plain web image with no proxy id is used as it is; no image is
+      // no key.
       expect(
         SendspinManager.queueRow(
           {
@@ -794,7 +801,7 @@ void main() {
           '',
           'https://ma.local:8095',
         )['artworkUrl'],
-        'https://ma.local:8095/imageproxy/th?size=128&fmt=jpg',
+        'https://ma.local:8095/imageproxy/th?size=160&fmt=jpg',
       );
     });
 

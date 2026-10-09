@@ -18,6 +18,7 @@ import 'package:video_player_platform_interface/video_player_platform_interface.
 class _Video extends VideoPlayerPlatform {
   final events = <int, StreamController<VideoEvent>>{};
   final playing = <int>{};
+  final mixWithOthers = <bool>[];
   var creates = 0;
 
   @override
@@ -74,7 +75,7 @@ class _Video extends VideoPlayerPlatform {
   @override
   Future<Duration> getPosition(int playerId) async => Duration.zero;
   @override
-  Future<void> setMixWithOthers(bool mixWithOthers) async {}
+  Future<void> setMixWithOthers(bool mix) async => mixWithOthers.add(mix);
   @override
   Widget buildViewWithOptions(VideoViewOptions options) => const SizedBox();
 }
@@ -174,6 +175,20 @@ void main() {
         ),
         isTrue,
       );
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
+
+  // Issue #924: a muted slide that takes audio focus silences the music
+  // playing on the device.
+  testWidgets('a video slide plays without taking audio focus', (tester) async {
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        MaterialApp(home: ImmichScreensaver(container: container)),
+      );
+      await pumpUntil(tester, () => video.playing.contains(1));
+      expect(video.mixWithOthers, isNotEmpty);
+      expect(video.mixWithOthers, everyElement(isTrue));
       await tester.pumpWidget(const SizedBox());
     });
   });

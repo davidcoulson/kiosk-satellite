@@ -117,8 +117,8 @@ class SendspinManager extends Manager {
   String _watchSig = '';
   Map<String, Object?>? _localQueueSnapshot;
 
-  /// When the local player last sent a seek, epoch ms: the re-base stands
-  /// down for a moment after it.
+  /// When the local player last sent a seek or a previous, epoch ms: the
+  /// re-base stands down for a moment after it.
   int _seekSentAt = 0;
 
   /// When the position was last taken from the server's queue time, epoch
@@ -978,6 +978,15 @@ class SendspinManager extends Manager {
           final playing = map['playing'] == true;
           if (playing != _playing) {
             _playing = playing;
+            // The position stood still while nothing played, and the
+            // native side reports playing once the music starts, so it
+            // runs on from here rather than from when it was stamped.
+            if (playing) {
+              _status = {
+                ..._status,
+                'receivedAt': DateTime.now().millisecondsSinceEpoch,
+              };
+            }
             _syncQueuePoll();
             if (!playing) unawaited(_watcher?.refresh());
             // Announce local playback outside full-screen player mode.
@@ -2165,6 +2174,7 @@ class SendspinManager extends Manager {
       command = nowPlaying.value?['playing'] == true ? 'pause' : 'play';
     }
     if (_remote case final remote?) return remote.control(command);
+    if (command == 'previous') _jumpSent();
     try {
       return await _channel.invokeMethod<bool>('control', {
             'command': command,
@@ -2174,6 +2184,15 @@ class SendspinManager extends Manager {
       log.warn(name, 'control $command failed: $e');
       return false;
     }
+  }
+
+  /// The local player asked the server to jump within the track. The
+  /// engine adopts the new position itself and its pushes carry it, so
+  /// they count again even right after a queue time was taken, and the
+  /// queue's own time stands aside until it has caught up.
+  void _jumpSent() {
+    _seekSentAt = DateTime.now().millisecondsSinceEpoch;
+    _maPositionAt = 0;
   }
 
   bool get _maConfigured =>
@@ -2578,7 +2597,7 @@ class SendspinManager extends Manager {
       'current': id.isNotEmpty && id == currentId,
       'played': index < currentIndex,
       // A row's thumbnail: the item's own image, small, through the
-      // server's proxy where it is not a plain URL.
+      // server's proxy.
       ...switch (queueImageUrl(
         it['image'] ??
             media['image'] ??
@@ -2586,7 +2605,7 @@ class SendspinManager extends Manager {
                 ? (media['metadata'] as Map)['images']
                 : null),
         webBase,
-        size: 128,
+        size: 160,
       )) {
         final url? => {'artworkUrl': url},
         null => const <String, Object?>{},
@@ -2678,17 +2697,24 @@ class SendspinManager extends Manager {
     return true;
   }
 
+  /// Where a seek to [positionMs] lands. Music Assistant seeks its queue
+  /// in whole seconds and drops the fraction of the local player's
+  /// milliseconds, so a local seek goes whole and the bar shows the place
+  /// the music plays from.
+  int seekTarget(int positionMs) =>
+      _remote == null ? positionMs ~/ 1000 * 1000 : positionMs;
+
   /// Jump the playing track to [positionMs]: the Now Playing view's
   /// progress bar. Locally the controller role's seek command, which the
   /// server advertises like any other; for a followed player Music
   /// Assistant's own seek, in whole seconds.
   Future<bool> seek(int positionMs) async {
     if (_remote case final remote?) return remote.seek(positionMs);
-    _seekSentAt = DateTime.now().millisecondsSinceEpoch;
+    _jumpSent();
     try {
       return await _channel.invokeMethod<bool>('control', {
             'command': 'seek',
-            'value': positionMs,
+            'value': seekTarget(positionMs),
           }) ??
           false;
     } catch (e) {

@@ -2714,8 +2714,9 @@ class _NowPlayingProgressState extends State<_NowPlayingProgress> {
   /// A seek just sent, held on screen until the next position report
   /// replaces it, so the bar does not snap back for the beat the round
   /// trip takes. The local engine adopts the target itself (Music
-  /// Assistant sends no fresh progress after a seek), so the report that
-  /// replaces this one already agrees with it.
+  /// Assistant sends no fresh progress after a seek) and reports it when
+  /// the restarted stream's music plays, so the bar stands still at the
+  /// target through the silence before it.
   int? _seekMs;
   int? _seekAt;
 
@@ -2772,7 +2773,7 @@ class _NowPlayingProgressState extends State<_NowPlayingProgress> {
   }
 
   Future<void> _seek(double ms) async {
-    final target = ms.round();
+    final target = c.sendspin.seekTarget(ms.round());
     setState(() {
       _dragMs = null;
       _dragging = false;
@@ -2797,15 +2798,15 @@ class _NowPlayingProgressState extends State<_NowPlayingProgress> {
     final bookDuration = (now['durationMs'] as num?)?.toInt() ?? 0;
     // Live position: the last report plus the wall time since, the way
     // the card and the lyrics extrapolate it; a seek in flight shows its
-    // target for at most a few seconds.
+    // target, still, for at most a few seconds.
     var position = (now['positionMs'] as num?)?.toInt() ?? 0;
     final receivedAt = (now['receivedAt'] as num?)?.toInt();
     final wall = DateTime.now().millisecondsSinceEpoch;
     if (playing && receivedAt != null) position += wall - receivedAt;
     final seekAt = _seekAt;
     if (_seekMs != null && seekAt != null) {
-      if (wall - seekAt < 4000) {
-        position = _seekMs! + (playing ? wall - seekAt : 0);
+      if (wall - seekAt < 6000) {
+        position = _seekMs!;
       } else {
         _seekMs = null;
         _seekAt = null;

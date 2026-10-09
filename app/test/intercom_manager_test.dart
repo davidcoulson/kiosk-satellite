@@ -147,7 +147,7 @@ void main() {
         ),
       );
     }
-    for (final name in ['playChime', 'screenOn']) {
+    for (final name in ['playChime', 'screenOn', 'stopSound']) {
       commands.register(
         Command(
           name: name,
@@ -203,6 +203,26 @@ void main() {
 
   Future<void> settle([int ms = 250]) =>
       Future<void>.delayed(Duration(milliseconds: ms));
+
+  /// A sounds folder holding ring.mp3, picked as the ring sound.
+  Future<void> pickRingSound() async {
+    await settings.set(defs.intercomRingSound, 'ring.mp3');
+    final root = await Directory.systemTemp.createTemp('ring-sounds-');
+    final sounds = await Directory('${root.path}/sounds').create();
+    await File('${sounds.path}/ring.mp3').writeAsBytes([1]);
+    final originalPaths = PathProviderPlatform.instance;
+    PathProviderPlatform.instance = _AnnouncementPaths(root.path);
+    addTearDown(() async {
+      PathProviderPlatform.instance = originalPaths;
+      await root.delete(recursive: true);
+    });
+  }
+
+  Iterable<Map<String, Object?>> ringSounds() =>
+      executed.where((e) => e.$1 == 'playChime').map((e) => e.$2);
+
+  Iterable<Object?> stoppedSounds() =>
+      executed.where((e) => e.$1 == 'stopSound').map((e) => e.$2['id']);
 
   setUp(() {
     peers = [
@@ -581,6 +601,8 @@ void main() {
       () async {
         peers.clear();
         await build(stubFleet: false);
+        // Onboarding done: the directory waits for it (#929).
+        await settings.set(defs.startUrl, 'http://ha.local:8123/lovelace');
         await settings.set(defs.fleetLeader, true);
         await settings.set(
           defs.fleetFollowers,
@@ -963,6 +985,57 @@ void main() {
         'token': tokenFor('c1'),
       });
       expect(good.ok, isTrue);
+    });
+
+    test(
+      'a picked ring sound plays one copy at a time and stops on answer',
+      () async {
+        await build();
+        await pickRingSound();
+        intercom
+          ..ringCadence = const Duration(milliseconds: 20)
+          ..ringForOverride = (() => const Duration(seconds: 5));
+        answers['POST /api/intercom/call/c1'] = (_) => {'ok': true};
+        await commands.execute('intercomIncoming', {
+          'call': 'c1',
+          'kind': 'call',
+          'from': {'id': 'kitchen', 'name': 'Kitchen', 'port': 2324},
+          'address': '192.168.1.70',
+          'token': tokenFor('c1'),
+        });
+        // Several cadence ticks pass while the first copy still plays.
+        await settle(150);
+        expect(ringSounds(), hasLength(1));
+        expect(ringSounds().single['id'], 'intercom-ring');
+        // Once it ends, the next tick rings again.
+        bus.publish(const SoundEnded(id: 'intercom-ring'));
+        await settle(60);
+        expect(ringSounds(), hasLength(2));
+        final r = await commands.execute('intercomAnswer', const {});
+        expect(r.ok, isTrue, reason: r.error);
+        expect(stoppedSounds(), ['intercom-ring']);
+        await settle(60);
+        expect(ringSounds(), hasLength(2));
+      },
+    );
+
+    test('a broadcast plays only the start of a picked ring sound', () async {
+      await build();
+      await pickRingSound();
+      intercom.shortRingSound = const Duration(milliseconds: 50);
+      await commands.execute('intercomIncoming', {
+        'call': 'b1',
+        'kind': 'broadcast',
+        'from': {'id': 'kitchen', 'name': 'Kitchen', 'port': 2324},
+        'address': '192.168.1.70',
+        'token': tokenFor('b1'),
+      });
+      await settle(20);
+      expect(ringSounds(), hasLength(1));
+      expect(stoppedSounds(), isEmpty);
+      await settle(80);
+      expect(stoppedSounds(), ['intercom-ring']);
+      expect(intercom.state, 'listening');
     });
 
     test('Maximum call duration hangs up a live call', () async {

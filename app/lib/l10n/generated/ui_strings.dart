@@ -1703,6 +1703,18 @@ abstract class UiStrings {
   /// Translate the visible message. Keep placeholders and any technical names unchanged.
   ///
   /// In en, this message translates to:
+  /// **'Uploading {current} of {total}…'**
+  String filesUploadingProgress(String current, String total);
+
+  /// Translate the visible message. Keep placeholders and any technical names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} files uploaded'**
+  String filesUploadedCount(String count);
+
+  /// Translate the visible message. Keep placeholders and any technical names unchanged.
+  ///
+  /// In en, this message translates to:
   /// **'\"All files access\" permission missing'**
   String get filesPermissionMissing;
 
