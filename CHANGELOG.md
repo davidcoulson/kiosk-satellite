@@ -2,7 +2,7 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
-## Unreleased
+## v2026.10.18 - 2026-10-09
 
 ### Added
 - **The adaptive brightness curve can run the other way.** Dragging the curve's dark room point above its bright room point, or typing it higher, now turns the curve over so the screen dims as the room gets brighter, for a screen that should glow in the dark such as an e-ink reader's backlight (#923). The dark room then sits at **Maximum brightness** and the bright room at **Minimum brightness**, so the Screen light in Home Assistant still turns the top of the curve. Moving an end now takes the middle points with it, on the device and in the remote admin.
