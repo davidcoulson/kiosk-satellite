@@ -3355,7 +3355,11 @@ class _LocalMediaScreensaverState extends State<LocalMediaScreensaver>
       VideoPlayerController? opened;
       try {
         final video = opened = await openVideo(
-          (viewType) => VideoPlayerController.file(file, viewType: viewType),
+          (viewType) => VideoPlayerController.file(
+            file,
+            viewType: viewType,
+            videoPlayerOptions: mutedVideoOptions,
+          ),
           onFallback: (e) => c.log.warn(
             'screensaver',
             'decoder refused the video surface, retrying on a platform '
@@ -4035,6 +4039,7 @@ class _ImmichScreensaverState extends State<ImmichScreensaver>
             c.immich.videoUri(asset),
             httpHeaders: c.immich.videoHeaders,
             viewType: viewType,
+            videoPlayerOptions: mutedVideoOptions,
           ),
           onFallback: (e) => c.log.warn(
             'screensaver',
