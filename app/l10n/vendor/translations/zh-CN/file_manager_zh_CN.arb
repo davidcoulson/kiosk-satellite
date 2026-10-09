@@ -4,6 +4,8 @@
   "filesUploading": "正在上传…",
   "filesUploadFailed": "上传失败",
   "filesUploaded": "已上传",
+  "filesUploadingProgress": "正在上传 {current}/{total}…",
+  "filesUploadedCount": "已上传 {count} 个文件",
   "filesPermissionMissing": "缺少“所有文件访问权限”",
   "filesPermissionHelp": "缺少此权限时，只能浏览应用文件夹。请在平板上打开的授权页面中授予此权限。",
   "filesGrant": "在设备上授权",

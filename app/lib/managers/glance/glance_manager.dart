@@ -24,6 +24,7 @@ class GlanceEntity {
     this.deviceClass,
     this.unit,
     this.precision,
+    this.labels,
   });
 
   final String entityId;
@@ -61,6 +62,10 @@ class GlanceEntity {
   /// #74). Null means none is set and the raw state shows as-is.
   final int? precision;
 
+  /// Home Assistant's wording for the state, so a window sensor reads
+  /// "Closed" in the server's language (issue #919). Null until it arrives.
+  final EntityStateLabels? labels;
+
   GlanceEntity merge({
     String? name,
     String? state,
@@ -69,6 +74,7 @@ class GlanceEntity {
     String? deviceClass,
     String? unit,
     int? precision,
+    EntityStateLabels? labels,
   }) => GlanceEntity(
     entityId: entityId,
     name: name ?? this.name,
@@ -80,6 +86,7 @@ class GlanceEntity {
     deviceClass: deviceClass ?? this.deviceClass,
     unit: unit ?? this.unit,
     precision: precision ?? this.precision,
+    labels: labels ?? this.labels,
   );
 
   Map<String, Object?> toJson() => {
@@ -305,6 +312,7 @@ class GlanceManager extends Manager {
       ids,
       _applyState,
       onPrecision: _applyPrecisions,
+      onStateLabels: _applyLabels,
     );
     if (live == null) {
       // Home Assistant unreachable, mid-restart, whatever: the row keeps
@@ -355,6 +363,12 @@ class GlanceManager extends Manager {
     entities.value = [
       for (final entity in entities.value)
         entity.merge(precision: precisions[entity.entityId]),
+    ];
+  }
+
+  void _applyLabels(EntityStateLabels labels) {
+    entities.value = [
+      for (final entity in entities.value) entity.merge(labels: labels),
     ];
   }
 

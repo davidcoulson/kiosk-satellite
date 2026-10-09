@@ -29,6 +29,35 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 - **An agent's remote admin no longer shows a Home Assistant tile.** It read "Not set up" on every agent, which never sets Home Assistant up; the Voice Satellite and Media Player tiles were already left out for the same reason.
 - **IPv6 address and the two by-interface address sensors start disabled** in a newly added Home Assistant device. IPv4 address covers the usual need; existing devices keep them as they are.
 
+## Unreleased
+
+### Added
+- **Scheduled screensavers have an ESPHome switch.** A new **Screensaver schedule** switch turns scheduled screensavers on or off from Home Assistant, so an automation can pause the schedule for a party or a vacation and bring it back after.
+
+### Changed
+- **Music Assistant covers load through Music Assistant.** Now Playing, the floating card, the queue panel and the paused track restored from Music Assistant loaded a streaming service's cover straight from the service, so a kiosk that reaches Music Assistant but not the internet showed no cover (#931). Covers now come through Music Assistant's image proxy whenever it offers one. Queue thumbnails also ask for a size Music Assistant 2.10 accepts, so a library track's thumbnail no longer fails to load.
+- **The File Manager uploads several files at once.** The remote admin's **File Manager** took one file per upload, so adding a folder of screensaver photos meant one pick per photo (#930). **Upload file** now takes any number of files, sends them one after another into the open folder and shows how far along it is. One message at the end confirms the count or names the files that failed.
+
+### Fixed
+- **A kiosk joins fleet lists once it can accept an invite.** A kiosk still on the welcome screen already showed up in the fleet leader's list, but the invite prompt only appears after onboarding, so an invite sent to it went nowhere (#929). A kiosk now stays out of fleet lists until onboarding is done and appears as soon as it finishes.
+
+## v2026.10.18 - 2026-10-09
+
+### Added
+- **The adaptive brightness curve can run the other way.** Dragging the curve's dark room point above its bright room point, or typing it higher, now turns the curve over so the screen dims as the room gets brighter, for a screen that should glow in the dark such as an e-ink reader's backlight (#923). The dark room then sits at **Maximum brightness** and the bright room at **Minimum brightness**, so the Screen light in Home Assistant still turns the top of the curve. Moving an end now takes the middle points with it, on the device and in the remote admin.
+
+### Changed
+- **Entity states read the way Home Assistant words them.** At a Glance and the screensaver **Entity** widget showed the raw state, so a window sensor read **Off** instead of **Closed**, always in English (#919). States now use Home Assistant's own wording for the entity's device class and integration, in Home Assistant's language, the same as its dashboards. Numbers keep their units and rounding.
+
+### Fixed
+- **The remote admin loads again with a dashboard view picked.** Since 2026.10.17 the remote admin stopped after the password screen with `i.repaint is not a function` on a kiosk whose screensaver is **Home Assistant Dashboard** or whose Now Playing **After dismissing** is **Chosen view** (#920). The **Dashboard view** row now loads like the other pickers.
+- **The Sendspin progress bar follows Previous and seeks.** On the device's own player, **Previous** restarted the song while the bar kept counting from where it was, even past the song's end (#915). After a seek on the bar, it could also jump back to the seek point every 5 seconds while the music played on. The bar now starts over with the song and moves on from a seek. This mostly showed without a Music Assistant token, which otherwise corrected the bar every few seconds.
+- **The Sendspin progress bar waits for the music after a seek, a Previous or a resume.** Each restart opens with about a second of silence before the music, and the bar counted through it, so it ran a second or two ahead of the song. It now holds still until the music plays. Seeks from the bar also land on the whole second Music Assistant plays from.
+- **A long intercom ring sound no longer piles up or rings into the call.** A picked **Ring sound** longer than 4 seconds started a new copy every 4 seconds over the ones still playing, and answering the call left every copy playing to its end (#922). The ring now plays one copy at a time, starting over once it ends, and stops as soon as the call is answered, declined, missed or ended. An incoming announcement plays only the first 2 seconds of the sound, so it no longer talks over the announcer.
+- **Plugin screensavers no longer flash white when their data changes.** A plugin screensaver built from bundled files, such as a clock showing a Home Assistant temperature, flashed white each time the plugin published new data (#918). Each update builds a new page, and the old page left the screen before the new one could paint. The old page now stays up until the new one has painted.
+- **At a Glance stays clear of the Immich photo details.** On a small screen the At a Glance row ran into the photo details in the bottom corners of the Immich screensaver, with one photo or a pair (#916). The row now measures the details and wraps into the space between them when two chips fit there. Otherwise it moves up above the details.
+- **Screensaver videos no longer silence music.** The Immich and Local Media screensavers play videos muted, but each video still claimed Android's audio focus, so music playing on the device went quiet for as long as a video was on screen (#924). Screensaver videos now play alongside other sound. A video cast over DLNA still takes audio focus as before.
+
 ## v2026.10.17 - 2026-10-08
 
 ### Changed

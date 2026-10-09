@@ -17,6 +17,9 @@ interface NativeSendspinCallbacks {
      */
     fun onAudioWrite(buffer: ByteBuffer, length: Int, timeoutMs: Int): Int
 
+    /** The next write is the stream's first music rather than the engine's leading silence. */
+    fun onAudioStart()
+
     fun onStreamStart(sampleRate: Int, channels: Int, bitDepth: Int)
 
     fun onStreamEnd()

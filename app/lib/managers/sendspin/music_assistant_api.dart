@@ -572,10 +572,15 @@ Map<String, Object?>? queueTrackSnapshot(
   };
 }
 
-/// A fetchable URL for a queue item's image: the path itself when it is
-/// a plain web URL, otherwise the server's image proxy (rooted at
-/// [webBase]) via the image's deterministic proxy id. Null when there is
-/// no image to offer.
+/// A fetchable URL for a queue item's image: the server's image proxy
+/// (rooted at [webBase]) via the image's deterministic proxy id, else the
+/// path itself when it is a plain web URL. Null when there is no image to
+/// offer.
+///
+/// The proxy comes first even for a streaming service's cover, so a kiosk
+/// that reaches Music Assistant but not the internet still gets its
+/// artwork, sized and cached by the server. [size] must be one the proxy
+/// accepts: 0 (original), 80, 160, 256, 512 or 1024.
 String? queueImageUrl(Object? image, String? webBase, {int size = 512}) {
   // A media item with no image of its own may carry a list of them in
   // its metadata, the way a radio station does: the thumbnail first,
@@ -586,13 +591,15 @@ String? queueImageUrl(Object? image, String? webBase, {int size = 512}) {
     return queueImageUrl(thumb ?? images.firstOrNull, webBase, size: size);
   }
   if (image is! Map) return null;
+  final proxyId = '${image['proxy_id'] ?? ''}';
+  if (proxyId.isNotEmpty && webBase != null) {
+    return '$webBase/imageproxy/$proxyId?size=$size&fmt=jpg';
+  }
   final path = '${image['path'] ?? ''}';
   if (image['remotely_accessible'] == true && path.startsWith('http')) {
     return path;
   }
-  final proxyId = '${image['proxy_id'] ?? ''}';
-  if (proxyId.isEmpty || webBase == null) return null;
-  return '$webBase/imageproxy/$proxyId?size=$size&fmt=jpg';
+  return null;
 }
 
 /// Request/response bookkeeping for one open connection, plus the events

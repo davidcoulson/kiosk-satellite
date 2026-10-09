@@ -4,6 +4,8 @@
   "filesUploading": "Subiendo…",
   "filesUploadFailed": "No se pudo subir el archivo",
   "filesUploaded": "Archivo subido",
+  "filesUploadingProgress": "Subiendo {current} de {total}…",
+  "filesUploadedCount": "{count} archivos subidos",
   "filesPermissionMissing": "Falta el permiso de acceso a todos los archivos",
   "filesPermissionHelp": "Sin este permiso solo puedes explorar la carpeta de la aplicación. La pantalla de permisos se abre en la tablet.",
   "filesGrant": "Conceder en el dispositivo",

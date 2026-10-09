@@ -1034,6 +1034,7 @@ void main() {
         'remote',
         'screensaver_brightness',
         'screensaver',
+        'screensaver_schedule',
         'hold_mode',
         'camera_enabled',
         'rtsp_streaming',
@@ -1292,6 +1293,13 @@ void main() {
       lines,
       contains('settings: set screensaver.enabled = false [esphome]'),
     );
+  });
+
+  test('the schedule switch turns scheduled screensavers on and off', () async {
+    await surface.handleCommand('screensaver_schedule', true);
+    expect(settings.get(defs.screensaverScheduleEnabled), isTrue);
+    await surface.handleCommand('screensaver_schedule', false);
+    expect(settings.get(defs.screensaverScheduleEnabled), isFalse);
   });
 
   test('the slide buttons step the showing slideshow', () async {

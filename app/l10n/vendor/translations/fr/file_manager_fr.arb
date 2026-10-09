@@ -4,6 +4,8 @@
   "filesUploading": "Envoi…",
   "filesUploadFailed": "Échec de l'envoi",
   "filesUploaded": "Envoyé",
+  "filesUploadingProgress": "Envoi {current} sur {total}…",
+  "filesUploadedCount": "{count} fichiers envoyés",
   "filesPermissionMissing": "Autorisation « Accès à tous les fichiers » manquante",
   "filesPermissionHelp": "Sans elle, seul le dossier de l'application peut être parcouru. L'écran d'autorisation s'ouvre sur la tablette.",
   "filesGrant": "Autoriser sur l'appareil",

@@ -539,6 +539,7 @@ class _DlnaPlayerState extends State<_DlnaPlayer> {
                   // stream").
                   formatHint: widget.media.hls ? VideoFormat.hls : null,
                   viewType: viewType,
+                  videoPlayerOptions: audibleVideoOptions,
                 ),
                 onFallback: (e) =>
                     widget.dlna.reportDecoderFallback(widget.media.uri, '$e'),

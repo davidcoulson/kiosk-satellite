@@ -1292,6 +1292,33 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
   /// Zero whenever the chips are not showing.
   final ValueNotifier<double> weatherChipsHeight = ValueNotifier(0);
 
+  /// The room the Immich metadata takes in each bottom corner it sits in,
+  /// measured after layout, so the At a Glance row can wrap between the
+  /// panels or rise above them (issue #916). It only grows while the
+  /// screensaver runs: every photo's details differ, and a row that
+  /// followed each slide would hop up and down with them.
+  final ValueNotifier<Map<String, Size>> metadataFootprint = ValueNotifier(
+    const {},
+  );
+
+  /// Records the metadata panel's size in [corner], keeping the largest
+  /// seen this session.
+  void reportMetadataFootprint(String corner, Size size) {
+    final had = metadataFootprint.value[corner];
+    if (had != null && had.width >= size.width && had.height >= size.height) {
+      return;
+    }
+    metadataFootprint.value = {
+      ...metadataFootprint.value,
+      corner: had == null
+          ? size
+          : Size(
+              size.width > had.width ? size.width : had.width,
+              size.height > had.height ? size.height : had.height,
+            ),
+    };
+  }
+
   /// The slideshow on screen, when the running mode is one. Home Assistant
   /// Media, Local Media, Photo Gallery and Immich Media register on mount
   /// and stand down on unmount, and so does the Camera Streams rotation,
@@ -1798,6 +1825,7 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
     scheduleGlance.value = null;
     claimedCorners.value = const {};
     weatherChipsHeight.value = 0;
+    metadataFootprint.value = const {};
     _slides = null;
     bus.publish(const ScreensaverStateChanged(active: false));
   }

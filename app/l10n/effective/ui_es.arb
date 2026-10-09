@@ -3467,6 +3467,41 @@
       ]
     }
   },
+  "filesUploadingProgress": "Subiendo {current} de {total}…",
+  "@filesUploadingProgress": {
+    "context": "File Manager > folders, uploads and file actions",
+    "description": "Translate the visible message. Keep placeholders and any technical names unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "File Manager > folders, uploads and file actions"
+      ]
+    },
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "filesUploadedCount": "{count} archivos subidos",
+  "@filesUploadedCount": {
+    "context": "File Manager > folders, uploads and file actions",
+    "description": "Translate the visible message. Keep placeholders and any technical names unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "File Manager > folders, uploads and file actions"
+      ]
+    },
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "filesPermissionMissing": "Falta el permiso de acceso a todos los archivos",
   "@filesPermissionMissing": {
     "context": "File Manager > folders, uploads and file actions",

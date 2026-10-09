@@ -900,6 +900,16 @@ class UiStringsRu extends UiStrings {
   String get filesUploaded => 'Загружено';
 
   @override
+  String filesUploadingProgress(String current, String total) {
+    return 'Загрузка $current из $total…';
+  }
+
+  @override
+  String filesUploadedCount(String count) {
+    return 'Загружено файлов: $count';
+  }
+
+  @override
   String get filesPermissionMissing => 'Нет разрешения «Доступ ко всем файлам»';
 
   @override

@@ -16,6 +16,7 @@ pending = []
 failure = None
 download_failure = False
 delete_failure = False
+multi = None
 class Handler(SimpleHTTPRequestHandler):
     def log_message(self, *_): pass
 server = ThreadingHTTPServer(('127.0.0.1',0),partial(Handler,directory=str(ROOT)))
@@ -34,7 +35,12 @@ def api(route):
     if path=='commands/fileDelete':
         return route.fulfill(json={'ok':not delete_failure,'error':'no such file' if delete_failure else None})
     if path=='files/upload':
-        assert parse_qs(urlsplit(route.request.url).query)=={'root':['app'],'path':['Raw & folder/Raw upload.txt']}
+        query=parse_qs(urlsplit(route.request.url).query)
+        if multi is not None:
+            multi.append((query['path'][0],route.request.post_data_buffer))
+            pending.append(route)
+            return
+        assert query=={'root':['app'],'path':['Raw & folder/Raw upload.txt']}
         assert route.request.post_data_buffer==b'original upload content'
         pending.append(route)
         return
@@ -78,7 +84,38 @@ try:
         expect(root.get_by_role('button',name=es['filesUpload'],exact=True)).to_be_enabled()
         expect(page.locator('.toast-title')).to_have_text(es['filesUploaded'])
         expect(page.locator('.toast-msg')).to_have_text('Raw upload.txt')
+        # A multiple pick goes up one file at a time into the folder open at
+        # the pick, even after browsing away, and one toast sums it up.
+        multi=[]
+        picks=[{'name':f'Photo {i}.jpg','mimeType':'image/jpeg','buffer':f'photo {i}'.encode()} for i in (1,2,3)]
+        root.locator('input[type=file]').set_input_files(picks)
+        progress=lambda lang,i:lang['filesUploadingProgress'].replace('{current}',str(i)).replace('{total}','3')
+        expect(root.get_by_role('button',name=progress(es,1),exact=True)).to_be_disabled()
         root.get_by_role('button',name=es['filesUp'],exact=True).click()
+        language('en')
+        expect(root.get_by_role('button',name=progress(en,1),exact=True)).to_be_disabled()
+        language('es')
+        assert len(pending)==1
+        pending.pop().fulfill(json={'ok':True})
+        expect(root.get_by_role('button',name=progress(es,2),exact=True)).to_be_disabled()
+        while len(pending)<1: page.wait_for_timeout(20)
+        pending.pop().fulfill(status=500,json={'error':'write failed: No space left'})
+        expect(root.get_by_role('button',name=progress(es,3),exact=True)).to_be_disabled()
+        while len(pending)<1: page.wait_for_timeout(20)
+        pending.pop().fulfill(json={'ok':True})
+        expect(root.get_by_role('button',name=es['filesUpload'],exact=True)).to_be_enabled()
+        assert multi==[(f'Raw & folder/Photo {i}.jpg',f'photo {i}'.encode()) for i in (1,2,3)],multi
+        expect(page.locator('.toast-title')).to_have_text(es['filesUploadFailed'])
+        expect(page.locator('.toast-msg')).to_have_text('Photo 2.jpg: '+es['filesWriteError'].replace('{error}','No space left'))
+        multi=[]
+        root.locator('input[type=file]').set_input_files(picks[:2])
+        for _ in range(2):
+            while len(pending)<1: page.wait_for_timeout(20)
+            pending.pop().fulfill(json={'ok':True})
+        expect(root.get_by_role('button',name=es['filesUpload'],exact=True)).to_be_enabled()
+        assert [p for p,_ in multi]==['Photo 1.jpg','Photo 2.jpg'],multi
+        expect(page.locator('.toast-title')).to_have_text(es['filesUploadedCount'].replace('{count}','2'))
+        multi=None
         expect(root.get_by_text('Raw <name>.txt',exact=True)).to_be_visible()
         with page.expect_download() as download:
             root.get_by_role('button',name=es['filesDownload'],exact=True).click()

@@ -4,6 +4,8 @@
   "filesUploading": "Загрузка…",
   "filesUploadFailed": "Не удалось загрузить",
   "filesUploaded": "Загружено",
+  "filesUploadingProgress": "Загрузка {current} из {total}…",
+  "filesUploadedCount": "Загружено файлов: {count}",
   "filesPermissionMissing": "Нет разрешения «Доступ ко всем файлам»",
   "filesPermissionHelp": "Без него доступна только папка приложения. Экран выдачи разрешения откроется на планшете.",
   "filesGrant": "Предоставить на устройстве",

@@ -72,27 +72,47 @@ function buildShell(tab) {
   uploadBtn.style.cssText = 'flex-shrink:0; margin-left:auto;';
   const picker = document.createElement('input');
   picker.type = 'file';
+  picker.multiple = true;
   picker.hidden = true;
+  // The endpoint takes one file per request, so a multiple pick goes up
+  // one file after another into the folder that was open at the pick,
+  // even if the person browses away meanwhile. One toast sums it up.
   picker.addEventListener('change', async () => {
-    const file = picker.files && picker.files[0];
-    if (!file) return;
-    uploadBtn.disabled = true;
-    textLabel(uploadBtn, 'filesUploading');
-    const target = [...filesState.crumbs, file.name].join('/');
-    try {
-      const q = `root=${encodeURIComponent(filesState.root)}&path=${encodeURIComponent(target)}`;
-      const res = await api(`/api/files/upload?${q}`, { method: 'POST', body: file });
-      if (!res.ok) {
-        showToast({ title: t('filesUploadFailed'),
-          message: fileError(((await res.json()) || {}).error || String(res.status)),
-          kind: 'error' });
-      } else {
-        showToast({ title: t('filesUploaded'), message: file.name, kind: 'success' });
-      }
-    } catch (e) {
-      showToast({ title: t('filesUploadFailed'), message: String(e), kind: 'error' });
-    }
+    const files = [...(picker.files || [])];
     picker.value = '';
+    if (!files.length) return;
+    const root = filesState.root;
+    const crumbs = [...filesState.crumbs];
+    uploadBtn.disabled = true;
+    const failures = [];
+    for (const [i, file] of files.entries()) {
+      if (files.length > 1) {
+        fileLabel(uploadBtn, () => t('filesUploadingProgress', {current:String(i + 1), total:String(files.length)}));
+      } else {
+        textLabel(uploadBtn, 'filesUploading');
+      }
+      const target = [...crumbs, file.name].join('/');
+      try {
+        const q = `root=${encodeURIComponent(root)}&path=${encodeURIComponent(target)}`;
+        const res = await api(`/api/files/upload?${q}`, { method: 'POST', body: file });
+        if (!res.ok) {
+          failures.push({ name: file.name,
+            error: fileError(((await res.json().catch(() => null)) || {}).error || String(res.status)) });
+        }
+      } catch (e) {
+        failures.push({ name: file.name, error: String(e) });
+      }
+    }
+    if (files.length === 1) {
+      if (failures.length) showToast({ title: t('filesUploadFailed'), message: failures[0].error, kind: 'error' });
+      else showToast({ title: t('filesUploaded'), message: files[0].name, kind: 'success' });
+    } else if (failures.length) {
+      showToast({ title: t('filesUploadFailed'),
+        message: failures.map((f) => `${f.name}: ${f.error}`).join(' · '),
+        kind: 'error', duration: 8000 });
+    } else {
+      showToast({ title: t('filesUploadedCount', {count:String(files.length)}), kind: 'success' });
+    }
     uploadBtn.disabled = false;
     textLabel(uploadBtn, 'filesUpload');
     refreshList();

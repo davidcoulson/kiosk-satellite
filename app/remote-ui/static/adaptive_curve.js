@@ -1,8 +1,9 @@
 /* The adaptive brightness curve (issues #343 and #742), the device's
    AdaptiveCurve (lib/managers/screen/adaptive_brightness.dart) line for
    line: four points, a monotone cubic through them on the log of the light
-   level, flat before the first and after the last. Pure, so the tests can
-   load it without a page. */
+   level, flat before the first and after the last, running uphill or, on an
+   inverted curve (issue #923), downhill. Pure, so the tests can load it
+   without a page. */
 
 const LUX_FLOOR = 0.01;
 
@@ -15,20 +16,25 @@ export const CURVE_KEYS = {
   p2Level: 'screen.adaptive_point2_level',
   p3Position: 'screen.adaptive_point3_position',
   p3Level: 'screen.adaptive_point3_level',
+  inverted: 'screen.adaptive_inverted',
 };
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
 
-/* Crossed light levels and falling brightness are flattened, so the curve
-   stays a monotone function whatever the settings say mid-edit. */
+/* Crossed light levels and brightness that turned back are flattened, so
+   the curve stays a monotone function whatever the settings say mid-edit.
+   The ends say which way it runs. */
 export function sanePoints(raw) {
+  const falling = raw.length > 0
+    && clamp(raw[raw.length - 1].level, 0, 1) < clamp(raw[0].level, 0, 1);
   const out = [];
   for (const p of raw) {
     let lux = Math.max(p.lux, LUX_FLOOR);
     let level = clamp(p.level, 0, 1);
     if (out.length) {
+      const prev = out[out.length - 1].level;
       lux = Math.max(lux, out[out.length - 1].lux);
-      level = Math.max(level, out[out.length - 1].level);
+      level = falling ? Math.min(level, prev) : Math.max(level, prev);
     }
     out.push({ lux, level });
   }
@@ -36,18 +42,21 @@ export function sanePoints(raw) {
 }
 
 /* The four points from the settings: the ends as they are, the middle two
-   from their shares of the span between the ends. */
+   from their shares of the span between the ends. Inverted (issue #923),
+   Dark room sits at Maximum and Bright room at Minimum. */
 export function curvePoints(v) {
   const dark = Math.max(v.dark, LUX_FLOOR);
   const bright = Math.max(v.bright, LUX_FLOOR);
+  const darkLevel = v.inverted ? v.max : v.min;
+  const brightLevel = v.inverted ? v.min : v.max;
   const lux = (position) => Math.exp(Math.log(dark)
     + clamp(position, 0, 1) * (Math.log(bright) - Math.log(dark)));
-  const level = (share) => v.min + clamp(share, 0, 1) * (v.max - v.min);
+  const level = (share) => darkLevel + clamp(share, 0, 1) * (brightLevel - darkLevel);
   return sanePoints([
-    { lux: dark, level: v.min },
+    { lux: dark, level: darkLevel },
     { lux: lux(v.p2Position), level: level(v.p2Level) },
     { lux: lux(v.p3Position), level: level(v.p3Level) },
-    { lux: bright, level: v.max },
+    { lux: bright, level: brightLevel },
   ]);
 }
 
@@ -58,13 +67,15 @@ export function positionFor(lux, darkLux, brightLux) {
   return clamp((Math.log(Math.max(lux, LUX_FLOOR)) - dark) / (bright - dark), 0, 1);
 }
 
-export function shareFor(level, minLevel, maxLevel) {
-  if (maxLevel <= minLevel) return 0;
-  return clamp((level - minLevel) / (maxLevel - minLevel), 0, 1);
+/* A brightness as a share of the way from the dark end's level to the
+   bright end's. */
+export function shareFor(level, darkLevel, brightLevel) {
+  if (brightLevel === darkLevel) return 0;
+  return clamp((level - darkLevel) / (brightLevel - darkLevel), 0, 1);
 }
 
 /* Fritsch-Butland tangents: the weighted harmonic mean of the neighboring
-   slopes, zero at a flat step, one-sided at the ends. */
+   slopes, zero at a flat step or a turn, one-sided at the ends. */
 function tangents(xs, ys) {
   const n = xs.length;
   const h = [];
@@ -77,7 +88,7 @@ function tangents(xs, ys) {
   m[0] = d[0];
   m[n - 1] = d[n - 2];
   for (let i = 1; i < n - 1; i++) {
-    if (d[i - 1] <= 0 || d[i] <= 0) continue;
+    if (d[i - 1] * d[i] <= 0) continue;
     const w1 = 2 * h[i] + h[i - 1];
     const w2 = h[i] + 2 * h[i - 1];
     m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i]);
@@ -103,28 +114,47 @@ export function levelAt(points, lux) {
   const t3 = t2 * t;
   const y = (2 * t3 - 3 * t2 + 1) * ys[k] + (t3 - 2 * t2 + t) * h * m[k]
     + (-2 * t3 + 3 * t2) * ys[k + 1] + (t3 - t2) * h * m[k + 1];
-  return clamp(y, ys[k], ys[k + 1]);
+  return clamp(y, Math.min(ys[k], ys[k + 1]), Math.max(ys[k], ys[k + 1]));
 }
 
-/* The settings a curve writes, rounded the way the device rounds them. */
+/* The settings a curve writes, rounded the way the device rounds them. A
+   Dark room end above the Bright room end is an inverted curve: Minimum
+   and Maximum stay the lower and higher of the two. */
 export function curveSettings(p) {
   const level = (v) => Math.round(v * 100) / 100;
   const lux = (v) => Math.round(v * 10) / 10;
   const share = (v) => Number(v.toFixed(6));
-  const min = level(p[0].level);
-  const max = level(p[3].level);
+  const darkLevel = level(p[0].level);
+  const brightLevel = level(p[3].level);
+  const inverted = darkLevel > brightLevel;
   const dark = lux(p[0].lux);
   const bright = lux(p[3].lux);
   return {
-    [CURVE_KEYS.min]: min,
-    [CURVE_KEYS.max]: max,
+    [CURVE_KEYS.min]: inverted ? brightLevel : darkLevel,
+    [CURVE_KEYS.max]: inverted ? darkLevel : brightLevel,
     [CURVE_KEYS.dark]: dark,
     [CURVE_KEYS.bright]: bright,
     [CURVE_KEYS.p2Position]: share(positionFor(p[1].lux, dark, bright)),
-    [CURVE_KEYS.p2Level]: share(shareFor(p[1].level, min, max)),
+    [CURVE_KEYS.p2Level]: share(shareFor(p[1].level, darkLevel, brightLevel)),
     [CURVE_KEYS.p3Position]: share(positionFor(p[2].lux, dark, bright)),
-    [CURVE_KEYS.p3Level]: share(shareFor(p[2].level, min, max)),
+    [CURVE_KEYS.p3Level]: share(shareFor(p[2].level, darkLevel, brightLevel)),
+    [CURVE_KEYS.inverted]: inverted,
   };
+}
+
+/* The curve with point i moved. An end that moves takes the middle points
+   with it: they keep their shares of the way from the Dark room level to
+   the Bright room level, so dragging one end past the other turns the
+   whole curve over instead of pinning the end on the middle. */
+export function withCurvePoint(p, i, moved) {
+  const last = p.length - 1;
+  const next = p.map((q, k) => (k === i ? moved : q));
+  if (i !== 0 && i !== last) return next;
+  for (let k = 1; k < last; k++) {
+    const s = shareFor(p[k].level, p[0].level, p[last].level);
+    next[k] = { lux: p[k].lux, level: next[0].level + s * (next[last].level - next[0].level) };
+  }
+  return next;
 }
 
 /* A light level for a label: one decimal at most, none when whole. */
@@ -144,14 +174,14 @@ export function snapLux(lux) {
 export const snapLevel = (level) => Math.round(level * 100) / 100;
 
 /* Where point i may go: between its neighbors in light (a drag keeps a
-   little room, a typed value only has to differ), between their
-   brightness, and the ends keep Minimum under Maximum. */
+   little room, a typed value only has to differ). A middle point stays
+   between their brightness, whichever way the curve runs. The ends go
+   anywhere, past each other too, which inverts the curve. */
 export function pointBounds(p, i, domain, gap = 1.12) {
   const last = p.length - 1;
-  let levelLo = i === 0 ? 0 : p[i - 1].level;
-  let levelHi = i === last ? 1 : p[i + 1].level;
-  if (i === 0) levelHi = Math.min(levelHi, p[last].level - 0.01);
-  if (i === last) levelLo = Math.max(levelLo, p[0].level + 0.01);
+  const end = i === 0 || i === last;
+  const levelLo = end ? 0 : Math.min(p[i - 1].level, p[i + 1].level);
+  const levelHi = end ? 1 : Math.max(p[i - 1].level, p[i + 1].level);
   return {
     luxLo: i === 0 ? (domain ? domain.lo : 0) : p[i - 1].lux * gap,
     luxHi: i === last ? (domain ? domain.hi : 200000) : p[i + 1].lux / gap,
@@ -160,11 +190,23 @@ export function pointBounds(p, i, domain, gap = 1.12) {
   };
 }
 
+/* An end never lands on the other end's brightness: a flat curve has no
+   direction. One crossing it hops a step further, or stays put at the
+   edge of the chart. */
+function pastOtherEnd(level, from, other) {
+  if (Math.abs(level - other) >= 0.005) return level;
+  const hop = snapLevel(other + (level >= from ? 0.01 : -0.01));
+  return hop < 0 || hop > 1 ? from : hop;
+}
+
 export function clampPoint(p, i, want, domain) {
   const b = pointBounds(p, i, domain);
+  const last = p.length - 1;
+  let level = b.levelLo <= b.levelHi ? clamp(want.level, b.levelLo, b.levelHi) : p[i].level;
+  if (i === 0 || i === last) level = pastOtherEnd(level, p[i].level, p[last - i].level);
   return {
     lux: b.luxLo <= b.luxHi ? clamp(want.lux, b.luxLo, b.luxHi) : p[i].lux,
-    level: b.levelLo <= b.levelHi ? clamp(want.level, b.levelLo, b.levelHi) : p[i].level,
+    level,
   };
 }
 

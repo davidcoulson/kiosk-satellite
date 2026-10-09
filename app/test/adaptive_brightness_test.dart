@@ -147,6 +147,75 @@ void main() {
     expect(zero.levelAt(1), greaterThan(0.2));
   });
 
+  // Issue #923: on an inverted curve Dark room sits at Maximum and Bright
+  // room at Minimum, for an e-ink reader's backlight.
+  AdaptiveCurve inverted({
+    double min = 0.2,
+    double max = 1.0,
+    double dark = 5,
+    double bright = 500,
+  }) => AdaptiveCurve.fromSettings(
+    minLevel: min,
+    maxLevel: max,
+    darkLux: dark,
+    brightLux: bright,
+    point2Position: 1 / 3,
+    point2Level: 1 / 3,
+    point3Position: 2 / 3,
+    point3Level: 2 / 3,
+    inverted: true,
+  );
+
+  test('an inverted curve is the same curve upside down', () {
+    final up = line();
+    final down = inverted();
+    expect(down.points.first.level, 1.0);
+    expect(down.points.last.level, 0.2);
+    for (final lux in [1.0, 5.0, 7.0, 20.0, 50.0, 120.0, 500.0, 900.0]) {
+      expect(
+        down.levelAt(lux),
+        closeTo(1.2 - up.levelAt(lux), 1e-9),
+        reason: '$lux',
+      );
+    }
+  });
+
+  test('a falling curve never climbs, and never overshoots a point', () {
+    final falling = AdaptiveCurve([
+      for (final p in steep.points) (lux: p.lux, level: 1 - p.level),
+    ]);
+    var last = 2.0;
+    for (var lux = 1.0; lux <= 1000; lux *= 1.01) {
+      final level = falling.levelAt(lux);
+      expect(level, lessThanOrEqualTo(last + 1e-12), reason: '$lux');
+      expect(level, closeTo(1 - steep.levelAt(lux), 1e-9), reason: '$lux');
+      last = level;
+    }
+  });
+
+  test('the factor of an inverted curve is over its dark end', () {
+    // The e-ink case: full backlight at 5 lx and under, off from 6 lx.
+    final curve = inverted(min: 0, max: 1, dark: 5, bright: 6);
+    expect(curve.factor(0), 1.0);
+    expect(curve.factor(5), 1.0);
+    expect(curve.factor(6), 0.0);
+    expect(curve.factor(2000), 0.0);
+    final dimmer = inverted(min: 0.1, max: 0.5, dark: 5, bright: 300);
+    expect(dimmer.factor(1), 1.0);
+    expect(dimmer.factor(1000), closeTo(0.2, 1e-9));
+  });
+
+  test('a middle point that rose on an inverted curve flattens', () {
+    final crossed = AdaptiveCurve([
+      (lux: 5, level: 0.9),
+      (lux: 10, level: 0.95),
+      (lux: 100, level: 0.4),
+      (lux: 200, level: 0.1),
+    ]);
+    expect(crossed.points[1].level, 0.9);
+    expect(crossed.levelAt(7), 0.9);
+  });
+
   test('ends that met become a step at the bright point', () {
     final equal = line(dark: 50, bright: 50);
     expect(equal.levelAt(49), 0.2);

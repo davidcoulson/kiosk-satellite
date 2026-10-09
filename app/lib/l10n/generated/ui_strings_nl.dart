@@ -898,6 +898,16 @@ class UiStringsNl extends UiStrings {
   String get filesUploaded => 'Geüpload';
 
   @override
+  String filesUploadingProgress(String current, String total) {
+    return 'Uploaden $current van $total…';
+  }
+
+  @override
+  String filesUploadedCount(String count) {
+    return '$count bestanden geüpload';
+  }
+
+  @override
   String get filesPermissionMissing =>
       'Toestemming voor toegang tot alle bestanden ontbreekt';
 

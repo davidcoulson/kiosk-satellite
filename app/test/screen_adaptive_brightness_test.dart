@@ -469,4 +469,33 @@ void main() {
     // Half way from 20% to 60%.
     expect(writes.last, closeTo(0.4, 0.001));
   });
+
+  // Issue #923: an e-ink reader's backlight, on in the dark and off in
+  // daylight. Inverted, Dark room sits at Maximum and Bright room at
+  // Minimum, and Home Assistant's Screen light still turns the top.
+  test('an inverted curve dims the panel as the room brightens', () async {
+    await build({
+      ...on,
+      'ks.screen.adaptive_min_brightness': 0,
+      'ks.screen.adaptive_max_brightness': 1,
+      'ks.screen.adaptive_dark_lux': 5,
+      'ks.screen.adaptive_bright_lux': 6,
+      'ks.screen.adaptive_inverted': true,
+    }, startLux: 2);
+    expect(writes.last, closeTo(1.0, 0.001));
+    bus.publish(light(400));
+    await settle();
+    expect(writes.last, 0.0);
+    bus.publish(light(3));
+    await settle();
+    expect(writes.last, closeTo(1.0, 0.001));
+    await screen.setBrightness(0.6);
+    await settle();
+    expect(writes.last, closeTo(0.6, 0.001));
+    expect(settings.get(defs.adaptiveMaxBrightness), closeTo(0.6, 0.001));
+    // Turning it back over from the editor lands at once.
+    await settings.set(defs.adaptiveInverted, false);
+    await settle();
+    expect(writes.last, 0.0);
+  });
 }

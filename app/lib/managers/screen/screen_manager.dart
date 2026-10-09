@@ -655,6 +655,7 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
     defs.adaptivePoint2Level.key,
     defs.adaptivePoint3Position.key,
     defs.adaptivePoint3Level.key,
+    defs.adaptiveInverted.key,
   };
 
   /// The four-point curve from its settings. Its factor is the level over
@@ -672,6 +673,7 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
     point2Level: _settings.get(defs.adaptivePoint2Level).toDouble(),
     point3Position: _settings.get(defs.adaptivePoint3Position).toDouble(),
     point3Level: _settings.get(defs.adaptivePoint3Level).toDouble(),
+    inverted: _settings.get(defs.adaptiveInverted),
   );
 
   static String _formatLux(double lux) => lux == lux.roundToDouble()

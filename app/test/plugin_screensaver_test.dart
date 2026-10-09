@@ -139,4 +139,58 @@ void main() {
     expect(document, contains('if (pending !== next) return;'));
     expect(document, isNot(contains('allow-same-origin')));
   });
+
+  group('asset publications keep the shown document until the next paints', () {
+    Map<String, Object?> asset(String data) => {
+      'entry': 'clock/index.html',
+      'assetOrigin': 'https://ks-plugin-a.invalid',
+      'assetDirectory': '/data/plugins/a/assets',
+      'dataJson': data,
+    };
+
+    test('changed options load beneath the shown document', () {
+      final documents = PluginDocuments();
+      expect(documents.publish(asset('{"t":"20.1"}')), false);
+      final first = documents.shown!.key;
+      expect(documents.publish(asset('{"t":"20.2"}')), true);
+      expect(documents.shown!.key, first);
+      expect(documents.next!.renderer['dataJson'], '{"t":"20.2"}');
+      expect(documents.ready(documents.next!.key), true);
+      expect(documents.shown!.renderer['dataJson'], '{"t":"20.2"}');
+      expect(documents.next, isNull);
+    });
+
+    test('a newer publication replaces one still loading', () {
+      final documents = PluginDocuments()..publish(asset('{"t":"1"}'));
+      documents.publish(asset('{"t":"2"}'));
+      final stale = documents.next!.key;
+      expect(documents.publish(asset('{"t":"3"}')), true);
+      expect(documents.ready(stale), false);
+      expect(documents.shown!.renderer['dataJson'], '{"t":"1"}');
+      expect(documents.ready(documents.next!.key), true);
+      expect(documents.shown!.renderer['dataJson'], '{"t":"3"}');
+    });
+
+    test('returning to the shown options drops the pending document', () {
+      final documents = PluginDocuments()..publish(asset('{"t":"1"}'));
+      documents.publish(asset('{"t":"2"}'));
+      expect(documents.publish(asset('{"t":"1"}')), false);
+      expect(documents.next, isNull);
+    });
+
+    test('inline updates stay in the shown document', () {
+      final documents = PluginDocuments()..publish({'html': '<p>1</p>'});
+      expect(documents.publish({'html': '<p>2</p>'}), false);
+      expect(documents.next, isNull);
+      expect(documents.shown!.renderer['html'], '<p>2</p>');
+    });
+
+    test('removal clears both documents', () {
+      final documents = PluginDocuments()..publish(asset('{"t":"1"}'));
+      documents.publish(asset('{"t":"2"}'));
+      documents.publish(null);
+      expect(documents.shown, isNull);
+      expect(documents.next, isNull);
+    });
+  });
 }

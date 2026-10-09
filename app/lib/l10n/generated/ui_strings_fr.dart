@@ -905,6 +905,16 @@ class UiStringsFr extends UiStrings {
   String get filesUploaded => 'Envoyé';
 
   @override
+  String filesUploadingProgress(String current, String total) {
+    return 'Envoi $current sur $total…';
+  }
+
+  @override
+  String filesUploadedCount(String count) {
+    return '$count fichiers envoyés';
+  }
+
+  @override
   String get filesPermissionMissing =>
       'Autorisation « Accès à tous les fichiers » manquante';
 

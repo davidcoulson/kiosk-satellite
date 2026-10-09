@@ -874,6 +874,16 @@ class UiStringsZh extends UiStrings {
   String get filesUploaded => '已上传';
 
   @override
+  String filesUploadingProgress(String current, String total) {
+    return '正在上传 $current/$total…';
+  }
+
+  @override
+  String filesUploadedCount(String count) {
+    return '已上传 $count 个文件';
+  }
+
+  @override
   String get filesPermissionMissing => '缺少“所有文件访问权限”';
 
   @override
@@ -13676,6 +13686,16 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get filesUploaded => '已上传';
+
+  @override
+  String filesUploadingProgress(String current, String total) {
+    return '正在上传 $current/$total…';
+  }
+
+  @override
+  String filesUploadedCount(String count) {
+    return '已上传 $count 个文件';
+  }
 
   @override
   String get filesPermissionMissing => '缺少“所有文件访问权限”';
