@@ -8,6 +8,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderProxyBox;
+import 'package:flutter/scheduler.dart' show SchedulerBinding;
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
@@ -383,12 +385,26 @@ class _ScreensaverOverlayState extends State<ScreensaverOverlay> {
                           final metadata = view == 'immich'
                               ? immichMetadataCorner(container.settings)
                               : null;
-                          return _GlanceOverlay(
-                            container: container,
-                            narrow:
-                                claimed.any((c) => c.startsWith('bottom_')) ||
-                                metadata == 'bottom_left' ||
-                                metadata == 'bottom_right',
+                          final narrow =
+                              claimed.any((c) => c.startsWith('bottom_')) ||
+                              metadata == 'bottom_left' ||
+                              metadata == 'bottom_right';
+                          if (!narrow || view != 'immich') {
+                            return _GlanceOverlay(
+                              container: container,
+                              narrow: narrow,
+                            );
+                          }
+                          // Once the panels have been measured, the row
+                          // fits itself to the room they leave.
+                          return ValueListenableBuilder<Map<String, Size>>(
+                            valueListenable:
+                                container.screensaver.metadataFootprint,
+                            builder: (context, footprint, _) => _GlanceOverlay(
+                              container: container,
+                              narrow: true,
+                              corners: footprint.values,
+                            ),
                           );
                         },
                       );
@@ -1325,11 +1341,46 @@ class _ClockScreensaverState extends State<ClockScreensaver>
   }
 }
 
+/// Where the At a Glance row goes over a mode with metadata panels in its
+/// bottom corners: its distance from the bottom edge, the widest it may
+/// run and whether it wraps narrow. [corners] are the panels' measured
+/// sizes, margins included, and [compactWidth] the narrowest the row
+/// wraps to.
+///
+/// The row is centred, so the wider panel sets the room on both sides. A
+/// fixed narrow width still ran into the panels on a small screen (issue
+/// #916): the row now wraps into the room the panels leave when two chips
+/// fit across it, and otherwise rises above the taller panel and takes
+/// the full width. Until the panels have been measured it wraps narrow as
+/// before.
+@visibleForTesting
+({double bottom, double maxWidth, bool narrow}) glancePlacement({
+  required double width,
+  required double inset,
+  required bool narrow,
+  required Iterable<Size> corners,
+  required double Function() compactWidth,
+}) {
+  if (!narrow || corners.isEmpty) {
+    return (bottom: inset, maxWidth: width, narrow: narrow);
+  }
+  final room = width - 2 * corners.map((c) => c.width).reduce(max);
+  if (compactWidth() <= room) {
+    return (bottom: inset, maxWidth: room, narrow: true);
+  }
+  final rise = corners.map((c) => c.height).reduce(max);
+  return (bottom: max(inset, rise), maxWidth: width, narrow: false);
+}
+
 /// The At a Glance row over the photo and web modes: bottom-pinned at the
 /// Clock screensaver's inset, sized by its rule, and never in the way of a
 /// touch. Its own widget so the overlay's build stays a list of layers.
 class _GlanceOverlay extends StatelessWidget {
-  const _GlanceOverlay({required this.container, required this.narrow});
+  const _GlanceOverlay({
+    required this.container,
+    required this.narrow,
+    this.corners = const [],
+  });
 
   final AppContainer container;
 
@@ -1338,20 +1389,41 @@ class _GlanceOverlay extends StatelessWidget {
   /// into them.
   final bool narrow;
 
+  /// The measured size of each panel in a bottom corner, margins
+  /// included. Empty until they have laid out, and the row then wraps
+  /// narrow as before.
+  final Iterable<Size> corners;
+
   @override
   Widget build(BuildContext context) {
     final height = MediaQuery.sizeOf(context).height;
+    final scale = min(1.0, height / 480).clamp(0.75, 1.0);
     return IgnorePointer(
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Padding(
-          padding: EdgeInsets.only(bottom: height * 0.06),
-          child: GlanceRow(
-            container: container,
-            scale: min(1.0, height / 480).clamp(0.75, 1.0),
-            narrow: narrow,
-          ),
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final (:bottom, :maxWidth, :narrow) = glancePlacement(
+            width: constraints.maxWidth,
+            inset: height * 0.06,
+            narrow: this.narrow,
+            corners: corners,
+            compactWidth: () =>
+                GlanceRow.compactWidth(context, container, scale),
+          );
+          return Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: bottom),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: GlanceRow(
+                  container: container,
+                  scale: scale,
+                  narrow: narrow,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -4806,15 +4878,26 @@ class _ImmichMetadataState extends State<_ImmichMetadata> {
             duration: _fade,
             child: Align(
               alignment: corner,
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 10,
-                  crossAxisAlignment: corner.x < 0
-                      ? CrossAxisAlignment.start
-                      : CrossAxisAlignment.end,
-                  children: lines,
+              child: _ReportSize(
+                // A bottom panel tells the At a Glance row how much room
+                // it takes, so the row keeps clear of it (issue #916).
+                onSize: corner.y > 0 && lines.isNotEmpty
+                    ? (size) =>
+                          widget.container.screensaver.reportMetadataFootprint(
+                            corner.x < 0 ? 'bottom_left' : 'bottom_right',
+                            size,
+                          )
+                    : null,
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 10,
+                    crossAxisAlignment: corner.x < 0
+                        ? CrossAxisAlignment.start
+                        : CrossAxisAlignment.end,
+                    children: lines,
+                  ),
                 ),
               ),
             ),
@@ -4822,6 +4905,38 @@ class _ImmichMetadataState extends State<_ImmichMetadata> {
         ],
       ),
     );
+  }
+}
+
+/// Hands its child's laid-out size to [onSize] whenever it changes, after
+/// the frame, since a listener may rebuild other widgets.
+class _ReportSize extends SingleChildRenderObjectWidget {
+  const _ReportSize({required this.onSize, super.child});
+
+  final ValueChanged<Size>? onSize;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderReportSize(onSize);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderReportSize render) =>
+      render.onSize = onSize;
+}
+
+class _RenderReportSize extends RenderProxyBox {
+  _RenderReportSize(this.onSize);
+
+  ValueChanged<Size>? onSize;
+  Size? _reported;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final callback = onSize;
+    if (callback == null || size == _reported) return;
+    final reported = _reported = size;
+    SchedulerBinding.instance.addPostFrameCallback((_) => callback(reported));
   }
 }
 

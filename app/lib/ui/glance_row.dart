@@ -102,6 +102,39 @@ class GlanceRow extends StatelessWidget {
   /// content, so narrowing is a width cap rather than a column count.
   static const _narrowWidth = 520.0;
 
+  /// The narrowest the row can wrap to and still read well, at the
+  /// caller's [scale]: one line when that is shorter, otherwise two
+  /// columns. A caller with a gap to fit, like the space between the
+  /// Immich metadata panels, checks it against this (issue #916). Zero
+  /// with nothing to show.
+  static double compactWidth(
+    BuildContext context,
+    AppContainer container,
+    double scale,
+  ) {
+    final entities = [
+      for (final entity in container.glance.entities.value)
+        if (!glanceValueBlank(entity)) entity,
+    ];
+    if (entities.isEmpty) return 0;
+    scale *= container.settings.get(defs.screensaverGlanceScale) / 100;
+    final columns = min(_portraitColumns, entities.length);
+    if (container.settings.get(defs.screensaverGlanceTextOnly)) {
+      return columns * _slotWidth * scale * _minFit;
+    }
+    final hideNames = container.settings.get(defs.screensaverGlanceHideNames);
+    final font = glanceFont(container);
+    final widths = [
+      for (final entity in entities)
+        _chipWidth(context, entity, scale, font, hideNames: hideNames),
+    ];
+    final spacing = 10 * scale;
+    final line =
+        widths.fold(0.0, (a, b) => a + b) + spacing * (entities.length - 1);
+    final grid = columns * widths.reduce(max) + spacing * (columns - 1);
+    return min(line, grid);
+  }
+
   @override
   Widget build(
     BuildContext context,

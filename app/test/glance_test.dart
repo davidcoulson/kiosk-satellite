@@ -594,6 +594,31 @@ void main() {
       expect({for (var i = 0; i < 4; i++) top(i)}.length, 2);
     });
 
+    // Issue #916: the overlay checks this against the room the Immich
+    // metadata leaves, so a row given exactly this much has to fit.
+    testWidgets('the compact width holds two columns of chips', (tester) async {
+      await pump(tester);
+      final context = tester.element(find.byType(GlanceRow));
+      final compact = GlanceRow.compactWidth(context, container, 1);
+      final spread = tester.getSize(find.byType(Row).first).width;
+      expect(compact, lessThan(spread));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: compact,
+                child: GlanceRow(container: container, narrow: true),
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      double left(int i) => tester.getTopLeft(find.text('Entity $i')).dx;
+      expect({for (var i = 0; i < 4; i++) left(i)}.length, 2);
+    });
+
     testWidgets('the Row scaling slider sizes the whole row', (tester) async {
       await pump(tester);
       final base = tester.getSize(find.byType(GlanceRow)).height;
