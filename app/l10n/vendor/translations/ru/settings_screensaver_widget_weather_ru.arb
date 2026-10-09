@@ -1,9 +1,6 @@
 {
   "@@locale": "ru",
   "screensaverOverlayWeatherEntity": "Сущность погоды",
-  "screensaverOverlayNoWeather": "Нет сущностей погоды",
-  "screensaverOverlayNoWeatherHelp": "Home Assistant не сообщил ни одной.",
-  "screensaverOverlayPickWeather": "Выберите сущность погоды…",
   "screensaverOverlayWeatherRequired": "Выберите сущность погоды.",
   "screensaverOverlayLocationName": "Название места",
   "screensaverOverlayLocationHelp": "Оставьте пустым, чтобы скрыть строку места.",

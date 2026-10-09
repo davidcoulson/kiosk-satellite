@@ -1161,6 +1161,7 @@ class SendspinManager extends Manager {
         'sendspin.ma_shortcut',
         'sendspin.ma_auto_close',
         'sendspin.ma_hide_close',
+        'sendspin.ma_zoom',
         'sendspin.player_shortcut',
         // Where the hardware volume keys go and how far they step: read
         // per press, nothing the audio client holds.

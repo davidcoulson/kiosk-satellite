@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kiosk_satellite/ui/entity_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kiosk_satellite/app_container.dart';
@@ -253,7 +254,18 @@ void main() {
               {'entity_id': 'tts.cloud', 'name': 'Cloud'},
             ]),
           ),
+        )
+        ..register(
+          Command(
+            name: 'haListEntities',
+            description: '',
+            handler: (_) async => const CommandResult.ok([
+              {'entity_id': 'tts.piper', 'name': 'Piper', 'domain': 'tts'},
+              {'entity_id': 'tts.cloud', 'name': 'Cloud', 'domain': 'tts'},
+            ]),
+          ),
         );
+      PickCatalog.reset();
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
             const MethodChannel('kiosk_satellite/device_details'),

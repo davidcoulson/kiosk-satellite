@@ -1,9 +1,6 @@
 {
   "@@locale": "es",
   "screensaverOverlayWeatherEntity": "Entidad del clima",
-  "screensaverOverlayNoWeather": "No hay entidades del clima",
-  "screensaverOverlayNoWeatherHelp": "Home Assistant no devolvió ninguna.",
-  "screensaverOverlayPickWeather": "Elige una entidad del clima…",
   "screensaverOverlayWeatherRequired": "Elige una entidad del clima.",
   "screensaverOverlayLocationName": "Nombre de la ubicación",
   "screensaverOverlayLocationHelp": "Déjalo vacío para ocultar la línea de ubicación.",

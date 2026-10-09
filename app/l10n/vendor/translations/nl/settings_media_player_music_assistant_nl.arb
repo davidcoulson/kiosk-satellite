@@ -12,6 +12,7 @@
   "settingSendspinMaAutoCloseDescription": "Keer terug naar het dashboard wanneer de Music Assistant-pagina gedurende deze tijd niet is aangeraakt. Bij 0 blijft de pagina geopend totdat deze handmatig wordt gesloten.",
   "settingSendspinMaHideCloseTitle": "Sluitknop verbergen",
   "settingSendspinMaHideCloseDescription": "De zwevende sluitknop kan bedieningselementen van Music Assistant bedekken, zoals het menu van Speelt nu. Zonder deze knop sluit je de pagina met de terugknop of via het kioskmenu.",
+  "settingSendspinMaZoomDescription": "Past de schaal aan van de volledige Music Assistant-pagina.",
   "mediaMaHint": "Server, token en snelkoppeling in het kioskmenu",
   "mediaKioskMenu": "Kioskmenu",
   "mediaValidateConnection": "Verbinding controleren",

@@ -228,6 +228,14 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingAdaptiveBrightnessTitle",
     "description": "settingAdaptiveBrightnessDescription",
   },
+  "screen.adaptive_use_entity": {
+    "title": "settingAdaptiveUseEntityTitle",
+    "description": "settingAdaptiveUseEntityDescription",
+  },
+  "screen.adaptive_light_entity": {
+    "title": "settingAdaptiveLightEntityTitle",
+    "description": "settingAdaptiveLightEntityDescription",
+  },
   "screen.adaptive_min_brightness": {
     "title": "settingAdaptiveMinBrightnessTitle",
     "description": "settingAdaptiveMinBrightnessDescription",
@@ -1019,6 +1027,10 @@ const settingMessageIds = <String, Map<String, String>>{
   "sendspin.ma_hide_close": {
     "title": "settingSendspinMaHideCloseTitle",
     "description": "settingSendspinMaHideCloseDescription",
+  },
+  "sendspin.ma_zoom": {
+    "title": "settingBrowserZoomTitle",
+    "description": "settingSendspinMaZoomDescription",
   },
   "sendspin.sonos_group_volume": {
     "title": "settingSendspinSonosGroupVolumeTitle",

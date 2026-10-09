@@ -1,0 +1,13 @@
+{
+  "@@locale": "zh_CN",
+  "entityPickerNoArea": "无区域",
+  "entityPickerAll": "全部",
+  "entityPickerChoose": "选择实体",
+  "entityPickerNoMatch": "没有匹配项",
+  "entityPickerOfflineHelp": "连接恢复后将加载实体。",
+  "entityPickerMissing": "此实体已不在 Home Assistant 中。请另选一个。",
+  "entityPickerOrderHint": "拖动或使用箭头调整顺序。",
+  "entityPickerFull": "请先移除一项再添加。",
+  "entityPickerAdd": "添加实体",
+  "entityPickerShowing": "正在显示 {count}/{max}"
+}

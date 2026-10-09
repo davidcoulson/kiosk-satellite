@@ -138,5 +138,17 @@ export const haTextMessageIds = {
   "Add views": "dashboardPickerAddViews",
   "Default dashboard": "dashboardPickerDefault",
   "The view the kiosk shows when it starts.": "dashboardPickerDefaultHelp",
-  "Back": "commonBack"
+  "Back": "commonBack",
+  "No area": "entityPickerNoArea",
+  "All": "entityPickerAll",
+  "Choose an entity": "entityPickerChoose",
+  "Nothing matches": "entityPickerNoMatch",
+  "The entities load once the connection is back.": "entityPickerOfflineHelp",
+  "This entity is gone from Home Assistant. Choose another.": "entityPickerMissing",
+  "Drag or use the arrows to change the order.": "entityPickerOrderHint",
+  "Remove one to add another.": "entityPickerFull",
+  "Add entities": "entityPickerAdd",
+  "Clear": "commonClear",
+  "Offline": "mediaOffline",
+  "Search entities": "esphomeEntitySearch"
 };

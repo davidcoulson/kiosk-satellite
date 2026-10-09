@@ -1,0 +1,13 @@
+{
+  "@@locale": "uk",
+  "entityPickerNoArea": "Без простору",
+  "entityPickerAll": "Усі",
+  "entityPickerChoose": "Виберіть сутність",
+  "entityPickerNoMatch": "Нічого не знайдено",
+  "entityPickerOfflineHelp": "Сутності завантажаться, щойно з'єднання відновиться.",
+  "entityPickerMissing": "Цієї сутності більше немає в Home Assistant. Виберіть іншу.",
+  "entityPickerOrderHint": "Перетягніть або скористайтеся стрілками, щоб змінити порядок.",
+  "entityPickerFull": "Видаліть одну, щоб додати іншу.",
+  "entityPickerAdd": "Додати сутності",
+  "entityPickerShowing": "Показано: {count} з {max}"
+}

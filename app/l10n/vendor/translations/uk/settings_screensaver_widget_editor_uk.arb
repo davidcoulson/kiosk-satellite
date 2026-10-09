@@ -20,6 +20,8 @@
   "screensaverOverlayLowHelp": "Залишатися прихованим, доки заряд не знизиться до 20 відсотків.",
   "screensaverOverlayShowName": "Показувати назву",
   "screensaverOverlayShowNameHelp": "Назва під значенням.",
+  "screensaverOverlayShowIcon": "Показувати піктограму",
+  "screensaverOverlayShowIconHelp": "Піктограма поруч зі значенням.",
   "screensaverOverlayFontSystem": "Системний",
   "screensaverOverlayFontSerif": "Із зарубками",
   "screensaverOverlayFontCondensed": "Вузький",

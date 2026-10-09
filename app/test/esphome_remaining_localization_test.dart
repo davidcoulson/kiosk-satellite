@@ -9,6 +9,7 @@ import 'package:kiosk_satellite/l10n/generated/ui_strings.dart';
 import 'package:kiosk_satellite/l10n/generated/ui_strings_en.dart';
 import 'package:kiosk_satellite/l10n/messages.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
+import 'package:kiosk_satellite/ui/entity_picker.dart';
 import 'package:kiosk_satellite/ui/intercom_settings.dart';
 import 'package:kiosk_satellite/ui/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -58,6 +59,7 @@ void main() {
   late ValueNotifier<Locale> language;
   late List<(String, Map<String, Object?>)> calls;
   setUp(() async {
+    PickCatalog.reset();
     SharedPreferences.setMockInitialValues({
       'ks.esphome.enabled': true,
       'ks.esphome.entities': true,
@@ -75,6 +77,7 @@ void main() {
       'esphomeStatus',
       'btProxyNearby',
       'announcementTtsEngines',
+      'haListEntities',
       'showNotification',
     ]) {
       c.commands.register(
@@ -107,6 +110,18 @@ void main() {
               'announcementTtsEngines' => [
                 {'entity_id': 'tts.original', 'name': 'First available'},
                 {'entity_id': 'tts.raw', 'name': '<b>Original engine</b>'},
+              ],
+              'haListEntities' => [
+                {
+                  'entity_id': 'tts.original',
+                  'name': 'First available',
+                  'domain': 'tts',
+                },
+                {
+                  'entity_id': 'tts.raw',
+                  'name': '<b>Original engine</b>',
+                  'domain': 'tts',
+                },
               ],
               _ => null,
             });
@@ -222,26 +237,22 @@ void main() {
         app(Scaffold(body: AnnouncementTtsEngineRow(container: c))),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Primero disponible'));
-      await tester.pumpAndSettle();
-      expect(find.text('First available'), findsOneWidget);
-      final reads = calls
-          .where((call) => call.$1 == 'announcementTtsEngines')
-          .length;
+      // The field's empty value follows the language.
       language.value = const Locale('en');
       await tester.pumpAndSettle();
-      expect(
-        find.descendant(
-          of: find.byType(SimpleDialog),
-          matching: find.text('Text to speech engine'),
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('First available'), findsOneWidget);
       language.value = const Locale('es');
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Primero disponible'));
+      await tester.pumpAndSettle();
+      // Home Assistant's engine names stay as they are, even one that
+      // reads like the empty value.
       expect(
-        calls.where((call) => call.$1 == 'announcementTtsEngines').length,
-        reads,
+        find.descendant(
+          of: find.byType(ItemPicker),
+          matching: find.text('First available'),
+        ),
+        findsOneWidget,
       );
       await tester.tap(find.text('<b>Original engine</b>'));
       await tester.pumpAndSettle();

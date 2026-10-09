@@ -48,7 +48,7 @@ final _curveKeys = {
 class _BrightnessCurveEditorState extends State<BrightnessCurveEditor>
     with TickerProviderStateMixin {
   StreamSubscription<SettingChanged>? _settingsSub;
-  StreamSubscription<LightLevelChanged>? _luxSub;
+  StreamSubscription<AdaptiveLightChanged>? _luxSub;
 
   /// The curve as the settings hold it, and the one on screen, which
   /// eases toward it when something else moves it (Home Assistant's
@@ -90,14 +90,14 @@ class _BrightnessCurveEditorState extends State<BrightnessCurveEditor>
     _target = _fromSettings();
     _from = _target;
     _morph.value = 1;
-    _lux = widget.container.device.lightLux;
+    _lux = widget.container.adaptiveLight.lux;
     _luxMove.value = 1;
     _settingsSub = widget.container.bus.on<SettingChanged>().listen((e) {
       if (!_curveKeys.contains(e.key) || _committing || !mounted) return;
       _retarget();
     });
-    _luxSub = widget.container.bus.on<LightLevelChanged>().listen((e) {
-      if (!mounted) return;
+    _luxSub = widget.container.bus.on<AdaptiveLightChanged>().listen((e) {
+      if (!mounted || e.lux == _lux) return;
       _luxFrom = _shownLux;
       _lux = e.lux;
       _luxMove.forward(from: 0);

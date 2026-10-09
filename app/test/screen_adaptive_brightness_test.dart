@@ -77,13 +77,16 @@ void main() {
     bus = EventBus();
     final log = Logger();
     commands = CommandRegistry(log);
-    // The device manager's probe, as the screen manager sees it.
+    // The adaptive light manager's probe, as the screen manager sees it.
     commands.register(
       Command(
-        name: 'getLightLevel',
+        name: 'getAdaptiveLight',
         description: 'fake',
-        handler: (_) async =>
-            CommandResult.ok({'present': present, 'lux': lux}),
+        handler: (_) async => CommandResult.ok({
+          'source': present ? 'sensor' : 'none',
+          'lux': present ? lux : null,
+          'live': false,
+        }),
       ),
     );
     settings = SettingsManager(bus, commands, log);
@@ -108,6 +111,10 @@ void main() {
         );
     await settle();
   }
+
+  /// A new reading from the light adaptive brightness follows.
+  AdaptiveLightChanged light(double lux, {String source = 'sensor'}) =>
+      AdaptiveLightChanged(source: source, lux: lux, live: true);
 
   Future<double?> ceiling() async =>
       (await commands.execute('getBrightness', const {'ceiling': true})).data
@@ -150,7 +157,7 @@ void main() {
       'setting moving, and the panel sensor hears each step', () async {
     await build(on);
     published.clear();
-    bus.publish(const LightLevelChanged(lux: 500));
+    bus.publish(light(500));
     await settle();
     expect(writes.last, closeTo(0.8, 0.001));
     expect(published.single.panel, closeTo(0.8, 0.001));
@@ -161,7 +168,7 @@ void main() {
   test('a step the eye cannot see is not written', () async {
     await build(on);
     // 5 -> 5.5 lx moves the factor by a hair.
-    bus.publish(const LightLevelChanged(lux: 5.5));
+    bus.publish(light(5.5));
     await settle();
     expect(writes, hasLength(1));
   });
@@ -173,7 +180,7 @@ void main() {
     await settle();
     expect(writes.last, closeTo(0.05, 0.001));
     expect(await ceiling(), 0.2);
-    bus.publish(const LightLevelChanged(lux: 500));
+    bus.publish(light(500));
     await settle();
     expect(writes.last, closeTo(0.2, 0.001));
     expect(await ceiling(), 0.2);
@@ -191,7 +198,7 @@ void main() {
     expect(await knob(), 0.4);
     expect(published.last.level, 0.4);
     expect(published.last.panel, closeTo(0.2, 0.001));
-    bus.publish(const LightLevelChanged(lux: 500));
+    bus.publish(light(500));
     await settle();
     expect(writes.last, closeTo(0.4, 0.001));
   });
@@ -345,7 +352,7 @@ void main() {
     expect(published.single.panel, 0.5);
     expect(await ceiling(), 0.5);
     // At the floor now: the external value is undone by the factor.
-    bus.publish(const LightLevelChanged(lux: 5));
+    bus.publish(light(5));
     await settle();
     expect(writes.last, closeTo(0.125, 0.001));
     await observe(0.05);
@@ -366,14 +373,33 @@ void main() {
     expect(await panelLevel(), 0.3);
   });
 
-  test('without a light sensor the switch does nothing', () async {
+  // Issue #911: the switch no longer needs the device's sensor. With
+  // nothing to read the curve holds Maximum, and a Home Assistant entity
+  // standing in for the sensor drives it like the sensor would.
+  test('without a reading the switch holds Maximum brightness', () async {
     await build({
       ...on,
       'ks.screen.set_brightness_on_launch': true,
       'ks.screen.default_brightness': 0.6,
     }, sensor: false);
-    expect(writes, [0.6]);
-    bus.publish(const LightLevelChanged(lux: 500));
+    expect(writes, [0.8]);
+    expect(await knob(), 0.8);
+  });
+
+  test('an entity reading drives the panel like the sensor', () async {
+    await build(on, sensor: false);
+    expect(writes, [0.8]);
+    bus.publish(light(5, source: 'entity'));
+    await settle();
+    expect(writes.last, closeTo(0.2, 0.001));
+  });
+
+  test('a source with no reading yet leaves the panel alone', () async {
+    await build(on);
+    expect(writes, [closeTo(0.2, 0.001)]);
+    bus.publish(
+      const AdaptiveLightChanged(source: 'entity', lux: null, live: false),
+    );
     await settle();
     expect(writes, hasLength(1));
   });
@@ -383,7 +409,7 @@ void main() {
     () async {
       await build(on, gap: const Duration(milliseconds: 60));
       await commands.execute('setBrightness', {'level': 0.8, 'ceiling': true});
-      bus.publish(const LightLevelChanged(lux: 500));
+      bus.publish(light(500));
       await settle();
       expect(writes, hasLength(2));
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -410,10 +436,10 @@ void main() {
       ),
       'ks.screen.adaptive_point3_level': AdaptiveCurve.shareFor(0.7, 0.2, 0.8),
     });
-    bus.publish(const LightLevelChanged(lux: 10));
+    bus.publish(light(10));
     await settle();
     expect(writes.last, closeTo(0.3, 0.001));
-    bus.publish(const LightLevelChanged(lux: 15));
+    bus.publish(light(15));
     await settle();
     expect(writes.last, closeTo(0.7, 0.001));
     // Moving a middle point from the editor lands at once.

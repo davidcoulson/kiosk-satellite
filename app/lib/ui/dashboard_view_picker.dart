@@ -1,11 +1,10 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../app_container.dart';
 import '../l10n/messages.dart';
 import 'kit.dart';
 import 'mdi_icon.dart';
+import 'picker_dialog.dart';
 import 'theme.dart';
 
 /// One Home Assistant view, as the dashboard picker shows it.
@@ -167,9 +166,9 @@ Future<String?> showDashboardPicker(
   String? selected,
 }) => showDialog<String>(
   context: context,
-  // The dialog closes on an outside tap itself, see _PickerDialog.
+  // The dialog closes on an outside tap itself, see PickerDialog.
   barrierDismissible: false,
-  builder: (context) => _PickerDialog<String>(
+  builder: (context) => PickerDialog<String>(
     title: title,
     builder: (close) => DashboardPicker(
       container: container,
@@ -192,7 +191,7 @@ Future<List<String>?> showDashboardMultiPicker(
 }) => showDialog<List<String>>(
   context: context,
   barrierDismissible: false,
-  builder: (context) => _PickerDialog<List<String>>(
+  builder: (context) => PickerDialog<List<String>>(
     title: title,
     builder: (close) => DashboardPicker(
       container: container,
@@ -204,59 +203,6 @@ Future<List<String>?> showDashboardMultiPicker(
     ),
   ),
 );
-
-class _PickerDialog<T> extends StatefulWidget {
-  const _PickerDialog({required this.title, required this.builder});
-
-  final String title;
-  final Widget Function(void Function(T?) close) builder;
-
-  @override
-  State<_PickerDialog<T>> createState() => _PickerDialogState<T>();
-}
-
-class _PickerDialogState<T> extends State<_PickerDialog<T>> {
-  final _openedAt = DateTime.now();
-
-  void _close(T? value) => Navigator.of(context).pop(value);
-
-  /// An outside tap closes the picker, but not the second tap of a double
-  /// tap on the field: that lands outside the dialog the first one opened.
-  void _outsideTap() {
-    if (DateTime.now().difference(_openedAt).inMilliseconds > 500) {
-      _close(null);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    if (size.width < 640) {
-      return Dialog.fullscreen(child: SafeArea(child: widget.builder(_close)));
-    }
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: _outsideTap,
-          ),
-        ),
-        Dialog(
-          insetPadding: const EdgeInsets.all(24),
-          child: SizedBox(
-            width: 760,
-            height: math.min(560.0, size.height - 48),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
-              child: widget.builder(_close),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 /// The picker itself: in a dialog through [showDashboardPicker], inline in
 /// Setup. At 520 and wider it shows two columns, narrower it drills in.

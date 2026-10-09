@@ -32,7 +32,7 @@ const REACH = 30;
 
 /* The editors on the page, for the live light reading. */
 const editors = new Set();
-document.addEventListener('ks-lightlevel', () => {
+document.addEventListener('ks-adaptivelight', () => {
   for (const editor of editors) {
     if (editor.row.isConnected) editor.moveLux();
     else editors.delete(editor);
@@ -84,7 +84,7 @@ export function brightnessCurveRow(row, { showError, clearError }) {
   let target = curvePoints(settingValues());
   let from = target;
   let morphStart = 0;
-  let lux = typeof state.lightLux === 'number' ? state.lightLux : null;
+  let lux = typeof state.adaptiveLux === 'number' ? state.adaptiveLux : null;
   let luxFrom = lux;
   let luxStart = 0;
   let drag = null;
@@ -274,9 +274,16 @@ export function brightnessCurveRow(row, { showError, clearError }) {
   const editor = {
     row,
     moveLux() {
-      if (typeof state.lightLux !== 'number' || state.lightLux === lux) return;
-      luxFrom = shownLux() ?? state.lightLux;
-      lux = state.lightLux;
+      // A source with no reading yet (an entity just picked): no marker.
+      if (typeof state.adaptiveLux !== 'number') {
+        if (lux === null) return;
+        lux = luxFrom = null;
+        schedule();
+        return;
+      }
+      if (state.adaptiveLux === lux) return;
+      luxFrom = shownLux() ?? state.adaptiveLux;
+      lux = state.adaptiveLux;
       luxStart = performance.now();
       schedule();
     },

@@ -51,9 +51,9 @@ import 'weather_mood_settings.dart';
 import 'date_picker.dart';
 import 'gesture_settings.dart';
 import 'entity_picker.dart';
+import 'glance_rows.dart';
 import 'esphome_entity_picker.dart';
 import 'hidden_pages_picker.dart';
-import 'glance_entity_picker.dart';
 import 'camera_settings.dart';
 import 'tls_settings.dart';
 import 'fleet_settings.dart';
@@ -3148,18 +3148,6 @@ class _CategoryContentState extends State<_CategoryContent> {
           ),
         ),
       ),
-    // No ambient light sensor: the switch says so instead of offering a
-    // curve with nothing to drive it. Mirrored on the remote too.
-    if (widget.category == 'Screen & Audio' && !container.device.hasLightSensor)
-      adaptiveBrightness.key: SearchLandingTarget(
-        id: adaptiveBrightness.key,
-        child: SwitchListTile(
-          title: Text(adaptiveBrightness.localizedTitle(context)),
-          subtitle: Text(screenAudioText(context, _noLightSensorNote)),
-          value: false,
-          onChanged: null,
-        ),
-      ),
     // The announcements' text to speech engine, language and voice are
     // picked from Home Assistant's lists, not typed. Mirrored on the
     // remote (intercom.js).
@@ -3247,7 +3235,6 @@ class _CategoryContentState extends State<_CategoryContent> {
   };
 
   bool _adaptiveOn(AppContainer container) =>
-      container.device.hasLightSensor &&
       container.settings.get(adaptiveBrightness);
 
   /// Extra widgets rendered directly under a setting: notices, validate
@@ -3287,10 +3274,14 @@ class _CategoryContentState extends State<_CategoryContent> {
       personSensorEnabled.key: _PersonSensorStatusRow(container: container),
     // The sensor's reading, live, under the switch: the curve's two light
     // levels are typed against it, and what a sensor calls a lit room is
-    // anyone's guess until it is on screen. Mirrored on the remote
+    // anyone's guess until it is on screen. Without a sensor, a note says
+    // so in its place: the switch stays usable, since a Home Assistant
+    // entity can stand in (issue #911). Mirrored on the remote
     // (notices.js, updateAdaptiveBrightnessRows).
-    if (widget.category == 'Screen & Audio' && container.device.hasLightSensor)
-      adaptiveBrightness.key: _AmbientLightRow(container: container),
+    if (widget.category == 'Screen & Audio')
+      adaptiveBrightness.key: container.device.hasLightSensor
+          ? _AmbientLightRow(container: container)
+          : HintRow(screenAudioText(context, _noLightSensorNote)),
     // Under the screensaver's brightness sliders while adaptive brightness
     // is on: the slider is the bright-room level the room's light dims
     // from, which is not what a slider called "brightness" says on its own.
@@ -5649,51 +5640,10 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
   }
 }
 
-/// The weather.* entities, picked from Home Assistant by friendly name.
-/// Returns (entity_id, name), or null when dismissed or unreachable.
-Future<(String, String)?> pickScreensaverWeatherEntity(
-  BuildContext context,
-  AppContainer container,
-  String current,
-) async {
-  final result = await container.commands.execute('haSearchEntities', const {
-    'query': 'weather.',
-  });
-  final data = result.data;
-  if (!result.ok || data is! List) {
-    if (context.mounted) {
-      showToast(
-        context,
-        title: screensaverText(context, 'Could not reach Home Assistant'),
-        kind: ToastKind.error,
-      );
-    }
-    return null;
-  }
-  final entities = [
-    for (final e in data)
-      if (e is Map && '${e['entity_id']}'.startsWith('weather.'))
-        ('${e['entity_id']}', '${e['name'] ?? e['entity_id']}'),
-  ];
-  if (entities.isEmpty) {
-    if (context.mounted) {
-      showToast(
-        context,
-        title: screensaverText(context, 'No weather entities'),
-        message: screensaverText(context, 'Home Assistant reported none.'),
-        kind: ToastKind.warning,
-      );
-    }
-    return null;
-  }
-  if (!context.mounted) return null;
-  return showRadioPicker<(String, String)>(
-    context,
-    title: screensaverText(context, 'Weather entity'),
-    options: [for (final e in entities) PickerOption(e, e.$2, detail: e.$1)],
-    selected: entities.where((e) => e.$1 == current).firstOrNull,
-  );
-}
+/// An entity's friendly name from the loaded entity list, the id when the
+/// list does not have it.
+String _entityName(String id) =>
+    PickCatalog.of('entities').value?.find(id)?.name ?? id;
 
 class _WidgetsEditor extends StatefulWidget {
   const _WidgetsEditor({required this.container, required this.onChanged});
@@ -5998,31 +5948,30 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                       // The entity everything is read from; the friendly
                       // name is cached in the config so both editors can
                       // show it without a Home Assistant round trip.
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(screensaverText(context, 'Weather entity')),
-                        subtitle: Text(
-                          weatherName.isNotEmpty
-                              ? weatherName
-                              : (weatherEntity.isNotEmpty
-                                    ? weatherEntity
-                                    : screensaverText(context, 'Not set')),
-                        ),
-                        trailing: TextButton(
-                          onPressed: () async {
-                            final picked = await pickScreensaverWeatherEntity(
+                      LabeledField(
+                        label: screensaverText(context, 'Weather entity'),
+                        child: PickFieldBox(
+                          spec: entitySpec(
+                            context,
+                            widget.container.commands,
+                            domains: const ['weather'],
+                          ),
+                          value: weatherEntity,
+                          onTap: () async {
+                            final picked = await showEntityPicker(
                               context,
                               widget.container,
-                              weatherEntity,
+                              title: screensaverText(context, 'Weather entity'),
+                              selected: weatherEntity,
+                              domains: const ['weather'],
                             );
-                            if (picked != null) {
-                              setDialogState(() {
-                                config['entity'] = picked.$1;
-                                config['name'] = picked.$2;
-                              });
-                            }
+                            final id = picked?.id;
+                            if (id == null) return;
+                            setDialogState(() {
+                              config['entity'] = id;
+                              config['name'] = _entityName(id);
+                            });
                           },
-                          child: Text(screensaverText(context, 'Choose')),
                         ),
                       ),
                       // Weather entities carry no city attribute, so the
@@ -6077,39 +6026,34 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                       toggle(screensaverText(context, 'Only when low'), 'low'),
                     ],
                     if (type == 'entity') ...[
-                      // The entity everything is read from, picked by
-                      // search the way the At a Glance row's are; the
-                      // friendly name is cached in the config so both
-                      // editors can show it without a round trip.
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(screensaverText(context, 'Entity')),
-                        subtitle: Text(
-                          weatherName.isNotEmpty
-                              ? weatherName
-                              : (weatherEntity.isNotEmpty
-                                    ? weatherEntity
-                                    : screensaverText(context, 'Not set')),
-                        ),
-                        trailing: TextButton(
-                          onPressed: () async {
-                            final picked = await pickHomeAssistantEntity(
+                      // The entity everything is read from, picked the
+                      // way the At a Glance row's are; the friendly name is
+                      // cached in the config so both editors can show it
+                      // without a round trip.
+                      LabeledField(
+                        label: screensaverText(context, 'Entity'),
+                        child: PickFieldBox(
+                          spec: entitySpec(context, widget.container.commands),
+                          value: weatherEntity,
+                          onTap: () async {
+                            final picked = await showEntityPicker(
                               context,
                               widget.container,
+                              title: screensaverText(context, 'Entity'),
+                              selected: weatherEntity,
                             );
-                            if (picked != null) {
-                              setDialogState(() {
-                                // Another entity has other attributes:
-                                // back to its state.
-                                if (picked.$1 != config['entity']) {
-                                  config['attribute'] = '';
-                                }
-                                config['entity'] = picked.$1;
-                                config['name'] = picked.$2;
-                              });
-                            }
+                            final id = picked?.id;
+                            if (id == null) return;
+                            setDialogState(() {
+                              // Another entity has other attributes: back
+                              // to its state.
+                              if (id != config['entity']) {
+                                config['attribute'] = '';
+                              }
+                              config['entity'] = id;
+                              config['name'] = _entityName(id);
+                            });
                           },
-                          child: Text(screensaverText(context, 'Choose')),
                         ),
                       ),
                       LabeledField(
@@ -6128,21 +6072,16 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                           onChanged: (v) => config['label'] = v.trim(),
                         ),
                       ),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          screensaverText(context, 'Displayed value'),
-                        ),
-                        subtitle: Text(
-                          '${config['attribute'] ?? ''}'.isEmpty
+                      LabeledField(
+                        label: screensaverText(context, 'Displayed value'),
+                        child: ChoiceBox(
+                          text: '${config['attribute'] ?? ''}'.isEmpty
                               ? screensaverText(context, 'State')
                               : '${config['attribute']}',
-                        ),
-                        trailing: TextButton(
-                          onPressed: weatherEntity.isEmpty
+                          onTap: weatherEntity.isEmpty
                               ? null
                               : () async {
-                                  final picked = await pickEntityAttribute(
+                                  final picked = await showEntityValuePicker(
                                     context,
                                     widget.container,
                                     entityId: weatherEntity,
@@ -6154,7 +6093,6 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                                     );
                                   }
                                 },
-                          child: Text(screensaverText(context, 'Choose')),
                         ),
                       ),
                       colorRow(),
@@ -6164,6 +6102,10 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                       toggle(
                         screensaverText(context, 'Show name'),
                         'show_name',
+                      ),
+                      toggle(
+                        screensaverText(context, 'Show icon'),
+                        'show_icon',
                       ),
                     ],
                   ],
@@ -6337,6 +6279,72 @@ class _AmbientLightRowState extends State<_AmbientLightRow> {
                 '${lux == lux.roundToDouble() ? lux.toInt() : lux.toStringAsFixed(1)}',
               ),
       ),
+    );
+  }
+}
+
+/// Adaptive brightness's Home Assistant light sensor (issue #911): the
+/// entity picked, with its reading live beside it, the way the Ambient
+/// light row shows the device sensor's. Tapping it opens the entity
+/// search. Mirrored on the remote (rows.js).
+class _LightEntityRow extends StatefulWidget {
+  const _LightEntityRow({
+    required this.container,
+    required this.def,
+    required this.onChanged,
+  });
+
+  final AppContainer container;
+  final SettingDef<Object> def;
+  final VoidCallback onChanged;
+
+  @override
+  State<_LightEntityRow> createState() => _LightEntityRowState();
+}
+
+class _LightEntityRowState extends State<_LightEntityRow> {
+  StreamSubscription<AdaptiveLightChanged>? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = widget.container.bus.on<AdaptiveLightChanged>().listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.container;
+    final def = widget.def;
+    final entity = c.settings.get(adaptiveLightEntity);
+    final light = c.adaptiveLight;
+    final lux = light.source == 'entity' ? light.lux : null;
+    final reading = lux == null
+        ? screenAudioText(context, 'No reading yet')
+        : (light.live
+              ? l10n(context).screenAudioLux
+              : l10n(context).screenAudioLuxLast)(
+            '${lux == lux.roundToDouble() ? lux.toInt() : lux.toStringAsFixed(1)}',
+          );
+    // The field opens the entity picker on light level sensors; the line
+    // under it carries the reading the brightness follows.
+    return PickRow(
+      title: def.localizedTitle(context),
+      description: entity.isEmpty ? def.localizedDescription(context) : reading,
+      spec: entitySpec(context, c.commands, deviceClass: 'illuminance'),
+      value: entity,
+      allowClear: true,
+      onPick: (id) async {
+        await c.settings.setFromJson(def.key, id ?? '');
+        widget.onChanged();
+      },
     );
   }
 }
@@ -7079,37 +7087,44 @@ class _PlayerRow extends StatefulWidget {
 }
 
 class _PlayerRowState extends State<_PlayerRow> {
-  Future<void> _pick() async {
+  static const _titles = {
+    'ma': 'Music Assistant player',
+    'ha': 'Home Assistant media player',
+    'sonos': 'Sonos room',
+  };
+
+  /// This device's own two players, or the picked source's.
+  PickSpec _spec(BuildContext context, String source) => source.isEmpty
+      ? fixedPlayerSpec(
+          context,
+          key: 'players:local',
+          items: [
+            PickItem(
+              id: '',
+              name: mediaText(context, 'Sendspin Player'),
+              icon: 'mdi:speaker',
+            ),
+            PickItem(
+              id: SendspinManager.localSessionPick,
+              name: mediaText(context, SendspinManager.localSessionName),
+              icon: 'mdi:cellphone-sound',
+            ),
+          ],
+        )
+      : playerSpec(context, widget.container.commands, source: source);
+
+  Future<void> _picked(String id, PickSpec spec) async {
     final container = widget.container;
     final source = container.settings.get(sendspinPlayerSource);
-    final current = container.settings.get(sendspinPlayer);
-    final result = await showDialog<List<String>>(
-      context: context,
-      builder: (ctx) => _PlayerPickerDialog(
-        container: container,
-        source: source,
-        current: current,
-        title: source.isEmpty ? sendspinPlayer.localizedTitle(ctx) : null,
-        players: source.isEmpty
-            ? [
-                {'id': '', 'name': mediaText(ctx, 'Sendspin Player')},
-                {
-                  'id': SendspinManager.localSessionPick,
-                  'name': mediaText(ctx, SendspinManager.localSessionName),
-                },
-              ]
-            : null,
-      ),
-    );
-    if (result == null) return;
-    await container.settings.set(sendspinPlayer, result[0]);
+    final name = PickCatalog.of(spec.key).value?.find(id)?.name ?? id;
+    await container.settings.set(sendspinPlayer, id);
     // Stored in English like every other name the pick keeps; the rows
     // translate it on the way out.
     await container.settings.set(
       sendspinPlayerName,
-      result[0] == SendspinManager.localSessionPick
+      id == SendspinManager.localSessionPick
           ? SendspinManager.localSessionName
-          : result[1],
+          : name,
     );
     // The manager maintains this flag from the same inputs, but over the
     // async bus — write it here too so the pane rebuild below already
@@ -7118,7 +7133,7 @@ class _PlayerRowState extends State<_PlayerRow> {
       sendspinPlayerActive,
       container.settings.get(sendspinEnabled) ||
           source.isNotEmpty ||
-          result[0].isNotEmpty,
+          id.isNotEmpty,
     );
     if (mounted) setState(() {});
     widget.onChanged();
@@ -7127,44 +7142,32 @@ class _PlayerRowState extends State<_PlayerRow> {
   @override
   Widget build(BuildContext context) {
     final settings = widget.container.settings;
-    // This device as the source: its Sendspin player unless the Local
-    // Media Session is picked.
-    final local = settings.get(sendspinPlayerSource).isEmpty;
+    final source = settings.get(sendspinPlayerSource);
+    final local = source.isEmpty;
     final name = settings.get(sendspinPlayerName).trim();
-    final picked = local || settings.get(sendspinPlayer).trim().isNotEmpty;
-    final label = _localSessionPicked(widget.container)
-        ? mediaText(context, SendspinManager.localSessionName)
-        : local
-        ? mediaText(context, 'Sendspin Player')
-        : picked && name.isNotEmpty
-        ? name
-        : mediaText(context, 'Pick a player');
-    return SettingsRow(
-      title: Text(sendspinPlayer.localizedTitle(context)),
-      subtitle: Text(sendspinPlayer.localizedDescription(context)),
-      trailing: ControlBox(
-        onTap: _pick,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 200),
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: picked
-                    ? null
-                    : TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            const Icon(Icons.arrow_drop_down, size: 22),
-          ],
-        ),
-      ),
-      onTap: _pick,
+    final spec = _spec(context, source);
+    return PickRow(
+      title: sendspinPlayer.localizedTitle(context),
+      description: sendspinPlayer.localizedDescription(context),
+      dialogTitle: local
+          ? sendspinPlayer.localizedTitle(context)
+          : mediaText(context, _titles[source] ?? 'Player'),
+      spec: spec,
+      value: settings.get(sendspinPlayer),
+      // This device's Sendspin player is the empty pick.
+      emptyIsPick: local,
+      placeholder: local
+          ? mediaText(context, 'Sendspin Player')
+          : mediaText(context, 'Pick a player'),
+      // Only the Local Media Session's name is the app's to translate; a
+      // player's own name stays exactly as the source sent it.
+      fallbackLabel: name.isEmpty
+          ? null
+          : name == SendspinManager.localSessionName
+          ? mediaText(context, name)
+          : name,
+      flagMissing: false,
+      onPick: (id) => _picked(id ?? '', spec),
     );
   }
 }
@@ -7182,243 +7185,33 @@ class _TtsOutputRow extends StatefulWidget {
 }
 
 class _TtsOutputRowState extends State<_TtsOutputRow> {
-  /// The picked player's name, looked up once: the setting keeps the id.
-  String? _name;
-
   @override
-  void initState() {
-    super.initState();
-    unawaited(_lookUp());
-  }
-
-  Future<void> _lookUp() async {
-    final id = widget.container.settings.get(voiceTtsOutput);
-    if (id.isEmpty) return;
-    final result = await widget.container.commands.execute('mediaPlayers', {
-      'source': 'ha',
-      'speakers': true,
-    });
-    final data = result.data;
-    final list = data is Map ? data['players'] : null;
-    for (final p in (list as List? ?? const [])) {
-      if (p is Map && '${p['id']}' == 'ha:$id' && mounted) {
-        setState(() => _name = '${p['name']}');
-      }
-    }
-  }
-
-  Future<void> _pick() async {
+  Widget build(BuildContext context) {
     final container = widget.container;
-    final result = await showDialog<List<String>>(
-      context: context,
-      builder: (ctx) => _PlayerPickerDialog(
-        container: container,
+    final id = container.settings.get(voiceTtsOutput);
+    return PickRow(
+      title: voiceTtsOutput.localizedTitle(context),
+      description: voiceTtsOutput.localizedDescription(context),
+      spec: playerSpec(
+        context,
+        container.commands,
         source: 'ha',
         speakers: true,
-        current: _listed(container.settings.get(voiceTtsOutput)),
-        title: voiceTtsOutput.localizedTitle(context),
-        noneLabel: voiceText(context, 'This kiosk'),
       ),
-    );
-    if (result == null) return;
-    // The list's ids carry their source; the setting keeps the entity.
-    await container.settings.set(
-      voiceTtsOutput,
-      result[0].replaceFirst('ha:', ''),
-    );
-    if (mounted) setState(() => _name = result[1]);
-    widget.onChanged();
-  }
-
-  /// An entity as the player list names it.
-  static String _listed(String entity) => entity.isEmpty ? '' : 'ha:$entity';
-
-  @override
-  Widget build(BuildContext context) {
-    final id = widget.container.settings.get(voiceTtsOutput);
-    final label = id.isEmpty
-        ? voiceText(context, 'This kiosk')
-        : (_name?.isNotEmpty ?? false)
-        ? _name!
-        : id;
-    return SettingsRow(
-      title: Text(voiceTtsOutput.localizedTitle(context)),
-      subtitle: Text(voiceTtsOutput.localizedDescription(context)),
-      trailing: ControlBox(
-        onTap: _pick,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 200),
-              child: Text(label, overflow: TextOverflow.ellipsis),
-            ),
-            const SizedBox(width: 6),
-            const Icon(Icons.arrow_drop_down, size: 22),
-          ],
-        ),
-      ),
-      onTap: _pick,
-    );
-  }
-}
-
-/// The picked source's players, fetched live. A source that cannot be
-/// listed says why instead of an empty list. Past a handful of rows a
-/// search field filters by name and id.
-class _PlayerPickerDialog extends StatefulWidget {
-  const _PlayerPickerDialog({
-    required this.container,
-    required this.source,
-    required this.current,
-    this.title,
-    this.noneLabel,
-    this.players,
-    this.speakers = false,
-  });
-
-  final AppContainer container;
-  final String source;
-  final String current;
-
-  /// A speaker for sounds: Home Assistant's list keeps Music Assistant's
-  /// own entities.
-  final bool speakers;
-
-  /// A fixed list in place of the source's live one: this device's own
-  /// players.
-  final List<Map<String, Object?>>? players;
-
-  /// The dialog's title, in place of the source's.
-  final String? title;
-
-  /// A first choice that picks no player (id ''), labelled this.
-  final String? noneLabel;
-
-  @override
-  State<_PlayerPickerDialog> createState() => _PlayerPickerDialogState();
-}
-
-class _PlayerPickerDialogState extends State<_PlayerPickerDialog> {
-  List<Map<String, Object?>>? _players;
-  String? _note;
-  String _query = '';
-
-  static const _titles = {
-    'ma': 'Music Assistant player',
-    'ha': 'Home Assistant media player',
-    'sonos': 'Sonos room',
-  };
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.players case final fixed?) {
-      _players = fixed;
-      return;
-    }
-    widget.container.commands
-        .execute('mediaPlayers', {
-          'source': widget.source,
-          if (widget.speakers) 'speakers': true,
-        })
-        .then((result) {
-          if (!mounted) return;
-          setState(() {
-            if (!result.ok) {
-              _note = result.error;
-              _players = const [];
-              return;
-            }
-            final data = result.data;
-            final list = data is Map ? data['players'] : null;
-            _players = [
-              for (final p in (list as List? ?? const []))
-                if (p is Map && p['group'] == widget.source)
-                  p.cast<String, Object?>(),
-            ];
-            final notes = data is Map ? data['notes'] : null;
-            final note = notes is Map ? notes[widget.source] : null;
-            _note = note == null ? null : '$note';
-          });
-        });
-  }
-
-  bool _matches(Map<String, Object?> p) {
-    if (_query.isEmpty) return true;
-    final q = _query.toLowerCase();
-    return '${p['name']}'.toLowerCase().contains(q) ||
-        '${p['sub'] ?? ''}'.toLowerCase().contains(q);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final players = _players;
-    final scheme = theme.colorScheme;
-    final body = players == null
-        ? const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
-          )
-        : RadioGroup<String>(
-            groupValue: widget.current,
-            onChanged: (value) {
-              final id = value ?? '';
-              final name =
-                  '${players.firstWhere((p) => '${p['id']}' == id, orElse: () => const {})['name'] ?? ''}';
-              Navigator.pop(context, [id, name]);
-            },
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                if (players.length > 8)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.search),
-                        hintText: mediaText(context, 'Search players'),
-                        isDense: true,
-                      ),
-                      onChanged: (v) => setState(() => _query = v.trim()),
-                    ),
-                  ),
-                if (widget.noneLabel != null)
-                  RadioListTile<String>(
-                    value: '',
-                    title: Text(widget.noneLabel!),
-                  ),
-                if (_note != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
-                    child: Text(
-                      mediaError(context, _note!),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                for (final p in players)
-                  if (_matches(p))
-                    RadioListTile<String>(
-                      value: '${p['id']}',
-                      title: Text('${p['name']}'),
-                      subtitle: p['available'] == false
-                          ? Text(mediaText(context, 'Offline'))
-                          : p['sub'] != null
-                          ? Text('${p['sub']}')
-                          : null,
-                    ),
-              ],
-            ),
-          );
-    return AlertDialog(
-      title: Text(
-        widget.title ?? mediaText(context, _titles[widget.source] ?? 'Player'),
-      ),
-      contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
-      content: SizedBox(width: 440, child: body),
+      // The list's ids carry their source; the setting keeps the entity.
+      value: id.isEmpty ? '' : 'ha:$id',
+      placeholder: voiceText(context, 'This kiosk'),
+      // Clear is this kiosk.
+      allowClear: true,
+      flagMissing: false,
+      onPick: (picked) async {
+        await container.settings.set(
+          voiceTtsOutput,
+          (picked ?? '').replaceFirst('ha:', ''),
+        );
+        if (mounted) setState(() {});
+        widget.onChanged();
+      },
     );
   }
 }
@@ -10964,6 +10757,11 @@ class SettingTile extends StatelessWidget {
         if (def.key == screensaverWeatherEntity.key) {
           return WeatherMoodEntityRow(container: c);
         }
+        // Adaptive brightness's light sensor entity (issue #911), picked
+        // with the entity search the plugins' entity fields use.
+        if (def.key == adaptiveLightEntity.key) {
+          return _LightEntityRow(container: c, def: def, onChanged: onChanged);
+        }
         // The Home Assistant Dashboard screensaver's view and Now Playing's
         // chosen view are picked from the instance's dashboards in the
         // dashboard picker, never typed.
@@ -11007,22 +10805,11 @@ class SettingTile extends StatelessWidget {
             ),
           );
         }
-        // The At a Glance entities: a list, edited in its own screen rather
-        // than typed as JSON.
+        // The At a Glance entities: the picks in order, each with its own
+        // name and displayed value, and a row that opens the entity picker
+        // to add more. Never typed as JSON.
         if (def.key == screensaverGlanceEntities.key) {
-          final chosen = _glanceEntities(c);
-          return ListTile(
-            title: Text(def.localizedTitle(context)),
-            subtitle: Text(
-              chosen.isEmpty
-                  ? l10n(context).screensaverOverlayGlanceEmpty(
-                      screensaverGlanceMax.toString(),
-                    )
-                  : chosen.map((e) => e['custom_name'] ?? e['name']).join(', '),
-            ),
-            trailing: const Icon(Icons.edit_outlined),
-            onTap: () => _editGlanceEntities(context),
-          );
+          return GlanceRows(container: c, def: def, onChanged: onChanged);
         }
         // The launcher whitelist: ticked off the device's launchable apps,
         // never typed as JSON.
@@ -11156,36 +10943,6 @@ class SettingTile extends StatelessWidget {
           onTap: () => _editText(context),
         );
     }
-  }
-
-  List<Map<String, Object?>> _glanceEntities(AppContainer container) {
-    try {
-      final decoded = jsonDecode(
-        container.settings.get(screensaverGlanceEntities),
-      );
-      if (decoded is! List) return [];
-      return [
-        for (final item in decoded)
-          if (item is Map) item.cast<String, Object?>(),
-      ];
-    } catch (_) {
-      return [];
-    }
-  }
-
-  Future<void> _editGlanceEntities(BuildContext context) async {
-    final saved = await Navigator.of(context).push<List<Map<String, Object?>>>(
-      MaterialPageRoute(
-        builder: (_) =>
-            GlanceEntityPicker(container: c, initial: _glanceEntities(c)),
-      ),
-    );
-    if (saved == null) return;
-    await c.settings.setFromJson(
-      screensaverGlanceEntities.key,
-      jsonEncode(saved),
-    );
-    onChanged();
   }
 
   Future<void> _pickCameraViews(BuildContext context) async {

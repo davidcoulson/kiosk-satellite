@@ -9,6 +9,7 @@ import '../core/events.dart';
 import '../managers/device/device_details.dart';
 import '../managers/intercom/intercom_manager.dart' show IntercomManager;
 import '../managers/settings/definitions.dart' as defs;
+import 'entity_picker.dart';
 import 'kit.dart';
 import 'settings_search.dart';
 import 'theme.dart';
@@ -409,7 +410,6 @@ class AnnouncementTtsEngineRow extends StatefulWidget {
 
 class _AnnouncementTtsEngineRowState extends State<AnnouncementTtsEngineRow> {
   StreamSubscription<SettingChanged>? _sub;
-  List<Map<String, String>> _engines = const [];
 
   AppContainer get c => widget.container;
 
@@ -419,7 +419,6 @@ class _AnnouncementTtsEngineRowState extends State<AnnouncementTtsEngineRow> {
     _sub = c.bus.on<SettingChanged>().listen((e) {
       if (e.key == widget.def.key && mounted) setState(() {});
     });
-    unawaited(_load());
   }
 
   @override
@@ -428,67 +427,10 @@ class _AnnouncementTtsEngineRowState extends State<AnnouncementTtsEngineRow> {
     super.dispose();
   }
 
-  Future<bool> _load() async {
-    final r = await c.commands.execute('announcementTtsEngines', const {});
-    if (!mounted || !r.ok || r.data is! List) return false;
-    setState(() {
-      _engines = [
-        for (final e in r.data as List)
-          if (e is Map)
-            {'entity_id': '${e['entity_id']}', 'name': '${e['name']}'},
-      ];
-    });
-    return true;
-  }
-
-  String _labelOf(String id) {
-    if (id.isEmpty) return esphomeText(context, 'First available');
-    for (final e in _engines) {
-      if (e['entity_id'] == id) return e['name']!;
-    }
-    return id;
-  }
-
-  Future<void> _pick() async {
-    final ok = await _load();
-    if (!mounted) return;
-    if (!ok) {
-      showToast(
-        context,
-        title: esphomeText(context, 'Could not reach Home Assistant'),
-        kind: ToastKind.error,
-      );
-      return;
-    }
-    final current = c.settings.get(widget.def).trim();
-    final picked = await showDialog<String>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(esphomeText(context, 'Text to speech engine')),
-        children: [
-          RadioGroup<String>(
-            groupValue: current,
-            onChanged: (value) => Navigator.of(context).pop(value),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                RadioListTile<String>(
-                  value: '',
-                  title: Text(esphomeText(context, 'First available')),
-                ),
-                for (final engine in _engines)
-                  RadioListTile<String>(
-                    value: engine['entity_id']!,
-                    title: Text(engine['name']!),
-                    subtitle: Text(engine['entity_id']!),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-    if (picked == null || picked == current) return;
+  Future<void> _pick(String? id) async {
+    // Clear is First available: the empty engine.
+    final picked = id ?? '';
+    if (picked == c.settings.get(widget.def).trim()) return;
     await c.settings.set(widget.def, picked);
     await c.settings.set(widget.languageDef, '');
     await c.settings.set(widget.voiceDef, '');
@@ -496,31 +438,17 @@ class _AnnouncementTtsEngineRowState extends State<AnnouncementTtsEngineRow> {
 
   @override
   Widget build(BuildContext context) {
-    final current = c.settings.get(widget.def).trim();
     return SearchLandingTarget(
       id: widget.def.key,
-      child: SettingsRow(
-        stack: true,
-        title: Text(widget.def.localizedTitle(context)),
-        subtitle: Text(widget.def.localizedDescription(context)),
-        trailing: ControlBox(
-          onTap: _pick,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 220),
-                child: Text(
-                  _labelOf(current),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 6),
-              const Icon(Icons.expand_more, size: 20),
-            ],
-          ),
-        ),
+      child: PickRow(
+        title: widget.def.localizedTitle(context),
+        description: widget.def.localizedDescription(context),
+        dialogTitle: esphomeText(context, 'Text to speech engine'),
+        spec: entitySpec(context, c.commands, domains: const ['tts']),
+        value: c.settings.get(widget.def).trim(),
+        placeholder: esphomeText(context, 'First available'),
+        allowClear: true,
+        onPick: _pick,
       ),
     );
   }

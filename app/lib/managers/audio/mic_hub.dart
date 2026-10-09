@@ -15,6 +15,7 @@ class MicHub {
   Stream<Uint8List> Function() opener = () => NativeMic().stream();
   final browserCapturing = ValueNotifier<bool>(false);
   StreamController<Uint8List>? _out;
+  final _tap = StreamController<Uint8List>.broadcast();
   StreamSubscription<Uint8List>? _native;
   Future<void> _pending = Future.value();
 
@@ -28,6 +29,11 @@ class MicHub {
     return _out!.stream;
   }
 
+  /// The chunks of a capture someone else holds open. Listening here never
+  /// opens the microphone, so a reader of the room's noise level records
+  /// nothing the wake word engine was not already hearing.
+  Stream<Uint8List> tap() => _tap.stream;
+
   Future<void> _sync({bool reopen = false}) {
     _pending = _pending
         .then((_) async {
@@ -38,10 +44,10 @@ class MicHub {
             await sub?.cancel();
           }
           if (wanted && _native == null) {
-            _native = opener().listen(
-              (chunk) => _out?.add(chunk),
-              onError: (Object e) => _out?.addError(e),
-            );
+            _native = opener().listen((chunk) {
+              _out?.add(chunk);
+              if (_tap.hasListener) _tap.add(chunk);
+            }, onError: (Object e) => _out?.addError(e));
           }
         })
         .catchError((Object e) {

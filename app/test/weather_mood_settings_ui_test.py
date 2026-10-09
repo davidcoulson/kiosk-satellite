@@ -35,13 +35,12 @@ def api(route):
         return route.fulfill(json={'settings': settings, 'subpageHints': {
             'Weather Mood screensaver': 'Weather entity, lightning, preview'}})
     name = path.removeprefix('commands/')
-    if name == 'haSearchEntities':
+    if name == 'haListEntities':
         if fail_search:
             return route.fulfill(json={'ok': False})
-        assert route.request.post_data_json == {'query': 'weather.'}
-        data = [{'entity_id': 'weather.home', 'name': 'Garden weather'},
-                {'entity_id': 'weather.coast', 'name': 'Coastal weather'},
-                {'entity_id': 'sensor.weather_temperature', 'name': 'Excluded sensor'}]
+        data = [{'entity_id': 'weather.home', 'name': 'Garden weather', 'domain': 'weather'},
+                {'entity_id': 'weather.coast', 'name': 'Coastal weather', 'domain': 'weather'},
+                {'entity_id': 'sensor.weather_temperature', 'name': 'Excluded sensor', 'domain': 'sensor'}]
     else:
         data = {'listPlugins': [], 'listFiles': [],
                 'mediaPlayers': {'players': []},
@@ -134,11 +133,15 @@ try:
             expect(root.locator('[data-key="screensaver.weather_lightning"] .name')).to_have_text(strings['settingScreensaverWeatherLightningTitle'])
             expect(root.locator('[data-key="screensaver.weather_blur"] .name')).to_have_text(strings['settingScreensaverWeatherBlurTitle'])
             expect(root.locator('[data-key="screensaver.weather_blur"] input[type="range"]')).to_be_visible()
-            picker = root.locator('[data-key="screensaver.weather_entity"] select')
-            expect(picker.locator('option[value="weather.coast"]')).to_have_text('Coastal weather')
-            expect(picker.locator('option[value^="sensor."]')).to_have_count(0)
+            # The weather field opens the entity picker, weather only.
+            entity_field = root.locator('[data-key="screensaver.weather_entity"] .ep-field')
+            entity_field.click()
+            picker = page.locator('.dash-picker-card')
+            expect(picker.locator('.dp-row', has_text='Coastal weather')).to_be_visible()
+            expect(picker.locator('.dp-row', has_text='Excluded sensor')).to_have_count(0)
             with page.expect_response('**/api/settings'):
-                picker.select_option('weather.coast')
+                picker.locator('.dp-row', has_text='Coastal weather').click()
+            expect(entity_field).to_contain_text('Coastal weather')
             assert {'screensaver.weather_entity': 'weather.coast'} in requests
             with page.expect_response('**/api/settings'):
                 root.locator('[data-key="screensaver.weather_lightning"] .switch').click()
@@ -199,12 +202,12 @@ try:
                 clock.click()
             expect(font).to_have_count(0)
             expect(root.locator('[data-key="screensaver.weather_bar_scale"]')).to_be_visible()
-            # A missing entity remains selected so transient HA failures cannot erase it.
+            # A missing entity stays stored and is flagged, never erased.
             fail_search = True
             next(item for item in settings if item['key']=='screensaver.weather_entity')['value']='weather.missing'
             page.evaluate("async () => (await import('/static/settings.js')).loadSettings()")
-            expect(picker).to_have_value('weather.missing')
-            expect(root.locator('[data-key="screensaver.weather_entity"] .row-error')).to_be_visible()
+            expect(entity_field).to_contain_text('weather.missing')
+            expect(root.locator('[data-key="screensaver.weather_entity"] .dp-missing')).to_be_visible()
             fail_search = False
             assert not errors, errors
             page.close()

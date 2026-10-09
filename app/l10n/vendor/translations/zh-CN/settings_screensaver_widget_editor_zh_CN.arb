@@ -20,6 +20,8 @@
   "screensaverOverlayLowHelp": "电量降至 20% 后才显示。",
   "screensaverOverlayShowName": "显示名称",
   "screensaverOverlayShowNameHelp": "数值下方的名称。",
+  "screensaverOverlayShowIcon": "显示图标",
+  "screensaverOverlayShowIconHelp": "数值旁边的图标。",
   "screensaverOverlayFontSystem": "系统",
   "screensaverOverlayFontSerif": "衬线",
   "screensaverOverlayFontCondensed": "窄体",

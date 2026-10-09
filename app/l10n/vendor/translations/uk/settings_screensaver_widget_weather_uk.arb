@@ -1,9 +1,6 @@
 {
   "@@locale": "uk",
   "screensaverOverlayWeatherEntity": "Об'єкт погоди",
-  "screensaverOverlayNoWeather": "Немає об'єктів погоди",
-  "screensaverOverlayNoWeatherHelp": "Home Assistant не повідомив про жоден об'єкт.",
-  "screensaverOverlayPickWeather": "Виберіть об'єкт погоди...",
   "screensaverOverlayWeatherRequired": "Виберіть об'єкт погоди.",
   "screensaverOverlayLocationName": "Назва місця",
   "screensaverOverlayLocationHelp": "Залиште порожнім, щоб приховати рядок розташування.",

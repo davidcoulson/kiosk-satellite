@@ -83,10 +83,15 @@ try:
 
         root = page.locator('#tab-sendspin')
         expect(root.locator('.media-player-intro')).to_contain_text('TEST The floating player')
-        picker = root.locator('[data-key="sendspin.player"] select')
-        expect(picker.locator('option[value="ma:raw-id"]')).to_have_text('TEST Offline <img src=x> {player} (offline)')
+        # The player field opens the picker over the source's players: the
+        # name stays as Home Assistant sent it, Offline translates.
+        root.locator('[data-key="sendspin.player"] .ep-field').click()
+        modal = page.locator('.dash-picker-card')
+        player = modal.locator('.dp-row', has_text='Offline <img src=x> {player}')
+        expect(player.locator('.ep-state')).to_have_text('TEST Offline')
+        assert modal.locator('img').count() == 0
         with page.expect_response('**/api/settings'):
-            picker.select_option('ma:raw-id')
+            player.click()
         assert requests[-1] == {'sendspin.player':'ma:raw-id',
             'sendspin.player_name':'Offline <img src=x> {player}', 'sendspin.player_active':True}
         expect(root.locator('.player-warn')).to_contain_text("TEST This device's own Sendspin player stays offline while Offline <img src=x> {player} is controlled.")
@@ -103,9 +108,10 @@ try:
         for language in ['en','es']:
             settings[0]['value'] = language
             page.evaluate("async()=>{await (await import('/static/settings.js')).loadSettings(); (await import('/static/tabs.js')).showTab('sendspin',{refresh:false});}")
-            expect(picker).to_have_value('ma:raw-id')
+            field = root.locator('[data-key="sendspin.player"] .ep-field')
+            expect(field.locator('.dp-field-text')).to_have_text('Offline <img src=x> {player}')
             expected = 'TEST ' if language == 'es' else ''
-            expect(picker.locator('option:checked')).to_have_text(expected+'Offline <img src=x> {player} (offline)')
+            expect(field.locator('.ep-field-state')).to_have_text(expected+'Offline')
             root.locator('[data-subpage-entry="Sendspin Player"]').click()
             codec = root.locator('[data-key="sendspin.codec"] select')
             expect(codec.locator('option[value="flac"]')).to_have_text(expected+'FLAC (lossless)')

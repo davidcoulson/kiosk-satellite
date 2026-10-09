@@ -1,9 +1,6 @@
 {
   "@@locale": "de",
   "screensaverOverlayWeatherEntity": "Wetter-Entität",
-  "screensaverOverlayNoWeather": "Keine Wetter-Entitäten vorhanden",
-  "screensaverOverlayNoWeatherHelp": "Home Assistant hat keine Wetter-Entitäten zurückgegeben.",
-  "screensaverOverlayPickWeather": "Wähle eine Wetter-Entität aus...",
   "screensaverOverlayWeatherRequired": "Bitte eine Wetter-Entität auswählen.",
   "screensaverOverlayLocationName": "Standortname",
   "screensaverOverlayLocationHelp": "Leer lassen, um die Standortzeile auszublenden.",

@@ -775,6 +775,41 @@ class UiStringsEn extends UiStrings {
   String get drawerNoReleaseNotes => 'No release notes.';
 
   @override
+  String get entityPickerNoArea => 'No area';
+
+  @override
+  String get entityPickerAll => 'All';
+
+  @override
+  String get entityPickerChoose => 'Choose an entity';
+
+  @override
+  String get entityPickerNoMatch => 'Nothing matches';
+
+  @override
+  String get entityPickerOfflineHelp =>
+      'The entities load once the connection is back.';
+
+  @override
+  String get entityPickerMissing =>
+      'This entity is gone from Home Assistant. Choose another.';
+
+  @override
+  String get entityPickerOrderHint =>
+      'Drag or use the arrows to change the order.';
+
+  @override
+  String get entityPickerFull => 'Remove one to add another.';
+
+  @override
+  String get entityPickerAdd => 'Add entities';
+
+  @override
+  String entityPickerShowing(String count, String max) {
+    return 'Showing $count of $max';
+  }
+
+  @override
   String get esphomeAllExposed => 'All available entities exposed';
 
   @override
@@ -1831,9 +1866,6 @@ class UiStringsEn extends UiStrings {
   String get gestureAutomationEntity => 'Automation entity';
 
   @override
-  String get gestureDomain => 'Domain';
-
-  @override
   String get gestureEntityOptional => 'Entity (optional)';
 
   @override
@@ -1841,9 +1873,6 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get gestureServiceTitle => 'Call a Home Assistant service';
-
-  @override
-  String get gestureServiceRequired => 'Domain and service are required.';
 
   @override
   String get gestureServiceJson => 'Service data must be a JSON object.';
@@ -1862,6 +1891,15 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get gestureEventJson => 'Event data must be a JSON object.';
+
+  @override
+  String get gestureServiceSearch => 'Search services';
+
+  @override
+  String get gestureServiceChoose => 'Choose a service';
+
+  @override
+  String get gestureServiceNoEntity => 'Not used by this service';
 
   @override
   String get gestureTester => 'Hand Gesture Tester';
@@ -2737,14 +2775,6 @@ class UiStringsEn extends UiStrings {
   @override
   String get pluginAddsAButtonToTheKioskEsphomeDeviceRequires =>
       'Adds a button to the kiosk ESPHome device. Requires ESPHome and native entities.';
-
-  @override
-  String get pluginSelectAnEntity => 'Select an entity';
-
-  @override
-  String pluginChooseName(String name) {
-    return 'Choose $name';
-  }
 
   @override
   String pluginConfigureName(String name) {
@@ -8240,6 +8270,10 @@ class UiStringsEn extends UiStrings {
       'The floating close button can sit on top of Music Assistant\'s own controls, like the Now Playing menu. Without it, dismiss with the back button or by using the kiosk\'s drawer menu.';
 
   @override
+  String get settingSendspinMaZoomDescription =>
+      'Scales the whole Music Assistant page.';
+
+  @override
   String get mediaMaHint => 'Server, token, kiosk menu shortcut';
 
   @override
@@ -8800,6 +8834,20 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingAdaptiveBrightnessDescription =>
       'Dim the screen as the room gets darker, using the ambient light sensor.';
+
+  @override
+  String get settingAdaptiveUseEntityTitle => 'Use Home Assistant entity';
+
+  @override
+  String get settingAdaptiveUseEntityDescription =>
+      'Read the room\'s light level from a Home Assistant sensor.';
+
+  @override
+  String get settingAdaptiveLightEntityTitle => 'Light sensor entity';
+
+  @override
+  String get settingAdaptiveLightEntityDescription =>
+      'The Home Assistant sensor that reports the light level in lux.';
 
   @override
   String get settingAdaptiveMinBrightnessTitle => 'Minimum brightness';
@@ -9465,19 +9513,6 @@ class UiStringsEn extends UiStrings {
   String get screensaverOverlayEntityRequired => 'Pick an entity.';
 
   @override
-  String get screensaverOverlaySearchHint => 'Name or entity id';
-
-  @override
-  String get screensaverOverlaySearchHintRemote =>
-      'Search by name or entity id';
-
-  @override
-  String get screensaverOverlaySearchEmpty => 'Type to search entities.';
-
-  @override
-  String get screensaverOverlayNoMatches => 'Nothing matched.';
-
-  @override
   String get screensaverOverlaySearching => 'Searching…';
 
   @override
@@ -9485,11 +9520,6 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get screensaverOverlayNoAnswer => 'The device did not answer.';
-
-  @override
-  String screensaverOverlaySearchError(String error) {
-    return 'Could not search entities: $error';
-  }
 
   @override
   String get settingScreensaverDismissOnFaceTitle => 'Dismiss on face';
@@ -9813,27 +9843,7 @@ class UiStringsEn extends UiStrings {
   String get screensaverOverlayShowing => 'Showing';
 
   @override
-  String get screensaverOverlayReorder => 'Showing (drag to reorder)';
-
-  @override
-  String get screensaverOverlayFull =>
-      'That is the most the row can show. Remove one to add another.';
-
-  @override
-  String get screensaverOverlayPickerTitle => 'At a glance entities';
-
-  @override
-  String screensaverOverlayGlanceEmpty(String count) {
-    return 'None yet. Up to $count entities.';
-  }
-
-  @override
   String get screensaverOverlayNone => 'None yet';
-
-  @override
-  String screensaverOverlayLimit(String count) {
-    return 'Up to $count entities.';
-  }
 
   @override
   String get screensaverOverlayGlancePage => 'At a Glance';
@@ -11181,6 +11191,12 @@ class UiStringsEn extends UiStrings {
   String get screensaverOverlayShowNameHelp => 'The name under the value.';
 
   @override
+  String get screensaverOverlayShowIcon => 'Show icon';
+
+  @override
+  String get screensaverOverlayShowIconHelp => 'The icon beside the value.';
+
+  @override
   String get screensaverOverlayFontSystem => 'System';
 
   @override
@@ -11203,15 +11219,6 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get screensaverOverlayWeatherEntity => 'Weather entity';
-
-  @override
-  String get screensaverOverlayNoWeather => 'No weather entities';
-
-  @override
-  String get screensaverOverlayNoWeatherHelp => 'Home Assistant reported none.';
-
-  @override
-  String get screensaverOverlayPickWeather => 'Pick a weather entity…';
 
   @override
   String get screensaverOverlayWeatherRequired => 'Pick a weather entity.';

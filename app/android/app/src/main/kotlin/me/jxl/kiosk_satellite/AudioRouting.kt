@@ -175,6 +175,11 @@ class AudioRoutingBridge(context: Context, messenger: BinaryMessenger) {
                 "resolveInput" -> result.success(
                     AudioRouting.resolve(call.argument<String>("selector"), source = true)?.id,
                 )
+                // Whether the kiosk itself made a sound lately, so the room's
+                // noise level never measures its own answers and music.
+                "playedWithin" -> result.success(
+                    EchoReference.playedWithin((call.argument<Number>("ms") ?: 0).toLong()),
+                )
                 else -> result.notImplemented()
             }
         }

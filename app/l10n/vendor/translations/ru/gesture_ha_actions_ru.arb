@@ -8,15 +8,16 @@
   "gestureEntityRequired": "Введите сущность вида {domain}.*",
   "gestureScriptEntity": "Сущность сценария",
   "gestureAutomationEntity": "Сущность автоматизации",
-  "gestureDomain": "Домен",
   "gestureEntityOptional": "Сущность (необязательно)",
   "gestureServiceData": "Данные службы (необязательно)",
   "gestureServiceTitle": "Вызвать службу Home Assistant",
-  "gestureServiceRequired": "Домен и служба обязательны.",
   "gestureServiceJson": "Данные службы должны быть JSON-объектом.",
   "gestureEventType": "Тип события",
   "gestureEventData": "Данные события (необязательно)",
   "gestureEventTitle": "Вызвать событие Home Assistant",
   "gestureEventRequired": "Тип события обязателен.",
-  "gestureEventJson": "Данные события должны быть JSON-объектом."
+  "gestureEventJson": "Данные события должны быть JSON-объектом.",
+  "gestureServiceSearch": "Поиск служб",
+  "gestureServiceChoose": "Выберите службу",
+  "gestureServiceNoEntity": "Эта служба его не использует"
 }

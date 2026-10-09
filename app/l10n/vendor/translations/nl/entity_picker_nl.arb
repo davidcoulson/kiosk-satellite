@@ -1,0 +1,13 @@
+{
+  "@@locale": "nl",
+  "entityPickerNoArea": "Geen ruimte",
+  "entityPickerAll": "Alle",
+  "entityPickerChoose": "Kies een entiteit",
+  "entityPickerNoMatch": "Niets gevonden",
+  "entityPickerOfflineHelp": "De entiteiten laden zodra de verbinding terug is.",
+  "entityPickerMissing": "Deze entiteit bestaat niet meer in Home Assistant. Kies een andere.",
+  "entityPickerOrderHint": "Sleep of gebruik de pijlen om de volgorde te wijzigen.",
+  "entityPickerFull": "Verwijder er een om een andere toe te voegen.",
+  "entityPickerAdd": "Entiteiten toevoegen",
+  "entityPickerShowing": "{count} van {max} getoond"
+}

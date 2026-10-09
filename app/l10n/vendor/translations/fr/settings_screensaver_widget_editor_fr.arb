@@ -20,6 +20,8 @@
   "screensaverOverlayLowHelp": "Rester masqué tant que la charge n'est pas descendue à 20 %.",
   "screensaverOverlayShowName": "Afficher le nom",
   "screensaverOverlayShowNameHelp": "Le nom sous la valeur.",
+  "screensaverOverlayShowIcon": "Afficher l'icône",
+  "screensaverOverlayShowIconHelp": "L'icône à côté de la valeur.",
   "screensaverOverlayFontSystem": "Système",
   "screensaverOverlayFontSerif": "Serif",
   "screensaverOverlayFontCondensed": "Condensée",

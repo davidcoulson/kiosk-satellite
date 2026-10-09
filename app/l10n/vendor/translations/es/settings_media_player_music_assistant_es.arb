@@ -12,6 +12,7 @@
   "settingSendspinMaAutoCloseDescription": "Vuelve al panel de control cuando nadie haya tocado la página de Music Assistant durante este tiempo. Con cero, permanece abierta hasta que se cierre.",
   "settingSendspinMaHideCloseTitle": "Ocultar el botón de cierre",
   "settingSendspinMaHideCloseDescription": "El botón de cierre flotante puede cubrir controles de Music Assistant, como el menú de Reproduciendo Ahora. Sin él, cierra la página con el botón Atrás o con el menú lateral del kiosko.",
+  "settingSendspinMaZoomDescription": "Cambia la escala de toda la página de Music Assistant.",
   "mediaMaHint": "Servidor, token y acceso directo en el menú del kiosko",
   "mediaKioskMenu": "Menú del kiosko",
   "mediaValidateConnection": "Validar conexión",

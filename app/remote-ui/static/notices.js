@@ -365,25 +365,27 @@ export async function updateProximityRows() {
 }
 
 /* The adaptive brightness rows (issue #343), mirroring the device. On a
-   device without an ambient light sensor the switch renders off and
-   disabled with the reason. With one, a live reading sits under the
-   switch (the curve's two light levels are typed against it, and what a
-   sensor calls a lit room is anyone's guess until it is on screen; the
-   value updates off the WebSocket's lightlevel messages, and the curve
-   editor below marks it on its chart). With the switch
+   device without an ambient light sensor a note under the switch says so;
+   the switch stays usable, since a Home Assistant entity can stand in
+   (issue #911). With one, a live reading sits under the switch (the
+   curve's two light levels are typed against it, and what a sensor calls
+   a lit room is anyone's guess until it is on screen; the value updates
+   off the WebSocket's lightlevel messages). The curve editor marks the
+   reading adaptive brightness follows, the sensor's or the entity's, off
+   the adaptivelight messages. With the switch
    on, the Default brightness slider stands down with the reason, and a
    hint under each screensaver brightness slider says the slider is the
    bright-room level the room's light dims from. Idempotent, so the save
    path re-runs it when the switch flips. The sensor is asked about once
-   per page load. */
-export async function updateAdaptiveBrightnessRows() {
-  await probeLightSensor();
+   per page load, the light adaptive brightness follows again when
+   [reprobe] says its source changed. */
+export async function updateAdaptiveBrightnessRows({ reprobe = false } = {}) {
+  await Promise.all([probeLightSensor(), probeAdaptiveLight(reprobe)]);
   for (const stale of document.querySelectorAll('.adaptive-note')) stale.remove();
   const note = (text) => hintRow(screenAudioText(text), { className: 'adaptive-note' });
   const row = document.querySelector('[data-key="screen.adaptive_brightness"]');
   const byKey = Object.fromEntries((state.settings || []).map((s) => [s.key, s]));
-  const adaptiveOn = byKey['screen.adaptive_brightness']?.value === true
-    && state.lightSensor === true;
+  const adaptiveOn = byKey['screen.adaptive_brightness']?.value === true;
   // The Overview slider turns a setting, and which one depends on the
   // switch: say so under it, the way the Screen light's docs do.
   const modeRow = document.getElementById('brightnessModeRow');
@@ -396,15 +398,12 @@ export async function updateAdaptiveBrightnessRows() {
   const defaultRow = document.querySelector('[data-key="screen.default_brightness"]');
   const defaultSlider = defaultRow?.querySelector('input[type="range"]');
   if (defaultSlider) defaultSlider.disabled = false;
-  if (state.lightSensor === false) {
-    if (!row) return;
-    const input = row.querySelector('.switch input');
-    if (input) { input.checked = false; input.disabled = true; }
+  if (row && state.lightSensor === false) {
     row.insertAdjacentElement('afterend', note(NO_LIGHT_SENSOR_NOTE));
-    return;
   }
-  // The curve editor may have been built before the probe answered.
-  if (state.lightSensor) document.dispatchEvent(new CustomEvent('ks-lightlevel'));
+  // The curve editor and the entity row may have been built before the
+  // probe answered.
+  document.dispatchEvent(new CustomEvent('ks-adaptivelight'));
   if (row && state.lightSensor) {
     const reading = readOnlyRow(screenAudioText('Ambient light'), screenAudioText(AMBIENT_LIGHT_NOTE),
       formatLux(state.lightLux));
@@ -460,21 +459,53 @@ export async function updateClockNightRows() {
     hintRow(screenAudioText(NO_LIGHT_SENSOR_NOTE), { className: 'clock-night-note' }));
 }
 
+/* The light level adaptive brightness follows, asked about once per page
+   load and again when its source changes; the adaptivelight messages
+   keep it current in between. */
+let adaptiveLightProbe;
+function probeAdaptiveLight(reprobe) {
+  if (reprobe) adaptiveLightProbe = undefined;
+  adaptiveLightProbe ??= (async () => {
+    try {
+      const res = await (await api('/api/commands/getAdaptiveLight',
+        { method: 'POST', body: '{}' })).json();
+      const data = res.data && typeof res.data === 'object' ? res.data : null;
+      if (data) showAdaptiveLight(data, false);
+    } catch (_) {}
+  })();
+  return adaptiveLightProbe;
+}
+
+/* A fresh reading of the light adaptive brightness follows, or a new
+   source, from the WebSocket: the curve's marker and the Light sensor
+   entity row repaint off the event. */
+export function showAdaptiveLight(msg, notify = true) {
+  state.adaptiveSource = msg.source;
+  state.adaptiveLux = typeof msg.lux === 'number' ? msg.lux : null;
+  state.adaptiveLive = msg.live === true;
+  if (notify) document.dispatchEvent(new CustomEvent('ks-adaptivelight'));
+}
+
+/* The Home Assistant entity's reading for its row (issue #911), worded
+   like the Ambient light row's. */
+export function entityLightReading() {
+  return formatLux(state.adaptiveSource === 'entity' ? state.adaptiveLux : null,
+    state.adaptiveLive);
+}
+
 /* A fresh sensor reading from the WebSocket: the live row, if it is up. */
 export function showLightLevel(lux) {
   state.lightLux = lux;
   state.lightLive = true;
   const el = document.querySelector('.ambient-light-value');
   if (el) el.textContent = formatLux(lux);
-  // The brightness curve marks the reading too (brightness_curve.js).
-  document.dispatchEvent(new CustomEvent('ks-lightlevel'));
 }
 
 /* Until the sensor has spoken this session, the reading is the last
    session's (some drivers emit nothing at registration), and says so. */
-function formatLux(lux) {
+function formatLux(lux, live = state.lightLive) {
   if (typeof lux !== 'number') return screenAudioText('No reading yet');
-  return t(state.lightLive ? 'screenAudioLux' : 'screenAudioLuxLast',
+  return t(live ? 'screenAudioLux' : 'screenAudioLuxLast',
     {lux: String(Number.isInteger(lux) ? lux : lux.toFixed(1))});
 }
 

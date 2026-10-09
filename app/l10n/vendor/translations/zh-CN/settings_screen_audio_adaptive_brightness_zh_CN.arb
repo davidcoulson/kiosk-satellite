@@ -27,5 +27,9 @@
   "screenAudioCurveLightLevel": "照度（lx）",
   "screenAudioCurveBrightness": "亮度（%）",
   "screenAudioCurveLuxRange": "请输入 {low} 至 {high} lx 之间的照度",
-  "screenAudioCurveLevelRange": "请输入 {low}% 至 {high}% 之间的亮度"
+  "screenAudioCurveLevelRange": "请输入 {low}% 至 {high}% 之间的亮度",
+  "settingAdaptiveUseEntityTitle": "使用 Home Assistant 实体",
+  "settingAdaptiveUseEntityDescription": "从 Home Assistant 传感器读取房间的光照强度。",
+  "settingAdaptiveLightEntityTitle": "光照传感器实体",
+  "settingAdaptiveLightEntityDescription": "以勒克斯为单位报告光照强度的 Home Assistant 传感器。"
 }

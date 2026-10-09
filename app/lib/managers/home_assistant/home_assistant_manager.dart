@@ -18,6 +18,7 @@ import '../browser/rotation_fade_script.dart';
 import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 import 'dashboard_list.dart';
+import 'entity_list.dart';
 import 'plugin_entities.dart';
 import 'package:kiosk_satellite/core/lifecycle.dart';
 
@@ -283,13 +284,75 @@ class HomeAssistantManager extends Manager {
       )
       ..register(
         Command(
+          name: 'haListServices',
+          description:
+              'Every service once, for the service picker: name, domain '
+              'and its title, icon and the entity domains it acts on.',
+          params: const {
+            'icons':
+                'true to add icon_path, the SVG path of each icon, for '
+                "the remote admin's service picker",
+          },
+          handler: (p) async {
+            final services = await listServices();
+            if (services == null) {
+              return const CommandResult.fail('could not list services');
+            }
+            return CommandResult.ok(
+              p['icons'] == true ? await withIconPaths(services) : services,
+            );
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'haListEntities',
+          description:
+              'Every entity once, for the entity picker: name, formatted '
+              'state, icon, domain and its title, area.',
+          params: const {
+            'domains': 'optional list of domains to keep',
+            'device_class':
+                'optional device class to keep (illuminance also takes '
+                'readings in lux)',
+            'icons':
+                'true to add icon_path, the SVG path of each icon, for '
+                "the remote admin's entity picker",
+          },
+          handler: (p) async {
+            final entities = await listEntities(
+              domains: [
+                if (p['domains'] is List)
+                  for (final d in p['domains'] as List) '$d',
+              ],
+              deviceClass: p['device_class'] as String?,
+            );
+            if (entities == null) {
+              return const CommandResult.fail('could not list entities');
+            }
+            return CommandResult.ok(
+              p['icons'] == true ? await withIconPaths(entities) : entities,
+            );
+          },
+        ),
+      )
+      ..register(
+        Command(
           name: 'haSearchEntities',
           description:
               'Search entities by id or friendly name, for the At a Glance '
               'picker. Returns at most 50, closest matches first.',
-          params: const {'query': 'text to match against id and name'},
+          params: const {
+            'query': 'text to match against id and name',
+            'filter':
+                'optional: illuminance keeps only light level sensors (an '
+                'empty query then lists them all)',
+          },
           handler: (p) async {
-            final matches = await searchEntities('${p['query'] ?? ''}');
+            final matches = await searchEntities(
+              '${p['query'] ?? ''}',
+              filter: p['filter'] as String?,
+            );
             return matches == null
                 ? const CommandResult.fail('could not list entities')
                 : CommandResult.ok(matches);
@@ -1475,8 +1538,9 @@ class HomeAssistantManager extends Manager {
 
   /// The dark state last pushed to the page, so the minute tick only fires JS
   /// on an actual light↔dark transition. Cleared when the feature is off so
-  /// re-enabling always re-applies.
-  bool? _lastDark;
+  /// re-enabling always re-applies. Null means the dashboard picks its own
+  /// theme. The Music Assistant page follows it too (issue #907).
+  final dashboardDark = ValueNotifier<bool?>(null);
 
   /// Push the scheduled light/dark theme into the HA frontend when it changes.
   ///
@@ -1502,8 +1566,8 @@ class HomeAssistantManager extends Manager {
           await _settings.setFromJson(defs.uiTheme.key, want);
         }
       }
-      if (!force && pinned == _lastDark) return;
-      _lastDark = pinned;
+      if (!force && pinned == dashboardDark.value) return;
+      dashboardDark.value = pinned;
       await commands.execute('evalJs', {'code': _themeJs(pinned)});
       return;
     }
@@ -1521,8 +1585,8 @@ class HomeAssistantManager extends Manager {
         }
       }
       if (!matchApp) {
-        if (!force && dark == _lastDark) return;
-        _lastDark = dark;
+        if (!force && dark == dashboardDark.value) return;
+        dashboardDark.value = dark;
         await commands.execute('evalJs', {'code': _themeJs(dark)});
         return;
       }
@@ -1532,12 +1596,12 @@ class HomeAssistantManager extends Manager {
     // is System, which Android flips at its own sunset/sunrise.
     if (matchApp) {
       final dark = _effectiveAppDark();
-      if (!force && dark == _lastDark) return;
-      _lastDark = dark;
+      if (!force && dark == dashboardDark.value) return;
+      dashboardDark.value = dark;
       await commands.execute('evalJs', {'code': _themeJs(dark)});
       return;
     }
-    _lastDark = null;
+    dashboardDark.value = null;
   }
 
   /// Whether the app is effectively dark right now: the App theme setting,
@@ -1883,7 +1947,13 @@ class HomeAssistantManager extends Manager {
   ///
   /// An exact id or a name that starts with the query sorts first, so
   /// typing "gara" puts Garage Door above Front Garage Light Sensor.
-  Future<List<Map<String, Object?>>?> searchEntities(String query) async {
+  ///
+  /// [filter] `illuminance` keeps only light level sensors, for adaptive
+  /// brightness's entity (issue #911).
+  Future<List<Map<String, Object?>>?> searchEntities(
+    String query, {
+    String? filter,
+  }) async {
     final states = await fetchStates();
     if (states == null) return null;
     final needle = query.trim().toLowerCase();
@@ -1892,6 +1962,7 @@ class HomeAssistantManager extends Manager {
       final id = '${state['entity_id'] ?? ''}';
       if (id.isEmpty) continue;
       final attributes = (state['attributes'] as Map?) ?? const {};
+      if (filter == 'illuminance' && !_isIlluminance(attributes)) continue;
       final name = '${attributes['friendly_name'] ?? _prettifyEntityId(id)}';
       if (needle.isNotEmpty &&
           !id.toLowerCase().contains(needle) &&
@@ -1916,6 +1987,269 @@ class HomeAssistantManager extends Manager {
     });
     return [for (final match in matches.take(50)) match.$3];
   }
+
+  /// Every entity, once, for the entity picker: id, name, the state as
+  /// Home Assistant formats it, icon (the entity's own, else the one Home
+  /// Assistant would draw), device class, unit, domain with its title in
+  /// Home Assistant's language, and area. Hidden entities stay out. Null
+  /// when Home Assistant cannot be reached.
+  ///
+  /// The page's own `hass` comes first: it already holds every state, the
+  /// registries the areas come from and Home Assistant's formatting. The
+  /// REST states and the websocket registries stand in when the page has
+  /// no hass yet.
+  Future<List<Map<String, Object?>>?> listEntities({
+    List<String> domains = const [],
+    String? deviceClass,
+  }) async {
+    final page = await _entitiesFromPage();
+    final entities = page?.$1 ?? await _entitiesFromRest();
+    if (entities == null) return null;
+    final titles = await _domainTitles(page?.$2 ?? 'en');
+    final filtered = filterEntities(
+      entities,
+      domains: domains,
+      deviceClass: deviceClass,
+    );
+    return [
+      for (final e in filtered)
+        {
+          ...withPickerState(e),
+          'domain_title':
+              titles['${e['domain']}'] ?? domainTitleFallback('${e['domain']}'),
+        },
+    ];
+  }
+
+  /// Every service Home Assistant offers, named in its language, for the
+  /// service picker. Null when Home Assistant cannot be reached.
+  Future<List<Map<String, Object?>>?> listServices() async {
+    final Object? services;
+    try {
+      services = await _wsCommand({'type': 'get_services'});
+    } catch (e) {
+      log.warn(name, 'services unavailable: $e');
+      return null;
+    }
+    if (services is! Map) return null;
+    final language = await _pageLanguage();
+    return serviceRows(
+      services,
+      names: await _serviceNames(language),
+      titles: await _domainTitles(language),
+    );
+  }
+
+  /// Home Assistant's language, from the page; English when it has none.
+  Future<String> _pageLanguage() async {
+    try {
+      final res = await commands.execute('evalJs', {
+        'code':
+            "(function () { var el = document.querySelector('home-assistant');"
+            " return (el && el.hass && el.hass.language) || 'en'; })()",
+      });
+      return res.ok && res.data is String && '${res.data}'.isNotEmpty
+          ? '${res.data}'
+          : 'en';
+    } catch (_) {
+      return 'en';
+    }
+  }
+
+  final Map<String, Map<String, String>> _serviceNamesByLanguage = {};
+
+  /// The services' names in [language], keyed `domain.service`, kept for
+  /// the session. Empty when they cannot be read.
+  Future<Map<String, String>> _serviceNames(String language) async {
+    final cached = _serviceNamesByLanguage[language];
+    if (cached != null) return cached;
+    try {
+      final result = await _wsCommand({
+        'type': 'frontend/get_translations',
+        'language': language,
+        'category': 'services',
+      });
+      final resources = result is Map ? result['resources'] : null;
+      final names = <String, String>{};
+      if (resources is Map) {
+        for (final entry in resources.entries) {
+          final match = RegExp(
+            r'^component\.([a-z0-9_]+)\.services\.([a-z0-9_]+)\.name$',
+          ).firstMatch('${entry.key}');
+          if (match != null) {
+            names['${match.group(1)}.${match.group(2)}'] = '${entry.value}';
+          }
+        }
+      }
+      return _serviceNamesByLanguage[language] = names;
+    } catch (e) {
+      log.warn(name, 'service names unavailable: $e');
+      return const {};
+    }
+  }
+
+  /// The entities from the page's hass, with Home Assistant's language.
+  Future<(List<Map<String, Object?>>, String)?> _entitiesFromPage() async {
+    const js = r'''
+(function () {
+  try {
+    var el = document.querySelector('home-assistant');
+    var hass = el && el.hass;
+    if (!hass || !hass.states) return 'null';
+    var ents = hass.entities || {}, devs = hass.devices || {}, areas = hass.areas || {};
+    var out = [];
+    Object.keys(hass.states).forEach(function (id) {
+      var s = hass.states[id], e = ents[id] || {};
+      if (e.hidden) return;
+      var a = s.attributes || {};
+      var areaId = e.area_id || (e.device_id && devs[e.device_id] && devs[e.device_id].area_id);
+      var state = s.state;
+      try { if (hass.formatEntityState) state = hass.formatEntityState(s); } catch (_) {}
+      out.push({
+        entity_id: id,
+        name: a.friendly_name || id,
+        state: String(state),
+        icon: a.icon || e.icon || null,
+        device_class: a.device_class || null,
+        unit: a.unit_of_measurement || null,
+        area: areaId && areas[areaId] ? areas[areaId].name : null
+      });
+    });
+    return JSON.stringify({ language: hass.language || 'en', entities: out });
+  } catch (e) {
+    return 'null';
+  }
+})()
+''';
+    try {
+      final res = await commands.execute('evalJs', {'code': js});
+      if (!res.ok) return null;
+      final decoded = jsonDecode(res.data as String);
+      if (decoded is! Map || decoded['entities'] is! List) return null;
+      return (
+        [
+          for (final e in (decoded['entities'] as List).cast<Map>())
+            _entityRow(e.cast<String, Object?>()),
+        ],
+        '${decoded['language'] ?? 'en'}',
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// The entities from the REST states, areas from the registries when
+  /// the websocket answers.
+  Future<List<Map<String, Object?>>?> _entitiesFromRest() async {
+    final states = await fetchStates();
+    if (states == null) return null;
+    final areas = <String, String>{};
+    final deviceAreas = <String, String>{};
+    final registry = <String, Map>{};
+    try {
+      final list = await _wsCommand({'type': 'config/area_registry/list'});
+      if (list is List) {
+        for (final a in list.whereType<Map>()) {
+          areas['${a['area_id']}'] = '${a['name']}';
+        }
+      }
+      final devices = await _wsCommand({'type': 'config/device_registry/list'});
+      if (devices is List) {
+        for (final d in devices.whereType<Map>()) {
+          if (d['area_id'] != null) {
+            deviceAreas['${d['id']}'] = '${d['area_id']}';
+          }
+        }
+      }
+      final entities = await _wsCommand({
+        'type': 'config/entity_registry/list',
+      });
+      if (entities is List) {
+        for (final e in entities.whereType<Map>()) {
+          registry['${e['entity_id']}'] = e;
+        }
+      }
+    } catch (e) {
+      log.warn(name, 'entity registries unavailable: $e');
+    }
+    return [
+      for (final state in states)
+        if ('${state['entity_id'] ?? ''}'.isNotEmpty &&
+            registry['${state['entity_id']}']?['hidden_by'] == null)
+          (() {
+            final id = '${state['entity_id']}';
+            final a = (state['attributes'] as Map?) ?? const {};
+            final reg = registry[id];
+            final areaId =
+                reg?['area_id'] ?? deviceAreas['${reg?['device_id']}'];
+            final unit = a['unit_of_measurement'] as String?;
+            return _entityRow({
+              'entity_id': id,
+              'name': '${a['friendly_name'] ?? _prettifyEntityId(id)}',
+              'state': formatStateFallback('${state['state'] ?? ''}', unit),
+              'icon': a['icon'] ?? reg?['icon'],
+              'device_class': a['device_class'],
+              'unit': unit,
+              'area': areaId == null ? null : areas['$areaId'],
+            });
+          })(),
+    ];
+  }
+
+  /// One list row: the fields as read, the domain, and an icon even when
+  /// the entity sets none.
+  static Map<String, Object?> _entityRow(Map<String, Object?> e) {
+    final id = '${e['entity_id']}';
+    final domain = id.split('.').first;
+    final deviceClass = e['device_class'] as String?;
+    final icon = e['icon'];
+    return {
+      ...e,
+      'domain': domain,
+      'icon': icon is String && icon.isNotEmpty
+          ? icon
+          : defaultEntityIcon(domain, deviceClass),
+    };
+  }
+
+  final Map<String, Map<String, String>> _titlesByLanguage = {};
+
+  /// Home Assistant's own names for the domains, in [language], kept for
+  /// the session. Empty when they cannot be read: the picker falls back
+  /// to the prettified domain.
+  Future<Map<String, String>> _domainTitles(String language) async {
+    final cached = _titlesByLanguage[language];
+    if (cached != null) return cached;
+    try {
+      final result = await _wsCommand({
+        'type': 'frontend/get_translations',
+        'language': language,
+        'category': 'title',
+      });
+      final resources = result is Map ? result['resources'] : null;
+      final titles = <String, String>{};
+      if (resources is Map) {
+        for (final entry in resources.entries) {
+          final key = '${entry.key}';
+          final match = RegExp(
+            r'^component\.([a-z0-9_]+)\.title$',
+          ).firstMatch(key);
+          if (match != null) titles[match.group(1)!] = '${entry.value}';
+        }
+      }
+      return _titlesByLanguage[language] = titles;
+    } catch (e) {
+      log.warn(name, 'domain titles unavailable: $e');
+      return const {};
+    }
+  }
+
+  /// A light level sensor (issue #911): the illuminance device class, or
+  /// a reading in lux from a template or custom sensor that sets the unit
+  /// and no class.
+  static bool _isIlluminance(Map attributes) =>
+      attributes['device_class'] == 'illuminance' ||
+      attributes['unit_of_measurement'] == 'lx';
 
   /// One entity's current attributes, or null when it (or Home Assistant)
   /// cannot be reached. For the At a Glance attribute picker: values ride

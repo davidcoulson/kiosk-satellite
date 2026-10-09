@@ -1,9 +1,6 @@
 {
   "@@locale": "nl",
   "screensaverOverlayWeatherEntity": "Weerentiteit",
-  "screensaverOverlayNoWeather": "Geen weerentiteiten",
-  "screensaverOverlayNoWeatherHelp": "Home Assistant heeft geen weerentiteiten gevonden.",
-  "screensaverOverlayPickWeather": "Kies een weerentiteit…",
   "screensaverOverlayWeatherRequired": "Kies een weerentiteit.",
   "screensaverOverlayLocationName": "Locatienaam",
   "screensaverOverlayLocationHelp": "Laat dit leeg om de locatieregel te verbergen.",

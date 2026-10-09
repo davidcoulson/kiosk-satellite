@@ -221,10 +221,12 @@ const runtimeStateSettings = new Set([
   // alarms event, not from a settings rebuild.
   'alarms.list', 'alarms.runtime',
 ]);
-// The Announcements and Alarms text to speech rows, each a picker that
-// repaints itself (intercom.js).
+// The Announcements and Alarms text to speech rows and Voice Satellite's
+// Play sounds on, each a picker that repaints itself (intercom.js,
+// vs_native.js).
 const ttsPickerSettings = new Set(['announcements', 'alarms']
-  .flatMap(prefix => ['engine', 'language', 'voice'].map(k => `${prefix}.tts_${k}`)));
+  .flatMap(prefix => ['engine', 'language', 'voice'].map(k => `${prefix}.tts_${k}`))
+  .concat('voice.tts_output'));
 let liveSettingsTimer = null;
 let liveSettingsRendering = false;
 let settingsRenders = 0;
@@ -283,9 +285,21 @@ async function flushSettingsUpdates() {
         continue;
       }
     }
-    // The text to speech pickers repaint themselves, and the engine's
-    // Language and Voice rows come and go in place (intercom.js), so a pick
-    // echoed back from the device does not rebuild every page.
+    // Use Home Assistant entity reveals one row in its own card (issue
+    // #911): the device's echo of a local save, or a flip on the device,
+    // places it in place rather than rebuilding the page.
+    if (!shapeChanged && setting.key === 'screen.adaptive_use_entity') {
+      const byKey = Object.fromEntries(state.settings.map(s => [s.key, s]));
+      if ((!rows.length && !depSatisfied(setting, byKey)) || (rows.length
+          && rows.every(row => row.updateSetting?.() && syncGatedRows(setting.key, row)))) {
+        updateAdaptiveBrightnessRows({ reprobe: true });
+        continue;
+      }
+    }
+    // The text to speech pickers repaint themselves, and the rows they
+    // gate (the engine's Language and Voice, Play sounds on's Play as) come
+    // and go in place, so a pick echoed back from the device does not
+    // rebuild every page.
     if (!shapeChanged && ttsPickerSettings.has(setting.key)) {
       const byKey = Object.fromEntries(state.settings.map(s => [s.key, s]));
       if ((!rows.length && !depSatisfied(setting, byKey)) || (rows.length

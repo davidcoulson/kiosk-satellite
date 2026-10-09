@@ -76,6 +76,7 @@ Use **Settings > ESPHome > Excluded entities** to pick entities that should stay
 | **Take camera snapshot** | button | Requires physical camera hardware. |
 | **Last camera snapshot** | timestamp | Requires physical camera hardware. The value is saved across restarts. |
 | **Ambient light** | sensor | Reports light levels in Lux. Requires a physical light sensor. A real change reaches Home Assistant at once. A sensor that keeps flapping between values is held to one update every 30 seconds so it cannot flood the recorder. |
+| **Ambient noise** | sensor | Reports how loud the room is in dBFS, averaged over 5 seconds. Reads unknown while wake word detection is off or muted. A real change reaches Home Assistant at once. A level that keeps moving is held to one update every 30 seconds, the same as Ambient light. See the [Ambient Noise](#ambient-noise) section. |
 | **GPS latitude**, **GPS longitude** | sensor | Reports coordinates in degrees, precise to six decimals. Requires **Report location** to be on and a physical GPS receiver. See the [GPS Sensor](#gps-sensor) section. |
 | **GPS accuracy**, **Altitude** | sensor | Reports accuracy and altitude in meters. Requires **Report location** to be on and a physical GPS receiver. |
 | **Speed** | sensor | Reports speed in meters per second (Home Assistant will automatically convert this to your preferred unit system). Requires **Report location** to be on and a physical GPS receiver. |
@@ -102,7 +103,7 @@ Every item in this list corresponds directly to a kiosk setting. They are fully 
 | **Screensaver timeout** | number | The idle timeout in seconds, the same value as **Idle timeout** on the Screensaver page. A write restarts the idle clock at the new value right away, so an automation can shorten it at night and stretch it back in the morning. `0` turns the idle clock off, so the screensaver only starts from the switch, a schedule or a gesture. |
 | **Clock background** | text | The Clock screensaver's background photo: a path to an image on the device or an image URL the device fetches. Every write reloads the image, an unchanged value included. |
 | **Kiosk mode**, **Lockdown mode**, **HA kiosk mode**, **Keep screen on**, **Remote management**, **Screensaver brightness**, **Screensaver**, **Hold mode** | switch | Standard toggle switches. |
-| **Adaptive brightness** | switch | Requires a physical light sensor. |
+| **Adaptive brightness** | switch | Follows the device's light sensor or the Home Assistant entity picked in its settings. |
 | **Camera enabled**, **Screensaver motion detection**, **Screensaver face detection** | switch | Requires physical camera hardware. The Camera enabled switch can be safely toggled throughout the day; the camera entities will remain listed. |
 | **RTSP Streaming** | switch | Enables or disables the RTSP server using the saved stream settings. Requires physical camera hardware. Camera enabled and Android camera permission must also be on. Changes sync with the local and remote settings pages without reconnecting ESPHome. |
 | **Screensaver proximity detection** | switch | Requires a physical proximity sensor. |
@@ -461,6 +462,20 @@ On the [remote API](remote-api.md) the same two are the `showLinkPage` and `hide
 - action: esphome.ks_theater_panel_navigate
   data: { url: "#/showtime" }
 ```
+
+## Ambient Noise
+
+The **Ambient noise** sensor reports how loud the room is as one number in dBFS. A typical use is an automation that lowers the assistant's volume when the house is quiet at night and raises it when the TV is on. Plugins that declare the `noise` capability read the same level.
+
+Only the level leaves the microphone, never audio:
+
+* The figure is the average over 5 seconds, rounded to a whole dB. Home Assistant hears about it when it moves by 2 dB or more.
+* It comes from the capture the wake word engine already has open, so it never opens the microphone. With wake word detection off or the satellite muted there is no level and the sensor reads unknown.
+* It holds its last value through voice turns, announcements, timers, alarms, media playback and intercom calls, so speech never shows up in it. Any 5 seconds in which the kiosk played a sound of its own are dropped as well. The value stays held until a clean reading replaces it.
+
+dBFS is relative to the loudest sound the microphone can record, which reads 0. It is not a calibrated sound level. Quieter rooms read lower. **Microphone gain** shifts the reading by the same number of dB, so set the gain first and then watch the sensor for a day to find your room's quiet and loud levels. Sound from the dashboard's web pages and the DLNA video player can't be told apart from the room, so it counts as noise.
+
+To keep the sensor out of Home Assistant, add it to **Settings > ESPHome > Excluded entities**.
 
 ## GPS Sensor
 

@@ -8,15 +8,16 @@
   "gestureEntityRequired": "Bitte eine Entität vom Typ {domain}.* eingeben.",
   "gestureScriptEntity": "Skript-Entität",
   "gestureAutomationEntity": "Automatisierungs-Entität",
-  "gestureDomain": "Domäne",
   "gestureEntityOptional": "Entität (optional)",
   "gestureServiceData": "Dienstedaten (optional)",
   "gestureServiceTitle": "Home-Assistant-Dienst aufrufen",
-  "gestureServiceRequired": "Domäne und Dienst sind erforderlich.",
   "gestureServiceJson": "Die Dienstedaten müssen ein JSON-Objekt sein.",
   "gestureEventType": "Ereignistyp",
   "gestureEventData": "Ereignisdaten (optional)",
   "gestureEventTitle": "Home-Assistant-Ereignis auslösen",
   "gestureEventRequired": "Der Ereignistyp ist erforderlich.",
-  "gestureEventJson": "Die Ereignisdaten müssen ein JSON-Objekt sein."
+  "gestureEventJson": "Die Ereignisdaten müssen ein JSON-Objekt sein.",
+  "gestureServiceSearch": "Dienste suchen",
+  "gestureServiceChoose": "Dienst auswählen",
+  "gestureServiceNoEntity": "Von diesem Dienst nicht verwendet"
 }

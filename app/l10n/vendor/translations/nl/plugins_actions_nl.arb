@@ -7,7 +7,5 @@
   "pluginAlsoAvailableWhileLockedIfTheKioskDrawerIs": "Ook beschikbaar wanneer het apparaat is vergrendeld, mits het kioskmenu is toegestaan.",
   "pluginExposeToHomeAssistant": "Beschikbaar stellen aan Home Assistant",
   "pluginAddsAButtonToTheKioskEsphomeDeviceRequires": "Voegt een knop toe aan het ESPHome-apparaat van de kiosk. Hiervoor zijn ESPHome en systeemeigen entiteiten vereist.",
-  "pluginSelectAnEntity": "Een entiteit selecteren",
-  "pluginChooseName": "Kies {name}",
   "pluginConfigureName": "{name} instellen"
 }

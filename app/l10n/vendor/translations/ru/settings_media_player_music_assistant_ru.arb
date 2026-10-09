@@ -12,6 +12,7 @@
   "settingSendspinMaAutoCloseDescription": "Возвращаться к панели, когда страницу Music Assistant никто не трогает это время. Ноль: держать открытой до закрытия.",
   "settingSendspinMaHideCloseTitle": "Скрыть кнопку закрытия",
   "settingSendspinMaHideCloseDescription": "Плавающая кнопка закрытия может попадать на собственные элементы Music Assistant, например меню «Сейчас играет». Без неё закрывайте кнопкой «Назад» или через меню киоска.",
+  "settingSendspinMaZoomDescription": "Масштабирует всю страницу Music Assistant.",
   "mediaMaHint": "Сервер, токен, пункт меню киоска",
   "mediaKioskMenu": "Меню киоска",
   "mediaValidateConnection": "Проверить соединение",

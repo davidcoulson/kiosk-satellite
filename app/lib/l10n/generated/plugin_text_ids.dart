@@ -45,7 +45,6 @@ const pluginTextMessageIds = <String, String>{
   "Also available while locked if the kiosk drawer is allowed.": "pluginAlsoAvailableWhileLockedIfTheKioskDrawerIs",
   "Expose to Home Assistant": "pluginExposeToHomeAssistant",
   "Adds a button to the kiosk ESPHome device. Requires ESPHome and native entities.": "pluginAddsAButtonToTheKioskEsphomeDeviceRequires",
-  "Select an entity": "pluginSelectAnEntity",
   "Settings": "commonSettings",
   "Shizuku access": "deviceShizukuAccess",
   "Checking availability": "deviceShizukuCheck",
