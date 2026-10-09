@@ -131,6 +131,12 @@ class FleetDevice {
 /// runs with Find other kiosks off too; only the service records and
 /// the listening for the others follow the switch.
 ///
+/// The fleet part also waits for onboarding to finish (start URL set).
+/// A kiosk still in the setup wizard cannot accept a fleet invite, since
+/// the invite prompt lives on the kiosk screen, so it stays out of the
+/// other kiosks' lists until then. The hostname still goes out, which
+/// keeps the remote setup wizard reachable by name.
+///
 /// Over HTTPS with an imported certificate, the DNS name it covers is
 /// announced too, and the other kiosks link here by that name instead of
 /// the IP address their browser would reject the certificate under
@@ -157,7 +163,8 @@ class FleetManager extends Manager {
   bool get enabled =>
       _settings.get(defs.remoteEnabled) &&
       _settings.get(defs.remotePassword).isNotEmpty &&
-      _settings.get(defs.remoteFleetDiscovery);
+      _settings.get(defs.remoteFleetDiscovery) &&
+      _settings.get(defs.startUrl).isNotEmpty;
 
   /// Whether the remote admin serves, which is when there is an address
   /// worth a name.
@@ -247,6 +254,8 @@ class FleetManager extends Manager {
             e.key == defs.remotePort.key ||
             e.key == defs.remoteTls.key ||
             e.key == defs.remoteFleetDiscovery.key ||
+            // Onboarding finishing is when the fleet part may start.
+            e.key == defs.startUrl.key ||
             e.key == defs.deviceName.key ||
             e.key == defs.deviceHostname.key) {
           // The seed's own write comes back here, while the start that
