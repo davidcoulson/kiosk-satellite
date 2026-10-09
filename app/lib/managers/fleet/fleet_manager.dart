@@ -169,11 +169,17 @@ class FleetManager extends Manager {
   String get name => 'fleet';
 
   /// Whether this device should be announcing and listening right now.
+  ///
+  /// An agent counts as onboarded without a start URL: it has no
+  /// dashboard, never shows the setup screen, and takes a fleet invite
+  /// through the remote admin (fleetAccept) rather than the kiosk
+  /// screen's prompt, so the onboarding gate would only hide it.
   bool get enabled =>
       _settings.get(defs.remoteEnabled) &&
       _settings.get(defs.remotePassword).isNotEmpty &&
       _settings.get(defs.remoteFleetDiscovery) &&
-      _settings.get(defs.startUrl).isNotEmpty;
+      (_settings.get(defs.startUrl).isNotEmpty ||
+          _settings.get(defs.agentMode));
 
   /// Whether the remote admin serves, which is when there is an address
   /// worth a name.
@@ -263,8 +269,10 @@ class FleetManager extends Manager {
             e.key == defs.remotePort.key ||
             e.key == defs.remoteTls.key ||
             e.key == defs.remoteFleetDiscovery.key ||
-            // Onboarding finishing is when the fleet part may start.
+            // Onboarding finishing is when the fleet part may start, and
+            // an agent is onboarded whatever its start URL.
             e.key == defs.startUrl.key ||
+            e.key == defs.agentMode.key ||
             e.key == defs.deviceName.key ||
             e.key == defs.deviceHostname.key) {
           // The seed's own write comes back here, while the start that

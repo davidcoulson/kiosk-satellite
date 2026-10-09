@@ -176,7 +176,7 @@ void main() {
     await pumpEventQueue();
     expect((calls.last.arguments as Map)['powerDialog'], {
       'package': 'com.htc.closedialog',
-      'choice': 'rl_sleep',
+      'choice': 'sleep',
     });
     await settings.set(defs.powerDialogChoice, 'rl_reboot');
     await pumpEventQueue();
@@ -197,6 +197,39 @@ void main() {
     final lines = log.recent.map((e) => '${e.level.name}: ${e.message}');
     expect(lines, contains('info: answered the power dialog with rl_sleep'));
     expect(lines, contains('warn: power dialog shown but rl_sleep not found'));
+  });
+
+  test('a sleep or dismiss answer is logged with its reason', () async {
+    await build();
+    await fromNative('powerDialog', {
+      'choice': 'sleep',
+      'found': true,
+      'detail': '',
+    });
+    await fromNative('powerDialog', {
+      'choice': 'sleep',
+      'found': false,
+      'detail': '',
+    });
+    await fromNative('powerDialog', {
+      'choice': 'dismiss',
+      'found': true,
+      'detail': 'the screen just woke, so no sleep',
+    });
+    await pumpEventQueue();
+    final lines = log.recent.map((e) => '${e.level.name}: ${e.message}');
+    expect(lines, contains('info: answered the power dialog with sleep'));
+    expect(
+      lines,
+      contains('warn: could not answer the power dialog with sleep'),
+    );
+    expect(
+      lines,
+      contains(
+        'info: answered the power dialog with dismiss '
+        '(the screen just woke, so no sleep)',
+      ),
+    );
   });
 
   test('remote keys are on by default and ride fleet sync', () {

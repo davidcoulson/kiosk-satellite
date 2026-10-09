@@ -166,7 +166,7 @@ void main() {
     // No package: nothing is answered. The answer defaults to the HY260's
     // Sleep row, which is the one a projector owner wants.
     expect(defs.powerDialogPackage.defaultValue, '');
-    expect(defs.powerDialogChoice.defaultValue, 'rl_sleep');
+    expect(defs.powerDialogChoice.defaultValue, 'sleep');
     for (final def in [defs.powerDialogPackage, defs.powerDialogChoice]) {
       expect(def.category, 'Device', reason: def.key);
       expect(def.section, 'Headless', reason: def.key);

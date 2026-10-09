@@ -228,6 +228,17 @@ void main() {
     expect(fleet.running, isTrue);
   });
 
+  test('an agent announces the fleet without a start URL', () async {
+    await build({
+      ...serving,
+      'ks.browser.start_url': '',
+      'ks.device.agent_mode': true,
+    });
+    final start = calls.singleWhere((c) => c.method == 'start');
+    expect(start.arguments['fleet'], isTrue);
+    expect(fleet.enabled, isTrue);
+  });
+
   test('the fleet waits for onboarding, the hostname does not', () async {
     await build({...serving, 'ks.browser.start_url': ''});
     final start = calls.singleWhere((c) => c.method == 'start');

@@ -601,6 +601,8 @@ void main() {
       () async {
         peers.clear();
         await build(stubFleet: false);
+        // Onboarding done: the directory waits for it (#929).
+        await settings.set(defs.startUrl, 'http://ha.local:8123/lovelace');
         await settings.set(defs.fleetLeader, true);
         await settings.set(
           defs.fleetFollowers,
