@@ -856,6 +856,69 @@ void main() {
     });
 
     test(
+      'a previous lets the engine restart the bar after a re-base',
+      () async {
+        await build(
+          extra: {
+            'ks.sendspin.player': '',
+            'ks.sendspin.player_source': '',
+            'ks.sendspin.enabled': true,
+            'ks.sendspin.client_id': 'abc123',
+          },
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        final native = <MethodCall>[];
+        messenger.setMockMethodCallHandler(channel, (call) async {
+          native.add(call);
+          return true;
+        });
+        const codec = StandardMethodCodec();
+        Future<void> fromNative(String method, Map<String, Object?> args) =>
+            messenger.handlePlatformMessage(
+              channel.name,
+              codec.encodeMethodCall(MethodCall(method, args)),
+              (_) {},
+            );
+        await fromNative('metadataChanged', {
+          'title': 'Song',
+          'positionMs': 150000,
+          'durationMs': 180000,
+        });
+        await fromNative('playingChanged', {'playing': true});
+        final now = DateTime.now().millisecondsSinceEpoch;
+        fake!.onSnapshot({
+          'title': 'Song',
+          'playing': true,
+          'positionMs': 99000,
+          'receivedAt': now,
+          'timeFresh': true,
+        });
+        await Future<void>.delayed(Duration.zero);
+        expect(native.where((c) => c.method == 'rebasePosition'), hasLength(1));
+        // Issue #915: Music Assistant restarts the track with no progress
+        // report, and the engine puts its own position back to 0.
+        expect(await sendspin.control('previous'), isTrue);
+        await fromNative('metadataChanged', {'positionMs': 0});
+        final restarted = sendspin.nowPlaying.value?['positionMs'] as int;
+        expect(restarted, inInclusiveRange(0, 500));
+        // The queue can still report the old place for a moment.
+        fake!.onSnapshot({
+          'title': 'Song',
+          'playing': true,
+          'positionMs': 101000,
+          'receivedAt': DateTime.now().millisecondsSinceEpoch,
+          'timeFresh': true,
+        });
+        await Future<void>.delayed(Duration.zero);
+        expect(native.where((c) => c.method == 'rebasePosition'), hasLength(1));
+        final held = sendspin.nowPlaying.value?['positionMs'] as int;
+        expect(held, inInclusiveRange(0, 500));
+      },
+    );
+
+    test(
       'local chapter metadata follows the audible book and clears on a song',
       () async {
         await build(

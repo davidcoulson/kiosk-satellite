@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Process
+import android.os.SystemClock
 import android.util.Log
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicBoolean
@@ -201,21 +202,24 @@ class NativeSendspinSession(
     }
 
     /**
-     * A seek's displacement from the engine's own progress, in ms. Music
-     * Assistant restarts the stream at the new position but sends no fresh
-     * metadata progress for it, so the engine keeps extrapolating from the
-     * report before the seek and the UI would show the old place while the
-     * audio plays the new one. The target is adopted here and carried by
-     * every position push until the server's next real metadata report,
-     * which re-bases everything.
+     * A position adopted ahead of the server: Music Assistant restarts the
+     * stream for a seek or a previous but sends no fresh metadata progress
+     * for it, so the engine keeps extrapolating from the report before and
+     * the UI would show the old place while the audio plays the new one.
+     * Carried by every position push until the server's next real metadata
+     * report, which re-bases everything.
      */
-    @Volatile private var seekOffsetMs = 0L
+    private val anchor = PositionAnchor()
+
+    /** The current track's duration from the last metadata report, 0 when unknown. */
+    @Volatile private var durationMs = 0L
 
     /** [arg] is the command's value where it takes one: the seek position in ms. */
     fun sendCommand(command: String, arg: Long = 0L): Boolean {
         if (handle == 0L) return false
         val sent = NativeSendspin.nativeSendCommand(handle, command, arg)
         if (sent && command == "seek") rebasePosition(arg)
+        if (sent && command == "previous") anchor.previousSent(SystemClock.elapsedRealtime())
         return sent
     }
 
@@ -227,13 +231,14 @@ class NativeSendspinSession(
      */
     fun rebasePosition(positionMs: Long) {
         if (handle == 0L) return
-        seekOffsetMs = positionMs - NativeSendspin.nativeGetTrackProgressMs(handle)
+        anchor.set(positionMs, SystemClock.elapsedRealtime(), streamActive)
         events.onPositionUpdate(positionMs)
     }
 
-    /** The engine's progress with any seek displacement applied. */
+    /** The adopted position while there is one, the engine's progress otherwise. */
     private fun displayedProgressMs(): Long =
-        (NativeSendspin.nativeGetTrackProgressMs(handle).toLong() + seekOffsetMs).coerceAtLeast(0L)
+        anchor.current(SystemClock.elapsedRealtime(), durationMs)
+            ?: NativeSendspin.nativeGetTrackProgressMs(handle).toLong().coerceAtLeast(0L)
 
     fun onNetworkAvailable() {
         if (destroyed.get() || handle == 0L) return
@@ -331,12 +336,19 @@ class NativeSendspinSession(
             Log.i(TAG, "Stream start sr=$sampleRate ch=$channels bd=$bitDepth")
             output.start(sampleRate, channels, bitDepth)
             streamActive = true
+            val now = SystemClock.elapsedRealtime()
+            anchor.setRunning(true, now)
+            if (anchor.onStreamStart(now)) {
+                Log.i(TAG, "Previous restarted the track: position reset to 0")
+                events.onPositionUpdate(0L)
+            }
             events.onStreamActiveChanged(true)
         }
 
         override fun onStreamEnd() {
             Log.i(TAG, "Stream end")
             streamActive = false
+            anchor.setRunning(false, SystemClock.elapsedRealtime())
             output.pause()
             events.onStreamActiveChanged(false)
         }
@@ -363,7 +375,8 @@ class NativeSendspinSession(
         ) {
             // A real server report: whatever it says about the position
             // outranks a seek the client carried on its own.
-            if (progressMs >= 0) seekOffsetMs = 0L
+            if (progressMs >= 0) anchor.clear()
+            this@NativeSendspinSession.durationMs = durationMs.coerceAtLeast(0L)
             events.onMetadata(title, artist, album, artworkUrl, progressMs, durationMs)
         }
 
@@ -398,6 +411,7 @@ class NativeSendspinSession(
                 controlHandler.removeCallbacks(reconnectRunnable)
             } else {
                 streamActive = false
+                anchor.setRunning(false, SystemClock.elapsedRealtime())
                 output.pause()
                 events.onStreamActiveChanged(false)
                 if (!destroyed.get() && serverUrl != null) {

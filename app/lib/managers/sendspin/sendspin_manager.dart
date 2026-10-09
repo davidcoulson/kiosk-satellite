@@ -117,8 +117,8 @@ class SendspinManager extends Manager {
   String _watchSig = '';
   Map<String, Object?>? _localQueueSnapshot;
 
-  /// When the local player last sent a seek, epoch ms: the re-base stands
-  /// down for a moment after it.
+  /// When the local player last sent a seek or a previous, epoch ms: the
+  /// re-base stands down for a moment after it.
   int _seekSentAt = 0;
 
   /// When the position was last taken from the server's queue time, epoch
@@ -2165,6 +2165,7 @@ class SendspinManager extends Manager {
       command = nowPlaying.value?['playing'] == true ? 'pause' : 'play';
     }
     if (_remote case final remote?) return remote.control(command);
+    if (command == 'previous') _jumpSent();
     try {
       return await _channel.invokeMethod<bool>('control', {
             'command': command,
@@ -2174,6 +2175,15 @@ class SendspinManager extends Manager {
       log.warn(name, 'control $command failed: $e');
       return false;
     }
+  }
+
+  /// The local player asked the server to jump within the track. The
+  /// engine adopts the new position itself and its pushes carry it, so
+  /// they count again even right after a queue time was taken, and the
+  /// queue's own time stands aside until it has caught up.
+  void _jumpSent() {
+    _seekSentAt = DateTime.now().millisecondsSinceEpoch;
+    _maPositionAt = 0;
   }
 
   bool get _maConfigured =>
@@ -2684,7 +2694,7 @@ class SendspinManager extends Manager {
   /// Assistant's own seek, in whole seconds.
   Future<bool> seek(int positionMs) async {
     if (_remote case final remote?) return remote.seek(positionMs);
-    _seekSentAt = DateTime.now().millisecondsSinceEpoch;
+    _jumpSent();
     try {
       return await _channel.invokeMethod<bool>('control', {
             'command': 'seek',
