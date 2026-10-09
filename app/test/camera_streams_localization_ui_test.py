@@ -94,7 +94,10 @@ try:
         page.evaluate('() => { window.editor = cameraEditors.editCameraSource(cameraConfig, cameraConfig.cameras[0]); }')
         modal = page.locator('.modal-card').last
         expect(modal.get_by_role('combobox', name='TEST Type', exact=True)).to_have_value('ha')
-        expect(modal.get_by_label('TEST Camera entity', exact=True)).to_have_value('camera.front_door')
+        # The entity field: the stored id stands in until Home Assistant's
+        # list loads, never translated.
+        entity_field = modal.locator('.form-field', has=page.get_by_text('TEST Camera entity', exact=True)).locator('.ep-field')
+        expect(entity_field).to_contain_text('camera.front_door')
         modal.get_by_role('combobox', name='TEST Preferred protocol', exact=True).select_option('auto')
         expect(modal.get_by_role('combobox', name='TEST Preferred protocol', exact=True).locator('option:checked')).to_have_text('TEST Auto')
         failure = 'could not read Home Assistant: <img src=x onerror=alert(1)>'

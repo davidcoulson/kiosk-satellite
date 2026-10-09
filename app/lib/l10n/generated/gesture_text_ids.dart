@@ -158,11 +158,9 @@ const gestureTextMessageIds = <String, String>{
   "Could not validate.": "gestureValidationFailed",
   "Script entity": "gestureScriptEntity",
   "Automation entity": "gestureAutomationEntity",
-  "Domain": "gestureDomain",
   "Entity (optional)": "gestureEntityOptional",
   "Service data (optional)": "gestureServiceData",
   "Call a Home Assistant service": "gestureServiceTitle",
-  "Domain and service are required.": "gestureServiceRequired",
   "Service data must be a JSON object.": "gestureServiceJson",
   "Event type": "gestureEventType",
   "Event data (optional)": "gestureEventData",
@@ -193,5 +191,8 @@ const gestureTextMessageIds = <String, String>{
   "Reading the hand": "gestureReadingHand",
   "No fingers up": "gestureNoFingers",
   "A live look at the fingers the camera reads.": "gestureTesterSearch",
-  "Hand Gestures": "gestureHandGestures"
+  "Hand Gestures": "gestureHandGestures",
+  "Search services": "gestureServiceSearch",
+  "Choose a service": "gestureServiceChoose",
+  "Not used by this service": "gestureServiceNoEntity"
 };

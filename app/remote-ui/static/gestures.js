@@ -13,6 +13,9 @@ import { applyManagedBanners } from './fleetsync.js';
 import { settingRow } from './rows.js';
 import { radioRow } from './views.js';
 import { pickDashboard } from './dashboard_picker.js';
+import {
+  entitySpec, onListLoaded, pickEntity, pickField, pickItem, serviceEntityDomains, serviceSpec,
+} from './entity_picker.js';
 import { messageBox, localizedMessageBox, modalShell } from './widgets.js';
 
 /* ---- Gestures (issue #99) ----
@@ -275,31 +278,11 @@ export function gestureValidateRow(getCheck) {
 // One Home Assistant entity plus a Validate check: the script and
 // automation dialogs. A bare name is qualified with the domain.
 export async function configureGestureHaEntity(current, spec) {
-  const body = document.createElement('div');
-  const entity = cameraField(spec.label, current?.entityId || '');
-  entity.input.placeholder = spec.hint;
-  const qualified = () => {
-    const value = entity.input.value.trim();
-    return !value || value.includes('.') ? value : `${spec.domain}.${value}`;
-  };
-  body.append(entity.wrap, gestureValidateRow(() => qualified()
-    ? { domain: spec.domain, service: spec.service, entity: qualified() }
-    : t('gestureEntityRequired', {domain: spec.domain})));
-  let out = null;
-  const saved = await cameraEditor({
-    title: spec.title,
-    body,
-    save: async () => {
-      const value = qualified();
-      if (!value.startsWith(`${spec.domain}.`)
-        || value.length <= spec.domain.length + 1) {
-        return { ok: false, error: t('gestureEntityRequired', {domain: spec.domain}) };
-      }
-      out = { type: spec.type, entityId: value };
-      return { ok: true };
-    },
-  });
-  return saved ? out : null;
+  // The entity picker over this domain's entities: picked from Home
+  // Assistant's own list, there is nothing to type or validate.
+  const out = await pickEntity({ title: spec.title, selected: current?.entityId || null,
+    domains: [spec.domain] });
+  return out?.id ? { type: spec.type, entityId: out.id } : null;
 }
 
 export async function configureGestureNavigate(current) {
@@ -361,38 +344,79 @@ export function parseGestureData(text) {
 
 export async function configureGestureHaService(current) {
   const body = document.createElement('div');
-  const domain = cameraField(gestureText('Domain'), current?.domain || '');
-  domain.input.placeholder = 'light';
-  const service = cameraField(gestureText('Service'), current?.service || '');
-  service.input.placeholder = 'turn_on';
-  const entity = cameraField(gestureText('Entity (optional)'), current?.entityId || '');
-  entity.input.placeholder = 'light.kitchen';
+  // One pick, domain.service, stored split as before.
+  let serviceId = current?.domain && current?.service ? `${current.domain}.${current.service}` : '';
+  let entityId = current?.entityId || '';
+  const labeled = (label, field) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'form-field';
+    const title = document.createElement('span');
+    title.className = 'desc';
+    title.textContent = label;
+    wrap.append(title, field.el);
+    return wrap;
+  };
+  const split = () => {
+    const dot = serviceId.indexOf('.');
+    return dot < 0 ? ['', serviceId] : [serviceId.slice(0, dot), serviceId.slice(dot + 1)];
+  };
+  // Only the entities the service acts on. Off until a service is picked,
+  // and for one that takes none.
+  const entity = pickField({
+    spec: entitySpec(), value: entityId,
+    onClick: async () => {
+      const domains = serviceEntityDomains(serviceId);
+      if (!domains) return;
+      const out = await pickItem({ title: gestureText('Entity (optional)'),
+        spec: entitySpec({ domains }), selected: entityId || null, allowClear: true });
+      if (!out) return;
+      entityId = out.id ?? '';
+      entity.setValue(entityId);
+    },
+  });
+  const syncEntity = () => {
+    const domains = serviceEntityDomains(serviceId);
+    entity.setEnabled(!!domains);
+    entity.setPlaceholder(serviceId && !domains ? gestureText('Not used by this service') : null);
+  };
+  // Picked from Home Assistant's own services, under their domains.
+  const service = pickField({
+    spec: serviceSpec(), value: serviceId, placeholder: gestureText('Choose a service'),
+    onClick: async () => {
+      const out = await pickItem({ title: gestureText('Service'), spec: serviceSpec(),
+        selected: serviceId || null });
+      if (!out?.id) return;
+      serviceId = out.id;
+      service.setValue(serviceId);
+      // An entity the new service cannot act on goes with the old one.
+      const domains = serviceEntityDomains(serviceId);
+      if (!domains || (domains.length && !domains.includes(entityId.split('.')[0]))) {
+        entityId = '';
+        entity.setValue('');
+      }
+      syncEntity();
+    },
+  });
+  syncEntity();
+  onListLoaded('services', service.el, syncEntity);
   const data = gestureTextarea(gestureText('Service data (optional)'),
     current?.data ? JSON.stringify(current.data) : '', '{"brightness_pct": 60}');
-  body.append(domain.wrap, service.wrap, entity.wrap, data.wrap,
-    gestureValidateRow(() => domain.input.value.trim() && service.input.value.trim()
-      ? {
-        domain: domain.input.value.trim(),
-        service: service.input.value.trim(),
-        entity: entity.input.value.trim(),
-      }
-      : gestureText('Domain and service are required.')));
+  body.append(labeled(gestureText('Service'), service),
+    labeled(gestureText('Entity (optional)'), entity), data.wrap,
+    gestureValidateRow(() => serviceId
+      ? { domain: split()[0], service: split()[1], entity: entityId }
+      : gestureText('Choose a service')));
   let out = null;
   const saved = await cameraEditor({
     title: gestureText('Call a Home Assistant service'),
     body,
     save: async () => {
-      if (!domain.input.value.trim() || !service.input.value.trim()) {
-        return { ok: false, error: gestureText('Domain and service are required.') };
-      }
+      if (!serviceId) return { ok: false, error: gestureText('Choose a service') };
       const parsed = parseGestureData(data.input.value);
       if (!parsed.ok) return { ok: false, error: gestureText('Service data must be a JSON object.') };
-      out = {
-        type: 'ha_service',
-        domain: domain.input.value.trim(),
-        service: service.input.value.trim(),
-      };
-      if (entity.input.value.trim()) out.entityId = entity.input.value.trim();
+      const [domain, name] = split();
+      out = { type: 'ha_service', domain, service: name };
+      if (entityId) out.entityId = entityId;
       if (parsed.value) out.data = parsed.value;
       return { ok: true };
     },

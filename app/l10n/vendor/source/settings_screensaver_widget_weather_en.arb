@@ -13,45 +13,6 @@
       ]
     }
   },
-  "screensaverOverlayNoWeather": "No weather entities",
-  "@screensaverOverlayNoWeather": {
-    "context": "Settings > Screensaver > Widgets > Weather widget",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Weather widget"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Weather widget"
-      ]
-    }
-  },
-  "screensaverOverlayNoWeatherHelp": "Home Assistant reported none.",
-  "@screensaverOverlayNoWeatherHelp": {
-    "context": "Settings > Screensaver > Widgets > Weather widget",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Weather widget"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Weather widget"
-      ]
-    }
-  },
-  "screensaverOverlayPickWeather": "Pick a weather entity…",
-  "@screensaverOverlayPickWeather": {
-    "context": "Settings > Screensaver > Widgets > Weather widget",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Weather widget"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Weather widget"
-      ]
-    }
-  },
   "screensaverOverlayWeatherRequired": "Pick a weather entity.",
   "@screensaverOverlayWeatherRequired": {
     "context": "Settings > Screensaver > Widgets > Weather widget",

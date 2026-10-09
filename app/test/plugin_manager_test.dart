@@ -10,6 +10,7 @@ import 'package:kiosk_satellite/l10n/generated/ui_strings.dart';
 import 'package:kiosk_satellite/l10n/generated/ui_strings_en.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kiosk_satellite/ui/entity_picker.dart';
 import 'package:kiosk_satellite/core/command_registry.dart';
 import 'package:kiosk_satellite/core/event_bus.dart';
 import 'package:kiosk_satellite/core/events.dart';
@@ -1587,20 +1588,25 @@ void main() {
         },
       ];
       installed[0]['values'] = {'entity': ''};
+      PickCatalog.reset();
       commands.register(
         Command(
-          name: 'haSearchEntities',
+          name: 'haListEntities',
           description: 'test',
-          handler: (params) async {
-            expect(params['query'], 'room');
-            return const CommandResult.ok([
-              {
-                'entity_id': 'sensor.room',
-                'name': 'Room temperature',
-                'state': '21',
-              },
-            ]);
-          },
+          handler: (_) async => const CommandResult.ok([
+            {
+              'entity_id': 'sensor.room',
+              'name': 'Room temperature',
+              'state': '21 °C',
+              'domain': 'sensor',
+            },
+            {
+              'entity_id': 'light.porch',
+              'name': 'Porch light',
+              'state': 'On',
+              'domain': 'light',
+            },
+          ]),
         ),
       );
       await plugins.refresh();
@@ -1615,16 +1621,20 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(TextField), findsNothing);
-      await tester.tap(find.text('Home Assistant entity'));
+      final field = find.byType(ControlBox);
+      await tester.tap(field);
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'room');
-      await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
+      expect(find.text('Porch light'), findsNothing);
       await tester.tap(find.text('Room temperature'));
       await tester.pumpAndSettle();
-      expect(find.text('sensor.room'), findsOneWidget);
+      expect(
+        find.descendant(of: field, matching: find.text('Room temperature')),
+        findsOneWidget,
+      );
       expect((installed[0]['values'] as Map)['entity'], 'sensor.room');
-      await tester.tap(find.text('Home Assistant entity'));
+      await tester.tap(field);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Clear'));
       await tester.pumpAndSettle();
@@ -1748,8 +1758,9 @@ void main() {
       of: find.text('Home Assistant entity'),
       matching: find.byType(SettingsRow),
     );
+    // The entity field, the picker's control box.
     expect(
-      find.descendant(of: row, matching: find.byIcon(Icons.edit_outlined)),
+      find.descendant(of: row, matching: find.byType(ControlBox)),
       findsOneWidget,
     );
     expect(

@@ -1,9 +1,6 @@
 {
   "@@locale": "zh_CN",
   "screensaverOverlayWeatherEntity": "天气实体",
-  "screensaverOverlayNoWeather": "没有天气实体",
-  "screensaverOverlayNoWeatherHelp": "Home Assistant 未报告任何天气实体。",
-  "screensaverOverlayPickWeather": "选择天气实体…",
   "screensaverOverlayWeatherRequired": "请选择天气实体。",
   "screensaverOverlayLocationName": "地点名称",
   "screensaverOverlayLocationHelp": "留空以隐藏地点名称行。",

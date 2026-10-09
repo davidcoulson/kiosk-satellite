@@ -2858,6 +2858,266 @@
       ]
     }
   },
+  "entityPickerNoArea": "Aucune pièce",
+  "@entityPickerNoArea": {
+    "context": "Entity picker",
+    "description": "Heading over entities that are in no Home Assistant area.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerAll": "Tous",
+  "@entityPickerAll": {
+    "context": "Entity picker",
+    "description": "Filter chip that shows every kind of entity or every source.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerChoose": "Choisir une entité",
+  "@entityPickerChoose": {
+    "context": "Entity picker",
+    "description": "Empty value of a setting that stores a Home Assistant entity.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerNoMatch": "Aucun résultat",
+  "@entityPickerNoMatch": {
+    "context": "Entity picker",
+    "description": "Shown when a search or filter finds nothing.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerOfflineHelp": "Les entités se chargeront au retour de la connexion.",
+  "@entityPickerOfflineHelp": {
+    "context": "Entity picker",
+    "description": "Message when Home Assistant's entities cannot be listed.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerMissing": "Cette entité n'existe plus dans Home Assistant. Choisissez-en une autre.",
+  "@entityPickerMissing": {
+    "context": "Entity picker",
+    "description": "Shown under a setting whose stored entity no longer exists.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerOrderHint": "Faites glisser ou utilisez les flèches pour changer l'ordre.",
+  "@entityPickerOrderHint": {
+    "context": "Entity picker",
+    "description": "Note under the picked entities, which can be reordered.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerFull": "Retirez-en une pour en ajouter une autre.",
+  "@entityPickerFull": {
+    "context": "Entity picker",
+    "description": "Shown when the most entities that can be picked are picked.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerAdd": "Ajouter des entités",
+  "@entityPickerAdd": {
+    "context": "Entity picker",
+    "description": "Row that opens the picker to add entities.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    }
+  },
+  "entityPickerShowing": "{count} sur {max} affichées",
+  "@entityPickerShowing": {
+    "context": "Entity picker",
+    "description": "How many entities are picked out of the most allowed.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > At a Glance",
+        "Settings > Screensaver > Widgets",
+        "Settings > Screen & Audio > Adaptive brightness",
+        "Settings > Sendspin",
+        "Settings > Gestures",
+        "Settings > Camera Streams",
+        "Settings > Plugins"
+      ],
+      "remoteAdmin": [
+        "Screensaver > At a Glance",
+        "Screensaver > Widgets",
+        "Screen & Audio > Adaptive brightness",
+        "Sendspin",
+        "Gestures",
+        "Camera Streams",
+        "Plugins"
+      ]
+    },
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "description": "Number picked."
+      },
+      "max": {
+        "type": "String",
+        "description": "Most that can be picked."
+      }
+    }
+  },
   "esphomeAllExposed": "Toutes les entités disponibles sont exposées",
   "@esphomeAllExposed": {
     "context": "Settings > ESPHome > Excluded entities",
@@ -6888,19 +7148,6 @@
       ]
     }
   },
-  "gestureDomain": "Domaine",
-  "@gestureDomain": {
-    "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
-    "description": "Label or guidance in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Gestures > Add gesture > Choose an action > Home Assistant"
-      ],
-      "remoteAdmin": [
-        "Gestures > Add gesture > Choose an action > Home Assistant"
-      ]
-    }
-  },
   "gestureEntityOptional": "Entité (facultative)",
   "@gestureEntityOptional": {
     "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
@@ -6929,19 +7176,6 @@
   },
   "gestureServiceTitle": "Appeler un service Home Assistant",
   "@gestureServiceTitle": {
-    "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
-    "description": "Label or guidance in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Gestures > Add gesture > Choose an action > Home Assistant"
-      ],
-      "remoteAdmin": [
-        "Gestures > Add gesture > Choose an action > Home Assistant"
-      ]
-    }
-  },
-  "gestureServiceRequired": "Le domaine et le service sont requis.",
-  "@gestureServiceRequired": {
     "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -7022,6 +7256,45 @@
   "@gestureEventJson": {
     "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
     "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action > Home Assistant"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action > Home Assistant"
+      ]
+    }
+  },
+  "gestureServiceSearch": "Rechercher des services",
+  "@gestureServiceSearch": {
+    "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
+    "description": "Hint in the search box of the service picker.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action > Home Assistant"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action > Home Assistant"
+      ]
+    }
+  },
+  "gestureServiceChoose": "Choisir un service",
+  "@gestureServiceChoose": {
+    "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
+    "description": "Empty value of the Service field, and the message when the gesture is saved without one.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action > Home Assistant"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action > Home Assistant"
+      ]
+    }
+  },
+  "gestureServiceNoEntity": "Non utilisé par ce service",
+  "@gestureServiceNoEntity": {
+    "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
+    "description": "Shown in the Entity field when the picked service acts on no entity.",
     "x-locations": {
       "device": [
         "Settings > Gestures > Add gesture > Choose an action > Home Assistant"
@@ -10237,38 +10510,6 @@
         "Plugin Manager > a plugin > Actions"
       ]
     }
-  },
-  "pluginSelectAnEntity": "Sélectionner une entité",
-  "@pluginSelectAnEntity": {
-    "context": "Settings > Plugin Manager > a plugin > Actions",
-    "description": "Visible label, help or status in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Plugin Manager > a plugin > Actions"
-      ],
-      "remoteAdmin": [
-        "Plugin Manager > a plugin > Actions"
-      ]
-    }
-  },
-  "pluginChooseName": "Choisir {name}",
-  "@pluginChooseName": {
-    "context": "Settings > Plugin Manager > a plugin > Actions",
-    "description": "Visible label, help or status in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Plugin Manager > a plugin > Actions"
-      ],
-      "remoteAdmin": [
-        "Plugin Manager > a plugin > Actions"
-      ]
-    },
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    },
-    "x-notes": "Keep placeholders unchanged. Names and technical values are supplied by the app."
   },
   "pluginConfigureName": "Configurer {name}",
   "@pluginConfigureName": {
@@ -34799,66 +35040,6 @@
       ]
     }
   },
-  "screensaverOverlaySearchHint": "Nom ou identifiant d'entité",
-  "@screensaverOverlaySearchHint": {
-    "context": "Settings > Screensaver > Widgets > Entity widget or At a Glance > Entities",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Entity widget > Choose",
-        "Settings > Screensaver > At a Glance > Entities"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Entity widget > Choose",
-        "Screensaver > At a Glance > Entities"
-      ]
-    }
-  },
-  "screensaverOverlaySearchHintRemote": "Rechercher par nom ou identifiant d'entité",
-  "@screensaverOverlaySearchHintRemote": {
-    "context": "Settings > Screensaver > Widgets > Entity widget or At a Glance > Entities",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Entity widget > Choose",
-        "Settings > Screensaver > At a Glance > Entities"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Entity widget > Choose",
-        "Screensaver > At a Glance > Entities"
-      ]
-    }
-  },
-  "screensaverOverlaySearchEmpty": "Tapez pour rechercher des entités.",
-  "@screensaverOverlaySearchEmpty": {
-    "context": "Settings > Screensaver > Widgets > Entity widget or At a Glance > Entities",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Entity widget > Choose",
-        "Settings > Screensaver > At a Glance > Entities"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Entity widget > Choose",
-        "Screensaver > At a Glance > Entities"
-      ]
-    }
-  },
-  "screensaverOverlayNoMatches": "Aucun résultat.",
-  "@screensaverOverlayNoMatches": {
-    "context": "Settings > Screensaver > Widgets > Entity widget or At a Glance > Entities",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Entity widget > Choose",
-        "Settings > Screensaver > At a Glance > Entities"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Entity widget > Choose",
-        "Screensaver > At a Glance > Entities"
-      ]
-    }
-  },
   "screensaverOverlaySearching": "Recherche…",
   "@screensaverOverlaySearching": {
     "context": "Settings > Screensaver > Widgets > Entity widget or At a Glance > Entities",
@@ -34902,27 +35083,6 @@
         "Screensaver > Widgets > Entity widget > Choose",
         "Screensaver > At a Glance > Entities"
       ]
-    }
-  },
-  "screensaverOverlaySearchError": "Impossible de rechercher les entités : {error}",
-  "@screensaverOverlaySearchError": {
-    "context": "Settings > Screensaver > Widgets > Entity widget or At a Glance > Entities",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Entity widget > Choose",
-        "Settings > Screensaver > At a Glance > Entities"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Entity widget > Choose",
-        "Screensaver > At a Glance > Entities"
-      ]
-    },
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "Technical error details. Keep unchanged."
-      }
     }
   },
   "settingScreensaverDismissOnFaceTitle": "Fermer sur visage",
@@ -36108,64 +36268,6 @@
       ]
     }
   },
-  "screensaverOverlayReorder": "Affichées (glisser pour réorganiser)",
-  "@screensaverOverlayReorder": {
-    "context": "Settings > Screensaver > At a Glance",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > At a Glance"
-      ],
-      "remoteAdmin": [
-        "Screensaver > At a Glance"
-      ]
-    }
-  },
-  "screensaverOverlayFull": "C'est le maximum que la ligne peut afficher. Retirez-en une pour en ajouter une autre.",
-  "@screensaverOverlayFull": {
-    "context": "Settings > Screensaver > At a Glance",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > At a Glance"
-      ],
-      "remoteAdmin": [
-        "Screensaver > At a Glance"
-      ]
-    }
-  },
-  "screensaverOverlayPickerTitle": "Entités « En un coup d'œil »",
-  "@screensaverOverlayPickerTitle": {
-    "context": "Settings > Screensaver > At a Glance",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > At a Glance"
-      ],
-      "remoteAdmin": [
-        "Screensaver > At a Glance"
-      ]
-    }
-  },
-  "screensaverOverlayGlanceEmpty": "Aucune pour l'instant. Jusqu'à {count} entités.",
-  "@screensaverOverlayGlanceEmpty": {
-    "context": "Settings > Screensaver > At a Glance",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > At a Glance"
-      ],
-      "remoteAdmin": [
-        "Screensaver > At a Glance"
-      ]
-    },
-    "placeholders": {
-      "count": {
-        "type": "String",
-        "description": "Maximum number of entities."
-      }
-    }
-  },
   "screensaverOverlayNone": "Aucune pour l'instant",
   "@screensaverOverlayNone": {
     "context": "Settings > Screensaver > At a Glance",
@@ -36177,25 +36279,6 @@
       "remoteAdmin": [
         "Screensaver > At a Glance"
       ]
-    }
-  },
-  "screensaverOverlayLimit": "Jusqu'à {count} entités.",
-  "@screensaverOverlayLimit": {
-    "context": "Settings > Screensaver > At a Glance",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > At a Glance"
-      ],
-      "remoteAdmin": [
-        "Screensaver > At a Glance"
-      ]
-    },
-    "placeholders": {
-      "count": {
-        "type": "String",
-        "description": "Maximum number of entities."
-      }
     }
   },
   "screensaverOverlayGlancePage": "En un coup d'œil",
@@ -41526,45 +41609,6 @@
   },
   "screensaverOverlayWeatherEntity": "Entité météo",
   "@screensaverOverlayWeatherEntity": {
-    "context": "Settings > Screensaver > Widgets > Weather widget",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Weather widget"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Weather widget"
-      ]
-    }
-  },
-  "screensaverOverlayNoWeather": "Aucune entité météo",
-  "@screensaverOverlayNoWeather": {
-    "context": "Settings > Screensaver > Widgets > Weather widget",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Weather widget"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Weather widget"
-      ]
-    }
-  },
-  "screensaverOverlayNoWeatherHelp": "Home Assistant n'en a signalé aucune.",
-  "@screensaverOverlayNoWeatherHelp": {
-    "context": "Settings > Screensaver > Widgets > Weather widget",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Weather widget"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Weather widget"
-      ]
-    }
-  },
-  "screensaverOverlayPickWeather": "Choisir une entité météo…",
-  "@screensaverOverlayPickWeather": {
     "context": "Settings > Screensaver > Widgets > Weather widget",
     "description": "Label or guidance in this editor.",
     "x-locations": {

@@ -128,19 +128,6 @@
       ]
     }
   },
-  "gestureDomain": "Domain",
-  "@gestureDomain": {
-    "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
-    "description": "Label or guidance in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Gestures > Add gesture > Choose an action > Home Assistant"
-      ],
-      "remoteAdmin": [
-        "Gestures > Add gesture > Choose an action > Home Assistant"
-      ]
-    }
-  },
   "gestureEntityOptional": "Entity (optional)",
   "@gestureEntityOptional": {
     "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
@@ -169,19 +156,6 @@
   },
   "gestureServiceTitle": "Call a Home Assistant service",
   "@gestureServiceTitle": {
-    "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
-    "description": "Label or guidance in this section.",
-    "x-locations": {
-      "device": [
-        "Settings > Gestures > Add gesture > Choose an action > Home Assistant"
-      ],
-      "remoteAdmin": [
-        "Gestures > Add gesture > Choose an action > Home Assistant"
-      ]
-    }
-  },
-  "gestureServiceRequired": "Domain and service are required.",
-  "@gestureServiceRequired": {
     "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -262,6 +236,45 @@
   "@gestureEventJson": {
     "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
     "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action > Home Assistant"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action > Home Assistant"
+      ]
+    }
+  },
+  "gestureServiceSearch": "Search services",
+  "@gestureServiceSearch": {
+    "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
+    "description": "Hint in the search box of the service picker.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action > Home Assistant"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action > Home Assistant"
+      ]
+    }
+  },
+  "gestureServiceChoose": "Choose a service",
+  "@gestureServiceChoose": {
+    "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
+    "description": "Empty value of the Service field, and the message when the gesture is saved without one.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action > Home Assistant"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action > Home Assistant"
+      ]
+    }
+  },
+  "gestureServiceNoEntity": "Not used by this service",
+  "@gestureServiceNoEntity": {
+    "context": "Settings > Gestures > Add gesture > Choose an action > Home Assistant",
+    "description": "Shown in the Entity field when the picked service acts on no entity.",
     "x-locations": {
       "device": [
         "Settings > Gestures > Add gesture > Choose an action > Home Assistant"

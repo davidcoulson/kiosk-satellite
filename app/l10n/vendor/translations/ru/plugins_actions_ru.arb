@@ -7,7 +7,5 @@
   "pluginAlsoAvailableWhileLockedIfTheKioskDrawerIs": "Также доступно при блокировке, если меню киоска разрешено.",
   "pluginExposeToHomeAssistant": "Предоставить доступ Home Assistant",
   "pluginAddsAButtonToTheKioskEsphomeDeviceRequires": "Добавляет кнопку на ESPHome-устройство киоска. Требуются ESPHome и нативные сущности.",
-  "pluginSelectAnEntity": "Выберите сущность",
-  "pluginChooseName": "Выбор: {name}",
   "pluginConfigureName": "Настройка: {name}"
 }

@@ -278,10 +278,9 @@ void main() {
     for (var i = 0; i < 5; i++) {
       await tester.pump(const Duration(milliseconds: 120));
     }
-    expect(
-      find.text('sensor.hallway_illuminance \u00b7 40 lx'),
-      findsOneWidget,
-    );
+    // The entity sits in the field, its reading on the line under it.
+    expect(find.text('sensor.hallway_illuminance'), findsOneWidget);
+    expect(find.text('40 lx'), findsOneWidget);
     expect(find.text('12 lx (last known)'), findsOneWidget);
   });
 }

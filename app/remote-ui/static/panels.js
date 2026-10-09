@@ -8,6 +8,7 @@ import { hintRow, showToast } from './widgets.js';
 import { loadSettings } from './settings.js';
 import { radioRow } from './views.js';
 import { currentDashboardPath, dashboardField } from './dashboard_picker.js';
+import { PLAYER_ICONS, cachedList, fixedPlayerSpec, pickField, pickItem, playerSpec } from './entity_picker.js';
 import { messageBox, modalShell } from './widgets.js';
 
 /* Overlay grant notice: mirror of the device's row directly under
@@ -149,74 +150,36 @@ export async function updatePlayerRow() {
   }
   row.stopPlayerWatch?.();
   row.playerSource = source;
-  row.querySelectorAll('input, select').forEach(el => el.remove());
-  const sel = document.createElement('select');
-  sel.className = 'field';
-  sel.dataset.source = source;
-  sel.style.cssText = 'flex-shrink:0; max-width:240px;';
-  row.appendChild(sel);
-  let players = [];
-  let note = '';
-  const paint = () => {
-    if (!row.contains(sel)) return;
+  row.querySelectorAll('input, select, .ep-field').forEach(el => el.remove());
+  row.classList.add('dp-field-row');
+  // The entity picker over the source's players, or this device's own two.
+  const spec = source ? playerSpec(source) : fixedPlayerSpec('players:local', [
+    { id: '', name: mediaText('Sendspin Player'), iconPath: PLAYER_ICONS.speaker,
+      group: '', available: true, raw: {} },
+    { id: LOCAL_SESSION, name: mediaText(LOCAL_SESSION_NAME), iconPath: PLAYER_ICONS.session,
+      group: '', available: true, raw: {} },
+  ]);
+  const titles = { ma: 'Music Assistant player', ha: 'Home Assistant media player', sonos: 'Sonos room' };
+  const picked = () => {
     const settings = Object.fromEntries((state.settings || []).map(s => [s.key, s.value]));
-    const id = settings['sendspin.player'] || '';
-    const name = settings['sendspin.player_name'] || '';
-    const add = (value, label) => {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = label;
-      sel.appendChild(option);
-      return option;
-    };
-    sel.replaceChildren();
-    add('', mediaText(source ? 'Pick a player' : 'Sendspin Player'));
-    const localSession = !source && id === LOCAL_SESSION;
-    if (!source) add(LOCAL_SESSION, mediaText(LOCAL_SESSION_NAME));
-    if (source) {
-      if (note && !players.length) add(`note:${source}`, mediaError(note)).disabled = true;
-      const names = {};
-      for (const p of players) names[p.name] = (names[p.name] || 0) + 1;
-      for (const p of players) {
-        const label = p.id === id && name ? name
-          : names[p.name] > 1 && p.sub ? `${p.name} (${p.sub})` : p.name;
-        add(p.id, p.available === false ? t('mediaOfflineName', {name: label}) : label);
-      }
-      if (id && !players.some(p => p.id === id)) add(id, name || id);
-    }
-    sel.value = source || localSession ? id : '';
-    updateSessionPermissions(tab, localSession);
-    tab.querySelector('.player-warn')?.remove();
-    if (source || localSession) {
-      const shown = localSession ? mediaText(LOCAL_SESSION_NAME) : name;
-      const warning = hintRow(t('mediaLocalOffline', {player: shown || mediaText('another player')}), { warn: true });
-      warning.classList.add('player-warn', 'divided');
-      row.insertAdjacentElement('afterend', warning);
-    }
+    return { id: settings['sendspin.player'] || '', name: settings['sendspin.player_name'] || '' };
   };
-  row.refreshPlayer = paint;
-  row.updateSetting = () => { paint(); return true; };
-  paint();
-  row.stopPlayerWatch = watchUpdates(['media-players'], async () => {
-    if (!source) return;
-    const result = await cmd('mediaPlayers', { source });
-    if (!row.contains(sel) || !result.ok || !Array.isArray(result.data?.players)) return;
-    players = result.data.players.filter(p => p.group === source);
-    note = result.data.notes?.[source] || '';
-    // Read the current selection after the request. A device update may
-    // have arrived while the source was listing its players.
-    paint();
-  }, { owner: row, intervalMs: 1000 });
-  sel.addEventListener('change', async () => {
+  let field = null;
+  const choose = async () => {
+    const { id } = picked();
+    const out = await pickItem({
+      title: source ? mediaText(titles[source] || 'Player') : (byKey['sendspin.player']?.title || ''),
+      spec, selected: source ? (id || null) : id,
+    });
+    if (!out || (out.id ?? '') === id) return;
+    const next = out.id ?? '';
     // Stored in English like every other name the pick keeps.
-    const name = sel.value === LOCAL_SESSION ? LOCAL_SESSION_NAME
-      : sel.value
-        ? players.find(p => p.id === sel.value)?.name
-          || sel.options[sel.selectedIndex].textContent : '';
+    const name = next === LOCAL_SESSION ? LOCAL_SESSION_NAME
+      : next ? (cachedList(spec.key)?.items.find(p => p.id === next)?.name || next) : '';
     const values = {
-      'sendspin.player': sel.value,
+      'sendspin.player': next,
       'sendspin.player_name': name,
-      'sendspin.player_active': !!sel.value || !!source
+      'sendspin.player_active': !!next || !!source
         || byKey['sendspin.enabled']?.value === true,
     };
     try {
@@ -230,7 +193,35 @@ export async function updatePlayerRow() {
       showToast({ title: mediaText('Could not select player'), message: mediaError(error.message), kind: 'error' });
     }
     paint();
-  });
+  };
+  const paint = () => {
+    if (!row.isConnected && field) return;
+    const { id, name } = picked();
+    const localSession = !source && id === LOCAL_SESSION;
+    const fresh = pickField({
+      spec, value: id,
+      placeholder: mediaText(source ? 'Pick a player' : 'Sendspin Player'),
+      // Only the Local Media Session's name is the app's to translate; a
+      // player's own name stays exactly as the source sent it.
+      fallbackLabel: name === LOCAL_SESSION_NAME ? mediaText(name) : (name || null),
+      flagMissing: false,
+      onClick: choose,
+    });
+    if (field) field.el.replaceWith(fresh.el); else row.appendChild(fresh.el);
+    field = fresh;
+    updateSessionPermissions(tab, localSession);
+    tab.querySelector('.player-warn')?.remove();
+    if (source || localSession) {
+      const shown = localSession ? mediaText(LOCAL_SESSION_NAME) : name;
+      const warning = hintRow(t('mediaLocalOffline', {player: shown || mediaText('another player')}), { warn: true });
+      warning.classList.add('player-warn', 'divided');
+      row.insertAdjacentElement('afterend', warning);
+    }
+  };
+  row.refreshPlayer = paint;
+  row.updateSetting = () => { paint(); return true; };
+  row.stopPlayerWatch = null;
+  paint();
 }
 
 /* The Local Media Session's Required system permissions group, at the end

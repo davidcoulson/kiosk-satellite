@@ -380,21 +380,23 @@ void main() {
     }
   });
 
-  test('the appearance rows sit in their own group at the subpage end', () {
+  test('the entities and appearance rows sit in their own groups', () {
     final glancePage = defs.allSettings
         .where((d) => d.subpage == 'At a Glance')
         .toList();
-    // The behavior rows lead under the subpage's own heading; the
-    // Appearance group closes the page.
+    // The switches lead under the subpage's own heading, the entities get
+    // a group of their own and the Appearance group closes the page.
     expect(
       [for (final d in glancePage) d.section],
       [
         'At a Glance',
         'At a Glance',
-        'At a Glance',
+        'Entities',
         ...List.filled(6, 'Appearance'),
       ],
     );
+    expect(glancePage[1], defs.screensaverGlanceNowPlaying);
+    expect(glancePage[2], defs.screensaverGlanceEntities);
     expect(glancePage.last.section, 'Appearance');
   });
 

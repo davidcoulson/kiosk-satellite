@@ -4103,7 +4103,8 @@ const screensaverGlanceEntities = SettingDef<String>(
       'Up to four entities to show, each with an optional custom '
       'name.',
   category: 'Screensaver',
-  section: 'At a Glance',
+  // Its own group under the switches, a list the way Views to rotate is.
+  section: 'Entities',
   subpage: 'At a Glance',
   dependsOn: 'screensaver.glance_enabled',
 );
@@ -10483,8 +10484,8 @@ const List<SettingDef<Object>> allSettings = [
   // The behavior rows first, then the Appearance group under its own
   // heading at the end of the subpage.
   screensaverGlanceEnabled,
-  screensaverGlanceEntities,
   screensaverGlanceNowPlaying,
+  screensaverGlanceEntities,
   screensaverGlanceScale,
   screensaverGlanceFont,
   screensaverGlanceFontWeight,

@@ -153,27 +153,27 @@ with sync_playwright() as playwright:
     expect(duck_row).to_have_attribute('data-preserved', 'yes')
     assert not [frame for frame in frames if frame.get('type') == 'settings'], frames
 
-    # A hand-built player select must follow both the chosen ID and source.
+    # The player field must follow both the chosen ID and source.
     page.locator('#tabs button[data-tab="sendspin"]').click()
-    player = page.locator('[data-key="sendspin.player"] select')
-    expect(player).to_have_value('ha:media_player.first')
+    player = page.locator('[data-key="sendspin.player"] .ep-field .dp-field-text')
+    expect(player).to_have_text('First speaker')
     change('sendspin.player', 'ha:media_player.second')
-    expect(player).to_have_value('ha:media_player.second')
+    expect(player).to_have_text('Second speaker')
+    # A player the source no longer lists keeps the name it was saved with.
+    change('sendspin.player_name', 'Unlisted speaker')
     change('sendspin.player', 'ha:media_player.unlisted')
-    expect(player).to_have_value('ha:media_player.unlisted')
+    expect(player).to_have_text('Unlisted speaker')
     change('sendspin.player_name', 'Second speaker renamed')
     expect(page.locator('.player-warn')).to_contain_text('Second speaker renamed')
     change('sendspin.player_source', 'ma')
     expect(page.locator('[data-key="sendspin.player_source"] select')).to_have_value('ma')
-    expect(player).to_have_attribute('data-source', 'ma')
     change('sendspin.player', 'ma:media_player.second')
-    expect(player).to_have_value('ma:media_player.second')
+    expect(player).to_have_text('Second speaker')
 
-    # The selected player's label and other sections stay in place.
-    expect(player.locator('option:checked')).to_have_text('Second speaker renamed')
+    # Other sections stay in place.
     page.locator('[data-key="sendspin.duck_percent"]').evaluate('el => el.dataset.kept = "yes"')
     change('sendspin.player_name', 'Office')
-    expect(player.locator('option:checked')).to_have_text('Office')
+    expect(page.locator('.player-warn')).to_contain_text('Office')
     expect(page.locator('[data-key="sendspin.duck_percent"]')).to_have_attribute('data-kept', 'yes')
 
     def route(path):

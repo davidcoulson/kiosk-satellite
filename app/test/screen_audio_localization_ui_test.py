@@ -109,13 +109,15 @@ try:
         # The entity's reading sits in its own row; Ambient light stays the
         # device sensor's (issue #911).
         entity=root.locator('[data-key="screen.adaptive_light_entity"]')
-        expect(entity.get_by_text('sensor.hallway_illuminance \u00b7 40 lx',exact=True)).to_be_visible()
+        # The entity sits in its field, the reading on the line under it.
+        expect(entity.locator('.ep-field')).to_contain_text('sensor.hallway_illuminance')
+        expect(entity.get_by_text('40 lx',exact=True)).to_be_visible()
         expect(entity.locator('button')).to_have_count(1)
         expect(root.locator('.ambient-light-value')).to_have_text('12 TEST last lux')
         page.evaluate("""async () => {
           (await import('/static/notices.js')).showAdaptiveLight({source:'entity',lux:55,live:true});
         }""")
-        expect(entity.get_by_text('sensor.hallway_illuminance \u00b7 55 lx',exact=True)).to_be_visible()
+        expect(entity.get_by_text('55 lx',exact=True)).to_be_visible()
         # No sensor: a note under the switch, which stays usable.
         page.evaluate("""async () => {
           (await import('/static/core.js')).state.lightSensor=false;

@@ -784,6 +784,41 @@ class UiStringsDe extends UiStrings {
   String get drawerNoReleaseNotes => 'Keine Versionshinweise verfügbar.';
 
   @override
+  String get entityPickerNoArea => 'Kein Bereich';
+
+  @override
+  String get entityPickerAll => 'Alle';
+
+  @override
+  String get entityPickerChoose => 'Entität auswählen';
+
+  @override
+  String get entityPickerNoMatch => 'Keine Treffer';
+
+  @override
+  String get entityPickerOfflineHelp =>
+      'Die Entitäten werden geladen, sobald die Verbindung wieder steht.';
+
+  @override
+  String get entityPickerMissing =>
+      'Diese Entität gibt es in Home Assistant nicht mehr. Wähle eine andere.';
+
+  @override
+  String get entityPickerOrderHint =>
+      'Ziehe oder nutze die Pfeile, um die Reihenfolge zu ändern.';
+
+  @override
+  String get entityPickerFull => 'Entferne eine, um eine weitere hinzuzufügen.';
+
+  @override
+  String get entityPickerAdd => 'Entitäten hinzufügen';
+
+  @override
+  String entityPickerShowing(String count, String max) {
+    return '$count von $max angezeigt';
+  }
+
+  @override
   String get esphomeAllExposed =>
       'Alle verfügbaren Entitäten werden freigegeben';
 
@@ -1831,9 +1866,6 @@ class UiStringsDe extends UiStrings {
   String get gestureAutomationEntity => 'Automatisierungs-Entität';
 
   @override
-  String get gestureDomain => 'Domäne';
-
-  @override
   String get gestureEntityOptional => 'Entität (optional)';
 
   @override
@@ -1841,9 +1873,6 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get gestureServiceTitle => 'Home-Assistant-Dienst aufrufen';
-
-  @override
-  String get gestureServiceRequired => 'Domäne und Dienst sind erforderlich.';
 
   @override
   String get gestureServiceJson =>
@@ -1864,6 +1893,15 @@ class UiStringsDe extends UiStrings {
   @override
   String get gestureEventJson =>
       'Die Ereignisdaten müssen ein JSON-Objekt sein.';
+
+  @override
+  String get gestureServiceSearch => 'Dienste suchen';
+
+  @override
+  String get gestureServiceChoose => 'Dienst auswählen';
+
+  @override
+  String get gestureServiceNoEntity => 'Von diesem Dienst nicht verwendet';
 
   @override
   String get gestureTester => 'Handgesten-Test';
@@ -2730,14 +2768,6 @@ class UiStringsDe extends UiStrings {
   @override
   String get pluginAddsAButtonToTheKioskEsphomeDeviceRequires =>
       'Fügt dem ESPHome-Gerät des Kiosks eine Schaltfläche hinzu. Erfordert ESPHome und native Entitäten.';
-
-  @override
-  String get pluginSelectAnEntity => 'Eine Entität auswählen';
-
-  @override
-  String pluginChooseName(String name) {
-    return '$name auswählen';
-  }
 
   @override
   String pluginConfigureName(String name) {
@@ -9416,20 +9446,6 @@ class UiStringsDe extends UiStrings {
       'Bitte eine Entität auswählen.';
 
   @override
-  String get screensaverOverlaySearchHint => 'Name oder Entitäts-ID';
-
-  @override
-  String get screensaverOverlaySearchHintRemote =>
-      'Nach Name oder Entitäts-ID suchen';
-
-  @override
-  String get screensaverOverlaySearchEmpty =>
-      'Zum Suchen von Entitäten tippen.';
-
-  @override
-  String get screensaverOverlayNoMatches => 'Keine Treffer gefunden.';
-
-  @override
   String get screensaverOverlaySearching => 'Suche läuft...';
 
   @override
@@ -9438,11 +9454,6 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get screensaverOverlayNoAnswer => 'Das Gerät hat nicht geantwortet.';
-
-  @override
-  String screensaverOverlaySearchError(String error) {
-    return 'Die Suche nach Entitäten ist fehlgeschlagen: $error';
-  }
 
   @override
   String get settingScreensaverDismissOnFaceTitle =>
@@ -9773,28 +9784,7 @@ class UiStringsDe extends UiStrings {
   String get screensaverOverlayShowing => 'Angezeigte Entitäten';
 
   @override
-  String get screensaverOverlayReorder =>
-      'Angezeigte Entitäten (zum Neuordnen ziehen)';
-
-  @override
-  String get screensaverOverlayFull =>
-      'Die Leiste enthält bereits die maximale Anzahl an Entitäten. Entferne eine, um eine weitere hinzuzufügen.';
-
-  @override
-  String get screensaverOverlayPickerTitle => '„Auf einen Blick“-Entitäten';
-
-  @override
-  String screensaverOverlayGlanceEmpty(String count) {
-    return 'Noch keine vorhanden. Bis zu $count Entitäten.';
-  }
-
-  @override
   String get screensaverOverlayNone => 'Noch keine vorhanden';
-
-  @override
-  String screensaverOverlayLimit(String count) {
-    return 'Bis zu $count Entitäten.';
-  }
 
   @override
   String get screensaverOverlayGlancePage => 'Auf einen Blick';
@@ -11199,17 +11189,6 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get screensaverOverlayWeatherEntity => 'Wetter-Entität';
-
-  @override
-  String get screensaverOverlayNoWeather => 'Keine Wetter-Entitäten vorhanden';
-
-  @override
-  String get screensaverOverlayNoWeatherHelp =>
-      'Home Assistant hat keine Wetter-Entitäten zurückgegeben.';
-
-  @override
-  String get screensaverOverlayPickWeather =>
-      'Wähle eine Wetter-Entität aus...';
 
   @override
   String get screensaverOverlayWeatherRequired =>

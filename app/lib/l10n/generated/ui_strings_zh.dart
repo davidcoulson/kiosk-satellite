@@ -759,6 +759,38 @@ class UiStringsZh extends UiStrings {
   String get drawerNoReleaseNotes => '暂无更新说明。';
 
   @override
+  String get entityPickerNoArea => '无区域';
+
+  @override
+  String get entityPickerAll => '全部';
+
+  @override
+  String get entityPickerChoose => '选择实体';
+
+  @override
+  String get entityPickerNoMatch => '没有匹配项';
+
+  @override
+  String get entityPickerOfflineHelp => '连接恢复后将加载实体。';
+
+  @override
+  String get entityPickerMissing => '此实体已不在 Home Assistant 中。请另选一个。';
+
+  @override
+  String get entityPickerOrderHint => '拖动或使用箭头调整顺序。';
+
+  @override
+  String get entityPickerFull => '请先移除一项再添加。';
+
+  @override
+  String get entityPickerAdd => '添加实体';
+
+  @override
+  String entityPickerShowing(String count, String max) {
+    return '正在显示 $count/$max';
+  }
+
+  @override
   String get esphomeAllExposed => '已提供所有可用实体';
 
   @override
@@ -1760,9 +1792,6 @@ class UiStringsZh extends UiStrings {
   String get gestureAutomationEntity => '自动化实体';
 
   @override
-  String get gestureDomain => '域';
-
-  @override
   String get gestureEntityOptional => '实体（可选）';
 
   @override
@@ -1770,9 +1799,6 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get gestureServiceTitle => '调用 Home Assistant 服务';
-
-  @override
-  String get gestureServiceRequired => '必须填写域和服务。';
 
   @override
   String get gestureServiceJson => '服务数据必须是 JSON 对象。';
@@ -1791,6 +1817,15 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get gestureEventJson => '事件数据必须是 JSON 对象。';
+
+  @override
+  String get gestureServiceSearch => '搜索服务';
+
+  @override
+  String get gestureServiceChoose => '选择服务';
+
+  @override
+  String get gestureServiceNoEntity => '此服务不使用';
 
   @override
   String get gestureTester => '手势测试器';
@@ -2625,14 +2660,6 @@ class UiStringsZh extends UiStrings {
   @override
   String get pluginAddsAButtonToTheKioskEsphomeDeviceRequires =>
       '在 Kiosk 的 ESPHome 设备中添加按钮。此功能需要 ESPHome 和原生实体。';
-
-  @override
-  String get pluginSelectAnEntity => '选择实体';
-
-  @override
-  String pluginChooseName(String name) {
-    return '选择 $name';
-  }
 
   @override
   String pluginConfigureName(String name) {
@@ -8769,18 +8796,6 @@ class UiStringsZh extends UiStrings {
   String get screensaverOverlayEntityRequired => '请选择实体。';
 
   @override
-  String get screensaverOverlaySearchHint => '名称或实体 ID';
-
-  @override
-  String get screensaverOverlaySearchHintRemote => '按名称或实体 ID 搜索';
-
-  @override
-  String get screensaverOverlaySearchEmpty => '输入文字以搜索实体。';
-
-  @override
-  String get screensaverOverlayNoMatches => '没有匹配项。';
-
-  @override
   String get screensaverOverlaySearching => '正在搜索…';
 
   @override
@@ -8788,11 +8803,6 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get screensaverOverlayNoAnswer => '设备未响应。';
-
-  @override
-  String screensaverOverlaySearchError(String error) {
-    return '无法搜索实体：$error';
-  }
 
   @override
   String get settingScreensaverDismissOnFaceTitle => '检测到人脸时关闭屏保';
@@ -9090,26 +9100,7 @@ class UiStringsZh extends UiStrings {
   String get screensaverOverlayShowing => '显示内容';
 
   @override
-  String get screensaverOverlayReorder => '显示内容（拖动排序）';
-
-  @override
-  String get screensaverOverlayFull => '此行已达到显示上限。请先移除一项再添加。';
-
-  @override
-  String get screensaverOverlayPickerTitle => '速览实体';
-
-  @override
-  String screensaverOverlayGlanceEmpty(String count) {
-    return '暂无。最多 $count 个实体。';
-  }
-
-  @override
   String get screensaverOverlayNone => '暂无';
-
-  @override
-  String screensaverOverlayLimit(String count) {
-    return '最多 $count 个实体。';
-  }
 
   @override
   String get screensaverOverlayGlancePage => '速览';
@@ -10396,15 +10387,6 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get screensaverOverlayWeatherEntity => '天气实体';
-
-  @override
-  String get screensaverOverlayNoWeather => '没有天气实体';
-
-  @override
-  String get screensaverOverlayNoWeatherHelp => 'Home Assistant 未报告任何天气实体。';
-
-  @override
-  String get screensaverOverlayPickWeather => '选择天气实体…';
 
   @override
   String get screensaverOverlayWeatherRequired => '请选择天气实体。';
@@ -13292,6 +13274,38 @@ class UiStringsZhCn extends UiStringsZh {
   String get drawerNoReleaseNotes => '暂无更新说明。';
 
   @override
+  String get entityPickerNoArea => '无区域';
+
+  @override
+  String get entityPickerAll => '全部';
+
+  @override
+  String get entityPickerChoose => '选择实体';
+
+  @override
+  String get entityPickerNoMatch => '没有匹配项';
+
+  @override
+  String get entityPickerOfflineHelp => '连接恢复后将加载实体。';
+
+  @override
+  String get entityPickerMissing => '此实体已不在 Home Assistant 中。请另选一个。';
+
+  @override
+  String get entityPickerOrderHint => '拖动或使用箭头调整顺序。';
+
+  @override
+  String get entityPickerFull => '请先移除一项再添加。';
+
+  @override
+  String get entityPickerAdd => '添加实体';
+
+  @override
+  String entityPickerShowing(String count, String max) {
+    return '正在显示 $count/$max';
+  }
+
+  @override
   String get esphomeAllExposed => '已提供所有可用实体';
 
   @override
@@ -14293,9 +14307,6 @@ class UiStringsZhCn extends UiStringsZh {
   String get gestureAutomationEntity => '自动化实体';
 
   @override
-  String get gestureDomain => '域';
-
-  @override
   String get gestureEntityOptional => '实体（可选）';
 
   @override
@@ -14303,9 +14314,6 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get gestureServiceTitle => '调用 Home Assistant 服务';
-
-  @override
-  String get gestureServiceRequired => '必须填写域和服务。';
 
   @override
   String get gestureServiceJson => '服务数据必须是 JSON 对象。';
@@ -14324,6 +14332,15 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get gestureEventJson => '事件数据必须是 JSON 对象。';
+
+  @override
+  String get gestureServiceSearch => '搜索服务';
+
+  @override
+  String get gestureServiceChoose => '选择服务';
+
+  @override
+  String get gestureServiceNoEntity => '此服务不使用';
 
   @override
   String get gestureTester => '手势测试器';
@@ -15158,14 +15175,6 @@ class UiStringsZhCn extends UiStringsZh {
   @override
   String get pluginAddsAButtonToTheKioskEsphomeDeviceRequires =>
       '在 Kiosk 的 ESPHome 设备中添加按钮。此功能需要 ESPHome 和原生实体。';
-
-  @override
-  String get pluginSelectAnEntity => '选择实体';
-
-  @override
-  String pluginChooseName(String name) {
-    return '选择 $name';
-  }
 
   @override
   String pluginConfigureName(String name) {
@@ -21302,18 +21311,6 @@ class UiStringsZhCn extends UiStringsZh {
   String get screensaverOverlayEntityRequired => '请选择实体。';
 
   @override
-  String get screensaverOverlaySearchHint => '名称或实体 ID';
-
-  @override
-  String get screensaverOverlaySearchHintRemote => '按名称或实体 ID 搜索';
-
-  @override
-  String get screensaverOverlaySearchEmpty => '输入文字以搜索实体。';
-
-  @override
-  String get screensaverOverlayNoMatches => '没有匹配项。';
-
-  @override
   String get screensaverOverlaySearching => '正在搜索…';
 
   @override
@@ -21321,11 +21318,6 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get screensaverOverlayNoAnswer => '设备未响应。';
-
-  @override
-  String screensaverOverlaySearchError(String error) {
-    return '无法搜索实体：$error';
-  }
 
   @override
   String get settingScreensaverDismissOnFaceTitle => '检测到人脸时关闭屏保';
@@ -21623,26 +21615,7 @@ class UiStringsZhCn extends UiStringsZh {
   String get screensaverOverlayShowing => '显示内容';
 
   @override
-  String get screensaverOverlayReorder => '显示内容（拖动排序）';
-
-  @override
-  String get screensaverOverlayFull => '此行已达到显示上限。请先移除一项再添加。';
-
-  @override
-  String get screensaverOverlayPickerTitle => '速览实体';
-
-  @override
-  String screensaverOverlayGlanceEmpty(String count) {
-    return '暂无。最多 $count 个实体。';
-  }
-
-  @override
   String get screensaverOverlayNone => '暂无';
-
-  @override
-  String screensaverOverlayLimit(String count) {
-    return '最多 $count 个实体。';
-  }
 
   @override
   String get screensaverOverlayGlancePage => '速览';
@@ -22929,15 +22902,6 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get screensaverOverlayWeatherEntity => '天气实体';
-
-  @override
-  String get screensaverOverlayNoWeather => '没有天气实体';
-
-  @override
-  String get screensaverOverlayNoWeatherHelp => 'Home Assistant 未报告任何天气实体。';
-
-  @override
-  String get screensaverOverlayPickWeather => '选择天气实体…';
 
   @override
   String get screensaverOverlayWeatherRequired => '请选择天气实体。';

@@ -105,66 +105,6 @@
       ]
     }
   },
-  "screensaverOverlaySearchHint": "Name or entity id",
-  "@screensaverOverlaySearchHint": {
-    "context": "Settings > Screensaver > Widgets > Entity widget or At a Glance > Entities",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Entity widget > Choose",
-        "Settings > Screensaver > At a Glance > Entities"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Entity widget > Choose",
-        "Screensaver > At a Glance > Entities"
-      ]
-    }
-  },
-  "screensaverOverlaySearchHintRemote": "Search by name or entity id",
-  "@screensaverOverlaySearchHintRemote": {
-    "context": "Settings > Screensaver > Widgets > Entity widget or At a Glance > Entities",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Entity widget > Choose",
-        "Settings > Screensaver > At a Glance > Entities"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Entity widget > Choose",
-        "Screensaver > At a Glance > Entities"
-      ]
-    }
-  },
-  "screensaverOverlaySearchEmpty": "Type to search entities.",
-  "@screensaverOverlaySearchEmpty": {
-    "context": "Settings > Screensaver > Widgets > Entity widget or At a Glance > Entities",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Entity widget > Choose",
-        "Settings > Screensaver > At a Glance > Entities"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Entity widget > Choose",
-        "Screensaver > At a Glance > Entities"
-      ]
-    }
-  },
-  "screensaverOverlayNoMatches": "Nothing matched.",
-  "@screensaverOverlayNoMatches": {
-    "context": "Settings > Screensaver > Widgets > Entity widget or At a Glance > Entities",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Entity widget > Choose",
-        "Settings > Screensaver > At a Glance > Entities"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Entity widget > Choose",
-        "Screensaver > At a Glance > Entities"
-      ]
-    }
-  },
   "screensaverOverlaySearching": "Searching…",
   "@screensaverOverlaySearching": {
     "context": "Settings > Screensaver > Widgets > Entity widget or At a Glance > Entities",
@@ -208,27 +148,6 @@
         "Screensaver > Widgets > Entity widget > Choose",
         "Screensaver > At a Glance > Entities"
       ]
-    }
-  },
-  "screensaverOverlaySearchError": "Could not search entities: {error}",
-  "@screensaverOverlaySearchError": {
-    "context": "Settings > Screensaver > Widgets > Entity widget or At a Glance > Entities",
-    "description": "Label or guidance in this editor.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver > Widgets > Entity widget > Choose",
-        "Settings > Screensaver > At a Glance > Entities"
-      ],
-      "remoteAdmin": [
-        "Screensaver > Widgets > Entity widget > Choose",
-        "Screensaver > At a Glance > Entities"
-      ]
-    },
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "Technical error details. Keep unchanged."
-      }
     }
   }
 }

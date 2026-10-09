@@ -60,12 +60,13 @@ def api(route):
         return route.fulfill(json={'settings': settings, 'subpageHints': {}})
     name = path.removeprefix('commands/')
     args = route.request.post_data_json or {}
-    if name == 'haSearchEntities':
+    if name == 'haListEntities':
         if fail_search:
             return route.fulfill(json={'ok': False})
-        data = ([{'entity_id': 'weather.original', 'name': 'State', 'state': 'sunny'}]
-                if args.get('query') == 'weather.' else
-                [{'entity_id': 'sensor.original', 'name': 'Weather', 'state': '42'}])
+        data = [{'entity_id': 'weather.original', 'name': 'State', 'state': 'Sunny', 'domain': 'weather'},
+                {'entity_id': 'sensor.original', 'name': 'Weather', 'state': '42', 'domain': 'sensor'},
+                {'entity_id': 'sensor.raw', 'name': 'Weather', 'state': '51 %', 'domain': 'sensor'},
+                {'entity_id': 'sensor.second', 'name': 'State', 'state': 'On', 'domain': 'sensor'}]
     else:
         data = {'haEntityAttributes': {'humidity': 51, 'friendly_name': 'Weather'},
                 'listPlugins': [], 'listFiles': [],
@@ -125,7 +126,11 @@ try:
         root.get_by_text('TEST Add widget', exact=True).click()
         field('Widget').locator('select').select_option('weather')
         expect(page.get_by_text('TEST Weather entity', exact=True)).to_be_visible()
-        field('Weather entity').locator('select').select_option('weather.original')
+        # The weather field opens the entity picker on weather entities.
+        field('Weather entity').locator('.ep-field').click()
+        picker = page.locator('.dash-picker-card')
+        expect(picker.locator('.dp-row')).to_have_count(1)
+        picker.locator('.dp-row', has_text='weather.original').click()
         field('Location name').locator('input').fill('Custom city')
         save()
         # Entries sort by corner, so locate by type instead of display order.
@@ -136,11 +141,14 @@ try:
 
         root.get_by_text('TEST Add widget', exact=True).click()
         field('Widget').locator('select').select_option('entity')
-        page.get_by_role('button', name='TEST Choose', exact=True).click()
-        page.get_by_placeholder('TEST Search by name or entity id').fill('Weather')
-        page.locator('.modal-back').last.get_by_text('Weather', exact=True).click()
-        expect(page.locator('.modal-back').get_by_text('Weather', exact=True)).to_be_visible()
-        field('Displayed value').locator('select').select_option('humidity')
+        field('Entity').locator('.ep-field').click()
+        picker = page.locator('.dash-picker-card')
+        picker.locator('.dp-search').fill('sensor.original')
+        picker.locator('.dp-row', has_text='sensor.original').click()
+        expect(field('Entity').locator('.ep-field')).to_contain_text('Weather')
+        # The value step: the state and each attribute with its reading.
+        field('Displayed value').locator('.ep-field').click()
+        page.locator('.ep-value-card .ep-option', has_text='humidity').click()
         field('Name').locator('input').fill('My entity')
         save()
         entity = next(w for w in json.loads(requests[-1]['screensaver.widgets']) if w['type'] == 'entity')
@@ -157,23 +165,24 @@ try:
 
         open_page('At a Glance')
         expect(page.locator('#pageTitle')).to_contain_text('TEST At a Glance')
-        root.get_by_role('button', name='TEST Choose', exact=True).click()
-        expect(page.get_by_text('TEST Showing', exact=True)).to_be_visible()
-        page.get_by_role('button', name='TEST Edit', exact=True).first.click()
-        field('Name').locator('input').fill('My glance')
-        field('Displayed value').locator('select').select_option('')
-        page.get_by_role('button', name='TEST Save', exact=True).last.click()
-        page.get_by_role('button', name='TEST Move down', exact=True).first.click()
-        save()
+        # The picks as rows: a click edits one, the arrows reorder, each
+        # change saved at once.
+        with page.expect_response('**/api/settings'):
+            root.locator('.ep-pick-main').first.click()
+            field('Name').locator('input').fill('My glance')
+            field('Displayed value').locator('.ep-field').click()
+            page.locator('.ep-value-card .ep-option', has_text='TEST State').click()
+            page.get_by_role('button', name='TEST Save', exact=True).last.click()
+        with page.expect_response('**/api/settings'):
+            page.get_by_role('button', name='TEST Move down', exact=True).first.click()
         chosen = json.loads(requests[-1]['screensaver.glance_entities'])
         assert chosen == [{'entity_id': 'sensor.second', 'name': 'State'},
                           {'entity_id': 'sensor.raw', 'name': 'Weather', 'custom_name': 'My glance'}]
-
-        root.get_by_role('button', name='TEST Choose', exact=True).click()
-        fail_search = True
-        page.get_by_placeholder('TEST Search by name or entity id').fill('error')
-        expect(page.get_by_text('TEST Could not reach Home Assistant', exact=True)).to_be_visible()
-        page.get_by_role('button', name='TEST Cancel', exact=True).click()
+        # Add entities opens the picker for several; Cancel changes nothing.
+        before = len(requests)
+        root.get_by_text('TEST Add entities', exact=True).click()
+        page.locator('.dash-picker-card').get_by_role('button', name='TEST Cancel', exact=True).click()
+        assert len(requests) == before
         assert not errors, errors
         browser.close()
 finally:

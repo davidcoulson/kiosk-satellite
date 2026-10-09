@@ -4,6 +4,7 @@ import { api, cmd, state } from './core.js';
 import { attachSoundSelect, attachSoundUpload, loadSettings } from './settings.js';
 import { syncGatedRows } from './rows.js';
 import { radioRow } from './views.js';
+import { entitySpec, pickField, pickItem } from './entity_picker.js';
 import { currentPath, showTab } from './tabs.js';
 import { copyBox, hintRow, modalShell, showToast } from './widgets.js';
 
@@ -310,14 +311,6 @@ document.addEventListener('ks-event', (e) => {
    the text to speech clause in settings.js), so neither a pick nor the
    device's echo of it rebuilds the settings pages. */
 
-// Engine names by entity id from the last answer, so a repaint does not
-// ask Home Assistant again.
-const engineNames = {};
-
-function rememberEngines(engines) {
-  for (const e of engines || []) engineNames[e.entity_id] = e.name;
-}
-
 const ttsValue = (key) => `${byKey(key)?.value || ''}`.trim();
 
 // After a pick: the gated rows in or out, a picker on any row just
@@ -339,69 +332,29 @@ export function attachTtsPicker(key, languageKey, voiceKey) {
   const ttsRow = document.querySelector(`[data-key="${key}"]`);
   if (!ttsRow || !byKey(key) || ttsRow.querySelector('.tts-pick')) return;
   ttsRow.querySelector('input')?.remove();
-  const box = document.createElement('button');
-  box.type = 'button';
-  box.className = 'btn-ghost tts-pick';
-  const paint = () => {
-    const id = ttsValue(key);
-    box.textContent = id ? engineNames[id] || id : esphomeText('First available');
-  };
-  paint();
-  // The friendly name once Home Assistant answers; the id until then.
-  if (ttsValue(key) && !engineNames[ttsValue(key)]) {
-    cmd('announcementTtsEngines').then((r) => {
-      if (r.ok) { rememberEngines(r.data); paint(); }
-    }).catch(() => {});
-  }
-  ttsRow.updateSetting = () => { paint(); return true; };
-  box.addEventListener('click', async () => {
-    let engines = [];
-    try {
-      const r = await cmd('announcementTtsEngines');
-      if (r.ok) engines = r.data || [];
-      else throw new Error(r.error || 'unreachable');
-    } catch (_) {
-      showToast({ title: esphomeText('Could not reach Home Assistant'), kind: 'error' });
-      return;
-    }
-    rememberEngines(engines);
-    const current = ttsValue(key);
-    const picked = await new Promise((resolve) => {
-      let language = messageLanguage();
-      const shell = modalShell({title: esphomeText('Text to speech engine'), onDismiss: () => close(null)});
-      const close = (value) => {
-        document.removeEventListener('ks-settings-cached', onLanguage);
-        shell.close();
-        resolve(value);
-      };
-      const first = radioRow('', '', !current, () => close(''));
-      shell.body.append(first);
-      for (const engine of engines) {
-        shell.body.append(radioRow(engine.name, engine.entity_id,
-          engine.entity_id === current, () => close(engine.entity_id)));
-      }
-      const cancel = document.createElement('button');
-      cancel.className = 'btn-text'; cancel.addEventListener('click', () => close(null));
-      shell.foot.append(cancel);
-      const labels = () => {
-        shell.head.textContent = esphomeText('Text to speech engine');
-        first.querySelector('.name').textContent = esphomeText('First available');
-        cancel.textContent = esphomeText('Cancel');
-      };
-      const onLanguage = () => {
-        if (language === messageLanguage()) return;
-        language = messageLanguage(); labels();
-      };
-      document.addEventListener('ks-settings-cached', onLanguage); labels();
-    });
-    if (picked === null || picked === current) return;
-    const patch = { [key]: picked, [languageKey]: '', [voiceKey]: '' };
-    const res = await api('/api/settings', { method: 'PATCH', body: JSON.stringify(patch) });
-    if (!res.ok) { showToast({ title: esphomeText('Not saved'), kind: 'error' }); return; }
-    for (const [k, v] of Object.entries(patch)) { const d = byKey(k); if (d) d.value = v; }
-    refreshTtsRows(key, languageKey, voiceKey);
+  // The entity picker over Home Assistant's text to speech entities, the
+  // device's row: Clear is First available.
+  const spec = entitySpec({ domains: ['tts'] });
+  const field = pickField({
+    spec, value: ttsValue(key), placeholder: esphomeText('First available'),
+    onClick: async () => {
+      const current = ttsValue(key);
+      const out = await pickItem({ title: esphomeText('Text to speech engine'), spec,
+        selected: current || null, allowClear: true });
+      if (!out) return;
+      const picked = out.id ?? '';
+      if (picked === current) return;
+      const patch = { [key]: picked, [languageKey]: '', [voiceKey]: '' };
+      const res = await api('/api/settings', { method: 'PATCH', body: JSON.stringify(patch) });
+      if (!res.ok) { showToast({ title: esphomeText('Not saved'), kind: 'error' }); return; }
+      for (const [k, v] of Object.entries(patch)) { const d = byKey(k); if (d) d.value = v; }
+      refreshTtsRows(key, languageKey, voiceKey);
+    },
   });
-  ttsRow.appendChild(box);
+  field.el.classList.add('tts-pick');
+  ttsRow.classList.add('dp-field-row');
+  ttsRow.updateSetting = () => { field.setValue(ttsValue(key)); return true; };
+  ttsRow.appendChild(field.el);
 }
 
 /* ---- text to speech language and voice rows ----

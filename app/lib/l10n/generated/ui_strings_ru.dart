@@ -780,6 +780,41 @@ class UiStringsRu extends UiStrings {
   String get drawerNoReleaseNotes => 'Примечаний к выпуску нет.';
 
   @override
+  String get entityPickerNoArea => 'Без пространства';
+
+  @override
+  String get entityPickerAll => 'Все';
+
+  @override
+  String get entityPickerChoose => 'Выберите сущность';
+
+  @override
+  String get entityPickerNoMatch => 'Ничего не найдено';
+
+  @override
+  String get entityPickerOfflineHelp =>
+      'Сущности загрузятся, когда соединение восстановится.';
+
+  @override
+  String get entityPickerMissing =>
+      'Этой сущности больше нет в Home Assistant. Выберите другую.';
+
+  @override
+  String get entityPickerOrderHint =>
+      'Перетащите или используйте стрелки, чтобы изменить порядок.';
+
+  @override
+  String get entityPickerFull => 'Уберите одну, чтобы добавить другую.';
+
+  @override
+  String get entityPickerAdd => 'Добавить сущности';
+
+  @override
+  String entityPickerShowing(String count, String max) {
+    return 'Показано: $count из $max';
+  }
+
+  @override
   String get esphomeAllExposed => 'Предоставлены все доступные сущности';
 
   @override
@@ -1811,9 +1846,6 @@ class UiStringsRu extends UiStrings {
   String get gestureAutomationEntity => 'Сущность автоматизации';
 
   @override
-  String get gestureDomain => 'Домен';
-
-  @override
   String get gestureEntityOptional => 'Сущность (необязательно)';
 
   @override
@@ -1821,9 +1853,6 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get gestureServiceTitle => 'Вызвать службу Home Assistant';
-
-  @override
-  String get gestureServiceRequired => 'Домен и служба обязательны.';
 
   @override
   String get gestureServiceJson => 'Данные службы должны быть JSON-объектом.';
@@ -1842,6 +1871,15 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get gestureEventJson => 'Данные события должны быть JSON-объектом.';
+
+  @override
+  String get gestureServiceSearch => 'Поиск служб';
+
+  @override
+  String get gestureServiceChoose => 'Выберите службу';
+
+  @override
+  String get gestureServiceNoEntity => 'Эта служба его не использует';
 
   @override
   String get gestureTester => 'Тестер жестов рукой';
@@ -2696,14 +2734,6 @@ class UiStringsRu extends UiStrings {
   @override
   String get pluginAddsAButtonToTheKioskEsphomeDeviceRequires =>
       'Добавляет кнопку на ESPHome-устройство киоска. Требуются ESPHome и нативные сущности.';
-
-  @override
-  String get pluginSelectAnEntity => 'Выберите сущность';
-
-  @override
-  String pluginChooseName(String name) {
-    return 'Выбор: $name';
-  }
 
   @override
   String pluginConfigureName(String name) {
@@ -9262,20 +9292,6 @@ class UiStringsRu extends UiStrings {
   String get screensaverOverlayEntityRequired => 'Выберите сущность.';
 
   @override
-  String get screensaverOverlaySearchHint => 'Название или ID сущности';
-
-  @override
-  String get screensaverOverlaySearchHintRemote =>
-      'Поиск по названию или ID сущности';
-
-  @override
-  String get screensaverOverlaySearchEmpty =>
-      'Введите текст для поиска сущностей.';
-
-  @override
-  String get screensaverOverlayNoMatches => 'Ничего не найдено.';
-
-  @override
   String get screensaverOverlaySearching => 'Поиск…';
 
   @override
@@ -9283,11 +9299,6 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get screensaverOverlayNoAnswer => 'Устройство не ответило.';
-
-  @override
-  String screensaverOverlaySearchError(String error) {
-    return 'Не удалось выполнить поиск сущностей: $error';
-  }
 
   @override
   String get settingScreensaverDismissOnFaceTitle =>
@@ -9612,28 +9623,7 @@ class UiStringsRu extends UiStrings {
   String get screensaverOverlayShowing => 'Показываются';
 
   @override
-  String get screensaverOverlayReorder =>
-      'Показываются (перетащите, чтобы изменить порядок)';
-
-  @override
-  String get screensaverOverlayFull =>
-      'Это максимум ряда. Уберите одну сущность, чтобы добавить другую.';
-
-  @override
-  String get screensaverOverlayPickerTitle => 'Сущности «Сводки»';
-
-  @override
-  String screensaverOverlayGlanceEmpty(String count) {
-    return 'Пока пусто. До $count сущностей.';
-  }
-
-  @override
   String get screensaverOverlayNone => 'Пока пусто';
-
-  @override
-  String screensaverOverlayLimit(String count) {
-    return 'До $count сущностей.';
-  }
 
   @override
   String get screensaverOverlayGlancePage => 'Сводка';
@@ -11011,16 +11001,6 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get screensaverOverlayWeatherEntity => 'Сущность погоды';
-
-  @override
-  String get screensaverOverlayNoWeather => 'Нет сущностей погоды';
-
-  @override
-  String get screensaverOverlayNoWeatherHelp =>
-      'Home Assistant не сообщил ни одной.';
-
-  @override
-  String get screensaverOverlayPickWeather => 'Выберите сущность погоды…';
 
   @override
   String get screensaverOverlayWeatherRequired => 'Выберите сущность погоды.';

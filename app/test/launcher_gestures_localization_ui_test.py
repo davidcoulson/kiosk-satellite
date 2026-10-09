@@ -42,7 +42,11 @@ def api(route):
     name=path.removeprefix('commands/');params=(route.request.post_data_json or {}) if route.request.method=='POST' else {}
     commands.append((name,params))
     data={'installedApps':apps,'hasOverlayPermission':True,'hasUiGuard':True,'hasBatteryUnrestricted':True,
-          'haValidateAction':{'domain':True,'service':False,'entity':True},'listPlugins':[],'listFiles':[],
+          'haValidateAction':{'domain':True,'service':False,'entity':True},
+          'haListEntities':[{'entity_id':'light.KITCHEN','name':'Kitchen','domain':'light'},{'entity_id':'switch.fan','name':'Fan','domain':'switch'}],
+          'haListServices':[{'id':'light.custom_on','domain':'light','service':'custom_on','name':'Custom on','domain_title':'Light','entity_domains':['light']},
+                            {'id':'scene.reload','domain':'scene','service':'reload','name':'Reload scenes','domain_title':'Scene','entity_domains':None}],
+          'listPlugins':[],'listFiles':[],
           'mediaPlayers':{'players':[]},'getAudioDevices':{'inputs':[],'outputs':[]}}.get(name,{})
     route.fulfill(json={'ok':True,'data':data})
 class Handler(SimpleHTTPRequestHandler):
@@ -108,8 +112,25 @@ try:
         # Validate and save HA service data with technical values intact.
         page.evaluate("async()=>{window.service=(await import('/static/gestures.js')).configureGestureHaService(null);}")
         dialog=page.locator('.modal-back').last
-        inputs=dialog.locator('input')
-        inputs.nth(0).fill('light');inputs.nth(1).fill('custom_on');inputs.nth(2).fill('light.KITCHEN')
+        service,entity=dialog.locator('.ep-field').nth(0),dialog.locator('.ep-field').nth(1)
+        # No service yet: the entity waits for one.
+        expect(entity).to_be_disabled()
+        # A service that takes no entity keeps the entity off.
+        service.click()
+        page.locator('.dash-picker-card .dp-row',has_text='Reload scenes').click()
+        expect(service).to_contain_text('Reload scenes')
+        expect(entity).to_be_disabled()
+        # The service and the entity are picked from Home Assistant's lists,
+        # not typed, and the entity list keeps only what the service acts on.
+        service.click()
+        page.locator('.dash-picker-card .dp-row',has_text='Custom on').click()
+        expect(page.locator('.dash-picker-card')).to_have_count(0)
+        expect(entity).to_be_enabled()
+        entity.click()
+        expect(page.locator('.dash-picker-card .dp-row',has_text='Fan')).to_have_count(0)
+        page.locator('.dash-picker-card .dp-row',has_text='Kitchen').click()
+        expect(page.locator('.dash-picker-card')).to_have_count(0)
+        expect(entity).to_contain_text('Kitchen')
         dialog.locator('textarea').fill('[]')
         dialog.get_by_role('button',name=translated['commonSave'],exact=True).click()
         expect(dialog.get_by_text(translated['gestureServiceJson'],exact=True)).to_be_visible()

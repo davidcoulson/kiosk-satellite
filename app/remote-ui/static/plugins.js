@@ -2,7 +2,7 @@ import { pluginError } from './localization.js';
 import { pluginText, t, messageLanguage } from './localization.js';
 import { preserveDraft } from './drafts.js';
 import { watchUpdates, receiveUpdate } from './live.js';
-import { entitySearchPicker } from './cameras.js';
+import { entitySpec, pickField, pickItem } from './entity_picker.js';
 import { cmd } from './core.js';
 import { updatePluginCharts } from './plugin-charts.js';
 import { updatePluginReadings } from './plugin-readings.js';
@@ -403,14 +403,25 @@ function render(root, state) {
         input.onchange = () => saveSetting(setting.key, Number(input.value), input);
         control.append(input, output); settingRow.append(control);
       } else if (setting.type === 'entity') {
-        const selected = values[setting.key] ?? setting.default;
-        settingRow.replaceChildren(info(setting.title, selected || setting.description || pluginText('Select an entity')));
-        const choose = iconButton(t("pluginChooseName", {name: setting.title}), 'm16 3 5 5-12 12-6 1 1-6 12-12M14 5l5 5');
-        choose.onclick = async () => {
-          const entity = await entitySearchPicker(setting.title, { allowClear: true });
-          if (entity) await saveSetting(setting.key, entity.entity_id, choose);
-        };
-        settingRow.append(choose);
+        // The entity picker, narrowed to the plugin's domain when it
+        // declares one; Clear empties the setting.
+        let current = values[setting.key] ?? setting.default ?? '';
+        const domains = Array.isArray(setting.domain) ? setting.domain.map(String)
+          : (setting.domain ? [String(setting.domain)] : []);
+        const spec = entitySpec({ domains });
+        const field = pickField({
+          spec, value: current,
+          onClick: async () => {
+            const out = await pickItem({ title: setting.title, spec,
+              selected: current || null, allowClear: true });
+            if (!out) return;
+            current = out.id ?? '';
+            await saveSetting(setting.key, current, field.el);
+            field.setValue(current);
+          },
+        });
+        settingRow.replaceChildren(info(setting.title, setting.description || ''), field.el);
+        settingRow.classList.add('dp-field-row');
       } else if (setting.type === 'select') {
         const select = element('select'); select.setAttribute('aria-label', setting.title);
         for (const choice of setting.options) { const option = element('option', choice); option.value = choice; select.append(option); }

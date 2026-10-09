@@ -835,29 +835,26 @@ class _PluginSettingsState extends State<_PluginSettings> {
   Widget _settingRow(Map raw) {
     if (raw['type'] == 'entity') {
       final value = '${_values[raw['key']] ?? raw['default']}';
-      return SettingsRow(
-        title: Text('${raw['title']}'),
-        subtitle: Text(
-          value.isEmpty
-              ? raw['description']?.toString() ??
-                    pluginText(context, 'Select an entity')
-              : value,
+      // A plugin may narrow the picker to one domain or a few.
+      final domain = raw['domain'];
+      return PickRow(
+        title: '${raw['title']}',
+        description: raw['description']?.toString(),
+        spec: entitySpec(
+          context,
+          widget.commands,
+          domains: [
+            if (domain is String) domain,
+            if (domain is List)
+              for (final d in domain) '$d',
+          ],
         ),
-        trailing: const Icon(Icons.edit_outlined),
+        value: value,
+        allowClear: true,
         enabled: !_busy,
-        onTap: _busy
-            ? null
-            : () async {
-                final selected = await pickHomeAssistantEntityFromCommands(
-                  context,
-                  widget.commands,
-                  title: '${raw['title']}',
-                  allowClear: true,
-                );
-                if (selected != null && mounted && !_busy) {
-                  await _saveValue('${raw['key']}', selected.$1);
-                }
-              },
+        onPick: (id) async {
+          if (mounted && !_busy) await _saveValue('${raw['key']}', id ?? '');
+        },
       );
     }
     if (raw['type'] == 'string') {
