@@ -23,6 +23,7 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 - **An agent never brings its screen forward on its own.** After an update, a Restart app or a crash, an agent started its Activity like a kiosk does, which fronted it over the box's own app: on a NexiGo projector the TV input paused and the vendor's service switched the laser on in an empty room. An agent now brings back only its background service on every one of those paths (boot already did), and Bring to front does nothing there. The status screen still opens from the app icon.
 
 ### Fixed
+- **DNS rebinding no longer gets past the setup and invitation guard.** The remote admin refused a browser POST from another origin by comparing the Origin header with the Host header, but a page whose own name resolves to the kiosk controls both. Over HTTP a browser's request to the setup routes or a fleet invitation must now name the kiosk itself: an IP address, localhost, or its own hostname (bare or `.local`). HTTPS is unaffected, since the certificate must match the name. Kiosks and Panel Fleet send no Origin and are unaffected; first-time setup over HTTP through a router DNS name now needs the IP address or the `.local` name.
 
 ### Changed
 - **No battery also drops Charging.** The switch said the charge was left out of Home Assistant entirely, but the Charging sensor stayed, reading on. It now goes with the level, and turning the switch on or off re-lists the entities without an app restart.

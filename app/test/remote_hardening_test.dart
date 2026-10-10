@@ -66,6 +66,7 @@ void main() {
     String path,
     String body, {
     String? origin,
+    String? host,
   }) async {
     final client = HttpClient();
     try {
@@ -73,6 +74,7 @@ void main() {
         Uri.parse('http://127.0.0.1:$port$path'),
       );
       if (origin != null) req.headers.set('origin', origin);
+      if (host != null) req.headers.host = host;
       req.write(body);
       final res = await req.close();
       final text = await res.transform(utf8.decoder).join();
@@ -128,6 +130,37 @@ void main() {
     final (kiosk, _, _) = await post('/api/fleet/invite', invite);
     expect(kiosk, 200);
     expect(executed, contains('fleetInviteReceived'));
+  });
+
+  test(
+    'a rebound name is not this kiosk, though origin and host agree',
+    () async {
+      await boot(configured);
+      // DNS rebinding: the page's own name now resolves to this kiosk, so the
+      // browser sends that name as both the origin and the Host.
+      final (rebound, error, _) = await post(
+        '/api/fleet/invite',
+        jsonEncode({'id': 'leader', 'name': 'L', 'nonce': 'n'}),
+        origin: 'http://evil.example:$port',
+        host: 'evil.example',
+      );
+      expect(rebound, 403);
+      expect(error['error'], 'cross-origin');
+      expect(executed, isNot(contains('fleetInviteReceived')));
+    },
+  );
+
+  test('its own names are this kiosk; any other name is not', () {
+    bool own(String host) => RemoteManager.isOwnHostName(host, 'ks-office');
+    expect(own('10.2.4.129'), isTrue);
+    expect(own('fe80::1'), isTrue);
+    expect(own('localhost'), isTrue);
+    expect(own('ks-office'), isTrue);
+    expect(own('KS-Office.local'), isTrue);
+    expect(own('ks-office.evil.example'), isFalse);
+    expect(own('evil.example'), isFalse);
+    expect(own(''), isFalse);
+    expect(RemoteManager.isOwnHostName('x.local', ''), isFalse);
   });
 
   test("the admin's own page is the same origin, whatever its port", () async {

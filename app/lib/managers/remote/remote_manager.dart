@@ -1771,7 +1771,14 @@ class RemoteManager extends Manager {
   /// otherwise POST to a panel still in setup and choose its admin password:
   /// the browser would hide the reply from that page, but the page already
   /// knows the password it sent.
-  static bool _crossOrigin(Request request) {
+  ///
+  /// The browser writes both headers, so a page can make them agree: with
+  /// DNS rebinding, its own name resolves to this kiosk's address and its
+  /// origin then reads as this one. Over HTTPS that cannot happen, since
+  /// the browser only accepts a certificate for the name it asked. Over
+  /// HTTP a browser's request must therefore name this kiosk itself: an
+  /// IP address, localhost, or its own hostname (bare or `.local`).
+  bool _crossOrigin(Request request) {
     final origin = request.headers['origin'];
     if (origin == null || origin.isEmpty) return false;
     final host = request.headers['host'];
@@ -1780,8 +1787,28 @@ class RemoteManager extends Manager {
     // an implied port compare equal on both sides.
     final self = host == null ? null : Uri.tryParse('http://$host');
     if (page == null || self == null) return true;
-    return page.host.toLowerCase() != self.host.toLowerCase() ||
-        page.port != self.port;
+    if (page.host.toLowerCase() != self.host.toLowerCase() ||
+        page.port != self.port) {
+      return true;
+    }
+    return !_runningTls && !isOwnHostName(self.host, _ownHostname);
+  }
+
+  /// The name this kiosk answers to over mDNS, without `.local`.
+  String get _ownHostname => defs.effectiveHostname(
+    _settings.get(defs.deviceHostname),
+    _settings.get(defs.deviceName),
+  );
+
+  /// Whether [host] (a Host header's name, IPv6 brackets already stripped)
+  /// is this kiosk itself rather than a name a page could point at it.
+  @visibleForTesting
+  static bool isOwnHostName(String host, String hostname) {
+    final h = host.toLowerCase();
+    if (h.isEmpty) return false;
+    if (InternetAddress.tryParse(h) != null || h == 'localhost') return true;
+    final own = hostname.toLowerCase();
+    return own.isNotEmpty && (h == own || h == '$own.local');
   }
 
   static Response _json(int status, Map<String, Object?> body) => Response(
