@@ -226,6 +226,10 @@ class Follower {
   /// Null on older kiosks that do not support the member directory.
   String? rosterRevision;
 
+  /// Another endpoint announcing this follower's id over mDNS, shown until
+  /// an admin confirms the move (fleetMoveFollower). Not persisted.
+  Map<String, Object?>? movedTo;
+
   /// How much of the uploaded APK the leader has streamed to this kiosk,
   /// 0 to 1 while a fleet install sends it, null otherwise. The leader's
   /// own count, so the poll never overwrites it.
@@ -693,6 +697,7 @@ class FleetSyncManager extends Manager {
       for (final f in _followers) {
         if (only != null && f.id != only) continue;
         final peer = peers[f.id];
+        f.movedTo = null;
         if (peer != null) {
           final address = '${peer['address'] ?? f.address}';
           final port = (peer['port'] as num?)?.toInt() ?? f.port;
@@ -700,17 +705,24 @@ class FleetSyncManager extends Manager {
           final peerName = '${peer['name'] ?? f.name}';
           final tls = peer['tls'] == true;
           final dnsName = '${peer['dnsName'] ?? ''}';
-          if (tls != f.tls ||
+          if (address != f.address || port != f.port) {
+            // A follower's address is pinned: its fleet token only ever
+            // goes there. Anything on the network can announce this id over
+            // mDNS, so another endpoint is shown, not followed, until an
+            // admin confirms the move (a new DHCP lease).
+            f.movedTo = {
+              'address': address,
+              'port': port,
+              'tls': tls,
+              'dnsName': dnsName,
+            };
+          } else if (tls != f.tls ||
               dnsName != f.dnsName ||
-              address != f.address ||
-              port != f.port ||
               version != f.version ||
               peerName != f.name) {
             f
               ..tls = tls
               ..dnsName = dnsName
-              ..address = address
-              ..port = port
               ..version = version
               ..name = peerName;
             changed = true;
@@ -1320,6 +1332,22 @@ class FleetSyncManager extends Manager {
       )
       ..register(
         Command(
+          name: 'fleetMoveFollower',
+          description:
+              "Point a follower at the address mDNS now announces for it, once "
+              "an admin has confirmed it is the same kiosk (a new DHCP lease). "
+              "Its fleet token goes to the new address from then on.",
+          params: const {'id': 'The follower'},
+          handler: (p) async {
+            final r = await moveFollower('${p['id'] ?? ''}');
+            return r == null
+                ? const CommandResult.ok(true)
+                : CommandResult.fail(r);
+          },
+        ),
+      )
+      ..register(
+        Command(
           name: 'fleetSyncNow',
           description:
               'Push the settings to one follower or to every follower '
@@ -1678,8 +1706,10 @@ class FleetSyncManager extends Manager {
     if (!manual) {
       final peer = (await _peers())[id];
       final saved = _follower(id);
-      address = peer?['address'] ?? saved?.address;
-      port = peer?['port'] ?? saved?.port;
+      // A saved follower is invited again where it is pinned, not where an
+      // announcement claiming its id points: fleetMoveFollower moves it.
+      address = saved?.address ?? peer?['address'];
+      port = saved?.port ?? peer?['port'];
       if (address == null) return 'That kiosk is not on the network right now';
     }
     final (error, found) = await lookupKiosk(
@@ -1855,6 +1885,36 @@ class FleetSyncManager extends Manager {
             'hidden': d.hidden && !selects.containsKey(d.key),
           },
     ];
+  }
+
+  /// Move a follower to the endpoint mDNS announces for it, after an admin
+  /// confirmed the move. Null when done, else why not.
+  Future<String?> moveFollower(String id) async {
+    final f = _follower(id);
+    if (f == null) return 'Not a follower';
+    final peer = (await _peers())[id];
+    final address = '${peer?['address'] ?? ''}';
+    if (peer == null || address.isEmpty) {
+      return 'That kiosk is not announcing another address now';
+    }
+    final port = (peer['port'] as num?)?.toInt() ?? f.port;
+    if (address == f.address && port == f.port) return null;
+    log.info(
+      name,
+      '${f.name} moved to $address:$port, as confirmed by an admin',
+    );
+    f
+      ..address = address
+      ..port = port
+      ..tls = peer['tls'] == true
+      ..dnsName = '${peer['dnsName'] ?? ''}'
+      ..movedTo = null
+      ..appliedRevision = null
+      ..rosterRevision = null;
+    await _saveFollowers();
+    _publish();
+    _scheduleTick();
+    return null;
   }
 
   Future<String?> removeFollower(String id) async {
@@ -2171,7 +2231,23 @@ class FleetSyncManager extends Manager {
     };
     // Already this kiosk's leader (a removal that never reached here, an
     // invitation sent again): nothing to confirm, the trust is standing.
+    // But only from where that trust was given. The leader's id is public
+    // (its identity endpoint, the member directory), so anything on the
+    // network can serve it from an address of its own; answering that
+    // with a token would hand a stranger the leader's powers here.
     if (current != null) {
+      final trustedAt = '${current['address'] ?? ''}';
+      if (trustedAt.isEmpty || trustedAt != address) {
+        log.warn(
+          name,
+          'refused an invitation in ${current['name']}\'s name from $address',
+        );
+        return (
+          'This kiosk follows ${current['name']} at another address. '
+              'Leave that fleet here first to follow it from $address.',
+          null,
+        );
+      }
       await _settings.set(defs.fleetLeaderInfo, jsonEncode(leaderInfo));
       final token = await _mintToken(leaderId);
       if (token == null) return ('Could not mint a token', null);
@@ -2363,6 +2439,8 @@ class FleetSyncManager extends Manager {
           'profileName': profileFor(f).name,
           'lastSyncAt': f.lastSyncAt,
           'update': f.update,
+          if (f.movedTo case final moved?)
+            'movedTo': '${moved['address']}:${moved['port']}',
           ...phaseOf(f, mine, fingerprintFor(f), now),
         },
     ];

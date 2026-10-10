@@ -452,10 +452,18 @@ internal class ApiServer(
             }
             if (sessions.size >= MAX_SESSIONS) {
                 // A port scanner or a reconnect storm; never queue unbounded
-                // handshake work.
-                log("rejecting connection from ${client.inetAddress.hostAddress}: session limit")
-                runCatching { client.close() }
-                continue
+                // handshake work. But a session that has not said hello yet
+                // has proved nothing (with a key, hello needs the handshake
+                // done), so the oldest such one makes room: otherwise a LAN
+                // device holding eight silent connections, reopened as each
+                // times out, would keep Home Assistant out for good.
+                val silent = sessions.firstOrNull { !it.greeted }
+                if (silent == null) {
+                    log("rejecting connection from ${client.inetAddress.hostAddress}: session limit")
+                    runCatching { client.close() }
+                    continue
+                }
+                silent.close("dropped for a new connection: the session limit was reached before it said hello")
             }
             val session = Session(client, sessionSeq.incrementAndGet())
             sessions.add(session)
@@ -619,6 +627,8 @@ internal class ApiServer(
             payload
         }
         @Volatile var handshaken = false
+        /** Said hello at the API level, after the handshake. */
+        @Volatile var greeted = false
         @Volatile var lastInboundAt = clock()
         @Volatile var lastPingSentAt = 0L
         private val closed = AtomicBoolean(false)
@@ -810,6 +820,7 @@ internal class ApiServer(
             try {
                 when (frame.type) {
                     Msg.HELLO_REQUEST -> {
+                        greeted = true
                         val hello = ApiCodec.parseHello(frame.payload)
                         log("session #$id hello from \"${hello.clientInfo}\" api ${hello.major}.${hello.minor}")
                         enqueue(Msg.HELLO_RESPONSE, ApiCodec.helloResponse(identity))

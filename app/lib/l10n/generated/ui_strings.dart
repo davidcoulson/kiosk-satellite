@@ -2054,6 +2054,42 @@ abstract class UiStrings {
   /// **'Enter the kiosk IP address and remote admin port.'**
   String get fleetAddressHelp;
 
+  /// Tag on a follower when another address announces its id.
+  ///
+  /// In en, this message translates to:
+  /// **'Announced at {address}'**
+  String fleetAnnouncedAtAddress(String address);
+
+  /// Tooltip on that tag.
+  ///
+  /// In en, this message translates to:
+  /// **'Something at another address announces this kiosk\'s id. Its fleet token keeps going to the address above until you confirm the move.'**
+  String get fleetAnnouncedAtHelp;
+
+  /// Menu item that moves a follower to the announced address.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the announced address'**
+  String get fleetUseTheAnnouncedAddress;
+
+  /// Confirmation dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Move {name} to {address}?'**
+  String fleetMoveNameToAddress(String name, String address);
+
+  /// Confirmation dialog message.
+  ///
+  /// In en, this message translates to:
+  /// **'Its fleet token will go to {address} from now on. Confirm only if you know the kiosk moved there, for example after a new DHCP lease: anything on the network can announce a kiosk\'s id.'**
+  String fleetMoveTokenWarning(String address);
+
+  /// Confirmation dialog button.
+  ///
+  /// In en, this message translates to:
+  /// **'Move'**
+  String get fleetMove;
+
   /// Visible label, help or status in this section.
   ///
   /// In en, this message translates to:

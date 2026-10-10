@@ -78,6 +78,18 @@ class AssistPipelineManager extends Manager {
   // binary frames. Parity is the point — the page's choreography was
   // tuned against these semantics and must not notice the move.
   final List<Uint8List> _buffer = [];
+
+  /// The most audio held for Home Assistant: 30 s of 16 kHz 16-bit mono.
+  /// Past it the oldest goes. Audio waits only for the run's handler id or
+  /// a reconnect; a turn whose init never comes, or whose connection stays
+  /// down, must not grow memory for as long as the microphone stays open.
+  static const maxBufferedBytes = 30 * 16000 * 2;
+  int _bufferedBytes = 0;
+
+  void _clearBuffer() {
+    _buffer.clear();
+    _bufferedBytes = 0;
+  }
   bool _micOpen = false;
   bool _buffering = false;
   bool _sending = false;
@@ -166,7 +178,7 @@ class AssistPipelineManager extends Manager {
             'seamless one-shot window between wake word and STT stream)',
         params: const {'reset': 'true to clear the buffer first'},
         handler: (p) async {
-          if (p['reset'] == true) _buffer.clear();
+          if (p['reset'] == true) _clearBuffer();
           _buffering = true;
           return const CommandResult.ok();
         },
@@ -177,7 +189,7 @@ class AssistPipelineManager extends Manager {
         params: const {'clear': 'true to drop what was buffered'},
         handler: (p) async {
           _buffering = false;
-          if (p['clear'] == true) _buffer.clear();
+          if (p['clear'] == true) _clearBuffer();
           return const CommandResult.ok();
         },
       ))
@@ -187,7 +199,7 @@ class AssistPipelineManager extends Manager {
             'Drop buffered audio (the page clears stale audio before '
             'resuming the stream after its chime)',
         handler: (_) async {
-          _buffer.clear();
+          _clearBuffer();
           return const CommandResult.ok();
         },
       ))
@@ -260,7 +272,13 @@ class AssistPipelineManager extends Manager {
     // on the floor — buffering them would put the wake chime into the STT
     // recording. The bar was already zeroed when the mute command landed.
     if (_muted) return;
-    if (_sending || _buffering) _buffer.add(pcm);
+    if (_sending || _buffering) {
+      _buffer.add(pcm);
+      _bufferedBytes += pcm.length;
+      while (_bufferedBytes > maxBufferedBytes && _buffer.length > 1) {
+        _bufferedBytes -= _buffer.removeAt(0).length;
+      }
+    }
     // Pre-roll is past audio: the pipeline wants it, the bar must not
     // render it (it would trail live speech by the pre-roll's length).
     if (preRoll) return;
@@ -274,7 +292,7 @@ class AssistPipelineManager extends Manager {
     _sending = false;
     _buffering = false;
     _stopPump();
-    _buffer.clear();
+    _clearBuffer();
     _levelBatch.clear();
     _lp180 = 0;
     _lp3400 = 0;
@@ -303,7 +321,7 @@ class AssistPipelineManager extends Manager {
       frame.setRange(1, frame.length, pcm);
       channel.sink.add(frame);
     }
-    _buffer.clear();
+    _clearBuffer();
   }
 
   /// The page's pushMicPcm math (audio/analyser.js), so the reactive bar

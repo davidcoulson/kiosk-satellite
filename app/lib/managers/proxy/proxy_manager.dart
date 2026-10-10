@@ -101,7 +101,8 @@ class ProxyManager extends Manager {
     );
     bus.on<SettingChanged>().listen((e) {
       if (e.key == defs.secureProxy.key || e.key == defs.startUrl.key) {
-        unawaited(sync());
+        // Logged by the chain; nobody here to hand the error to.
+        unawaited(sync().catchError((Object _) {}));
       }
       // The toggle only means something for a plain-http instance. When the
       // HA URL moves to https (or loopback) the proxy is forced off, so the
@@ -140,13 +141,21 @@ class ProxyManager extends Manager {
   /// toggle (its own SettingChanged reaction races this manager's) —
   /// which is also why the body is serialized: two concurrent syncs would
   /// each see no server and both bind one, leaking the loser.
+  ///
+  /// A sync that fails (the port cannot be bound) still fails for its own
+  /// caller, but never the chain: a failed future there would skip every
+  /// later sync, leaving the proxy wrong until the app restarts.
   Future<void> sync() {
-    return _syncChain = _syncChain.then((_) async {
+    final run = _syncChain.then((_) async {
       _target = _mappableOrigin();
       final wanted = _settings.get(defs.secureProxy) && _target != null;
       if (wanted && _server == null) await _start();
       if (!wanted && _server != null) await _stop();
     });
+    _syncChain = run.catchError((Object e) {
+      log.warn(name, 'sync failed: $e');
+    });
+    return run;
   }
 
   /// The start URL's origin when it is plain http on a non-loopback host —

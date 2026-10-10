@@ -1005,6 +1005,37 @@ void main() {
       },
     );
 
+    test("the leader's id from another address gets no token, from its own "
+        'address it does', () async {
+      await build();
+      answers['GET /api/fleet/identity'] = (_) => {
+        'id': 'lead',
+        'name': 'Living Room',
+        'leader': true,
+      };
+      Future<CommandResult> invite(String from, String nonce) =>
+          commands.execute('fleetInviteReceived', {
+            'invite': nonce,
+            'leader': {'id': 'lead', 'name': 'Living Room', 'port': 2324},
+            'address': from,
+          });
+      await invite('192.168.1.30', 'nonce1');
+      expect((await commands.execute('fleetAccept', const {})).ok, isTrue);
+      expect(fleet.leader?['address'], '192.168.1.30');
+
+      // Anything can serve the leader's public id from its own address.
+      final stranger = await invite('192.168.1.66', 'nonce2');
+      expect(stranger.ok, isFalse);
+      expect(stranger.error, contains('another address'));
+      expect(fleet.leader?['address'], '192.168.1.30');
+      expect(fleet.pendingInvite, isNull);
+
+      // The leader itself, sending again, is still trusted at once.
+      final again = await invite('192.168.1.30', 'nonce3');
+      expect(again.ok, isTrue, reason: again.error);
+      expect((again.data as Map)['token'], isA<String>());
+    });
+
     test('a leader cannot be invited to follow', () async {
       await build(prefs: {'ks.fleet.leader': true});
       answers['GET /api/fleet/identity'] = (_) => {
@@ -1228,6 +1259,55 @@ void main() {
         expect(row['status'], startsWith('Synced'));
       },
     );
+
+    test('an announcement from another address never moves a follower until an '
+        'admin confirms it', () async {
+      await build(
+        prefs: {
+          'ks.fleet.leader': true,
+          'ks.fleet.followers': jsonEncode([
+            {
+              'id': 'bed',
+              'name': 'Bedroom',
+              'address': '192.168.1.71',
+              'port': 2324,
+              'token': 'tok-bed',
+            },
+          ]),
+        },
+      );
+      answers['GET /api/fleet/status'] = (_) => {
+        'id': 'bed',
+        'version': '2026.9.19',
+        'leaderId': 'me',
+        'appliedRevision': null,
+        'dirty': false,
+      };
+      // Anything on the network can announce the follower's id.
+      peers.single
+        ..['address'] = '10.9.9.9'
+        ..['port'] = 2324
+        ..['name'] = 'Impostor';
+      await commands.execute('fleetSyncNow', const {});
+      final tokenHosts = {
+        for (final q in sent)
+          if (q.headers['Authorization'] == 'Bearer tok-bed') q.url.host,
+      };
+      expect(tokenHosts, {'192.168.1.71'}, reason: 'the token stays pinned');
+      var row = (fleet.status()['followers'] as List).single as Map;
+      expect(row['address'], '192.168.1.71');
+      expect(row['name'], 'Bedroom');
+      expect(row['movedTo'], '10.9.9.9:2324');
+
+      // Confirmed by an admin: from now on it is reached there.
+      final r = await commands.execute('fleetMoveFollower', {'id': 'bed'});
+      expect(r.ok, isTrue, reason: r.error);
+      row = (fleet.status()['followers'] as List).single as Map;
+      expect(row['address'], '10.9.9.9');
+      expect(row.containsKey('movedTo'), isFalse);
+      final stored = jsonDecode(settings.get(defs.fleetFollowers)) as List;
+      expect((stored.single as Map)['address'], '10.9.9.9');
+    });
 
     test(
       'a follower on another version is not pushed and reads which it needs',

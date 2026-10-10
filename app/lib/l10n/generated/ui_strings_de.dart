@@ -1116,6 +1116,31 @@ class UiStringsDe extends UiStrings {
       'Gib die IP-Adresse des Kiosks und seinen Fernverwaltungs-Port ein.';
 
   @override
+  String fleetAnnouncedAtAddress(String address) {
+    return 'Announced at $address';
+  }
+
+  @override
+  String get fleetAnnouncedAtHelp =>
+      'Something at another address announces this kiosk\'s id. Its fleet token keeps going to the address above until you confirm the move.';
+
+  @override
+  String get fleetUseTheAnnouncedAddress => 'Use the announced address';
+
+  @override
+  String fleetMoveNameToAddress(String name, String address) {
+    return 'Move $name to $address?';
+  }
+
+  @override
+  String fleetMoveTokenWarning(String address) {
+    return 'Its fleet token will go to $address from now on. Confirm only if you know the kiosk moved there, for example after a new DHCP lease: anything on the network can announce a kiosk\'s id.';
+  }
+
+  @override
+  String get fleetMove => 'Move';
+
+  @override
   String get fleetAddAProfile => 'Profil hinzufügen';
 
   @override

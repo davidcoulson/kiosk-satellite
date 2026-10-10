@@ -300,6 +300,9 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'fleetIpAddress' => strings.fleetIpAddress,
       'fleetRemoteAdminPort' => strings.fleetRemoteAdminPort,
       'fleetAddressHelp' => strings.fleetAddressHelp,
+      'fleetAnnouncedAtHelp' => strings.fleetAnnouncedAtHelp,
+      'fleetUseTheAnnouncedAddress' => strings.fleetUseTheAnnouncedAddress,
+      'fleetMove' => strings.fleetMove,
       'fleetAddAProfile' => strings.fleetAddAProfile,
       'fleetTheCollectionOfSettingsCredentialsAndExclusionsToSync' =>
         strings.fleetTheCollectionOfSettingsCredentialsAndExclusionsToSync,

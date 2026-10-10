@@ -4233,6 +4233,105 @@
       ]
     }
   },
+  "fleetAnnouncedAtAddress": "Announced at {address}",
+  "@fleetAnnouncedAtAddress": {
+    "context": "Settings > Fleet Management > Add a kiosk and device invitation prompt",
+    "description": "Tag on a follower when another address announces its id.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > Add a kiosk and device invitation prompt"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > Add a kiosk and device invitation prompt"
+      ]
+    },
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Names and technical values are supplied by the app."
+  },
+  "fleetAnnouncedAtHelp": "Something at another address announces this kiosk's id. Its fleet token keeps going to the address above until you confirm the move.",
+  "@fleetAnnouncedAtHelp": {
+    "context": "Settings > Fleet Management > Add a kiosk and device invitation prompt",
+    "description": "Tooltip on that tag.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > Add a kiosk and device invitation prompt"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > Add a kiosk and device invitation prompt"
+      ]
+    }
+  },
+  "fleetUseTheAnnouncedAddress": "Use the announced address",
+  "@fleetUseTheAnnouncedAddress": {
+    "context": "Settings > Fleet Management > Add a kiosk and device invitation prompt",
+    "description": "Menu item that moves a follower to the announced address.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > Add a kiosk and device invitation prompt"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > Add a kiosk and device invitation prompt"
+      ]
+    }
+  },
+  "fleetMoveNameToAddress": "Move {name} to {address}?",
+  "@fleetMoveNameToAddress": {
+    "context": "Settings > Fleet Management > Add a kiosk and device invitation prompt",
+    "description": "Confirmation dialog title.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > Add a kiosk and device invitation prompt"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > Add a kiosk and device invitation prompt"
+      ]
+    },
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "address": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Names and technical values are supplied by the app."
+  },
+  "fleetMoveTokenWarning": "Its fleet token will go to {address} from now on. Confirm only if you know the kiosk moved there, for example after a new DHCP lease: anything on the network can announce a kiosk's id.",
+  "@fleetMoveTokenWarning": {
+    "context": "Settings > Fleet Management > Add a kiosk and device invitation prompt",
+    "description": "Confirmation dialog message.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > Add a kiosk and device invitation prompt"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > Add a kiosk and device invitation prompt"
+      ]
+    },
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Names and technical values are supplied by the app."
+  },
+  "fleetMove": "Move",
+  "@fleetMove": {
+    "context": "Settings > Fleet Management > Add a kiosk and device invitation prompt",
+    "description": "Confirmation dialog button.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > Add a kiosk and device invitation prompt"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > Add a kiosk and device invitation prompt"
+      ]
+    }
+  },
   "fleetAddAProfile": "Add a profile",
   "@fleetAddAProfile": {
     "context": "Settings > Fleet Management > Profiles > a profile",

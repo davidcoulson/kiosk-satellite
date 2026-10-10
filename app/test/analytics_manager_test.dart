@@ -415,6 +415,19 @@ void main() {
       expect(u['vs_wake_arbitration'], isFalse);
       expect(u.containsKey('vs_arbitration_won'), isFalse);
 
+      // A custom model's phrase is its author's words: a kind only.
+      wakeState = {
+        ...wakeState,
+        'models': [
+          {'id': 'grandmas_kitchen', 'wakeWord': 'Hey Grandma Rose'},
+          {'id': 'ok_nova', 'wakeWord': 'Ok Nova'},
+        ],
+      };
+      u = await usage();
+      expect(u['wake_word'], 'custom');
+      expect(u['wake_word_2'], 'Ok Nova');
+      expect(jsonEncode(u), isNot(contains('Grandma')));
+
       // OpenAI answers wake word 1, a second wake word goes to Assist.
       answers = ['openai', 'assist'];
       wakeState = {

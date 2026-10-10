@@ -16,6 +16,7 @@ import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 import '../update/update_http_client.dart';
 import '../voice/wake_catalog.dart';
+import '../voice/wake_catalog.dart';
 import '../wake_word/engine.dart';
 import 'analytics_scrub.dart';
 import 'crash_journal.dart';
@@ -32,6 +33,11 @@ import 'usage_counters.dart';
 /// while at least one switch is on. docs/analytics.md is the contract this
 /// class implements; change one and change the other.
 class AnalyticsManager extends Manager {
+  /// Every model id the app bundles, across the engines.
+  static final _bundledWakeWordIds = {
+    for (final ids in bundledWakeWords.values) ...ids,
+  };
+
   AnalyticsManager(
     super.bus,
     super.commands,
@@ -493,9 +499,20 @@ class AnalyticsManager extends Manager {
           }
           final models = data['models'];
           if (models is List) {
-            String word(int i) => models.length > i && models[i] is Map
-                ? '${(models[i] as Map)['wakeWord'] ?? ''}'
-                : '';
+            // A bundled model is named by its phrase, a catalog pick. A
+            // custom one's phrase is whatever its author typed (a name, a
+            // household word), so it reads as a kind only, as the Usage
+            // promise says.
+            String word(int i) {
+              if (models.length <= i || models[i] is! Map) return '';
+              final m = models[i] as Map;
+              final phrase = '${m['wakeWord'] ?? ''}';
+              if (phrase.isEmpty) return '';
+              return _bundledWakeWordIds.contains('${m['id']}')
+                  ? phrase
+                  : 'custom';
+            }
+
             wakeWord = word(0);
             wakeWord2 = word(1);
           }

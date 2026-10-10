@@ -167,5 +167,7 @@ const fleetTextMessageIds = <String, String>{
   "That kiosk leads a fleet.": "fleetErrorIsLeader",
   "That kiosk already follows another leader.": "fleetErrorOtherLeader",
   "Agent": "fleetAgentTag",
-  "the alarms themselves": "fleetTheAlarmsThemselves"
+  "the alarms themselves": "fleetTheAlarmsThemselves",
+  "Something at another address announces this kiosk's id. Its fleet token keeps going to the address above until you confirm the move.": "fleetAnnouncedAtHelp",
+  "Use the announced address": "fleetUseTheAnnouncedAddress"
 };
