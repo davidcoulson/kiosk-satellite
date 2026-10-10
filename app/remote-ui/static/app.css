@@ -290,6 +290,9 @@
   body.agent #npTitle, body.agent #npCard { display: none !important; }
   .tag.device { background: var(--secondary-container);
     color: var(--on-secondary-container); font-size: 10px; }
+  /* Something needs a look: an address announcing a follower's id. */
+  .tag.warn { background: transparent; color: var(--warn);
+    box-shadow: inset 0 0 0 1px var(--warn); font-size: 10px; }
   /* Agent: a different kind of kiosk, not a state of this one, so it reads
      as its own thing rather than as a warning. */
   .tag.agent { background: var(--tertiary-container, var(--surface-2));

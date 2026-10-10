@@ -795,6 +795,13 @@ export async function renderFleetPage({ fetch = true } = {}) {
 function followerRow(f) {
   const tags = [];
   if (f.profile !== 'default') tags.push(tag(f.profileName || fleetText('Profile'), 'device'));
+  // Another address announces this follower's id: shown, never followed,
+  // until an admin confirms the move (its fleet token would go there).
+  if (f.movedTo) {
+    const moved = tag(t('fleetAnnouncedAtAddress', { address: f.movedTo }), 'warn');
+    moved.title = fleetText("Something at another address announces this kiosk's id. Its fleet token keeps going to the address above until you confirm the move.");
+    tags.push(moved);
+  }
   const row = kioskRow({ name: f.name, address: f.address, version: f.version, tags });
   row.classList.remove('fleet-row');
   if (f.phase === 'version') {
@@ -819,6 +826,12 @@ function followerRow(f) {
     f.phase === 'declined' || f.phase === 'left'
       ? { label: fleetText('Invite again'), run: () => run('fleetInvite', { id: f.id, profile: f.profile }) }
       : { label: fleetText('Sync now'), run: () => run('fleetSyncNow', { id: f.id }) },
+    ...(f.movedTo ? [{ label: fleetText('Use the announced address'), run: async () => {
+      const pick = await localizedMessageBox({titleId:'fleetMoveNameToAddress', messageId:'fleetMoveTokenWarning',
+        values:() => ({name:f.name, address:f.movedTo}),
+        buttons:[{id:'commonCancel', value:'Cancel'}, {id:'fleetMove', value:'Move'}]});
+      if (pick === 'Move') await run('fleetMoveFollower', { id: f.id });
+    } }] : []),
     { label: fleetText('Remove'), danger: true, run: async () => {
       const pick = await localizedMessageBox({titleId:'fleetRemoveName', messageId:'fleetItStopsFollowingThisKioskAndKeepsItsSettings', values:() => ({name:f.name}),
         buttons:[{id:'commonCancel', value:'Cancel'}, {id:'commonRemove', value:'Remove'}]});

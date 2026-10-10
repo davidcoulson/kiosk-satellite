@@ -1076,6 +1076,31 @@ class UiStringsZh extends UiStrings {
   String get fleetAddressHelp => '请输入 Kiosk 设备的 IP 地址和远程管理端口。';
 
   @override
+  String fleetAnnouncedAtAddress(String address) {
+    return 'Announced at $address';
+  }
+
+  @override
+  String get fleetAnnouncedAtHelp =>
+      'Something at another address announces this kiosk\'s id. Its fleet token keeps going to the address above until you confirm the move.';
+
+  @override
+  String get fleetUseTheAnnouncedAddress => 'Use the announced address';
+
+  @override
+  String fleetMoveNameToAddress(String name, String address) {
+    return 'Move $name to $address?';
+  }
+
+  @override
+  String fleetMoveTokenWarning(String address) {
+    return 'Its fleet token will go to $address from now on. Confirm only if you know the kiosk moved there, for example after a new DHCP lease: anything on the network can announce a kiosk\'s id.';
+  }
+
+  @override
+  String get fleetMove => 'Move';
+
+  @override
   String get fleetAddAProfile => '添加配置方案';
 
   @override
@@ -13888,6 +13913,31 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get fleetAddressHelp => '请输入 Kiosk 设备的 IP 地址和远程管理端口。';
+
+  @override
+  String fleetAnnouncedAtAddress(String address) {
+    return 'Announced at $address';
+  }
+
+  @override
+  String get fleetAnnouncedAtHelp =>
+      'Something at another address announces this kiosk\'s id. Its fleet token keeps going to the address above until you confirm the move.';
+
+  @override
+  String get fleetUseTheAnnouncedAddress => 'Use the announced address';
+
+  @override
+  String fleetMoveNameToAddress(String name, String address) {
+    return 'Move $name to $address?';
+  }
+
+  @override
+  String fleetMoveTokenWarning(String address) {
+    return 'Its fleet token will go to $address from now on. Confirm only if you know the kiosk moved there, for example after a new DHCP lease: anything on the network can announce a kiosk\'s id.';
+  }
+
+  @override
+  String get fleetMove => 'Move';
 
   @override
   String get fleetAddAProfile => '添加配置方案';

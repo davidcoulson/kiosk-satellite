@@ -172,6 +172,33 @@ void main() {
         reason: 'the pre-roll buffered during the seamless window leads');
   });
 
+  test('audio waiting for a handler id is capped, oldest dropped', () async {
+    await build();
+    await commands.execute('pipelineOpenMic', const {});
+    await commands.execute('pipelineStartBuffering', const {'reset': true});
+    // 40 s of audio while nothing can send it: only the newest 30 s stay.
+    final chunk = Uint8List(32000); // one second
+    for (var i = 0; i < 40; i++) {
+      chunk[0] = i;
+      mic.feed(Uint8List.fromList(chunk));
+    }
+    final run = await commands.execute('pipelineRun', const {
+      'entity_id': 'assist_satellite.office_tablet',
+      'start_stage': 'stt',
+      'end_stage': 'tts',
+      'sample_rate': 16000,
+    });
+    final sub = await server.nextJson((m) => m['type'] == 'voice_satellite/run_pipeline');
+    server.sendEvent(sub['id'] as int, {'type': 'init', 'handler_id': 3});
+    await commands
+        .execute('pipelineStartSending', {'runId': (run.data as Map)['runId']});
+    await _until(() => server.binaryFrames.length >= 30);
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    expect(server.binaryFrames, hasLength(30));
+    expect(server.binaryFrames.first[1], 10, reason: 'the first 10 s were dropped');
+    expect(server.binaryFrames.last[1], 39);
+  });
+
   test('clearing the buffer drops the chime-window audio', () async {
     await build();
     await commands.execute('pipelineOpenMic', const {});

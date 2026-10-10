@@ -111,6 +111,28 @@ class ApiServerTest {
         PlainClient(server.boundPort).also { client = it }
 
     @Test
+    fun silentConnectionsNeverLockHomeAssistantOut() {
+        val server = startServer(RecordingBackend())
+        // A LAN device fills every slot and never says hello.
+        val silent = (1..8).map { // the server's session limit
+            Socket("127.0.0.1", server.boundPort).apply { soTimeout = 5_000 }
+        }
+        try {
+            Thread.sleep(200)
+            // Home Assistant still gets in, and its session works.
+            val c = connect(server)
+            c.send(Msg.HELLO_REQUEST, ProtoWriter().run {
+                string(1, "Home Assistant"); varint(2, 1); varint(3, 10); toByteArray()
+            })
+            assertEquals(Msg.HELLO_RESPONSE, c.read().type)
+            // The oldest silent one was dropped to make room.
+            assertEquals(-1, silent.first().getInputStream().read())
+        } finally {
+            silent.forEach { runCatching { it.close() } }
+        }
+    }
+
+    @Test
     fun helloConnectDeviceInfo() {
         val backend = RecordingBackend()
         val c = connect(startServer(backend))
