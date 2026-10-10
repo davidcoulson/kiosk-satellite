@@ -915,6 +915,13 @@ void main() {
         'versionCode': 5,
       };
       expect(await refused(length: apk.length + 5), contains('ended early'));
+      // More than announced is cut off, not written until storage fills.
+      expect(await refused(length: apk.length - 5), contains('More arrived'));
+      // An announced size past any APK is refused before a byte is read.
+      expect(
+        await refused(length: UpdateManager.maxUploadBytes + 1),
+        contains('an APK is at most'),
+      );
       final dir = Directory('${cache.path}/updates');
       expect(await dir.list().toList(), isEmpty);
       expect((await status())['uploaded'], isNull);

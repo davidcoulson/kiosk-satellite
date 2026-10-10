@@ -13,16 +13,17 @@ void main() {
   setUp(() => auth = AuthStore(secret));
 
   int expOf(String token) {
-    final payload = jsonDecode(
-      utf8.decode(base64Url.decode(token.split('.').first)),
-    ) as Map;
+    final payload =
+        jsonDecode(utf8.decode(base64Url.decode(token.split('.').first)))
+            as Map;
     return payload['exp'] as int;
   }
 
   test('a default token validates and expires in about a week', () {
     final token = auth.issueToken();
     expect(auth.validate(token), isTrue);
-    final days = (expOf(token) - DateTime.now().millisecondsSinceEpoch) /
+    final days =
+        (expOf(token) - DateTime.now().millisecondsSinceEpoch) /
         Duration.millisecondsPerDay;
     expect(days, closeTo(7, 0.01));
   });
@@ -30,21 +31,24 @@ void main() {
   test('a caller-chosen ttl is honored', () {
     final token = auth.issueToken(ttl: const Duration(days: 365));
     expect(auth.validate(token), isTrue);
-    final days = (expOf(token) - DateTime.now().millisecondsSinceEpoch) /
+    final days =
+        (expOf(token) - DateTime.now().millisecondsSinceEpoch) /
         Duration.millisecondsPerDay;
     expect(days, closeTo(365, 0.01));
   });
 
   test('an absurd ttl is clamped to the ceiling', () {
     final token = auth.issueToken(ttl: const Duration(days: 100000));
-    final days = (expOf(token) - DateTime.now().millisecondsSinceEpoch) /
+    final days =
+        (expOf(token) - DateTime.now().millisecondsSinceEpoch) /
         Duration.millisecondsPerDay;
     expect(days, closeTo(AuthStore.maxTtl.inDays, 0.01));
   });
 
   test('a zero or negative ttl falls back to the default', () {
     for (final ttl in const [Duration.zero, Duration(days: -5)]) {
-      final days = (expOf(auth.issueToken(ttl: ttl)) -
+      final days =
+          (expOf(auth.issueToken(ttl: ttl)) -
               DateTime.now().millisecondsSinceEpoch) /
           Duration.millisecondsPerDay;
       expect(days, closeTo(7, 0.01));
@@ -54,11 +58,15 @@ void main() {
   test('an expired token is rejected', () {
     // Hand-signed with the same secret, expiry in the past: the signature
     // is valid, only time has run out.
-    final payload = base64Url.encode(utf8.encode(jsonEncode({
-      'exp': DateTime.now()
-          .subtract(const Duration(minutes: 1))
-          .millisecondsSinceEpoch,
-    })));
+    final payload = base64Url.encode(
+      utf8.encode(
+        jsonEncode({
+          'exp': DateTime.now()
+              .subtract(const Duration(minutes: 1))
+              .millisecondsSinceEpoch,
+        }),
+      ),
+    );
     final sig = base64Url.encode(
       Hmac(sha256, utf8.encode(secret)).convert(utf8.encode(payload)).bytes,
     );
@@ -106,5 +114,19 @@ void main() {
       expect(auth.validate(fleet), isTrue);
       expect(auth.claimsOf(fleet)?['pv'], isNull);
     });
+  });
+
+  test('rotating addresses cannot grow the failure list past its cap', () {
+    final auth = AuthStore('k');
+    for (var i = 0; i < AuthStore.maxTrackedAddresses * 4; i++) {
+      auth.recordFailure('fd00::$i');
+    }
+    expect(auth.trackedAddresses, AuthStore.maxTrackedAddresses);
+    // A real attacker on one address is still throttled.
+    for (var i = 0; i < 5; i++) {
+      auth.recordFailure('10.0.0.66');
+    }
+    expect(auth.isThrottled('10.0.0.66'), isTrue);
+    expect(auth.trackedAddresses, AuthStore.maxTrackedAddresses);
   });
 }

@@ -130,24 +130,43 @@ internal class ProtoReader(private val data: ByteArray) {
         return true
     }
 
-    fun asLong(): Long = varintValue
-    fun asInt(): Int = varintValue.toInt()
-    fun asBool(): Boolean = varintValue != 0L
-    fun asString(): String = String(data, chunkStart, chunkLength, Charsets.UTF_8)
-    fun asBytes(): ByteArray = data.copyOfRange(chunkStart, chunkStart + chunkLength)
+    // Each accessor reads the current field as the type it was sent as, or
+    // throws: a field sent with another wire type would otherwise hand back
+    // whatever an earlier field left behind (a stale varint, a stale range).
+    private fun expect(type: Int) {
+        if (wireType != type) {
+            throw ProtoException("field $field is wire type $wireType, not $type")
+        }
+    }
+
+    fun asLong(): Long { expect(0); return varintValue }
+    fun asInt(): Int { expect(0); return varintValue.toInt() }
+    fun asBool(): Boolean { expect(0); return varintValue != 0L }
+    fun asString(): String {
+        expect(2)
+        return String(data, chunkStart, chunkLength, Charsets.UTF_8)
+    }
+    fun asBytes(): ByteArray {
+        expect(2)
+        return data.copyOfRange(chunkStart, chunkStart + chunkLength)
+    }
 
     /** Little-endian fixed32 (wire type 5). */
-    fun asFixed32(): Int =
-        (data[chunkStart].toInt() and 0xFF) or
+    fun asFixed32(): Int {
+        expect(5)
+        return (data[chunkStart].toInt() and 0xFF) or
             ((data[chunkStart + 1].toInt() and 0xFF) shl 8) or
             ((data[chunkStart + 2].toInt() and 0xFF) shl 16) or
             ((data[chunkStart + 3].toInt() and 0xFF) shl 24)
+    }
 
     fun asFloat(): Float = Float.fromBits(asFixed32())
 
     /** ZigZag-decoded sint32 (ExecuteServiceArgument.int_). */
-    fun asSint32(): Int =
-        ((varintValue ushr 1) xor -(varintValue and 1)).toInt()
+    fun asSint32(): Int {
+        expect(0)
+        return ((varintValue ushr 1) xor -(varintValue and 1)).toInt()
+    }
 
     private fun readRawVarint(): Long {
         var shift = 0

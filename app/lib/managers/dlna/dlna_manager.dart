@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' show Random;
+import 'dart:typed_data' show BytesBuilder;
 
 import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:http/http.dart' as http;
@@ -138,8 +140,7 @@ class DlnaManager extends Manager {
   /// controller declared, so video and streams still take the screen even
   /// when they happen to carry no picture.
   bool get audioInBackground =>
-      media.value?.kind == 'audio' &&
-      _settings.get(defs.dlnaAudioBackground);
+      media.value?.kind == 'audio' && _settings.get(defs.dlnaAudioBackground);
 
   /// Whether the DLNA overlay is on screen (media up, or queued and showing
   /// its loading card). This is the overlay's own visibility rule, shared
@@ -169,8 +170,8 @@ class DlnaManager extends Manager {
   String get _transportActions => media.value == null
       ? ''
       : transportState.value == 'PLAYING'
-          ? 'Stop,Pause,Seek'
-          : 'Play,Stop';
+      ? 'Stop,Pause,Seek'
+      : 'Play,Stop';
 
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
@@ -354,13 +355,13 @@ class DlnaManager extends Manager {
 
   /// NT/ST values this renderer answers for, with their USNs.
   Map<String, String> get _targets => {
-        'upnp:rootdevice': 'uuid:$_uuid::upnp:rootdevice',
-        'uuid:$_uuid': 'uuid:$_uuid',
-        mediaRendererType: 'uuid:$_uuid::$mediaRendererType',
-        avtType: 'uuid:$_uuid::$avtType',
-        rcsType: 'uuid:$_uuid::$rcsType',
-        cmsType: 'uuid:$_uuid::$cmsType',
-      };
+    'upnp:rootdevice': 'uuid:$_uuid::upnp:rootdevice',
+    'uuid:$_uuid': 'uuid:$_uuid',
+    mediaRendererType: 'uuid:$_uuid::$mediaRendererType',
+    avtType: 'uuid:$_uuid::$avtType',
+    rcsType: 'uuid:$_uuid::$rcsType',
+    cmsType: 'uuid:$_uuid::$cmsType',
+  };
 
   String get _serverHeader =>
       'Android/1.0 UPnP/1.0 KioskSatellite/$_appVersion';
@@ -384,15 +385,12 @@ class DlnaManager extends Manager {
     // Announce twice shortly after start (UDP is lossy), then keep alive.
     _sendAlive();
     Timer(const Duration(milliseconds: 400), _sendAlive);
-    _aliveTimer = Timer.periodic(
-      const Duration(seconds: 600),
-      (_) {
-        // Purge here too: _notifyAll only runs for services that event,
-        // so ConnectionManager subscriptions would otherwise pile up.
-        _purgeSubs();
-        _sendAlive();
-      },
-    );
+    _aliveTimer = Timer.periodic(const Duration(seconds: 600), (_) {
+      // Purge here too: _notifyAll only runs for services that event,
+      // so ConnectionManager subscriptions would otherwise pile up.
+      _purgeSubs();
+      _sendAlive();
+    });
   }
 
   void _onDatagram(Datagram dg) {
@@ -407,15 +405,16 @@ class DlnaManager extends Manager {
     final matches = st == 'ssdp:all'
         ? _targets.entries.toList()
         : _targets.containsKey(st)
-            ? [MapEntry(st, _targets[st]!)]
-            : const <MapEntry<String, String>>[];
+        ? [MapEntry(st, _targets[st]!)]
+        : const <MapEntry<String, String>>[];
     if (matches.isEmpty) return;
     // A short random delay per the spec (MX), spreading replies out.
     Timer(Duration(milliseconds: Random().nextInt(80)), () {
       final sock = _ssdp;
       if (sock == null) return;
       for (final m in matches) {
-        final response = 'HTTP/1.1 200 OK\r\n'
+        final response =
+            'HTTP/1.1 200 OK\r\n'
             'CACHE-CONTROL: max-age=1800\r\n'
             'EXT:\r\n'
             'LOCATION: http://$_ip:$_livePort/device.xml\r\n'
@@ -433,7 +432,8 @@ class DlnaManager extends Manager {
     final sock = _ssdp;
     if (sock == null) return;
     for (final t in _targets.entries) {
-      final msg = 'NOTIFY * HTTP/1.1\r\n'
+      final msg =
+          'NOTIFY * HTTP/1.1\r\n'
           'HOST: $_ssdpAddress:$_ssdpPort\r\n'
           'CACHE-CONTROL: max-age=1800\r\n'
           'LOCATION: http://$_ip:$_livePort/device.xml\r\n'
@@ -456,13 +456,15 @@ class DlnaManager extends Manager {
     final path = request.url.path;
     switch ((request.method, path)) {
       case ('GET', 'device.xml'):
-        return _xml(deviceDescription(
-          friendlyName: _settings.get(defs.deviceName).isEmpty
-              ? 'Kiosk Satellite'
-              : _settings.get(defs.deviceName),
-          uuid: _uuid,
-          appVersion: _appVersion,
-        ));
+        return _xml(
+          deviceDescription(
+            friendlyName: _settings.get(defs.deviceName).isEmpty
+                ? 'Kiosk Satellite'
+                : _settings.get(defs.deviceName),
+            uuid: _uuid,
+            appVersion: _appVersion,
+          ),
+        );
       case ('GET', 'AVTransport.xml'):
         return _xml(avtScpd);
       case ('GET', 'RenderingControl.xml'):
@@ -480,16 +482,36 @@ class DlnaManager extends Manager {
     return Response.notFound('not found');
   }
 
-  Response _xml(String body) => Response.ok(
-        body,
-        headers: {'content-type': 'text/xml; charset="utf-8"'},
-      );
+  static const _maxControlBytes = 256 * 1024;
+
+  static Future<String?> _readCapped(Request request, int limit) async {
+    final declared = request.contentLength;
+    if (declared != null && declared > limit) return null;
+    final bytes = BytesBuilder(copy: false);
+    try {
+      await for (final chunk in request.read().timeout(
+        const Duration(seconds: 15),
+      )) {
+        if (bytes.length + chunk.length > limit) return null;
+        bytes.add(chunk);
+      }
+    } on TimeoutException {
+      return null;
+    }
+    return utf8.decode(bytes.takeBytes(), allowMalformed: true);
+  }
+
+  Response _xml(String body) =>
+      Response.ok(body, headers: {'content-type': 'text/xml; charset="utf-8"'});
 
   Future<Response> _control(Request request, String service) async {
     final soapAction = request.headers['soapaction'] ?? '';
-    final action =
-        RegExp(r'#(\w+)').firstMatch(soapAction)?[1] ?? 'unknown';
-    final body = await request.readAsString();
+    final action = RegExp(r'#(\w+)').firstMatch(soapAction)?[1] ?? 'unknown';
+    // A control call is a few kilobytes even with DIDL metadata. Anything
+    // on the network may send one, so the body is capped before it is read
+    // whole, and an oversized one is refused.
+    final body = await _readCapped(request, _maxControlBytes);
+    if (body == null) return Response(413);
     final args = parseSoapArgs(body);
     log.debug(name, '$service.$action ${args.keys.toList()}');
     try {
@@ -566,8 +588,11 @@ class DlnaManager extends Manager {
           title: titleOf(meta),
           hls: mime.contains('mpegurl') || path.endsWith('.m3u8'),
         );
-        log.info(name, 'media set: ${media.value!.kind}'
-            '${media.value!.hls ? ' (hls)' : ''} $uri');
+        log.info(
+          name,
+          'media set: ${media.value!.kind}'
+          '${media.value!.hls ? ' (hls)' : ''} $uri',
+        );
         _position = Duration.zero;
         _duration = Duration.zero;
         // No pending flag while already PLAYING: SetAVTransportURI during
@@ -674,8 +699,10 @@ class DlnaManager extends Manager {
         return {'CurrentVolume': '${volume.value}'};
       case 'SetVolume':
         volume.value =
-            (int.tryParse(args['DesiredVolume'] ?? '') ?? volume.value)
-                .clamp(0, 100);
+            (int.tryParse(args['DesiredVolume'] ?? '') ?? volume.value).clamp(
+              0,
+              100,
+            );
         _notifyRcs();
         return const {};
       case 'GetMute':
@@ -724,16 +751,32 @@ class DlnaManager extends Manager {
       final sub = subs.where((s) => s.sid == existingSid).firstOrNull;
       if (sub == null) return Response(412);
       sub.expiry = DateTime.now().add(const Duration(seconds: 300));
-      return Response.ok('', headers: {
-        'SID': sub.sid,
-        'TIMEOUT': 'Second-300',
-        'SERVER': _serverHeader,
-      });
+      return Response.ok(
+        '',
+        headers: {
+          'SID': sub.sid,
+          'TIMEOUT': 'Second-300',
+          'SERVER': _serverHeader,
+        },
+      );
     }
-    final callback = RegExp(r'<(.+?)>')
-        .firstMatch(request.headers['callback'] ?? '')?[1];
+    final callback = RegExp(
+      r'<(.+?)>',
+    ).firstMatch(request.headers['callback'] ?? '')?[1];
     final url = callback == null ? null : Uri.tryParse(callback);
     if (url == null) return Response(412);
+    // Events go back to the subscriber only: an http callback on the
+    // address the subscription came from, as every control point sends.
+    // Anything else would let any device on the network aim this kiosk's
+    // NOTIFY requests at a third host, or at the kiosk's own services.
+    final from =
+        (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)
+            ?.remoteAddress
+            .address;
+    if (!dlnaCallbackAllowed(url, from)) {
+      log.warn(name, 'refused an event callback to $url from $from');
+      return Response(412);
+    }
     final sub = _Subscription(
       'uuid:${_newUuid()}',
       url,
@@ -748,43 +791,40 @@ class DlnaManager extends Manager {
     Timer(const Duration(milliseconds: 100), () {
       sub.sendQueue = sub.sendQueue.then((_) => _notifyOne(service, sub));
     });
-    return Response.ok('', headers: {
-      'SID': sub.sid,
-      'TIMEOUT': 'Second-300',
-      'SERVER': _serverHeader,
-    });
+    return Response.ok(
+      '',
+      headers: {
+        'SID': sub.sid,
+        'TIMEOUT': 'Second-300',
+        'SERVER': _serverHeader,
+      },
+    );
   }
 
   Map<String, String> _eventProps(String service) {
     switch (service) {
       case 'AVTransport':
         return {
-          'LastChange': lastChange(
-            'urn:schemas-upnp-org:metadata-1-0/AVT/',
-            {
-              'TransportState': transportState.value,
-              'CurrentTransportActions': _transportActions,
-              'TransportStatus': 'OK',
-              'CurrentPlayMode': 'NORMAL',
-              'NumberOfTracks': media.value == null ? '0' : '1',
-              'CurrentTrack': media.value == null ? '0' : '1',
-              'CurrentTrackURI': media.value?.uri ?? '',
-              'CurrentTrackMetaData': media.value?.metadata ?? '',
-              'CurrentTrackDuration': formatUpnpTime(_duration),
-              'AVTransportURI': media.value?.uri ?? '',
-              'AVTransportURIMetaData': media.value?.metadata ?? '',
-            },
-          ),
+          'LastChange': lastChange('urn:schemas-upnp-org:metadata-1-0/AVT/', {
+            'TransportState': transportState.value,
+            'CurrentTransportActions': _transportActions,
+            'TransportStatus': 'OK',
+            'CurrentPlayMode': 'NORMAL',
+            'NumberOfTracks': media.value == null ? '0' : '1',
+            'CurrentTrack': media.value == null ? '0' : '1',
+            'CurrentTrackURI': media.value?.uri ?? '',
+            'CurrentTrackMetaData': media.value?.metadata ?? '',
+            'CurrentTrackDuration': formatUpnpTime(_duration),
+            'AVTransportURI': media.value?.uri ?? '',
+            'AVTransportURIMetaData': media.value?.metadata ?? '',
+          }),
         };
       case 'RenderingControl':
         return {
-          'LastChange': lastChange(
-            'urn:schemas-upnp-org:metadata-1-0/RCS/',
-            {
-              'Volume': '${volume.value}',
-              'Mute': muted.value ? '1' : '0',
-            },
-          ),
+          'LastChange': lastChange('urn:schemas-upnp-org:metadata-1-0/RCS/', {
+            'Volume': '${volume.value}',
+            'Mute': muted.value ? '1' : '0',
+          }),
         };
       default:
         return {
@@ -939,4 +979,15 @@ class _UpnpError implements Exception {
   _UpnpError(this.code, this.message);
   final int code;
   final String message;
+}
+
+/// Whether a GENA subscription from [subscriber] may have its events sent
+/// to [callback]: plain http, back to the subscriber's own address.
+bool dlnaCallbackAllowed(Uri callback, String? subscriber) {
+  if (subscriber == null || callback.scheme != 'http') return false;
+  final host = callback.host.toLowerCase();
+  final from = subscriber.toLowerCase();
+  if (host == from) return true;
+  // An IPv4 subscriber seen on a dual-stack socket arrives mapped.
+  return from.startsWith('::ffff:') && host == from.substring(7);
 }

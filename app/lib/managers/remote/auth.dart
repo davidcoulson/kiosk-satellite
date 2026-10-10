@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 /// Stateless bearer tokens + per-IP login throttling for the remote server.
 ///
@@ -116,6 +117,12 @@ class AuthStore {
     return result == 0;
   }
 
+  /// The most addresses whose failures are remembered at once.
+  static const maxTrackedAddresses = 256;
+
+  @visibleForTesting
+  int get trackedAddresses => _failures.length;
+
   bool isThrottled(String ip) {
     final failures = _failures[ip];
     if (failures == null) return false;
@@ -127,13 +134,31 @@ class AuthStore {
   void recordFailure(String ip) {
     // Bounded: an address whose failures have all aged out throttles
     // nothing, and IPv6 gives one machine as many addresses as it likes.
-    if (_failures.length >= 256) {
+    if (_failures.length >= maxTrackedAddresses && !_failures.containsKey(ip)) {
       final cutoff = DateTime.now().subtract(_throttleWindow);
       _failures.removeWhere(
         (_, times) => times.every((t) => t.isBefore(cutoff)),
       );
+      // Still full of live entries (many addresses failing at once): the
+      // one whose last failure is oldest makes room, so the map never
+      // grows past the cap however many addresses a client rotates through.
+      if (_failures.length >= maxTrackedAddresses) {
+        String? oldest;
+        DateTime? oldestAt;
+        _failures.forEach((key, times) {
+          final last = times.isEmpty ? DateTime(0) : times.last;
+          if (oldestAt == null || last.isBefore(oldestAt!)) {
+            oldest = key;
+            oldestAt = last;
+          }
+        });
+        _failures.remove(oldest);
+      }
     }
-    (_failures[ip] ??= []).add(DateTime.now());
+    final times = _failures[ip] ??= [];
+    times.add(DateTime.now());
+    // Only the recent ones decide a throttle.
+    if (times.length > _maxFailures * 2) times.removeAt(0);
   }
 
   void clearFailures(String ip) => _failures.remove(ip);

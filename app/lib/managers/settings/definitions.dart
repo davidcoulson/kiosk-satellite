@@ -12,6 +12,7 @@ import '../../l10n/generated/setting_ids.dart';
 import '../../l10n/generated/setting_option_ids.dart';
 
 import '../btproxy/node_name.dart';
+import '../remote/password_hash.dart';
 
 enum SettingType { string, boolean, number, select, password }
 
@@ -9373,7 +9374,21 @@ const remotePassword = SettingDef<String>(
   subpage: 'Remote Administration',
   secret: true,
   perDevice: true,
+  validator: _adminPasswordLength,
 );
+
+/// The longest admin password a login accepts (remote_manager.dart). One
+/// set longer could never be typed back in, locking the remote admin out.
+const maxAdminPasswordLength = 1024;
+
+/// A password as typed must be one a login accepts. A stored hash (a backup
+/// being restored) is not a typed password and passes.
+String? _adminPasswordLength(Object? v) =>
+    v is String &&
+        !PasswordHash.isHashed(v) &&
+        v.length > maxAdminPasswordLength
+    ? 'At most $maxAdminPasswordLength characters'
+    : null;
 
 const remoteFleetDiscovery = SettingDef<bool>(
   key: 'remote.fleet_discovery',

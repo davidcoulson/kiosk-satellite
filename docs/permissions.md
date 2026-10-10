@@ -40,6 +40,8 @@ The only update-related permission that requires manual user intervention is **I
 | Media library | Grants read access to local folders selected for the Local Media screensaver. |
 | Log access | Specifically for hardware with native person sensors (such as Meta Portals). It reads system logs for the Person Sensor and the screensaver's Person Detection feature. This can only be granted via `adb` and takes effect after an app restart. See [Meta Portal](portal.md). |
 
+A web page's request for the camera, the microphone or the location is granted only to Home Assistant, the start page or the secure context proxy, and only while its switch under **Web Content** is on. A frame embedded in a dashboard from another site, or a website opened from a dashboard link, is refused whatever the switches say.
+
 ## Granting Everything via ADB
 
 You can execute the standard runtime permissions as a single block:

@@ -144,6 +144,9 @@ class FleetDiscovery(
     }
 
     private companion object {
+        /** The most other kiosks remembered at once: far more than a home
+         *  holds, and a ceiling for a network flooding made-up ids. */
+        const val MAX_PEERS = 64
         const val TAG = "KsFleet"
         val io = BoundedWorker("fleet-mdns-tx", capacity = 32)
         const val SERVICE = "_kiosk-satellite._tcp.local"
@@ -548,7 +551,11 @@ class FleetDiscovery(
                         name = entries["name"] ?: inst.removeSuffix(suffix),
                         version = entries["version"] ?: "",
                         address = address,
-                        port = entries["port"]?.toIntOrNull() ?: record.first,
+                        // An announced port must be a port: anything else
+                        // falls back to the SRV record's, so a bad TXT entry
+                        // cannot break the URL every view builds from it.
+                        port = entries["port"]?.toIntOrNull()?.takeIf { it in 1..65535 }
+                            ?: record.first,
                         seenAt = now,
                         host = entries["host"]?.lowercase() ?: "",
                         tls = entries["tls"] == "1",
@@ -556,6 +563,12 @@ class FleetDiscovery(
                         dnsName = entries["dns"]?.lowercase() ?: "",
                     )
                     val before = peers[peerId]
+                    if (before == null && peers.size >= MAX_PEERS) {
+                        // A flood of made-up ids: the stalest peer makes
+                        // room, so the map and every snapshot stay bounded.
+                        peers.entries.minByOrNull { it.value.seenAt }
+                            ?.let { peers.remove(it.key) }
+                    }
                     peers[peerId] = peer
                     if (before == null || before.copy(seenAt = 0) != peer.copy(seenAt = 0)) {
                         changed = true

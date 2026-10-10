@@ -17,6 +17,8 @@ Only these two schemes are claimed. Chromium's `intent://` links are refused on 
 
 A `ks://` link runs the same action a [gesture](gestures.md) can, with the same rules. The app launcher refuses when it is off or has no apps picked, the intercom refuses when it is off, and the outcome shows in a toast when the link cannot do what it names. The Allowed Actions of a restricted kiosk menu are not consulted: a link is one way to keep a feature reachable while its menu row is hidden.
 
+`ks://` and `app://` links work only from the dashboard page itself, while it shows Home Assistant or the start page. A link inside an embedded frame, such as a webpage card or a third-party card's iframe, is ignored, so a frame on a dashboard can never open Android Settings, launch an app or leave kiosk mode. The dashboard frame also refuses `data:`, `file:` and other non-web addresses.
+
 | Link | What it does |
 | --- | --- |
 | `ks://apps` | Opens the [app launcher](kiosk.md) overlay. `ks://launcher` is the same thing. |

@@ -132,6 +132,8 @@ internal class ApiServer(
         const val RSSI_REFRESH_MS = 1_500L
         /** Quiet-address horizon after which a sighting is "new" again. */
         const val REDISCOVERY_MS = 30 * 60_000L
+        /** The most advertisers whose forwarding history is kept. */
+        const val FORWARD_STATE_MAX = 4096
     }
 
     private val running = AtomicBoolean(false)
@@ -560,6 +562,16 @@ internal class ApiServer(
                         batch.add(adv)
                     }
                 }
+                // Bounded: rotating or made-up addresses would otherwise
+                // add an entry each for the life of the server. An entry
+                // older than the rediscovery window decides nothing (the
+                // next packet is forwarded either way), so those go first;
+                // past the cap even live ones go, which only costs each a
+                // packet forwarded once more.
+                if (forwardState.size > FORWARD_STATE_MAX) {
+                    forwardState.entries.removeAll { now - it.value.lastForwardedAt > REDISCOVERY_MS }
+                    if (forwardState.size > FORWARD_STATE_MAX) forwardState.clear()
+                }
             }
             if (batch.isEmpty()) return
             val payload = ApiCodec.rawAdvertisementsResponse(batch)
@@ -654,6 +666,19 @@ internal class ApiServer(
             } else {
                 writerWake.release()
             }
+        }
+
+        /** Whether this session made the connection to [address]. */
+        private fun ownsGatt(address: Long): Boolean {
+            val owns = synchronized(gattLock) { gattOwner[address] === this }
+            if (!owns) log("session #$id: refused GATT work on ${formatGattAddress(address)}, not its connection")
+            return owns
+        }
+
+        /** This session's connection, or nobody's. */
+        private fun ownsOrFree(address: Long): Boolean {
+            val owner = synchronized(gattLock) { gattOwner[address] }
+            return owner == null || owner === this
         }
 
         fun close(reason: String) {
@@ -792,10 +817,16 @@ internal class ApiServer(
                             BtDeviceRequestType.CONNECT_V3_WITHOUT_CACHE,
                     )
                 }
-                BtDeviceRequestType.DISCONNECT -> gattBackend.disconnect(request.address)
-                BtDeviceRequestType.PAIR -> gattBackend.pair(request.address)
-                BtDeviceRequestType.UNPAIR -> gattBackend.unpair(request.address)
-                BtDeviceRequestType.CLEAR_CACHE -> gattBackend.clearCache(request.address)
+                // Another session's connection is not this one's to end or
+                // re-pair; a device nobody holds is anyone's.
+                BtDeviceRequestType.DISCONNECT ->
+                    if (ownsOrFree(request.address)) gattBackend.disconnect(request.address)
+                BtDeviceRequestType.PAIR ->
+                    if (ownsOrFree(request.address)) gattBackend.pair(request.address)
+                BtDeviceRequestType.UNPAIR ->
+                    if (ownsOrFree(request.address)) gattBackend.unpair(request.address)
+                BtDeviceRequestType.CLEAR_CACHE ->
+                    if (ownsOrFree(request.address)) gattBackend.clearCache(request.address)
             }
         }
 
@@ -896,28 +927,42 @@ internal class ApiServer(
                             })
                     }
                     Msg.BT_DEVICE_REQUEST -> handleDeviceRequest(frame.payload)
-                    Msg.GATT_GET_SERVICES_REQUEST ->
-                        gatt?.getServices(GattCodec.parseAddress(frame.payload))
+                    // GATT work only on a connection this session made: two
+                    // clients with the key (two Home Assistants, a test
+                    // tool) must not read, write or watch each other's
+                    // devices - a lock another one is talking to.
+                    Msg.GATT_GET_SERVICES_REQUEST -> {
+                        val address = GattCodec.parseAddress(frame.payload)
+                        if (ownsGatt(address)) gatt?.getServices(address)
+                    }
                     Msg.GATT_READ_REQUEST -> {
                         val request = GattCodec.parseHandleRequest(frame.payload)
-                        gatt?.read(request.address, request.handle)
+                        if (ownsGatt(request.address)) gatt?.read(request.address, request.handle)
                     }
                     Msg.GATT_WRITE_REQUEST -> {
                         val request = GattCodec.parseWriteRequest(frame.payload)
-                        gatt?.write(request.address, request.handle, request.data,
-                            request.response)
+                        if (ownsGatt(request.address)) {
+                            gatt?.write(request.address, request.handle, request.data,
+                                request.response)
+                        }
                     }
                     Msg.GATT_READ_DESCRIPTOR_REQUEST -> {
                         val request = GattCodec.parseHandleRequest(frame.payload)
-                        gatt?.readDescriptor(request.address, request.handle)
+                        if (ownsGatt(request.address)) {
+                            gatt?.readDescriptor(request.address, request.handle)
+                        }
                     }
                     Msg.GATT_WRITE_DESCRIPTOR_REQUEST -> {
                         val request = GattCodec.parseWriteDescriptor(frame.payload)
-                        gatt?.writeDescriptor(request.address, request.handle, request.data)
+                        if (ownsGatt(request.address)) {
+                            gatt?.writeDescriptor(request.address, request.handle, request.data)
+                        }
                     }
                     Msg.GATT_NOTIFY_REQUEST -> {
                         val request = GattCodec.parseNotifyRequest(frame.payload)
-                        gatt?.setNotify(request.address, request.handle, request.enable)
+                        if (ownsGatt(request.address)) {
+                            gatt?.setNotify(request.address, request.handle, request.enable)
+                        }
                     }
                     Msg.BT_SCANNER_SET_MODE_REQUEST -> {
                         val requested = ApiCodec.parseScannerSetMode(frame.payload)

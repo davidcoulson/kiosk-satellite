@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../../core/capped_read.dart';
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
 import '../../core/manager.dart';
@@ -398,11 +399,19 @@ class NotificationManager extends Manager {
     Uri url,
     Map<String, String> headers,
   ) async {
-    final response = await http.get(url, headers: headers);
-    if (response.statusCode != 200) {
-      throw StateError('HTTP ${response.statusCode}');
+    // Streamed against the cap: a bodyBytes read would hold the whole
+    // response in memory before [maxImageBytes] could be checked.
+    final client = http.Client();
+    try {
+      final request = http.Request('GET', url)..headers.addAll(headers);
+      final response = await client.send(request);
+      if (response.statusCode != 200) {
+        throw StateError('HTTP ${response.statusCode}');
+      }
+      return await readCapped(response.stream, maxImageBytes);
+    } finally {
+      client.close();
     }
-    return response.bodyBytes;
   }
 
   /// What the chime plays and how loud, from the call first and the

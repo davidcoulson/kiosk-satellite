@@ -62,6 +62,15 @@ final _path = RegExp(
 final _ipv4 = RegExp(r'\b(?:\d{1,3}\.){3}\d{1,3}(?::\d{1,5})?\b');
 final _email = RegExp(r'\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b');
 final _entity = RegExp('\\b(?:${haDomains.join('|')})\\.[a-z0-9_]+\\b');
+
+/// An entity id from a domain the list above does not know (a custom
+/// integration's, such as `variable.` or `var.`): lowercase `domain.object`,
+/// not part of a path or a package name, and not a file name. Stack frames
+/// are untouched: their class and method names start upper case or with an
+/// underscore, and their files sit inside a `package:` path.
+final _customEntity = RegExp(
+  r'(?<![\w/:.@-])[a-z][a-z0-9_]*\.(?!(?:dart|kt|java|js|mjs|json|so|xml|yaml|yml|md|txt|png|jpg|html|css|apk|log)\b)[a-z0-9_]{2,}\b(?![.:/(\w-])',
+);
 final _bearer = RegExp(
   r'\b(bearer|token|password|authorization)([=: ]+)(?:bearer\s+)?\S+',
   caseSensitive: false,
@@ -75,7 +84,8 @@ String scrubDiagnostics(String text) => text
     .replaceAll(_path, '<path>')
     .replaceAll(_ipv4, '<ip>')
     .replaceAll(_email, '<email>')
-    .replaceAll(_entity, '<entity>');
+    .replaceAll(_entity, '<entity>')
+    .replaceAll(_customEntity, '<entity>');
 
 /// [text] cut to [max] characters, keeping the start: the first lines of a
 /// trace name the exception and where it was thrown, which is the part that

@@ -615,6 +615,12 @@ class RemoteManager extends Manager {
       if (password is! String || password.length < 4) {
         return _json(400, {'error': 'password must be at least 4 characters'});
       }
+      if (password.length > defs.maxAdminPasswordLength) {
+        return _json(400, {
+          'error':
+              'password must be at most ${defs.maxAdminPasswordLength} characters',
+        });
+      }
       // The first page's other field. It rides the same request because
       // before a password exists there is no session to PATCH settings
       // with; the wizard sends it whenever it sends a password.
@@ -846,7 +852,7 @@ class RemoteManager extends Manager {
     final password = body?['password'];
     if (password is String &&
         password.isNotEmpty &&
-        password.length <= 1024 &&
+        password.length <= defs.maxAdminPasswordLength &&
         await PasswordHash.verifyAsync(
           _settings.get(defs.remotePassword),
           password,
@@ -1269,6 +1275,16 @@ class RemoteManager extends Manager {
         (raw) async {
           Object? id;
           var mutating = false;
+          final size = raw is String
+              ? raw.length
+              : raw is List<int>
+              ? raw.length
+              : 0;
+          if (size > _wsMessageLimit) {
+            log.warn(name, 'closed a WebSocket that sent $size bytes at once');
+            unawaited(channel.sink.close(1009, 'message too big'));
+            return;
+          }
           try {
             if (!_auth.validate(token)) {
               await channel.sink.close(1008, 'Session expired');
@@ -1738,6 +1754,14 @@ class RemoteManager extends Manager {
   /// config import carrying the page's localStorage.
   static const _bodyLimit = 16 * 1024 * 1024;
 
+  /// The longest a request body may pause, and take in all.
+  static const _bodyIdle = Duration(seconds: 15);
+  static const _bodyDeadline = Duration(seconds: 60);
+
+  /// The largest WebSocket message a logged-in client may send. Commands
+  /// are small JSON; anything bigger is closed on, not decoded.
+  static const _wsMessageLimit = 1024 * 1024;
+
   /// The JSON object in [request]'s body, or null when it is not one or runs
   /// past [limit]. Counted as it streams rather than after: readAsString()
   /// buffers whatever arrives, so an unauthenticated POST of a few gigabytes
@@ -1750,8 +1774,13 @@ class RemoteManager extends Manager {
       final declared = request.contentLength;
       if (declared != null && declared > limit) return null;
       final bytes = BytesBuilder(copy: false);
-      await for (final chunk in request.read()) {
+      // A client that trickles its body, or stops sending, must not hold the
+      // request open: a gap of [_bodyIdle] or a body that takes longer than
+      // [_bodyDeadline] in all ends it.
+      final started = Stopwatch()..start();
+      await for (final chunk in request.read().timeout(_bodyIdle)) {
         if (bytes.length + chunk.length > limit) return null;
+        if (started.elapsed > _bodyDeadline) return null;
         bytes.add(chunk);
       }
       final decoded = jsonDecode(utf8.decode(bytes.takeBytes()));

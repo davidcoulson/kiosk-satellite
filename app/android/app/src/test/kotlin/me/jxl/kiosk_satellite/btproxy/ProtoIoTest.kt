@@ -78,4 +78,21 @@ class ProtoIoTest {
         w.message(1, ByteArray(0))
         assertContentEquals(byteArrayOf(0x0A, 0x00), w.toByteArray())
     }
+
+    @Test
+    fun aFieldReadAsTheWrongTypeIsRefusedNotAStaleValue() {
+        // Field 1 a varint, field 2 sent as bytes where a varint is expected.
+        val data = ProtoWriter().run {
+            varint(1, 0x112233445566L); bytes(2, byteArrayOf(1, 2, 3)); toByteArray()
+        }
+        val r = ProtoReader(data)
+        assertTrue(r.next())
+        assertEquals(0x112233445566L, r.asLong())
+        assertTrue(r.next())
+        assertEquals(2, r.field)
+        // Before, this handed back field 1's varint.
+        assertFailsWith<ProtoException> { r.asLong() }
+        assertContentEquals(byteArrayOf(1, 2, 3), r.asBytes())
+    }
 }
+

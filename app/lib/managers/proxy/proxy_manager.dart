@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
 import '../../core/manager.dart';
@@ -109,7 +111,8 @@ class ProxyManager extends Manager {
       // connection card's row never shows an "on" it cannot honor.
       if (e.key == defs.haUrl.key && _settings.get(defs.secureProxy)) {
         final u = Uri.tryParse((e.value as String? ?? '').trim());
-        final isHttp = u != null &&
+        final isHttp =
+            u != null &&
             u.scheme == 'http' &&
             u.host != 'localhost' &&
             u.host != '127.0.0.1';
@@ -205,9 +208,12 @@ class ProxyManager extends Manager {
     // else; Dart's defaults (content-type, x-frame-options, nosniff) would be
     // merged into every one of them, including the 304s that must stay bare.
     _server!.defaultResponseHeaders.clear();
-    _server!.listen(_handle, onError: (Object e) {
-      log.warn(name, 'server error: $e');
-    });
+    _server!.listen(
+      _handle,
+      onError: (Object e) {
+        log.warn(name, 'server error: $e');
+      },
+    );
     _lastTargetOrigin = targetOrigin;
     _lastLoopbackOrigin = loopbackOrigin;
     log.info(
@@ -286,8 +292,9 @@ class ProxyManager extends Manager {
     // at -1 the response would go out chunked, and the terminating `0\r\n\r\n`
     // the page never reads stays in the socket: the next response on that
     // keep-alive connection is then parsed starting from that garbage.
-    res.contentLength =
-        _bodyless(upstream.statusCode) ? 0 : upstream.contentLength;
+    res.contentLength = _bodyless(upstream.statusCode)
+        ? 0
+        : upstream.contentLength;
     upstream.headers.forEach((k, values) {
       final lk = k.toLowerCase();
       if (_hopByHop.contains(lk) || lk == 'content-length') return;
@@ -302,6 +309,7 @@ class ProxyManager extends Manager {
       var first = true;
       for (var v in values) {
         if (lk == 'location') v = mapUrl(v);
+        if (lk == 'set-cookie') v = hostOnlyCookie(v);
         if (first) {
           res.headers.set(k, v);
           first = false;
@@ -314,6 +322,16 @@ class ProxyManager extends Manager {
     await res.addStream(upstream);
     await res.close();
   }
+
+  /// [cookie] without its Domain attribute. The page runs on loopback, so a
+  /// cookie scoped to Home Assistant's own host name would be refused by the
+  /// browser and a sign-in that relies on one would not stick. Without it the
+  /// cookie belongs to the host that served it: the proxy.
+  @visibleForTesting
+  static String hostOnlyCookie(String cookie) => cookie
+      .split(';')
+      .where((part) => !part.trim().toLowerCase().startsWith('domain='))
+      .join(';');
 
   /// Statuses whose response never has a body, whatever the upstream headers
   /// say: 1xx, 204 No Content and 304 Not Modified (Home Assistant answers

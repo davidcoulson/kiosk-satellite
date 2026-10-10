@@ -111,8 +111,7 @@ class UpdateManager extends Manager {
   static const updateRepository = 'davidcoulson/kiosk-satellite';
 
   /// Where the notice sends someone who wants to read about a release.
-  static const releasesPage =
-      'https://github.com/$updateRepository/releases';
+  static const releasesPage = 'https://github.com/$updateRepository/releases';
 
   /// The releases list rather than `/releases/latest`: one request either
   /// way, but the list also carries the bodies of releases the device
@@ -828,6 +827,9 @@ class UpdateManager extends Manager {
 
   /// The installer copies the APK into its session before committing, so
   /// an upload needs room for two copies plus some slack for the install.
+  /// The largest APK an upload may carry. A release is about 100 MB.
+  static const maxUploadBytes = 400 * 1024 * 1024;
+
   static const _installSlack = 64 * 1024 * 1024;
 
   /// Streams an uploaded APK into the updates folder and inspects it
@@ -851,6 +853,12 @@ class UpdateManager extends Manager {
     await for (final stale in dir.list()) {
       await stale.delete();
     }
+    if (length != null && length > maxUploadBytes) {
+      throw StateError(
+        'The file is ${_mb(length)} MB; an APK is at most '
+        '${_mb(maxUploadBytes)} MB.',
+      );
+    }
     if (length != null) {
       final free = await _freeSpace();
       if (free != null && free < length * 2 + _installSlack) {
@@ -869,6 +877,11 @@ class UpdateManager extends Manager {
     }
 
     var got = 0;
+    // What may arrive: the declared length, or the cap when none was
+    // declared (a chunked upload). More than that is cut off rather than
+    // written until the storage is full.
+    final allowed = length ?? maxUploadBytes;
+    String? overflow;
     final sink = part.openWrite();
     try {
       // addStream has backpressure built in: the socket waits for the
@@ -876,10 +889,23 @@ class UpdateManager extends Manager {
       await sink.addStream(
         body.map((chunk) {
           got += chunk.length;
+          if (got > allowed) {
+            overflow = length == null
+                ? 'The upload passed ${_mb(maxUploadBytes)} MB, more than an '
+                      'APK can be.'
+                : 'More arrived than the ${_mb(length)} MB announced.';
+            throw StateError(overflow!);
+          }
           return chunk;
         }),
       );
     } catch (e) {
+      if (overflow != null) {
+        try {
+          await sink.close();
+        } catch (_) {}
+        refuse(overflow!);
+      }
       // The browser went away mid-transfer (tab closed, Wi-Fi dropped):
       // nothing to keep, and the half file must not wait for the sweep.
       // The sink is already in error and its close may say so again.
