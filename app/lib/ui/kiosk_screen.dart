@@ -1864,6 +1864,17 @@ class _KioskScreenState extends State<KioskScreen>
         c.browser.showLinkOverlay(url.toString());
         return NavigationActionPolicy.CANCEL;
       }
+      // ks:// and app:// only from the dashboard's own page, and the
+      // dashboard frame shows web pages only (dashboardNavigationAllowed).
+      if (!dashboardNavigationAllowed(
+        url,
+        mainFrame: action.isForMainFrame,
+        pageTrusted: await c.jsApi.isConfiguredPage(null),
+        trustedOrigin: (u) => c.jsApi.isTrustedOrigin?.call(u) ?? true,
+      )) {
+        c.log.warn('kiosk', 'refused $url in the dashboard');
+        return NavigationActionPolicy.CANCEL;
+      }
       if (url.scheme == 'ks') {
         // Cancel whatever it names: a link that is ours by scheme must never
         // reach Chromium, which would put its error page over the dashboard.
@@ -2130,11 +2141,25 @@ class _KioskScreenState extends State<KioskScreen>
 /// overlay: a resource is granted only if its Web Content toggle is on and
 /// the OS runtime grant is held (requested lazily here, never all at once at
 /// launch).
+///
+/// Only for a configured page (Home Assistant, the start page, the secure
+/// context proxy): Android asks nobody before the WebView's own recorder
+/// starts, so a frame embedded in a dashboard or a site opened from a link
+/// must not get the room's microphone, camera or location just because the
+/// switches are on.
 Future<PermissionResponse> _webPermissionResponse(
   AppContainer c,
   PermissionRequest request,
 ) async {
   final granted = <PermissionResourceType>[];
+  final trusted = c.jsApi.isTrustedOrigin;
+  if (trusted != null && !trusted(request.origin)) {
+    c.log.warn('kiosk', 'refused ${request.resources} to ${request.origin}');
+    return PermissionResponse(
+      resources: const [],
+      action: PermissionResponseAction.DENY,
+    );
+  }
   for (final resource in request.resources) {
     if (await _webResourceAllowed(c, resource)) granted.add(resource);
   }

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
 
+import '../core/capped_read.dart';
 import '../app_container.dart';
 import '../l10n/messages.dart';
 import '../managers/dlna/dlna_manager.dart';
@@ -277,7 +278,10 @@ class _DlnaImageState extends State<_DlnaImage> {
           },
         );
       } else {
-        final bytes = await res.stream.toBytes();
+        // Streamed against a cap: any device on the network can hand this
+        // kiosk an image URL, and an endless response would otherwise be
+        // held whole in memory.
+        final bytes = await readCapped(res.stream, _maxImageBytes);
         client.close();
         _client = null;
         _setFrame(bytes);
@@ -707,3 +711,6 @@ class _DlnaPlayerState extends State<_DlnaPlayer> {
     );
   }
 }
+
+/// The largest still image a DLNA sender's URL may return.
+const _maxImageBytes = 32 * 1024 * 1024;

@@ -303,8 +303,14 @@ class GlanceManager extends Manager {
       _settings.get(defs.sendspinFullscreen) &&
       _settings.get(defs.screensaverGlanceNowPlaying);
 
+  /// Bumped by every open and close: a subscription that finishes opening
+  /// after a newer open or a close is no longer wanted, and is closed rather
+  /// than kept untracked beside the current one.
+  int _openGeneration = 0;
+
   Future<void> _open() async {
     _close();
+    final generation = _openGeneration;
     if (!_modeWantsRow && !_nowPlayingWantsRow) return;
     final ids = [for (final entity in entities.value) entity.entityId];
     if (ids.isEmpty) return;
@@ -324,8 +330,9 @@ class GlanceManager extends Manager {
       });
       return;
     }
-    // The screensaver may have gone away while the socket was opening.
-    if (!_screensaverActive) {
+    // The screensaver may have gone away while the socket was opening, or
+    // the settings changed and a newer open (or a close) came after this one.
+    if (!_screensaverActive || generation != _openGeneration) {
       await live.close();
       return;
     }
@@ -347,6 +354,7 @@ class GlanceManager extends Manager {
   }
 
   void _close() {
+    _openGeneration++;
     _retry?.cancel();
     _retry = null;
     final live = _live;

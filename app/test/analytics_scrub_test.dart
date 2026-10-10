@@ -45,4 +45,19 @@ E/flutter: Exception: failed to load https://home.example.com:8123/api/states
     expect(out, endsWith('<clipped>'));
     expect(clipDiagnostics('short'), 'short');
   });
+
+  test('a custom integration\'s entity id is scrubbed; code is not', () {
+    final out = scrubDiagnostics(
+      'StateError: variable.front_door_code missing\n'
+      '#0      _GlanceState.build (package:kiosk_satellite/ui/glance.dart:12:3)\n'
+      '#1      main.<anonymous closure> (file.dart:4)\n'
+      'see fleet_sync_manager.dart and log.info',
+    );
+    expect(out, contains('<entity> missing'));
+    expect(out, isNot(contains('front_door_code')));
+    expect(out, contains('_GlanceState.build'));
+    expect(out, contains('package:kiosk_satellite/ui/glance.dart:12:3'));
+    expect(out, contains('fleet_sync_manager.dart'));
+  });
 }
+

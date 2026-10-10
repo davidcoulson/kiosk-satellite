@@ -16,6 +16,7 @@ import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
 
 import 'alarms_overlay.dart' show alarmTimeText;
+import '../managers/browser/navigation.dart';
 import '../managers/alarms/alarm_manager.dart';
 import 'alarm_ring_overlay.dart';
 import '../app_container.dart';
@@ -3084,7 +3085,13 @@ setInterval(function () {
         if (_renderPaused) unawaited(controller.pause());
         controller.addJavaScriptHandler(
           handlerName: 'dismiss',
-          callback: (_) {
+          // The main frame, or a frame of the configured site itself. A
+          // third-party frame inside it (an ad) cannot report taps: the
+          // kiosk screen's own pointer listener still sees real ones.
+          callback: (JavaScriptHandlerFunctionData data) {
+            if (!data.isMainFrame && !isSameWebOrigin(website, data.origin)) {
+              return null;
+            }
             // 'touch_page', not 'touch': the kiosk screen's raw pointer
             // Listener reports the same taps, and under the double-tap
             // option (discussion #248) the manager must count each tap

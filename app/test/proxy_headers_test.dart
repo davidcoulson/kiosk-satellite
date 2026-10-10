@@ -38,12 +38,17 @@ void main() {
           text = text.substring(end);
           const common =
               'x-frame-options: SAMEORIGIN\r\nx-content-type-options: nosniff';
-          final revalidated = head.startsWith('GET /asset.js ') &&
+          final revalidated =
+              head.startsWith('GET /asset.js ') &&
               head.toLowerCase().contains('if-none-match: "v1"');
-          sock.add(latin1.encode(revalidated
-              ? 'HTTP/1.1 304 Not Modified\r\netag: "v1"\r\n$common\r\n\r\n'
-              : 'HTTP/1.1 200 OK\r\ncontent-type: text/html\r\n'
-                  'content-length: 5\r\n$common\r\n\r\nhello'));
+          sock.add(
+            latin1.encode(
+              revalidated
+                  ? 'HTTP/1.1 304 Not Modified\r\netag: "v1"\r\n$common\r\n\r\n'
+                  : 'HTTP/1.1 200 OK\r\ncontent-type: text/html\r\n'
+                        'content-length: 5\r\n$common\r\n\r\nhello',
+            ),
+          );
         }
         pending
           ..clear()
@@ -105,10 +110,10 @@ void main() {
     // to the shared list: one extra copy per proxied response, forever,
     // until the header block passed the browser's 256 KB cap.
     final wire = await exchange([for (var i = 0; i < 5; i++) get('/')]);
-    final counts = RegExp(r'x-frame-options: ([^\r]*)', caseSensitive: false)
-        .allMatches(wire)
-        .map((m) => m.group(1)!.split(',').length)
-        .toList();
+    final counts = RegExp(
+      r'x-frame-options: ([^\r]*)',
+      caseSensitive: false,
+    ).allMatches(wire).map((m) => m.group(1)!.split(',').length).toList();
     expect(counts, hasLength(5));
     expect(counts, everyElement(1));
   });
@@ -134,10 +139,22 @@ void main() {
     expect(wire, endsWith('hello'));
   });
 
-  test('the page sees Home Assistant headers, not the proxy defaults',
-      () async {
-    final wire = await exchange([get('/')]);
-    expect(wire, contains('x-frame-options: SAMEORIGIN'));
-    expect(wire.toLowerCase(), isNot(contains('x-xss-protection')));
+  test(
+    'the page sees Home Assistant headers, not the proxy defaults',
+    () async {
+      final wire = await exchange([get('/')]);
+      expect(wire, contains('x-frame-options: SAMEORIGIN'));
+      expect(wire.toLowerCase(), isNot(contains('x-xss-protection')));
+    },
+  );
+
+  test('a proxied cookie loses its Domain and keeps everything else', () {
+    expect(
+      ProxyManager.hostOnlyCookie(
+        'sid=abc; Domain=ha.example; Path=/; HttpOnly; SameSite=Lax',
+      ),
+      'sid=abc; Path=/; HttpOnly; SameSite=Lax',
+    );
+    expect(ProxyManager.hostOnlyCookie('a=b; Path=/'), 'a=b; Path=/');
   });
 }

@@ -209,6 +209,23 @@ class JsApiManager extends Manager {
     'pipelineStartSending',
     'setWakeWordConfig',
     'setWakeWordActive',
+    // The other side of the same microphone: these stop, mute or release
+    // it. A page that is not the dashboard has no business silencing the
+    // room's voice satellite either, and only Voice Satellite on Home
+    // Assistant calls them.
+    'releaseWakeWord',
+    'setStopWordActive',
+    'stopAudioStream',
+    'pipelineStop',
+    'pipelineCloseMic',
+    'pipelineSetMuted',
+    'pipelineStopBuffering',
+    'pipelineClearBuffer',
+    'pipelineStopSending',
+    // Internal handlers of the dashboard's own scripts: the browser
+    // microphone lock and the voice settings refresh.
+    'browserMicrophone',
+    'remoteSettingsChanged',
   };
 
   void _setPageInteraction(bool active, String reason) {

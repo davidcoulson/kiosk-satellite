@@ -229,6 +229,46 @@ void main() {
       },
     );
 
+    test(
+      'nor silence it: the stop and mute methods are the dashboard\'s too',
+      () async {
+        await withMicrophone();
+        for (final name in [
+          'releaseWakeWord',
+          'pipelineSetMuted',
+          'stopAudioStream',
+        ]) {
+          commands.register(
+            Command(
+              name: name,
+              description: 'test stub',
+              handler: (p) async {
+                ran.add(name);
+                return const CommandResult.ok(true);
+              },
+            ),
+          );
+        }
+        for (final name in [
+          'releaseWakeWord',
+          'pipelineSetMuted',
+          'stopAudioStream',
+          'browserMicrophone',
+        ]) {
+          await api.handleCall([
+            name,
+            <String, Object?>{'id': 'x', 'active': true},
+          ], origin: Uri.parse('https://evil.example'));
+        }
+        expect(ran, isEmpty);
+        await api.handleCall([
+          'releaseWakeWord',
+          <String, Object?>{},
+        ], origin: Uri.parse('http://ha.local:8123'));
+        expect(ran, ['releaseWakeWord']);
+      },
+    );
+
     test('a call with no origin and no page to ask is refused', () async {
       // A missing origin must not be a way around the gate: with no
       // WebView attached there is no page to fall back on either.

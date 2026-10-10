@@ -18,6 +18,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// command with this device first and the rest by name, and publishes a
 /// change as an event the remote admin page hears.
 void main() {
+  test('a peer whose announced port is not a port is dropped', () {
+    Map<Object?, Object?> peer(Object port) => {
+      'id': 'x',
+      'address': '10.0.0.5',
+      'port': port,
+    };
+    expect(FleetDevice.fromMap(peer(2324)), isNotNull);
+    expect(FleetDevice.fromMap(peer(0)), isNull);
+    expect(FleetDevice.fromMap(peer(65536)), isNull);
+    expect(FleetDevice.fromMap(peer(-1)), isNull);
+  });
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final calls = <MethodCall>[];

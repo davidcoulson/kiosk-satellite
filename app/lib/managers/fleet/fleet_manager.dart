@@ -58,7 +58,8 @@ class FleetDevice {
     if (raw == null) return null;
     final address = '${raw['address'] ?? ''}';
     final port = raw['port'];
-    if (port is! num) return null;
+    // Not a port: dropped, rather than failing every URL built from it.
+    if (port is! num || port < 1 || port > 65535) return null;
     return FleetDevice(
       id: '${raw['id'] ?? ''}',
       name: '${raw['name'] ?? ''}',

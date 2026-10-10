@@ -95,3 +95,32 @@ String? _decode(String segment) {
     return null;
   }
 }
+
+/// Whether the dashboard WebView may follow a navigation to [url].
+///
+/// `ks://` and `app://` reach Android and the kiosk itself (Settings, any
+/// installed app, kiosk mode), so only the dashboard may use them: the main
+/// frame ([mainFrame]) while it shows a configured page ([pageTrusted]). A
+/// frame embedded in a dashboard (an ad, a third-party card) gets nothing,
+/// and neither does a page the dashboard was navigated away to.
+///
+/// The main frame shows web pages only: a `data:`, `file:` or other
+/// document there would be handed the JavaScript bridge. A `blob:` carries
+/// the origin that made it, so one made by a configured page
+/// ([trustedOrigin]) is allowed. Sub-frames load as they always have.
+bool dashboardNavigationAllowed(
+  Uri url, {
+  required bool mainFrame,
+  required bool pageTrusted,
+  required bool Function(Uri origin) trustedOrigin,
+}) {
+  final scheme = url.scheme.toLowerCase();
+  if (scheme == 'ks' || scheme == 'app') return mainFrame && pageTrusted;
+  if (!mainFrame) return true;
+  if (scheme == 'http' || scheme == 'https' || scheme == 'about') return true;
+  if (scheme == 'blob') {
+    final inner = Uri.tryParse(url.path);
+    return inner != null && inner.hasScheme && trustedOrigin(inner);
+  }
+  return false;
+}

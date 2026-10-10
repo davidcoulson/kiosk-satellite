@@ -102,4 +102,43 @@ void main() {
       expect(kioskLinkAction('ks://theater/on/now'), isNull);
     });
   });
+
+  group('dashboardNavigationAllowed', () {
+    final ha = Uri.parse('http://ha.local:8123/lovelace/0');
+    bool trusted(Uri u) => u.host == 'ha.local' && u.port == 8123;
+    bool go(String url, {bool main = true, bool page = true}) =>
+        dashboardNavigationAllowed(
+          Uri.parse(url),
+          mainFrame: main,
+          pageTrusted: page,
+          trustedOrigin: trusted,
+        );
+
+    test('kiosk and app links only from the dashboard page itself', () {
+      expect(go('ks://apps'), isTrue);
+      expect(go('app://com.example.clock'), isTrue);
+      // An iframe in the dashboard: an ad, a third-party card.
+      expect(go('ks://android-settings', main: false), isFalse);
+      expect(go('app://com.android.settings', main: false), isFalse);
+      // The main frame, but showing a page that is not configured.
+      expect(go('ks://ha-kiosk', page: false), isFalse);
+    });
+
+    test('the main frame shows web pages only', () {
+      expect(go(ha.toString()), isTrue);
+      expect(go('https://example.com/'), isTrue);
+      expect(go('about:blank'), isTrue);
+      expect(go('data:text/html,<script>x</script>'), isFalse);
+      expect(go('file:///sdcard/page.html'), isFalse);
+      expect(go('javascript:alert(1)'), isFalse);
+      expect(go('intent://x#Intent;end'), isFalse);
+      expect(go('blob:http://ha.local:8123/1234'), isTrue);
+      expect(go('blob:https://evil.example/1234'), isFalse);
+    });
+
+    test('sub-frames load as they always have', () {
+      expect(go('data:text/html,hi', main: false), isTrue);
+      expect(go('https://example.com/', main: false, page: false), isTrue);
+    });
+  });
 }
