@@ -1270,12 +1270,15 @@ class EspEntitySurface {
       // configured: with none, every one of them would sit at zero
       // forever and say nothing.
       if (_advertisementFilterConfigured) ...[
+        // These four start disabled in a new Home Assistant device: they are
+        // for tuning a filter, and every reading is a recorder row.
         diagnostic(
           'btproxy_adv_forwarded',
           'BLE adverts forwarded',
           icon: 'mdi:bluetooth-transfer',
           unit: 'adv/min',
           stateClass: 1,
+          disabled: true,
         ),
         diagnostic(
           'btproxy_adv_dropped',
@@ -1283,6 +1286,7 @@ class EspEntitySurface {
           icon: 'mdi:bluetooth-off',
           unit: 'adv/min',
           stateClass: 1,
+          disabled: true,
         ),
         // A subset of "dropped" that answers a different question than the
         // RSSI drops do: how much of what this panel hears is other
@@ -1294,6 +1298,7 @@ class EspEntitySurface {
           icon: 'mdi:cellphone-remove',
           unit: 'adv/min',
           stateClass: 1,
+          disabled: true,
         ),
         // Adverts forwarded ONLY because a service UUID matched. It sits at
         // zero while nothing is pairing, so any movement is direct evidence
@@ -1314,6 +1319,7 @@ class EspEntitySurface {
           icon: 'mdi:filter-variant',
           unit: '%',
           stateClass: 1,
+          disabled: true,
         ),
       ],
       if (_settings.get(defs.btproxyEnabled) &&
@@ -2177,6 +2183,7 @@ class EspEntitySurface {
     // must go out again even when they did not move, or the uptime
     // sensors sit on "unknown" until the app itself restarts.
     _lastAnchor.clear();
+    _filterPublished.clear();
     _subs.add(
       bus.on<ScreensaverStateChanged>().listen((e) {
         _screensaverActive = e.active;
@@ -3447,6 +3454,10 @@ class EspEntitySurface {
         _settings.get(defs.btproxyFilterIrks),
       ).isNotEmpty;
 
+  /// Where the filter rates read the time: the wall clock, replaced in
+  /// tests by a fake one.
+  DateTime Function() clock = DateTime.now;
+
   /// The filter's totals as of the last poll, and when that was.
   Map<String, num> _lastFilterCounters = const {};
   DateTime? _lastFilterAt;
@@ -3475,8 +3486,13 @@ class EspEntitySurface {
       ])
         if (filter[key] is num) key: filter[key] as num,
     };
-    final at = DateTime.now();
+    final at = clock();
     final since = _lastFilterAt;
+    // A rate over a sliver of time is noise: two polls milliseconds apart
+    // (the first one at startup and the first scheduled one) would turn a
+    // single advert into thousands a minute. Such a reading is skipped and
+    // the earlier one kept as the baseline.
+    if (since != null && at.difference(since) < _minFilterWindow) return;
     _lastFilterAt = at;
     final previous = _lastFilterCounters;
     _lastFilterCounters = now;
@@ -3491,16 +3507,64 @@ class EspEntitySurface {
     }
 
     double rate(String key) => delta(key) / minutes;
-    await _send('btproxy_adv_forwarded', rate('forwarded').round());
-    await _send('btproxy_adv_dropped', rate('dropped').round());
-    await _send('btproxy_adv_dropped_rpa', rate('droppedRpa').round());
+    await _sendFilterValue(
+      'btproxy_adv_forwarded',
+      rate('forwarded').round(),
+      at,
+    );
+    await _sendFilterValue('btproxy_adv_dropped', rate('dropped').round(), at);
+    await _sendFilterValue(
+      'btproxy_adv_dropped_rpa',
+      rate('droppedRpa').round(),
+      at,
+    );
     await _send('btproxy_adv_service_uuid', rate('allowedServiceUuid').round());
     final heard = delta('forwarded') + delta('dropped');
     // Unknown rather than 0% when the panel heard nothing at all, so an
     // idle radio is not misreported as a filter that dropped nothing.
-    await _send(
+    await _sendFilterValue(
       'btproxy_drop_rate',
-      heard == 0 ? null : (100 * delta('dropped') / heard),
+      heard == 0
+          ? null
+          : (1000 * delta('dropped') / heard).round() / 10, // one decimal
+      at,
     );
+  }
+
+  /// The shortest time a filter rate is measured over.
+  static const _minFilterWindow = Duration(seconds: 30);
+
+  /// What each filter rate last went out as, and when.
+  final Map<String, (num?, DateTime)> _filterPublished = {};
+
+  /// A filter rate goes to Home Assistant only when it has moved enough to
+  /// mean something, or [filterHeartbeat] has passed since it last went:
+  /// the counts swing by a few adverts a minute all the time, and each
+  /// reading Home Assistant gets is a recorder row.
+  static const filterHeartbeat = Duration(minutes: 5);
+
+  /// How far a rate must move to be sent before the heartbeat: 10 adv/min
+  /// for the counts, 5 points for the drop rate.
+  static double _filterStep(String objectId) =>
+      objectId == 'btproxy_drop_rate' ? 5 : 10;
+
+  Future<void> _sendFilterValue(
+    String objectId,
+    num? value,
+    DateTime at,
+  ) async {
+    final last = _filterPublished[objectId];
+    if (last != null) {
+      final (previous, sentAt) = last;
+      final due = at.difference(sentAt) >= filterHeartbeat;
+      final moved =
+          (previous == null) != (value == null) ||
+          (previous != null &&
+              value != null &&
+              (value - previous).abs() >= _filterStep(objectId));
+      if (!due && !moved) return;
+    }
+    _filterPublished[objectId] = (value, at);
+    await _send(objectId, value);
   }
 }
