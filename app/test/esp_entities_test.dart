@@ -21,6 +21,9 @@ void main() {
   late SettingsManager settings;
   late EspEntitySurface surface;
   late Logger log;
+
+  /// What the stubbed esphomeStatus answers, read at each call.
+  late Map<String, Object?> Function() esphomeStatus;
   late List<(String, Object?)> pushed;
   late List<(String, List<int>)> images;
   late List<(String, Map<String, Object?>)> executed;
@@ -223,10 +226,20 @@ void main() {
       ),
     );
     stub('btProxyNearby', {'count': 13});
-    stub('esphomeStatus', {
+    esphomeStatus = () => {
       'connections': ['AA:BB:CC:DD:EE:FF'],
       'connectionSlots': 3,
-    });
+    };
+    commands.register(
+      Command(
+        name: 'esphomeStatus',
+        description: 'stub',
+        handler: (p) async {
+          executed.add(('esphomeStatus', Map<String, Object?>.from(p)));
+          return CommandResult.ok(esphomeStatus());
+        },
+      ),
+    );
     stub('isScreenOn', true);
     stub('getBrightness', 0.4);
     stub('getVolume', 55);
@@ -2874,6 +2887,100 @@ void main() {
         expect(sent, isNot(contains(id)), reason: id);
       }
       expect(sent, contains('cpu'));
+    });
+  });
+
+  group('the advertisement filter rates', () {
+    // Totals that grow like the Home Theater Panel's: 370 forwarded and
+    // 674 dropped a minute, 386 of them rotating addresses.
+    var forwarded = 0, dropped = 0, droppedRpa = 0;
+    setUp(() => forwarded = dropped = droppedRpa = 0);
+    void counters() => esphomeStatus = () => {
+      'filter': {
+        'forwarded': forwarded,
+        'dropped': dropped,
+        'droppedRpa': droppedRpa,
+        'allowedServiceUuid': 0,
+      },
+    };
+
+    List<Object?> sent(String id) => [
+      for (final (objectId, value) in pushed)
+        if (objectId == id) value,
+    ];
+
+    test('start disabled, as diagnostics', () async {
+      await settings.set(defs.btproxyEnabled, true);
+      await settings.set(defs.btproxyFilter, '{"rssiThreshold": -75}');
+      final all = {
+        for (final e in await surface.build()) '${e['objectId']}': e,
+      };
+      for (final id in [
+        'btproxy_adv_forwarded',
+        'btproxy_adv_dropped',
+        'btproxy_adv_dropped_rpa',
+        'btproxy_drop_rate',
+      ]) {
+        expect(all[id]?['disabled'], true, reason: id);
+        expect(all[id]?['category'], 2, reason: id);
+      }
+    });
+
+    test('go out rounded, on a real change or every five minutes', () async {
+      await settings.set(defs.btproxyEnabled, true);
+      await settings.set(defs.btproxyFilter, '{"rssiThreshold": -75}');
+      counters();
+      fakeAsync((async) {
+        final start = DateTime(2026, 10, 12);
+        surface.clock = () => start.add(async.elapsed);
+        surface.build();
+        async.flushMicrotasks();
+        surface.attach(
+          (objectId, value) async => pushed.add((objectId, value)),
+          (objectId, jpeg) async => images.add((objectId, jpeg)),
+        );
+        async.flushMicrotasks();
+        // A minute of traffic, arriving mid-interval as real adverts do,
+        // so the poll that closes the minute sees all of it.
+        void minute(int f, int d, int r) {
+          async.elapse(const Duration(seconds: 30));
+          forwarded += f;
+          dropped += d;
+          droppedRpa += r;
+          async.elapse(const Duration(seconds: 30));
+        }
+
+        // A quiet first minute: zero, and an unknown drop rate (nothing
+        // heard), go out as the first readings.
+        async.elapse(const Duration(seconds: 60));
+        expect(sent('btproxy_adv_forwarded'), [0]);
+        expect(sent('btproxy_drop_rate'), [null]);
+
+        minute(370, 674, 386);
+        expect(sent('btproxy_adv_forwarded'), [0, 370]);
+        expect(sent('btproxy_adv_dropped'), [0, 674]);
+        expect(sent('btproxy_adv_dropped_rpa'), [0, 386]);
+        expect(sent('btproxy_drop_rate'), [null, 64.6]);
+
+        // A few adverts either way: nothing new for the recorder.
+        minute(375, 670, 390);
+        minute(368, 679, 383);
+        expect(sent('btproxy_adv_forwarded'), [0, 370]);
+        expect(sent('btproxy_drop_rate'), [null, 64.6]);
+
+        // A real move goes out at once, and only for what moved.
+        minute(200, 680, 386);
+        expect(sent('btproxy_adv_forwarded'), [0, 370, 200]);
+        expect(sent('btproxy_drop_rate'), [null, 64.6, 77.3]);
+        expect(sent('btproxy_adv_dropped'), [0, 674]);
+
+        // Steady after that: the heartbeat repeats it five minutes on.
+        for (var i = 0; i < 4; i++) {
+          minute(370, 674, 386);
+        }
+        expect(sent('btproxy_adv_dropped'), [0, 674, 674]);
+        surface.detach();
+      });
     });
   });
 
