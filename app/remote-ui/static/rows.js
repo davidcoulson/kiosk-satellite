@@ -21,14 +21,21 @@ import {
 } from './entity_picker.js';
 import {
   entityLightReading,
+  externalMotionReading,
+  probeExternalMotion,
   updateAdaptiveBrightnessRows,
   updateFaceRows,
+  updateMotionCameraRows,
   syncScreenOffAdminNotice,
 } from './notices.js';
 import {
+  WAKE_SOURCES,
+  decodeWakeSources,
   openImmichNamesPicker,
   openLauncherAppsPicker,
   openMediaBrowser,
+  openWakeSourcesPicker,
+  wakeSourcesText,
 } from './pickers.js';
 import { loadSettings, refreshRealMacNote, updatePersonSensorRows, updateRtspRows } from './settings.js';
 import { dashboardField } from './dashboard_picker.js';
@@ -44,6 +51,12 @@ import {
 // The Immich name-picker rows (albums, people, tags): which command lists
 // the choices, and the words for an empty pick and an empty list, the same
 // as the device's.
+// Mirrors cameraAutoDismissStops in definitions.dart.
+const CAMERA_DISMISS_STOPS = [
+  ...Array.from({length: 11}, (_, i) => i * 30),
+  ...Array.from({length: 11}, (_, i) => (i + 2) * 300),
+];
+
 const IMMICH_NAMED_ROWS = {
   'screensaver.immich_album': {
     command: 'immichAlbums', empty: 'All media',
@@ -299,6 +312,9 @@ export function settingRow(s) {
       || s.key === 'screensaver.dismiss_on_face') {
       updateFaceRows();
     }
+    // A Home Assistant entity in the camera's place frees Dismiss on
+    // motion from the camera (issue #973).
+    if (s.key === 'motion.use_entity') updateMotionCameraRows();
     // The person sensor pages' status rows answer for their own switches.
     if (s.key === 'screensaver.dismiss_on_person' || s.key === 'person.sensor') updatePersonSensorRows();
     if (s.key === 'camera.rtsp.enabled' || s.key === 'camera.rtsp.protocol') updateRtspRows();
@@ -419,6 +435,31 @@ export function settingRow(s) {
     row.updateSetting = () => { paint(); field.setValue(current()); return true; };
     return row;
   }
+  // The external motion sensor (issue #973), mirroring the device's row:
+  // occupancy, motion and presence sensors only, and once one is picked
+  // what it reads stands in for the description.
+  if (s.key === 'motion.entity') {
+    const desc = info.querySelector('.desc');
+    const current = () => (state.settings || []).find((o) => o.key === s.key)?.value ?? s.value ?? '';
+    const paint = () => {
+      desc.textContent = current() ? externalMotionReading() : s.description;
+    };
+    paint();
+    const repaint = () => {
+      if (row.isConnected) paint();
+      else document.removeEventListener('ks-externalmotion', repaint);
+    };
+    document.addEventListener('ks-externalmotion', repaint);
+    probeExternalMotion();
+    const field = entityRow(entitySpec({ deviceClass: 'occupancy' }), { allowClear: true });
+    row.updateSetting = () => {
+      probeExternalMotion(true);
+      paint();
+      field.setValue(current());
+      return true;
+    };
+    return row;
+  }
   // The Home Assistant Dashboard screensaver's view and Now Playing's
   // chosen view are picked in the dashboard picker, mirroring the
   // device's row: the field shows the stored view and opens the picker.
@@ -470,6 +511,29 @@ export function settingRow(s) {
       'display:flex; gap:10px; align-items:center; min-width:0; max-width:60%; flex:0 1 auto';
     controls.append(val, btn);
     row.appendChild(controls);
+    return row;
+  }
+
+  // Wake to screensaver, mirroring the device's row: the picks at rest in
+  // a dropdown-style box that opens a checkbox dialog. Stored as a JSON
+  // list of sources (issue #954).
+  if (s.key === 'screensaver.screen_off_wake_to_screensaver') {
+    const current = () => (state.settings || []).find((o) => o.key === s.key)?.value ?? s.value ?? '[]';
+    const field = choiceBox(wakeSourcesText(decodeWakeSources(current())), async () => {
+      // A powered-off panel takes no touches: Touch can only wake the black
+      // screen that stands in for it.
+      const value = (key) => (state.settings || []).find((o) => o.key === key)?.value;
+      const touchReady = Number(value('screensaver.screen_off_minutes')) > 0
+        && value('screensaver.screen_off_black') === true;
+      const picked = await openWakeSourcesPicker(s.title, decodeWakeSources(current()), touchReady);
+      if (!picked) return;
+      field.setText(wakeSourcesText(picked));
+      await save(JSON.stringify(WAKE_SOURCES.filter((source) => picked.has(source))));
+      field.setText(wakeSourcesText(decodeWakeSources(current())));
+    });
+    bindUpdate(field.el, () => field.setText(wakeSourcesText(decodeWakeSources(current()))));
+    row.classList.add('dp-field-row');
+    row.appendChild(field.el);
     return row;
   }
 
@@ -1520,7 +1584,24 @@ export function settingRow(s) {
   // A bounded number is dragged, not typed, the same slider the device
   // shows. Label updates live; the value saves once, on release.
   if (s.type === 'number' && s.min != null && s.max != null) {
+    // Camera auto-dismiss moves through stops, not seconds: every 30 s up to
+    // 5 min, then every 5 min up to an hour. The slider holds the stop index
+    // and a stored value between stops sits on the nearest one.
+    const stops = s.key === 'camera.auto_dismiss_seconds' ? CAMERA_DISMISS_STOPS : null;
+    const toSlider = (v) => stops
+      ? stops.reduce((best, stop, i) => Math.abs(stop - v) < Math.abs(stops[best] - v) ? i : best, 0)
+      : v;
+    const fromSlider = (v) => stops ? stops[v] : v;
     const label = (v) => {
+      if (stops) {
+        const seconds = stops[v];
+        if (seconds <= 0) return t('cameraStreamsOff');
+        if (seconds < 60) return t('cameraStreamsSeconds', {seconds: String(seconds)});
+        if (seconds % 3600 === 0) return t('haHours', {hours: String(seconds / 3600)});
+        return t('haMinutes', {minutes: new Intl.NumberFormat(messageLanguage(), {
+          maximumFractionDigits: 1,
+        }).format(seconds / 60)});
+      }
       if (s.key === 'gestures.hand_hold_seconds') {
         return Number(v) === 0 ? t('gestureHoldInstant')
           : t('gestureHoldSeconds', {seconds: new Intl.NumberFormat(messageLanguage(), {
@@ -1543,12 +1624,13 @@ export function settingRow(s) {
         : `${v}${s.unit || ''}`;
     };
     const slider = attachSlider(row, {
-      min: s.min, max: s.max, step: s.step ?? 'any',
-      value: typeof s.value === 'number' ? s.value : s.min,
+      min: stops ? 0 : s.min, max: stops ? stops.length - 1 : s.max,
+      step: stops ? 1 : s.step ?? 'any',
+      value: toSlider(typeof s.value === 'number' ? s.value : s.min),
       label,
     });
     slider.input.addEventListener('change', async () => {
-      const next = Number(slider.input.value);
+      const next = fromSlider(Number(slider.input.value));
       // Enabling real screen-off gets a warning first: what a dark panel
       // does to Wi-Fi, the camera and the app itself is the manufacturer's
       // call, and the Black screensaver avoids the whole regime.
@@ -1568,7 +1650,7 @@ export function settingRow(s) {
       // it here first made a refused value snap "back" to itself.
       save(next);
     });
-    bindUpdate(slider.input, () => slider.set(s.value));
+    bindUpdate(slider.input, () => slider.set(toSlider(s.value)));
     if (s.key === 'sendspin.duck_percent') {
       const fragment = document.createDocumentFragment();
       fragment.append(row, albumArtCacheRow());

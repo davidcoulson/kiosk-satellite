@@ -13,6 +13,7 @@ import '../device/ip_addresses.dart';
 import '../gestures/remote_keys_manager.dart' show remoteKeyEventTypes;
 import '../intercom/intercom_sensors.dart';
 import 'dashboard_views.dart';
+import '../home_assistant/custom_pages.dart';
 import 'interaction_stamp.dart';
 import '../sendspin/music_assistant_api.dart';
 import '../screensaver/screensaver_manager.dart'
@@ -413,6 +414,22 @@ class EspEntitySurface {
       unit: 's',
       deviceClass: 'duration',
       mode: 0,
+    ),
+    // Turn screen off after, in minutes (issue #960): an automation can
+    // keep a bedroom panel lit by day and let it go dark at night. A write
+    // under a running screensaver restarts the countdown, unless the active
+    // schedule entry carries its own minutes.
+    'screensaver_screen_off_after': (
+      name: 'Screensaver screen off after',
+      icon: 'mdi:monitor-off',
+      def: defs.screensaverScreenOffMinutes,
+      fraction: false,
+      min: 0,
+      max: 60,
+      step: 1,
+      unit: 'min',
+      deviceClass: 'duration',
+      mode: 2,
     ),
     'assistant_volume': _percent(
       'Assistant volume',
@@ -1835,6 +1852,11 @@ class EspEntitySurface {
     // Ends the call, cancels one still ringing or closes an announcement.
     // Answers so "no call" reaches the automation as an error.
     {'name': 'intercom_hangup', 'supportsResponse': true, 'args': []},
+    // Answer or decline the call ringing here, so a headless kiosk or one
+    // out of reach can be picked up from Home Assistant (issue #943).
+    // Answers so "nothing is ringing" reaches the automation as an error.
+    {'name': 'intercom_answer', 'supportsResponse': true, 'args': []},
+    {'name': 'intercom_decline', 'supportsResponse': true, 'args': []},
     // A web page over the dashboard, the surface a tapped dashboard link
     // or the Music Assistant entry gets: the dashboard stays alive under
     // it and the wake word keeps listening. Answers so a bad URL reaches
@@ -2074,6 +2096,14 @@ class EspEntitySurface {
         return data is Map ? data.cast<String, Object?>() : const {};
       case 'intercom_hangup':
         final result = await commands.execute('intercomHangup', const {});
+        if (!result.ok) throw StateError(result.error ?? 'refused');
+        return const {};
+      case 'intercom_answer':
+        final result = await commands.execute('intercomAnswer', const {});
+        if (!result.ok) throw StateError(result.error ?? 'refused');
+        return const {};
+      case 'intercom_decline':
+        final result = await commands.execute('intercomDecline', const {});
         if (!result.ok) throw StateError(result.error ?? 'refused');
         return const {};
       case 'open_url':
@@ -2735,6 +2765,10 @@ class EspEntitySurface {
       }
       return;
     }
+    if (e.key == defs.haCustomPages.key) {
+      unawaited(_followCustomPages());
+      return;
+    }
     for (final entry in _settingSwitches.entries) {
       if (entry.value.$3.key == e.key) {
         _send(entry.key, e.value == true);
@@ -3212,12 +3246,44 @@ class EspEntitySurface {
   /// which raced the same way (issue #362). A stale list is corrected by
   /// the re-reads that follow, with a restart only when it moved.
   Future<void> _refreshDashboardViews() async {
-    _dashboardViews = _rememberedDashboardViews();
-    if (_dashboardViews.isNotEmpty) return;
+    final remembered = _rememberedDashboardViews();
+    if (remembered.isNotEmpty) {
+      _dashboardViews = _withCustomPages(remembered);
+      return;
+    }
     final learned = await _learnDashboardViews();
-    if (learned.isEmpty) return;
+    if (learned.isEmpty) {
+      _dashboardViews = _withCustomPages(const []);
+      return;
+    }
     _dashboardViews = learned;
     await _settings.setInternal(_dashboardViewsKey, jsonEncode(learned));
+  }
+
+  /// [views] with the custom pages as they are in the settings now, last.
+  /// They are added here rather than learned with the views because the
+  /// list they come from is the kiosk's own: the re-read that learns the
+  /// views needs the Home Assistant page on screen and cannot run while a
+  /// custom page is showing.
+  List<String> _withCustomPages(List<String> views) => [
+    for (final v in views)
+      if (!isCustomPagePath(v)) v,
+    for (final p in parseCustomPages(_settings.get(defs.haCustomPages)))
+      p.navPath,
+  ];
+
+  /// A page added, changed or removed: the selects' options follow at
+  /// once, re-registering the device only when the list really moved.
+  Future<void> _followCustomPages() async {
+    final next = _withCustomPages(_dashboardViews);
+    if (jsonEncode(next) == jsonEncode(_dashboardViews)) return;
+    _dashboardViews = next;
+    if (next.any((v) => !isCustomPagePath(v))) {
+      await _settings.setInternal(_dashboardViewsKey, jsonEncode(next));
+    }
+    if (_push == null) return;
+    log.info('esphome', 'custom pages changed; re-listing entities');
+    onCatalogChanged?.call();
   }
 
   List<String> _rememberedDashboardViews() {
@@ -3309,7 +3375,8 @@ class EspEntitySurface {
     for (final d in dashboards.data as List) {
       if (d is! Map) continue;
       final urlPath = '${d['url_path'] ?? ''}';
-      if (urlPath.isEmpty) continue;
+      // The custom pages join after the read (see _withCustomPages).
+      if (urlPath.isEmpty || urlPath == customPagesDashboardPath) continue;
       final views = await commands.execute('haListDashboardViews', {
         'url_path': urlPath,
       });
@@ -3325,7 +3392,7 @@ class EspEntitySurface {
         options.add(urlPath);
       }
     }
-    return options;
+    return options.isEmpty ? options : _withCustomPages(options);
   }
 
   /// Re-reads the list while serving, when the page reports the dashboard

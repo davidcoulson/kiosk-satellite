@@ -42,6 +42,8 @@ class JsApiManager extends Manager {
     'getVoiceTimers': 'voiceTimers',
     'controlVoiceTimer': 'voiceTimerControl',
     'getDeviceInfo': 'getDeviceInfo',
+    'getTheme': 'getTheme',
+    'getKioskState': 'getKioskState',
     'getBrightness': 'getBrightness',
     'setBrightness': 'setBrightness',
     'setTheaterMode': 'setTheaterMode',

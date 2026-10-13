@@ -30,5 +30,14 @@
   "pluginErrorAndroidApi": "Плагину нужен Android API {version}",
   "pluginErrorInvalidField": "Недопустимое поле {field}",
   "pluginErrorTooManyTriggers": "Слишком много триггеров",
-  "pluginErrorTriggerId": "Недопустимый или повторяющийся ID триггера"
+  "pluginErrorTriggerId": "Недопустимый или повторяющийся ID триггера",
+  "pluginErrorListSetting": "Недопустимая настройка списка",
+  "pluginErrorSettingCondition": "Недопустимое условие настройки",
+  "pluginErrorIcon": "Ожидалось имя значка MDI",
+  "pluginErrorDashboard": "Ожидался путь к панели",
+  "pluginErrorCameraView": "Ожидался ID вида камер",
+  "pluginErrorListValue": "Ожидалась настройка списка",
+  "pluginErrorListCount": "В списке слишком много или слишком мало элементов",
+  "pluginErrorRequiredField": "Заполните все обязательные поля",
+  "pluginErrorListSize": "Настройки списка могут занимать не более 32 КБ"
 }

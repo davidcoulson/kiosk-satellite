@@ -47,9 +47,16 @@ function tag(text, kind = '') {
 }
 
 // A tap is the pick, so the row carries no control: the name on its own
-// line, then the address, the version tag and, on the one this page came
+// line, then the host it opens at, the version tag and, on the one this page came
 // from, the This device tag. The tags share the second line so a long
 // name has the first to itself and truncates there.
+// The host the row opens at: the Admin URL's when the kiosk has one
+// (issue #967), else its address.
+function shownHost(d) {
+  if (!d.adminUrl) return d.address;
+  try { return new URL(d.adminUrl).hostname; } catch (_) { return d.address; }
+}
+
 function deviceRow(d) {
   const row = document.createElement('div');
   row.className = 'row fleet-row' + (d.self ? ' self' : '');
@@ -63,7 +70,7 @@ function deviceRow(d) {
   const desc = document.createElement('div');
   desc.className = 'desc';
   const addr = document.createElement('span');
-  addr.textContent = d.address;
+  addr.textContent = shownHost(d);
   desc.appendChild(addr);
   if (d.version) desc.appendChild(tag(d.version));
   // An agent has no dashboard: worth knowing before picking one, since its

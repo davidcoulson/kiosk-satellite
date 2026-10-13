@@ -18,6 +18,7 @@ import '../../managers/voice/voice_notice.dart';
 import '../theme.dart';
 import '../toast.dart';
 import 'art_ink_blobs.dart';
+import 'art_jarvis.dart';
 import 'art_lens_flares.dart';
 import 'art_logo.dart';
 import 'art_waveform.dart';
@@ -418,6 +419,21 @@ class _AssistOverlayState extends State<AssistOverlay>
           ),
         if (skin.art == SkinArt.lensFlares)
           LensFlaresArt(mode: mode, reactive: reactive, level: c.voice.level),
+        // Jarvis gives way to a result panel standing over it in portrait.
+        if (skin.art == SkinArt.jarvis)
+          IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: _panelAbove(context, view) ? 0 : 1,
+              duration: const Duration(milliseconds: 300),
+              child: JarvisArt(
+                mode: mode,
+                reactive: reactive,
+                level: _glide,
+                clock: _clock,
+                box: _jarvisBox(context, skin, scale, view, reactive),
+              ),
+            ),
+          ),
         SkinBarLayer(
           skin: skin,
           mode: mode,
@@ -428,13 +444,72 @@ class _AssistOverlayState extends State<AssistOverlay>
         if (view.phase == AssistPhase.announcement)
           _announcement(context, skin, palette, scale, view)
         else ...[
-          _chat(context, skin, palette, scale, view, reactive),
+          // With the whole conversation hidden, Jarvis shows only its
+          // reactor: no thinking dots either.
+          if (skin.art != SkinArt.jarvis || !_conversationHidden)
+            _chat(context, skin, palette, scale, view, reactive),
           if (primaryResult(view.results) case final result?)
             _panel(context, skin, dark, scale, result),
         ],
         if (_lightbox case (final kind, final value))
           Positioned.fill(child: _lightboxView(context, kind, value)),
       ],
+    );
+  }
+
+  /// Every Conversation toggle is off.
+  bool get _conversationHidden =>
+      !c.settings.get(defs.voiceShowCommand) &&
+      !c.settings.get(defs.voiceShowAnswer) &&
+      !c.settings.get(defs.voiceShowTools);
+
+  /// Jarvis's full screen reactor: room kept under it for the command and
+  /// three lines of answer at the chosen text size, so a small screen still
+  /// reads a whole answer, or the whole screen with the conversation hidden.
+  Rect _jarvisBox(
+    BuildContext context,
+    AssistSkin skin,
+    double scale,
+    AssistView view,
+    bool reactive,
+  ) {
+    final settings = c.settings;
+    final scaler = MediaQuery.textScalerOf(context);
+    double line(double size) => scaler.scale(size * scale) * skin.lineHeight;
+    final command = settings.get(defs.voiceShowCommand);
+    final answer = settings.get(defs.voiceShowAnswer);
+    var chat = 0.0;
+    if (command) chat += line(skin.userSize) + 8 + skin.gap;
+    if (answer) chat += 3 * line(skin.answerSize) + 8;
+    if (!command && !answer && settings.get(defs.voiceShowTools)) {
+      chat += line(skin.toolSize) + 8;
+    }
+    if (chat > 0) {
+      chat += reactive ? skin.chatBottomReactive : skin.chatBottom;
+    }
+    return jarvisReactor(
+      MediaQuery.sizeOf(context),
+      _beside(context, view),
+      chat: chat,
+    );
+  }
+
+  /// A result panel stands at the top, over the chat: portrait.
+  bool _panelAbove(BuildContext context, AssistView view) {
+    final size = MediaQuery.sizeOf(context);
+    return size.height > size.width && primaryResult(view.results) != null;
+  }
+
+  /// The chat's side insets while a result panel stands beside it, for
+  /// art that keeps to the chat's column. None in portrait, where the
+  /// panel sits above the chat.
+  EdgeInsets _beside(BuildContext context, AssistView view) {
+    final size = MediaQuery.sizeOf(context);
+    final result = primaryResult(view.results);
+    if (result == null || size.height > size.width) return EdgeInsets.zero;
+    return EdgeInsets.only(
+      left: size.width * 0.075,
+      right: chatRightInset(size, result),
     );
   }
 
@@ -544,12 +619,87 @@ class _AssistOverlayState extends State<AssistOverlay>
     // The bubble: the exchange, and the skin's bar docked along its
     // bottom. Up for the whole conversation, a slim pill with just the bar
     // while nothing has been said. Voice Only shows the mark alone, no
-    // bubble around it, fading as the conversation ends.
+    // bubble around it, fading as the conversation ends. Jarvis puts its
+    // reactor above the exchange instead of a bar, its outer ring
+    // unwinding as the conversation ends.
     final logoSide = (math.min(size.width, size.height) * 0.24).clamp(
       72.0,
       140.0,
     );
-    final card = skin.voiceOnly
+    final decoration = BoxDecoration(
+      color: bubble,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: palette.answer.withValues(alpha: 0.16)),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x33000000),
+          blurRadius: 16,
+          offset: Offset(0, 4),
+        ),
+      ],
+    );
+    // Jarvis's slot: the reactor on top, the bubble hanging under it with
+    // room kept for its tallest, so the reactor stays put while the bubble
+    // grows with the answer. Touches on the empty room reach the screen.
+    // The box holds the blocks at full stretch, past the outer ring.
+    final reactorSide = (math.min(size.width, size.height) * 0.5).clamp(
+      150.0,
+      350.0,
+    );
+    const reactorGap = 28.0;
+    final room = size.height - padding.vertical - 40 - reactorSide - reactorGap;
+    final bubbleMax = math.min((size.height * 0.4).clamp(140.0, 360.0), room);
+    final jarvis = skin.art == SkinArt.jarvis;
+    // With the whole conversation hidden it floats alone, no bubble.
+    final alone = jarvis && _conversationHidden;
+    final card = jarvis
+        ? SizedBox(
+            width: width,
+            height: alone
+                ? reactorSide
+                : reactorSide + reactorGap + math.max(0.0, bubbleMax),
+            child: Column(
+              spacing: reactorGap,
+              children: [
+                SizedBox.square(
+                  dimension: reactorSide,
+                  child: JarvisArt(
+                    mode: mode,
+                    reactive: reactive,
+                    level: _glide,
+                    clock: _clock,
+                    compact: true,
+                    countdown: c.voice.dockCountdown,
+                  ),
+                ),
+                if (!alone && lines.isNotEmpty && bubbleMax > 0)
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.ease,
+                    alignment: Alignment.topCenter,
+                    child: Container(
+                      width: width,
+                      constraints: BoxConstraints(maxHeight: bubbleMax),
+                      clipBehavior: Clip.antiAlias,
+                      decoration: decoration,
+                      // Past its tallest, the newest lines stay in view.
+                      child: SingleChildScrollView(
+                        reverse: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          spacing: 6,
+                          children: lines,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          )
+        : skin.voiceOnly
         ? SizedBox.square(
             dimension: logoSide,
             child: IgnorePointer(
@@ -569,20 +719,7 @@ class _AssistOverlayState extends State<AssistOverlay>
             child: Container(
               width: width,
               clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                color: bubble,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: palette.answer.withValues(alpha: 0.16),
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x33000000),
-                    blurRadius: 16,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
+              decoration: decoration,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -628,7 +765,9 @@ class _AssistOverlayState extends State<AssistOverlay>
               alignment: Alignment(_dockX * 2 - 1, _dockY * 2 - 1),
               child: GestureDetector(
                 key: _dockKey,
-                behavior: HitTestBehavior.opaque,
+                behavior: jarvis
+                    ? HitTestBehavior.deferToChild
+                    : HitTestBehavior.opaque,
                 // Ends it, as a double tap on the full screen overlay does.
                 onDoubleTap: c.voice.dismiss,
                 onPanUpdate: (d) {
@@ -963,11 +1102,15 @@ class _AssistOverlayState extends State<AssistOverlay>
     // In portrait a result panel stands at the top, down to half the
     // screen at most: the chat stays under it rather than running across.
     final underPanel = portrait && result != null;
+    // Jarvis's chat starts under its reactor, so no line crosses it.
+    final underArt = skin.art == SkinArt.jarvis && !underPanel;
     final top = underPanel
         ? math.max(
             skin.chatTop,
             size.height * (panelTop + panelMaxPortrait) + 16,
           )
+        : underArt
+        ? _jarvisBox(context, skin, scale, view, reactive).bottom + 16
         : skin.chatTop;
 
     /// How tall the lines above a turn's answer stand: its command and
@@ -1104,9 +1247,9 @@ class _AssistOverlayState extends State<AssistOverlay>
         children: lines,
       ),
     );
-    if (underPanel) {
-      // Under a portrait panel they leave at its edge instead, fading out
-      // over the first lines' worth below it.
+    if (underPanel || underArt) {
+      // Under a portrait panel or the reactor they leave at its edge
+      // instead, fading out over the first lines' worth below it.
       chat = ClipRect(
         child: ShaderMask(
           blendMode: BlendMode.dstIn,
@@ -1123,7 +1266,7 @@ class _AssistOverlayState extends State<AssistOverlay>
     return Positioned(
       left: left,
       right: right,
-      top: underPanel ? top : 0,
+      top: underPanel || underArt ? top : 0,
       bottom: bottom,
       child: chat,
     );

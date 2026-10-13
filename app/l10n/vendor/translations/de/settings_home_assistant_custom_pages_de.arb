@@ -1,0 +1,20 @@
+{
+  "@@locale": "de",
+  "haCustomPages": "Eigene Seiten",
+  "haCustomPagesHintDashboard": "Deine eigenen HTML-Seiten als Dashboard",
+  "haCustomPagesAdd": "Seite hinzufügen",
+  "haCustomPagesEmpty": "Füge HTML-Seiten aus dem www-Ordner von Home Assistant hinzu, um sie wie ein Dashboard auszuwählen.",
+  "haCustomPagesGuide": "Anleitung für eigene Seiten",
+  "haCustomPagesGuideHint": "So erstellst du eine Seite, die mit Home Assistant spricht.",
+  "haCustomPageAddTitle": "Eigene Seite hinzufügen",
+  "haCustomPageEditTitle": "Eigene Seite bearbeiten",
+  "haCustomPageName": "Name",
+  "haCustomPagePath": "Pfad",
+  "haCustomPagePathHint": "Eine Datei im www-Ordner von Home Assistant, z. B. /local/dashboard.html.",
+  "haCustomPageNameMissing": "Gib einen Namen ein.",
+  "haCustomPagePathInvalid": "Gib einen Pfad unter /local/ ein, z. B. /local/dashboard.html.",
+  "haCustomPageDuplicate": "Eine andere Seite verwendet diesen Pfad bereits.",
+  "haCustomPageNotFound": "Home Assistant hat unter diesem Pfad keine Datei.",
+  "haCustomPageUnreachable": "Home Assistant nicht erreichbar.",
+  "haCustomPageStatus": "Home Assistant hat mit HTTP {code} geantwortet."
+}

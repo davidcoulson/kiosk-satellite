@@ -8,5 +8,10 @@
   "settingScreensaverPostponeOnMotionDescription": "Відкладати запуск заставки при виявленні руху. ПОПЕРЕДЖЕННЯ: камера працюватиме постійно.",
   "screensaverDetectionMotionPage": "Виявлення руху",
   "screensaverDetectionMotionHint": "Закриття або відкладання заставки за рухом",
-  "screensaverDetectionMotionTuning": "Чутливість виявлення руху налаштовується в параметрах Камери."
+  "screensaverDetectionMotionTuning": "Чутливість виявлення руху налаштовується в параметрах Камери.",
+  "settingMotionUseEntityTitle": "Використовувати сутність Home Assistant",
+  "settingMotionUseEntityDescription": "Визначає рух за датчиком Home Assistant замість камери.",
+  "settingMotionEntityTitle": "Сутність датчика руху",
+  "settingMotionEntityDescription": "Датчик зайнятості, руху або присутності Home Assistant, за яким слід стежити.",
+  "screensaverDetectionExternalMotionHeading": "Зовнішній датчик руху"
 }

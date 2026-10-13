@@ -23,5 +23,6 @@
   "haUnknownEntities": "Die Entitäten dieser Ansicht können nicht ermittelt werden, daher werden ihre Aktualisierungen nicht gefiltert.",
   "haWaiting": "Warte auf das Laden des Dashboards...",
   "haShowScan": "Analysedetails anzeigen.",
-  "haThreshold": "Diese Ansicht verwendet {count} Entitäten und überschreitet damit den Filter-Schwellenwert. Die Filterung ist deaktiviert."
+  "haThreshold": "Diese Ansicht verwendet {count} Entitäten und überschreitet damit den Filter-Schwellenwert. Die Filterung ist deaktiviert.",
+  "haCustomPageFilter": "Wird auf eigenen Seiten nicht verwendet."
 }

@@ -45,6 +45,7 @@ import {
 import { applyManagedBanners, renderFleetPage } from './fleetsync.js';
 import { decorateAnnouncementsPage, renderIntercomPage } from './intercom.js';
 import { renderAlarmsPage } from './alarms.js';
+import { renderCustomPagesPage } from './custom_pages.js';
 import { askImportOptions } from './pickers.js';
 import { settingRow, syncGatedRows } from './rows.js';
 import { applySubpageView, currentPath, setCurrentPath, subpageEntry, refreshNavigationText } from './tabs.js';
@@ -204,7 +205,7 @@ const layoutSettings = new Set([
   'screen.adaptive_brightness', 'screensaver.clock_night',
   'camera.rtsp.enabled', 'camera.rtsp.protocol', 'camera.onvif.port',
   'camera.rtsp.port', 'btproxy.nearby_sort', 'esphome.real_mac',
-  'esphome.mac_override', 'ha.rotation_enabled', 'esphome.node_name',
+  'esphome.mac_override', 'esphome.node_name',
   'btproxy.connections', 'home.keep_pinning', 'browser.start_url',
 ]);
 // Runtime state the device keeps in settings and no page draws. A wake word
@@ -215,6 +216,12 @@ const layoutSettings = new Set([
 // event (the rotation page below): a save echoed back from the device, or
 // a change from another admin, never rebuilds the tab.
 const rotationListSettings = new Set(['ha.rotation_dashboards', 'ha.rotation_urls']);
+// The Dashboard View Rotation and Return to home cards draw these
+// themselves and repaint in place when one changes (the HA tab below): the
+// device's echo of every save there used to rebuild the whole tab.
+const rotationCardSettings = new Set(['ha.rotation_enabled', 'ha.rotation_seconds',
+  'ha.rotation_pause_seconds', 'ha.rotation_crossfade', 'ha.rotation_fade_seconds',
+  'ha.return_home_enabled', 'ha.return_home_seconds']);
 const runtimeStateSettings = new Set([
   'screensaver.saved_brightness', 'voice.timer_position', 'sendspin.player_pos',
   // The alarms and their ring state: the Alarms page redraws from the
@@ -296,6 +303,16 @@ async function flushSettingsUpdates() {
         continue;
       }
     }
+    // The same for the external motion sensor's switch (issue #973), which
+    // also frees Dismiss on motion from the camera on the Screensaver tab.
+    if (!shapeChanged && setting.key === 'motion.use_entity') {
+      const byKey = Object.fromEntries(state.settings.map(s => [s.key, s]));
+      if ((!rows.length && !depSatisfied(setting, byKey)) || (rows.length
+          && rows.every(row => row.updateSetting?.() && syncGatedRows(setting.key, row)))) {
+        updateMotionCameraRows();
+        continue;
+      }
+    }
     // The text to speech pickers repaint themselves, and the rows they
     // gate (the engine's Language and Voice, Play sounds on's Play as) come
     // and go in place, so a pick echoed back from the device does not
@@ -316,6 +333,9 @@ async function flushSettingsUpdates() {
     // model list never rebuilds the page.
     if (!hasDependants && REALTIME_PROVIDER_SETTINGS.has(setting.key)) continue;
     if (!shapeChanged && !hasDependants && rotationListSettings.has(setting.key)) continue;
+    if (!shapeChanged && rotationCardSettings.has(setting.key)) continue;
+    // The Custom Pages list repaints itself (custom_pages.js).
+    if (!shapeChanged && setting.key === 'ha.custom_pages') continue;
     // Only the choices of a dropdown moved (a provider's model list came
     // in): its row refreshes them in place rather than the page rebuilding
     // under whatever is being typed elsewhere on it.
@@ -1922,11 +1942,19 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
       const haPanels = render(
         restRoot,
         ['Home Assistant'].filter((c) => (byCat[c] || []).length),
-        { handBuilt: HAND_BUILT_PAGES });
+        { handBuilt: HAND_BUILT_PAGES, extra: ['Custom Pages'] });
       byCat['Home Assistant'] = savedHa;
       // Each hand-built group goes on the page its entry row opens. No
       // heading with it: the page title already carries the name.
       const panelFor = (sub) => haPanels.get(sub) || root;
+
+      // Custom Pages, which no setting draws: its entry row sits right
+      // under the Default dashboard card, as on the device.
+      {
+        const entry = restRoot.querySelector('[data-subpage-entry="Custom Pages"]');
+        if (entry) dcard.after(entry.closest('.card'));
+        renderCustomPagesPage(haPanels.get('Custom Pages'));
+      }
 
       // Theme, hand-built: the toggles re-render only this card, showing
       // or hiding their dependent rows in place.
@@ -1988,7 +2016,25 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
         // The card re-renders itself in place on toggle, like the Theme
         // and Return-home cards: the shared settingRow save would reload
         // the whole tab.
+        // What the card shows, so a change made elsewhere (the device,
+        // another admin) repaints it and the echo of its own save does not.
+        const rotationKeys = ['ha.rotation_enabled', 'ha.rotation_seconds',
+          'ha.rotation_pause_seconds', 'ha.rotation_crossfade', 'ha.rotation_fade_seconds'];
+        const rotationShown = () => JSON.stringify(rotationKeys.map((k) => byKey[k]?.value));
+        let shownRotation = '';
+        const onRotationSettings = (e) => {
+          if (!rcard.isConnected) {
+            document.removeEventListener('ks-settings', onRotationSettings);
+            return;
+          }
+          if (!(e.detail || []).some((k) => rotationKeys.includes(k))) return;
+          if (rotationShown() === shownRotation) return;
+          renderRotationCard();
+          renderReturnCard();
+        };
+        document.addEventListener('ks-settings', onRotationSettings);
         const renderRotationCard = async () => {
+        shownRotation = rotationShown();
         rcard.innerHTML = '';
         rlists.replaceChildren();
         const section = (title) => {
@@ -2031,6 +2077,8 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
             secInp.addEventListener('change', () => {
               const v = Math.max(5, Number(secInp.value) || 30);
               secInp.value = v;
+              if (byKey['ha.rotation_seconds']) byKey['ha.rotation_seconds'].value = v;
+              shownRotation = rotationShown();
               api('/api/settings', { method: 'PATCH',
                 body: JSON.stringify({ 'ha.rotation_seconds': v }) });
             });
@@ -2054,6 +2102,8 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
             pInp.addEventListener('change', () => {
               const v = Math.max(0, Number(pInp.value) || 0);
               pInp.value = v;
+              if (byKey['ha.rotation_pause_seconds']) byKey['ha.rotation_pause_seconds'].value = v;
+              shownRotation = rotationShown();
               api('/api/settings', { method: 'PATCH',
                 body: JSON.stringify({ 'ha.rotation_pause_seconds': v }) });
             });
@@ -2074,6 +2124,7 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
             rcard.appendChild(toggleRow(rotFade.title, rotFade.description,
               rotFade.value === true, async (on) => {
                 rotFade.value = on;
+                shownRotation = rotationShown();
                 await api('/api/settings', { method: 'PATCH',
                   body: JSON.stringify({ 'ha.rotation_crossfade': on }) });
                 renderFadeSettings();
@@ -2217,7 +2268,21 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
           // settingRow's save would loadSettings() (the seconds row gates
           // on the switch), and on this tab that re-fetches every
           // dashboard — a full-page flash for one checkbox.
+          const returnKeys = ['ha.return_home_enabled', 'ha.return_home_seconds',
+            'ha.rotation_enabled'];
+          const returnShown = () => JSON.stringify(returnKeys.map((k) => byKey[k]?.value));
+          let shownReturn = '';
+          const onReturnSettings = (e) => {
+            if (!hcard.isConnected) {
+              document.removeEventListener('ks-settings', onReturnSettings);
+              return;
+            }
+            if (!(e.detail || []).some((k) => returnKeys.includes(k))) return;
+            if (returnShown() !== shownReturn) renderReturnCard();
+          };
+          document.addEventListener('ks-settings', onReturnSettings);
           renderReturnCard = () => {
+            shownReturn = returnShown();
             hcard.innerHTML = '';
             if (byKey['ha.rotation_enabled']?.value === true) {
               hcard.appendChild(toggleRow(rhEnabled.title,
@@ -2344,6 +2409,13 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
                   if (!st || !st.mode || st.mode === 'boot') {
                     hist.length = 0;
                     telemetryText.textContent = haText('Waiting for the dashboard to load…');
+                    return;
+                  }
+                  // The person's own page under /local/: nothing of Home
+                  // Assistant's to filter.
+                  if (st.mode === 'custom-page') {
+                    hist.length = 0;
+                    telemetryText.textContent = haText('Not used on custom pages.');
                     return;
                   }
                   if (st.mode === 'passthrough') {

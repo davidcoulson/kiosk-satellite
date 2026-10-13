@@ -33,6 +33,8 @@ plugin = {
 plugin['settings'][0]['group'] = 'Chart demo'
 plugin['settings'][1]['group'] = 'Home Assistant demo'
 plugin['settings'].append({'key': 'diagnostic', 'title': 'Enable diagnostic', 'type': 'boolean', 'default': False, 'group': 'Shizuku demo'})
+plugin['settings'].append({'key': 'token', 'title': 'API token', 'type': 'secret', 'default': '', 'group': 'Shizuku demo'})
+plugin['values']['token'] = '__set__'
 plugin['groups'] = [
     {'title': 'Chart demo', 'charts': ['demo'], 'readingsTitle': 'Chart readings', 'readings': ['sensor.wave']},
     {'title': 'Home Assistant demo', 'readingsTitle': 'Home Assistant readings', 'readings': ['text_sensor.ha_state']},
@@ -108,7 +110,10 @@ def api(route):
         if name in ('enablePlugin', 'disablePlugin'):
             installed[0]['enabled'] = name == 'enablePlugin'
         elif name == 'configurePlugin':
-            installed[0]['values'] = params['values']
+            installed[0]['values'] = dict(params['values'])
+            # The host lists a saved secret as __set__, never its value.
+            if installed[0]['values'].get('token'):
+                installed[0]['values']['token'] = '__set__'
         elif name == 'removePlugin':
             installed = []
         result = installed
@@ -171,7 +176,7 @@ try:
         expect(root.get_by_role('button', name='Uninstall Hello World')).not_to_be_visible()
         expect(page.locator('#pageTitle')).to_contain_text('Hello World')
         expect(root.get_by_text('Shizuku reading', exact=True)).to_be_visible(timeout=10000)
-        ordered = ['Chart demo', 'Greeting', 'Activity chart', 'Chart readings', 'Wave reading', 'Home Assistant demo', 'Home Assistant entity', 'Home Assistant readings', 'HA reading', 'Shizuku demo', 'Enable diagnostic', 'Shizuku readings', 'Shizuku reading']
+        ordered = ['Chart demo', 'Greeting', 'Activity chart', 'Chart readings', 'Wave reading', 'Home Assistant demo', 'Home Assistant entity', 'Home Assistant readings', 'HA reading', 'Shizuku demo', 'Enable diagnostic', 'API token', 'Shizuku readings', 'Shizuku reading']
         positions = [root.get_by_text(label, exact=True).bounding_box()['y'] for label in ordered]
         assert positions == sorted(positions), 'Demo settings and output are out of order'
         page.screenshot(path='/tmp/kiosk-plugin-grouped-demo.png', full_page=True)
@@ -214,6 +219,32 @@ try:
         root.get_by_role('textbox', name='Greeting').press('Tab')
         expect(root.get_by_role('button', name='Save settings')).to_have_count(0)
         expect(root.get_by_role('textbox', name='Greeting')).to_have_value('Changed on the subpage')
+        # A saved secret shows only a placeholder. Typing replaces it and
+        # other edits echo the mask. The eye shows only what is typed.
+        token = root.get_by_label('API token', exact=True)
+        expect(token).to_have_attribute('type', 'password')
+        expect(token).to_have_value('')
+        expect(token).to_have_attribute('placeholder', '•••••• (set)')
+        configured = lambda: [r for r in requests if r[0] == 'configurePlugin'][-1][1]['values']
+        assert configured()['token'] == '__set__'
+        expect(root.locator('.plugin-secret').get_by_role('button', name='Clear')).to_have_count(0)
+        reveal = root.locator('.plugin-secret').get_by_role('button', name='Show password')
+        expect(reveal).to_be_hidden()
+        token.fill('rotated')
+        expect(reveal).to_be_visible()
+        reveal.click()
+        expect(token).to_have_attribute('type', 'text')
+        hide = root.locator('.plugin-secret').get_by_role('button', name='Hide password')
+        expect(hide).to_be_visible()
+        field_box, button_box = token.bounding_box(), hide.bounding_box()
+        assert field_box['x'] < button_box['x'] and button_box['x'] + button_box['width'] <= field_box['x'] + field_box['width'], (field_box, button_box)
+        hide.click()
+        expect(token).to_have_attribute('type', 'password')
+        token.press('Enter')
+        expect(root.get_by_label('API token', exact=True)).to_have_value('')
+        expect(root.get_by_label('API token', exact=True)).to_have_attribute('placeholder', '•••••• (set)')
+        assert configured()['token'] == 'rotated'
+        expect(root.locator('.plugin-secret').get_by_role('button', name='Show password')).to_be_hidden()
         assert page.url.endswith('#plugins/hello-world')
         page.locator('#pageTitle').get_by_role('button', name='Back').click()
         expect(row).to_be_visible()

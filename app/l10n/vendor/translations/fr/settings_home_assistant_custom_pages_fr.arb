@@ -1,0 +1,20 @@
+{
+  "@@locale": "fr",
+  "haCustomPages": "Pages personnalisées",
+  "haCustomPagesHintDashboard": "Vos pages HTML personnalisées affichées comme tableau de bord",
+  "haCustomPagesAdd": "Ajouter une page",
+  "haCustomPagesEmpty": "Ajoutez des pages HTML du dossier www de Home Assistant pour les choisir comme un tableau de bord.",
+  "haCustomPagesGuide": "Guide des pages personnalisées",
+  "haCustomPagesGuideHint": "Comment créer une page qui communique avec Home Assistant.",
+  "haCustomPageAddTitle": "Ajouter une page personnalisée",
+  "haCustomPageEditTitle": "Modifier la page personnalisée",
+  "haCustomPageName": "Nom",
+  "haCustomPagePath": "Chemin",
+  "haCustomPagePathHint": "Un fichier du dossier www de Home Assistant, par exemple /local/dashboard.html.",
+  "haCustomPageNameMissing": "Saisissez un nom.",
+  "haCustomPagePathInvalid": "Saisissez un chemin sous /local/, par exemple /local/dashboard.html.",
+  "haCustomPageDuplicate": "Une autre page utilise déjà ce chemin.",
+  "haCustomPageNotFound": "Home Assistant n'a aucun fichier à ce chemin.",
+  "haCustomPageUnreachable": "Impossible de joindre Home Assistant.",
+  "haCustomPageStatus": "Home Assistant a répondu avec le code HTTP {code}."
+}

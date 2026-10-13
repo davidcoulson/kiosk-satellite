@@ -91,7 +91,7 @@ For voice control, leave Voice Satellite on in the setup wizard, then add the ki
 <summary><strong>All guides and API references</strong></summary>
 <p></p>
   
-&bull; **Display:** [Screen settings](https://kiosksatellite.com/docs/screen/), [screensavers](https://kiosksatellite.com/docs/screensavers/), [Immich](https://kiosksatellite.com/docs/immich/) and [At a Glance widgets](https://kiosksatellite.com/docs/at-a-glance/).
+&bull; **Display:** [Screen settings](https://kiosksatellite.com/docs/screen/), [custom pages](https://kiosksatellite.com/docs/custom-pages/), [screensavers](https://kiosksatellite.com/docs/screensavers/), [Immich](https://kiosksatellite.com/docs/immich/) and [At a Glance widgets](https://kiosksatellite.com/docs/at-a-glance/).
 
 &bull; **Voice and media:** [Voice Satellite](https://kiosksatellite.com/docs/voice-satellite/), [microphone](https://kiosksatellite.com/docs/microphone/), [media player](https://kiosksatellite.com/docs/sendspin/), [camera views](https://kiosksatellite.com/docs/cameras/), [device camera](https://kiosksatellite.com/docs/camera/), [intercom](https://kiosksatellite.com/docs/intercom/) and [DLNA](https://kiosksatellite.com/docs/dlna/).
 

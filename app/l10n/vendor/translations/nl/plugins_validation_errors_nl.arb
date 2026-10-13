@@ -30,5 +30,14 @@
   "pluginErrorAndroidApi": "De plug-in vereist Android-API {version}",
   "pluginErrorInvalidField": "Ongeldige {field}",
   "pluginErrorTooManyTriggers": "Te veel triggers",
-  "pluginErrorTriggerId": "Ongeldige of dubbele trigger-ID"
+  "pluginErrorTriggerId": "Ongeldige of dubbele trigger-ID",
+  "pluginErrorListSetting": "Ongeldige lijstinstelling",
+  "pluginErrorSettingCondition": "Ongeldige voorwaarde voor instelling",
+  "pluginErrorIcon": "Er werd een MDI-pictogramnaam verwacht",
+  "pluginErrorDashboard": "Er werd een dashboardpad verwacht",
+  "pluginErrorCameraView": "Er werd een cameraweergave-ID verwacht",
+  "pluginErrorListValue": "Er werd een lijstinstelling verwacht",
+  "pluginErrorListCount": "De lijst heeft te veel of te weinig items",
+  "pluginErrorRequiredField": "Vul alle verplichte velden in",
+  "pluginErrorListSize": "Lijstinstellingen mogen maximaal 32 KB groot zijn"
 }

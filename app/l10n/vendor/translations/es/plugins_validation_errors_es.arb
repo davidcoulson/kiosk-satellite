@@ -30,5 +30,14 @@
   "pluginErrorAndroidApi": "El plugin necesita la API {version} de Android",
   "pluginErrorInvalidField": "El campo {field} no es válido",
   "pluginErrorTooManyTriggers": "Demasiados disparadores",
-  "pluginErrorTriggerId": "El ID del disparador no es válido o está duplicado"
+  "pluginErrorTriggerId": "El ID del disparador no es válido o está duplicado",
+  "pluginErrorListSetting": "El ajuste de lista no es válido",
+  "pluginErrorSettingCondition": "La condición del ajuste no es válida",
+  "pluginErrorIcon": "Se esperaba un nombre de icono MDI",
+  "pluginErrorDashboard": "Se esperaba la ruta de un panel de control",
+  "pluginErrorCameraView": "Se esperaba un ID de vista de cámaras",
+  "pluginErrorListValue": "Se esperaba un ajuste de lista",
+  "pluginErrorListCount": "La lista tiene demasiados elementos o muy pocos",
+  "pluginErrorRequiredField": "Completa todos los campos obligatorios",
+  "pluginErrorListSize": "Los ajustes de lista pueden ocupar como máximo 32 KB"
 }

@@ -30,5 +30,14 @@
   "pluginErrorAndroidApi": "Плагін потребує Android API {version}",
   "pluginErrorInvalidField": "Недійсне поле {field}",
   "pluginErrorTooManyTriggers": "Занадто багато тригерів",
-  "pluginErrorTriggerId": "Недійсний або дубльований ідентифікатор тригера"
+  "pluginErrorTriggerId": "Недійсний або дубльований ідентифікатор тригера",
+  "pluginErrorListSetting": "Недійсне налаштування списку",
+  "pluginErrorSettingCondition": "Недійсна умова налаштування",
+  "pluginErrorIcon": "Очікується назва піктограми MDI",
+  "pluginErrorDashboard": "Очікується шлях до панелі керування",
+  "pluginErrorCameraView": "Очікується ідентифікатор вигляду камер",
+  "pluginErrorListValue": "Очікується налаштування списку",
+  "pluginErrorListCount": "У списку забагато або замало елементів",
+  "pluginErrorRequiredField": "Заповніть усі обов'язкові поля",
+  "pluginErrorListSize": "Налаштування списку можуть займати не більше 32 КБ"
 }

@@ -955,18 +955,22 @@ class DropdownRow<T> extends StatelessWidget {
   });
 
   final String title;
-  final String description;
+
+  /// Null leaves the row without a description line.
+  final String? description;
   final T? value;
 
   /// (value, label) pairs; labels are built with single-line ellipsis so a
   /// long device name truncates instead of wrapping inside the menu.
   final List<(T, String)> options;
 
-  final ValueChanged<T?> onChanged;
+  /// Null disables the dropdown.
+  final ValueChanged<T?>? onChanged;
 
   @override
   Widget build(BuildContext context) {
     final tight = tightPane(context);
+    final description = this.description;
     final dropdown = KsDropdown<T>(
       value: value,
       expand: tight,
@@ -982,7 +986,7 @@ class DropdownRow<T> extends StatelessWidget {
     if (!tight) {
       return ListTile(
         title: Text(title),
-        subtitle: Text(description),
+        subtitle: description == null ? null : Text(description),
         trailing: dropdown,
       );
     }
@@ -993,8 +997,10 @@ class DropdownRow<T> extends StatelessWidget {
         children: [
           const SizedBox(height: 6),
           dropdown,
-          const SizedBox(height: 8),
-          Text(description),
+          if (description != null) ...[
+            const SizedBox(height: 8),
+            Text(description),
+          ],
         ],
       ),
     );

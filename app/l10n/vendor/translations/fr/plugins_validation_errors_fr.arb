@@ -30,5 +30,14 @@
   "pluginErrorAndroidApi": "Le plugin nécessite l'API Android {version}",
   "pluginErrorInvalidField": "{field} invalide",
   "pluginErrorTooManyTriggers": "Trop de déclencheurs",
-  "pluginErrorTriggerId": "Identifiant de déclencheur invalide ou en double"
+  "pluginErrorTriggerId": "Identifiant de déclencheur invalide ou en double",
+  "pluginErrorListSetting": "Paramètre de liste invalide",
+  "pluginErrorSettingCondition": "Condition de paramètre invalide",
+  "pluginErrorIcon": "Un nom d'icône MDI était attendu",
+  "pluginErrorDashboard": "Un chemin de tableau de bord était attendu",
+  "pluginErrorCameraView": "Un identifiant de vue caméra était attendu",
+  "pluginErrorListValue": "Un paramètre de liste était attendu",
+  "pluginErrorListCount": "La liste contient trop ou trop peu d'éléments",
+  "pluginErrorRequiredField": "Remplissez tous les champs obligatoires",
+  "pluginErrorListSize": "Les paramètres de liste ne doivent pas dépasser 32 Ko"
 }

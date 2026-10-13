@@ -18,13 +18,15 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * The intercom's playback sink: one streaming AudioTrack, fed the far
- * kiosk's voice as raw 16 kHz mono PCM16. It plays as media, and what it
+ * kiosk's voice as raw 16 kHz mono PCM16, or an announcement from Home
+ * Assistant at its own rate. It plays as media, and what it
  * plays goes to the software echo canceller through a [TrackTap], so the
  * microphone does not send the far kiosk its own voice back.
  *
  * Methods (channel `kiosk_satellite/intercom_audio`):
- *  - start {volume, handsFree}: opens the track, `volume` the linear base gain 0..1
- *    (the intercom fader, tapered on the Dart side). True when playing.
+ *  - start {volume, handsFree, rate}: opens the track, `volume` the linear base gain 0..1
+ *    (the intercom fader, tapered on the Dart side), `rate` the PCM's sample
+ *    rate, 16 kHz when left out. True when playing.
  *  - write <bytes>, on `kiosk_satellite/intercom_audio_data`: one chunk.
  *    That channel runs on a background queue, not the main thread: on an
  *    Echo Show 8 a busy UI thread held chunks back and handed them over in
@@ -35,6 +37,10 @@ import java.util.concurrent.atomic.AtomicInteger
  *  - setVolume {volume}: moves the fader live.
  *  - setHandsFree {enabled}: selects call-specific echo cancellation tuning.
  *  - stop: releases the track.
+ *  - decode {bytes, rate}: an audio file to mono PCM16 at `rate`, or at the
+ *    file's own rate (within [MIN_RATE]..[MAX_RATE]) when `rate` is 0.
+ *    Answers {pcm, rate}.
+ *  - chimePcm {rate}: the built-in announcement chime at `rate`.
  *
  * Android puts the master volume on the track. On fixed-volume devices
  * the software master ([VolumeController.masterGain]) stands in.
@@ -43,6 +49,10 @@ class IntercomAudio(context: Context, messenger: BinaryMessenger) {
     companion object {
         private const val TAG = "IntercomAudio"
         private const val SAMPLE_RATE = 16000
+
+        /** The rates an announcement keeps as decoded; others are converted to the nearest. */
+        private const val MIN_RATE = 16000
+        private const val MAX_RATE = 48000
         private const val BUFFER_MS = 400
         private const val MAX_QUEUED = 6
 
@@ -80,6 +90,9 @@ class IntercomAudio(context: Context, messenger: BinaryMessenger) {
     @Volatile private var tap: TrackTap? = null
     @Volatile private var output: AudioDeviceInfo? = null
     @Volatile private var baseVolume = 1f
+
+    /** The open track's sample rate. */
+    @Volatile private var rate = SAMPLE_RATE
     private val queued = AtomicInteger(0)
 
     /** Frames written to [track] since it started, the prime included. */
@@ -92,7 +105,12 @@ class IntercomAudio(context: Context, messenger: BinaryMessenger) {
             when (call.method) {
                 "start" -> {
                     baseVolume = (call.argument<Double>("volume") ?: 1.0).toFloat().coerceIn(0f, 1f)
-                    result.success(start(call.argument<Boolean>("handsFree") ?: false))
+                    result.success(
+                        start(
+                            call.argument<Boolean>("handsFree") ?: false,
+                            call.argument<Int>("rate") ?: SAMPLE_RATE,
+                        ),
+                    )
                 }
                 "setHandsFree" -> {
                     val on = call.argument<Boolean>("enabled") == true && track != null
@@ -113,15 +131,18 @@ class IntercomAudio(context: Context, messenger: BinaryMessenger) {
                     result.success(null)
                 }
                 "stopRing" -> { stopRing(); result.success(null) }
-                "chimePcm" -> result.success(chimePcm())
+                "chimePcm" -> result.success(chimePcm(call.argument<Int>("rate") ?: SAMPLE_RATE))
                 "decode" -> {
-                    val bytes = call.arguments as? ByteArray
+                    val bytes = call.argument<ByteArray>("bytes")
+                    val wanted = call.argument<Int>("rate") ?: SAMPLE_RATE
                     if (bytes == null) { result.success(null) }
                     else workerHandler.post {
-                        val out = try { decodeTo16k(bytes) } catch (e: Exception) {
+                        val out = try { decode(bytes, wanted) } catch (e: Exception) {
                             Log.w(TAG, "decode failed: ${e.message}"); null
                         }
-                        mainHandler.post { result.success(out) }
+                        mainHandler.post {
+                            result.success(out?.let { mapOf("pcm" to it.first, "rate" to it.second) })
+                        }
                     }
                 }
                 else -> result.notImplemented()
@@ -153,17 +174,18 @@ class IntercomAudio(context: Context, messenger: BinaryMessenger) {
         }
     }
 
-    private fun start(handsFree: Boolean): Boolean {
+    private fun start(handsFree: Boolean, sampleRate: Int): Boolean {
         stop()
         val target = AudioRouting.currentOutput()
+        val sr = sampleRate.coerceIn(8000, MAX_RATE)
         val minBuf = AudioTrack.getMinBufferSize(
-            SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
+            sr, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
         )
         if (minBuf <= 0) {
             Log.e(TAG, "unsupported format")
             return false
         }
-        val bufferBytes = maxOf(minBuf * 2, SAMPLE_RATE * 2 * BUFFER_MS / 1000)
+        val bufferBytes = maxOf(minBuf * 2, sr * 2 * BUFFER_MS / 1000)
         val newTrack = try {
             AudioTrack.Builder()
                 .setAudioAttributes(
@@ -174,7 +196,7 @@ class IntercomAudio(context: Context, messenger: BinaryMessenger) {
                 )
                 .setAudioFormat(
                     AudioFormat.Builder()
-                        .setSampleRate(SAMPLE_RATE)
+                        .setSampleRate(sr)
                         .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
                         .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                         .build(),
@@ -196,11 +218,12 @@ class IntercomAudio(context: Context, messenger: BinaryMessenger) {
         }
         track = newTrack
         output = target
-        tap = TrackTap(newTrack, SAMPLE_RATE, 1)
+        rate = sr
+        tap = TrackTap(newTrack, sr, 1)
         applyVolume()
         // Prime a short silence so the first chunk lands on a running
         // track without an underrun at the very start.
-        val silence = ByteArray(SAMPLE_RATE * 2 / 10)
+        val silence = ByteArray(sr * 2 / 10)
         written = 0
         tap?.wrote(silence, 0, silence.size)
         newTrack.write(silence, 0, silence.size)
@@ -209,7 +232,7 @@ class IntercomAudio(context: Context, messenger: BinaryMessenger) {
         // Use the call's echo processing without an extra energy gate.
         // Nearby speech must remain audible while the other side talks.
         SoftwareEcho.setMode(this, if (handsFree) ResidualEchoGate.Mode.INTERCOM else null)
-        Log.i(TAG, "playback started (buffer=${bufferBytes}b)")
+        Log.i(TAG, "playback started ($sr Hz, buffer=${bufferBytes}b)")
         return true
     }
 
@@ -236,11 +259,11 @@ class IntercomAudio(context: Context, messenger: BinaryMessenger) {
                     // more.
                     val head = t.playbackHeadPosition.toLong() and 0xFFFFFFFFL
                     val buffered = written - head
-                    if (buffered > SAMPLE_RATE * 3 / 4) {
+                    if (buffered > rate * 3 / 4) {
                         drop()
                         return@post
                     }
-                    if (buffered > SAMPLE_RATE * BUFFER_TARGET_MS / 1000 && silent(bytes)) {
+                    if (buffered > rate * BUFFER_TARGET_MS / 1000 && silent(bytes)) {
                         return@post
                     }
                     // The canceller's reference first: a write blocks while
@@ -280,11 +303,13 @@ class IntercomAudio(context: Context, messenger: BinaryMessenger) {
 
     /**
      * Decodes a whole audio file (whatever the platform's codecs read:
-     * MP3, AAC, OGG, WAV) to 16 kHz mono PCM16, the intercom's own
-     * format, so a clip from Home Assistant's text to speech rides the
-     * same frames a microphone would. Runs on the worker.
+     * MP3, AAC, OGG, WAV) to mono PCM16 at [wanted] Hz, or at the file's
+     * own rate when [wanted] is 0. An announcement plays at the file's
+     * rate: brought down to 16 kHz, text to speech lost everything over
+     * 8 kHz and its sibilants turned harsh. Answers the PCM and its rate.
+     * Runs on the worker.
      */
-    private fun decodeTo16k(bytes: ByteArray): ByteArray? {
+    private fun decode(bytes: ByteArray, wanted: Int): Pair<ByteArray, Int>? {
         val file = java.io.File.createTempFile("ks-announce", ".bin", appContext.cacheDir)
         try {
             file.writeBytes(bytes)
@@ -360,20 +385,14 @@ class IntercomAudio(context: Context, messenger: BinaryMessenger) {
                 }
                 mono[i] = acc / channels
             }
-            // Linear resample to 16 kHz.
-            val outFrames = (frames.toLong() * SAMPLE_RATE / rate).toInt()
-            val out = java.nio.ByteBuffer.allocate(outFrames * 2).order(java.nio.ByteOrder.LITTLE_ENDIAN)
-            val step = rate.toDouble() / SAMPLE_RATE
-            for (i in 0 until outFrames) {
-                val pos = i * step
-                val j = pos.toInt().coerceAtMost(frames - 1)
-                val k = (j + 1).coerceAtMost(frames - 1)
-                val frac = (pos - j).toFloat()
-                val v = mono[j] + (mono[k] - mono[j]) * frac
-                out.putShort((v * 32767f).toInt().coerceIn(-32768, 32767).toShort())
-            }
-            Log.i(TAG, "decoded ${raw.size} bytes ($mime, $rate Hz, $channels ch) to ${outFrames * 1000L / SAMPLE_RATE} ms")
-            return out.array()
+            // To the rate asked for. Low-passed first when it comes down,
+            // or what is over the new limit folds back as a hiss.
+            val target = if (wanted > 0) wanted else rate.coerceIn(MIN_RATE, MAX_RATE)
+            val converted = ReferenceResampler(rate, target).process(mono)
+            val out = java.nio.ByteBuffer.allocate(converted.size * 2).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            for (v in converted) out.putShort((v * 32767f).toInt().coerceIn(-32768, 32767).toShort())
+            Log.i(TAG, "decoded ${raw.size} bytes ($mime, $rate Hz, $channels ch) to ${converted.size * 1000L / target} ms at $target Hz")
+            return out.array() to target
         } finally {
             runCatching { file.delete() }
         }
@@ -462,13 +481,13 @@ class IntercomAudio(context: Context, messenger: BinaryMessenger) {
     /**
      * The built-in announcement chime: two soft bell notes, E6 then C6,
      * each a sine with a quick attack and an exponential decay, the
-     * second starting under the first's tail. About a second, as 16 kHz
-     * mono PCM16 peaking near full scale like the text to speech audio.
+     * second starting under the first's tail. About a second, as mono
+     * PCM16 at [sr] Hz peaking near full scale like the text to speech audio.
      * Dart plays it ahead of the words on the same track, so the two
      * share one route, one gain and the platform's processing.
      */
-    private fun chimePcm(): ByteArray {
-        val sr = SAMPLE_RATE
+    private fun chimePcm(sampleRate: Int): ByteArray {
+        val sr = sampleRate.coerceIn(8000, MAX_RATE)
         val total = (sr * 1.1).toInt()
         val wave = DoubleArray(total)
         fun note(freq: Double, start: Int, length: Int, gain: Double) {

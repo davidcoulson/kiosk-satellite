@@ -52,6 +52,10 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingRemoteFleetDiscoveryTitle",
     "description": "settingRemoteFleetDiscoveryDescription",
   },
+  "remote.admin_url": {
+    "title": "settingRemoteAdminUrlTitle",
+    "description": "settingRemoteAdminUrlDescription",
+  },
   "service.cpu_awake": {
     "title": "settingServiceCpuAwakeTitle",
     "description": "settingServiceCpuAwakeDescription",
@@ -446,7 +450,7 @@ const settingMessageIds = <String, Map<String, String>>{
   },
   "screensaver.screen_off_wake_to_screensaver": {
     "title": "settingScreensaverScreenOffWakeToScreensaverTitle",
-    "description": "settingScreensaverScreenOffWakeToScreensaverDescription",
+    "description": "settingScreensaverScreenOffWakeToScreensaverDescriptionSources",
   },
   "screensaver.schedule_enabled": {
     "title": "settingScreensaverScheduleEnabledTitle",
@@ -835,6 +839,14 @@ const settingMessageIds = <String, Map<String, String>>{
   "motion.start_delay": {
     "title": "settingMotionStartDelayTitle",
     "description": "settingMotionStartDelayDescription",
+  },
+  "motion.use_entity": {
+    "title": "settingMotionUseEntityTitle",
+    "description": "settingMotionUseEntityDescription",
+  },
+  "motion.entity": {
+    "title": "settingMotionEntityTitle",
+    "description": "settingMotionEntityDescription",
   },
   "person.sensor": {
     "title": "settingPersonSensorTitle",
@@ -2051,5 +2063,61 @@ const settingMessageIds = <String, Map<String, String>>{
   "voice.realtime_gemini_proactive": {
     "title": "settingVoiceRealtimeGeminiProactiveTitle",
     "description": "settingVoiceRealtimeGeminiProactiveDescription",
+  },
+  "screensaver.media_metadata": {
+    "title": "settingScreensaverMediaMetadataTitle",
+    "description": "settingScreensaverMediaMetadataDescription",
+  },
+  "screensaver.media_metadata_date": {
+    "title": "settingScreensaverMediaMetadataDateTitle",
+    "description": "settingScreensaverMediaMetadataDateDescription",
+  },
+  "screensaver.media_metadata_camera": {
+    "title": "settingScreensaverMediaMetadataCameraTitle",
+    "description": "settingScreensaverMediaMetadataCameraDescription",
+  },
+  "screensaver.media_metadata_position": {
+    "title": "settingScreensaverMediaMetadataPositionTitle",
+    "description": "settingScreensaverMediaMetadataPositionDescription",
+  },
+  "screensaver.media_metadata_text_shadow": {
+    "title": "settingScreensaverMediaMetadataTextShadowTitle",
+    "description": "settingScreensaverMediaMetadataTextShadowDescription",
+  },
+  "screensaver.media_metadata_scale": {
+    "title": "settingScreensaverMediaMetadataScaleTitle",
+    "description": "settingScreensaverMediaMetadataScaleDescription",
+  },
+  "screensaver.media_vignette_strength": {
+    "title": "settingScreensaverMediaVignetteStrengthTitle",
+    "description": "settingScreensaverMediaVignetteStrengthDescription",
+  },
+  "screensaver.local_metadata": {
+    "title": "settingScreensaverLocalMetadataTitle",
+    "description": "settingScreensaverLocalMetadataDescription",
+  },
+  "screensaver.local_metadata_date": {
+    "title": "settingScreensaverLocalMetadataDateTitle",
+    "description": "settingScreensaverLocalMetadataDateDescription",
+  },
+  "screensaver.local_metadata_camera": {
+    "title": "settingScreensaverLocalMetadataCameraTitle",
+    "description": "settingScreensaverLocalMetadataCameraDescription",
+  },
+  "screensaver.local_metadata_position": {
+    "title": "settingScreensaverLocalMetadataPositionTitle",
+    "description": "settingScreensaverLocalMetadataPositionDescription",
+  },
+  "screensaver.local_metadata_text_shadow": {
+    "title": "settingScreensaverLocalMetadataTextShadowTitle",
+    "description": "settingScreensaverLocalMetadataTextShadowDescription",
+  },
+  "screensaver.local_metadata_scale": {
+    "title": "settingScreensaverLocalMetadataScaleTitle",
+    "description": "settingScreensaverLocalMetadataScaleDescription",
+  },
+  "screensaver.local_vignette_strength": {
+    "title": "settingScreensaverLocalVignetteStrengthTitle",
+    "description": "settingScreensaverLocalVignetteStrengthDescription",
   },
 };

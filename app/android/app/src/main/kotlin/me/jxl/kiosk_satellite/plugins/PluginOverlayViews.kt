@@ -2,12 +2,14 @@ package me.jxl.kiosk_satellite.plugins
 
 import android.content.Context
 import android.content.res.AssetManager
+import android.graphics.Path
 import android.graphics.Typeface
 import android.os.Build
 import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.View
 import android.widget.FrameLayout
+import androidx.core.graphics.PathParser
 import io.flutter.FlutterInjector
 import io.flutter.plugin.common.StandardMessageCodec
 import io.flutter.plugin.platform.PlatformView
@@ -55,6 +57,10 @@ internal class PluginOverlayViews(
     }
 
     private val fonts = Fonts(assets)
+    private val icons = MdiPaths { letter ->
+        val asset = FlutterInjector.instance().flutterLoader().getLookupKeyForAsset("assets/mdi/$letter.json")
+        assets.open(asset).bufferedReader().use { it.readText() }
+    }
     private val live = mutableListOf<Hosted>()
 
     override fun create(context: Context, viewId: Int, args: Any?): PlatformView {
@@ -66,8 +72,8 @@ internal class PluginOverlayViews(
         val themeArgs = params["theme"] as? Map<*, *>
         val wrapWidth = (params["width"] as? Number)?.toInt() == PluginOverlays.WRAP
         val wrapHeight = (params["height"] as? Number)?.toInt() == PluginOverlays.WRAP
-        val inset = (params["inset"] as? Number)?.toInt() ?: 0
-        val frame = OverlayFrame(context, wrapWidth, wrapHeight, inset) { width, height ->
+        val insets = (params["insets"] as? List<*>)?.map { (it as? Number)?.toInt() ?: 0 }?.takeIf { it.size == 4 } ?: listOf(0, 0, 0, 0)
+        val frame = OverlayFrame(context, wrapWidth, wrapHeight, insets) { width, height ->
             measured(mapOf("id" to id, "session" to session, "key" to key, "generation" to generation, "width" to width, "height" to height))
         }
         val factory = lookup(id, session, key, generation)
@@ -111,7 +117,7 @@ internal class PluginOverlayViews(
         val colors = (args?.get("colors") as? Map<*, *>)?.entries
             ?.mapNotNull { (role, value) -> (role as? String)?.let { name -> (value as? Number)?.let { name to it.toInt() } } }
             ?.toMap() ?: emptyMap()
-        return KsTheme(args?.get("dark") as? Boolean ?: true, context.resources.displayMetrics.density, colors, fonts)
+        return KsTheme(args?.get("dark") as? Boolean ?: true, context.resources.displayMetrics.density, colors, fonts, icons)
     }
 
     /** Rubik, the KS typeface, at real weights from its variable wght axis. */
@@ -146,7 +152,8 @@ internal class PluginOverlayViews(
         context: Context,
         private val wrapWidth: Boolean,
         private val wrapHeight: Boolean,
-        private val insetDp: Int,
+        /** Left, top, right and bottom, in dp. */
+        private val insetsDp: List<Int>,
         private val onMeasured: (Int, Int) -> Unit,
     ) : FrameLayout(context) {
         private var reported: Pair<Int, Int>? = null
@@ -157,11 +164,12 @@ internal class PluginOverlayViews(
             val height = MeasureSpec.getSize(heightMeasureSpec)
             if (child == null) { setMeasuredDimension(width, height); return }
             val metrics = resources.displayMetrics
-            val inset = Math.round(insetDp * 2 * metrics.density)
+            val across = Math.round((insetsDp[0] + insetsDp[2]) * metrics.density)
+            val down = Math.round((insetsDp[1] + insetsDp[3]) * metrics.density)
             fun spec(wrap: Boolean, exact: Int, available: Int) =
-                if (wrap) MeasureSpec.makeMeasureSpec(maxOf(0, available - inset), MeasureSpec.AT_MOST)
+                if (wrap) MeasureSpec.makeMeasureSpec(maxOf(0, available), MeasureSpec.AT_MOST)
                 else MeasureSpec.makeMeasureSpec(exact, MeasureSpec.EXACTLY)
-            child.measure(spec(wrapWidth, width, metrics.widthPixels), spec(wrapHeight, height, metrics.heightPixels))
+            child.measure(spec(wrapWidth, width, metrics.widthPixels - across), spec(wrapHeight, height, metrics.heightPixels - down))
             setMeasuredDimension(width, height)
             if (!wrapWidth && !wrapHeight) return
             val size = (if (wrapWidth) child.measuredWidth else width) to (if (wrapHeight) child.measuredHeight else height)
@@ -175,5 +183,44 @@ internal class PluginOverlayViews(
             val child = getChildAt(0) ?: return
             child.layout(0, 0, child.measuredWidth, child.measuredHeight)
         }
+    }
+}
+
+/**
+ * KS's own Material Design Icons for KsTheme.icon: the path data the app
+ * draws its icons from, one shard per first letter under assets/mdi.
+ * A name is found by scanning the shard's text rather than parsing the
+ * whole JSON, which keeps a lookup on the main thread to a millisecond.
+ * Resolved outlines are kept, shards only while a few letters are in use.
+ */
+internal class MdiPaths(
+    /** The text of one shard, a-z or _, or null when it cannot be read. */
+    private val read: (String) -> String?,
+) : KsTheme.Icons {
+    private val resolved = object : LinkedHashMap<String, Path?>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Path?>) = size > 256
+    }
+    private val shards = object : LinkedHashMap<String, String>(4, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>) = size > 3
+    }
+
+    @Synchronized override fun path(name: String): Path? {
+        val key = name.trim().lowercase().removePrefix("mdi:")
+        if (!key.matches(Regex("[a-z0-9][a-z0-9-]{0,79}"))) return null
+        if (resolved.containsKey(key)) return resolved[key]
+        val data = lookup(key)?.let { if (it.startsWith("@")) lookup(it.substring(1)) else it }
+        // The parser turns bad data into an empty path rather than failing.
+        val path = data?.let { try { PathParser.createPathFromPathData(it) } catch (_: Throwable) { null } }?.takeUnless { it.isEmpty }
+        resolved[key] = path
+        return path
+    }
+
+    private fun lookup(key: String): String? {
+        val letter = if (key[0] in 'a'..'z') key[0].toString() else "_"
+        val text = shards[letter] ?: (try { read(letter) } catch (_: Throwable) { null })?.also { shards[letter] = it } ?: return null
+        val marker = "\"$key\":\""
+        val start = text.indexOf(marker).takeIf { it >= 0 }?.plus(marker.length) ?: return null
+        val end = text.indexOf('"', start).takeIf { it > start } ?: return null
+        return text.substring(start, end)
     }
 }

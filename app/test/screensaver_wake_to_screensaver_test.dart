@@ -132,10 +132,7 @@ void main() {
           'ks.screensaver.screen_off_minutes': 5,
         });
         async.flushMicrotasks();
-        expect(
-          settings.get(defs.screensaverScreenOffWakeToScreensaver),
-          isFalse,
-        );
+        expect(settings.get(defs.screensaverScreenOffWakeToScreensaver), '[]');
         async.elapse(const Duration(minutes: 6));
         expect(screenCalls, ['screenOff']);
         bus.publish(event);
@@ -184,17 +181,138 @@ void main() {
     });
   }
 
-  test('the switch is exposed through the settings schema', () async {
+  // A wake the app did not ask for (power button, the Echo Show's mute
+  // button, double-tap to wake) follows the switch too (issue #952).
+  test('a system wake under a dark panel relights the screensaver', () {
+    fakeAsync((async) {
+      build({
+        wakeKey: true,
+        'ks.screensaver.timeout_seconds': 60,
+        'ks.screensaver.screen_off_minutes': 5,
+      });
+      async.flushMicrotasks();
+      async.elapse(const Duration(minutes: 6));
+      expect(screenCalls, ['screenOff']);
+      expect(saver.isActive, isTrue);
+
+      bus.publish(const ScreenStateChanged(on: true));
+      async.flushMicrotasks();
+      expect(saver.isActive, isTrue);
+      expect(screenCalls, ['screenOff']);
+
+      // A fresh countdown runs from the wake.
+      async.elapse(const Duration(minutes: 4));
+      expect(screenCalls, ['screenOff']);
+      async.elapse(const Duration(minutes: 1));
+      expect(screenCalls, ['screenOff', 'screenOff']);
+      expect(saver.isActive, isTrue);
+
+      // Woken again, then a touch is what opens the dashboard.
+      bus.publish(const ScreenStateChanged(on: true));
+      async.flushMicrotasks();
+      expect(saver.isActive, isTrue);
+      bus.publish(const ActivityDetected(source: 'touch'));
+      async.flushMicrotasks();
+      expect(saver.isActive, isFalse);
+    });
+  });
+
+  test('a system wake under a dark panel opens the dashboard by default', () {
+    fakeAsync((async) {
+      build({
+        'ks.screensaver.timeout_seconds': 60,
+        'ks.screensaver.screen_off_minutes': 5,
+      });
+      async.flushMicrotasks();
+      async.elapse(const Duration(minutes: 6));
+      expect(screenCalls, ['screenOff']);
+      bus.publish(const ScreenStateChanged(on: true));
+      async.flushMicrotasks();
+      expect(saver.isActive, isFalse);
+    });
+  });
+
+  test('the pick is exposed through the settings schema', () async {
     await build({});
     final def = defs.screensaverScreenOffWakeToScreensaver;
     expect(settings.visible(def), isTrue);
-    await settings.setFromJson(def.key, true);
+    expect(await settings.setFromJson(def.key, '["touch","motion"]'), isTrue);
     expect(
       settings.describe().firstWhere((row) => row['key'] == def.key),
-      containsPair('value', true),
+      containsPair('value', '["motion","touch"]'),
     );
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getBool(wakeKey), isTrue);
+    expect(prefs.getString(wakeKey), '["motion","touch"]');
+    expect(await settings.setFromJson(def.key, '["sneeze"]'), isFalse);
+    expect(await settings.setFromJson(def.key, 'motion'), isFalse);
     await saver.dispose();
+  });
+
+  // The setting was a switch before issue #954. On stood for every
+  // detection and the power button, never touch.
+  for (final (stored, expected) in [
+    (true, '["motion","face","proximity","person","power"]'),
+    (false, '[]'),
+  ]) {
+    test('a stored switch $stored migrates to $expected', () async {
+      await build({wakeKey: stored});
+      expect(
+        settings.get(defs.screensaverScreenOffWakeToScreensaver),
+        expected,
+      );
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString(wakeKey), expected);
+      await saver.dispose();
+    });
+
+    test('an imported switch $stored becomes $expected', () async {
+      await build({});
+      expect(
+        await settings.import({
+          defs.screensaverScreenOffWakeToScreensaver.key: stored,
+        }),
+        1,
+      );
+      expect(
+        settings.get(defs.screensaverScreenOffWakeToScreensaver),
+        expected,
+      );
+      await saver.dispose();
+    });
+  }
+
+  test('a detection that is not picked wakes the dashboard', () {
+    fakeAsync((async) {
+      build({
+        'ks.screensaver.dismiss_on_motion': true,
+        'ks.screensaver.dismiss_on_proximity': true,
+        wakeKey: '["motion"]',
+        'ks.screensaver.timeout_seconds': 60,
+        'ks.screensaver.screen_off_minutes': 5,
+      });
+      async.flushMicrotasks();
+      async.elapse(const Duration(minutes: 6));
+      expect(screenCalls, ['screenOff']);
+      bus.publish(const ProximityDetected());
+      async.flushMicrotasks();
+      expect(saver.isActive, isFalse);
+      expect(screenCalls, ['screenOff', 'screenOn']);
+    });
+  });
+
+  test('a system wake opens the dashboard when Power button is not picked', () {
+    fakeAsync((async) {
+      build({
+        wakeKey: '["motion","face","proximity","person","touch"]',
+        'ks.screensaver.timeout_seconds': 60,
+        'ks.screensaver.screen_off_minutes': 5,
+      });
+      async.flushMicrotasks();
+      async.elapse(const Duration(minutes: 6));
+      expect(screenCalls, ['screenOff']);
+      bus.publish(const ScreenStateChanged(on: true));
+      async.flushMicrotasks();
+      expect(saver.isActive, isFalse);
+    });
   });
 }

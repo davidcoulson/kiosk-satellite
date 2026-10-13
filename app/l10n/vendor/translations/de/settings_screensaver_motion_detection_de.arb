@@ -8,5 +8,10 @@
   "settingScreensaverPostponeOnMotionDescription": "Verzögert die Aktivierung des Bildschirmschoners, wenn Bewegung erkannt wird. WARNUNG: Die Kamera bleibt dadurch dauerhaft eingeschaltet.",
   "screensaverDetectionMotionPage": "Bewegungserkennung",
   "screensaverDetectionMotionHint": "Bildschirmschoner bei Bewegungserkennung schließen oder verzögern",
-  "screensaverDetectionMotionTuning": "Die Bewegungserkennung wird in den Kamera-Einstellungen konfiguriert."
+  "screensaverDetectionMotionTuning": "Die Bewegungserkennung wird in den Kamera-Einstellungen konfiguriert.",
+  "settingMotionUseEntityTitle": "Home Assistant-Entität verwenden",
+  "settingMotionUseEntityDescription": "Erkennt Bewegung mit einem Home Assistant-Sensor statt mit der Kamera.",
+  "settingMotionEntityTitle": "Bewegungssensor-Entität",
+  "settingMotionEntityDescription": "Der Belegungs-, Bewegungs- oder Anwesenheitssensor von Home Assistant, der verwendet wird.",
+  "screensaverDetectionExternalMotionHeading": "Externer Bewegungssensor"
 }

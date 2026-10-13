@@ -63,3 +63,92 @@ String colorSchemeJs({required bool dark}) {
 /// Flips the state [colorSchemeJs] installed. A no-op on a page without it.
 String colorSchemeSetJs({required bool dark}) =>
     'window.__ksSetDark && window.__ksSetDark($dark);';
+
+/// [colorSchemeJs] for a custom page (a person's own HTML under `/local/`),
+/// which also covers the page's CSS: a custom page asks
+/// `@media (prefers-color-scheme)` as often as it asks `matchMedia`.
+///
+/// Chromium offers no way to answer the CSS media feature for a page, so
+/// the page's own rules are rewritten instead. Every media condition naming
+/// `prefers-color-scheme` in a same-origin stylesheet, a `<link media>`, a
+/// `<style media>` or a `<source media>` gets that feature swapped for a
+/// query that always or never matches, kept with the original so a flip
+/// rewrites it again. Stylesheets from another host cannot be read and keep
+/// answering from Android. Installed on every document and acting only on
+/// custom pages, so it can ride the dashboard WebView's document-start
+/// scripts.
+String customPageColorSchemeJs({required bool dark}) =>
+    '''
+    (function () {
+      if (location.pathname.indexOf('/local/') !== 0) return;
+      ${colorSchemeJs(dark: dark)}
+      if (!window.__ksSetDark || window.__ksCssScheme) return;
+      window.__ksCssScheme = true;
+      var dark = $dark;
+      var feature = /\\(\\s*prefers-color-scheme\\s*:\\s*(dark|light)\\s*\\)/i;
+      var features = /\\(\\s*prefers-color-scheme\\s*:\\s*(dark|light)\\s*\\)/gi;
+      function rewrite(text) {
+        return text.replace(features, function (_, scheme) {
+          return (scheme.toLowerCase() === 'dark') === dark
+            ? '(min-width: 0px)' : '(max-width: -1px)';
+        });
+      }
+      function fixList(list, owner) {
+        if (!list) return;
+        if (owner.__ksMedia === undefined) {
+          if (!feature.test(list.mediaText)) return;
+          owner.__ksMedia = list.mediaText;
+        }
+        var next = rewrite(owner.__ksMedia);
+        if (list.mediaText !== next) list.mediaText = next;
+      }
+      function walk(rules) {
+        for (var i = 0; i < rules.length; i++) {
+          var rule = rules[i];
+          if (rule.media) fixList(rule.media, rule);
+          if (rule.styleSheet) sheet(rule.styleSheet);
+          if (rule.cssRules) walk(rule.cssRules);
+        }
+      }
+      function sheet(s) {
+        try {
+          fixList(s.media, s);
+          walk(s.cssRules);
+        } catch (e) {}
+      }
+      function sources() {
+        var els = document.querySelectorAll('source[media]');
+        for (var i = 0; i < els.length; i++) {
+          var el = els[i];
+          if (el.__ksMedia === undefined) {
+            if (!feature.test(el.media)) continue;
+            el.__ksMedia = el.media;
+          }
+          var next = rewrite(el.__ksMedia);
+          if (el.media !== next) el.media = next;
+        }
+      }
+      function all() {
+        for (var i = 0; i < document.styleSheets.length; i++) {
+          sheet(document.styleSheets[i]);
+        }
+        sources();
+      }
+      var queued = false;
+      function soon() {
+        if (queued) return;
+        queued = true;
+        setTimeout(function () { queued = false; all(); }, 0);
+      }
+      new MutationObserver(soon).observe(document, { childList: true, subtree: true });
+      document.addEventListener('load', soon, true);
+      document.addEventListener('DOMContentLoaded', all);
+      var setDark = window.__ksSetDark;
+      window.__ksSetDark = function (next) {
+        setDark(next);
+        if (next === dark) return;
+        dark = next;
+        all();
+      };
+    })();
+  ''';

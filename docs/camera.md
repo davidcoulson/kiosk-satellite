@@ -86,6 +86,8 @@ Detection is engineered to be CPU efficient and to work effectively in the dark.
 
 **Startup delay** solves a specific hardware problem: devices whose camera physically moves as it opens (like a phone with a motorized pop up module). As the lens travels into position, that sweeping movement registers as a massive change across the whole frame, rather than a simple lighting shift. None of the standard discounting algorithms can filter it out, which causes the kiosk to immediately dismiss the screensaver that just started the camera. The delay counts from the very first frame and applies to every single path that starts the camera, not just screensavers. Schedule boundaries, the screen turning on, or a tuning change all trigger the same lens deployment. Frames are still tracked as a baseline while the delay runs, ensuring detection is fully sensitive the very second the delay expires. Leave it at 0 on a device with a fixed camera; a few seconds is usually enough for the hardware that requires it.
 
+A Home Assistant occupancy, motion or presence sensor can stand in for the camera on the screensaver's motion settings. See [External Motion Sensor](screensavers.md#external-motion-sensor).
+
 Two related switches are located elsewhere: with **Allow screensaver** turned on under [Lockdown Mode](kiosk.md), Dismiss on motion remains deactivated until the lock lifts. Additionally, the Sendspin player's full screen view only reacts to motion if its own **Dismiss "Now Playing" on motion** setting is enabled.
 
 ## Person Sensor

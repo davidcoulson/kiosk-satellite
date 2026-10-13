@@ -343,5 +343,18 @@
         "description": "Number of entities."
       }
     }
+  },
+  "haCustomPageFilter": "Not used on custom pages.",
+  "@haCustomPageFilter": {
+    "context": "Settings:Home Assistant Setup:Optimizations",
+    "description": "Live update-filter status while a custom page (a person's own HTML page) is on screen: the filter leaves those pages alone.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup > Optimizations"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup > Optimizations"
+      ]
+    }
   }
 }

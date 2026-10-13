@@ -1,5 +1,5 @@
 import { pluginError } from './localization.js';
-import { pluginText, t, messageLanguage } from './localization.js';
+import { deviceText, pluginText, t, messageLanguage } from './localization.js';
 import { preserveDraft } from './drafts.js';
 import { watchUpdates, receiveUpdate } from './live.js';
 import { entitySpec, pickField, pickItem } from './entity_picker.js';
@@ -7,6 +7,8 @@ import { cmd } from './core.js';
 import { updatePluginCharts } from './plugin-charts.js';
 import { updatePluginReadings } from './plugin-readings.js';
 import { currentPath, showTab, subpageEntry } from './tabs.js';
+import { dashboardField } from './dashboard_picker.js';
+import { cameraViewSpec, fieldVisible, iconField, listSetting } from './plugin_lists.js';
 import { hintRow, messageBox, modalShell, showToast, swatch } from './widgets.js';
 import { marked } from './vendor-marked.js';
 import DOMPurify from './vendor-purify.js';
@@ -140,6 +142,9 @@ async function zipBase64(file) {
   }
   return btoa(binary);
 }
+
+const EYE = 'M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z';
+const EYE_OFF = 'M3 3l18 18M10.6 5.6c.5-.1.9-.1 1.4-.1 6.5 0 10 6.5 10 6.5a16 16 0 0 1-3.2 4M6.6 6.6A16 16 0 0 0 2 12s3.5 6.5 10 6.5c2 0 3.8-.6 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2';
 
 function iconButton(label, path) {
   const button = element('button', undefined, 'icon-btn'); button.type = 'button';
@@ -385,9 +390,20 @@ function render(root, state) {
         await refresh();
       }
     }, trigger);
-    for (const setting of plugin.settings || []) {
+    // A setting whose condition does not hold stays off the page. Its
+    // saved value is kept.
+    const shown = (plugin.settings || []).filter((setting) => fieldVisible(setting, values, plugin.settings));
+    for (const setting of shown) {
       const group = setting.group || 'Settings';
       const panel = ensureGroup(group);
+      if (setting.type === 'list') {
+        const alone = shown.filter((entry) => (entry.group || 'Settings') === group).length === 1;
+        const block = listSetting({ setting, rows: values[setting.key] ?? setting.default ?? [], showTitle: !alone,
+          onChange: (rows) => saveSetting(setting.key, rows, block) });
+        block.dataset.searchId = `plugin:${plugin.id}:setting:${setting.key}`;
+        panel.append(block);
+        continue;
+      }
       const settingRow = element('div', undefined, 'row');
       settingRow.dataset.searchId = `plugin:${plugin.id}:setting:${setting.key}`;
       settingRow.append(info(setting.title, setting.description));
@@ -424,6 +440,29 @@ function render(root, state) {
         });
         settingRow.replaceChildren(info(setting.title, setting.description || ''), field.el);
         settingRow.classList.add('dp-field-row');
+      } else if (setting.type === 'icon' || setting.type === 'dashboard' || setting.type === 'cameraView') {
+        const current = values[setting.key] ?? setting.default ?? '';
+        let field;
+        if (setting.type === 'icon') {
+          field = iconField({ value: current, title: setting.title, onPick: (picked) => saveSetting(setting.key, picked, field.el) });
+        } else if (setting.type === 'dashboard') {
+          field = dashboardField({ value: current, title: setting.title, onPick: (path) => saveSetting(setting.key, path, field.el) });
+        } else {
+          const spec = cameraViewSpec();
+          let picked = current;
+          field = pickField({
+            spec, value: current, placeholder: pluginText('Choose a camera view'),
+            onClick: async () => {
+              const out = await pickItem({ title: setting.title, spec, selected: picked || null, allowClear: true });
+              if (!out) return;
+              picked = out.id ?? '';
+              await saveSetting(setting.key, picked, field.el);
+              field.setValue(picked);
+            },
+          });
+        }
+        settingRow.replaceChildren(info(setting.title, setting.description || ''), field.el);
+        settingRow.classList.add('dp-field-row');
       } else if (setting.type === 'select') {
         const select = element('select'); select.setAttribute('aria-label', setting.title);
         for (const choice of setting.options) { const option = element('option', choice); option.value = choice; select.append(option); }
@@ -435,6 +474,40 @@ function render(root, state) {
         settingRow.append(swatch(rgb, setting.title, (selected) => {
           saveSetting(setting.key, '#' + selected.split(',').map((c) => Number(c).toString(16).padStart(2, '0')).join('').toUpperCase(), settingRow.querySelector('button'));
         }));
+      } else if (setting.type === 'secret') {
+        // The listing reads __set__ for a saved secret, never the value.
+        // Typing replaces it. The eye shows what is being typed.
+        const saved = values[setting.key] === '__set__';
+        input.type = 'password'; input.maxLength = 512; input.autocomplete = 'new-password';
+        input.placeholder = saved ? deviceText('•••••• (set)') : deviceText('Not set');
+        const reveal = iconButton(pluginText('Show password'), EYE);
+        const show = (shown) => {
+          input.type = shown ? 'text' : 'password';
+          const label = pluginText(shown ? 'Hide password' : 'Show password');
+          reveal.title = label; reveal.setAttribute('aria-label', label);
+          reveal.querySelector('path').setAttribute('d', shown ? EYE_OFF : EYE);
+        };
+        // Blur saves, since switching the field's type drops its change
+        // event. A saved secret leaves the field empty and hidden again.
+        input.onblur = () => input.value && run(async () => {
+          try {
+            await command('configurePlugin', { id: plugin.id, values: { ...plugin.values, [setting.key]: input.value } });
+            input.value = ''; show(false); reveal.hidden = true;
+          } finally {
+            await refresh();
+          }
+        }, input);
+        input.onkeydown = (event) => { if (event.key === 'Enter') input.blur(); };
+        // Pressing the eye keeps focus in the field, so it does not save
+        // and redraw the row halfway through typing.
+        reveal.onmousedown = (event) => event.preventDefault();
+        reveal.onclick = () => show(input.type === 'password');
+        // The eye appears only with typed text, since the saved value is
+        // never shown. An emptied field hides its text again.
+        reveal.hidden = true;
+        input.oninput = () => { reveal.hidden = !input.value; if (!input.value) show(false); };
+        const control = element('div', undefined, 'plugin-secret'); control.append(input, reveal);
+        settingRow.append(control);
       } else {
         input.type = 'text'; input.maxLength = 512; input.value = values[setting.key] ?? setting.default;
         input.onchange = () => saveSetting(setting.key, input.value, input);

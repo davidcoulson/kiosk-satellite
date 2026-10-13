@@ -611,6 +611,14 @@ class UiStringsRu extends UiStrings {
       'Вид, который киоск показывает при запуске.';
 
   @override
+  String get dashboardPickerOnePage => '1 страница';
+
+  @override
+  String dashboardPickerPageCount(String count) {
+    return 'Страниц: $count';
+  }
+
+  @override
   String get dlnaCannotDecode =>
       'Это устройство не может декодировать это видео.';
 
@@ -2914,6 +2922,40 @@ class UiStringsRu extends UiStrings {
   }
 
   @override
+  String get pluginShowPassword => 'Показать пароль';
+
+  @override
+  String get pluginHidePassword => 'Скрыть пароль';
+
+  @override
+  String get pluginUntitled => 'Без названия';
+
+  @override
+  String get pluginSearchIcons => 'Поиск значков';
+
+  @override
+  String get pluginChooseIcon => 'Выберите значок';
+
+  @override
+  String get pluginSearchCameraViews => 'Поиск видов камер';
+
+  @override
+  String get pluginChooseCameraView => 'Выберите вид камер';
+
+  @override
+  String get pluginCameraViewGone =>
+      'Этого вида камер больше нет. Выберите другой.';
+
+  @override
+  String get pluginDragToReorder => 'Перетащите для изменения порядка';
+
+  @override
+  String get pluginDone => 'Готово';
+
+  @override
+  String get pluginRequired => 'Обязательно';
+
+  @override
   String get pluginAddPlugin => 'Добавить плагин';
 
   @override
@@ -3416,6 +3458,35 @@ class UiStringsRu extends UiStrings {
       'Недопустимый или повторяющийся ID триггера';
 
   @override
+  String get pluginErrorListSetting => 'Недопустимая настройка списка';
+
+  @override
+  String get pluginErrorSettingCondition => 'Недопустимое условие настройки';
+
+  @override
+  String get pluginErrorIcon => 'Ожидалось имя значка MDI';
+
+  @override
+  String get pluginErrorDashboard => 'Ожидался путь к панели';
+
+  @override
+  String get pluginErrorCameraView => 'Ожидался ID вида камер';
+
+  @override
+  String get pluginErrorListValue => 'Ожидалась настройка списка';
+
+  @override
+  String get pluginErrorListCount =>
+      'В списке слишком много или слишком мало элементов';
+
+  @override
+  String get pluginErrorRequiredField => 'Заполните все обязательные поля';
+
+  @override
+  String get pluginErrorListSize =>
+      'Настройки списка могут занимать не более 32 КБ';
+
+  @override
   String get remoteDisableTitle => 'Выключить удалённое управление?';
 
   @override
@@ -3842,6 +3913,9 @@ class UiStringsRu extends UiStrings {
   String overviewMetricDegrees(String value) {
     return '$value°C';
   }
+
+  @override
+  String get overviewShowingCustomPages => 'Показ своих страниц';
 
   @override
   String get overviewNoScreenshot => 'Нет скриншота';
@@ -5640,6 +5714,21 @@ class UiStringsRu extends UiStrings {
       'Объявлять это устройство в сети и показывать другие киоски в удалённом администрировании для переключения между ними.';
 
   @override
+  String get settingRemoteAdminUrlTitle => 'URL администрирования';
+
+  @override
+  String get settingRemoteAdminUrlDescription =>
+      'Адрес, который другие киоски открывают в «Сменить киоск», чтобы перейти к этому, например имя обратного прокси. Оставьте пустым, чтобы использовать его сетевой адрес.';
+
+  @override
+  String get deviceAdminUrlInvalid =>
+      'Введите корректный адрес, например https://kiosk.example.com';
+
+  @override
+  String get deviceAdminUrlPath =>
+      'Введите только адрес, без пути. Пример: https://kiosk.example.com';
+
+  @override
   String get deviceRemotePage => 'Удалённое администрирование';
 
   @override
@@ -7111,6 +7200,65 @@ class UiStringsRu extends UiStrings {
   @override
   String get gestureRemoteKeysHelp =>
       'A mapped key runs its action whatever app is in front, and does nothing else.';
+  String get haCustomPages => 'Свои страницы';
+
+  @override
+  String get haCustomPagesHintDashboard =>
+      'Ваши HTML-страницы в качестве панели';
+
+  @override
+  String get haCustomPagesAdd => 'Добавить страницу';
+
+  @override
+  String get haCustomPagesEmpty =>
+      'Добавьте HTML-страницы из папки www Home Assistant, чтобы выбирать их как панель.';
+
+  @override
+  String get haCustomPagesGuide => 'Руководство по своим страницам';
+
+  @override
+  String get haCustomPagesGuideHint =>
+      'Как создать страницу, которая работает с Home Assistant.';
+
+  @override
+  String get haCustomPageAddTitle => 'Добавить свою страницу';
+
+  @override
+  String get haCustomPageEditTitle => 'Изменить свою страницу';
+
+  @override
+  String get haCustomPageName => 'Название';
+
+  @override
+  String get haCustomPagePath => 'Путь';
+
+  @override
+  String get haCustomPagePathHint =>
+      'Файл в папке www Home Assistant, например /local/dashboard.html.';
+
+  @override
+  String get haCustomPageNameMissing => 'Введите название.';
+
+  @override
+  String get haCustomPagePathInvalid =>
+      'Введите путь в /local/, например /local/dashboard.html.';
+
+  @override
+  String get haCustomPageDuplicate =>
+      'Этот путь уже использует другая страница.';
+
+  @override
+  String get haCustomPageNotFound =>
+      'В Home Assistant нет файла по этому пути.';
+
+  @override
+  String get haCustomPageUnreachable =>
+      'Не удалось подключиться к Home Assistant.';
+
+  @override
+  String haCustomPageStatus(String code) {
+    return 'Home Assistant ответил кодом HTTP $code.';
+  }
 
   @override
   String get settingHaHoldModeTitle => 'Режим удержания';
@@ -7245,6 +7393,9 @@ class UiStringsRu extends UiStrings {
   String haThreshold(String count) {
     return 'Этот вид использует сущностей: $count, что превышает порог фильтрации. Фильтрация выключена.';
   }
+
+  @override
+  String get haCustomPageFilter => 'Не используется на своих страницах.';
 
   @override
   String get settingHaReturnHomeEnabledTitle =>
@@ -9793,8 +9944,33 @@ class UiStringsRu extends UiStrings {
       'Пробуждать в заставку';
 
   @override
-  String get settingScreensaverScreenOffWakeToScreensaverDescription =>
-      'Определение движения, лица, близости или присутствия после выключения экрана возвращает заставку вместо панели, с новым отсчётом «Выключать экран через». Касание всё равно открывает панель.';
+  String get settingScreensaverScreenOffWakeToScreensaverDescriptionSources =>
+      'Выберите, что возвращает заставку вместо панели после выключения экрана. Отсчёт «Выключать экран через» начинается заново.';
+
+  @override
+  String get screensaverWakeSourcesAll => 'Все';
+
+  @override
+  String get screensaverWakeSourceMotion => 'Движение';
+
+  @override
+  String get screensaverWakeSourceFace => 'Лицо';
+
+  @override
+  String get screensaverWakeSourceProximity => 'Близость';
+
+  @override
+  String get screensaverWakeSourcePerson => 'Присутствие';
+
+  @override
+  String get screensaverWakeSourcePower => 'Кнопка питания';
+
+  @override
+  String get screensaverWakeSourceTouch => 'Касание';
+
+  @override
+  String get screensaverWakeSourceTouchRequires =>
+      'Требует и «Выключать экран через», и «Использовать чёрный экран вместо этого».';
 
   @override
   String get screensaverModeDim => 'Затемнение';
@@ -10581,11 +10757,64 @@ class UiStringsRu extends UiStrings {
       'Касание левой или правой пятой части экрана показывает предыдущий или следующий слайд вместо закрытия.';
 
   @override
+  String get settingScreensaverMediaMetadataTitle => 'Показывать метаданные';
+
+  @override
+  String get settingScreensaverMediaMetadataDescription =>
+      'Дата и детали камеры поверх фото.';
+
+  @override
+  String get settingScreensaverMediaMetadataDateTitle => 'Дата съёмки';
+
+  @override
+  String get settingScreensaverMediaMetadataDateDescription =>
+      'Показывать, когда снято фото.';
+
+  @override
+  String get settingScreensaverMediaMetadataCameraTitle => 'Детали камеры';
+
+  @override
+  String get settingScreensaverMediaMetadataCameraDescription =>
+      'Показывать фокусное расстояние, диафрагму и ISO.';
+
+  @override
+  String get settingScreensaverMediaMetadataPositionTitle =>
+      'Позиция метаданных';
+
+  @override
+  String get settingScreensaverMediaMetadataPositionDescription =>
+      'В каком углу находятся детали.';
+
+  @override
+  String get settingScreensaverMediaMetadataTextShadowTitle => 'Тень текста';
+
+  @override
+  String get settingScreensaverMediaMetadataTextShadowDescription =>
+      'Добавить тень тексту метаданных для читаемости на фото.';
+
+  @override
+  String get settingScreensaverMediaMetadataScaleTitle => 'Масштаб текста';
+
+  @override
+  String get settingScreensaverMediaMetadataScaleDescription =>
+      'Масштабируйте детали фото под размер экрана.';
+
+  @override
+  String get settingScreensaverMediaVignetteStrengthTitle => 'Сила виньетки';
+
+  @override
+  String get settingScreensaverMediaVignetteStrengthDescription =>
+      'Затемнение позади деталей для читаемости на светлых фото. 0 выключает.';
+
+  @override
+  String get screensaverMediaHaMetadata => 'Метаданные «Медиа Home Assistant»';
+
+  @override
   String get screensaverMediaHaPage => 'Заставка «Медиа Home Assistant»';
 
   @override
-  String get screensaverMediaHaHint =>
-      'Источник медиа, тайминг, перемешивание, заполнение';
+  String get screensaverMediaHaPageHint =>
+      'Источник медиа, тайминг, перемешивание, заполнение, метаданные';
 
   @override
   String get screensaverMediaChoose => 'Выберите медиа';
@@ -10674,11 +10903,64 @@ class UiStringsRu extends UiStrings {
       'Касание левой или правой пятой части экрана показывает предыдущий или следующий слайд вместо закрытия.';
 
   @override
+  String get settingScreensaverLocalMetadataTitle => 'Показывать метаданные';
+
+  @override
+  String get settingScreensaverLocalMetadataDescription =>
+      'Дата и детали камеры поверх фото.';
+
+  @override
+  String get settingScreensaverLocalMetadataDateTitle => 'Дата съёмки';
+
+  @override
+  String get settingScreensaverLocalMetadataDateDescription =>
+      'Показывать, когда снято фото.';
+
+  @override
+  String get settingScreensaverLocalMetadataCameraTitle => 'Детали камеры';
+
+  @override
+  String get settingScreensaverLocalMetadataCameraDescription =>
+      'Показывать фокусное расстояние, диафрагму и ISO.';
+
+  @override
+  String get settingScreensaverLocalMetadataPositionTitle =>
+      'Позиция метаданных';
+
+  @override
+  String get settingScreensaverLocalMetadataPositionDescription =>
+      'В каком углу находятся детали.';
+
+  @override
+  String get settingScreensaverLocalMetadataTextShadowTitle => 'Тень текста';
+
+  @override
+  String get settingScreensaverLocalMetadataTextShadowDescription =>
+      'Добавить тень тексту метаданных для читаемости на фото.';
+
+  @override
+  String get settingScreensaverLocalMetadataScaleTitle => 'Масштаб текста';
+
+  @override
+  String get settingScreensaverLocalMetadataScaleDescription =>
+      'Масштабируйте детали фото под размер экрана.';
+
+  @override
+  String get settingScreensaverLocalVignetteStrengthTitle => 'Сила виньетки';
+
+  @override
+  String get settingScreensaverLocalVignetteStrengthDescription =>
+      'Затемнение позади деталей для читаемости на светлых фото. 0 выключает.';
+
+  @override
+  String get screensaverMediaLocalMetadata => 'Метаданные «Локальные медиа»';
+
+  @override
   String get screensaverMediaLocalPage => 'Заставка «Локальные медиа»';
 
   @override
-  String get screensaverMediaLocalHint =>
-      'Папка, тайминг, перемешивание, переход';
+  String get screensaverMediaLocalPageHint =>
+      'Папка, тайминг, перемешивание, переход, метаданные';
 
   @override
   String get settingScreensaverDismissOnMotionTitle => 'Прятать при движении';
@@ -10713,6 +10995,25 @@ class UiStringsRu extends UiStrings {
   @override
   String get screensaverDetectionMotionTuning =>
       'Определение движения настраивается в настройках камеры.';
+
+  @override
+  String get settingMotionUseEntityTitle =>
+      'Использовать сущность Home Assistant';
+
+  @override
+  String get settingMotionUseEntityDescription =>
+      'Определять движение по датчику Home Assistant вместо камеры.';
+
+  @override
+  String get settingMotionEntityTitle => 'Сущность датчика движения';
+
+  @override
+  String get settingMotionEntityDescription =>
+      'Датчик занятости, движения или присутствия Home Assistant, за которым нужно следить.';
+
+  @override
+  String get screensaverDetectionExternalMotionHeading =>
+      'Внешний датчик движения';
 
   @override
   String get settingScreensaverDismissOnPersonTitle =>

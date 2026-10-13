@@ -8,5 +8,10 @@
   "settingScreensaverPostponeOnMotionDescription": "Откладывать включение заставки при обнаружении движения. ВНИМАНИЕ: камера работает постоянно.",
   "screensaverDetectionMotionPage": "Определение движения",
   "screensaverDetectionMotionHint": "Прятать или откладывать заставку при движении",
-  "screensaverDetectionMotionTuning": "Определение движения настраивается в настройках камеры."
+  "screensaverDetectionMotionTuning": "Определение движения настраивается в настройках камеры.",
+  "settingMotionUseEntityTitle": "Использовать сущность Home Assistant",
+  "settingMotionUseEntityDescription": "Определять движение по датчику Home Assistant вместо камеры.",
+  "settingMotionEntityTitle": "Сущность датчика движения",
+  "settingMotionEntityDescription": "Датчик занятости, движения или присутствия Home Assistant, за которым нужно следить.",
+  "screensaverDetectionExternalMotionHeading": "Внешний датчик движения"
 }

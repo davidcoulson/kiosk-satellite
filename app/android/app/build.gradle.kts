@@ -38,6 +38,14 @@ android {
     // AGP's universal split includes dependency ABIs outside Flutter's list.
     // Flutter has no 32-bit x86 engine, so keep those libraries out as before.
     packaging.jniLibs.excludes.add("**/x86/**")
+    // The wake word runtime comes from the onnxruntime plugin (ARM only) and
+    // Microsoft's AAR (x86_64), see dependencies. Their ARM libraries are the
+    // same 1.15.1 build, and the Dart bindings never use the Java JNI bridge.
+    // Only the ARM paths: a pickFirst match wins over excludes, so a wider
+    // pattern would bring the AAR's x86 library back past the rule above.
+    packaging.jniLibs.pickFirsts.add("**/arm64-v8a/libonnxruntime.so")
+    packaging.jniLibs.pickFirsts.add("**/armeabi-v7a/libonnxruntime.so")
+    packaging.jniLibs.excludes.add("**/libonnxruntime4j_jni.so")
 
     // Flutter narrows its own engine to --target-platform, but dependencies
     // still ship every ABI they have: an arm64 build carried 42 MB of 32-bit
@@ -242,6 +250,14 @@ dependencies {
     // import strtod_l (libmediapipe_tasks_vision_jni.so) and fail to load
     // on Android 7; 0.10.26.1 is the newest clean release.
     implementation("com.google.mediapipe:tasks-vision:0.10.26.1")
+
+    // ONNX Runtime for vsWakeWord, openWakeWord and custom wake models. The
+    // onnxruntime plugin (1.4.1) bundles Microsoft's 1.15.1 libraries for
+    // ARM only, so x86_64 devices (BlissOS, ChromeOS) could not start the
+    // wake word. This is the AAR those libraries come from, which also ships
+    // x86_64. Keep it on the plugin's ORT version: the IR 9 ceiling in
+    // onnx_ir.dart and the generated C API bindings both assume 1.15.
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.15.1")
 
     // Media3 ExoPlayer for streamed Voice Satellite sounds (TTS): its whole
     // pipeline runs in-process, so the output is an app-owned AudioTrack

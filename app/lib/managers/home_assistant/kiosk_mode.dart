@@ -99,11 +99,14 @@ const kioskModeScript = '''
       // zero, nothing cleverer: the view container pads itself by the header
       // height plus the safe-area inset, and a padding that keeps the inset
       // leaves a cutout-sized band where the header was, doubled because
-      // #view and hui-view nest (#249).
+      // #view and hui-view nest (#249). The one exception is room a plugin
+      // reserved for a bar along the top, and only on the outer container,
+      // so it counts once.
       if (S.header) {
         rules += '.header,.toolbar,app-header,ch-header{display:none!important;}' +
           '#view,hui-view{padding-top:0!important;' +
-          'min-height:100vh!important;--kiosk-header-height:0px;}';
+          'min-height:100vh!important;--kiosk-header-height:0px;}' +
+          '#view{padding-top:var(--ks-content-inset-top,0px)!important;}';
       }
       // The width variables are zeroed again here because the declaration on
       // home-assistant-main can be outranked in place: Material You Utilities
@@ -112,9 +115,14 @@ const kioskModeScript = '''
       // rule on specificity (#403). A declaration on this host starts a new
       // cascade below it, so whatever won up there no longer matters to
       // anything inside the dashboard, navbar-card included.
+      // Home Assistant pads the view container's left side only on a narrow
+      // layout, where it has no sidebar. With the sidebar hidden a wide
+      // layout has none either, so a plugin's rail on the left would cover
+      // the cards.
       if (S.sidebar) {
         rules +=
-          ':host{--ha-sidebar-width:0px!important;--mdc-drawer-width:0px!important;}';
+          ':host{--ha-sidebar-width:0px!important;--mdc-drawer-width:0px!important;}' +
+          '#view{padding-left:var(--safe-area-inset-left,0px)!important;}';
       }
       return rules;
     }

@@ -65,7 +65,7 @@ void main() {
     final keys = defs.allSettings.map((d) => d.key).toList();
     expect(
       keys.indexOf(defs.updateSource.key),
-      keys.indexOf(defs.remoteFleetDiscovery.key) + 1,
+      keys.indexOf(defs.remoteAdminUrl.key) + 1,
     );
   });
 }

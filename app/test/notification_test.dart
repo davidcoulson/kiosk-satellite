@@ -297,6 +297,12 @@ void main() {
       );
       expect(hangup['args'], isEmpty);
       expect(hangup['supportsResponse'], isTrue);
+      // Answer and decline for the call ringing here (issue #943).
+      for (final name in ['intercom_answer', 'intercom_decline']) {
+        final action = services.singleWhere((s) => s['name'] == name);
+        expect(action['args'], isEmpty);
+        expect(action['supportsResponse'], isTrue);
+      }
 
       final response = await surface.handleService('notification', {
         'message': 'Dinner is ready',

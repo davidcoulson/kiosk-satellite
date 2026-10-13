@@ -175,6 +175,66 @@ void main() {
     expect(outcomes[1], isNull);
   });
 
+  testWidgets('a grid picker shows tiles, searches and picks one', (
+    tester,
+  ) async {
+    final outcomes = <PickOutcome?>[];
+    final spec = PickSpec(
+      key: 'gridTest',
+      loader: () async => PickList([
+        for (final name in ['garage', 'garage-open', 'home', 'sofa'])
+          PickItem(
+            id: 'mdi:$name',
+            name: name.replaceAll('-', ' '),
+            sub: name,
+            icon: 'mdi:$name',
+          ),
+      ]),
+      searchHint: 'Search icons',
+      noGroup: '',
+      chips: false,
+      headings: false,
+      grid: true,
+      limit: 3,
+    );
+    await _pump(
+      tester,
+      const Size(1200, 800),
+      (context) => TextButton(
+        onPressed: () async => outcomes.add(
+          await showItemPicker(
+            context,
+            title: 'Icon',
+            spec: spec,
+            selected: 'mdi:home',
+          ),
+        ),
+        child: const Text('open'),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GridView), findsOneWidget);
+    expect(find.byType(ListView), findsNothing);
+    // At most three show, the picked one first.
+    expect(find.text('home'), findsOneWidget);
+    expect(find.text('garage'), findsOneWidget);
+    expect(find.text('garage-open'), findsOneWidget);
+    expect(find.text('sofa'), findsNothing);
+    expect(
+      tester.getTopLeft(find.text('home')).dx,
+      lessThan(tester.getTopLeft(find.text('garage')).dx),
+    );
+    // Words find the dashed name.
+    await tester.enterText(find.byType(TextField), 'garage open');
+    await tester.pumpAndSettle();
+    expect(find.text('garage-open'), findsOneWidget);
+    expect(find.text('sofa'), findsNothing);
+    await tester.tap(find.text('garage-open'));
+    await tester.pumpAndSettle();
+    expect(outcomes.single?.id, 'mdi:garage-open');
+  });
+
   testWidgets('several picks stop at the limit and come back in order', (
     tester,
   ) async {

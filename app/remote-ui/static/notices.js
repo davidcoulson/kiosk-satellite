@@ -262,23 +262,32 @@ export function syncScreenOffAdminNotice() {
 
 /* The screensaver's motion switches follow the Camera section, mirroring
    the device: with the camera master switch off, "Dismiss on motion"
-   renders disabled with the reason; with it on, a hint under the postpone
-   row marks where the tuning rows used to sit - camera pick, frame rate
-   and sensitivity are Camera-settings decisions now. */
+   renders disabled with the reason, unless a Home Assistant entity
+   detects motion in the camera's place (issue #973); with it on, a hint
+   under the postpone row marks where the tuning rows used to sit - camera
+   pick, frame rate and sensitivity are Camera-settings decisions now.
+   Idempotent, so the save path re-runs it when the entity switch flips. */
 export function updateMotionCameraRows() {
   const byKey = Object.fromEntries((state.settings || []).map((s) => [s.key, s]));
   const camOn = byKey['camera.enabled']?.value === true
     && state.cameraPresent !== false;
+  const entityOn = byKey['motion.use_entity']?.value === true;
   const tab = document.getElementById('tab-screensaver');
+  if (!tab) return;
+  for (const stale of tab.querySelectorAll('.motion-camera-note')) stale.remove();
   const dismiss = tab.querySelector('[data-key="screensaver.dismiss_on_motion"]');
   if (!dismiss) return;
-  const note = (text) => hintRow(text);
-  if (!camOn) {
-    const input = dismiss.querySelector('.switch input');
+  const note = (text) => hintRow(text, { className: 'motion-camera-note' });
+  const input = dismiss.querySelector('.switch input');
+  if (input) {
+    input.disabled = false;
+    input.checked = byKey['screensaver.dismiss_on_motion']?.value === true;
+  }
+  if (!camOn && !entityOn) {
     if (input) { input.checked = false; input.disabled = true; }
     dismiss.insertAdjacentElement('afterend',
       note(screensaverText('Requires the camera. Turn it on in the Camera settings first.')));
-  } else {
+  } else if (camOn) {
     const anchor = tab.querySelector('[data-key="screensaver.postpone_on_motion"]');
     if (anchor) {
       anchor.insertAdjacentElement('afterend',
@@ -484,6 +493,37 @@ export function showAdaptiveLight(msg, notify = true) {
   state.adaptiveLux = typeof msg.lux === 'number' ? msg.lux : null;
   state.adaptiveLive = msg.live === true;
   if (notify) document.dispatchEvent(new CustomEvent('ks-adaptivelight'));
+}
+
+/* What the Home Assistant motion entity reads (issue #973), asked about
+   once per page load and again when the entity changes; the
+   externalmotion messages keep it current in between. */
+let externalMotionProbe;
+export function probeExternalMotion(reprobe = false) {
+  if (reprobe) externalMotionProbe = undefined;
+  externalMotionProbe ??= (async () => {
+    try {
+      const res = await (await api('/api/commands/getExternalMotion',
+        { method: 'POST', body: '{}' })).json();
+      const data = res.data && typeof res.data === 'object' ? res.data : null;
+      if (data) showExternalMotion(data);
+    } catch (_) {}
+  })();
+  return externalMotionProbe;
+}
+
+/* A new state from the WebSocket: the Motion sensor entity row repaints
+   off the event. */
+export function showExternalMotion(msg) {
+  state.externalMotion = typeof msg.detected === 'boolean' ? msg.detected : null;
+  document.dispatchEvent(new CustomEvent('ks-externalmotion'));
+}
+
+/* The motion entity's state for its row, worded like the Occupancy rows'. */
+export function externalMotionReading() {
+  if (state.externalMotion === true) return screensaverText('Detected');
+  if (state.externalMotion === false) return t('screensaverDetectionClear');
+  return screenAudioText('No reading yet');
 }
 
 /* The Home Assistant entity's reading for its row (issue #911), worded

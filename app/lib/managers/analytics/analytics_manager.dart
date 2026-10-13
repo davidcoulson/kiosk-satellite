@@ -16,7 +16,6 @@ import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 import '../update/update_http_client.dart';
 import '../voice/wake_catalog.dart';
-import '../voice/wake_catalog.dart';
 import '../wake_word/engine.dart';
 import 'analytics_scrub.dart';
 import 'crash_journal.dart';

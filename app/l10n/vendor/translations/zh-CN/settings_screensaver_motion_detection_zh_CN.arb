@@ -8,5 +8,10 @@
   "settingScreensaverPostponeOnMotionDescription": "检测到运动时，延迟启动屏保。注意：开启后，摄像头会持续运行。",
   "screensaverDetectionMotionPage": "运动检测",
   "screensaverDetectionMotionHint": "检测到运动时关闭或延迟启动屏保",
-  "screensaverDetectionMotionTuning": "运动检测功能可在摄像头设置中调整。"
+  "screensaverDetectionMotionTuning": "运动检测功能可在摄像头设置中调整。",
+  "settingMotionUseEntityTitle": "使用 Home Assistant 实体",
+  "settingMotionUseEntityDescription": "使用 Home Assistant 传感器代替摄像头检测运动。",
+  "settingMotionEntityTitle": "运动传感器实体",
+  "settingMotionEntityDescription": "要跟随的 Home Assistant 占用、运动或存在传感器。",
+  "screensaverDetectionExternalMotionHeading": "外部运动传感器"
 }

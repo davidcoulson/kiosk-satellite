@@ -23,5 +23,6 @@
   "haUnknownEntities": "无法确定此页面使用的实体，不会过滤更新。",
   "haWaiting": "等待仪表盘加载…",
   "haShowScan": "显示扫描详情。",
-  "haThreshold": "此页面使用 {count} 个实体，超过过滤阈值。过滤已禁用。"
+  "haThreshold": "此页面使用 {count} 个实体，超过过滤阈值。过滤已禁用。",
+  "haCustomPageFilter": "不用于自定义网页。"
 }

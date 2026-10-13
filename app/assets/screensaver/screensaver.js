@@ -416,6 +416,7 @@ async function playItem(hass, id, playlist, advance, intervalMs) {
   const epoch = ++photoEpoch;
   const cam = cameraOf(id);
   if (cam) {
+    bridge('slide', null); // no photo details for a camera
     log('camera: ' + cam);
     let webrtc = false;
     try { webrtc = !failedWebrtc.has(cam) && await cameraSupportsWebrtc(hass, cam); } catch (e) { log('camera: caps error ' + e); }
@@ -442,6 +443,7 @@ async function playItem(hass, id, playlist, advance, intervalMs) {
     v.loop = playlist.length === 1;
     if (playlist.length > 1) v.addEventListener('ended', advance);
     v.addEventListener('error', advance);
+    bridge('slide', null); // no photo details for a video
     showElement(v);
   } else {
     if (/^audio\//.test(resolved.mime_type || '')) {
@@ -460,11 +462,15 @@ async function playItem(hass, id, playlist, advance, intervalMs) {
       const show = () => {
         if (epoch !== photoEpoch) return;
         if (!photosActive) { pendingPhoto = show; return; }
+        // The app draws the photo's details over the page from its EXIF.
+        bridge('slide', { id, url });
         showElement(stillFor(img), { still: true, holdMs: intervalMs });
         if (playlist.length > 1) startPhotoHold(advance, intervalMs);
       };
       if (img.decode) img.decode().then(show, show); else show();
     };
+    // A head start for the app's EXIF read while the image loads.
+    bridge('photo', { id, url });
     img.src = url;
   }
 }

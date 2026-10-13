@@ -415,6 +415,143 @@ void main() {
     },
   );
 
+  test('camera views and dashboards are listed without internals', () async {
+    register(
+      'cameraGetConfig',
+      (_) async => const CommandResult.ok({
+        'servers': [
+          {'id': 's', 'url': 'http://user:pw@go2rtc:1984'},
+        ],
+        'cameras': [
+          {'id': 'c1', 'url': 'rtsp://secret'},
+        ],
+        'views': [
+          {
+            'id': 'a1b2c3d4e5f60718293a4b5c6d7e8f90',
+            'name': 'Front door',
+            'cameraIds': ['c1', 'c2'],
+            'grid': 4,
+          },
+          {'id': 'default', 'name': 'Default', 'cameraIds': []},
+        ],
+      }),
+    );
+    final views = await read('getCameraViews');
+    expect(views['data'], [
+      {
+        'id': 'a1b2c3d4e5f60718293a4b5c6d7e8f90',
+        'name': 'Front door',
+        'cameraCount': 2,
+      },
+      {'id': 'default', 'name': 'Default', 'cameraCount': 0},
+    ]);
+    expect(views.toString(), isNot(contains('rtsp')));
+    expect((await read('getCameraViews', params: {'all': true}))['ok'], false);
+
+    var configured = true;
+    register(
+      'haListDashboards',
+      (_) async => !configured
+          ? const CommandResult.fail('Home Assistant not configured')
+          : const CommandResult.ok([
+              {
+                'url_path': 'lovelace',
+                'title': 'Overview',
+                'icon': 'mdi:home',
+                'require_admin': false,
+              },
+              {'url_path': 'dashboard-cams', 'title': 'Cameras'},
+              {'url_path': '', 'title': 'Broken'},
+            ]),
+    );
+    register('haListDashboardViews', (p) async {
+      if (p['url_path'] == 'dashboard-cams') {
+        return const CommandResult.fail('could not read the dashboard');
+      }
+      return const CommandResult.ok([
+        {'route': 'home', 'title': 'Home', 'icon': 'mdi:sofa', 'cards': 12},
+        {'route': 'garage', 'subview': true},
+        {'route': ''},
+      ]);
+    });
+    final dashboards = await read('getDashboards');
+    expect(dashboards['data'], [
+      {
+        'urlPath': 'lovelace',
+        'title': 'Overview',
+        'icon': 'mdi:home',
+        'custom': false,
+        'views': [
+          {
+            'path': 'lovelace/home',
+            'title': 'Home',
+            'icon': 'mdi:sofa',
+            'subview': false,
+          },
+          {
+            'path': 'lovelace/garage',
+            'title': 'garage',
+            'icon': null,
+            'subview': true,
+          },
+        ],
+      },
+      // A dashboard whose views cannot be read still lists, without views.
+      {
+        'urlPath': 'dashboard-cams',
+        'title': 'Cameras',
+        'icon': null,
+        'custom': false,
+        'views': [],
+      },
+    ]);
+    configured = false;
+    expect((await read('getDashboards'))['ok'], false);
+  });
+
+  test('haNavigate takes queries and reports arriving on the view', () async {
+    api.open({
+      ...session,
+      'capabilities': ['host.control'],
+    });
+    var outcome = 'navigated';
+    final paths = <Object?>[];
+    register('haNavigate', (p) async {
+      paths.add(p['path']);
+      return CommandResult.ok(outcome);
+    });
+    Future<Object?> go(String path) async =>
+        (await read('haNavigate', params: {'path': path}))['data'];
+    expect(await go('lovelace/0'), true);
+    outcome = 'already';
+    expect(await go('/cameras/0?camera=garage'), true);
+    outcome = 'off-origin';
+    expect(await go('local/dashboard.html#kitchen'), false);
+    outcome = 'failed';
+    expect(await go('lovelace/0/'), false);
+    expect(paths, [
+      'lovelace/0',
+      '/cameras/0?camera=garage',
+      'local/dashboard.html#kitchen',
+      'lovelace/0/',
+    ]);
+    for (final bad in [
+      '../config',
+      'lovelace/../config',
+      'lovelace/./x',
+      'https://evil.test',
+      'lovelace/0?x=a b',
+      '?only=query',
+    ]) {
+      expect(
+        (await read('haNavigate', params: {'path': bad}))['ok'],
+        false,
+        reason: bad,
+      );
+    }
+    expect(paths, hasLength(4));
+  });
+
   test('volume reads and writes pass the channel through', () async {
     api.open({
       ...session,

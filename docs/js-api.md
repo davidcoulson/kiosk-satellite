@@ -44,6 +44,27 @@ Only the configured start page and Home Assistant's own pages, in the main frame
 | `getTheaterMode()` | `{active, phase, source, since, overlayOpacity, backlight, peekBrightness, peekSeconds}` | The current state. `phase` is `off`, `dim`, `peek` or `black`; `source` is what turned it on (`page`, `ha`, `remote`, `link`). |
 | `theaterPeek(seconds)` | `boolean` | Brightens the panel for `seconds` (3 to 600, default the setting). `false` when theater mode is off. |
 
+### Theme and Kiosk State
+
+| Method | Returns | Description |
+|---|---|---|
+| `getTheme()` | `{app, homeAssistant}` | The app's and Home Assistant's light or dark state. `app` is `{mode, dark}`, where `mode` is the **App theme** setting (`light`, `dark` or `system`) and `dark` is what it resolves to now, Android's dark mode included for `system`. `homeAssistant` is `{mode, dark, scheduled, followsApp}`, where `mode` is the Home Assistant **Theme** setting (`auto`, `light` or `dark`), `dark` is the light or dark the kiosk sets on Home Assistant's frontend now (`null` while Home Assistant picks its own), `scheduled` is **Match theme to time of day** and `followsApp` is **Sync Home Assistant themes with Kiosk Satellite**. `kiosksatellite:theme` carries the same object whenever either moves. |
+| `getKioskState()` | Object | The kiosk's modes and overlays, see below. `kiosksatellite:kiosk-state` carries the same object whenever anything in it moves. |
+
+`getKioskState()` answers:
+
+| Field | Type | Description |
+|---|---|---|
+| `kioskMode` | `boolean` | **Enable kiosk mode** is on. |
+| `lockdownMode` | `boolean` | **Lockdown Mode** is on. |
+| `haKioskMode` | `{enabled, hideHeader, hideSidebar}` | Home Assistant kiosk mode and what it hides. It only acts on Home Assistant's own dashboards. |
+| `screensaver` | `{active, view}` | Whether the screensaver is up and what it shows (`clock`, `media`, `dashboard` and so on). `view` is `null` when none. |
+| `screenOn` | `boolean` | The screen power state. |
+| `holdMode` | `boolean` | Hold mode pins the current view. |
+| `rotation` | `boolean` | Dashboard view rotation is on. |
+| `cameraView` | `string \| null` | The id of the camera view on screen, `null` when none. |
+| `mediaPlayer` | `{state, title, artist, source, nowPlayingShown}` | The followed media player: `state` is `playing`, `paused` or `idle`, `source` names the player and `nowPlayingShown` is whether the full-screen Now Playing view is up. |
+
 ### Interactions
 
 | Method | Returns | Description |
@@ -149,6 +170,8 @@ The API dispatches `CustomEvent`s directly on the `window` object:
 | `kiosksatellite:screenon` / `:screenoff` | `{}` | The screen power state changed. |
 | `kiosksatellite:screensaverstart` / `:screensaverstop` | `{}` | The screensaver state changed. |
 | `kiosksatellite:theatermode` | `{active, phase, source}` | [Theater mode](theater.md) changed phase, and once more after every page load while it is on. |
+| `kiosksatellite:theme` | the `getTheme()` shape | The app's or Home Assistant's light or dark state changed. |
+| `kiosksatellite:kiosk-state` | the `getKioskState()` shape | Anything `getKioskState()` reports changed. |
 | `kiosksatellite:sound-started` | `{id}` | A `playSound` request actually began playing (audio is physically leaving the speaker). You should time stop word arming and UI state changes off this event, not off the `playSound` resolution. |
 | `kiosksatellite:sound-level` | `{id, level}` | Provides the playback level of a playing sound (the mean absolute amplitude from 0 to 1, updating at most ~20 times per second, with near duplicate samples skipped). This allows a page visualizer to animate to audio it never actually touches. Note: This is best-effort and will be absent on devices lacking a functional hardware `Visualizer`. |
 | `kiosksatellite:voice-chimes-changed` | `{filename: seconds}` | Selected local chime durations changed. Use these values for local microphone timing. Remote speakers continue to use Home Assistant sounds. |

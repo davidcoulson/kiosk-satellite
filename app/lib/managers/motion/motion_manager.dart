@@ -209,10 +209,16 @@ class MotionManager extends Manager {
   /// the camera brings motion detection back without re-setup. An active
   /// schedule entry's motion override (issue #89) stands in for the dismiss
   /// switch while it holds — a Black entry overnight can keep the camera off
-  /// entirely.
+  /// entirely. A Home Assistant entity picked in the camera's place (issue
+  /// #973) leaves the camera out of it.
   bool get enabled =>
-      (_schedulePolicy ?? _settings.get(defs.screensaverDismissOnMotion)) &&
-      _settings.get(defs.cameraEnabled);
+      _dismissOnMotion &&
+      _settings.get(defs.cameraEnabled) &&
+      !_settings.get(defs.motionUseEntity);
+
+  /// Dismiss on motion as the screensaver reads it, whatever the source.
+  bool get _dismissOnMotion =>
+      _schedulePolicy ?? _settings.get(defs.screensaverDismissOnMotion);
 
   /// Whether the postpone leg wants the camera: between screensavers, with
   /// the screen actually lit, on a device whose screensaver can start at
@@ -224,7 +230,8 @@ class MotionManager extends Manager {
       _settings.get(defs.screensaverPostponeOnMotion) &&
       _settings.get(defs.screensaverDismissOnMotion) &&
       _settings.get(defs.screensaverEnabled) &&
-      _settings.get(defs.cameraEnabled);
+      _settings.get(defs.cameraEnabled) &&
+      !_settings.get(defs.motionUseEntity);
 
   /// Whether the standalone motion sensor wants the camera: whenever it is
   /// on. No screensaver or screen-state gates (see the class comment).
@@ -234,12 +241,12 @@ class MotionManager extends Manager {
   /// The face leg (issue #304): "Dismiss on face" rides the same session
   /// under the same gates as Dismiss on motion (screensaver showing, camera
   /// on, the schedule's per-entry override standing in for the switch),
-  /// plus one of its own: Dismiss on motion takes precedence. With motion
-  /// effectively on, the face leg is idle, which the settings pages say
-  /// under the switch.
+  /// plus one of its own: Dismiss on motion takes precedence, from the
+  /// camera or from a Home Assistant entity. With motion effectively on,
+  /// the face leg is idle, which the settings pages say under the switch.
   bool get faceEnabled =>
       _vision.faces &&
-      !enabled &&
+      !_dismissOnMotion &&
       (_faceSchedulePolicy ?? _settings.get(defs.screensaverDismissOnFace)) &&
       _settings.get(defs.cameraEnabled);
 
@@ -522,6 +529,7 @@ class MotionManager extends Manager {
           e.key == defs.screensaverDismissOnFace.key ||
           e.key == defs.screensaverPostponeOnFace.key ||
           e.key == defs.motionSensor.key ||
+          e.key == defs.motionUseEntity.key ||
           e.key == defs.screensaverEnabled.key ||
           e.key == defs.cameraEnabled.key ||
           // The hand leg's gates: the mappings themselves and the
@@ -533,6 +541,9 @@ class MotionManager extends Manager {
       // Entity-side only (the ESPHome sensor times its own clear): no
       // reason to restart the camera over it.
       if (e.key == defs.motionSensorOffDelay.key) return;
+      // The entity is the motion entity manager's to follow; the camera
+      // only cares whether the switch is on.
+      if (e.key == defs.motionEntity.key) return;
       // The preview's look and span are read when a preview shows; only
       // the switch itself changes what the session is bound with.
       if (e.key == defs.facePreviewSeconds.key ||

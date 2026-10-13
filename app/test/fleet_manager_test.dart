@@ -630,4 +630,104 @@ void main() {
     expect(fleet.devices.single.url, 'https://leader.example.com:2324');
     expect(fleet.devices.single.toDirectory()['dnsName'], 'leader.example.com');
   });
+
+  group('an Admin URL (issue #967)', () {
+    test('is stored as the origin alone', () async {
+      await build(serving);
+      await settings.set(defs.remoteAdminUrl, ' https://Kiosk.Example.com/ ');
+      expect(settings.get(defs.remoteAdminUrl), 'https://kiosk.example.com');
+      await settings.set(defs.remoteAdminUrl, 'http://kstest.lan:8080');
+      expect(settings.get(defs.remoteAdminUrl), 'http://kstest.lan:8080');
+    });
+
+    test('refuses a path, credentials or another scheme', () {
+      for (final bad in [
+        'kiosk.example.com',
+        'ftp://kiosk.example.com',
+        'https://kiosk.example.com/admin',
+        'https://kiosk.example.com/?a=1',
+        'https://user:pw@kiosk.example.com',
+        'https://not_a_host',
+        'https://${'a' * 250}.com',
+      ]) {
+        expect(defs.validateAdminUrl(bad), isNotNull, reason: bad);
+      }
+      expect(defs.validateAdminUrl(''), isNull);
+      expect(defs.validateAdminUrl('https://kiosk.example.com:8443'), isNull);
+      expect(
+        defs.validateAdminUrl('https://kiosk.example.com/admin'),
+        startsWith('Enter only the address'),
+      );
+    });
+
+    test('is announced, and a change goes out at once', () async {
+      await build(serving);
+      var start = calls.lastWhere((c) => c.method == 'start');
+      expect((start.arguments as Map).containsKey('adminUrl'), isFalse);
+      calls.clear();
+      await settings.set(defs.remoteAdminUrl, 'https://kstest.example.com');
+      await pump();
+      start = calls.lastWhere((c) => c.method == 'start');
+      expect(
+        (start.arguments as Map)['adminUrl'],
+        'https://kstest.example.com',
+      );
+    });
+
+    test(
+      'the switcher opens it ahead of the DNS name and the address',
+      () async {
+        await build(serving);
+        snapshot = {
+          'self': {...self, 'adminUrl': 'https://living.example.com'},
+          'peers': [
+            {
+              'id': 'bbbb',
+              'name': 'Bedroom',
+              'version': '2026.10.21',
+              'address': '192.168.1.71',
+              'port': 2324,
+              'tls': true,
+              'dnsName': 'bedroom.example.com',
+              'adminUrl': 'https://bedroom.proxy.example.com',
+            },
+            {
+              'id': 'cccc',
+              'name': 'Kitchen',
+              'version': '2026.10.21',
+              'address': '192.168.1.70',
+              'port': 2324,
+              'adminUrl': 'javascript:alert(1)',
+            },
+          ],
+        };
+        final r = await commands.execute('fleet', const {});
+        final devices = (r.data as Map)['devices'] as List;
+        final byId = {for (final d in devices.cast<Map>()) d['id']: d};
+        expect(byId['aaaa']!['url'], 'https://living.example.com');
+        expect(byId['bbbb']!['url'], 'https://bedroom.proxy.example.com');
+        // Anything that is not a plain web origin is dropped.
+        expect(byId['cccc']!['url'], 'http://192.168.1.70:2324');
+        expect(byId['cccc']!.containsKey('adminUrl'), isFalse);
+        // The address and port stay for fleet calls and the intercom.
+        expect(byId['bbbb']!['address'], '192.168.1.71');
+        expect(byId['bbbb']!['port'], 2324);
+      },
+    );
+
+    test('travels in the fleet directory', () async {
+      final leader = {
+        ...self,
+        'id': 'lead',
+        'name': 'Leader',
+        'adminUrl': 'https://leader.example.com',
+      };
+      await build({...serving, 'ks.fleet.leader_info': jsonEncode(leader)});
+      expect(fleet.devices.single.url, 'https://leader.example.com');
+      expect(
+        fleet.devices.single.toDirectory()['adminUrl'],
+        'https://leader.example.com',
+      );
+    });
+  });
 }

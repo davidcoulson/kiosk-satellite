@@ -2303,6 +2303,60 @@
       ]
     }
   },
+  "dashboardPickerOnePage": "1 página",
+  "@dashboardPickerOnePage": {
+    "context": "Dashboard picker",
+    "description": "How many custom pages the Custom Pages entry lists, exactly one.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerPageCount": "{count} páginas",
+  "@dashboardPickerPageCount": {
+    "context": "Dashboard picker",
+    "description": "How many custom pages the Custom Pages entry lists, two or more.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    },
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "description": "Number of pages, two or more."
+      }
+    }
+  },
   "dlnaCannotDecode": "Este dispositivo no puede decodificar este video.",
   "@dlnaCannotDecode": {
     "context": "Device > DLNA playback overlay",
@@ -11194,6 +11248,149 @@
     },
     "x-notes": "Keep supplied names and version numbers unchanged."
   },
+  "pluginShowPassword": "Mostrar contraseña",
+  "@pluginShowPassword": {
+    "context": "Settings > Plugin Manager",
+    "description": "Tooltip of the button that shows or hides the text typed into a plugin's secret setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginHidePassword": "Ocultar contraseña",
+  "@pluginHidePassword": {
+    "context": "Settings > Plugin Manager",
+    "description": "Tooltip of the button that shows or hides the text typed into a plugin's secret setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginUntitled": "Sin nombre",
+  "@pluginUntitled": {
+    "context": "Settings > Plugin Manager",
+    "description": "Name shown for a row of a plugin's list setting that has no name yet.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginSearchIcons": "Buscar iconos",
+  "@pluginSearchIcons": {
+    "context": "Settings > Plugin Manager",
+    "description": "Placeholder of the search box in the icon picker of a plugin setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginChooseIcon": "Elige un icono",
+  "@pluginChooseIcon": {
+    "context": "Settings > Plugin Manager",
+    "description": "Placeholder of a plugin icon setting with no icon chosen.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginSearchCameraViews": "Buscar vistas de cámaras",
+  "@pluginSearchCameraViews": {
+    "context": "Settings > Plugin Manager",
+    "description": "Placeholder of the search box in the camera view picker of a plugin setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginChooseCameraView": "Elige una vista de cámaras",
+  "@pluginChooseCameraView": {
+    "context": "Settings > Plugin Manager",
+    "description": "Placeholder of a plugin camera view setting with no view chosen.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginCameraViewGone": "Esta vista de cámaras ya no existe. Elige otra.",
+  "@pluginCameraViewGone": {
+    "context": "Settings > Plugin Manager",
+    "description": "Shown under a plugin camera view setting whose saved view was deleted.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginDragToReorder": "Arrastra para reordenar",
+  "@pluginDragToReorder": {
+    "context": "Settings > Plugin Manager",
+    "description": "Label of the handle that drags a row of a plugin's list setting to a new position.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginDone": "Hecho",
+  "@pluginDone": {
+    "context": "Settings > Plugin Manager",
+    "description": "Button that keeps the changes to a nested row and returns to the row that holds it, in the row editor of a plugin list setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginRequired": "Obligatorio",
+  "@pluginRequired": {
+    "context": "Settings > Plugin Manager",
+    "description": "Shown beside the label of an empty required field in the row editor of a plugin list setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
   "pluginAddPlugin": "Añadir plugin",
   "@pluginAddPlugin": {
     "context": "Settings > Plugin Manager > Add plugin or Install from ZIP",
@@ -13081,6 +13278,123 @@
       ]
     }
   },
+  "pluginErrorListSetting": "El ajuste de lista no es válido",
+  "@pluginErrorListSetting": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorSettingCondition": "La condición del ajuste no es válida",
+  "@pluginErrorSettingCondition": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorIcon": "Se esperaba un nombre de icono MDI",
+  "@pluginErrorIcon": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorDashboard": "Se esperaba la ruta de un panel de control",
+  "@pluginErrorDashboard": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorCameraView": "Se esperaba un ID de vista de cámaras",
+  "@pluginErrorCameraView": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorListValue": "Se esperaba un ajuste de lista",
+  "@pluginErrorListValue": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorListCount": "La lista tiene demasiados elementos o muy pocos",
+  "@pluginErrorListCount": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorRequiredField": "Completa todos los campos obligatorios",
+  "@pluginErrorRequiredField": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorListSize": "Los ajustes de lista pueden ocupar como máximo 32 KB",
+  "@pluginErrorListSize": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
   "remoteDisableTitle": "¿Desactivar la administración remota?",
   "@remoteDisableTitle": {
     "context": "Remote admin > Device > Remote management, or any copy button",
@@ -14521,6 +14835,17 @@
       "value": {
         "type": "String"
       }
+    }
+  },
+  "overviewShowingCustomPages": "Mostrando páginas personalizadas",
+  "@overviewShowingCustomPages": {
+    "context": "Remote admin > Overview > Status",
+    "description": "Home Assistant chip status while a custom page (a person's own HTML page) is on screen instead of a Home Assistant dashboard.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Status"
+      ]
     }
   },
   "overviewNoScreenshot": "Sin captura de pantalla",
@@ -21310,6 +21635,58 @@
       ]
     }
   },
+  "settingRemoteAdminUrlTitle": "URL de administración",
+  "@settingRemoteAdminUrlTitle": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Setting label. The web address used to open this kiosk's remote admin from other kiosks.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin URL"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin URL"
+      ]
+    }
+  },
+  "settingRemoteAdminUrlDescription": "Dirección que abren otros kioskos en Cambiar de kiosko para llegar a este, como el nombre de un proxy inverso. Déjala vacía para usar su dirección de red.",
+  "@settingRemoteAdminUrlDescription": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Help below the Admin URL field. Switch kiosk is the name of the kiosk picker in the remote admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin URL"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin URL"
+      ]
+    }
+  },
+  "deviceAdminUrlInvalid": "Introduce una dirección válida, por ejemplo https://kiosk.example.com",
+  "@deviceAdminUrlInvalid": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Error under the Admin URL field when the value is not a web address. Keep the example address as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin URL"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin URL"
+      ]
+    }
+  },
+  "deviceAdminUrlPath": "Introduce solo la dirección, sin ruta. Ejemplo: https://kiosk.example.com",
+  "@deviceAdminUrlPath": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Error under the Admin URL field when the address has a path after the host. Keep the example address as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin URL"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin URL"
+      ]
+    }
+  },
   "deviceRemotePage": "Administración remota",
   "@deviceRemotePage": {
     "context": "Settings:Device:Remote Administration",
@@ -26859,6 +27236,237 @@
       ]
     }
   },
+  "haCustomPages": "Páginas personalizadas",
+  "@haCustomPages": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Name of the settings page and of the dashboard picker entry that lists a person's own HTML pages hosted in Home Assistant.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant",
+        "Settings > Home Assistant > Custom Pages",
+        "Dashboard picker"
+      ],
+      "remoteAdmin": [
+        "Home Assistant",
+        "Home Assistant > Custom Pages",
+        "Dashboard picker"
+      ]
+    }
+  },
+  "haCustomPagesHintDashboard": "Tus páginas HTML personalizadas mostradas como un panel de control",
+  "@haCustomPagesHintDashboard": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Hint under the Custom Pages entry row: the person's own HTML pages, shown by the kiosk in place of a dashboard.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant"
+      ],
+      "remoteAdmin": [
+        "Home Assistant"
+      ]
+    }
+  },
+  "haCustomPagesAdd": "Añadir página",
+  "@haCustomPagesAdd": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Button that opens the dialog to add a custom page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagesEmpty": "Añade páginas HTML de la carpeta www de Home Assistant para elegirlas como un panel de control.",
+  "@haCustomPagesEmpty": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Shown while no custom page is added yet. www is a folder name and stays as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagesGuide": "Guía de páginas personalizadas",
+  "@haCustomPagesGuide": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Row that opens the documentation about building a custom page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagesGuideHint": "Cómo crear una página que se comunica con Home Assistant.",
+  "@haCustomPagesGuideHint": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Description under the Custom page guide row.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageAddTitle": "Añadir página personalizada",
+  "@haCustomPageAddTitle": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Title of the dialog that adds a custom page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageEditTitle": "Editar página personalizada",
+  "@haCustomPageEditTitle": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Title of the dialog that changes a custom page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageName": "Nombre",
+  "@haCustomPageName": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Field label: the name the dashboard picker shows for the page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagePath": "Ruta",
+  "@haCustomPagePath": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Field label: the address of the page inside Home Assistant, such as /local/dashboard.html.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagePathHint": "Un archivo de la carpeta www de Home Assistant, como /local/dashboard.html.",
+  "@haCustomPagePathHint": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Help under the Path field. Keep www and /local/dashboard.html unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageNameMissing": "Introduce un nombre.",
+  "@haCustomPageNameMissing": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the name is empty.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagePathInvalid": "Introduce una ruta dentro de /local/, como /local/dashboard.html.",
+  "@haCustomPagePathInvalid": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the path is not under /local/. Keep /local/ and /local/dashboard.html unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageDuplicate": "Otra página ya usa esta ruta.",
+  "@haCustomPageDuplicate": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the path is already in the list.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageNotFound": "Home Assistant no tiene ningún archivo en esta ruta.",
+  "@haCustomPageNotFound": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when Home Assistant answers that the file does not exist.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageUnreachable": "No se pudo conectar con Home Assistant.",
+  "@haCustomPageUnreachable": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when Home Assistant does not answer.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageStatus": "Home Assistant respondió con HTTP {code}.",
+  "@haCustomPageStatus": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when Home Assistant answers the page with an HTTP status other than 200. HTTP stays as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    },
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "description": "The HTTP status code, such as 403."
+      }
+    }
+  },
   "settingHaHoldModeTitle": "Modo de pausa",
   "@settingHaHoldModeTitle": {
     "context": "Settings:Home Assistant Setup:Hold mode",
@@ -27366,6 +27974,19 @@
         "type": "String",
         "description": "Number of entities."
       }
+    }
+  },
+  "haCustomPageFilter": "No se usa en páginas personalizadas.",
+  "@haCustomPageFilter": {
+    "context": "Settings:Home Assistant Setup:Optimizations",
+    "description": "Live update-filter status while a custom page (a person's own HTML page) is on screen: the filter leaves those pages alone.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup > Optimizations"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup > Optimizations"
+      ]
     }
   },
   "settingHaReturnHomeEnabledTitle": "Volver a la vista de inicio del panel de control",
@@ -36903,10 +37524,114 @@
       ]
     }
   },
-  "settingScreensaverScreenOffWakeToScreensaverDescription": "Tras apagarse la pantalla, la detección de movimiento, rostros, proximidad o personas muestra el protector de pantalla en lugar del panel de control y reinicia el tiempo para apagar la pantalla. Tocar la pantalla sigue abriendo el panel de control.",
-  "@settingScreensaverScreenOffWakeToScreensaverDescription": {
+  "settingScreensaverScreenOffWakeToScreensaverDescriptionSources": "Elige qué hace volver al protector de pantalla en lugar del panel de control después de apagarse la pantalla. El tiempo de Apagar la pantalla después de vuelve a empezar.",
+  "@settingScreensaverScreenOffWakeToScreensaverDescriptionSources": {
     "context": "Settings:Screensaver",
     "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourcesAll": "Todo",
+  "@screensaverWakeSourcesAll": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Value of the Wake to screensaver row when every way of waking is picked.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceMotion": "Movimiento",
+  "@screensaverWakeSourceMotion": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: motion detection wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceFace": "Rostro",
+  "@screensaverWakeSourceFace": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: face detection wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceProximity": "Proximidad",
+  "@screensaverWakeSourceProximity": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: the proximity sensor wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourcePerson": "Persona",
+  "@screensaverWakeSourcePerson": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: person detection wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourcePower": "Botón de encendido",
+  "@screensaverWakeSourcePower": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: the device power button wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceTouch": "Tocar",
+  "@screensaverWakeSourceTouch": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: touching the black screen brings the screensaver back.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceTouchRequires": "Requiere tanto \"Apagar la pantalla después de\" como \"Usar una pantalla negra en su lugar\".",
+  "@screensaverWakeSourceTouchRequires": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Hint under the grayed-out Touch choice in the Wake to screensaver dialog. Both quoted names are other settings on the same page.",
     "x-locations": {
       "device": [
         "Settings > Screensaver"
@@ -39985,6 +40710,201 @@
       ]
     }
   },
+  "settingScreensaverMediaMetadataTitle": "Mostrar metadatos",
+  "@settingScreensaverMediaMetadataTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataDescription": "Muestra la fecha y los detalles de la cámara sobre la foto.",
+  "@settingScreensaverMediaMetadataDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataDateTitle": "Fecha de captura",
+  "@settingScreensaverMediaMetadataDateTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataDateDescription": "Muestra cuándo se tomó la foto.",
+  "@settingScreensaverMediaMetadataDateDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataCameraTitle": "Detalles de la cámara",
+  "@settingScreensaverMediaMetadataCameraTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataCameraDescription": "Muestra la distancia focal, la apertura y el ISO.",
+  "@settingScreensaverMediaMetadataCameraDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataPositionTitle": "Posición de los metadatos",
+  "@settingScreensaverMediaMetadataPositionTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataPositionDescription": "Esquina en la que se muestran los detalles.",
+  "@settingScreensaverMediaMetadataPositionDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataTextShadowTitle": "Sombra del texto",
+  "@settingScreensaverMediaMetadataTextShadowTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataTextShadowDescription": "Añade una sombra al texto de los metadatos para facilitar su lectura sobre las fotos.",
+  "@settingScreensaverMediaMetadataTextShadowDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataScaleTitle": "Tamaño del texto",
+  "@settingScreensaverMediaMetadataScaleTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataScaleDescription": "Ajusta el tamaño de los detalles de la foto a la pantalla.",
+  "@settingScreensaverMediaMetadataScaleDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaVignetteStrengthTitle": "Intensidad del sombreado",
+  "@settingScreensaverMediaVignetteStrengthTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaVignetteStrengthDescription": "Oscuridad del sombreado detrás de los detalles para facilitar la lectura sobre fotos claras. Con 0, se desactiva.",
+  "@settingScreensaverMediaVignetteStrengthDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "screensaverMediaHaMetadata": "Metadatos del contenido multimedia de Home Assistant",
+  "@screensaverMediaHaMetadata": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
   "screensaverMediaHaPage": "Protector de pantalla: Contenido multimedia de Home Assistant",
   "@screensaverMediaHaPage": {
     "context": "Settings:Screensaver:Home Assistant Media screensaver",
@@ -39998,8 +40918,8 @@
       ]
     }
   },
-  "screensaverMediaHaHint": "Origen multimedia, duración, orden aleatorio y ajuste a la pantalla",
-  "@screensaverMediaHaHint": {
+  "screensaverMediaHaPageHint": "Origen multimedia, duración, orden aleatorio, ajuste a la pantalla y metadatos",
+  "@screensaverMediaHaPageHint": {
     "context": "Settings:Screensaver:Home Assistant Media screensaver",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -40342,6 +41262,201 @@
       ]
     }
   },
+  "settingScreensaverLocalMetadataTitle": "Mostrar metadatos",
+  "@settingScreensaverLocalMetadataTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataDescription": "Muestra la fecha y los detalles de la cámara sobre la foto.",
+  "@settingScreensaverLocalMetadataDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataDateTitle": "Fecha de captura",
+  "@settingScreensaverLocalMetadataDateTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataDateDescription": "Muestra cuándo se tomó la foto.",
+  "@settingScreensaverLocalMetadataDateDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataCameraTitle": "Detalles de la cámara",
+  "@settingScreensaverLocalMetadataCameraTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataCameraDescription": "Muestra la distancia focal, la apertura y el ISO.",
+  "@settingScreensaverLocalMetadataCameraDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataPositionTitle": "Posición de los metadatos",
+  "@settingScreensaverLocalMetadataPositionTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataPositionDescription": "Esquina en la que se muestran los detalles.",
+  "@settingScreensaverLocalMetadataPositionDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataTextShadowTitle": "Sombra del texto",
+  "@settingScreensaverLocalMetadataTextShadowTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataTextShadowDescription": "Añade una sombra al texto de los metadatos para facilitar su lectura sobre las fotos.",
+  "@settingScreensaverLocalMetadataTextShadowDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataScaleTitle": "Tamaño del texto",
+  "@settingScreensaverLocalMetadataScaleTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataScaleDescription": "Ajusta el tamaño de los detalles de la foto a la pantalla.",
+  "@settingScreensaverLocalMetadataScaleDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalVignetteStrengthTitle": "Intensidad del sombreado",
+  "@settingScreensaverLocalVignetteStrengthTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalVignetteStrengthDescription": "Oscuridad del sombreado detrás de los detalles para facilitar la lectura sobre fotos claras. Con 0, se desactiva.",
+  "@settingScreensaverLocalVignetteStrengthDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "screensaverMediaLocalMetadata": "Metadatos del contenido multimedia local",
+  "@screensaverMediaLocalMetadata": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
   "screensaverMediaLocalPage": "Protector de pantalla: Contenido multimedia local",
   "@screensaverMediaLocalPage": {
     "context": "Settings:Screensaver:Local Media screensaver",
@@ -40355,8 +41470,8 @@
       ]
     }
   },
-  "screensaverMediaLocalHint": "Carpeta, duración, orden aleatorio y transición",
-  "@screensaverMediaLocalHint": {
+  "screensaverMediaLocalPageHint": "Carpeta, duración, orden aleatorio, transición y metadatos",
+  "@screensaverMediaLocalPageHint": {
     "context": "Settings:Screensaver:Local Media screensaver",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -40476,6 +41591,71 @@
   "@screensaverDetectionMotionTuning": {
     "context": "Settings > Screensaver > Motion Detection",
     "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionUseEntityTitle": "Usar entidad de Home Assistant",
+  "@settingMotionUseEntityTitle": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionUseEntityDescription": "Detecta el movimiento con un sensor de Home Assistant en lugar de la cámara.",
+  "@settingMotionUseEntityDescription": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionEntityTitle": "Entidad del sensor de movimiento",
+  "@settingMotionEntityTitle": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionEntityDescription": "El sensor de ocupación, movimiento o presencia de Home Assistant que se va a seguir.",
+  "@settingMotionEntityDescription": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "screensaverDetectionExternalMotionHeading": "Sensor de movimiento externo",
+  "@screensaverDetectionExternalMotionHeading": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Section heading.",
     "x-locations": {
       "device": [
         "Settings > Screensaver > Motion Detection"

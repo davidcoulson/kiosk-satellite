@@ -91,6 +91,64 @@ void main() {
     },
   );
 
+  // Touch under Wake to screensaver (issue #954): the first touch on the
+  // black screen brings the screensaver back, its lift is not a second
+  // touch, and the next touch opens the dashboard.
+  test('touch picked brings the screensaver back over the black screen', () {
+    fakeAsync((async) {
+      final start = DateTime(2026, 10, 11, 12);
+      build({'ks.screensaver.screen_off_wake_to_screensaver': '["touch"]'});
+      async.flushMicrotasks();
+      saver.clock = () => start.add(async.elapsed);
+      async.elapse(const Duration(minutes: 1));
+      expect(saver.activeView.value, 'blank');
+
+      saver.notifyActivity('touch');
+      async.flushMicrotasks();
+      expect(saver.isActive, isTrue);
+      expect(saver.activeView.value, 'clock');
+      expect(brightness.last, 0.8);
+
+      // The waking finger lifts, and a second finger of the same gesture
+      // lands right behind it.
+      async.elapse(const Duration(milliseconds: 50));
+      saver.notifyActivity('touch');
+      async.elapse(const Duration(milliseconds: 100));
+      saver.notifyActivity('tap');
+      saver.notifyActivity('touch_page');
+      async.flushMicrotasks();
+      expect(saver.isActive, isTrue);
+      expect(saver.activeView.value, 'clock');
+
+      // The countdown starts over from the wake.
+      async.elapse(const Duration(seconds: 60));
+      expect(saver.activeView.value, 'blank');
+      saver.notifyActivity('touch');
+      async.flushMicrotasks();
+      expect(saver.activeView.value, 'clock');
+
+      // A second touch opens the dashboard.
+      async.elapse(const Duration(seconds: 2));
+      saver.notifyActivity('touch');
+      async.flushMicrotasks();
+      expect(saver.isActive, isFalse);
+      saver.dispose();
+    });
+  });
+
+  test('the old switch on still lets touch open the dashboard', () {
+    fakeAsync((async) {
+      build({'ks.screensaver.screen_off_wake_to_screensaver': true});
+      async.flushMicrotasks();
+      async.elapse(const Duration(minutes: 1));
+      expect(saver.activeView.value, 'blank');
+      saver.notifyActivity('touch');
+      async.flushMicrotasks();
+      expect(saver.isActive, isFalse);
+      saver.dispose();
+    });
+  });
+
   test(
     'notifications, music and brightness changes leave the screen blank',
     () {

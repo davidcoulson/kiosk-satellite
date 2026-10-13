@@ -1037,6 +1037,7 @@ void main() {
         'next_screensaver',
         'screensaver_brightness_level',
         'screensaver_timeout',
+        'screensaver_screen_off_after',
         'assistant_volume',
         'media_volume',
         'clock_background',
@@ -1677,6 +1678,34 @@ void main() {
   );
 
   test(
+    'screensaver screen off after is a minutes slider clamped to the setting range',
+    () async {
+      final catalog = await surface.build();
+      final screenOff = catalog.firstWhere(
+        (e) => e['objectId'] == 'screensaver_screen_off_after',
+      );
+      expect(screenOff['type'], 'number');
+      expect(screenOff['unit'], 'min');
+      expect(screenOff['deviceClass'], 'duration');
+      expect(screenOff['mode'], 2);
+      expect(screenOff['min'], 0);
+      expect(screenOff['max'], 60);
+      expect(screenOff['step'], 1);
+      expect(screenOff['category'], 1);
+      await attach();
+      pushed.clear();
+      await surface.handleCommand('screensaver_screen_off_after', 15.0);
+      expect(settings.get(defs.screensaverScreenOffMinutes), 15);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(pushed, contains(('screensaver_screen_off_after', 15)));
+      await surface.handleCommand('screensaver_screen_off_after', 90.0);
+      expect(settings.get(defs.screensaverScreenOffMinutes), 60);
+      await surface.handleCommand('screensaver_screen_off_after', -1.0);
+      expect(settings.get(defs.screensaverScreenOffMinutes), 0);
+    },
+  );
+
+  test(
     'intercom volume is a percent slider listed while the intercom is on',
     () async {
       var catalog = await surface.build();
@@ -1932,6 +1961,39 @@ void main() {
         'lovelace/home',
         'lovelace/cameras',
       ]);
+    });
+
+    test('custom pages join the options and follow the setting', () async {
+      await surface.build();
+      await attach();
+      await settings.setFromJson(
+        defs.haCustomPages.key,
+        jsonEncode([
+          {'name': 'Wall', 'path': '/local/wall.html#den'},
+        ]),
+      );
+      await pumpEventQueue();
+      expect(catalogChanges, 1);
+      var select = (await surface.build()).firstWhere(
+        (d) => d['objectId'] == 'dashboard_view',
+      );
+      expect(select['options'], [
+        'lovelace/home',
+        'lovelace/cameras',
+        'local/wall.html#den',
+      ]);
+
+      // A re-read from the page keeps them, without a second restart.
+      await surface.relearnDashboardViews();
+      expect(catalogChanges, 1);
+
+      await settings.setFromJson(defs.haCustomPages.key, '[]');
+      await pumpEventQueue();
+      expect(catalogChanges, 2);
+      select = (await surface.build()).firstWhere(
+        (d) => d['objectId'] == 'dashboard_view',
+      );
+      expect(select['options'], ['lovelace/home', 'lovelace/cameras']);
     });
 
     test('the page reporting a dashboard change re-reads the list, '

@@ -70,6 +70,10 @@ import me.jxl.kiosk_satellite.fleet.MdnsPackets.u32
  * #833). The switcher links to it by that name, since its certificate
  * fails the browser's check under the IP address.
  *
+ * A kiosk given an Admin URL, such as a reverse proxy name, announces it
+ * as `admin=` (issue #967), and the switcher opens that instead. Fleet
+ * calls and the intercom keep to the address and port.
+ *
  * A Wi-Fi MulticastLock is held while running: without it most Android
  * Wi-Fi drivers drop multicast frames with the screen off, which would
  * make a dark kiosk deaf to the others and invisible to them.
@@ -108,6 +112,7 @@ class FleetDiscovery(
         // opening one and leaving someone to work it out.
         val agent: Boolean = false,
         val dnsName: String = "",
+        val adminUrl: String = "",
     ) {
         fun toMap(): Map<String, Any?> = mapOf(
             "id" to id,
@@ -118,6 +123,7 @@ class FleetDiscovery(
             "tls" to tls,
             "agent" to agent,
             "dnsName" to dnsName,
+            "adminUrl" to adminUrl,
         )
     }
 
@@ -192,6 +198,8 @@ class FleetDiscovery(
     @Volatile private var agent = false
     /** The DNS name the imported certificate covers; empty for none. */
     @Volatile private var dnsName: String = ""
+    /** The Admin URL the switcher opens instead of the address; empty for none. */
+    @Volatile private var adminUrl: String = ""
     /** The label this kiosk answers to as `<hostname>.local`; empty for none. */
     @Volatile private var hostname: String = ""
     /** Whether the service records go out and the others are listened for. */
@@ -237,12 +245,14 @@ class FleetDiscovery(
         tls: Boolean = false,
         agent: Boolean = false,
         dnsName: String = "",
+        adminUrl: String = "",
     ) {
         this.name = name.ifBlank { Build.MODEL ?: "Kiosk Satellite" }
         this.port = port
         this.tls = tls
         this.agent = agent
         this.dnsName = dnsName.lowercase()
+        this.adminUrl = adminUrl
         if (this.hostname != hostname) hostClash = ""
         this.hostname = hostname.lowercase()
         hostNeedle = if (this.hostname.isEmpty()) ByteArray(0)
@@ -413,6 +423,7 @@ class FleetDiscovery(
             tls = tls,
             agent = agent,
             dnsName = dnsName,
+            adminUrl = adminUrl,
         )
         return Snapshot(self, list, listening && running, hostClash)
     }
@@ -561,6 +572,7 @@ class FleetDiscovery(
                         tls = entries["tls"] == "1",
                         agent = entries["agent"] == "1",
                         dnsName = entries["dns"]?.lowercase() ?: "",
+                        adminUrl = entries["admin"] ?: "",
                     )
                     val before = peers[peerId]
                     if (before == null && peers.size >= MAX_PEERS) {
@@ -731,7 +743,8 @@ class FleetDiscovery(
                     (if (hostname.isEmpty()) emptyList() else listOf("host=$hostname")) +
                     (if (tls) listOf("tls=1") else emptyList()) +
                     (if (agent) listOf("agent=1") else emptyList()) +
-                    (if (tls && dnsName.isNotEmpty()) listOf("dns=$dnsName") else emptyList())
+                    (if (tls && dnsName.isNotEmpty()) listOf("dns=$dnsName") else emptyList()) +
+                    (if (adminUrl.isNotEmpty()) listOf("admin=$adminUrl") else emptyList())
                 for (entry in entries) {
                     // A TXT entry is at most 255 bytes; a name past that is cut.
                     val bytes = entry.toByteArray(Charsets.UTF_8).take(255).toByteArray()

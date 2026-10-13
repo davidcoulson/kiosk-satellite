@@ -61,6 +61,7 @@ import 'camera_views_picker.dart';
 import 'dashboard_view_picker.dart';
 import 'import_options_dialog.dart';
 import 'intercom_settings.dart';
+import 'custom_pages_settings.dart';
 import 'custom_wake_models.dart';
 import 'kit.dart';
 import 'time_picker.dart';
@@ -2941,6 +2942,9 @@ class _CategoryContentState extends State<_CategoryContent> {
           id: 'x:dashboard_picker',
           child: _DashboardPickerCard(container: container),
         ),
+      // The person's own pages, offered by the picker above beside the
+      // dashboards. No setting draws the page, so its row is placed here.
+      _subpageEntryCard(container, 'Home Assistant', 'Custom Pages'),
       ..._sectionedCards(container, [
         for (final def in _defsFor('Home Assistant'))
           if (def.key != haUrl.key &&
@@ -3062,8 +3066,11 @@ class _CategoryContentState extends State<_CategoryContent> {
           onChanged: null,
         ),
       ),
+    // A Home Assistant entity in the camera's place (issue #973) keeps the
+    // switch usable without one.
     if (widget.category == 'Screensaver' &&
-        !container.deviceCamera.effectiveEnabled)
+        !container.deviceCamera.effectiveEnabled &&
+        !container.settings.get(motionUseEntity))
       screensaverDismissOnMotion.key: SearchLandingTarget(
         id: screensaverDismissOnMotion.key,
         child: SwitchListTile(
@@ -3484,6 +3491,7 @@ class _CategoryContentState extends State<_CategoryContent> {
       return [
         PluginDetailPanel(
           plugins: container.plugins,
+          container: container,
           id: subpage,
           onDisabled: () => closeSettingsSubpage(context),
         ),
@@ -4018,6 +4026,8 @@ class _CategoryContentState extends State<_CategoryContent> {
     }
 
     switch (subpage) {
+      case 'Custom Pages':
+        return [CustomPagesCard(container: container)];
       case 'Dashboard View Rotation':
         // Hand-built: the view checkboxes need the live dashboards from Home
         // Assistant, which the generic renderer cannot supply.
@@ -6349,6 +6359,66 @@ class _LightEntityRowState extends State<_LightEntityRow> {
   }
 }
 
+/// The Home Assistant motion sensor picked in the camera's place (issue
+/// #973): the field opens the entity picker on occupancy, motion and
+/// presence sensors, and once one is picked the line under it says what
+/// it reads, live. Mirrored on the remote (rows.js).
+class _MotionEntityRow extends StatefulWidget {
+  const _MotionEntityRow({
+    required this.container,
+    required this.def,
+    required this.onChanged,
+  });
+
+  final AppContainer container;
+  final SettingDef<Object> def;
+  final VoidCallback onChanged;
+
+  @override
+  State<_MotionEntityRow> createState() => _MotionEntityRowState();
+}
+
+class _MotionEntityRowState extends State<_MotionEntityRow> {
+  StreamSubscription<ExternalMotionChanged>? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = widget.container.bus.on<ExternalMotionChanged>().listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.container;
+    final def = widget.def;
+    final entity = c.settings.get(motionEntity);
+    final reading = switch (c.motionEntity.detected) {
+      true => screensaverText(context, 'Detected'),
+      false => l10n(context).screensaverDetectionClear,
+      null => screenAudioText(context, 'No reading yet'),
+    };
+    return PickRow(
+      title: def.localizedTitle(context),
+      description: entity.isEmpty ? def.localizedDescription(context) : reading,
+      spec: entitySpec(context, c.commands, deviceClass: 'occupancy'),
+      value: entity,
+      allowClear: true,
+      onPick: (id) async {
+        await c.settings.setFromJson(def.key, id ?? '');
+        widget.onChanged();
+      },
+    );
+  }
+}
+
 /// Under the face sensitivity slider: the rest of the tuning is the
 /// motion camera's, shared with it.
 const _faceTuningNote =
@@ -7795,8 +7865,9 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
   bool _runtimeAll = false;
 
   /// The wrapper's reported mode: 'filtering', 'passthrough' (this view's
-  /// entities cannot be determined, so it is deliberately unfiltered), or
-  /// 'boot' while the allowlist has not been built yet.
+  /// entities cannot be determined, so it is deliberately unfiltered),
+  /// 'custom-page' (a custom page is on screen, never filtered) or 'boot'
+  /// while the allowlist has not been built yet.
   String _mode = 'boot';
 
   /// Tap on the "Watching N entities" link: opens the watched-entities list.
@@ -8066,6 +8137,14 @@ class _OptimizationsCardState extends State<_OptimizationsCard> {
             ],
           ),
         ),
+      );
+    }
+    // The person's own page under /local/: nothing of Home Assistant's
+    // to filter.
+    if (_ready && _mode == 'custom-page') {
+      return _telemetryRow(
+        theme,
+        Text(haText(context, 'Not used on custom pages.'), style: base),
       );
     }
     final note = _rawFirehose ? _rawFirehoseNote : '';
@@ -10762,6 +10841,10 @@ class SettingTile extends StatelessWidget {
         if (def.key == adaptiveLightEntity.key) {
           return _LightEntityRow(container: c, def: def, onChanged: onChanged);
         }
+        // The external motion sensor (issue #973), picked the same way.
+        if (def.key == motionEntity.key) {
+          return _MotionEntityRow(container: c, def: def, onChanged: onChanged);
+        }
         // The Home Assistant Dashboard screensaver's view and Now Playing's
         // chosen view are picked from the instance's dashboards in the
         // dashboard picker, never typed.
@@ -10843,6 +10926,16 @@ class SettingTile extends StatelessWidget {
             ),
             trailing: const Icon(Icons.edit_outlined),
             onTap: () => _pickImmichNamed(context, immichNamed),
+          );
+        }
+        // Wake to screensaver: what wakes to the screensaver, ticked off in a
+        // dialog from a dropdown-style box rather than typed as JSON.
+        if (def.key == screensaverScreenOffWakeToScreensaver.key) {
+          return _WakeToScreensaverRow(
+            container: c,
+            def: def,
+            value: value as String,
+            onChanged: onChanged,
           );
         }
         // The camera screensaver's views are picked from the ones configured
@@ -12304,4 +12397,121 @@ String _subpageDisplayTitle(
     if (profile != null) return fleetProfileName(context, profile);
   }
   return settingsPageText(context, category, subpage);
+}
+
+/// The labels of Wake to screensaver's sources.
+String _wakeSourceLabel(BuildContext context, String source) =>
+    switch (source) {
+      'motion' => screensaverText(context, 'Motion'),
+      'face' => screensaverText(context, 'Face'),
+      'proximity' => screensaverText(context, 'Proximity'),
+      'person' => screensaverText(context, 'Person'),
+      'power' => screensaverText(context, 'Power button'),
+      _ => screensaverText(context, 'Touch'),
+    };
+
+/// Wake to screensaver as a settings row: the picks at rest in a
+/// dropdown-style box, opening a dialog of checkboxes.
+class _WakeToScreensaverRow extends StatelessWidget {
+  const _WakeToScreensaverRow({
+    required this.container,
+    required this.def,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final AppContainer container;
+  final SettingDef<Object> def;
+  final String value;
+  final VoidCallback onChanged;
+
+  Future<void> _open(BuildContext context) async {
+    final picked = decodeWakeToScreensaver(value);
+    // A powered-off panel takes no touches: Touch can only wake the black
+    // screen that stands in for it.
+    final settings = container.settings;
+    final touchReady =
+        settings.get(screensaverScreenOffMinutes) > 0 &&
+        settings.get(screensaverScreenOffBlack);
+    final hintColor = Theme.of(context).colorScheme.onSurfaceVariant;
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(def.localizedTitle(context)),
+          content: SizedBox(
+            width: 420,
+            child: EdgeFade(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final source in wakeToScreensaverSources)
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: picked.contains(source),
+                      title: Text(_wakeSourceLabel(context, source)),
+                      subtitle: source == 'touch' && !touchReady
+                          ? Text(
+                              screensaverText(
+                                context,
+                                'Requires both "Turn screen off after" and '
+                                '"Use a black screen instead."',
+                              ),
+                              style: TextStyle(color: hintColor),
+                            )
+                          : null,
+                      onChanged: source == 'touch' && !touchReady
+                          ? null
+                          : (on) => setState(() {
+                              if (on == true) {
+                                picked.add(source);
+                              } else {
+                                picked.remove(source);
+                              }
+                            }),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(screensaverText(context, 'Cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(screensaverText(context, 'Save')),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (saved != true) return;
+    await container.settings.setFromJson(
+      def.key,
+      encodeWakeToScreensaver(picked),
+    );
+    onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final picked = decodeWakeToScreensaver(value);
+    final text = picked.isEmpty
+        ? screensaverText(context, 'Off')
+        : picked.length == wakeToScreensaverSources.length
+        ? screensaverText(context, 'All')
+        : [
+            for (final source in wakeToScreensaverSources)
+              if (picked.contains(source)) _wakeSourceLabel(context, source),
+          ].join(', ');
+    final field = ChoiceBox(text: text, onTap: () => _open(context));
+    return SettingsRow(
+      title: Text(def.localizedTitle(context)),
+      stack: true,
+      subtitle: Text(def.localizedDescription(context)),
+      trailing: tightPane(context) ? field : SizedBox(width: 300, child: field),
+    );
+  }
 }

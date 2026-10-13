@@ -8,5 +8,10 @@
   "settingScreensaverPostponeOnMotionDescription": "Retrasa la activación del protector de pantalla cuando detecta movimiento. ADVERTENCIA: Mantiene la cámara encendida permanentemente.",
   "screensaverDetectionMotionPage": "Detección de movimiento",
   "screensaverDetectionMotionHint": "Cierra o pospone el protector de pantalla al detectar movimiento",
-  "screensaverDetectionMotionTuning": "La detección de movimiento se ajusta en la configuración de Cámara."
+  "screensaverDetectionMotionTuning": "La detección de movimiento se ajusta en la configuración de Cámara.",
+  "settingMotionUseEntityTitle": "Usar entidad de Home Assistant",
+  "settingMotionUseEntityDescription": "Detecta el movimiento con un sensor de Home Assistant en lugar de la cámara.",
+  "settingMotionEntityTitle": "Entidad del sensor de movimiento",
+  "settingMotionEntityDescription": "El sensor de ocupación, movimiento o presencia de Home Assistant que se va a seguir.",
+  "screensaverDetectionExternalMotionHeading": "Sensor de movimiento externo"
 }

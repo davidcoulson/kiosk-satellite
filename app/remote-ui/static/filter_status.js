@@ -4,7 +4,8 @@ import { cmd } from './core.js';
 // store, which is unnecessary for the Overview label on a slow panel.
 export const filterStatusScript = '(function(){var S=window.__ksWs;'
   + 'return JSON.stringify(S?{enabled:S.enabled,built:S.built,'
-  + 'allow:S.allow?S.allow.size:null,standDown:S.standDown||null}:null);})()';
+  + 'allow:S.allow?S.allow.size:null,standDown:S.standDown||null,'
+  + 'customPage:S.customPage===true}:null);})()';
 
 let status = null, sampledAt = -Infinity, pending = null, revision = 0;
 
@@ -27,6 +28,11 @@ export async function readFilterStatus(enabled) {
       let value = JSON.parse(result.data);
       if (typeof value === 'string') value = JSON.parse(value);
       if (!value?.enabled) return null;
+      // A custom page is on screen: there is no Home Assistant dashboard
+      // to filter, so the chip says what is showing instead.
+      if (value.customPage) {
+        return { unfiltered: false, label: 'Showing custom pages' };
+      }
       if (Number.isInteger(value.allow) && value.allow >= 0) {
         return { unfiltered: false,
           label: `Watching ${value.allow} ${value.allow === 1 ? 'entity' : 'entities'}` };

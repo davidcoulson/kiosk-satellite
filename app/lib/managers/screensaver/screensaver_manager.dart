@@ -467,7 +467,12 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
     // whose hand it was. A person at the panel (power button, double-tap-
     // to-wake: source system) is activity like a touch, so they land on
     // the dashboard rather than the screensaver — except under lockdown,
-    // which keeps its screen locked here exactly like it does for motion.
+    // which keeps its screen locked here exactly like it does for motion,
+    // and with Power button picked under Wake to screensaver, which brings
+    // the screensaver back for these wakes the same as for a detection
+    // (issue #952). Android
+    // never tells an app which key or gesture woke the panel, so every
+    // wake the app did not ask for counts here.
     // The app's own pokes (source app) are either part of a dismiss that
     // is already running or an automation switching the panel on to show
     // the screensaver (a photo frame's morning switch-on), so those keep
@@ -490,10 +495,11 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
         return;
       }
       _panelDark = false;
-      if (byHand) {
+      if (byHand && !_wakesToScreensaver('power')) {
         notifyActivity('screen on');
         return;
       }
+      if (byHand) log.info(name, 'woken by the device; screensaver stays');
       if (_blanked) {
         unawaited(_wakeFromBlank());
       } else {
@@ -537,44 +543,16 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
         unawaited(start(forNowPlaying: true));
       }
     });
+    // The camera's motion, unless a Home Assistant entity stands in for
+    // it (issue #973). The camera still ticks for the Motion sensor entity
+    // then, and that is not the screensaver's motion.
     bus.on<MotionDetected>().listen((_) {
-      // Under lockdown the screen must stay locked: motion neither
-      // dismisses a screensaver running under the opt-in nor postpones
-      // the next one. The mode lifting brings normal behavior back.
-      if (_settings.get(defs.lockdownEnabled)) return;
-      if (!_active) {
-        // Between screensavers, motion can only postpone the next one
-        // (discussion #126): people moving in front of the device keep
-        // resetting the idle clock, exactly like a touch would. Gated on
-        // Dismiss on motion too — the postpone switch extends it and must
-        // never act on its own (a stale true would otherwise act from
-        // under a hidden row).
-        if (_settings.get(defs.screensaverPostponeOnMotion) &&
-            _settings.get(defs.screensaverDismissOnMotion)) {
-          _resetIdleTimer();
-        }
-        return;
-      }
-      if (!_screenDark &&
-          _settings.get(defs.screensaverDismissOnMotionScreenOffOnly)) {
-        return;
-      }
-      // The active schedule entry's motion override (issue #89) wins over
-      // the switch, matching the camera's own gating in MotionManager.
-      if (!(_motionPolicy ?? _settings.get(defs.screensaverDismissOnMotion))) {
-        return;
-      }
-      // The full-screen now-playing view has its own motion policy: it is
-      // a music display, and someone walking past should not interrupt it
-      // unless explicitly asked to (sendspin.fullscreen_motion).
-      final showingNowPlaying = activeView.value != null && _nowPlayingTakeover;
-      if (showingNowPlaying &&
-          !nowPlayingShared &&
-          !_settings.get(defs.sendspinFullscreenMotion)) {
-        return;
-      }
-      if (_wakeToScreensaver('motion')) return;
-      notifyActivity('motion');
+      if (_settings.get(defs.motionUseEntity)) return;
+      _onMotion();
+    });
+    bus.on<ExternalMotionDetected>().listen((e) {
+      if (!_settings.get(defs.motionUseEntity)) return;
+      _onMotion(held: e.held);
     });
     bus.on<FaceDetected>().listen((_) {
       // Same lockdown rule as motion.
@@ -985,17 +963,66 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
   /// relit by the app's own display (see [ScreensaverSlideChanged]).
   void notifySlideChanged() => bus.publish(const ScreensaverSlideChanged());
 
+  /// Motion from the camera, or from the Home Assistant entity in its
+  /// place (issue #973). [held] is the entity still on: it postpones like
+  /// any motion but never dismisses, the person sensor's rule (issue
+  /// #369), since a screensaver that started with the sensor on is wanted.
+  void _onMotion({bool held = false}) {
+    // Under lockdown the screen must stay locked: motion neither
+    // dismisses a screensaver running under the opt-in nor postpones
+    // the next one. The mode lifting brings normal behavior back.
+    if (_settings.get(defs.lockdownEnabled)) return;
+    if (!_active) {
+      // Between screensavers, motion can only postpone the next one
+      // (discussion #126): people moving in front of the device keep
+      // resetting the idle clock, exactly like a touch would. Gated on
+      // Dismiss on motion too — the postpone switch extends it and must
+      // never act on its own (a stale true would otherwise act from
+      // under a hidden row).
+      if (_settings.get(defs.screensaverPostponeOnMotion) &&
+          _settings.get(defs.screensaverDismissOnMotion)) {
+        _resetIdleTimer();
+      }
+      return;
+    }
+    if (!_screenDark &&
+        _settings.get(defs.screensaverDismissOnMotionScreenOffOnly)) {
+      return;
+    }
+    // The active schedule entry's motion override (issue #89) wins over
+    // the switch, matching the camera's own gating in MotionManager.
+    if (!(_motionPolicy ?? _settings.get(defs.screensaverDismissOnMotion))) {
+      return;
+    }
+    if (held) return;
+    // The full-screen now-playing view has its own motion policy: it is
+    // a music display, and someone walking past should not interrupt it
+    // unless explicitly asked to (sendspin.fullscreen_motion).
+    final showingNowPlaying = activeView.value != null && _nowPlayingTakeover;
+    if (showingNowPlaying &&
+        !nowPlayingShared &&
+        !_settings.get(defs.sendspinFullscreenMotion)) {
+      return;
+    }
+    if (_wakeToScreensaver('motion')) return;
+    notifyActivity('motion');
+  }
+
+  /// Whether [source] is picked under Wake to screensaver.
+  bool _wakesToScreensaver(String source) => defs
+      .decodeWakeToScreensaver(
+        _settings.get(defs.screensaverScreenOffWakeToScreensaver),
+      )
+      .contains(source);
+
   /// "Wake to screensaver": a detection under a dark panel powers the
   /// screen back on and nothing more. The app's own wake reaches the
   /// ScreenStateChanged listener as source app, which keeps the session
   /// and arms a fresh screen-off countdown, the same path the ESPHome
   /// Screen light takes. Returns whether it took the event; a lit panel
-  /// or the switch off leaves the dismiss to the caller.
+  /// or a source not picked leaves the dismiss to the caller.
   bool _wakeToScreensaver(String source) {
-    if (!_screenDark ||
-        !_settings.get(defs.screensaverScreenOffWakeToScreensaver)) {
-      return false;
-    }
+    if (!_screenDark || !_wakesToScreensaver(source)) return false;
     log.info(name, 'woken by $source; screen on, screensaver stays');
     if (_blanked && !_panelDark) {
       unawaited(_wakeFromBlank());
@@ -1005,11 +1032,39 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
     return true;
   }
 
+  /// When a touch last brought the screensaver back over a black screen
+  /// (Touch under Wake to screensaver, issue #954). One tap reports twice
+  /// (see [_tapChainStart]), and the lift of the waking tap must not be
+  /// the second touch that opens the dashboard: until the next finger
+  /// comes down, the echoes are dropped, and so are the other fingers of
+  /// the same gesture.
+  DateTime? _touchWokeAt;
+
+  static bool _isTouch(String source) =>
+      source == 'touch' ||
+      source == 'touch_page' ||
+      source == 'tap' ||
+      source == 'screensaver_touch';
+
   void notifyActivity(String source) {
     // A ringing alarm on this screensaver ends through its Snooze and Stop
     // buttons only: a brush of the hand, motion or a face never dismisses
     // it.
     if (alarmTakeover.value == 'ringing') return;
+    if (_isTouch(source)) {
+      final woke = _touchWokeAt;
+      if (woke != null) {
+        if (source != 'touch' || clock().difference(woke) < _tapDebounce) {
+          return;
+        }
+        _touchWokeAt = null;
+      }
+      // Only a black screen takes touches: a powered-off panel does not.
+      if (_active && _blanked && !_panelDark && _wakeToScreensaver('touch')) {
+        _touchWokeAt = clock();
+        return;
+      }
+    }
     // Overlay controls consume their touch without dismissing the view.
     if (_touchOnControl &&
         (source == 'touch' || source == 'touch_page' || source == 'tap')) {
@@ -1299,6 +1354,13 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
   /// followed each slide would hop up and down with them.
   final ValueNotifier<Map<String, Size>> metadataFootprint = ValueNotifier(
     const {},
+  );
+
+  /// The photo the Home Assistant Media page shows, as its media id and the
+  /// URL it was loaded from, so the metadata panel drawn over the page can
+  /// read its EXIF (issue #953). Null for a video, a camera or nothing yet.
+  final ValueNotifier<({String id, String url})?> mediaSlide = ValueNotifier(
+    null,
   );
 
   /// Records the metadata panel's size in [corner], keeping the largest
@@ -1826,6 +1888,7 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
     claimedCorners.value = const {};
     weatherChipsHeight.value = 0;
     metadataFootprint.value = const {};
+    mediaSlide.value = null;
     _slides = null;
     bus.publish(const ScreensaverStateChanged(active: false));
   }

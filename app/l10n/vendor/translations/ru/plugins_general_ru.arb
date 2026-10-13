@@ -21,5 +21,16 @@
   "pluginThisPluginWasInstalledFromZipAndHasNo": "Плагин установлен из ZIP и не имеет README репозитория.",
   "pluginImageUnavailable": "Изображение недоступно",
   "pluginCouldNotOpenThisLink": "Не удалось открыть эту ссылку.",
-  "pluginEnableName": "Включить {name}"
+  "pluginEnableName": "Включить {name}",
+  "pluginShowPassword": "Показать пароль",
+  "pluginHidePassword": "Скрыть пароль",
+  "pluginUntitled": "Без названия",
+  "pluginSearchIcons": "Поиск значков",
+  "pluginChooseIcon": "Выберите значок",
+  "pluginSearchCameraViews": "Поиск видов камер",
+  "pluginChooseCameraView": "Выберите вид камер",
+  "pluginCameraViewGone": "Этого вида камер больше нет. Выберите другой.",
+  "pluginDragToReorder": "Перетащите для изменения порядка",
+  "pluginDone": "Готово",
+  "pluginRequired": "Обязательно"
 }

@@ -15,5 +15,20 @@
   "settingScreensaverLocalEdgeTapsTitle": "Касание краёв для смены слайдов",
   "settingScreensaverLocalEdgeTapsDescription": "Касание левой или правой пятой части экрана показывает предыдущий или следующий слайд вместо закрытия.",
   "screensaverMediaLocalPage": "Заставка «Локальные медиа»",
-  "screensaverMediaLocalHint": "Папка, тайминг, перемешивание, переход"
+  "screensaverMediaLocalPageHint": "Папка, тайминг, перемешивание, переход, метаданные",
+  "settingScreensaverLocalMetadataTitle": "Показывать метаданные",
+  "settingScreensaverLocalMetadataDateTitle": "Дата съёмки",
+  "settingScreensaverLocalMetadataDateDescription": "Показывать, когда снято фото.",
+  "settingScreensaverLocalMetadataCameraTitle": "Детали камеры",
+  "settingScreensaverLocalMetadataCameraDescription": "Показывать фокусное расстояние, диафрагму и ISO.",
+  "settingScreensaverLocalMetadataPositionTitle": "Позиция метаданных",
+  "settingScreensaverLocalMetadataPositionDescription": "В каком углу находятся детали.",
+  "settingScreensaverLocalMetadataTextShadowTitle": "Тень текста",
+  "settingScreensaverLocalMetadataTextShadowDescription": "Добавить тень тексту метаданных для читаемости на фото.",
+  "settingScreensaverLocalMetadataScaleTitle": "Масштаб текста",
+  "settingScreensaverLocalMetadataScaleDescription": "Масштабируйте детали фото под размер экрана.",
+  "settingScreensaverLocalVignetteStrengthTitle": "Сила виньетки",
+  "settingScreensaverLocalVignetteStrengthDescription": "Затемнение позади деталей для читаемости на светлых фото. 0 выключает.",
+  "settingScreensaverLocalMetadataDescription": "Дата и детали камеры поверх фото.",
+  "screensaverMediaLocalMetadata": "Метаданные «Локальные медиа»"
 }

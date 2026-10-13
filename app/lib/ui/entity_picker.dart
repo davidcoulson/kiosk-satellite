@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../app_container.dart';
 import '../core/command_registry.dart';
 import '../l10n/messages.dart';
+import '../managers/home_assistant/entity_list.dart';
 import 'kit.dart';
 import 'mdi_icon.dart';
 import 'picker_dialog.dart';
@@ -117,6 +118,8 @@ class PickSpec {
     this.chips = true,
     this.headings = true,
     this.noteText,
+    this.grid = false,
+    this.limit,
   });
 
   final String key;
@@ -134,6 +137,15 @@ class PickSpec {
 
   /// Translates a source's note for the screen.
   final String Function(BuildContext context, String note)? noteText;
+
+  /// Lays the rows out as tiles of an icon over a short label (the icon
+  /// picker), the label being the row's [PickItem.sub] or its name.
+  final bool grid;
+
+  /// The most rows on show, the picked ones first while nothing is typed.
+  /// Search finds the rest. For sources too big to draw whole, like the
+  /// thousands of icons.
+  final int? limit;
 }
 
 /// Home Assistant's entities, all of them, filtered on the device per
@@ -153,11 +165,7 @@ PickSpec entitySpec(
       ? null
       : (item) =>
             (domains.isEmpty || domains.contains(item.raw['domain'])) &&
-            (deviceClass == null ||
-                (deviceClass == 'illuminance'
-                    ? item.raw['device_class'] == 'illuminance' ||
-                          item.raw['unit'] == 'lx'
-                    : item.raw['device_class'] == deviceClass)),
+            (deviceClass == null || matchesDeviceClass(item.raw, deviceClass)),
 );
 
 /// Loads the entity list every entity picker shares, for a screen that
@@ -731,6 +739,25 @@ class _ItemPickerState extends State<ItemPicker> {
         title: haText(context, 'Nothing matches'),
       );
     }
+    if (widget.spec.grid) {
+      var items = [
+        for (final e in entries)
+          if (e.item != null) e.item!,
+      ];
+      final limit = widget.spec.limit;
+      if (limit != null && items.length > limit) {
+        if (_query.isEmpty && _picked.isNotEmpty) {
+          items = [
+            for (final i in items)
+              if (_picked.contains(i.id)) i,
+            for (final i in items)
+              if (!_picked.contains(i.id)) i,
+          ];
+        }
+        items = items.take(limit).toList();
+      }
+      return _grid(context, items, wide);
+    }
     if (!_scrolledToPick && _picked.isNotEmpty && _query.isEmpty) {
       _scrolledToPick = true;
       final first = entries.indexWhere(
@@ -772,6 +799,56 @@ class _ItemPickerState extends State<ItemPicker> {
           );
         },
       ),
+    );
+  }
+
+  /// Tiles at least [_GridCell.width] wide, as many as fit, the way the
+  /// remote admin's icon picker lays them out. Opens on the picked one.
+  Widget _grid(BuildContext context, List<PickItem> items, bool wide) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        const gap = 6.0;
+        final side = wide ? 0.0 : 8.0;
+        final columns =
+            ((box.maxWidth - 2 * side + gap) / (_GridCell.width + gap))
+                .floor()
+                .clamp(1, 1000);
+        if (!_scrolledToPick && _picked.isNotEmpty && _query.isEmpty) {
+          _scrolledToPick = true;
+          final first = items.indexWhere((i) => _picked.contains(i.id));
+          final row = first ~/ columns;
+          if (row > 1) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_scroll.hasClients) {
+                _scroll.jumpTo(
+                  ((row - 1) * (_GridCell.height + gap)).clamp(
+                    0.0,
+                    _scroll.position.maxScrollExtent,
+                  ),
+                );
+              }
+            });
+          }
+        }
+        return EdgeFade(
+          child: GridView.builder(
+            controller: _scroll,
+            padding: EdgeInsets.fromLTRB(side, 0, side, 8),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              mainAxisExtent: _GridCell.height,
+              mainAxisSpacing: gap,
+              crossAxisSpacing: gap,
+            ),
+            itemCount: items.length,
+            itemBuilder: (context, i) => _GridCell(
+              item: items[i],
+              picked: _picked.contains(items[i].id),
+              onTap: () => _tap(items[i]),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -894,6 +971,57 @@ class _ItemPickerState extends State<ItemPicker> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// One tile of a grid picker: the icon over its label, tinted when picked.
+class _GridCell extends StatelessWidget {
+  const _GridCell({
+    required this.item,
+    required this.picked,
+    required this.onTap,
+  });
+
+  static const width = 88.0;
+  static const height = 76.0;
+
+  final PickItem item;
+  final bool picked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final color = picked ? scheme.primary : scheme.onSurface;
+    final label = item.sub ?? item.name;
+    return Tooltip(
+      message: label,
+      waitDuration: const Duration(milliseconds: 600),
+      child: Material(
+        color: picked ? scheme.primaryContainer : Colors.transparent,
+        borderRadius: BorderRadius.circular(Ks.radiusControl),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(Ks.radiusControl),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(4, 10, 4, 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PickIcon(icon: item.icon, size: 28, color: color),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11.5, color: color),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

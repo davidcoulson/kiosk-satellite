@@ -1,0 +1,20 @@
+{
+  "@@locale": "zh_CN",
+  "haCustomPages": "自定义网页",
+  "haCustomPagesHintDashboard": "作为仪表盘显示的自定义 HTML 网页",
+  "haCustomPagesAdd": "添加网页",
+  "haCustomPagesEmpty": "添加 Home Assistant www 文件夹中的 HTML 网页，即可像仪表盘一样选择它们。",
+  "haCustomPagesGuide": "自定义网页指南",
+  "haCustomPagesGuideHint": "如何构建与 Home Assistant 通信的网页。",
+  "haCustomPageAddTitle": "添加自定义网页",
+  "haCustomPageEditTitle": "编辑自定义网页",
+  "haCustomPageName": "名称",
+  "haCustomPagePath": "路径",
+  "haCustomPagePathHint": "Home Assistant www 文件夹中的文件，例如 /local/dashboard.html。",
+  "haCustomPageNameMissing": "请输入名称。",
+  "haCustomPagePathInvalid": "请输入 /local/ 下的路径，例如 /local/dashboard.html。",
+  "haCustomPageDuplicate": "另一个网页已在使用此路径。",
+  "haCustomPageNotFound": "Home Assistant 在此路径下没有文件。",
+  "haCustomPageUnreachable": "无法连接 Home Assistant。",
+  "haCustomPageStatus": "Home Assistant 返回了 HTTP {code}。"
+}

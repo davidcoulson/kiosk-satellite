@@ -36,6 +36,117 @@ class PluginPackageTest {
         assertFalse(PluginHostPolicy.validEvent("ha.entity."))
     }
 
+    @Test fun secretSettingsAreMaskedAndKeptWhenEditedUnchanged() {
+        val secret = JSONObject().put("key", "token").put("title", "Token").put("type", "secret").put("default", "")
+        val name = JSONObject().put("key", "name").put("title", "Name").put("type", "string").put("default", "")
+        val value = PluginManifest(manifest().put("settings", org.json.JSONArray().put(secret).put(name)))
+        rejects { PluginManifest(manifest().put("settings", org.json.JSONArray().put(JSONObject(secret.toString()).put("default", "hunter2")))) }
+        rejects { value.config(JSONObject().put("token", 42)) }
+        val saved = JSONObject(value.config(JSONObject().put("token", "hunter2").put("name", "Hall")))
+        val masked = value.masked(saved)
+        assertEquals(PluginManifest.SECRET_SET, masked.getString("token"))
+        assertEquals("Hall", masked.getString("name"))
+        assertEquals("", value.masked(JSONObject().put("token", "")).getString("token"))
+        // Echoing the masked listing back, or omitting the secret, keeps the saved value.
+        assertEquals("hunter2", value.config(value.unmasked(masked.put("name", "Den"), saved))["token"])
+        assertEquals("hunter2", value.config(value.unmasked(JSONObject().put("name", "Den"), saved))["token"])
+        assertEquals("rotated", value.config(value.unmasked(JSONObject().put("token", "rotated"), saved))["token"])
+        assertEquals("", value.config(value.unmasked(JSONObject().put("token", ""), saved))["token"])
+    }
+
+    private fun listManifest() = manifest().put("settings", org.json.JSONArray("""[
+      {"key":"collapse","type":"select","title":"Collapse","default":"Off","options":["Off","On"]},
+      {"key":"after","type":"number","title":"After","default":0,"min":0,"max":60,"visibleWhen":{"key":"collapse","notEquals":"Off"}},
+      {"key":"items","type":"list","title":"Items","maxItems":4,"addTitle":"Add item",
+       "row":{"title":"label","subtitle":["page","opens"],"icon":"icon"},
+       "default":[{"label":"Home","page":"lovelace/0"}],
+       "fields":[
+         {"key":"label","type":"string","title":"Label","required":true},
+         {"key":"icon","type":"icon","title":"Icon"},
+         {"key":"opens","type":"select","title":"Opens","options":["Page","Camera view","Menu"]},
+         {"key":"page","type":"dashboard","title":"Page","required":true,"visibleWhen":{"key":"opens","equals":"Page"}},
+         {"key":"camera","type":"cameraView","title":"Camera","required":true,"visibleWhen":{"key":"opens","equals":"Camera view"}},
+         {"key":"entries","type":"list","title":"Entries","minItems":1,"maxItems":16,"visibleWhen":{"key":"opens","equals":"Menu"},
+          "fields":[{"key":"label","type":"string","title":"Label","required":true},{"key":"page","type":"dashboard","title":"Page"}]}
+       ]}
+    ]"""))
+
+    @Test fun listSettingsFillRowsAndReachThePluginAsLists() {
+        val value = PluginManifest(listManifest())
+        val defaults = value.config(JSONObject())
+        val items = defaults["items"] as List<*>
+        assertEquals(1, items.size)
+        val home = items[0] as Map<*, *>
+        assertEquals(setOf("label", "icon", "opens", "page", "camera", "entries"), home.keys)
+        assertEquals("Page", home["opens"])
+        assertEquals(emptyList<Any>(), home["entries"])
+        assertThrows(UnsupportedOperationException::class.java) { (items as MutableList<Any>).add("more") }
+        // A row read back from the stored form, the way PluginBridge saves it, is the same row.
+        val stored = JSONObject(defaults)
+        assertEquals(defaults, value.config(stored))
+        val menu = org.json.JSONArray("""[{"label":"Cameras","opens":"Menu","entries":[{"label":"Front","page":"lovelace/front"}]}]""")
+        val nested = (value.config(JSONObject().put("items", menu))["items"] as List<*>)[0] as Map<*, *>
+        assertEquals("lovelace/front", ((nested["entries"] as List<*>)[0] as Map<*, *>)["page"])
+        // Lists arriving from Dart are plain collections.
+        assertEquals(1, (value.config(JSONObject(mapOf("items" to listOf(mapOf("label" to "Den", "page" to "/lovelace/den")))))["items"] as List<*>).size)
+    }
+
+    @Test fun listSettingsEnforceShownFieldsOnly() {
+        val value = PluginManifest(listManifest())
+        fun items(json: String) = JSONObject().put("items", org.json.JSONArray(json))
+        // A hidden required field may stay empty. A shown one may not.
+        value.config(items("""[{"label":"Front","opens":"Camera view","camera":"a1b2c3d4e5f60718293a4b5c6d7e8f90"}]"""))
+        rejects { value.config(items("""[{"label":"Front","opens":"Camera view"}]""")) }
+        rejects { value.config(items("""[{"label":" ","page":"lovelace/0"}]""")) }
+        rejects { value.config(items("""[{"label":"Menu","opens":"Menu","entries":[]}]""")) }
+        rejects { value.config(items("""[{"label":"Home","page":"lovelace/0","color":"red"}]""")) }
+        rejects { value.config(items("""[{"label":"Home","page":"lovelace/0?x=1"}]""")) }
+        rejects { value.config(items("""[{"label":"Home","page":"lovelace/0","icon":"home"}]""")) }
+        rejects { value.config(items("[" + List(5) { """{"label":"$it","page":"p"}""" }.joinToString(",") + "]")) }
+        rejects { value.config(JSONObject().put("items", "Home = /lovelace/0")) }
+        val long = "x".repeat(500)
+        rejects { value.config(items("[" + List(4) { """{"label":"$long","opens":"Menu","entries":[${List(16) { """{"label":"$long"}""" }.joinToString(",")}]}""" }.joinToString(",") + "]")) }
+        assertEquals(30, value.config(JSONObject().put("collapse", "On").put("after", 30))["after"])
+    }
+
+    @Test fun listSchemasAreValidated() {
+        fun withItems(change: (JSONObject) -> Unit) = listManifest().also { change(it.getJSONArray("settings").getJSONObject(2)) }
+        fun field(index: Int, change: (JSONObject) -> Unit) = withItems { change(it.getJSONArray("fields").getJSONObject(index)) }
+        PluginManifest(listManifest())
+        rejects { PluginManifest(withItems { it.put("fields", org.json.JSONArray()) }) }
+        rejects { PluginManifest(withItems { it.put("maxItems", 33) }) }
+        rejects { PluginManifest(withItems { it.put("minItems", 5) }) }
+        rejects { PluginManifest(withItems { it.put("row", JSONObject().put("title", "missing")) }) }
+        rejects { PluginManifest(withItems { it.put("row", JSONObject().put("icon", "label")) }) }
+        rejects { PluginManifest(withItems { it.put("row", JSONObject().put("title", "entries")) }) }
+        rejects { PluginManifest(withItems { it.put("default", org.json.JSONArray("""[{"label":""}]""")) }) }
+        // Conditions name a field declared earlier, by a supported test.
+        rejects { PluginManifest(field(1, { it.put("visibleWhen", JSONObject().put("key", "page").put("equals", "x")) })) }
+        rejects { PluginManifest(field(1, { it.put("visibleWhen", JSONObject().put("key", "label").put("matches", "x")) })) }
+        rejects { PluginManifest(field(1, { it.put("visibleWhen", JSONObject().put("key", "label").put("notEmpty", false)) })) }
+        rejects { PluginManifest(field(1, { it.put("visibleWhen", JSONObject().put("key", "label").put("equals", JSONObject())) })) }
+        // No secrets or groups in rows, no list three deep and no required outside a list.
+        rejects { PluginManifest(field(0, { it.put("type", "secret") })) }
+        rejects { PluginManifest(field(0, { it.put("group", "Look") })) }
+        rejects { PluginManifest(field(2, { it.put("required", true) })) }
+        rejects { PluginManifest(withItems { it.getJSONArray("fields").getJSONObject(5).getJSONArray("fields").put(JSONObject("""{"key":"deeper","type":"list","title":"Deeper","fields":[{"key":"a","type":"string","title":"A"}]}""")) }) }
+        rejects { PluginManifest(listManifest().also { it.getJSONArray("settings").getJSONObject(0).put("required", true) }) }
+        rejects { PluginManifest(listManifest().also { it.getJSONArray("settings").getJSONObject(1).put("visibleWhen", JSONObject().put("key", "items").put("notEmpty", true)) }) }
+    }
+
+    @Test fun pickerSettingTypesStoreTheirOwnFormats() {
+        val value = PluginManifest(manifest().put("settings", org.json.JSONArray("""[
+          {"key":"icon","type":"icon","title":"Icon","default":"mdi:home-outline"},
+          {"key":"page","type":"dashboard","title":"Page","default":""},
+          {"key":"camera","type":"cameraView","title":"Camera","default":"default"}
+        ]""")))
+        assertEquals("mdi:garage", value.config(JSONObject().put("icon", "mdi:garage"))["icon"])
+        assertEquals("/dashboard-kitchen/lights", value.config(JSONObject().put("page", "/dashboard-kitchen/lights"))["page"])
+        for ((key, bad) in listOf("icon" to "garage", "icon" to "mdi:Garage", "page" to "https://example.com", "page" to "a b", "camera" to "../x")) {
+            rejects { value.config(JSONObject().put(key, bad)) }
+        }
+    }
+
     @Test fun keyEventsSkipTypedText() {
         val time = "2026-10-05T17:00:00.000Z"
         assertEquals(

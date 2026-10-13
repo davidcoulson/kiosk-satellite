@@ -612,6 +612,14 @@ class UiStringsEs extends UiStrings {
       'La vista que muestra el kiosko al iniciar.';
 
   @override
+  String get dashboardPickerOnePage => '1 página';
+
+  @override
+  String dashboardPickerPageCount(String count) {
+    return '$count páginas';
+  }
+
+  @override
   String get dlnaCannotDecode =>
       'Este dispositivo no puede decodificar este video.';
 
@@ -2930,6 +2938,40 @@ class UiStringsEs extends UiStrings {
   }
 
   @override
+  String get pluginShowPassword => 'Mostrar contraseña';
+
+  @override
+  String get pluginHidePassword => 'Ocultar contraseña';
+
+  @override
+  String get pluginUntitled => 'Sin nombre';
+
+  @override
+  String get pluginSearchIcons => 'Buscar iconos';
+
+  @override
+  String get pluginChooseIcon => 'Elige un icono';
+
+  @override
+  String get pluginSearchCameraViews => 'Buscar vistas de cámaras';
+
+  @override
+  String get pluginChooseCameraView => 'Elige una vista de cámaras';
+
+  @override
+  String get pluginCameraViewGone =>
+      'Esta vista de cámaras ya no existe. Elige otra.';
+
+  @override
+  String get pluginDragToReorder => 'Arrastra para reordenar';
+
+  @override
+  String get pluginDone => 'Hecho';
+
+  @override
+  String get pluginRequired => 'Obligatorio';
+
+  @override
   String get pluginAddPlugin => 'Añadir plugin';
 
   @override
@@ -3450,6 +3492,38 @@ class UiStringsEs extends UiStrings {
       'El ID del disparador no es válido o está duplicado';
 
   @override
+  String get pluginErrorListSetting => 'El ajuste de lista no es válido';
+
+  @override
+  String get pluginErrorSettingCondition =>
+      'La condición del ajuste no es válida';
+
+  @override
+  String get pluginErrorIcon => 'Se esperaba un nombre de icono MDI';
+
+  @override
+  String get pluginErrorDashboard =>
+      'Se esperaba la ruta de un panel de control';
+
+  @override
+  String get pluginErrorCameraView => 'Se esperaba un ID de vista de cámaras';
+
+  @override
+  String get pluginErrorListValue => 'Se esperaba un ajuste de lista';
+
+  @override
+  String get pluginErrorListCount =>
+      'La lista tiene demasiados elementos o muy pocos';
+
+  @override
+  String get pluginErrorRequiredField =>
+      'Completa todos los campos obligatorios';
+
+  @override
+  String get pluginErrorListSize =>
+      'Los ajustes de lista pueden ocupar como máximo 32 KB';
+
+  @override
   String get remoteDisableTitle => '¿Desactivar la administración remota?';
 
   @override
@@ -3877,6 +3951,9 @@ class UiStringsEs extends UiStrings {
   String overviewMetricDegrees(String value) {
     return '$value°C';
   }
+
+  @override
+  String get overviewShowingCustomPages => 'Mostrando páginas personalizadas';
 
   @override
   String get overviewNoScreenshot => 'Sin captura de pantalla';
@@ -5703,6 +5780,21 @@ class UiStringsEs extends UiStrings {
       'Anuncia este dispositivo en la red y muestra los otros kioskos en la administración remota para cambiar entre ellos.';
 
   @override
+  String get settingRemoteAdminUrlTitle => 'URL de administración';
+
+  @override
+  String get settingRemoteAdminUrlDescription =>
+      'Dirección que abren otros kioskos en Cambiar de kiosko para llegar a este, como el nombre de un proxy inverso. Déjala vacía para usar su dirección de red.';
+
+  @override
+  String get deviceAdminUrlInvalid =>
+      'Introduce una dirección válida, por ejemplo https://kiosk.example.com';
+
+  @override
+  String get deviceAdminUrlPath =>
+      'Introduce solo la dirección, sin ruta. Ejemplo: https://kiosk.example.com';
+
+  @override
   String get deviceRemotePage => 'Administración remota';
 
   @override
@@ -7194,6 +7286,64 @@ class UiStringsEs extends UiStrings {
   @override
   String get gestureRemoteKeysHelp =>
       'A mapped key runs its action whatever app is in front, and does nothing else.';
+  String get haCustomPages => 'Páginas personalizadas';
+
+  @override
+  String get haCustomPagesHintDashboard =>
+      'Tus páginas HTML personalizadas mostradas como un panel de control';
+
+  @override
+  String get haCustomPagesAdd => 'Añadir página';
+
+  @override
+  String get haCustomPagesEmpty =>
+      'Añade páginas HTML de la carpeta www de Home Assistant para elegirlas como un panel de control.';
+
+  @override
+  String get haCustomPagesGuide => 'Guía de páginas personalizadas';
+
+  @override
+  String get haCustomPagesGuideHint =>
+      'Cómo crear una página que se comunica con Home Assistant.';
+
+  @override
+  String get haCustomPageAddTitle => 'Añadir página personalizada';
+
+  @override
+  String get haCustomPageEditTitle => 'Editar página personalizada';
+
+  @override
+  String get haCustomPageName => 'Nombre';
+
+  @override
+  String get haCustomPagePath => 'Ruta';
+
+  @override
+  String get haCustomPagePathHint =>
+      'Un archivo de la carpeta www de Home Assistant, como /local/dashboard.html.';
+
+  @override
+  String get haCustomPageNameMissing => 'Introduce un nombre.';
+
+  @override
+  String get haCustomPagePathInvalid =>
+      'Introduce una ruta dentro de /local/, como /local/dashboard.html.';
+
+  @override
+  String get haCustomPageDuplicate => 'Otra página ya usa esta ruta.';
+
+  @override
+  String get haCustomPageNotFound =>
+      'Home Assistant no tiene ningún archivo en esta ruta.';
+
+  @override
+  String get haCustomPageUnreachable =>
+      'No se pudo conectar con Home Assistant.';
+
+  @override
+  String haCustomPageStatus(String code) {
+    return 'Home Assistant respondió con HTTP $code.';
+  }
 
   @override
   String get settingHaHoldModeTitle => 'Modo de pausa';
@@ -7332,6 +7482,9 @@ class UiStringsEs extends UiStrings {
   String haThreshold(String count) {
     return 'Esta vista usa $count entidades, lo que supera el umbral del filtro. El filtrado está desactivado.';
   }
+
+  @override
+  String get haCustomPageFilter => 'No se usa en páginas personalizadas.';
 
   @override
   String get settingHaReturnHomeEnabledTitle =>
@@ -9909,8 +10062,33 @@ class UiStringsEs extends UiStrings {
       'Volver al protector de pantalla al despertar';
 
   @override
-  String get settingScreensaverScreenOffWakeToScreensaverDescription =>
-      'Tras apagarse la pantalla, la detección de movimiento, rostros, proximidad o personas muestra el protector de pantalla en lugar del panel de control y reinicia el tiempo para apagar la pantalla. Tocar la pantalla sigue abriendo el panel de control.';
+  String get settingScreensaverScreenOffWakeToScreensaverDescriptionSources =>
+      'Elige qué hace volver al protector de pantalla en lugar del panel de control después de apagarse la pantalla. El tiempo de Apagar la pantalla después de vuelve a empezar.';
+
+  @override
+  String get screensaverWakeSourcesAll => 'Todo';
+
+  @override
+  String get screensaverWakeSourceMotion => 'Movimiento';
+
+  @override
+  String get screensaverWakeSourceFace => 'Rostro';
+
+  @override
+  String get screensaverWakeSourceProximity => 'Proximidad';
+
+  @override
+  String get screensaverWakeSourcePerson => 'Persona';
+
+  @override
+  String get screensaverWakeSourcePower => 'Botón de encendido';
+
+  @override
+  String get screensaverWakeSourceTouch => 'Tocar';
+
+  @override
+  String get screensaverWakeSourceTouchRequires =>
+      'Requiere tanto \"Apagar la pantalla después de\" como \"Usar una pantalla negra en su lugar\".';
 
   @override
   String get screensaverModeDim => 'Atenuar';
@@ -10717,12 +10895,69 @@ class UiStringsEs extends UiStrings {
       'Tocar el quinto izquierdo o derecho de la pantalla muestra la imagen anterior o siguiente en lugar de cerrar el protector de pantalla.';
 
   @override
+  String get settingScreensaverMediaMetadataTitle => 'Mostrar metadatos';
+
+  @override
+  String get settingScreensaverMediaMetadataDescription =>
+      'Muestra la fecha y los detalles de la cámara sobre la foto.';
+
+  @override
+  String get settingScreensaverMediaMetadataDateTitle => 'Fecha de captura';
+
+  @override
+  String get settingScreensaverMediaMetadataDateDescription =>
+      'Muestra cuándo se tomó la foto.';
+
+  @override
+  String get settingScreensaverMediaMetadataCameraTitle =>
+      'Detalles de la cámara';
+
+  @override
+  String get settingScreensaverMediaMetadataCameraDescription =>
+      'Muestra la distancia focal, la apertura y el ISO.';
+
+  @override
+  String get settingScreensaverMediaMetadataPositionTitle =>
+      'Posición de los metadatos';
+
+  @override
+  String get settingScreensaverMediaMetadataPositionDescription =>
+      'Esquina en la que se muestran los detalles.';
+
+  @override
+  String get settingScreensaverMediaMetadataTextShadowTitle =>
+      'Sombra del texto';
+
+  @override
+  String get settingScreensaverMediaMetadataTextShadowDescription =>
+      'Añade una sombra al texto de los metadatos para facilitar su lectura sobre las fotos.';
+
+  @override
+  String get settingScreensaverMediaMetadataScaleTitle => 'Tamaño del texto';
+
+  @override
+  String get settingScreensaverMediaMetadataScaleDescription =>
+      'Ajusta el tamaño de los detalles de la foto a la pantalla.';
+
+  @override
+  String get settingScreensaverMediaVignetteStrengthTitle =>
+      'Intensidad del sombreado';
+
+  @override
+  String get settingScreensaverMediaVignetteStrengthDescription =>
+      'Oscuridad del sombreado detrás de los detalles para facilitar la lectura sobre fotos claras. Con 0, se desactiva.';
+
+  @override
+  String get screensaverMediaHaMetadata =>
+      'Metadatos del contenido multimedia de Home Assistant';
+
+  @override
   String get screensaverMediaHaPage =>
       'Protector de pantalla: Contenido multimedia de Home Assistant';
 
   @override
-  String get screensaverMediaHaHint =>
-      'Origen multimedia, duración, orden aleatorio y ajuste a la pantalla';
+  String get screensaverMediaHaPageHint =>
+      'Origen multimedia, duración, orden aleatorio, ajuste a la pantalla y metadatos';
 
   @override
   String get screensaverMediaChoose => 'Elegir contenido multimedia';
@@ -10811,12 +11046,69 @@ class UiStringsEs extends UiStrings {
       'Tocar el quinto izquierdo o derecho de la pantalla muestra la imagen anterior o siguiente en lugar de cerrar el protector de pantalla.';
 
   @override
+  String get settingScreensaverLocalMetadataTitle => 'Mostrar metadatos';
+
+  @override
+  String get settingScreensaverLocalMetadataDescription =>
+      'Muestra la fecha y los detalles de la cámara sobre la foto.';
+
+  @override
+  String get settingScreensaverLocalMetadataDateTitle => 'Fecha de captura';
+
+  @override
+  String get settingScreensaverLocalMetadataDateDescription =>
+      'Muestra cuándo se tomó la foto.';
+
+  @override
+  String get settingScreensaverLocalMetadataCameraTitle =>
+      'Detalles de la cámara';
+
+  @override
+  String get settingScreensaverLocalMetadataCameraDescription =>
+      'Muestra la distancia focal, la apertura y el ISO.';
+
+  @override
+  String get settingScreensaverLocalMetadataPositionTitle =>
+      'Posición de los metadatos';
+
+  @override
+  String get settingScreensaverLocalMetadataPositionDescription =>
+      'Esquina en la que se muestran los detalles.';
+
+  @override
+  String get settingScreensaverLocalMetadataTextShadowTitle =>
+      'Sombra del texto';
+
+  @override
+  String get settingScreensaverLocalMetadataTextShadowDescription =>
+      'Añade una sombra al texto de los metadatos para facilitar su lectura sobre las fotos.';
+
+  @override
+  String get settingScreensaverLocalMetadataScaleTitle => 'Tamaño del texto';
+
+  @override
+  String get settingScreensaverLocalMetadataScaleDescription =>
+      'Ajusta el tamaño de los detalles de la foto a la pantalla.';
+
+  @override
+  String get settingScreensaverLocalVignetteStrengthTitle =>
+      'Intensidad del sombreado';
+
+  @override
+  String get settingScreensaverLocalVignetteStrengthDescription =>
+      'Oscuridad del sombreado detrás de los detalles para facilitar la lectura sobre fotos claras. Con 0, se desactiva.';
+
+  @override
+  String get screensaverMediaLocalMetadata =>
+      'Metadatos del contenido multimedia local';
+
+  @override
   String get screensaverMediaLocalPage =>
       'Protector de pantalla: Contenido multimedia local';
 
   @override
-  String get screensaverMediaLocalHint =>
-      'Carpeta, duración, orden aleatorio y transición';
+  String get screensaverMediaLocalPageHint =>
+      'Carpeta, duración, orden aleatorio, transición y metadatos';
 
   @override
   String get settingScreensaverDismissOnMotionTitle =>
@@ -10852,6 +11144,24 @@ class UiStringsEs extends UiStrings {
   @override
   String get screensaverDetectionMotionTuning =>
       'La detección de movimiento se ajusta en la configuración de Cámara.';
+
+  @override
+  String get settingMotionUseEntityTitle => 'Usar entidad de Home Assistant';
+
+  @override
+  String get settingMotionUseEntityDescription =>
+      'Detecta el movimiento con un sensor de Home Assistant en lugar de la cámara.';
+
+  @override
+  String get settingMotionEntityTitle => 'Entidad del sensor de movimiento';
+
+  @override
+  String get settingMotionEntityDescription =>
+      'El sensor de ocupación, movimiento o presencia de Home Assistant que se va a seguir.';
+
+  @override
+  String get screensaverDetectionExternalMotionHeading =>
+      'Sensor de movimiento externo';
 
   @override
   String get settingScreensaverDismissOnPersonTitle =>

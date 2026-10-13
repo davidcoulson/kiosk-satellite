@@ -49,6 +49,7 @@ class FleetBridge(context: Context, messenger: BinaryMessenger) {
                         tls = call.argument<Boolean>("tls") ?: false,
                         agent = call.argument<Boolean>("agent") ?: false,
                         dnsName = call.argument<String>("dnsName") ?: "",
+                        adminUrl = call.argument<String>("adminUrl") ?: "",
                     )
                     result.success(null)
                 }

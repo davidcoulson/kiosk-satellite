@@ -23,5 +23,6 @@
   "haUnknownEntities": "No se pueden determinar las entidades de esta vista, por lo que sus actualizaciones no se filtran.",
   "haWaiting": "Esperando a que se cargue el panel de control…",
   "haShowScan": "Mostrar detalles del análisis.",
-  "haThreshold": "Esta vista usa {count} entidades, lo que supera el umbral del filtro. El filtrado está desactivado."
+  "haThreshold": "Esta vista usa {count} entidades, lo que supera el umbral del filtro. El filtrado está desactivado.",
+  "haCustomPageFilter": "No se usa en páginas personalizadas."
 }

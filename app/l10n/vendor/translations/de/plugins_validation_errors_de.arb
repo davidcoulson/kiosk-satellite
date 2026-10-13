@@ -30,5 +30,14 @@
   "pluginErrorAndroidApi": "Das Plugin benötigt Android-API {version}",
   "pluginErrorInvalidField": "Das Feld {field} ist ungültig",
   "pluginErrorTooManyTriggers": "Zu viele Auslöser",
-  "pluginErrorTriggerId": "Die Auslöser-ID ist ungültig oder bereits vorhanden"
+  "pluginErrorTriggerId": "Die Auslöser-ID ist ungültig oder bereits vorhanden",
+  "pluginErrorListSetting": "Die Listeneinstellung ist ungültig",
+  "pluginErrorSettingCondition": "Die Bedingung der Einstellung ist ungültig",
+  "pluginErrorIcon": "Es wurde ein MDI-Symbolname erwartet",
+  "pluginErrorDashboard": "Es wurde ein Dashboard-Pfad erwartet",
+  "pluginErrorCameraView": "Es wurde eine Kameraansichts-ID erwartet",
+  "pluginErrorListValue": "Es wurde eine Listeneinstellung erwartet",
+  "pluginErrorListCount": "Die Liste hat zu viele oder zu wenige Einträge",
+  "pluginErrorRequiredField": "Fülle alle Pflichtfelder aus",
+  "pluginErrorListSize": "Listeneinstellungen dürfen höchstens 32 KB groß sein"
 }

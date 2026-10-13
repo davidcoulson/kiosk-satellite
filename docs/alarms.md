@@ -187,3 +187,5 @@ actions:
     target:
       entity_id: light.bedroom
 ```
+
+Apps on the kiosk itself, like Tasker or MacroDroid, get the same events as [Android Broadcasts](android-broadcasts.md#alarms).

@@ -2303,6 +2303,60 @@
       ]
     }
   },
+  "dashboardPickerOnePage": "1 个网页",
+  "@dashboardPickerOnePage": {
+    "context": "Dashboard picker",
+    "description": "How many custom pages the Custom Pages entry lists, exactly one.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerPageCount": "{count} 个网页",
+  "@dashboardPickerPageCount": {
+    "context": "Dashboard picker",
+    "description": "How many custom pages the Custom Pages entry lists, two or more.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    },
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "description": "Number of pages, two or more."
+      }
+    }
+  },
   "dlnaCannotDecode": "此设备无法解码此视频。",
   "@dlnaCannotDecode": {
     "context": "Device > DLNA playback overlay",
@@ -11194,6 +11248,149 @@
     },
     "x-notes": "Keep supplied names and version numbers unchanged."
   },
+  "pluginShowPassword": "显示密码",
+  "@pluginShowPassword": {
+    "context": "Settings > Plugin Manager",
+    "description": "Tooltip of the button that shows or hides the text typed into a plugin's secret setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginHidePassword": "隐藏密码",
+  "@pluginHidePassword": {
+    "context": "Settings > Plugin Manager",
+    "description": "Tooltip of the button that shows or hides the text typed into a plugin's secret setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginUntitled": "未命名",
+  "@pluginUntitled": {
+    "context": "Settings > Plugin Manager",
+    "description": "Name shown for a row of a plugin's list setting that has no name yet.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginSearchIcons": "搜索图标",
+  "@pluginSearchIcons": {
+    "context": "Settings > Plugin Manager",
+    "description": "Placeholder of the search box in the icon picker of a plugin setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginChooseIcon": "选择图标",
+  "@pluginChooseIcon": {
+    "context": "Settings > Plugin Manager",
+    "description": "Placeholder of a plugin icon setting with no icon chosen.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginSearchCameraViews": "搜索摄像头画面",
+  "@pluginSearchCameraViews": {
+    "context": "Settings > Plugin Manager",
+    "description": "Placeholder of the search box in the camera view picker of a plugin setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginChooseCameraView": "选择摄像头画面",
+  "@pluginChooseCameraView": {
+    "context": "Settings > Plugin Manager",
+    "description": "Placeholder of a plugin camera view setting with no view chosen.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginCameraViewGone": "此摄像头画面已不存在，请另选一个。",
+  "@pluginCameraViewGone": {
+    "context": "Settings > Plugin Manager",
+    "description": "Shown under a plugin camera view setting whose saved view was deleted.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginDragToReorder": "拖动排序",
+  "@pluginDragToReorder": {
+    "context": "Settings > Plugin Manager",
+    "description": "Label of the handle that drags a row of a plugin's list setting to a new position.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginDone": "完成",
+  "@pluginDone": {
+    "context": "Settings > Plugin Manager",
+    "description": "Button that keeps the changes to a nested row and returns to the row that holds it, in the row editor of a plugin list setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginRequired": "必填",
+  "@pluginRequired": {
+    "context": "Settings > Plugin Manager",
+    "description": "Shown beside the label of an empty required field in the row editor of a plugin list setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
   "pluginAddPlugin": "添加插件",
   "@pluginAddPlugin": {
     "context": "Settings > Plugin Manager > Add plugin or Install from ZIP",
@@ -13081,6 +13278,123 @@
       ]
     }
   },
+  "pluginErrorListSetting": "列表设置无效",
+  "@pluginErrorListSetting": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorSettingCondition": "设置的显示条件无效",
+  "@pluginErrorSettingCondition": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorIcon": "需要 MDI 图标名称",
+  "@pluginErrorIcon": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorDashboard": "需要仪表盘路径",
+  "@pluginErrorDashboard": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorCameraView": "需要摄像头画面 ID",
+  "@pluginErrorCameraView": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorListValue": "此设置的值必须为列表",
+  "@pluginErrorListValue": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorListCount": "列表的条目过多或过少",
+  "@pluginErrorListCount": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorRequiredField": "请填写所有必填项",
+  "@pluginErrorRequiredField": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorListSize": "列表设置不能超过 32 KB",
+  "@pluginErrorListSize": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
   "remoteDisableTitle": "要关闭远程管理吗？",
   "@remoteDisableTitle": {
     "context": "Remote admin > Device > Remote management, or any copy button",
@@ -14521,6 +14835,17 @@
       "value": {
         "type": "String"
       }
+    }
+  },
+  "overviewShowingCustomPages": "正在显示自定义网页",
+  "@overviewShowingCustomPages": {
+    "context": "Remote admin > Overview > Status",
+    "description": "Home Assistant chip status while a custom page (a person's own HTML page) is on screen instead of a Home Assistant dashboard.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Status"
+      ]
     }
   },
   "overviewNoScreenshot": "暂无截图",
@@ -21310,6 +21635,58 @@
       ]
     }
   },
+  "settingRemoteAdminUrlTitle": "管理地址",
+  "@settingRemoteAdminUrlTitle": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Setting label. The web address used to open this kiosk's remote admin from other kiosks.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin URL"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin URL"
+      ]
+    }
+  },
+  "settingRemoteAdminUrlDescription": "其他 Kiosk 设备在“切换 Kiosk 设备”中打开此设备时使用的地址，例如反向代理名称。留空则使用其网络地址。",
+  "@settingRemoteAdminUrlDescription": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Help below the Admin URL field. Switch kiosk is the name of the kiosk picker in the remote admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin URL"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin URL"
+      ]
+    }
+  },
+  "deviceAdminUrlInvalid": "请输入有效地址，例如 https://kiosk.example.com",
+  "@deviceAdminUrlInvalid": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Error under the Admin URL field when the value is not a web address. Keep the example address as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin URL"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin URL"
+      ]
+    }
+  },
+  "deviceAdminUrlPath": "仅填写地址，不要包含路径。例如：https://kiosk.example.com",
+  "@deviceAdminUrlPath": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Error under the Admin URL field when the address has a path after the host. Keep the example address as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin URL"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin URL"
+      ]
+    }
+  },
   "deviceRemotePage": "远程管理",
   "@deviceRemotePage": {
     "context": "Settings:Device:Remote Administration",
@@ -26859,6 +27236,237 @@
       ]
     }
   },
+  "haCustomPages": "自定义网页",
+  "@haCustomPages": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Name of the settings page and of the dashboard picker entry that lists a person's own HTML pages hosted in Home Assistant.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant",
+        "Settings > Home Assistant > Custom Pages",
+        "Dashboard picker"
+      ],
+      "remoteAdmin": [
+        "Home Assistant",
+        "Home Assistant > Custom Pages",
+        "Dashboard picker"
+      ]
+    }
+  },
+  "haCustomPagesHintDashboard": "作为仪表盘显示的自定义 HTML 网页",
+  "@haCustomPagesHintDashboard": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Hint under the Custom Pages entry row: the person's own HTML pages, shown by the kiosk in place of a dashboard.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant"
+      ],
+      "remoteAdmin": [
+        "Home Assistant"
+      ]
+    }
+  },
+  "haCustomPagesAdd": "添加网页",
+  "@haCustomPagesAdd": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Button that opens the dialog to add a custom page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagesEmpty": "添加 Home Assistant www 文件夹中的 HTML 网页，即可像仪表盘一样选择它们。",
+  "@haCustomPagesEmpty": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Shown while no custom page is added yet. www is a folder name and stays as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagesGuide": "自定义网页指南",
+  "@haCustomPagesGuide": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Row that opens the documentation about building a custom page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagesGuideHint": "如何构建与 Home Assistant 通信的网页。",
+  "@haCustomPagesGuideHint": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Description under the Custom page guide row.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageAddTitle": "添加自定义网页",
+  "@haCustomPageAddTitle": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Title of the dialog that adds a custom page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageEditTitle": "编辑自定义网页",
+  "@haCustomPageEditTitle": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Title of the dialog that changes a custom page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageName": "名称",
+  "@haCustomPageName": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Field label: the name the dashboard picker shows for the page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagePath": "路径",
+  "@haCustomPagePath": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Field label: the address of the page inside Home Assistant, such as /local/dashboard.html.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagePathHint": "Home Assistant www 文件夹中的文件，例如 /local/dashboard.html。",
+  "@haCustomPagePathHint": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Help under the Path field. Keep www and /local/dashboard.html unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageNameMissing": "请输入名称。",
+  "@haCustomPageNameMissing": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the name is empty.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagePathInvalid": "请输入 /local/ 下的路径，例如 /local/dashboard.html。",
+  "@haCustomPagePathInvalid": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the path is not under /local/. Keep /local/ and /local/dashboard.html unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageDuplicate": "另一个网页已在使用此路径。",
+  "@haCustomPageDuplicate": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the path is already in the list.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageNotFound": "Home Assistant 在此路径下没有文件。",
+  "@haCustomPageNotFound": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when Home Assistant answers that the file does not exist.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageUnreachable": "无法连接 Home Assistant。",
+  "@haCustomPageUnreachable": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when Home Assistant does not answer.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageStatus": "Home Assistant 返回了 HTTP {code}。",
+  "@haCustomPageStatus": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when Home Assistant answers the page with an HTTP status other than 200. HTTP stays as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    },
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "description": "The HTTP status code, such as 403."
+      }
+    }
+  },
   "settingHaHoldModeTitle": "页面保持模式",
   "@settingHaHoldModeTitle": {
     "context": "Settings:Home Assistant Setup:Hold mode",
@@ -27366,6 +27974,19 @@
         "type": "String",
         "description": "Number of entities."
       }
+    }
+  },
+  "haCustomPageFilter": "不用于自定义网页。",
+  "@haCustomPageFilter": {
+    "context": "Settings:Home Assistant Setup:Optimizations",
+    "description": "Live update-filter status while a custom page (a person's own HTML page) is on screen: the filter leaves those pages alone.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup > Optimizations"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup > Optimizations"
+      ]
     }
   },
   "settingHaReturnHomeEnabledTitle": "返回默认仪表盘页面",
@@ -36903,10 +37524,114 @@
       ]
     }
   },
-  "settingScreensaverScreenOffWakeToScreensaverDescription": "屏幕关闭后，运动、人脸、接近或人体检测会唤醒屏保，而不是打开仪表盘，并重新开始关闭屏幕倒计时。触屏仍会打开仪表盘。",
-  "@settingScreensaverScreenOffWakeToScreensaverDescription": {
+  "settingScreensaverScreenOffWakeToScreensaverDescriptionSources": "选择屏幕关闭后哪些方式会唤醒屏保，而不是打开仪表盘。屏保启动后关屏时间的倒计时会重新开始。",
+  "@settingScreensaverScreenOffWakeToScreensaverDescriptionSources": {
     "context": "Settings:Screensaver",
     "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourcesAll": "全部",
+  "@screensaverWakeSourcesAll": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Value of the Wake to screensaver row when every way of waking is picked.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceMotion": "运动",
+  "@screensaverWakeSourceMotion": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: motion detection wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceFace": "人脸",
+  "@screensaverWakeSourceFace": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: face detection wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceProximity": "接近",
+  "@screensaverWakeSourceProximity": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: the proximity sensor wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourcePerson": "人体",
+  "@screensaverWakeSourcePerson": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: person detection wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourcePower": "电源键",
+  "@screensaverWakeSourcePower": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: the device power button wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceTouch": "触屏",
+  "@screensaverWakeSourceTouch": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: touching the black screen brings the screensaver back.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceTouchRequires": "需要设置“屏保启动后关屏时间”并开启“用黑屏替代关屏”。",
+  "@screensaverWakeSourceTouchRequires": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Hint under the grayed-out Touch choice in the Wake to screensaver dialog. Both quoted names are other settings on the same page.",
     "x-locations": {
       "device": [
         "Settings > Screensaver"
@@ -39985,6 +40710,201 @@
       ]
     }
   },
+  "settingScreensaverMediaMetadataTitle": "显示元数据",
+  "@settingScreensaverMediaMetadataTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataDescription": "在照片上显示日期和相机详情。",
+  "@settingScreensaverMediaMetadataDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataDateTitle": "拍摄日期",
+  "@settingScreensaverMediaMetadataDateTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataDateDescription": "显示照片的拍摄时间。",
+  "@settingScreensaverMediaMetadataDateDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataCameraTitle": "相机详情",
+  "@settingScreensaverMediaMetadataCameraTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataCameraDescription": "显示焦距、光圈和 ISO。",
+  "@settingScreensaverMediaMetadataCameraDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataPositionTitle": "元数据位置",
+  "@settingScreensaverMediaMetadataPositionTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataPositionDescription": "详情显示的屏幕角落。",
+  "@settingScreensaverMediaMetadataPositionDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataTextShadowTitle": "文字投影",
+  "@settingScreensaverMediaMetadataTextShadowTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataTextShadowDescription": "为元数据文字添加阴影，使其在照片上更清晰。",
+  "@settingScreensaverMediaMetadataTextShadowDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataScaleTitle": "文字缩放",
+  "@settingScreensaverMediaMetadataScaleTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataScaleDescription": "调整照片详情的大小以适应屏幕尺寸。",
+  "@settingScreensaverMediaMetadataScaleDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaVignetteStrengthTitle": "暗角强度",
+  "@settingScreensaverMediaVignetteStrengthTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaVignetteStrengthDescription": "调整照片详情下方阴影的深浅，使文字在明亮的照片上也能看清。设为 0 时不显示阴影。",
+  "@settingScreensaverMediaVignetteStrengthDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "screensaverMediaHaMetadata": "Home Assistant 媒体元数据",
+  "@screensaverMediaHaMetadata": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
   "screensaverMediaHaPage": "Home Assistant 媒体屏保",
   "@screensaverMediaHaPage": {
     "context": "Settings:Screensaver:Home Assistant Media screensaver",
@@ -39998,8 +40918,8 @@
       ]
     }
   },
-  "screensaverMediaHaHint": "媒体来源、时长、随机播放和填充",
-  "@screensaverMediaHaHint": {
+  "screensaverMediaHaPageHint": "媒体来源、时长、随机播放、填充和元数据",
+  "@screensaverMediaHaPageHint": {
     "context": "Settings:Screensaver:Home Assistant Media screensaver",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -40342,6 +41262,201 @@
       ]
     }
   },
+  "settingScreensaverLocalMetadataTitle": "显示元数据",
+  "@settingScreensaverLocalMetadataTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataDescription": "在照片上显示日期和相机详情。",
+  "@settingScreensaverLocalMetadataDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataDateTitle": "拍摄日期",
+  "@settingScreensaverLocalMetadataDateTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataDateDescription": "显示照片的拍摄时间。",
+  "@settingScreensaverLocalMetadataDateDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataCameraTitle": "相机详情",
+  "@settingScreensaverLocalMetadataCameraTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataCameraDescription": "显示焦距、光圈和 ISO。",
+  "@settingScreensaverLocalMetadataCameraDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataPositionTitle": "元数据位置",
+  "@settingScreensaverLocalMetadataPositionTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataPositionDescription": "详情显示的屏幕角落。",
+  "@settingScreensaverLocalMetadataPositionDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataTextShadowTitle": "文字投影",
+  "@settingScreensaverLocalMetadataTextShadowTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataTextShadowDescription": "为元数据文字添加阴影，使其在照片上更清晰。",
+  "@settingScreensaverLocalMetadataTextShadowDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataScaleTitle": "文字缩放",
+  "@settingScreensaverLocalMetadataScaleTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataScaleDescription": "调整照片详情的大小以适应屏幕尺寸。",
+  "@settingScreensaverLocalMetadataScaleDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalVignetteStrengthTitle": "暗角强度",
+  "@settingScreensaverLocalVignetteStrengthTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalVignetteStrengthDescription": "调整照片详情下方阴影的深浅，使文字在明亮的照片上也能看清。设为 0 时不显示阴影。",
+  "@settingScreensaverLocalVignetteStrengthDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "screensaverMediaLocalMetadata": "本地媒体元数据",
+  "@screensaverMediaLocalMetadata": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
   "screensaverMediaLocalPage": "本地媒体屏保",
   "@screensaverMediaLocalPage": {
     "context": "Settings:Screensaver:Local Media screensaver",
@@ -40355,8 +41470,8 @@
       ]
     }
   },
-  "screensaverMediaLocalHint": "文件夹、时长、随机播放和切换效果",
-  "@screensaverMediaLocalHint": {
+  "screensaverMediaLocalPageHint": "文件夹、时长、随机播放、切换效果和元数据",
+  "@screensaverMediaLocalPageHint": {
     "context": "Settings:Screensaver:Local Media screensaver",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -40476,6 +41591,71 @@
   "@screensaverDetectionMotionTuning": {
     "context": "Settings > Screensaver > Motion Detection",
     "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionUseEntityTitle": "使用 Home Assistant 实体",
+  "@settingMotionUseEntityTitle": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionUseEntityDescription": "使用 Home Assistant 传感器代替摄像头检测运动。",
+  "@settingMotionUseEntityDescription": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionEntityTitle": "运动传感器实体",
+  "@settingMotionEntityTitle": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionEntityDescription": "要跟随的 Home Assistant 占用、运动或存在传感器。",
+  "@settingMotionEntityDescription": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "screensaverDetectionExternalMotionHeading": "外部运动传感器",
+  "@screensaverDetectionExternalMotionHeading": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Section heading.",
     "x-locations": {
       "device": [
         "Settings > Screensaver > Motion Detection"

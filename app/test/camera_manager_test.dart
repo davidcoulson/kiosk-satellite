@@ -118,6 +118,18 @@ void main() {
     },
   );
 
+  test('auto-dismiss stops keep every earlier value and reach an hour', () {
+    final stops = defs.cameraAutoDismissStops;
+    // Every value the old 30 s slider could save is still a stop.
+    for (var seconds = 0; seconds <= 300; seconds += 30) {
+      expect(stops, contains(seconds));
+    }
+    expect(stops.first, defs.cameraAutoDismissSeconds.min);
+    expect(stops.last, defs.cameraAutoDismissSeconds.max);
+    expect(stops, orderedEquals([...stops]..sort()));
+    expect(stops.length, 22);
+  });
+
   test('a view holds up to 12 cameras and no more', () async {
     SharedPreferences.setMockInitialValues({});
     final bus = EventBus();

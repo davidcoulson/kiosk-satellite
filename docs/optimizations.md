@@ -73,6 +73,8 @@ The Home Assistant status pill on the remote admin Overview also shows **Watchin
 
 If a component enumerates `hass.states`, the status says the view reads all entity states. **Show scan details** in device settings and remote admin opens a copyable call stack from the first scan. The same diagnostic appears once in the Web Console log. The stack may point to a custom resource or function but cannot identify the exact card instance. A trace is captured only once per view visit while filtering is enabled, is limited to 4,096 characters and is fetched by the settings dialog only when requested. Normal entity reads and incoming updates do not capture traces. Filtering behavior stays the same.
 
+The filter leaves [custom pages](custom-pages.md) alone, since they are your own code rather than Home Assistant's dashboard. While one is on screen, the status line says **Not used on custom pages** and the Overview's Home Assistant chip reads **Showing custom pages**.
+
 As you navigate between different dashboard views, the filter updates automatically. If the app encounters a view containing dynamic or complex custom cards whose entity dependencies cannot be reliably parsed (such as heavily templated cards), it safely bypasses the filter for that specific view to prevent breaking your layout. This fallback mechanism ensures that, at worst, the dashboard simply reverts to standard, unfiltered Home Assistant behavior. This feature works best on dedicated, single view kiosk setups.
 
 ## Measured Against Fully Kiosk

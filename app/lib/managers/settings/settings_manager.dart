@@ -570,6 +570,18 @@ class SettingsManager extends Manager {
         log.info(name, 'migrated $key ($fill)');
       }
     }
+    // Wake to screensaver was a switch and is now a pick of what wakes to
+    // the screensaver (issue #954). On stood for every detection and the
+    // power button, never touch, so nobody's kiosk wakes differently.
+    final wakeKey = _prefix + screensaverScreenOffWakeToScreensaver.key;
+    final wake = _prefs.get(wakeKey);
+    if (wake is bool) {
+      await _prefs.setString(wakeKey, wakeToScreensaverFromSwitch(wake));
+      log.info(
+        name,
+        'migrated ${screensaverScreenOffWakeToScreensaver.key} ($wake)',
+      );
+    }
   }
 
   T get<T>(SettingDef<T> def) {
@@ -848,6 +860,11 @@ class SettingsManager extends Manager {
   }) async {
     final def = defByKey(key);
     if (def == null) return false;
+    // A backup, a fleet leader or an API caller from before Wake to
+    // screensaver became a pick still sends the switch.
+    if (def.key == screensaverScreenOffWakeToScreensaver.key && value is bool) {
+      value = wakeToScreensaverFromSwitch(value);
+    }
     if (validate(def, value, batch: batch) != null) return false;
     switch (def.type) {
       case SettingType.boolean when value is bool:

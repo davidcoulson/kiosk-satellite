@@ -9,14 +9,22 @@ class PluginOverlaysTest {
     }
 
     private fun PluginOverlays<String>.bar(key: String = "bar", factory: String = "first", width: Int = PluginOverlays.WRAP) =
-        show(key, "top", width, PluginOverlays.WRAP, 12, true, false, true, factory)
+        show(key, PluginOverlays.Placement("top", width, PluginOverlays.WRAP, listOf(12, 12, 12, 12)), factory)
+
+    private fun PluginOverlays<String>.placed(placement: PluginOverlays.Placement) = show("menu", placement, "f")
 
     @Test fun snapshotCarriesPlacementKeyAndGeneration() {
         val overlays = PluginOverlays<String>()
-        val entry = overlays.show("full", "center", PluginOverlays.FILL, PluginOverlays.FILL, 0, false, true, false, "factory")
+        val entry = overlays.show("full", PluginOverlays.Placement(
+            "center", PluginOverlays.FILL, PluginOverlays.FILL, listOf(0, 8, 0, 96), offsetX = -40, offsetY = 12,
+            closeOnBack = false, onTop = true, touchable = false, closeOnOutsideTouch = true, passOutsideTouch = true,
+            enter = "slide", exit = "fade", duration = 300,
+        ), "factory")
         assertEquals(listOf(mapOf(
-            "anchor" to "center", "width" to PluginOverlays.FILL, "height" to PluginOverlays.FILL, "inset" to 0,
-            "closeOnBack" to false, "onTop" to true, "touchable" to false, "key" to "full", "generation" to entry.generation,
+            "anchor" to "center", "width" to PluginOverlays.FILL, "height" to PluginOverlays.FILL, "insets" to listOf(0, 8, 0, 96),
+            "offsetX" to -40, "offsetY" to 12, "closeOnBack" to false, "onTop" to true, "touchable" to false,
+            "closeOnOutsideTouch" to true, "passOutsideTouch" to true, "enter" to "slide", "exit" to "fade", "duration" to 300,
+            "key" to "full", "generation" to entry.generation,
         )), overlays.snapshot())
         assertEquals("factory", overlays.get("full", entry.generation)?.factory)
     }
@@ -24,11 +32,22 @@ class PluginOverlaysTest {
     @Test fun rejectsBadPlacements() {
         val overlays = PluginOverlays<String>()
         rejects { overlays.bar(key = "Bar") }
-        rejects { overlays.show("bar", "middle", PluginOverlays.WRAP, PluginOverlays.WRAP, 0, true, false, true, "f") }
+        val wrap = PluginOverlays.WRAP
+        rejects { overlays.placed(PluginOverlays.Placement("middle", wrap, wrap)) }
         rejects { overlays.bar(width = 0) }
         rejects { overlays.bar(width = 4097) }
-        rejects { overlays.show("bar", "top", PluginOverlays.WRAP, PluginOverlays.WRAP, 201, true, false, true, "f") }
+        rejects { overlays.placed(PluginOverlays.Placement("top", wrap, wrap, listOf(0, 0, 0, 4097))) }
+        rejects { overlays.placed(PluginOverlays.Placement("top", wrap, wrap, listOf(0, -1, 0, 0))) }
+        rejects { overlays.placed(PluginOverlays.Placement("top", wrap, wrap, listOf(0, 0, 0))) }
+        rejects { overlays.placed(PluginOverlays.Placement("top", wrap, wrap, offsetX = 4097)) }
+        rejects { overlays.placed(PluginOverlays.Placement("top", wrap, wrap, enter = "spin")) }
+        rejects { overlays.placed(PluginOverlays.Placement("top", wrap, wrap, exit = "")) }
+        rejects { overlays.placed(PluginOverlays.Placement("top", wrap, wrap, duration = 49)) }
+        rejects { overlays.placed(PluginOverlays.Placement("top", wrap, wrap, duration = 1001)) }
+        rejects { overlays.placed(PluginOverlays.Placement("top", wrap, wrap, passOutsideTouch = true)) }
         overlays.bar(width = 4096)
+        overlays.placed(PluginOverlays.Placement("bottom-left", wrap, wrap, listOf(0, 0, 0, 4096), offsetX = -4096, offsetY = 4096,
+            closeOnOutsideTouch = true, passOutsideTouch = true, enter = "scale", exit = "slide", duration = 1000))
     }
 
     @Test fun limitsEachSessionToFourOverlays() {

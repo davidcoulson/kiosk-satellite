@@ -472,6 +472,7 @@ class _KioskScreenState extends State<KioskScreen>
     // Zoom applies live via the viewport meta — no rebuild, no reload.
     if (e.key == defs.browserZoom.key) {
       await c.browser.runJs(_zoomJs);
+      _syncContentInsets();
       return;
     }
     // Scroll lock rides the zoom path: applied live as page CSS, no rebuild.
@@ -777,6 +778,7 @@ class _KioskScreenState extends State<KioskScreen>
     // The volume key routing follows the player and the screensaver
     // slot (issue #544); the setting rides _onSettingChanged.
     c.sendspin.nowPlaying.addListener(_syncVolumeKeys);
+    c.pageState.pageDark.addListener(_pageDarkChanged);
     c.screensaver.activeView.addListener(_syncVolumeKeys);
     // The build and the native key routing both follow these surfaces.
     c.browser.overlayUrl.addListener(_onOverlayChanged);
@@ -786,6 +788,8 @@ class _KioskScreenState extends State<KioskScreen>
     c.plugins.windows.addListener(_onOverlayChanged);
     c.plugins.installed.addListener(_onOverlayChanged);
     c.homeLauncher.roleHeld.addListener(_onOverlayChanged);
+    c.plugins.contentInsets.addListener(_syncContentInsets);
+    _syncContentInsets();
 
     // Download feedback lives in-app: the kiosk hides the status bar, so the
     // DownloadManager notification is invisible and without this a download
@@ -855,6 +859,15 @@ class _KioskScreenState extends State<KioskScreen>
     if (mounted) setState(() => _activityAttached = true);
   }
 
+  /// The space plugins keep clear of their bars, in dp, as the page's CSS
+  /// pixels: the Zoom level scales the page, so one CSS pixel spans that
+  /// many dp.
+  void _syncContentInsets() {
+    final zoom = c.settings.get(defs.browserZoom).toDouble();
+    final dp = c.plugins.contentInsets.value;
+    unawaited(c.browser.setContentInsets(zoom > 0 ? dp / zoom : dp));
+  }
+
   /// The zoom-level setting as a viewport-meta scale, see
   /// viewport_zoom_script.dart for why not CSS zoom.
   String get _zoomJs => viewportZoomJs(
@@ -890,6 +903,11 @@ class _KioskScreenState extends State<KioskScreen>
 
   String get _initialUrl => c.settings.get(defs.startUrl);
 
+  /// The kiosk went light or dark: a custom page on screen, and the next
+  /// one, follow.
+  void _pageDarkChanged() =>
+      unawaited(c.browser.setCustomPageDark(c.pageState.pageDark.value));
+
   /// The JS bridge is always injected at document start. Kiosk mode rides
   /// along as a document-start script too, and is re-asserted per load in
   /// [onLoadStop] so a page that outlived a toggle catches up.
@@ -921,6 +939,14 @@ class _KioskScreenState extends State<KioskScreen>
     // (frozen at WebView creation), corrected live in _onSettingChanged,
     // and re-asserted every load in onLoadStop for pages loaded after a
     // toggle.
+    // A custom page's prefers-color-scheme answers with the kiosk's light
+    // or dark (PageStateManager.pageDark), for matchMedia and its CSS. Acts
+    // only under /local/; swapped live by BrowserManager.setCustomPageDark.
+    UserScript(
+      groupName: BrowserManager.customPageSchemeGroup,
+      source: customPageColorSchemeJs(dark: c.pageState.pageDark.value),
+      injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+    ),
     UserScript(
       source: 'window.__ksPtrEnabled = $_ptrEnabled;',
       injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
@@ -950,6 +976,14 @@ class _KioskScreenState extends State<KioskScreen>
     // is what lets the toggle apply without a reload.
     UserScript(
       source: kioskModeScript,
+      injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+    ),
+    // The room plugins reserve for their bars. A group of its own, so
+    // BrowserManager can swap it when a plugin changes it and every new
+    // page starts with the current value.
+    UserScript(
+      groupName: BrowserManager.contentInsetsGroup,
+      source: c.browser.contentInsetsSource,
       injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
     ),
     UserScript(
@@ -1435,6 +1469,7 @@ class _KioskScreenState extends State<KioskScreen>
     _cameraSub?.cancel();
     _saverSub?.cancel();
     c.sendspin.nowPlaying.removeListener(_syncVolumeKeys);
+    c.pageState.pageDark.removeListener(_pageDarkChanged);
     c.screensaver.activeView.removeListener(_syncVolumeKeys);
     c.browser.overlayUrl.removeListener(_onOverlayChanged);
     c.launcher.visible.removeListener(_onOverlayChanged);
@@ -1443,6 +1478,7 @@ class _KioskScreenState extends State<KioskScreen>
     c.plugins.windows.removeListener(_onOverlayChanged);
     c.plugins.installed.removeListener(_onOverlayChanged);
     c.homeLauncher.roleHeld.removeListener(_onOverlayChanged);
+    c.plugins.contentInsets.removeListener(_syncContentInsets);
     super.dispose();
   }
 
@@ -1754,15 +1790,23 @@ class _KioskScreenState extends State<KioskScreen>
     return fromStart ? _initialUrl : c.browser.currentUrl;
   }
 
-  Widget _webView() => InAppWebView(
+  Widget _webView() {
+    // unmap-then-map settles the URL on whichever origin the CURRENT
+    // proxy state calls for: a rebuild triggered by the proxy toggle
+    // moves a proxied currentUrl back to the real origin (or vice
+    // versa), and both calls pass everything else through untouched.
+    final initialUrl = c.proxy.mapUrl(c.proxy.unmapUrl(_rebuildUrl()));
+    // A custom page skips the HTTP cache from its very first load (see
+    // BrowserManager.prepareLoad), as everything does with Disable cache.
+    final freshLoads =
+        c.settings.get(defs.disableCache) ||
+        BrowserManager.isCustomPageUrl(initialUrl);
+    return _buildWebView(initialUrl, freshLoads);
+  }
+
+  Widget _buildWebView(String initialUrl, bool freshLoads) => InAppWebView(
     key: ValueKey(_webViewEpoch),
-    initialUrlRequest: URLRequest(
-      // unmap-then-map settles the URL on whichever origin the CURRENT
-      // proxy state calls for: a rebuild triggered by the proxy toggle
-      // moves a proxied currentUrl back to the real origin (or vice
-      // versa), and both calls pass everything else through untouched.
-      url: WebUri(c.proxy.mapUrl(c.proxy.unmapUrl(_rebuildUrl()))),
-    ),
+    initialUrlRequest: URLRequest(url: WebUri(initialUrl)),
     initialUserScripts: UnmodifiableListView(_userScripts),
     pullToRefreshController: _pullToRefresh,
     initialSettings: InAppWebViewSettings(
@@ -1820,9 +1864,7 @@ class _KioskScreenState extends State<KioskScreen>
       // on), so a page's saved config survives. Nothing is cleared;
       // only "Log out" deliberately wipes storage.
       cacheEnabled: !c.settings.get(defs.disableCache),
-      cacheMode: c.settings.get(defs.disableCache)
-          ? CacheMode.LOAD_NO_CACHE
-          : CacheMode.LOAD_DEFAULT,
+      cacheMode: freshLoads ? CacheMode.LOAD_NO_CACHE : CacheMode.LOAD_DEFAULT,
       // Downloads (an APK update from GitHub, a camera clip): without this
       // the WebView silently ignores them.
       useOnDownloadStart: true,
@@ -1903,6 +1945,12 @@ class _KioskScreenState extends State<KioskScreen>
         return NavigationActionPolicy.CANCEL;
       }
       if (url.scheme != 'app') {
+        // A link or script moving the page to or from a custom page sets
+        // the cache for it before the load starts.
+        if (action.isForMainFrame &&
+            (url.scheme == 'http' || url.scheme == 'https')) {
+          await c.browser.prepareLoad(url.toString());
+        }
         return NavigationActionPolicy.ALLOW;
       }
       final package = appLinkPackage(url.toString());
@@ -1925,7 +1973,7 @@ class _KioskScreenState extends State<KioskScreen>
       return NavigationActionPolicy.CANCEL;
     },
     onWebViewCreated: (controller) {
-      c.browser.attach(controller);
+      c.browser.attach(controller, freshLoads: freshLoads);
       c.jsApi.attach(controller);
       // Scrollable pages report their pulls here (see _pullToRefresh).
       controller.addJavaScriptHandler(

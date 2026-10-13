@@ -15,5 +15,20 @@
   "settingScreensaverLocalEdgeTapsTitle": "Tik op randen om dia's te wijzigen",
   "settingScreensaverLocalEdgeTapsDescription": "Tik in het linker- of rechtervijfde van het scherm om de vorige of volgende foto te tonen in plaats van de schermbeveiliging af te sluiten.",
   "screensaverMediaLocalPage": "Lokale mediaschermbeveiliging",
-  "screensaverMediaLocalHint": "Map, timing, willekeurige volgorde en overgangen"
+  "screensaverMediaLocalPageHint": "Map, timing, willekeurige volgorde, overgangen en metadata",
+  "settingScreensaverLocalMetadataTitle": "Metadata tonen",
+  "settingScreensaverLocalMetadataDateTitle": "Opnamedatum",
+  "settingScreensaverLocalMetadataDateDescription": "Laat zien wanneer de foto is genomen.",
+  "settingScreensaverLocalMetadataCameraTitle": "Cameragegevens",
+  "settingScreensaverLocalMetadataCameraDescription": "Toont brandpuntsafstand, diafragma en ISO.",
+  "settingScreensaverLocalMetadataPositionTitle": "Positie van metagegevens",
+  "settingScreensaverLocalMetadataPositionDescription": "In welke hoek de details worden weergegeven.",
+  "settingScreensaverLocalMetadataTextShadowTitle": "Tekstschaduw",
+  "settingScreensaverLocalMetadataTextShadowDescription": "Voeg een schaduw toe aan de tekst met metagegevens zodat deze op foto's beter leesbaar is.",
+  "settingScreensaverLocalMetadataScaleTitle": "Tekstgrootte",
+  "settingScreensaverLocalMetadataScaleDescription": "Pas de grootte van de fotogegevens aan zodat deze beter op het scherm past.",
+  "settingScreensaverLocalVignetteStrengthTitle": "Vignettesterkte",
+  "settingScreensaverLocalVignetteStrengthDescription": "Bepaalt hoe donker de schaduw achter de details is, zodat deze op lichte foto's leesbaar blijven. Stel 0 in om dit uit te schakelen.",
+  "settingScreensaverLocalMetadataDescription": "Toon de datum en cameragegevens over de foto.",
+  "screensaverMediaLocalMetadata": "Metadata van lokale media"
 }

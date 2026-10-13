@@ -15,5 +15,20 @@
   "settingScreensaverLocalEdgeTapsTitle": "Zum Bildwechsel auf die Bildschirmränder tippen",
   "settingScreensaverLocalEdgeTapsDescription": "Ein Tippen auf das linke oder rechte Fünftel des Bildschirms zeigt das vorherige bzw. nächste Bild an, anstatt den Bildschirmschoner zu schließen.",
   "screensaverMediaLocalPage": "Bildschirmschoner: Lokale Medien",
-  "screensaverMediaLocalHint": "Ordner, Anzeigedauer, Zufallswiedergabe und Übergänge"
+  "screensaverMediaLocalPageHint": "Ordner, Anzeigedauer, Zufallswiedergabe, Übergänge und Metadaten",
+  "settingScreensaverLocalMetadataTitle": "Metadaten anzeigen",
+  "settingScreensaverLocalMetadataDateTitle": "Aufnahmedatum",
+  "settingScreensaverLocalMetadataDateDescription": "Zeigt an, wann das Foto aufgenommen wurde.",
+  "settingScreensaverLocalMetadataCameraTitle": "Kameradetails",
+  "settingScreensaverLocalMetadataCameraDescription": "Zeigt Brennweite, Blende und ISO-Wert an.",
+  "settingScreensaverLocalMetadataPositionTitle": "Position der Metadaten",
+  "settingScreensaverLocalMetadataPositionDescription": "Die Ecke, in der die Details angezeigt werden.",
+  "settingScreensaverLocalMetadataTextShadowTitle": "Textschatten",
+  "settingScreensaverLocalMetadataTextShadowDescription": "Fügt dem Metadatentext einen Schatten hinzu, um die Lesbarkeit auf Fotos zu verbessern.",
+  "settingScreensaverLocalMetadataScaleTitle": "Textgröße",
+  "settingScreensaverLocalMetadataScaleDescription": "Passt die Größe der Fotodetails an den Bildschirm an.",
+  "settingScreensaverLocalVignetteStrengthTitle": "Intensität der Abdunklung",
+  "settingScreensaverLocalVignetteStrengthDescription": "Stärke der Abdunklung hinter den Details, um die Lesbarkeit auf hellen Fotos zu verbessern. Bei 0 ist sie deaktiviert.",
+  "settingScreensaverLocalMetadataDescription": "Zeigt Aufnahmedatum und Kameradaten über dem Foto an.",
+  "screensaverMediaLocalMetadata": "Metadaten der lokalen Medien"
 }

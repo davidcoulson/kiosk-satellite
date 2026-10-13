@@ -23,5 +23,6 @@
   "haUnknownEntities": "De entiteiten in deze weergave kunnen niet worden bepaald. Updates worden daarom niet gefilterd.",
   "haWaiting": "Wachten tot het dashboard is geladen…",
   "haShowScan": "Scangegevens tonen.",
-  "haThreshold": "Deze weergave gebruikt {count} entiteiten en overschrijdt daarmee de filterdrempel. Filteren is uitgeschakeld."
+  "haThreshold": "Deze weergave gebruikt {count} entiteiten en overschrijdt daarmee de filterdrempel. Filteren is uitgeschakeld.",
+  "haCustomPageFilter": "Niet gebruikt op eigen pagina's."
 }

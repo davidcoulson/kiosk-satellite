@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../managers/home_assistant/custom_pages.dart' show customPagesIcon;
 import '../managers/settings/definitions.dart' show subpageHints;
+import 'mdi_icon.dart';
 
 /// The glyph each second-level settings page wears: on its entry row, where
 /// it sits ahead of the name, and again in the page's own title. Keyed by
 /// [subpageHints]' names; the remote admin draws the same glyphs from its
 /// icons module, so a page reads alike on both surfaces.
 ///
-/// A Material [IconData], or the path of an SVG asset for a page named
+/// A Material [IconData], the path of an SVG asset for a page named
 /// after a product with a mark of its own (the shape the category rail
-/// uses). Bare outlined glyphs, no disc: the rail already spends the
+/// uses) or an MDI name ("mdi:...") for a page whose glyph the dashboard
+/// pickers draw too. Bare outlined glyphs, no disc: the rail already spends the
 /// colored discs on the first level, and a second level that repeated them
 /// would flatten the hierarchy.
 const Map<String, Object> subpageIcons = {
@@ -18,6 +21,7 @@ const Map<String, Object> subpageIcons = {
   // Home Assistant.
   'User Interface': Icons.dashboard_customize_outlined,
   'Theme': Icons.palette_outlined,
+  'Custom Pages': customPagesIcon,
   'Dashboard View Rotation': Icons.autorenew,
   'Return to home dashboard view': Icons.home_outlined,
   'Hold mode': Icons.push_pin_outlined,
@@ -118,6 +122,15 @@ class SubpageGlyph extends StatelessWidget {
     if (icon is IconData) return Icon(icon, size: size);
     final theme = IconTheme.of(context);
     final side = size ?? theme.size ?? 24;
+    final color = theme.color ?? Theme.of(context).colorScheme.onSurface;
+    if (icon is String && icon.startsWith('mdi:')) {
+      return MdiIcon(
+        name: icon,
+        size: side,
+        color: color,
+        fallback: Icons.article_outlined,
+      );
+    }
     return SvgPicture.asset(
       icon as String,
       width: side,

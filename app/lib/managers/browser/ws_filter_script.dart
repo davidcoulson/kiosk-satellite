@@ -21,12 +21,26 @@
 ///
 /// Dashboard reads also add dependencies at runtime. Scanning all states or
 /// an unavailable tracking hook makes the view pass through unfiltered.
-/// Unknown subscriptions and unresolved views also pass through. Filtering is
+/// Unknown subscriptions and unresolved views also pass through. A custom
+/// page (the person's own HTML under `/local/`) is never wrapped and its
+/// `stats()` report mode `custom-page`. Filtering is
 /// controlled at runtime by `window.__ksWs.setEnabled(bool)` so it can be
 /// A/B'd live, and `window.__ksWs` exposes counters for measurement.
 const wsFilterScript = r'''
 (function () {
   if (window.__ksWs) return;
+  // A custom page under /local/ is the person's own code, not Home
+  // Assistant's frontend: its sockets are left alone and the status rows
+  // say why there is nothing to report.
+  if (location.pathname.indexOf('/local/') === 0) {
+    window.__ksWs = { enabled: true, built: true, allow: null,
+      customPage: true, setEnabled: function () {},
+      stats: function () {
+        return { enabled: true, allow: null, mode: 'custom-page',
+          customPage: true, subs: [], stateChangedSubs: 0 };
+      } };
+    return;
+  }
   var Native = window.WebSocket;
   if (!Native) return;
 

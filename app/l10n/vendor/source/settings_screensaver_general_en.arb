@@ -299,10 +299,114 @@
       ]
     }
   },
-  "settingScreensaverScreenOffWakeToScreensaverDescription": "Motion, face, proximity or person detection after the screen has turned off brings the screensaver back instead of the dashboard, with a fresh Turn screen off after countdown. Touch still opens the dashboard.",
-  "@settingScreensaverScreenOffWakeToScreensaverDescription": {
+  "settingScreensaverScreenOffWakeToScreensaverDescriptionSources": "Choose what brings the screensaver back instead of the dashboard after the screen has turned off. The Turn screen off after countdown starts over.",
+  "@settingScreensaverScreenOffWakeToScreensaverDescriptionSources": {
     "context": "Settings:Screensaver",
     "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourcesAll": "All",
+  "@screensaverWakeSourcesAll": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Value of the Wake to screensaver row when every way of waking is picked.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceMotion": "Motion",
+  "@screensaverWakeSourceMotion": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: motion detection wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceFace": "Face",
+  "@screensaverWakeSourceFace": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: face detection wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceProximity": "Proximity",
+  "@screensaverWakeSourceProximity": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: the proximity sensor wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourcePerson": "Person",
+  "@screensaverWakeSourcePerson": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: person detection wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourcePower": "Power button",
+  "@screensaverWakeSourcePower": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: the device power button wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceTouch": "Touch",
+  "@screensaverWakeSourceTouch": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: touching the black screen brings the screensaver back.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceTouchRequires": "Requires both \"Turn screen off after\" and \"Use a black screen instead.\"",
+  "@screensaverWakeSourceTouchRequires": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Hint under the grayed-out Touch choice in the Wake to screensaver dialog. Both quoted names are other settings on the same page.",
     "x-locations": {
       "device": [
         "Settings > Screensaver"

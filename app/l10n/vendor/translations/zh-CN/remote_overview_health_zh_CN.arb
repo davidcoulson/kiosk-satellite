@@ -44,5 +44,6 @@
   "overviewTemperature": "温度",
   "overviewMemoryFree": "可用 {amount} GB",
   "overviewMetricPercent": "{value}%",
-  "overviewMetricDegrees": "{value}°C"
+  "overviewMetricDegrees": "{value}°C",
+  "overviewShowingCustomPages": "正在显示自定义网页"
 }

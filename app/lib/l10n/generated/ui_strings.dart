@@ -1166,6 +1166,18 @@ abstract class UiStrings {
   /// **'The view the kiosk shows when it starts.'**
   String get dashboardPickerDefaultHelp;
 
+  /// How many custom pages the Custom Pages entry lists, exactly one.
+  ///
+  /// In en, this message translates to:
+  /// **'1 page'**
+  String get dashboardPickerOnePage;
+
+  /// How many custom pages the Custom Pages entry lists, two or more.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pages'**
+  String dashboardPickerPageCount(String count);
+
   /// Playback failure caused by the device video decoder.
   ///
   /// In en, this message translates to:
@@ -5164,6 +5176,72 @@ abstract class UiStrings {
   /// **'Enable {name}'**
   String pluginEnableName(String name);
 
+  /// Tooltip of the button that shows or hides the text typed into a plugin's secret setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get pluginShowPassword;
+
+  /// Tooltip of the button that shows or hides the text typed into a plugin's secret setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get pluginHidePassword;
+
+  /// Name shown for a row of a plugin's list setting that has no name yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled'**
+  String get pluginUntitled;
+
+  /// Placeholder of the search box in the icon picker of a plugin setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Search icons'**
+  String get pluginSearchIcons;
+
+  /// Placeholder of a plugin icon setting with no icon chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an icon'**
+  String get pluginChooseIcon;
+
+  /// Placeholder of the search box in the camera view picker of a plugin setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Search camera views'**
+  String get pluginSearchCameraViews;
+
+  /// Placeholder of a plugin camera view setting with no view chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a camera view'**
+  String get pluginChooseCameraView;
+
+  /// Shown under a plugin camera view setting whose saved view was deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'This camera view is gone. Choose another.'**
+  String get pluginCameraViewGone;
+
+  /// Label of the handle that drags a row of a plugin's list setting to a new position.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get pluginDragToReorder;
+
+  /// Button that keeps the changes to a nested row and returns to the row that holds it, in the row editor of a plugin list setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get pluginDone;
+
+  /// Shown beside the label of an empty required field in the row editor of a plugin list setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get pluginRequired;
+
   /// Visible label, help or status in this section.
   ///
   /// In en, this message translates to:
@@ -6004,6 +6082,60 @@ abstract class UiStrings {
   /// **'Invalid or duplicate trigger ID'**
   String get pluginErrorTriggerId;
 
+  /// Explain the failure. Keep technical identifiers, file names and product names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid list setting'**
+  String get pluginErrorListSetting;
+
+  /// Explain the failure. Keep technical identifiers, file names and product names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid setting condition'**
+  String get pluginErrorSettingCondition;
+
+  /// Explain the failure. Keep technical identifiers, file names and product names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected an MDI icon name'**
+  String get pluginErrorIcon;
+
+  /// Explain the failure. Keep technical identifiers, file names and product names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected a dashboard path'**
+  String get pluginErrorDashboard;
+
+  /// Explain the failure. Keep technical identifiers, file names and product names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected a camera view ID'**
+  String get pluginErrorCameraView;
+
+  /// Explain the failure. Keep technical identifiers, file names and product names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected a list setting'**
+  String get pluginErrorListValue;
+
+  /// Explain the failure. Keep technical identifiers, file names and product names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many or too few list items'**
+  String get pluginErrorListCount;
+
+  /// Explain the failure. Keep technical identifiers, file names and product names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in every required field'**
+  String get pluginErrorRequiredField;
+
+  /// Explain the failure. Keep technical identifiers, file names and product names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'List settings must be at most 32 KB'**
+  String get pluginErrorListSize;
+
   /// Translate the visible message. Keep placeholders and any technical names unchanged.
   ///
   /// In en, this message translates to:
@@ -6717,6 +6849,12 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'{value}°C'**
   String overviewMetricDegrees(String value);
+
+  /// Home Assistant chip status while a custom page (a person's own HTML page) is on screen instead of a Home Assistant dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing custom pages'**
+  String get overviewShowingCustomPages;
 
   /// Translate the interface text. Keep external names, versions and technical details unchanged.
   ///
@@ -9814,6 +9952,30 @@ abstract class UiStrings {
   /// **'Announce this device on the network and list the other kiosks in the remote admin, to switch between them.'**
   String get settingRemoteFleetDiscoveryDescription;
 
+  /// Setting label. The web address used to open this kiosk's remote admin from other kiosks.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin URL'**
+  String get settingRemoteAdminUrlTitle;
+
+  /// Help below the Admin URL field. Switch kiosk is the name of the kiosk picker in the remote admin.
+  ///
+  /// In en, this message translates to:
+  /// **'Address other kiosks open in Switch kiosk to reach this one, such as a reverse proxy name. Leave blank to use its network address.'**
+  String get settingRemoteAdminUrlDescription;
+
+  /// Error under the Admin URL field when the value is not a web address. Keep the example address as is.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid address, for example https://kiosk.example.com'**
+  String get deviceAdminUrlInvalid;
+
+  /// Error under the Admin URL field when the address has a path after the host. Keep the example address as is.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter only the address, without a path. Example: https://kiosk.example.com'**
+  String get deviceAdminUrlPath;
+
   /// Label or explanation on this Device settings page.
   ///
   /// In en, this message translates to:
@@ -12304,6 +12466,107 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'A mapped key runs its action whatever app is in front, and does nothing else.'**
   String get gestureRemoteKeysHelp;
+  /// Name of the settings page and of the dashboard picker entry that lists a person's own HTML pages hosted in Home Assistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Pages'**
+  String get haCustomPages;
+
+  /// Hint under the Custom Pages entry row: the person's own HTML pages, shown by the kiosk in place of a dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Your custom HTML pages served as a dashboard'**
+  String get haCustomPagesHintDashboard;
+
+  /// Button that opens the dialog to add a custom page.
+  ///
+  /// In en, this message translates to:
+  /// **'Add page'**
+  String get haCustomPagesAdd;
+
+  /// Shown while no custom page is added yet. www is a folder name and stays as is.
+  ///
+  /// In en, this message translates to:
+  /// **'Add HTML pages from the Home Assistant www folder to pick them like a dashboard.'**
+  String get haCustomPagesEmpty;
+
+  /// Row that opens the documentation about building a custom page.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom page guide'**
+  String get haCustomPagesGuide;
+
+  /// Description under the Custom page guide row.
+  ///
+  /// In en, this message translates to:
+  /// **'How to build a page that talks to Home Assistant.'**
+  String get haCustomPagesGuideHint;
+
+  /// Title of the dialog that adds a custom page.
+  ///
+  /// In en, this message translates to:
+  /// **'Add custom page'**
+  String get haCustomPageAddTitle;
+
+  /// Title of the dialog that changes a custom page.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit custom page'**
+  String get haCustomPageEditTitle;
+
+  /// Field label: the name the dashboard picker shows for the page.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get haCustomPageName;
+
+  /// Field label: the address of the page inside Home Assistant, such as /local/dashboard.html.
+  ///
+  /// In en, this message translates to:
+  /// **'Path'**
+  String get haCustomPagePath;
+
+  /// Help under the Path field. Keep www and /local/dashboard.html unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'A file in the Home Assistant www folder, such as /local/dashboard.html.'**
+  String get haCustomPagePathHint;
+
+  /// Error in the custom page dialog when the name is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name.'**
+  String get haCustomPageNameMissing;
+
+  /// Error in the custom page dialog when the path is not under /local/. Keep /local/ and /local/dashboard.html unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a path under /local/, such as /local/dashboard.html.'**
+  String get haCustomPagePathInvalid;
+
+  /// Error in the custom page dialog when the path is already in the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Another page already uses this path.'**
+  String get haCustomPageDuplicate;
+
+  /// Error in the custom page dialog when Home Assistant answers that the file does not exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant has no file at this path.'**
+  String get haCustomPageNotFound;
+
+  /// Error in the custom page dialog when Home Assistant does not answer.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach Home Assistant.'**
+  String get haCustomPageUnreachable;
+
+  /// Error in the custom page dialog when Home Assistant answers the page with an HTTP status other than 200. HTTP stays as is.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant answered with HTTP {code}.'**
+  String haCustomPageStatus(String code);
 
   /// Setting label.
   ///
@@ -12514,6 +12777,12 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'This view uses {count} entities, which crosses the filtering threshold. Filtering is disabled.'**
   String haThreshold(String count);
+
+  /// Live update-filter status while a custom page (a person's own HTML page) is on screen: the filter leaves those pages alone.
+  ///
+  /// In en, this message translates to:
+  /// **'Not used on custom pages.'**
+  String get haCustomPageFilter;
 
   /// Setting label.
   ///
@@ -16910,8 +17179,56 @@ abstract class UiStrings {
   /// Help below the setting.
   ///
   /// In en, this message translates to:
-  /// **'Motion, face, proximity or person detection after the screen has turned off brings the screensaver back instead of the dashboard, with a fresh Turn screen off after countdown. Touch still opens the dashboard.'**
-  String get settingScreensaverScreenOffWakeToScreensaverDescription;
+  /// **'Choose what brings the screensaver back instead of the dashboard after the screen has turned off. The Turn screen off after countdown starts over.'**
+  String get settingScreensaverScreenOffWakeToScreensaverDescriptionSources;
+
+  /// Value of the Wake to screensaver row when every way of waking is picked.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get screensaverWakeSourcesAll;
+
+  /// Choice in the Wake to screensaver dialog: motion detection wakes the screen to the screensaver.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion'**
+  String get screensaverWakeSourceMotion;
+
+  /// Choice in the Wake to screensaver dialog: face detection wakes the screen to the screensaver.
+  ///
+  /// In en, this message translates to:
+  /// **'Face'**
+  String get screensaverWakeSourceFace;
+
+  /// Choice in the Wake to screensaver dialog: the proximity sensor wakes the screen to the screensaver.
+  ///
+  /// In en, this message translates to:
+  /// **'Proximity'**
+  String get screensaverWakeSourceProximity;
+
+  /// Choice in the Wake to screensaver dialog: person detection wakes the screen to the screensaver.
+  ///
+  /// In en, this message translates to:
+  /// **'Person'**
+  String get screensaverWakeSourcePerson;
+
+  /// Choice in the Wake to screensaver dialog: the device power button wakes the screen to the screensaver.
+  ///
+  /// In en, this message translates to:
+  /// **'Power button'**
+  String get screensaverWakeSourcePower;
+
+  /// Choice in the Wake to screensaver dialog: touching the black screen brings the screensaver back.
+  ///
+  /// In en, this message translates to:
+  /// **'Touch'**
+  String get screensaverWakeSourceTouch;
+
+  /// Hint under the grayed-out Touch choice in the Wake to screensaver dialog. Both quoted names are other settings on the same page.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires both \"Turn screen off after\" and \"Use a black screen instead.\"'**
+  String get screensaverWakeSourceTouchRequires;
 
   /// Label, status or guidance in this section.
   ///
@@ -18263,6 +18580,96 @@ abstract class UiStrings {
   /// **'A tap on the left or right fifth of the screen shows the previous or next slide instead of dismissing.'**
   String get settingScreensaverMediaEdgeTapsDescription;
 
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Show metadata'**
+  String get settingScreensaverMediaMetadataTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Date and camera details over the photo.'**
+  String get settingScreensaverMediaMetadataDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Date taken'**
+  String get settingScreensaverMediaMetadataDateTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Show when the photo was taken.'**
+  String get settingScreensaverMediaMetadataDateDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera details'**
+  String get settingScreensaverMediaMetadataCameraTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Show focal length, aperture and ISO.'**
+  String get settingScreensaverMediaMetadataCameraDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata position'**
+  String get settingScreensaverMediaMetadataPositionTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Which corner the details sit in.'**
+  String get settingScreensaverMediaMetadataPositionDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Text drop shadow'**
+  String get settingScreensaverMediaMetadataTextShadowTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a drop shadow to metadata text for readability on photos.'**
+  String get settingScreensaverMediaMetadataTextShadowDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Text scaling'**
+  String get settingScreensaverMediaMetadataScaleTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Scale the photo details to better fit your screen size.'**
+  String get settingScreensaverMediaMetadataScaleDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Vignette strength'**
+  String get settingScreensaverMediaVignetteStrengthTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Darkness of the shading behind the details, for readability on bright photos. 0 turns it off.'**
+  String get settingScreensaverMediaVignetteStrengthDescription;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant Media metadata'**
+  String get screensaverMediaHaMetadata;
+
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
@@ -18272,8 +18679,8 @@ abstract class UiStrings {
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
-  /// **'Media source, timing, shuffle, fill'**
-  String get screensaverMediaHaHint;
+  /// **'Media source, timing, shuffle, fill, metadata'**
+  String get screensaverMediaHaPageHint;
 
   /// Label or guidance in this section.
   ///
@@ -18425,6 +18832,96 @@ abstract class UiStrings {
   /// **'A tap on the left or right fifth of the screen shows the previous or next slide instead of dismissing.'**
   String get settingScreensaverLocalEdgeTapsDescription;
 
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Show metadata'**
+  String get settingScreensaverLocalMetadataTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Date and camera details over the photo.'**
+  String get settingScreensaverLocalMetadataDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Date taken'**
+  String get settingScreensaverLocalMetadataDateTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Show when the photo was taken.'**
+  String get settingScreensaverLocalMetadataDateDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera details'**
+  String get settingScreensaverLocalMetadataCameraTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Show focal length, aperture and ISO.'**
+  String get settingScreensaverLocalMetadataCameraDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata position'**
+  String get settingScreensaverLocalMetadataPositionTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Which corner the details sit in.'**
+  String get settingScreensaverLocalMetadataPositionDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Text drop shadow'**
+  String get settingScreensaverLocalMetadataTextShadowTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a drop shadow to metadata text for readability on photos.'**
+  String get settingScreensaverLocalMetadataTextShadowDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Text scaling'**
+  String get settingScreensaverLocalMetadataScaleTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Scale the photo details to better fit your screen size.'**
+  String get settingScreensaverLocalMetadataScaleDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Vignette strength'**
+  String get settingScreensaverLocalVignetteStrengthTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Darkness of the shading behind the details, for readability on bright photos. 0 turns it off.'**
+  String get settingScreensaverLocalVignetteStrengthDescription;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Local Media metadata'**
+  String get screensaverMediaLocalMetadata;
+
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
@@ -18434,8 +18931,8 @@ abstract class UiStrings {
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
-  /// **'Folder, timing, shuffle, transition'**
-  String get screensaverMediaLocalHint;
+  /// **'Folder, timing, shuffle, transition, metadata'**
+  String get screensaverMediaLocalPageHint;
 
   /// Setting label.
   ///
@@ -18490,6 +18987,36 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Motion detection is tuned in the Camera settings.'**
   String get screensaverDetectionMotionTuning;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Home Assistant entity'**
+  String get settingMotionUseEntityTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Detect motion with a Home Assistant sensor instead of the camera.'**
+  String get settingMotionUseEntityDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion sensor entity'**
+  String get settingMotionEntityTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'The Home Assistant occupancy, motion or presence sensor to follow.'**
+  String get settingMotionEntityDescription;
+
+  /// Section heading.
+  ///
+  /// In en, this message translates to:
+  /// **'External Motion Sensor'**
+  String get screensaverDetectionExternalMotionHeading;
 
   /// Setting label.
   ///

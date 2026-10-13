@@ -116,5 +116,70 @@
         "Screensaver > Motion Detection"
       ]
     }
+  },
+  "settingMotionUseEntityTitle": "Use Home Assistant entity",
+  "@settingMotionUseEntityTitle": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionUseEntityDescription": "Detect motion with a Home Assistant sensor instead of the camera.",
+  "@settingMotionUseEntityDescription": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionEntityTitle": "Motion sensor entity",
+  "@settingMotionEntityTitle": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionEntityDescription": "The Home Assistant occupancy, motion or presence sensor to follow.",
+  "@settingMotionEntityDescription": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "screensaverDetectionExternalMotionHeading": "External Motion Sensor",
+  "@screensaverDetectionExternalMotionHeading": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Section heading.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
   }
 }

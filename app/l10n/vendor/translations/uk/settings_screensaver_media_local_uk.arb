@@ -15,5 +15,20 @@
   "settingScreensaverLocalEdgeTapsTitle": "Торкання країв для зміни слайдів",
   "settingScreensaverLocalEdgeTapsDescription": "Торкання лівої або правої п'ятої частини екрана показує попередній або наступний слайд замість закриття заставки.",
   "screensaverMediaLocalPage": "Заставка локальних медіа",
-  "screensaverMediaLocalHint": "Папка, тривалість, випадковий порядок, перехід"
+  "screensaverMediaLocalPageHint": "Папка, тривалість, випадковий порядок, перехід, метадані",
+  "settingScreensaverLocalMetadataTitle": "Показувати метадані",
+  "settingScreensaverLocalMetadataDateTitle": "Дата зйомки",
+  "settingScreensaverLocalMetadataDateDescription": "Показувати, коли було зроблено фото.",
+  "settingScreensaverLocalMetadataCameraTitle": "Параметри камери",
+  "settingScreensaverLocalMetadataCameraDescription": "Показувати фокусну відстань, діафрагму та ISO.",
+  "settingScreensaverLocalMetadataPositionTitle": "Розташування метаданих",
+  "settingScreensaverLocalMetadataPositionDescription": "У якому кутку показувати відомості.",
+  "settingScreensaverLocalMetadataTextShadowTitle": "Тінь тексту",
+  "settingScreensaverLocalMetadataTextShadowDescription": "Додати тінь до тексту метаданих для кращої читабельності на фотографіях.",
+  "settingScreensaverLocalMetadataScaleTitle": "Масштаб тексту",
+  "settingScreensaverLocalMetadataScaleDescription": "Масштабувати відомості фото відповідно до розміру екрана.",
+  "settingScreensaverLocalVignetteStrengthTitle": "Інтенсивність віньєтування",
+  "settingScreensaverLocalVignetteStrengthDescription": "Затемнення фону за відомостями для читабельності на яскравих фото. 0 вимикає його.",
+  "settingScreensaverLocalMetadataDescription": "Дата та параметри камери поверх фото.",
+  "screensaverMediaLocalMetadata": "Метадані локальних медіа"
 }

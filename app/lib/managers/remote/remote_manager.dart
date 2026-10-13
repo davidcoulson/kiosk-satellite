@@ -276,6 +276,15 @@ class RemoteManager extends Manager {
       }),
     );
 
+    // What the Home Assistant motion entity reads (issue #973), for its
+    // row on the Motion Sensor page.
+    _subscriptions.add(
+      bus.on<ExternalMotionChanged>().listen((e) {
+        if (_wsClients.isEmpty) return;
+        _broadcast({'type': 'externalmotion', 'detected': e.detected});
+      }),
+    );
+
     // Mic level samples for the admin settings meter. No wireName (the page
     // computes its own levels), and they only flow while a client holds a
     // mic-level watch, so this is not a standing 10 Hz feed.

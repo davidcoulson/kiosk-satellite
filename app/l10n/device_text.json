@@ -291,6 +291,8 @@
   "The server is not running.": "deviceServerStopped",
   "Enter the folder URL, for example http://nas.local/kiosk-satellite": "deviceUpdateUrlInvalid",
   "Enter only the folder URL, without anything after the path. Example: http://nas.local/kiosk-satellite": "deviceUpdateUrlPath",
+  "Enter a valid address, for example https://kiosk.example.com": "deviceAdminUrlInvalid",
+  "Enter only the address, without a path. Example: https://kiosk.example.com": "deviceAdminUrlPath",
   "plugged": "devicePlugged",
   "low": "deviceLowMemory",
   "Import": "commonImport",

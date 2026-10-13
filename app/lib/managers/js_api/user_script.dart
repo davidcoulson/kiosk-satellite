@@ -60,6 +60,11 @@ String buildKioskSatelliteScript({
     },
 
     getDeviceInfo: function () { return call('getDeviceInfo'); },
+    // The app's and Home Assistant's light or dark state, and the kiosk's
+    // modes and overlays. 'kiosksatellite:theme' and
+    // 'kiosksatellite:kiosk-state' carry the same shapes on every change.
+    getTheme: function () { return call('getTheme'); },
+    getKioskState: function () { return call('getKioskState'); },
     getBrightness: function () { return call('getBrightness'); },
     setBrightness: function (level) { return call('setBrightness', { level: level }); },
 

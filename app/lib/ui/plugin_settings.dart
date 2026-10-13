@@ -8,10 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../app_container.dart';
 import '../managers/plugins/plugin_manager.dart';
 import '../core/command_registry.dart';
+import 'dashboard_view_picker.dart';
 import 'entity_picker.dart';
 import 'kit.dart';
+import 'plugin_list_setting.dart';
 import 'plugin_chart.dart';
 import 'plugin_readings.dart';
 import 'plugin_shizuku.dart';
@@ -628,10 +631,15 @@ class PluginDetailPanel extends StatefulWidget {
     required this.plugins,
     required this.id,
     this.onDisabled,
+    this.container,
   });
   final PluginManager plugins;
   final String id;
   final VoidCallback? onDisabled;
+
+  /// For the dashboard and camera view pickers. Without it they stay
+  /// read-only.
+  final AppContainer? container;
   @override
   State<PluginDetailPanel> createState() => _PluginDetailPanelState();
 }
@@ -731,6 +739,7 @@ class _PluginDetailPanelState extends State<PluginDetailPanel> {
             key: ValueKey(widget.id),
             plugin: plugin,
             commands: widget.plugins.commands,
+            container: widget.container,
             plugins: widget.plugins,
             busy: _busy,
             run: _run,
@@ -749,9 +758,11 @@ class _PluginSettings extends StatefulWidget {
     required this.plugins,
     required this.busy,
     required this.run,
+    this.container,
   });
   final Map<String, Object?> plugin;
   final CommandRegistry commands;
+  final AppContainer? container;
   final PluginManager plugins;
   final bool busy;
   final Future<void> Function(String, Map<String, Object?>) run;
@@ -815,40 +826,65 @@ class _PluginSettingsState extends State<_PluginSettings> {
 
   Future<void> _editText(Map raw) async {
     final key = '${raw['key']}';
-    var draft = '${_values[key] ?? raw['default']}';
+    final secret = raw['type'] == 'secret' || raw['secret'] == true;
+    // A secret is only ever replaced. Saving an empty field clears it.
+    // The eye shows what is being typed, never the saved value, so it
+    // appears only once there is text.
+    var draft = secret ? '' : '${_values[key] ?? raw['default']}';
+    var obscured = secret;
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('${raw['title']}'),
-        content: SizedBox(
-          width: 420,
-          child: TextFormField(
-            initialValue: draft,
-            autofocus: true,
-            maxLength: 512,
-            obscureText: raw['secret'] == true,
-            // A token is pasted, never typed, and autocorrect on a 180
-            // character string is only ever damage.
-            autocorrect: raw['secret'] != true,
-            enableSuggestions: raw['secret'] != true,
-            textInputAction: TextInputAction.done,
-            decoration: InputDecoration(
-              hintText: raw['description'] as String?,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('${raw['title']}'),
+          content: SizedBox(
+            width: 420,
+            child: TextFormField(
+              initialValue: draft,
+              obscureText: obscured,
+              autofocus: true,
+              maxLength: 512,
+              // A token is pasted, never typed, and autocorrect on a 180
+              // character string is only ever damage.
+              autocorrect: !secret,
+              enableSuggestions: !secret,
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                hintText: raw['description'] as String?,
+                suffixIcon: secret && draft.isNotEmpty
+                    ? IconButton(
+                        tooltip: pluginText(
+                          context,
+                          obscured ? 'Show password' : 'Hide password',
+                        ),
+                        icon: Icon(
+                          obscured
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
+                        onPressed: () =>
+                            setDialogState(() => obscured = !obscured),
+                      )
+                    : null,
+              ),
+              onChanged: (value) => setDialogState(() {
+                draft = value;
+                if (value.isEmpty) obscured = secret;
+              }),
+              onFieldSubmitted: (value) => Navigator.pop(context, value),
             ),
-            onChanged: (value) => draft = value,
-            onFieldSubmitted: (value) => Navigator.pop(context, value),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(pluginText(context, 'Cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, draft),
+              child: Text(pluginText(context, 'Save')),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(pluginText(context, 'Cancel')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, draft),
-            child: Text(pluginText(context, 'Save')),
-          ),
-        ],
       ),
     );
     if (result != null && mounted && !_busy) {
@@ -856,7 +892,95 @@ class _PluginSettingsState extends State<_PluginSettings> {
     }
   }
 
-  Widget _settingRow(Map raw) {
+  PluginFieldServices get _services => PluginFieldServices(
+    commands: widget.commands,
+    container: widget.container,
+  );
+
+  Widget _settingRow(Map raw, {bool alone = false}) {
+    final key = '${raw['key']}';
+    final value = _values[key] ?? raw['default'];
+    switch (raw['type']) {
+      case 'list':
+        return PluginListSetting(
+          setting: raw,
+          rows: (value as List? ?? const []).whereType<Map>().toList(),
+          services: _services,
+          enabled: !_busy,
+          showTitle: !alone,
+          onChanged: (rows) => _saveValue(key, rows),
+        );
+      case 'icon':
+        return SettingsRow(
+          title: Text('${raw['title']}'),
+          subtitle: raw['description'] == null
+              ? null
+              : Text('${raw['description']}'),
+          stack: true,
+          trailing: SizedBox(
+            width: tightPane(context) ? null : 300,
+            child: PluginIconBox(
+              value: '$value',
+              onTap: _busy
+                  ? null
+                  : () async {
+                      final picked = await pickPluginIcon(
+                        context,
+                        title: '${raw['title']}',
+                        value: '$value',
+                      );
+                      if (picked != null && mounted && !_busy) {
+                        await _saveValue(key, picked);
+                      }
+                    },
+            ),
+          ),
+        );
+      case 'dashboard' when widget.container != null:
+        return DashboardViewRow(
+          container: widget.container!,
+          title: '${raw['title']}',
+          description: raw['description']?.toString(),
+          value: '$value',
+          onPick: (path) {
+            if (mounted && !_busy) _saveValue(key, path);
+          },
+        );
+      case 'cameraView':
+        return PickRow(
+          title: '${raw['title']}',
+          description: raw['description']?.toString(),
+          spec: pluginCameraViewSpec(context, _services),
+          value: '$value',
+          placeholder: pluginText(context, 'Choose a camera view'),
+          missingText: pluginText(
+            context,
+            'This camera view is gone. Choose another.',
+          ),
+          allowClear: true,
+          enabled: !_busy && widget.container != null,
+          onPick: (id) async {
+            if (mounted && !_busy) await _saveValue(key, id ?? '');
+          },
+        );
+    }
+    if (raw['type'] == 'select') {
+      // The app's own dropdown row, so plugin choices look like every
+      // other setting's.
+      return DropdownRow<String>(
+        title: '${raw['title']}',
+        description: raw['description']?.toString(),
+        value: '$value',
+        options: [
+          for (final option in raw['options'] as List) ('$option', '$option'),
+        ],
+        onChanged: _busy
+            ? null
+            : (v) {
+                if (v != null && v != '$value') _saveValue(key, v);
+              },
+      );
+    }
     if (raw['type'] == 'entity') {
       final value = '${_values[raw['key']] ?? raw['default']}';
       // A plugin may narrow the picker to one domain or a few.
@@ -881,14 +1005,16 @@ class _PluginSettingsState extends State<_PluginSettings> {
         },
       );
     }
-    if (raw['type'] == 'string') {
+    if (raw['type'] == 'string' ||
+        raw['type'] == 'secret' ||
+        raw['type'] == 'dashboard') {
       final value = '${_values[raw['key']] ?? raw['default']}';
       // A string setting marked secret holds a credential -- an access
       // token, an API key. Home Assistant Setup shows its own token as
       // dots for the same reason: a wall panel's settings screen is read
       // by whoever is standing in front of it, and the value is no more
       // useful on screen than its length is.
-      final secret = raw['secret'] == true;
+      final secret = raw['secret'] == true || raw['type'] == 'secret';
       return SettingsRow(
         title: Text('${raw['title']}'),
         subtitle: Text(
@@ -1033,20 +1159,6 @@ class _PluginSettingsState extends State<_PluginSettings> {
             ],
           ),
         );
-      case 'select':
-        return SizedBox(
-          width: 220,
-          child: DropdownButtonFormField<String>(
-            key: ValueKey('$key-$value'),
-            initialValue: '$value',
-            isExpanded: true,
-            items: [
-              for (final option in raw['options'] as List)
-                DropdownMenuItem(value: '$option', child: Text('$option')),
-            ],
-            onChanged: _busy ? null : (v) => _saveValue(key, v),
-          ),
-        );
       case 'color':
         final hex = '$value';
         final color = Color(
@@ -1090,7 +1202,13 @@ class _PluginSettingsState extends State<_PluginSettings> {
   @override
   Widget build(BuildContext context) {
     final plugin = widget.plugin;
-    final settings = plugin['settings'] as List? ?? const [];
+    final declared = plugin['settings'] as List? ?? const [];
+    // A setting whose condition does not hold stays out of the page. Its
+    // saved value is kept.
+    final settings = [
+      for (final raw in declared.whereType<Map>())
+        if (pluginFieldVisible(raw, _values, declared)) raw,
+    ];
     final commands = plugin['commands'] as List? ?? const [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1106,16 +1224,23 @@ class _PluginSettingsState extends State<_PluginSettings> {
                   ? pluginText(context, 'Settings')
                   : group,
             ),
-            SettingsCard(
-              children: [
-                for (final raw in settings.where(
-                  (raw) => '${(raw as Map)['group'] ?? 'Settings'}' == group,
-                ))
-                  SearchLandingTarget(
-                    id: 'plugin:${plugin['id']}:setting:${(raw as Map)['key']}',
-                    child: _settingRow(raw),
-                  ),
-              ],
+            Builder(
+              builder: (context) {
+                final rows = [
+                  for (final raw in settings)
+                    if ('${raw['group'] ?? 'Settings'}' == group) raw,
+                ];
+                if (rows.isEmpty) return const SizedBox.shrink();
+                return SettingsCard(
+                  children: [
+                    for (final raw in rows)
+                      SearchLandingTarget(
+                        id: 'plugin:${plugin['id']}:setting:${raw['key']}',
+                        child: _settingRow(raw, alone: rows.length == 1),
+                      ),
+                  ],
+                );
+              },
             ),
             _PluginGroupOutput(
               plugins: widget.plugins,

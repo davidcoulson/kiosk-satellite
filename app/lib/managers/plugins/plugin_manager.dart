@@ -1,13 +1,16 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart' show EdgeInsets;
 import 'package:flutter/services.dart';
 
 import '../../core/command_registry.dart';
 import '../../core/manager.dart';
 import '../../core/events.dart';
+import '../../ui/mdi_icon.dart';
 import 'plugin_repository.dart';
 import 'plugin_host_api.dart';
 
@@ -36,10 +39,16 @@ class PluginNativeOverlay {
     required this.anchor,
     required this.width,
     required this.height,
-    required this.inset,
+    required this.insets,
     required this.closeOnBack,
     required this.onTop,
     required this.touchable,
+    this.offset = Offset.zero,
+    this.closeOnOutsideTouch = false,
+    this.passOutsideTouch = false,
+    this.enter = 'none',
+    this.exit = 'none',
+    this.duration = const Duration(milliseconds: 200),
     this.measured,
   });
 
@@ -53,10 +62,25 @@ class PluginNativeOverlay {
   final String anchor;
   final int width;
   final int height;
-  final int inset;
+
+  /// The distance from each kiosk edge, in logical pixels (dp).
+  final EdgeInsets insets;
+
+  /// Where the overlay moves from its anchored place, in dp.
+  final Offset offset;
   final bool closeOnBack;
   final bool onTop;
   final bool touchable;
+
+  /// A touch outside the overlay closes it. With [passOutsideTouch] that
+  /// touch also reaches what is under it.
+  final bool closeOnOutsideTouch;
+  final bool passOutsideTouch;
+
+  /// How it appears and leaves: none, fade, slide or scale.
+  final String enter;
+  final String exit;
+  final Duration duration;
   final Size? measured;
 
   /// A replaced overlay is a new view, so the generation is part of it.
@@ -72,10 +96,16 @@ class PluginNativeOverlay {
     anchor: anchor,
     width: width,
     height: height,
-    inset: inset,
+    insets: insets,
+    offset: offset,
     closeOnBack: closeOnBack,
     onTop: onTop,
     touchable: touchable,
+    closeOnOutsideTouch: closeOnOutsideTouch,
+    passOutsideTouch: passOutsideTouch,
+    enter: enter,
+    exit: exit,
+    duration: duration,
     measured: size,
   );
 }
@@ -120,6 +150,30 @@ class PluginManager extends Manager {
   // to the old Activity. A new epoch rebuilds every overlay view on the new
   // one, so plugins get a live context and the old Activity can go.
   final overlayEpoch = ValueNotifier<int>(0);
+
+  /// The space running plugins asked the dashboard to keep clear, in dp:
+  /// the largest per edge. Zero when none asked.
+  final contentInsets = ValueNotifier<EdgeInsets>(EdgeInsets.zero);
+  final _contentInsets = <String, EdgeInsets>{};
+
+  void _setContentInsets(String pluginId, EdgeInsets? insets) {
+    if (insets == null || insets == EdgeInsets.zero) {
+      _contentInsets.remove(pluginId);
+    } else {
+      _contentInsets[pluginId] = insets;
+    }
+    var merged = EdgeInsets.zero;
+    for (final i in _contentInsets.values) {
+      merged = EdgeInsets.fromLTRB(
+        math.max(merged.left, i.left),
+        math.max(merged.top, i.top),
+        math.max(merged.right, i.right),
+        math.max(merged.bottom, i.bottom),
+      );
+    }
+    if (merged != contentInsets.value) contentInsets.value = merged;
+  }
+
   StreamSubscription<ActivityAttached>? _attachSub;
   Map<String, Object?>? _overlayTheme;
   final shizuku = ValueNotifier<Map<String, Object?>>(const {
@@ -227,6 +281,7 @@ class PluginManager extends Manager {
           _setStatusTiles(data['id'] as String, const []);
           _setEntities(data['id'] as String, const []);
           _setOverlays(data['id'] as String, const []);
+          _setContentInsets(data['id'] as String, null);
           _hostReads.open(call.arguments as Map);
         case 'hostSessionClosed':
           final data = call.arguments as Map;
@@ -237,6 +292,7 @@ class PluginManager extends Manager {
             _setStatusTiles(data['id'] as String, const []);
             _setEntities(data['id'] as String, const []);
             _setOverlays(data['id'] as String, const []);
+            _setContentInsets(data['id'] as String, null);
           }
           _hostReads.close(call.arguments as Map);
         case 'hostSubscription':
@@ -281,6 +337,12 @@ class PluginManager extends Manager {
               data['id'] as String,
               data['screensavers'] as List,
             );
+          }
+        case 'contentInsets':
+          final data = call.arguments as Map;
+          if (_runtimeSessions[data['id']] == data['session'] &&
+              data['session'] != null) {
+            _setContentInsets(data['id'] as String, _insets(data['insets']));
           }
         case 'overlays':
           final data = call.arguments as Map;
@@ -536,6 +598,29 @@ class PluginManager extends Manager {
       const {'id': 'Plugin ID', 'values': 'Complete settings object'},
     );
     register(
+      'searchIcons',
+      'Find Material Design Icons by name, with their SVG paths, for icon settings.',
+      (p) async {
+        final names = p['names'];
+        final picked = names is List
+            ? [for (final name in names.take(100)) '$name']
+            : await MdiIcons.search(
+                '${p['query'] ?? ''}',
+                limit: ((p['limit'] as num?)?.toInt() ?? 60).clamp(1, 200),
+              );
+        final paths = await MdiIcons.paths(picked);
+        return [
+          for (final name in picked.map(MdiIcons.normalize))
+            if (paths[name] != null) {'name': 'mdi:$name', 'path': paths[name]},
+        ];
+      },
+      const {
+        'query': 'Words the icon name contains. Empty lists the first icons.',
+        'names': 'Exact icon names to resolve instead of a search, at most 100',
+        'limit': 'Most results to return, 60 unless set, at most 200',
+      },
+    );
+    register(
       'runPluginCommand',
       'Run a declared command of an enabled plugin.',
       (p) => update('execute', p),
@@ -755,6 +840,7 @@ class PluginManager extends Manager {
           : const [];
       if (!enabled.value || item['running'] != true) {
         _runtimeSessions.remove(item['id']);
+        _setContentInsets(item['id'] as String, null);
       }
       _setCharts(
         item['id'] as String,
@@ -783,6 +869,9 @@ class PluginManager extends Manager {
         _runtimeSessions.remove(id);
         _setCharts(id, const []);
       }
+    }
+    for (final id in _contentInsets.keys.toList()) {
+      if (!items.any((p) => p['id'] == id)) _setContentInsets(id, null);
     }
     _runtimeEntities.removeWhere(
       (id, _) => !items.any(
@@ -820,10 +909,21 @@ class PluginManager extends Manager {
               anchor: raw['anchor'] as String,
               width: (raw['width'] as num).toInt(),
               height: (raw['height'] as num).toInt(),
-              inset: (raw['inset'] as num).toInt(),
+              insets: _insets(raw['insets']),
+              offset: Offset(
+                (raw['offsetX'] as num? ?? 0).toDouble(),
+                (raw['offsetY'] as num? ?? 0).toDouble(),
+              ),
               closeOnBack: raw['closeOnBack'] == true,
               onTop: raw['onTop'] == true,
               touchable: raw['touchable'] != false,
+              closeOnOutsideTouch: raw['closeOnOutsideTouch'] == true,
+              passOutsideTouch: raw['passOutsideTouch'] == true,
+              enter: raw['enter'] as String? ?? 'none',
+              exit: raw['exit'] as String? ?? 'none',
+              duration: Duration(
+                milliseconds: (raw['duration'] as num? ?? 200).toInt(),
+              ),
             ),
           ])
             overlay.id: overlay,
@@ -841,6 +941,20 @@ class PluginManager extends Manager {
       overlays.value = next;
     }
   }
+
+  static EdgeInsets _insets(Object? raw) {
+    final sides = [
+      for (final side in raw is List ? raw : const []) (side as num).toDouble(),
+    ];
+    return sides.length == 4
+        ? EdgeInsets.fromLTRB(sides[0], sides[1], sides[2], sides[3])
+        : EdgeInsets.zero;
+  }
+
+  /// Whether the session that showed [overlay] still runs. An overlay of
+  /// an ended session leaves at once, with no exit transition.
+  bool overlaySessionLive(PluginNativeOverlay overlay) =>
+      _runtimeSessions[overlay.pluginId] == overlay.session;
 
   /// The overlay a back press closes: the topmost that allows it.
   PluginNativeOverlay? get backOverlay =>
@@ -1016,6 +1130,7 @@ class PluginManager extends Manager {
     windows.dispose();
     overlays.dispose();
     overlayEpoch.dispose();
+    contentInsets.dispose();
     shizuku.dispose();
     status.dispose();
     enabled.dispose();

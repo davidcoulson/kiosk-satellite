@@ -23,5 +23,7 @@
   "dashboardPickerMissing": "Cette vue n'existe plus dans Home Assistant. Choisissez-en une autre.",
   "dashboardPickerAddViews": "Ajouter des vues",
   "dashboardPickerDefault": "Tableau de bord par défaut",
-  "dashboardPickerDefaultHelp": "La vue que le kiosque affiche à son démarrage."
+  "dashboardPickerDefaultHelp": "La vue que le kiosque affiche à son démarrage.",
+  "dashboardPickerOnePage": "1 page",
+  "dashboardPickerPageCount": "{count} pages"
 }

@@ -63,6 +63,31 @@ class SettingsSearchEntry {
 /// "permissions" or "export" still lands somewhere. Mirrored in the remote
 /// admin's SEARCH_EXTRAS; keep the two lists in step.
 const List<SettingsSearchEntry> handBuiltSearchEntries = [
+  // No setting draws Custom Pages, so the page and its rows are listed
+  // here (remote: DEFLESS_SUBPAGES and SEARCH_EXTRAS).
+  SettingsSearchEntry(
+    category: 'Home Assistant',
+    title: 'Custom Pages',
+    description: 'Your custom HTML pages served as a dashboard',
+    anchorId: 'sub:Custom Pages',
+    isPage: true,
+  ),
+  SettingsSearchEntry(
+    category: 'Home Assistant',
+    title: 'Add page',
+    description:
+        'Add HTML pages from the Home Assistant www folder to pick them '
+        'like a dashboard.',
+    subpage: 'Custom Pages',
+    anchorId: 'x:custom_pages',
+  ),
+  SettingsSearchEntry(
+    category: 'Home Assistant',
+    title: 'Custom page guide',
+    description: 'How to build a page that talks to Home Assistant.',
+    subpage: 'Custom Pages',
+    anchorId: 'x:custom_pages_docs',
+  ),
   SettingsSearchEntry(
     category: 'Device',
     title: 'TLS',

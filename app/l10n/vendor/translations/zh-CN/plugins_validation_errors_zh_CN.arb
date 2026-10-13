@@ -30,5 +30,14 @@
   "pluginErrorAndroidApi": "插件需要 Android API {version}",
   "pluginErrorInvalidField": "{field} 无效",
   "pluginErrorTooManyTriggers": "触发器过多",
-  "pluginErrorTriggerId": "触发器 ID 无效或重复"
+  "pluginErrorTriggerId": "触发器 ID 无效或重复",
+  "pluginErrorListSetting": "列表设置无效",
+  "pluginErrorSettingCondition": "设置的显示条件无效",
+  "pluginErrorIcon": "需要 MDI 图标名称",
+  "pluginErrorDashboard": "需要仪表盘路径",
+  "pluginErrorCameraView": "需要摄像头画面 ID",
+  "pluginErrorListValue": "此设置的值必须为列表",
+  "pluginErrorListCount": "列表的条目过多或过少",
+  "pluginErrorRequiredField": "请填写所有必填项",
+  "pluginErrorListSize": "列表设置不能超过 32 KB"
 }

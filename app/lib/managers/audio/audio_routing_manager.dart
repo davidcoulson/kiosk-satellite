@@ -25,6 +25,10 @@ import 'mic_hub.dart';
 /// USB mic was pulled) an [AudioDevicesChanged] with capturePathChanged goes
 /// out so the wake-word engine reopens capture on the right device instead
 /// of holding whatever was true at its last start.
+///
+/// Voice interactions hold transient audio focus, so other apps' music
+/// ducks under a turn, an alarm or an intercom call the way Android apps
+/// expect. Media playback, ours included, is not an interaction.
 class AudioRoutingManager extends Manager {
   AudioRoutingManager(super.bus, super.commands, super.log, this._settings);
 
@@ -40,6 +44,9 @@ class AudioRoutingManager extends Manager {
   int? _micDeviceId;
 
   Timer? _hotplugDebounce;
+
+  /// Interaction reasons in progress. Focus is held while any remain.
+  final _interactions = <String>{};
 
   @override
   Future<void> init() async {
@@ -86,6 +93,25 @@ class AudioRoutingManager extends Manager {
       } else if (e.key == defs.audioSpeakerDevice.key) {
         _pushOutput(_settings.get(defs.audioSpeakerDevice));
       }
+    });
+
+    bus.on<VoiceInteractionChanged>().listen((e) {
+      if (e.reason == 'media') return;
+      final wasActive = _interactions.isNotEmpty;
+      if (e.active) {
+        _interactions.add(e.reason);
+      } else {
+        _interactions.remove(e.reason);
+      }
+      final active = _interactions.isNotEmpty;
+      if (active == wasActive) return;
+      unawaited(
+        _channel.invokeMethod<void>('holdFocus', {'active': active}).catchError(
+          (Object error) {
+            log.warn(name, 'audio focus change failed: $error');
+          },
+        ),
+      );
     });
 
     commands.register(

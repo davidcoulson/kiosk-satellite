@@ -384,6 +384,18 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "low": "voiceRealtimeReasoningLow",
     "medium": "voiceRealtimeReasoningMedium",
     "high": "voiceRealtimeReasoningHigh"
+  },
+  "screensaver.media_metadata_position": {
+    "top_left": "screensaverMediaTopLeft",
+    "top_right": "screensaverMediaTopRight",
+    "bottom_left": "screensaverMediaBottomLeft",
+    "bottom_right": "screensaverMediaBottomRight"
+  },
+  "screensaver.local_metadata_position": {
+    "top_left": "screensaverMediaTopLeft",
+    "top_right": "screensaverMediaTopRight",
+    "bottom_left": "screensaverMediaBottomLeft",
+    "bottom_right": "screensaverMediaBottomRight"
   }
 };
 const settingPlaceholderMessageIds = <String, String>{

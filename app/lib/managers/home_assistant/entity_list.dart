@@ -9,8 +9,24 @@ library;
 bool isIlluminanceEntity(Map<String, Object?> entity) =>
     entity['device_class'] == 'illuminance' || entity['unit'] == 'lx';
 
+/// A binary sensor that says someone is around (issue #973): occupancy,
+/// motion or presence, which integrations pick between inconsistently for
+/// the same kind of sensor.
+bool isOccupancyEntity(Map<String, Object?> entity) =>
+    entity['domain'] == 'binary_sensor' &&
+    const {'occupancy', 'motion', 'presence'}.contains(entity['device_class']);
+
+/// Whether [entity] is of [deviceClass]: `illuminance` also takes
+/// readings in lux, `occupancy` also takes motion and presence sensors.
+bool matchesDeviceClass(Map<String, Object?> entity, String deviceClass) =>
+    switch (deviceClass) {
+      'illuminance' => isIlluminanceEntity(entity),
+      'occupancy' => isOccupancyEntity(entity),
+      _ => entity['device_class'] == deviceClass,
+    };
+
 /// [entities] narrowed to [domains] (all when empty) and [deviceClass]
-/// (`illuminance` also takes readings in lux).
+/// (see [matchesDeviceClass]).
 List<Map<String, Object?>> filterEntities(
   List<Map<String, Object?>> entities, {
   List<String> domains = const [],
@@ -18,10 +34,7 @@ List<Map<String, Object?>> filterEntities(
 }) => [
   for (final e in entities)
     if ((domains.isEmpty || domains.contains(e['domain'])) &&
-        (deviceClass == null ||
-            (deviceClass == 'illuminance'
-                ? isIlluminanceEntity(e)
-                : e['device_class'] == deviceClass)))
+        (deviceClass == null || matchesDeviceClass(e, deviceClass)))
       e,
 ];
 

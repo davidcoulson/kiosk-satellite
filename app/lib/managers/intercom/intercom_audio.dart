@@ -7,7 +7,8 @@ import 'package:flutter/services.dart';
 ///
 /// The bridge is a plain method channel: [start] opens the track at the
 /// intercom's format (16 kHz mono PCM16, what the microphone hub delivers
-/// on the other kiosk), [write] hands it one chunk, [setVolume] moves the
+/// on the other kiosk) or at an announcement's own rate, [write] hands it
+/// one chunk, [setVolume] moves the
 /// intercom fader live and [stop] releases the track and the route.
 /// Replaced in tests through [invoker].
 class IntercomAudio {
@@ -25,17 +26,31 @@ class IntercomAudio {
       (method, [args]) => (method == 'write' ? _data : _channel)
           .invokeMethod<Object?>(method, args);
 
+  /// The intercom's own sample rate, what a microphone sends.
+  static const callRate = 16000;
+
   bool _open = false;
+  int _rate = callRate;
 
   bool get open => _open;
 
-  /// Opens the track. [volume] is the linear base gain, 0..1. False when
-  /// the platform could not (no bridge in tests, a track that failed).
-  Future<bool> start({required double volume, bool handsFree = false}) async {
+  /// The open track's sample rate.
+  int get rate => _rate;
+
+  /// Opens the track for mono PCM16 at [rate]. [volume] is the linear
+  /// base gain, 0..1. False when the platform could not (no bridge in
+  /// tests, a track that failed).
+  Future<bool> start({
+    required double volume,
+    bool handsFree = false,
+    int rate = callRate,
+  }) async {
+    _rate = rate;
     try {
       final ok = await invoker('start', {
         'volume': volume,
         'handsFree': handsFree,
+        'rate': rate,
       });
       _open = ok == true;
     } on MissingPluginException {
@@ -46,7 +61,7 @@ class IntercomAudio {
     return _open;
   }
 
-  /// One chunk of PCM16 mono 16 kHz. Fire and forget: a chunk the track
+  /// One chunk of PCM16 mono at [rate]. Fire and forget: a chunk the track
   /// could not take is dropped, the next one lands on time.
   void write(Uint8List pcm) {
     if (!_open) return;
@@ -90,11 +105,12 @@ class IntercomAudio {
 
   /// The built-in announcement chime, two soft bell notes, synthesized
   /// natively. [volume] as for the ring.
-  /// The built-in announcement chime as 16 kHz mono PCM16, played ahead
-  /// of the words on the same track. Null when the platform could not.
-  Future<Uint8List?> chimePcm() async {
+  /// The built-in announcement chime as mono PCM16 at [rate], played
+  /// ahead of the words on the same track. Null when the platform could
+  /// not.
+  Future<Uint8List?> chimePcm({int rate = callRate}) async {
     try {
-      final out = await invoker('chimePcm');
+      final out = await invoker('chimePcm', {'rate': rate});
       return out is Uint8List ? out : null;
     } catch (_) {
       return null;
@@ -108,12 +124,19 @@ class IntercomAudio {
   }
 
   /// Decodes an audio file (MP3, WAV, OGG, whatever the platform decodes)
-  /// to 16 kHz mono PCM16, for an announcement from Home Assistant. Null
-  /// when the platform could not.
-  Future<Uint8List?> decode(Uint8List bytes) async {
+  /// to mono PCM16 at [rate], or at the file's own rate when [rate] is 0,
+  /// for an announcement from Home Assistant. Null when the platform
+  /// could not.
+  Future<({Uint8List pcm, int rate})?> decode(
+    Uint8List bytes, {
+    int rate = 0,
+  }) async {
     try {
-      final out = await invoker('decode', bytes);
-      return out is Uint8List ? out : null;
+      final out = await invoker('decode', {'bytes': bytes, 'rate': rate});
+      if (out is! Map) return null;
+      final pcm = out['pcm'];
+      final got = out['rate'];
+      return pcm is Uint8List && got is int ? (pcm: pcm, rate: got) : null;
     } catch (_) {
       return null;
     }

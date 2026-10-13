@@ -194,7 +194,7 @@ void main() {
         final row = tester.widget<DropdownRow<String>>(
           find.byType(DropdownRow<String>),
         );
-        row.onChanged('es');
+        row.onChanged!('es');
         await tester.pumpAndSettle();
         expectLanguage('es', deviceLocale);
         expect(container.settings.get(uiLanguage), 'es');

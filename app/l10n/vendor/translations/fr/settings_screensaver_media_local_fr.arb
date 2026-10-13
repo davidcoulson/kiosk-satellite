@@ -15,5 +15,20 @@
   "settingScreensaverLocalEdgeTapsTitle": "Appuyer sur les bords pour changer de diapositive",
   "settingScreensaverLocalEdgeTapsDescription": "Un appui sur le cinquième gauche ou droit de l'écran affiche la diapositive précédente ou suivante au lieu de fermer l'économiseur d'écran.",
   "screensaverMediaLocalPage": "Économiseur d'écran média local",
-  "screensaverMediaLocalHint": "Dossier, cadence, aléatoire, transition"
+  "screensaverMediaLocalPageHint": "Dossier, cadence, aléatoire, transition, métadonnées",
+  "settingScreensaverLocalMetadataTitle": "Afficher les métadonnées",
+  "settingScreensaverLocalMetadataDateTitle": "Date de prise de vue",
+  "settingScreensaverLocalMetadataDateDescription": "Afficher la date de prise de vue de la photo.",
+  "settingScreensaverLocalMetadataCameraTitle": "Détails de l'appareil photo",
+  "settingScreensaverLocalMetadataCameraDescription": "Afficher la focale, l'ouverture et la sensibilité ISO.",
+  "settingScreensaverLocalMetadataPositionTitle": "Position des métadonnées",
+  "settingScreensaverLocalMetadataPositionDescription": "Dans quel coin les détails apparaissent.",
+  "settingScreensaverLocalMetadataTextShadowTitle": "Ombre portée du texte",
+  "settingScreensaverLocalMetadataTextShadowDescription": "Ajouter une ombre portée au texte des métadonnées pour la lisibilité sur les photos.",
+  "settingScreensaverLocalMetadataScaleTitle": "Mise à l'échelle du texte",
+  "settingScreensaverLocalMetadataScaleDescription": "Ajuste la taille des détails de la photo à votre écran.",
+  "settingScreensaverLocalVignetteStrengthTitle": "Intensité du vignettage",
+  "settingScreensaverLocalVignetteStrengthDescription": "Opacité de l'ombrage sombre derrière les détails, pour la lisibilité sur les photos claires. 0 le désactive.",
+  "settingScreensaverLocalMetadataDescription": "Date et détails de l'appareil photo par-dessus la photo.",
+  "screensaverMediaLocalMetadata": "Métadonnées du média local"
 }

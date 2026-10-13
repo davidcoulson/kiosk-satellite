@@ -3,7 +3,9 @@ import 'package:kiosk_satellite/core/command_registry.dart';
 import 'package:kiosk_satellite/core/event_bus.dart';
 import 'package:kiosk_satellite/core/logging.dart';
 import 'package:kiosk_satellite/managers/home_assistant/home_assistant_manager.dart';
+import 'package:kiosk_satellite/core/photo_exif.dart';
 import 'package:kiosk_satellite/managers/screensaver/immich_manager.dart';
+import 'package:kiosk_satellite/managers/screensaver/photo_metadata.dart';
 import 'package:kiosk_satellite/managers/settings/settings_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -114,6 +116,71 @@ void main() {
             '{"position":"bottom_right","type":"clock","config":{}}]',
       });
       expect(immichMetadataCorner(settings), isNull);
+    });
+  });
+
+  // Issue #953: the same panel over Home Assistant Media and Local Media,
+  // each on its own settings, read from the photo's EXIF.
+  group('EXIF metadata modes', () {
+    test('each mode follows its own switches', () async {
+      final settings = await build({
+        'ks.screensaver.media_metadata': true,
+        'ks.screensaver.local_metadata': true,
+        'ks.screensaver.local_metadata_camera': false,
+      });
+      expect(photoMetadataVisible(settings, 'media'), isTrue);
+      expect(photoMetadataFieldOn(settings, 'media', 'settings'), isTrue);
+      expect(photoMetadataFieldOn(settings, 'local', 'camera'), isFalse);
+      expect(photoMetadataFieldOn(settings, 'local', 'settings'), isFalse);
+      expect(photoMetadataFieldOn(settings, 'local', 'date'), isTrue);
+      expect(photoMetadataVisible(settings, 'immich'), isFalse);
+    });
+
+    test('no album or location line without a server to name them', () {
+      for (final mode in ['media', 'local']) {
+        expect(
+          photoMetadataDefs[mode]!.fields.keys,
+          unorderedEquals(['date', 'camera', 'settings']),
+          reason: mode,
+        );
+      }
+    });
+
+    test('off by default, and the Photo Gallery has no panel', () async {
+      final settings = await build(const {});
+      expect(photoMetadataVisible(settings, 'media'), isFalse);
+      expect(photoMetadataVisible(settings, 'local'), isFalse);
+      expect(photoMetadataDefs.containsKey('gallery'), isFalse);
+      expect(photoMetadataCorner(settings, 'gallery'), isNull);
+    });
+
+    test('a widget in the corner pushes the panel along', () async {
+      final settings = await build({
+        'ks.screensaver.media_metadata': true,
+        'ks.screensaver.media_metadata_position': 'bottom_right',
+        'ks.screensaver.widgets':
+            '[{"position":"bottom_right","type":"battery","config":{}}]',
+      });
+      expect(photoMetadataCorner(settings, 'media'), 'top_left');
+    });
+
+    test('the lines read like Immich\'s', () {
+      final details = photoExifDetails(
+        PhotoExif(
+          taken: DateTime(2025, 3, 29, 14, 22),
+          make: 'Canon',
+          model: 'Canon EOS R5',
+          focalLength: 35,
+          fNumber: 1.8,
+          iso: 400,
+        ),
+      );
+      expect(details['date'], 'March 29, 2025');
+      expect(details['camera'], 'Canon EOS R5');
+      expect(details['settings'], '35mm  f/1.8  ISO 400');
+      expect(photoCameraLine('Google', 'Pixel 8 Pro'), 'Google Pixel 8 Pro');
+      expect(photoExifDetails(null), isEmpty);
+      expect(photoExifDetails(const PhotoExif(make: 'Google')), isEmpty);
     });
   });
 

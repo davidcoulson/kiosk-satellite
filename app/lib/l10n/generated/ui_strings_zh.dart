@@ -595,6 +595,14 @@ class UiStringsZh extends UiStrings {
   String get dashboardPickerDefaultHelp => 'Kiosk 启动时显示的页面。';
 
   @override
+  String get dashboardPickerOnePage => '1 个网页';
+
+  @override
+  String dashboardPickerPageCount(String count) {
+    return '$count 个网页';
+  }
+
+  @override
   String get dlnaCannotDecode => '此设备无法解码此视频。';
 
   @override
@@ -2837,6 +2845,39 @@ class UiStringsZh extends UiStrings {
   }
 
   @override
+  String get pluginShowPassword => '显示密码';
+
+  @override
+  String get pluginHidePassword => '隐藏密码';
+
+  @override
+  String get pluginUntitled => '未命名';
+
+  @override
+  String get pluginSearchIcons => '搜索图标';
+
+  @override
+  String get pluginChooseIcon => '选择图标';
+
+  @override
+  String get pluginSearchCameraViews => '搜索摄像头画面';
+
+  @override
+  String get pluginChooseCameraView => '选择摄像头画面';
+
+  @override
+  String get pluginCameraViewGone => '此摄像头画面已不存在，请另选一个。';
+
+  @override
+  String get pluginDragToReorder => '拖动排序';
+
+  @override
+  String get pluginDone => '完成';
+
+  @override
+  String get pluginRequired => '必填';
+
+  @override
   String get pluginAddPlugin => '添加插件';
 
   @override
@@ -3292,6 +3333,33 @@ class UiStringsZh extends UiStrings {
   String get pluginErrorTriggerId => '触发器 ID 无效或重复';
 
   @override
+  String get pluginErrorListSetting => '列表设置无效';
+
+  @override
+  String get pluginErrorSettingCondition => '设置的显示条件无效';
+
+  @override
+  String get pluginErrorIcon => '需要 MDI 图标名称';
+
+  @override
+  String get pluginErrorDashboard => '需要仪表盘路径';
+
+  @override
+  String get pluginErrorCameraView => '需要摄像头画面 ID';
+
+  @override
+  String get pluginErrorListValue => '此设置的值必须为列表';
+
+  @override
+  String get pluginErrorListCount => '列表的条目过多或过少';
+
+  @override
+  String get pluginErrorRequiredField => '请填写所有必填项';
+
+  @override
+  String get pluginErrorListSize => '列表设置不能超过 32 KB';
+
+  @override
   String get remoteDisableTitle => '要关闭远程管理吗？';
 
   @override
@@ -3701,6 +3769,9 @@ class UiStringsZh extends UiStrings {
   String overviewMetricDegrees(String value) {
     return '$value°C';
   }
+
+  @override
+  String get overviewShowingCustomPages => '正在显示自定义网页';
 
   @override
   String get overviewNoScreenshot => '暂无截图';
@@ -5393,6 +5464,19 @@ class UiStringsZh extends UiStrings {
       '在网络中广播此设备，并在远程管理中列出其他 Kiosk 设备，方便切换。';
 
   @override
+  String get settingRemoteAdminUrlTitle => '管理地址';
+
+  @override
+  String get settingRemoteAdminUrlDescription =>
+      '其他 Kiosk 设备在“切换 Kiosk 设备”中打开此设备时使用的地址，例如反向代理名称。留空则使用其网络地址。';
+
+  @override
+  String get deviceAdminUrlInvalid => '请输入有效地址，例如 https://kiosk.example.com';
+
+  @override
+  String get deviceAdminUrlPath => '仅填写地址，不要包含路径。例如：https://kiosk.example.com';
+
+  @override
   String get deviceRemotePage => '远程管理';
 
   @override
@@ -6772,6 +6856,60 @@ class UiStringsZh extends UiStrings {
   @override
   String get gestureRemoteKeysHelp =>
       'A mapped key runs its action whatever app is in front, and does nothing else.';
+  String get haCustomPages => '自定义网页';
+
+  @override
+  String get haCustomPagesHintDashboard => '作为仪表盘显示的自定义 HTML 网页';
+
+  @override
+  String get haCustomPagesAdd => '添加网页';
+
+  @override
+  String get haCustomPagesEmpty =>
+      '添加 Home Assistant www 文件夹中的 HTML 网页，即可像仪表盘一样选择它们。';
+
+  @override
+  String get haCustomPagesGuide => '自定义网页指南';
+
+  @override
+  String get haCustomPagesGuideHint => '如何构建与 Home Assistant 通信的网页。';
+
+  @override
+  String get haCustomPageAddTitle => '添加自定义网页';
+
+  @override
+  String get haCustomPageEditTitle => '编辑自定义网页';
+
+  @override
+  String get haCustomPageName => '名称';
+
+  @override
+  String get haCustomPagePath => '路径';
+
+  @override
+  String get haCustomPagePathHint =>
+      'Home Assistant www 文件夹中的文件，例如 /local/dashboard.html。';
+
+  @override
+  String get haCustomPageNameMissing => '请输入名称。';
+
+  @override
+  String get haCustomPagePathInvalid =>
+      '请输入 /local/ 下的路径，例如 /local/dashboard.html。';
+
+  @override
+  String get haCustomPageDuplicate => '另一个网页已在使用此路径。';
+
+  @override
+  String get haCustomPageNotFound => 'Home Assistant 在此路径下没有文件。';
+
+  @override
+  String get haCustomPageUnreachable => '无法连接 Home Assistant。';
+
+  @override
+  String haCustomPageStatus(String code) {
+    return 'Home Assistant 返回了 HTTP $code。';
+  }
 
   @override
   String get settingHaHoldModeTitle => '页面保持模式';
@@ -6897,6 +7035,9 @@ class UiStringsZh extends UiStrings {
   String haThreshold(String count) {
     return '此页面使用 $count 个实体，超过过滤阈值。过滤已禁用。';
   }
+
+  @override
+  String get haCustomPageFilter => '不用于自定义网页。';
 
   @override
   String get settingHaReturnHomeEnabledTitle => '返回默认仪表盘页面';
@@ -9278,8 +9419,33 @@ class UiStringsZh extends UiStrings {
   String get settingScreensaverScreenOffWakeToScreensaverTitle => '唤醒后打开屏保';
 
   @override
-  String get settingScreensaverScreenOffWakeToScreensaverDescription =>
-      '屏幕关闭后，运动、人脸、接近或人体检测会唤醒屏保，而不是打开仪表盘，并重新开始关闭屏幕倒计时。触屏仍会打开仪表盘。';
+  String get settingScreensaverScreenOffWakeToScreensaverDescriptionSources =>
+      '选择屏幕关闭后哪些方式会唤醒屏保，而不是打开仪表盘。屏保启动后关屏时间的倒计时会重新开始。';
+
+  @override
+  String get screensaverWakeSourcesAll => '全部';
+
+  @override
+  String get screensaverWakeSourceMotion => '运动';
+
+  @override
+  String get screensaverWakeSourceFace => '人脸';
+
+  @override
+  String get screensaverWakeSourceProximity => '接近';
+
+  @override
+  String get screensaverWakeSourcePerson => '人体';
+
+  @override
+  String get screensaverWakeSourcePower => '电源键';
+
+  @override
+  String get screensaverWakeSourceTouch => '触屏';
+
+  @override
+  String get screensaverWakeSourceTouchRequires =>
+      '需要设置“屏保启动后关屏时间”并开启“用黑屏替代关屏”。';
 
   @override
   String get screensaverModeDim => '调暗';
@@ -10018,10 +10184,59 @@ class UiStringsZh extends UiStrings {
       '点击屏幕左侧或右侧五分之一区域，显示上一张或下一张幻灯片，而非关闭屏保。';
 
   @override
+  String get settingScreensaverMediaMetadataTitle => '显示元数据';
+
+  @override
+  String get settingScreensaverMediaMetadataDescription => '在照片上显示日期和相机详情。';
+
+  @override
+  String get settingScreensaverMediaMetadataDateTitle => '拍摄日期';
+
+  @override
+  String get settingScreensaverMediaMetadataDateDescription => '显示照片的拍摄时间。';
+
+  @override
+  String get settingScreensaverMediaMetadataCameraTitle => '相机详情';
+
+  @override
+  String get settingScreensaverMediaMetadataCameraDescription =>
+      '显示焦距、光圈和 ISO。';
+
+  @override
+  String get settingScreensaverMediaMetadataPositionTitle => '元数据位置';
+
+  @override
+  String get settingScreensaverMediaMetadataPositionDescription => '详情显示的屏幕角落。';
+
+  @override
+  String get settingScreensaverMediaMetadataTextShadowTitle => '文字投影';
+
+  @override
+  String get settingScreensaverMediaMetadataTextShadowDescription =>
+      '为元数据文字添加阴影，使其在照片上更清晰。';
+
+  @override
+  String get settingScreensaverMediaMetadataScaleTitle => '文字缩放';
+
+  @override
+  String get settingScreensaverMediaMetadataScaleDescription =>
+      '调整照片详情的大小以适应屏幕尺寸。';
+
+  @override
+  String get settingScreensaverMediaVignetteStrengthTitle => '暗角强度';
+
+  @override
+  String get settingScreensaverMediaVignetteStrengthDescription =>
+      '调整照片详情下方阴影的深浅，使文字在明亮的照片上也能看清。设为 0 时不显示阴影。';
+
+  @override
+  String get screensaverMediaHaMetadata => 'Home Assistant 媒体元数据';
+
+  @override
   String get screensaverMediaHaPage => 'Home Assistant 媒体屏保';
 
   @override
-  String get screensaverMediaHaHint => '媒体来源、时长、随机播放和填充';
+  String get screensaverMediaHaPageHint => '媒体来源、时长、随机播放、填充和元数据';
 
   @override
   String get screensaverMediaChoose => '选择媒体';
@@ -10106,10 +10321,59 @@ class UiStringsZh extends UiStrings {
       '点击屏幕左侧或右侧五分之一区域，显示上一张或下一张幻灯片，而非关闭屏保。';
 
   @override
+  String get settingScreensaverLocalMetadataTitle => '显示元数据';
+
+  @override
+  String get settingScreensaverLocalMetadataDescription => '在照片上显示日期和相机详情。';
+
+  @override
+  String get settingScreensaverLocalMetadataDateTitle => '拍摄日期';
+
+  @override
+  String get settingScreensaverLocalMetadataDateDescription => '显示照片的拍摄时间。';
+
+  @override
+  String get settingScreensaverLocalMetadataCameraTitle => '相机详情';
+
+  @override
+  String get settingScreensaverLocalMetadataCameraDescription =>
+      '显示焦距、光圈和 ISO。';
+
+  @override
+  String get settingScreensaverLocalMetadataPositionTitle => '元数据位置';
+
+  @override
+  String get settingScreensaverLocalMetadataPositionDescription => '详情显示的屏幕角落。';
+
+  @override
+  String get settingScreensaverLocalMetadataTextShadowTitle => '文字投影';
+
+  @override
+  String get settingScreensaverLocalMetadataTextShadowDescription =>
+      '为元数据文字添加阴影，使其在照片上更清晰。';
+
+  @override
+  String get settingScreensaverLocalMetadataScaleTitle => '文字缩放';
+
+  @override
+  String get settingScreensaverLocalMetadataScaleDescription =>
+      '调整照片详情的大小以适应屏幕尺寸。';
+
+  @override
+  String get settingScreensaverLocalVignetteStrengthTitle => '暗角强度';
+
+  @override
+  String get settingScreensaverLocalVignetteStrengthDescription =>
+      '调整照片详情下方阴影的深浅，使文字在明亮的照片上也能看清。设为 0 时不显示阴影。';
+
+  @override
+  String get screensaverMediaLocalMetadata => '本地媒体元数据';
+
+  @override
   String get screensaverMediaLocalPage => '本地媒体屏保';
 
   @override
-  String get screensaverMediaLocalHint => '文件夹、时长、随机播放和切换效果';
+  String get screensaverMediaLocalPageHint => '文件夹、时长、随机播放、切换效果和元数据';
 
   @override
   String get settingScreensaverDismissOnMotionTitle => '检测到运动时关闭屏保';
@@ -10140,6 +10404,23 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get screensaverDetectionMotionTuning => '运动检测功能可在摄像头设置中调整。';
+
+  @override
+  String get settingMotionUseEntityTitle => '使用 Home Assistant 实体';
+
+  @override
+  String get settingMotionUseEntityDescription =>
+      '使用 Home Assistant 传感器代替摄像头检测运动。';
+
+  @override
+  String get settingMotionEntityTitle => '运动传感器实体';
+
+  @override
+  String get settingMotionEntityDescription =>
+      '要跟随的 Home Assistant 占用、运动或存在传感器。';
+
+  @override
+  String get screensaverDetectionExternalMotionHeading => '外部运动传感器';
 
   @override
   String get settingScreensaverDismissOnPersonTitle => '检测到人体时关闭屏保';
@@ -13434,6 +13715,14 @@ class UiStringsZhCn extends UiStringsZh {
   String get dashboardPickerDefaultHelp => 'Kiosk 启动时显示的页面。';
 
   @override
+  String get dashboardPickerOnePage => '1 个网页';
+
+  @override
+  String dashboardPickerPageCount(String count) {
+    return '$count 个网页';
+  }
+
+  @override
   String get dlnaCannotDecode => '此设备无法解码此视频。';
 
   @override
@@ -15676,6 +15965,39 @@ class UiStringsZhCn extends UiStringsZh {
   }
 
   @override
+  String get pluginShowPassword => '显示密码';
+
+  @override
+  String get pluginHidePassword => '隐藏密码';
+
+  @override
+  String get pluginUntitled => '未命名';
+
+  @override
+  String get pluginSearchIcons => '搜索图标';
+
+  @override
+  String get pluginChooseIcon => '选择图标';
+
+  @override
+  String get pluginSearchCameraViews => '搜索摄像头画面';
+
+  @override
+  String get pluginChooseCameraView => '选择摄像头画面';
+
+  @override
+  String get pluginCameraViewGone => '此摄像头画面已不存在，请另选一个。';
+
+  @override
+  String get pluginDragToReorder => '拖动排序';
+
+  @override
+  String get pluginDone => '完成';
+
+  @override
+  String get pluginRequired => '必填';
+
+  @override
   String get pluginAddPlugin => '添加插件';
 
   @override
@@ -16131,6 +16453,33 @@ class UiStringsZhCn extends UiStringsZh {
   String get pluginErrorTriggerId => '触发器 ID 无效或重复';
 
   @override
+  String get pluginErrorListSetting => '列表设置无效';
+
+  @override
+  String get pluginErrorSettingCondition => '设置的显示条件无效';
+
+  @override
+  String get pluginErrorIcon => '需要 MDI 图标名称';
+
+  @override
+  String get pluginErrorDashboard => '需要仪表盘路径';
+
+  @override
+  String get pluginErrorCameraView => '需要摄像头画面 ID';
+
+  @override
+  String get pluginErrorListValue => '此设置的值必须为列表';
+
+  @override
+  String get pluginErrorListCount => '列表的条目过多或过少';
+
+  @override
+  String get pluginErrorRequiredField => '请填写所有必填项';
+
+  @override
+  String get pluginErrorListSize => '列表设置不能超过 32 KB';
+
+  @override
   String get remoteDisableTitle => '要关闭远程管理吗？';
 
   @override
@@ -16540,6 +16889,9 @@ class UiStringsZhCn extends UiStringsZh {
   String overviewMetricDegrees(String value) {
     return '$value°C';
   }
+
+  @override
+  String get overviewShowingCustomPages => '正在显示自定义网页';
 
   @override
   String get overviewNoScreenshot => '暂无截图';
@@ -18232,6 +18584,19 @@ class UiStringsZhCn extends UiStringsZh {
       '在网络中广播此设备，并在远程管理中列出其他 Kiosk 设备，方便切换。';
 
   @override
+  String get settingRemoteAdminUrlTitle => '管理地址';
+
+  @override
+  String get settingRemoteAdminUrlDescription =>
+      '其他 Kiosk 设备在“切换 Kiosk 设备”中打开此设备时使用的地址，例如反向代理名称。留空则使用其网络地址。';
+
+  @override
+  String get deviceAdminUrlInvalid => '请输入有效地址，例如 https://kiosk.example.com';
+
+  @override
+  String get deviceAdminUrlPath => '仅填写地址，不要包含路径。例如：https://kiosk.example.com';
+
+  @override
   String get deviceRemotePage => '远程管理';
 
   @override
@@ -19611,6 +19976,60 @@ class UiStringsZhCn extends UiStringsZh {
   @override
   String get gestureRemoteKeysHelp =>
       'A mapped key runs its action whatever app is in front, and does nothing else.';
+  String get haCustomPages => '自定义网页';
+
+  @override
+  String get haCustomPagesHintDashboard => '作为仪表盘显示的自定义 HTML 网页';
+
+  @override
+  String get haCustomPagesAdd => '添加网页';
+
+  @override
+  String get haCustomPagesEmpty =>
+      '添加 Home Assistant www 文件夹中的 HTML 网页，即可像仪表盘一样选择它们。';
+
+  @override
+  String get haCustomPagesGuide => '自定义网页指南';
+
+  @override
+  String get haCustomPagesGuideHint => '如何构建与 Home Assistant 通信的网页。';
+
+  @override
+  String get haCustomPageAddTitle => '添加自定义网页';
+
+  @override
+  String get haCustomPageEditTitle => '编辑自定义网页';
+
+  @override
+  String get haCustomPageName => '名称';
+
+  @override
+  String get haCustomPagePath => '路径';
+
+  @override
+  String get haCustomPagePathHint =>
+      'Home Assistant www 文件夹中的文件，例如 /local/dashboard.html。';
+
+  @override
+  String get haCustomPageNameMissing => '请输入名称。';
+
+  @override
+  String get haCustomPagePathInvalid =>
+      '请输入 /local/ 下的路径，例如 /local/dashboard.html。';
+
+  @override
+  String get haCustomPageDuplicate => '另一个网页已在使用此路径。';
+
+  @override
+  String get haCustomPageNotFound => 'Home Assistant 在此路径下没有文件。';
+
+  @override
+  String get haCustomPageUnreachable => '无法连接 Home Assistant。';
+
+  @override
+  String haCustomPageStatus(String code) {
+    return 'Home Assistant 返回了 HTTP $code。';
+  }
 
   @override
   String get settingHaHoldModeTitle => '页面保持模式';
@@ -19736,6 +20155,9 @@ class UiStringsZhCn extends UiStringsZh {
   String haThreshold(String count) {
     return '此页面使用 $count 个实体，超过过滤阈值。过滤已禁用。';
   }
+
+  @override
+  String get haCustomPageFilter => '不用于自定义网页。';
 
   @override
   String get settingHaReturnHomeEnabledTitle => '返回默认仪表盘页面';
@@ -22117,8 +22539,33 @@ class UiStringsZhCn extends UiStringsZh {
   String get settingScreensaverScreenOffWakeToScreensaverTitle => '唤醒后打开屏保';
 
   @override
-  String get settingScreensaverScreenOffWakeToScreensaverDescription =>
-      '屏幕关闭后，运动、人脸、接近或人体检测会唤醒屏保，而不是打开仪表盘，并重新开始关闭屏幕倒计时。触屏仍会打开仪表盘。';
+  String get settingScreensaverScreenOffWakeToScreensaverDescriptionSources =>
+      '选择屏幕关闭后哪些方式会唤醒屏保，而不是打开仪表盘。屏保启动后关屏时间的倒计时会重新开始。';
+
+  @override
+  String get screensaverWakeSourcesAll => '全部';
+
+  @override
+  String get screensaverWakeSourceMotion => '运动';
+
+  @override
+  String get screensaverWakeSourceFace => '人脸';
+
+  @override
+  String get screensaverWakeSourceProximity => '接近';
+
+  @override
+  String get screensaverWakeSourcePerson => '人体';
+
+  @override
+  String get screensaverWakeSourcePower => '电源键';
+
+  @override
+  String get screensaverWakeSourceTouch => '触屏';
+
+  @override
+  String get screensaverWakeSourceTouchRequires =>
+      '需要设置“屏保启动后关屏时间”并开启“用黑屏替代关屏”。';
 
   @override
   String get screensaverModeDim => '调暗';
@@ -22857,10 +23304,59 @@ class UiStringsZhCn extends UiStringsZh {
       '点击屏幕左侧或右侧五分之一区域，显示上一张或下一张幻灯片，而非关闭屏保。';
 
   @override
+  String get settingScreensaverMediaMetadataTitle => '显示元数据';
+
+  @override
+  String get settingScreensaverMediaMetadataDescription => '在照片上显示日期和相机详情。';
+
+  @override
+  String get settingScreensaverMediaMetadataDateTitle => '拍摄日期';
+
+  @override
+  String get settingScreensaverMediaMetadataDateDescription => '显示照片的拍摄时间。';
+
+  @override
+  String get settingScreensaverMediaMetadataCameraTitle => '相机详情';
+
+  @override
+  String get settingScreensaverMediaMetadataCameraDescription =>
+      '显示焦距、光圈和 ISO。';
+
+  @override
+  String get settingScreensaverMediaMetadataPositionTitle => '元数据位置';
+
+  @override
+  String get settingScreensaverMediaMetadataPositionDescription => '详情显示的屏幕角落。';
+
+  @override
+  String get settingScreensaverMediaMetadataTextShadowTitle => '文字投影';
+
+  @override
+  String get settingScreensaverMediaMetadataTextShadowDescription =>
+      '为元数据文字添加阴影，使其在照片上更清晰。';
+
+  @override
+  String get settingScreensaverMediaMetadataScaleTitle => '文字缩放';
+
+  @override
+  String get settingScreensaverMediaMetadataScaleDescription =>
+      '调整照片详情的大小以适应屏幕尺寸。';
+
+  @override
+  String get settingScreensaverMediaVignetteStrengthTitle => '暗角强度';
+
+  @override
+  String get settingScreensaverMediaVignetteStrengthDescription =>
+      '调整照片详情下方阴影的深浅，使文字在明亮的照片上也能看清。设为 0 时不显示阴影。';
+
+  @override
+  String get screensaverMediaHaMetadata => 'Home Assistant 媒体元数据';
+
+  @override
   String get screensaverMediaHaPage => 'Home Assistant 媒体屏保';
 
   @override
-  String get screensaverMediaHaHint => '媒体来源、时长、随机播放和填充';
+  String get screensaverMediaHaPageHint => '媒体来源、时长、随机播放、填充和元数据';
 
   @override
   String get screensaverMediaChoose => '选择媒体';
@@ -22945,10 +23441,59 @@ class UiStringsZhCn extends UiStringsZh {
       '点击屏幕左侧或右侧五分之一区域，显示上一张或下一张幻灯片，而非关闭屏保。';
 
   @override
+  String get settingScreensaverLocalMetadataTitle => '显示元数据';
+
+  @override
+  String get settingScreensaverLocalMetadataDescription => '在照片上显示日期和相机详情。';
+
+  @override
+  String get settingScreensaverLocalMetadataDateTitle => '拍摄日期';
+
+  @override
+  String get settingScreensaverLocalMetadataDateDescription => '显示照片的拍摄时间。';
+
+  @override
+  String get settingScreensaverLocalMetadataCameraTitle => '相机详情';
+
+  @override
+  String get settingScreensaverLocalMetadataCameraDescription =>
+      '显示焦距、光圈和 ISO。';
+
+  @override
+  String get settingScreensaverLocalMetadataPositionTitle => '元数据位置';
+
+  @override
+  String get settingScreensaverLocalMetadataPositionDescription => '详情显示的屏幕角落。';
+
+  @override
+  String get settingScreensaverLocalMetadataTextShadowTitle => '文字投影';
+
+  @override
+  String get settingScreensaverLocalMetadataTextShadowDescription =>
+      '为元数据文字添加阴影，使其在照片上更清晰。';
+
+  @override
+  String get settingScreensaverLocalMetadataScaleTitle => '文字缩放';
+
+  @override
+  String get settingScreensaverLocalMetadataScaleDescription =>
+      '调整照片详情的大小以适应屏幕尺寸。';
+
+  @override
+  String get settingScreensaverLocalVignetteStrengthTitle => '暗角强度';
+
+  @override
+  String get settingScreensaverLocalVignetteStrengthDescription =>
+      '调整照片详情下方阴影的深浅，使文字在明亮的照片上也能看清。设为 0 时不显示阴影。';
+
+  @override
+  String get screensaverMediaLocalMetadata => '本地媒体元数据';
+
+  @override
   String get screensaverMediaLocalPage => '本地媒体屏保';
 
   @override
-  String get screensaverMediaLocalHint => '文件夹、时长、随机播放和切换效果';
+  String get screensaverMediaLocalPageHint => '文件夹、时长、随机播放、切换效果和元数据';
 
   @override
   String get settingScreensaverDismissOnMotionTitle => '检测到运动时关闭屏保';
@@ -22979,6 +23524,23 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get screensaverDetectionMotionTuning => '运动检测功能可在摄像头设置中调整。';
+
+  @override
+  String get settingMotionUseEntityTitle => '使用 Home Assistant 实体';
+
+  @override
+  String get settingMotionUseEntityDescription =>
+      '使用 Home Assistant 传感器代替摄像头检测运动。';
+
+  @override
+  String get settingMotionEntityTitle => '运动传感器实体';
+
+  @override
+  String get settingMotionEntityDescription =>
+      '要跟随的 Home Assistant 占用、运动或存在传感器。';
+
+  @override
+  String get screensaverDetectionExternalMotionHeading => '外部运动传感器';
 
   @override
   String get settingScreensaverDismissOnPersonTitle => '检测到人体时关闭屏保';

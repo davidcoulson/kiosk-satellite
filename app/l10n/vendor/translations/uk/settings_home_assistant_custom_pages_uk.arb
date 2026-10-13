@@ -1,0 +1,20 @@
+{
+  "@@locale": "uk",
+  "haCustomPages": "Власні сторінки",
+  "haCustomPagesHintDashboard": "Ваші власні HTML-сторінки як панель керування",
+  "haCustomPagesAdd": "Додати сторінку",
+  "haCustomPagesEmpty": "Додайте HTML-сторінки з теки www Home Assistant, щоб вибирати їх як панель керування.",
+  "haCustomPagesGuide": "Посібник із власних сторінок",
+  "haCustomPagesGuideHint": "Як створити сторінку, що працює з Home Assistant.",
+  "haCustomPageAddTitle": "Додати власну сторінку",
+  "haCustomPageEditTitle": "Змінити власну сторінку",
+  "haCustomPageName": "Назва",
+  "haCustomPagePath": "Шлях",
+  "haCustomPagePathHint": "Файл у теці www Home Assistant, наприклад /local/dashboard.html.",
+  "haCustomPageNameMissing": "Введіть назву.",
+  "haCustomPagePathInvalid": "Введіть шлях у /local/, наприклад /local/dashboard.html.",
+  "haCustomPageDuplicate": "Цей шлях уже використовує інша сторінка.",
+  "haCustomPageNotFound": "У Home Assistant немає файлу за цим шляхом.",
+  "haCustomPageUnreachable": "Не вдалося з'єднатися з Home Assistant.",
+  "haCustomPageStatus": "Home Assistant відповів кодом HTTP {code}."
+}

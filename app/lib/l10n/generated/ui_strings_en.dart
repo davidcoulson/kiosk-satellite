@@ -607,6 +607,14 @@ class UiStringsEn extends UiStrings {
       'The view the kiosk shows when it starts.';
 
   @override
+  String get dashboardPickerOnePage => '1 page';
+
+  @override
+  String dashboardPickerPageCount(String count) {
+    return '$count pages';
+  }
+
+  @override
   String get dlnaCannotDecode => 'This device cannot decode this video.';
 
   @override
@@ -2902,6 +2910,40 @@ class UiStringsEn extends UiStrings {
   }
 
   @override
+  String get pluginShowPassword => 'Show password';
+
+  @override
+  String get pluginHidePassword => 'Hide password';
+
+  @override
+  String get pluginUntitled => 'Untitled';
+
+  @override
+  String get pluginSearchIcons => 'Search icons';
+
+  @override
+  String get pluginChooseIcon => 'Choose an icon';
+
+  @override
+  String get pluginSearchCameraViews => 'Search camera views';
+
+  @override
+  String get pluginChooseCameraView => 'Choose a camera view';
+
+  @override
+  String get pluginCameraViewGone =>
+      'This camera view is gone. Choose another.';
+
+  @override
+  String get pluginDragToReorder => 'Drag to reorder';
+
+  @override
+  String get pluginDone => 'Done';
+
+  @override
+  String get pluginRequired => 'Required';
+
+  @override
   String get pluginAddPlugin => 'Add plugin';
 
   @override
@@ -3398,6 +3440,33 @@ class UiStringsEn extends UiStrings {
   String get pluginErrorTriggerId => 'Invalid or duplicate trigger ID';
 
   @override
+  String get pluginErrorListSetting => 'Invalid list setting';
+
+  @override
+  String get pluginErrorSettingCondition => 'Invalid setting condition';
+
+  @override
+  String get pluginErrorIcon => 'Expected an MDI icon name';
+
+  @override
+  String get pluginErrorDashboard => 'Expected a dashboard path';
+
+  @override
+  String get pluginErrorCameraView => 'Expected a camera view ID';
+
+  @override
+  String get pluginErrorListValue => 'Expected a list setting';
+
+  @override
+  String get pluginErrorListCount => 'Too many or too few list items';
+
+  @override
+  String get pluginErrorRequiredField => 'Fill in every required field';
+
+  @override
+  String get pluginErrorListSize => 'List settings must be at most 32 KB';
+
+  @override
   String get remoteDisableTitle => 'Turn off remote management?';
 
   @override
@@ -3822,6 +3891,9 @@ class UiStringsEn extends UiStrings {
   String overviewMetricDegrees(String value) {
     return '$value°C';
   }
+
+  @override
+  String get overviewShowingCustomPages => 'Showing custom pages';
 
   @override
   String get overviewNoScreenshot => 'No screenshot';
@@ -5612,6 +5684,21 @@ class UiStringsEn extends UiStrings {
       'Announce this device on the network and list the other kiosks in the remote admin, to switch between them.';
 
   @override
+  String get settingRemoteAdminUrlTitle => 'Admin URL';
+
+  @override
+  String get settingRemoteAdminUrlDescription =>
+      'Address other kiosks open in Switch kiosk to reach this one, such as a reverse proxy name. Leave blank to use its network address.';
+
+  @override
+  String get deviceAdminUrlInvalid =>
+      'Enter a valid address, for example https://kiosk.example.com';
+
+  @override
+  String get deviceAdminUrlPath =>
+      'Enter only the address, without a path. Example: https://kiosk.example.com';
+
+  @override
   String get deviceRemotePage => 'Remote Administration';
 
   @override
@@ -7068,6 +7155,62 @@ class UiStringsEn extends UiStrings {
   @override
   String get gestureRemoteKeysHelp =>
       'A mapped key runs its action whatever app is in front, and does nothing else.';
+  String get haCustomPages => 'Custom Pages';
+
+  @override
+  String get haCustomPagesHintDashboard =>
+      'Your custom HTML pages served as a dashboard';
+
+  @override
+  String get haCustomPagesAdd => 'Add page';
+
+  @override
+  String get haCustomPagesEmpty =>
+      'Add HTML pages from the Home Assistant www folder to pick them like a dashboard.';
+
+  @override
+  String get haCustomPagesGuide => 'Custom page guide';
+
+  @override
+  String get haCustomPagesGuideHint =>
+      'How to build a page that talks to Home Assistant.';
+
+  @override
+  String get haCustomPageAddTitle => 'Add custom page';
+
+  @override
+  String get haCustomPageEditTitle => 'Edit custom page';
+
+  @override
+  String get haCustomPageName => 'Name';
+
+  @override
+  String get haCustomPagePath => 'Path';
+
+  @override
+  String get haCustomPagePathHint =>
+      'A file in the Home Assistant www folder, such as /local/dashboard.html.';
+
+  @override
+  String get haCustomPageNameMissing => 'Enter a name.';
+
+  @override
+  String get haCustomPagePathInvalid =>
+      'Enter a path under /local/, such as /local/dashboard.html.';
+
+  @override
+  String get haCustomPageDuplicate => 'Another page already uses this path.';
+
+  @override
+  String get haCustomPageNotFound => 'Home Assistant has no file at this path.';
+
+  @override
+  String get haCustomPageUnreachable => 'Could not reach Home Assistant.';
+
+  @override
+  String haCustomPageStatus(String code) {
+    return 'Home Assistant answered with HTTP $code.';
+  }
 
   @override
   String get settingHaHoldModeTitle => 'Hold mode';
@@ -7203,6 +7346,9 @@ class UiStringsEn extends UiStrings {
   String haThreshold(String count) {
     return 'This view uses $count entities, which crosses the filtering threshold. Filtering is disabled.';
   }
+
+  @override
+  String get haCustomPageFilter => 'Not used on custom pages.';
 
   @override
   String get settingHaReturnHomeEnabledTitle => 'Return to home dashboard view';
@@ -9725,8 +9871,33 @@ class UiStringsEn extends UiStrings {
       'Wake to screensaver';
 
   @override
-  String get settingScreensaverScreenOffWakeToScreensaverDescription =>
-      'Motion, face, proximity or person detection after the screen has turned off brings the screensaver back instead of the dashboard, with a fresh Turn screen off after countdown. Touch still opens the dashboard.';
+  String get settingScreensaverScreenOffWakeToScreensaverDescriptionSources =>
+      'Choose what brings the screensaver back instead of the dashboard after the screen has turned off. The Turn screen off after countdown starts over.';
+
+  @override
+  String get screensaverWakeSourcesAll => 'All';
+
+  @override
+  String get screensaverWakeSourceMotion => 'Motion';
+
+  @override
+  String get screensaverWakeSourceFace => 'Face';
+
+  @override
+  String get screensaverWakeSourceProximity => 'Proximity';
+
+  @override
+  String get screensaverWakeSourcePerson => 'Person';
+
+  @override
+  String get screensaverWakeSourcePower => 'Power button';
+
+  @override
+  String get screensaverWakeSourceTouch => 'Touch';
+
+  @override
+  String get screensaverWakeSourceTouchRequires =>
+      'Requires both \"Turn screen off after\" and \"Use a black screen instead.\"';
 
   @override
   String get screensaverModeDim => 'Dim';
@@ -10515,10 +10686,66 @@ class UiStringsEn extends UiStrings {
       'A tap on the left or right fifth of the screen shows the previous or next slide instead of dismissing.';
 
   @override
+  String get settingScreensaverMediaMetadataTitle => 'Show metadata';
+
+  @override
+  String get settingScreensaverMediaMetadataDescription =>
+      'Date and camera details over the photo.';
+
+  @override
+  String get settingScreensaverMediaMetadataDateTitle => 'Date taken';
+
+  @override
+  String get settingScreensaverMediaMetadataDateDescription =>
+      'Show when the photo was taken.';
+
+  @override
+  String get settingScreensaverMediaMetadataCameraTitle => 'Camera details';
+
+  @override
+  String get settingScreensaverMediaMetadataCameraDescription =>
+      'Show focal length, aperture and ISO.';
+
+  @override
+  String get settingScreensaverMediaMetadataPositionTitle =>
+      'Metadata position';
+
+  @override
+  String get settingScreensaverMediaMetadataPositionDescription =>
+      'Which corner the details sit in.';
+
+  @override
+  String get settingScreensaverMediaMetadataTextShadowTitle =>
+      'Text drop shadow';
+
+  @override
+  String get settingScreensaverMediaMetadataTextShadowDescription =>
+      'Add a drop shadow to metadata text for readability on photos.';
+
+  @override
+  String get settingScreensaverMediaMetadataScaleTitle => 'Text scaling';
+
+  @override
+  String get settingScreensaverMediaMetadataScaleDescription =>
+      'Scale the photo details to better fit your screen size.';
+
+  @override
+  String get settingScreensaverMediaVignetteStrengthTitle =>
+      'Vignette strength';
+
+  @override
+  String get settingScreensaverMediaVignetteStrengthDescription =>
+      'Darkness of the shading behind the details, for readability on bright photos. 0 turns it off.';
+
+  @override
+  String get screensaverMediaHaMetadata => 'Home Assistant Media metadata';
+
+  @override
   String get screensaverMediaHaPage => 'Home Assistant Media screensaver';
 
   @override
-  String get screensaverMediaHaHint => 'Media source, timing, shuffle, fill';
+  String get screensaverMediaHaPageHint =>
+      'Media source, timing, shuffle, fill, metadata';
 
   @override
   String get screensaverMediaChoose => 'Choose media';
@@ -10607,10 +10834,66 @@ class UiStringsEn extends UiStrings {
       'A tap on the left or right fifth of the screen shows the previous or next slide instead of dismissing.';
 
   @override
+  String get settingScreensaverLocalMetadataTitle => 'Show metadata';
+
+  @override
+  String get settingScreensaverLocalMetadataDescription =>
+      'Date and camera details over the photo.';
+
+  @override
+  String get settingScreensaverLocalMetadataDateTitle => 'Date taken';
+
+  @override
+  String get settingScreensaverLocalMetadataDateDescription =>
+      'Show when the photo was taken.';
+
+  @override
+  String get settingScreensaverLocalMetadataCameraTitle => 'Camera details';
+
+  @override
+  String get settingScreensaverLocalMetadataCameraDescription =>
+      'Show focal length, aperture and ISO.';
+
+  @override
+  String get settingScreensaverLocalMetadataPositionTitle =>
+      'Metadata position';
+
+  @override
+  String get settingScreensaverLocalMetadataPositionDescription =>
+      'Which corner the details sit in.';
+
+  @override
+  String get settingScreensaverLocalMetadataTextShadowTitle =>
+      'Text drop shadow';
+
+  @override
+  String get settingScreensaverLocalMetadataTextShadowDescription =>
+      'Add a drop shadow to metadata text for readability on photos.';
+
+  @override
+  String get settingScreensaverLocalMetadataScaleTitle => 'Text scaling';
+
+  @override
+  String get settingScreensaverLocalMetadataScaleDescription =>
+      'Scale the photo details to better fit your screen size.';
+
+  @override
+  String get settingScreensaverLocalVignetteStrengthTitle =>
+      'Vignette strength';
+
+  @override
+  String get settingScreensaverLocalVignetteStrengthDescription =>
+      'Darkness of the shading behind the details, for readability on bright photos. 0 turns it off.';
+
+  @override
+  String get screensaverMediaLocalMetadata => 'Local Media metadata';
+
+  @override
   String get screensaverMediaLocalPage => 'Local Media screensaver';
 
   @override
-  String get screensaverMediaLocalHint => 'Folder, timing, shuffle, transition';
+  String get screensaverMediaLocalPageHint =>
+      'Folder, timing, shuffle, transition, metadata';
 
   @override
   String get settingScreensaverDismissOnMotionTitle => 'Dismiss on motion';
@@ -10645,6 +10928,24 @@ class UiStringsEn extends UiStrings {
   @override
   String get screensaverDetectionMotionTuning =>
       'Motion detection is tuned in the Camera settings.';
+
+  @override
+  String get settingMotionUseEntityTitle => 'Use Home Assistant entity';
+
+  @override
+  String get settingMotionUseEntityDescription =>
+      'Detect motion with a Home Assistant sensor instead of the camera.';
+
+  @override
+  String get settingMotionEntityTitle => 'Motion sensor entity';
+
+  @override
+  String get settingMotionEntityDescription =>
+      'The Home Assistant occupancy, motion or presence sensor to follow.';
+
+  @override
+  String get screensaverDetectionExternalMotionHeading =>
+      'External Motion Sensor';
 
   @override
   String get settingScreensaverDismissOnPersonTitle => 'Dismiss on person';

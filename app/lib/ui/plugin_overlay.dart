@@ -90,7 +90,11 @@ Map<String, Object?> pluginOverlayTheme(ThemeData theme) {
 /// Native plugin overlays, bottom to top. The kiosk has two of these
 /// layers: one in the kiosk plane under the menu and the screensaver, and
 /// one in the voice overlay's slot for overlays that asked to be on top.
-class PluginNativeOverlays extends StatelessWidget {
+///
+/// An overlay that leaves with an exit transition stays in its place until
+/// the transition ends, with its view alive, so a hidden, replaced or
+/// closed overlay can fade or slide away.
+class PluginNativeOverlays extends StatefulWidget {
   const PluginNativeOverlays({
     super.key,
     required this.plugins,
@@ -102,43 +106,141 @@ class PluginNativeOverlays extends StatelessWidget {
   static const viewType = 'kiosk_satellite/plugin_overlay';
 
   @override
-  Widget build(BuildContext context) => ValueListenableBuilder<int>(
-    valueListenable: plugins.overlayEpoch,
-    builder: (context, epoch, _) =>
-        ValueListenableBuilder<List<PluginNativeOverlay>>(
-          valueListenable: plugins.overlays,
-          builder: (context, overlays, _) {
-            final shown = overlays.where((o) => o.onTop == onTop).toList();
-            if (shown.isEmpty) return const SizedBox.shrink();
-            final theme = plugins.overlayTheme(
-              pluginOverlayTheme(Theme.of(context)),
-            );
-            // Native views draw in physical pixels, so Scale UI leaves them
-            // alone the way it leaves the dashboard alone.
-            return UiScaleExempt(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  for (final overlay in shown)
-                    _NativeOverlay(
-                      key: ValueKey('${overlay.id}@$epoch'),
-                      overlay: overlay,
-                      theme: theme,
-                    ),
-                ],
+  State<PluginNativeOverlays> createState() => _PluginNativeOverlaysState();
+}
+
+class _PluginNativeOverlaysState extends State<PluginNativeOverlays> {
+  /// What this layer draws, in stacking order: the live overlays and the
+  /// ones playing their exit.
+  var _shown = <PluginNativeOverlay>[];
+  final _leaving = <String>{};
+  late int _epoch = widget.plugins.overlayEpoch.value;
+
+  @override
+  void initState() {
+    super.initState();
+    _sync();
+    widget.plugins.overlays.addListener(_changed);
+    widget.plugins.overlayEpoch.addListener(_changed);
+  }
+
+  @override
+  void dispose() {
+    widget.plugins.overlays.removeListener(_changed);
+    widget.plugins.overlayEpoch.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() => setState(_sync);
+
+  void _sync() {
+    final live = {
+      for (final o in widget.plugins.overlays.value)
+        if (o.onTop == widget.onTop) o.id: o,
+    };
+    // A re-created Activity re-keys every view, so nothing can stay to
+    // play its exit.
+    if (widget.plugins.overlayEpoch.value != _epoch) {
+      _epoch = widget.plugins.overlayEpoch.value;
+      _leaving.clear();
+      _shown = live.values.toList();
+      return;
+    }
+    final next = <PluginNativeOverlay>[];
+    for (final overlay in _shown) {
+      final current = live.remove(overlay.id);
+      if (current != null) {
+        next.add(current);
+      } else if (_leaving.contains(overlay.id) ||
+          (overlay.exit != 'none' &&
+              widget.plugins.overlaySessionLive(overlay))) {
+        _leaving.add(overlay.id);
+        next.add(overlay);
+      }
+    }
+    _shown = [...next, ...live.values];
+  }
+
+  void _left(String id) {
+    if (!mounted) return;
+    setState(() {
+      _leaving.remove(id);
+      _shown = _shown.where((o) => o.id != id).toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_shown.isEmpty) return const SizedBox.shrink();
+    final theme = widget.plugins.overlayTheme(
+      pluginOverlayTheme(Theme.of(context)),
+    );
+    // Native views draw in physical pixels, so Scale UI leaves them alone
+    // the way it leaves the dashboard alone.
+    return UiScaleExempt(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          for (final overlay in _shown) ...[
+            // Under the overlay, so its own touches still reach it.
+            if (overlay.closeOnOutsideTouch && !_leaving.contains(overlay.id))
+              _OutsideTouch(
+                key: ValueKey('outside:${overlay.id}@$_epoch'),
+                passThrough: overlay.passOutsideTouch,
+                onTouch: () => unawaited(widget.plugins.closeOverlay(overlay)),
               ),
-            );
-          },
-        ),
+            _NativeOverlay(
+              key: ValueKey('${overlay.id}@$_epoch'),
+              overlay: overlay,
+              theme: theme,
+              leaving: _leaving.contains(overlay.id),
+              onLeft: () => _left(overlay.id),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Catches a touch anywhere outside one overlay and closes it. Opaque, so
+/// the touch only closes, unless the plugin asked to pass it through to
+/// what is under it.
+class _OutsideTouch extends StatelessWidget {
+  const _OutsideTouch({
+    super.key,
+    required this.passThrough,
+    required this.onTouch,
+  });
+  final bool passThrough;
+  final VoidCallback onTouch;
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    behavior: passThrough
+        ? HitTestBehavior.translucent
+        : HitTestBehavior.opaque,
+    onPointerDown: (_) => onTouch(),
+    child: const SizedBox.expand(),
   );
 }
 
-class _NativeOverlay extends StatelessWidget {
-  const _NativeOverlay({super.key, required this.overlay, required this.theme});
+class _NativeOverlay extends StatefulWidget {
+  const _NativeOverlay({
+    super.key,
+    required this.overlay,
+    required this.theme,
+    required this.leaving,
+    required this.onLeft,
+  });
   final PluginNativeOverlay overlay;
   final Map<String, Object?> theme;
 
-  static Alignment _alignment(String anchor) => switch (anchor) {
+  /// Playing its exit transition. It no longer takes touches.
+  final bool leaving;
+  final VoidCallback onLeft;
+
+  static Alignment alignment(String anchor) => switch (anchor) {
     'top-left' => Alignment.topLeft,
     'top' => Alignment.topCenter,
     'top-right' => Alignment.topRight,
@@ -150,14 +252,96 @@ class _NativeOverlay extends StatelessWidget {
     _ => Alignment.center,
   };
 
+  /// Where a slide comes from, as a fraction of the overlay's own size:
+  /// the edge it is anchored to. A centered overlay rises a little.
+  static Offset slideFrom(String anchor) => switch (anchor) {
+    'top-left' || 'top' || 'top-right' => const Offset(0, -1),
+    'bottom-left' || 'bottom' || 'bottom-right' => const Offset(0, 1),
+    'left' => const Offset(-1, 0),
+    'right' => const Offset(1, 0),
+    _ => const Offset(0, 0.12),
+  };
+
+  @override
+  State<_NativeOverlay> createState() => _NativeOverlayState();
+}
+
+class _NativeOverlayState extends State<_NativeOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _motion = AnimationController(
+    vsync: this,
+    duration: widget.overlay.duration,
+    value: widget.overlay.enter == 'none' ? 1 : 0,
+  );
+  late final Animation<double> _eased = CurvedAnimation(
+    parent: _motion,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
+  bool _entered = false;
+
+  PluginNativeOverlay get overlay => widget.overlay;
+
+  // Until Android has measured a wrapped view it is laid out at one pixel
+  // and kept invisible, so it never flashes at the wrong size.
+  bool get _ready => !overlay.wraps || overlay.measured != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _enter();
+  }
+
+  @override
+  void didUpdateWidget(covariant _NativeOverlay old) {
+    super.didUpdateWidget(old);
+    if (widget.leaving && !old.leaving) {
+      _motion.duration = overlay.duration;
+      _motion.reverse().whenCompleteOrCancel(widget.onLeft);
+    } else if (!widget.leaving) {
+      _enter();
+    }
+  }
+
+  /// The enter transition starts once the view has its size.
+  void _enter() {
+    if (_entered || !_ready) return;
+    _entered = true;
+    if (overlay.enter != 'none') _motion.forward();
+  }
+
+  @override
+  void dispose() {
+    _motion.dispose();
+    super.dispose();
+  }
+
+  Widget _transition(Widget child) => AnimatedBuilder(
+    animation: _eased,
+    child: child,
+    builder: (context, child) {
+      final t = _eased.value;
+      final kind = widget.leaving ? overlay.exit : overlay.enter;
+      return switch (kind) {
+        'fade' => Opacity(opacity: t, child: child),
+        'slide' => FractionalTranslation(
+          translation: _NativeOverlay.slideFrom(overlay.anchor) * (1 - t),
+          child: Opacity(opacity: t, child: child),
+        ),
+        'scale' => Transform.scale(
+          scale: 0.92 + 0.08 * t,
+          child: Opacity(opacity: t, child: child),
+        ),
+        _ => child!,
+      };
+    },
+  );
+
   @override
   Widget build(BuildContext context) {
     final ratio = MediaQuery.devicePixelRatioOf(context);
-    // Until Android has measured a wrapped view it is laid out at one
-    // pixel and kept invisible, so it never flashes at the wrong size.
-    final ready = !overlay.wraps || overlay.measured != null;
     return Padding(
-      padding: EdgeInsets.all(overlay.inset.toDouble()),
+      padding: overlay.insets,
       child: LayoutBuilder(
         builder: (context, bounds) {
           double side(int value, double? measured, double available) =>
@@ -167,8 +351,11 @@ class _NativeOverlay extends StatelessWidget {
                   measured == null ? 1 : math.min(measured / ratio, available),
                 _ => math.min(value.toDouble(), available),
               });
-          return Align(
-            alignment: _alignment(overlay.anchor),
+          return CustomSingleChildLayout(
+            delegate: _Placed(
+              _NativeOverlay.alignment(overlay.anchor),
+              overlay.offset,
+            ),
             child: SizedBox(
               width: side(
                 overlay.width,
@@ -180,31 +367,39 @@ class _NativeOverlay extends StatelessWidget {
                 overlay.measured?.height,
                 bounds.maxHeight,
               ),
-              child: Opacity(
-                opacity: ready ? 1 : 0,
-                // A visual-only overlay lets every touch through.
-                child: IgnorePointer(
-                  ignoring: !ready || !overlay.touchable,
-                  child: AndroidView(
-                    viewType: PluginNativeOverlays.viewType,
-                    creationParams: {
-                      'id': overlay.pluginId,
-                      'session': overlay.session,
-                      'key': overlay.key,
-                      'generation': overlay.generation,
-                      'width': overlay.width,
-                      'height': overlay.height,
-                      'inset': overlay.inset,
-                      'theme': theme,
-                    },
-                    creationParamsCodec: const StandardMessageCodec(),
-                    // Every touch inside the overlay is the plugin's, even
-                    // a drag the kiosk's own detectors would otherwise win.
-                    gestureRecognizers: {
-                      Factory<OneSequenceGestureRecognizer>(
-                        EagerGestureRecognizer.new,
-                      ),
-                    },
+              child: _transition(
+                Opacity(
+                  opacity: _ready ? 1 : 0,
+                  // A visual-only overlay lets every touch through, and a
+                  // leaving one takes none.
+                  child: IgnorePointer(
+                    ignoring: !_ready || !overlay.touchable || widget.leaving,
+                    child: AndroidView(
+                      viewType: PluginNativeOverlays.viewType,
+                      creationParams: {
+                        'id': overlay.pluginId,
+                        'session': overlay.session,
+                        'key': overlay.key,
+                        'generation': overlay.generation,
+                        'width': overlay.width,
+                        'height': overlay.height,
+                        'insets': [
+                          overlay.insets.left.round(),
+                          overlay.insets.top.round(),
+                          overlay.insets.right.round(),
+                          overlay.insets.bottom.round(),
+                        ],
+                        'theme': widget.theme,
+                      },
+                      creationParamsCodec: const StandardMessageCodec(),
+                      // Every touch inside the overlay is the plugin's, even
+                      // a drag the kiosk's own detectors would otherwise win.
+                      gestureRecognizers: {
+                        Factory<OneSequenceGestureRecognizer>(
+                          EagerGestureRecognizer.new,
+                        ),
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -214,6 +409,35 @@ class _NativeOverlay extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Places an overlay at its anchor, moved by its offset and kept inside
+/// the area its insets leave.
+class _Placed extends SingleChildLayoutDelegate {
+  const _Placed(this.alignment, this.offset);
+  final Alignment alignment;
+  final Offset offset;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      constraints.loosen();
+
+  @override
+  Offset getPositionForChild(Size size, Size child) {
+    final at =
+        alignment.alongOffset(
+          Offset(size.width - child.width, size.height - child.height),
+        ) +
+        offset;
+    return Offset(
+      at.dx.clamp(0, math.max(0, size.width - child.width)),
+      at.dy.clamp(0, math.max(0, size.height - child.height)),
+    );
+  }
+
+  @override
+  bool shouldRelayout(_Placed old) =>
+      old.alignment != alignment || old.offset != offset;
 }
 
 class _FloatingWindow extends StatefulWidget {

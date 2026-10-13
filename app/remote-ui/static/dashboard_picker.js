@@ -45,7 +45,10 @@ export function loadDashboards() {
       }));
       catalog = dashboards.map((d, i) => ({
         path: String(d.url_path),
-        title: d.title || d.url_path,
+        // The Custom Pages entry: the person's own pages under /local/,
+        // listed as its views and named in the admin's language.
+        custom: d.custom === true,
+        title: d.custom === true ? haText('Custom Pages') : (d.title || d.url_path),
         iconPath: d.icon_path || null,
         views: views[i].filter((v) => v.route !== undefined && v.route !== '')
           .map((v) => ({
@@ -91,7 +94,10 @@ export function matchDashboard(list, path) {
 export function dashboardPathOfUrl(url, base) {
   base = (base || '').replace(/\/$/, '');
   if (!base || !url || !url.startsWith(base + '/')) return null;
-  return url.slice(base.length + 1).replace(/[?#].*$/, '').replace(/\/+$/, '');
+  const path = url.slice(base.length + 1);
+  // A custom page keeps its query and fragment, which pick its layout.
+  if (path.startsWith('local/')) return path;
+  return path.replace(/[?#].*$/, '').replace(/\/+$/, '');
 }
 
 /* ------------------------------------------------------------ pieces */
@@ -147,6 +153,10 @@ function highlighted(text, query) {
 
 function countLabel(d) {
   if (!d.views.length) return haText('Builds its own views');
+  if (d.custom) {
+    return d.views.length === 1 ? haText('1 page')
+      : t('dashboardPickerPageCount', { count: String(d.views.length) });
+  }
   if (d.views.length === 1) return haText('1 view');
   return t('dashboardPickerViewCount', { count: String(d.views.length) });
 }

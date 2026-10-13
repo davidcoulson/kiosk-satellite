@@ -94,4 +94,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.info_outline), findsOneWidget);
   });
+  test('the icon picker searches names by their words', () async {
+    final all = await MdiIcons.names();
+    expect(all.length, greaterThan(7000));
+    // Renamed icons are left out, so each icon shows once.
+    expect(all, isNot(contains('123')));
+    expect(all, contains('garage-open'));
+    final found = await MdiIcons.search('garage open');
+    expect(found.first, 'garage-open');
+    expect(found, everyElement(allOf(contains('garage'), contains('open'))));
+    expect(await MdiIcons.search(''), hasLength(60));
+  });
+
+  test('several paths resolve in one read per letter', () async {
+    var reads = 0;
+    final read = MdiIcons.readShard;
+    MdiIcons.forget();
+    MdiIcons.readShard = (key) {
+      reads++;
+      return read(key);
+    };
+    addTearDown(() {
+      MdiIcons.readShard = read;
+      MdiIcons.forget();
+    });
+    final paths = await MdiIcons.paths([
+      'mdi:garage',
+      'garage-open',
+      'gate',
+      'mdi:not-an-icon-at-all',
+    ]);
+    expect(paths.keys, unorderedEquals(['garage', 'garage-open', 'gate']));
+    // One for the three under g, one for the name under n.
+    expect(reads, 2);
+    // A held set answers without reading again.
+    await MdiIcons.hold();
+    reads = 0;
+    expect(await MdiIcons.path('home-outline'), isNotNull);
+    expect(reads, 0);
+    MdiIcons.release();
+  });
 }

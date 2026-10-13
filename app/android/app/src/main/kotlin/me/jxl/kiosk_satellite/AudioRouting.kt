@@ -180,6 +180,10 @@ class AudioRoutingBridge(context: Context, messenger: BinaryMessenger) {
                 "playedWithin" -> result.success(
                     EchoReference.playedWithin((call.argument<Number>("ms") ?: 0).toLong()),
                 )
+                "holdFocus" -> {
+                    AudioFocus.hold(context, call.argument<Boolean>("active") == true)
+                    result.success(true)
+                }
                 else -> result.notImplemented()
             }
         }

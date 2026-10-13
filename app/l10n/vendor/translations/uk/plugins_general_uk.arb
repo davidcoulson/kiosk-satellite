@@ -21,5 +21,16 @@
   "pluginThisPluginWasInstalledFromZipAndHasNo": "Цей плагін було встановлено з архіву ZIP, він не має опису README з репозиторію.",
   "pluginImageUnavailable": "Зображення недоступне",
   "pluginCouldNotOpenThisLink": "Не вдалося відкрити це посилання.",
-  "pluginEnableName": "Увімкнути {name}"
+  "pluginEnableName": "Увімкнути {name}",
+  "pluginShowPassword": "Показати пароль",
+  "pluginHidePassword": "Сховати пароль",
+  "pluginUntitled": "Без назви",
+  "pluginSearchIcons": "Пошук піктограм",
+  "pluginChooseIcon": "Виберіть піктограму",
+  "pluginSearchCameraViews": "Пошук виглядів камер",
+  "pluginChooseCameraView": "Виберіть вигляд камер",
+  "pluginCameraViewGone": "Цього вигляду камер більше немає. Виберіть інший.",
+  "pluginDragToReorder": "Перетягніть для зміни порядку",
+  "pluginDone": "Готово",
+  "pluginRequired": "Обов'язково"
 }

@@ -11,6 +11,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterView
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
 import io.flutter.plugin.common.MethodChannel
@@ -102,6 +103,9 @@ class MainActivity : FlutterActivity() {
         val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
         val mode = prefs.getString("flutter.ks.browser.cutout_mode", null) ?: "always"
         CutoutLayout.apply(this, mode)
+        findViewById<View>(FLUTTER_VIEW_ID)?.let {
+            if (it is FlutterView) CutoutLayout.withholdCaptionBar(it)
+        }
         // Same story for the forced orientation (screen.orientation): a
         // device without a rotation sensor would otherwise draw its first
         // frame the way Android booted, then turn (issue #541).
@@ -240,6 +244,8 @@ class MainActivity : FlutterActivity() {
         screenCapture = ScreenCapture(this, messenger)
         kioskLock = KioskLock(this, messenger)
         webViewFreeze = WebViewFreeze(this, messenger)
+        // Home Assistant's HLS playlists get a deadline (see the class).
+        HlsPlaylistGuard.install()
         webViewRecovery = WebViewRecovery(flutterEngine)
         webViewBackdrop = WebViewBackdrop(this)
         provisionChannel = MethodChannel(messenger, "kiosk_satellite/provision")

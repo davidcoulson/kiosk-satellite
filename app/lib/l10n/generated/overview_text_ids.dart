@@ -108,5 +108,6 @@ const overviewTextMessageIds = <String, String>{
   "CPU": "overviewCpu",
   "RAM": "overviewMemory",
   "Temp": "overviewTemperature",
-  "Add to Home Assistant": "overviewEsphomeAdd"
+  "Add to Home Assistant": "overviewEsphomeAdd",
+  "Showing custom pages": "overviewShowingCustomPages"
 };

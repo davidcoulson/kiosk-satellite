@@ -1,0 +1,20 @@
+{
+  "@@locale": "nl",
+  "haCustomPages": "Eigen pagina's",
+  "haCustomPagesHintDashboard": "Je eigen HTML-pagina's als dashboard",
+  "haCustomPagesAdd": "Pagina toevoegen",
+  "haCustomPagesEmpty": "Voeg HTML-pagina's uit de www-map van Home Assistant toe om ze als een dashboard te kiezen.",
+  "haCustomPagesGuide": "Handleiding voor eigen pagina's",
+  "haCustomPagesGuideHint": "Zo bouw je een pagina die met Home Assistant praat.",
+  "haCustomPageAddTitle": "Eigen pagina toevoegen",
+  "haCustomPageEditTitle": "Eigen pagina bewerken",
+  "haCustomPageName": "Naam",
+  "haCustomPagePath": "Pad",
+  "haCustomPagePathHint": "Een bestand in de www-map van Home Assistant, zoals /local/dashboard.html.",
+  "haCustomPageNameMissing": "Voer een naam in.",
+  "haCustomPagePathInvalid": "Voer een pad onder /local/ in, zoals /local/dashboard.html.",
+  "haCustomPageDuplicate": "Een andere pagina gebruikt dit pad al.",
+  "haCustomPageNotFound": "Home Assistant heeft geen bestand op dit pad.",
+  "haCustomPageUnreachable": "Kan Home Assistant niet bereiken.",
+  "haCustomPageStatus": "Home Assistant antwoordde met HTTP {code}."
+}

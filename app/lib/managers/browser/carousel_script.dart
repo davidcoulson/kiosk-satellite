@@ -296,7 +296,8 @@ const dashboardCarouselScript = '''
     host.id = '__ksCarouselDots';
     host.style.cssText =
       'position:fixed;left:50%;' +
-      'bottom:calc(18px + env(safe-area-inset-bottom, 0px));' +
+      // Home Assistant's own inset, so the dots also clear a plugin's bar.
+      'bottom:calc(18px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));' +
       'transform:translateX(-50%);z-index:2147483647;display:flex;' +
       'gap:7px;align-items:center;padding:7px 11px;border-radius:999px;' +
       'background:rgba(0,0,0,.38);pointer-events:none;opacity:0;' +

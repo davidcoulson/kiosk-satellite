@@ -75,7 +75,7 @@ When Home Assistant runs the integration, onboarding offers the same migration i
 | | Stop word interruption | Say "stop" to cut off an answer, a timer alert or an announcement. It also closes a result panel. |
 | | Wake Word Arbitration | When several kiosks hear the wake word, only the closest one answers. See [Wake word arbitration](#wake-word-arbitration). |
 | | Custom Models | Your own wake word models. See [Custom wake word models](custom-wake-words.md). |
-| Appearance | Skin | Kiosk Satellite, Default, Google Home, Home Assistant, Alexa, Siri, Retro Terminal, Waveform, Lens Flares, Ink Blobs or Voice Only. Voice Only shows no text, only the Kiosk Satellite logo with its bars moving to your voice and the answer, for screens too small to read. **Preview** shows it for five seconds. |
+| Appearance | Skin | Kiosk Satellite, Default, Google Home, Home Assistant, Alexa, Siri, Retro Terminal, Waveform, Lens Flares, Ink Blobs, Jarvis or Voice Only. Jarvis draws a holographic HUD reactor that turns and pulses with your voice and the answer, and docked it floats above the conversation's text. Voice Only shows no text, only the Kiosk Satellite logo with its bars moving to your voice and the answer, for screens too small to read. **Preview** shows it for five seconds. |
 | | Theme, Background, Text size, Reactive activity bar | Light or dark, how much of the dashboard shows through, the text size and the bar that follows your voice and the answer. |
 | Conversation | Show what you said, Show the answer, Show tool use, Hide sentiment tags | What the overlay shows. |
 | | Keep the answer on screen, Keep results on screen, Announcement time | How long each stays. Results at 0 stay until dismissed. |
@@ -366,6 +366,8 @@ adb shell am broadcast -a me.jxl.kiosk_satellite.action.VOICE_CANCEL
 ```
 
 `slot` is optional and defaults to 1. The broadcasts work while Kiosk Satellite is running, even with another app in front, and do nothing while Voice Satellite is off.
+
+Kiosk Satellite also sends broadcasts of its own as a turn starts, changes and ends, so another app can come back the moment it is over. See [Android Broadcasts](android-broadcasts.md).
 
 ## Fleets
 

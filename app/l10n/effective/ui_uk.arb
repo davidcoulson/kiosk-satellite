@@ -2303,6 +2303,60 @@
       ]
     }
   },
+  "dashboardPickerOnePage": "1 сторінка",
+  "@dashboardPickerOnePage": {
+    "context": "Dashboard picker",
+    "description": "How many custom pages the Custom Pages entry lists, exactly one.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
+  "dashboardPickerPageCount": "Сторінок: {count}",
+  "@dashboardPickerPageCount": {
+    "context": "Dashboard picker",
+    "description": "How many custom pages the Custom Pages entry lists, two or more.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    },
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "description": "Number of pages, two or more."
+      }
+    }
+  },
   "dlnaCannotDecode": "Цей пристрій не може декодувати це відео.",
   "@dlnaCannotDecode": {
     "context": "Device > DLNA playback overlay",
@@ -11194,6 +11248,149 @@
     },
     "x-notes": "Keep supplied names and version numbers unchanged."
   },
+  "pluginShowPassword": "Показати пароль",
+  "@pluginShowPassword": {
+    "context": "Settings > Plugin Manager",
+    "description": "Tooltip of the button that shows or hides the text typed into a plugin's secret setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginHidePassword": "Сховати пароль",
+  "@pluginHidePassword": {
+    "context": "Settings > Plugin Manager",
+    "description": "Tooltip of the button that shows or hides the text typed into a plugin's secret setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginUntitled": "Без назви",
+  "@pluginUntitled": {
+    "context": "Settings > Plugin Manager",
+    "description": "Name shown for a row of a plugin's list setting that has no name yet.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginSearchIcons": "Пошук піктограм",
+  "@pluginSearchIcons": {
+    "context": "Settings > Plugin Manager",
+    "description": "Placeholder of the search box in the icon picker of a plugin setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginChooseIcon": "Виберіть піктограму",
+  "@pluginChooseIcon": {
+    "context": "Settings > Plugin Manager",
+    "description": "Placeholder of a plugin icon setting with no icon chosen.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginSearchCameraViews": "Пошук виглядів камер",
+  "@pluginSearchCameraViews": {
+    "context": "Settings > Plugin Manager",
+    "description": "Placeholder of the search box in the camera view picker of a plugin setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginChooseCameraView": "Виберіть вигляд камер",
+  "@pluginChooseCameraView": {
+    "context": "Settings > Plugin Manager",
+    "description": "Placeholder of a plugin camera view setting with no view chosen.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginCameraViewGone": "Цього вигляду камер більше немає. Виберіть інший.",
+  "@pluginCameraViewGone": {
+    "context": "Settings > Plugin Manager",
+    "description": "Shown under a plugin camera view setting whose saved view was deleted.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginDragToReorder": "Перетягніть для зміни порядку",
+  "@pluginDragToReorder": {
+    "context": "Settings > Plugin Manager",
+    "description": "Label of the handle that drags a row of a plugin's list setting to a new position.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginDone": "Готово",
+  "@pluginDone": {
+    "context": "Settings > Plugin Manager",
+    "description": "Button that keeps the changes to a nested row and returns to the row that holds it, in the row editor of a plugin list setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginRequired": "Обов'язково",
+  "@pluginRequired": {
+    "context": "Settings > Plugin Manager",
+    "description": "Shown beside the label of an empty required field in the row editor of a plugin list setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
   "pluginAddPlugin": "Додати плагін",
   "@pluginAddPlugin": {
     "context": "Settings > Plugin Manager > Add plugin or Install from ZIP",
@@ -13081,6 +13278,123 @@
       ]
     }
   },
+  "pluginErrorListSetting": "Недійсне налаштування списку",
+  "@pluginErrorListSetting": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorSettingCondition": "Недійсна умова налаштування",
+  "@pluginErrorSettingCondition": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorIcon": "Очікується назва піктограми MDI",
+  "@pluginErrorIcon": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorDashboard": "Очікується шлях до панелі керування",
+  "@pluginErrorDashboard": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorCameraView": "Очікується ідентифікатор вигляду камер",
+  "@pluginErrorCameraView": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorListValue": "Очікується налаштування списку",
+  "@pluginErrorListValue": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorListCount": "У списку забагато або замало елементів",
+  "@pluginErrorListCount": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorRequiredField": "Заповніть усі обов'язкові поля",
+  "@pluginErrorRequiredField": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
+  "pluginErrorListSize": "Налаштування списку можуть займати не більше 32 КБ",
+  "@pluginErrorListSize": {
+    "context": "Settings > Plugin Manager > Add plugin, preview or install",
+    "description": "Explain the failure. Keep technical identifiers, file names and product names unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager > Add plugin, preview or install"
+      ]
+    }
+  },
   "remoteDisableTitle": "Вимкнути віддалене керування?",
   "@remoteDisableTitle": {
     "context": "Remote admin > Device > Remote management, or any copy button",
@@ -14521,6 +14835,17 @@
       "value": {
         "type": "String"
       }
+    }
+  },
+  "overviewShowingCustomPages": "Показ власних сторінок",
+  "@overviewShowingCustomPages": {
+    "context": "Remote admin > Overview > Status",
+    "description": "Home Assistant chip status while a custom page (a person's own HTML page) is on screen instead of a Home Assistant dashboard.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Status"
+      ]
     }
   },
   "overviewNoScreenshot": "Немає знімка екрана",
@@ -21310,6 +21635,58 @@
       ]
     }
   },
+  "settingRemoteAdminUrlTitle": "URL адміністрування",
+  "@settingRemoteAdminUrlTitle": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Setting label. The web address used to open this kiosk's remote admin from other kiosks.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin URL"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin URL"
+      ]
+    }
+  },
+  "settingRemoteAdminUrlDescription": "Адреса, яку інші кіоски відкривають у «Перемкнути кіоск», щоб перейти до цього, наприклад ім'я зворотного проксі. Залиште порожнім, щоб використовувати його мережеву адресу.",
+  "@settingRemoteAdminUrlDescription": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Help below the Admin URL field. Switch kiosk is the name of the kiosk picker in the remote admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin URL"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin URL"
+      ]
+    }
+  },
+  "deviceAdminUrlInvalid": "Введіть дійсну адресу, наприклад https://kiosk.example.com",
+  "@deviceAdminUrlInvalid": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Error under the Admin URL field when the value is not a web address. Keep the example address as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin URL"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin URL"
+      ]
+    }
+  },
+  "deviceAdminUrlPath": "Введіть лише адресу, без шляху. Приклад: https://kiosk.example.com",
+  "@deviceAdminUrlPath": {
+    "context": "Settings:Device:Remote Administration",
+    "description": "Error under the Admin URL field when the address has a path after the host. Keep the example address as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Remote Administration > Admin URL"
+      ],
+      "remoteAdmin": [
+        "Device > Remote Administration > Admin URL"
+      ]
+    }
+  },
   "deviceRemotePage": "Віддалене адміністрування",
   "@deviceRemotePage": {
     "context": "Settings:Device:Remote Administration",
@@ -26859,6 +27236,237 @@
       ]
     }
   },
+  "haCustomPages": "Власні сторінки",
+  "@haCustomPages": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Name of the settings page and of the dashboard picker entry that lists a person's own HTML pages hosted in Home Assistant.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant",
+        "Settings > Home Assistant > Custom Pages",
+        "Dashboard picker"
+      ],
+      "remoteAdmin": [
+        "Home Assistant",
+        "Home Assistant > Custom Pages",
+        "Dashboard picker"
+      ]
+    }
+  },
+  "haCustomPagesHintDashboard": "Ваші власні HTML-сторінки як панель керування",
+  "@haCustomPagesHintDashboard": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Hint under the Custom Pages entry row: the person's own HTML pages, shown by the kiosk in place of a dashboard.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant"
+      ],
+      "remoteAdmin": [
+        "Home Assistant"
+      ]
+    }
+  },
+  "haCustomPagesAdd": "Додати сторінку",
+  "@haCustomPagesAdd": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Button that opens the dialog to add a custom page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagesEmpty": "Додайте HTML-сторінки з теки www Home Assistant, щоб вибирати їх як панель керування.",
+  "@haCustomPagesEmpty": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Shown while no custom page is added yet. www is a folder name and stays as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagesGuide": "Посібник із власних сторінок",
+  "@haCustomPagesGuide": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Row that opens the documentation about building a custom page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagesGuideHint": "Як створити сторінку, що працює з Home Assistant.",
+  "@haCustomPagesGuideHint": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Description under the Custom page guide row.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageAddTitle": "Додати власну сторінку",
+  "@haCustomPageAddTitle": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Title of the dialog that adds a custom page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageEditTitle": "Змінити власну сторінку",
+  "@haCustomPageEditTitle": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Title of the dialog that changes a custom page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageName": "Назва",
+  "@haCustomPageName": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Field label: the name the dashboard picker shows for the page.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagePath": "Шлях",
+  "@haCustomPagePath": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Field label: the address of the page inside Home Assistant, such as /local/dashboard.html.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagePathHint": "Файл у теці www Home Assistant, наприклад /local/dashboard.html.",
+  "@haCustomPagePathHint": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Help under the Path field. Keep www and /local/dashboard.html unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageNameMissing": "Введіть назву.",
+  "@haCustomPageNameMissing": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the name is empty.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPagePathInvalid": "Введіть шлях у /local/, наприклад /local/dashboard.html.",
+  "@haCustomPagePathInvalid": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the path is not under /local/. Keep /local/ and /local/dashboard.html unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageDuplicate": "Цей шлях уже використовує інша сторінка.",
+  "@haCustomPageDuplicate": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the path is already in the list.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageNotFound": "У Home Assistant немає файлу за цим шляхом.",
+  "@haCustomPageNotFound": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when Home Assistant answers that the file does not exist.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageUnreachable": "Не вдалося з'єднатися з Home Assistant.",
+  "@haCustomPageUnreachable": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when Home Assistant does not answer.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "haCustomPageStatus": "Home Assistant відповів кодом HTTP {code}.",
+  "@haCustomPageStatus": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when Home Assistant answers the page with an HTTP status other than 200. HTTP stays as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    },
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "description": "The HTTP status code, such as 403."
+      }
+    }
+  },
   "settingHaHoldModeTitle": "Режим утримання",
   "@settingHaHoldModeTitle": {
     "context": "Settings:Home Assistant Setup:Hold mode",
@@ -27366,6 +27974,19 @@
         "type": "String",
         "description": "Number of entities."
       }
+    }
+  },
+  "haCustomPageFilter": "Не використовується на власних сторінках.",
+  "@haCustomPageFilter": {
+    "context": "Settings:Home Assistant Setup:Optimizations",
+    "description": "Live update-filter status while a custom page (a person's own HTML page) is on screen: the filter leaves those pages alone.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup > Optimizations"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup > Optimizations"
+      ]
     }
   },
   "settingHaReturnHomeEnabledTitle": "Повернення на головний вигляд панелі керування",
@@ -36903,10 +37524,114 @@
       ]
     }
   },
-  "settingScreensaverScreenOffWakeToScreensaverDescription": "Розпізнавання руху, обличчя чи наближення після вимкнення екрана відновлює заставку, а не панель, із новим відліком вимкнення екрана. Дотик все одно відкриває панель керування.",
-  "@settingScreensaverScreenOffWakeToScreensaverDescription": {
+  "settingScreensaverScreenOffWakeToScreensaverDescriptionSources": "Виберіть, що повертає заставку замість панелі після вимкнення екрана. Відлік «Вимкнути екран через» починається знову.",
+  "@settingScreensaverScreenOffWakeToScreensaverDescriptionSources": {
     "context": "Settings:Screensaver",
     "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourcesAll": "Усе",
+  "@screensaverWakeSourcesAll": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Value of the Wake to screensaver row when every way of waking is picked.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceMotion": "Рух",
+  "@screensaverWakeSourceMotion": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: motion detection wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceFace": "Обличчя",
+  "@screensaverWakeSourceFace": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: face detection wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceProximity": "Наближення",
+  "@screensaverWakeSourceProximity": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: the proximity sensor wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourcePerson": "Людина",
+  "@screensaverWakeSourcePerson": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: person detection wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourcePower": "Кнопка живлення",
+  "@screensaverWakeSourcePower": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: the device power button wakes the screen to the screensaver.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceTouch": "Дотик",
+  "@screensaverWakeSourceTouch": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Choice in the Wake to screensaver dialog: touching the black screen brings the screensaver back.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "screensaverWakeSourceTouchRequires": "Потрібні обидва параметри: «Вимкнути екран через» і «Використовувати чорний екран замість вимкнення».",
+  "@screensaverWakeSourceTouchRequires": {
+    "context": "Settings:Screensaver:Wake to screensaver",
+    "description": "Hint under the grayed-out Touch choice in the Wake to screensaver dialog. Both quoted names are other settings on the same page.",
     "x-locations": {
       "device": [
         "Settings > Screensaver"
@@ -39985,6 +40710,201 @@
       ]
     }
   },
+  "settingScreensaverMediaMetadataTitle": "Показувати метадані",
+  "@settingScreensaverMediaMetadataTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataDescription": "Дата та параметри камери поверх фото.",
+  "@settingScreensaverMediaMetadataDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataDateTitle": "Дата зйомки",
+  "@settingScreensaverMediaMetadataDateTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataDateDescription": "Показувати, коли було зроблено фото.",
+  "@settingScreensaverMediaMetadataDateDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataCameraTitle": "Параметри камери",
+  "@settingScreensaverMediaMetadataCameraTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataCameraDescription": "Показувати фокусну відстань, діафрагму та ISO.",
+  "@settingScreensaverMediaMetadataCameraDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataPositionTitle": "Розташування метаданих",
+  "@settingScreensaverMediaMetadataPositionTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataPositionDescription": "У якому кутку показувати відомості.",
+  "@settingScreensaverMediaMetadataPositionDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataTextShadowTitle": "Тінь тексту",
+  "@settingScreensaverMediaMetadataTextShadowTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataTextShadowDescription": "Додати тінь до тексту метаданих для кращої читабельності на фотографіях.",
+  "@settingScreensaverMediaMetadataTextShadowDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataScaleTitle": "Масштаб тексту",
+  "@settingScreensaverMediaMetadataScaleTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaMetadataScaleDescription": "Масштабувати відомості фото відповідно до розміру екрана.",
+  "@settingScreensaverMediaMetadataScaleDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaVignetteStrengthTitle": "Інтенсивність віньєтування",
+  "@settingScreensaverMediaVignetteStrengthTitle": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverMediaVignetteStrengthDescription": "Затемнення фону за відомостями для читабельності на яскравих фото. 0 вимикає його.",
+  "@settingScreensaverMediaVignetteStrengthDescription": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
+  "screensaverMediaHaMetadata": "Метадані медіа Home Assistant",
+  "@screensaverMediaHaMetadata": {
+    "context": "Settings:Screensaver:Home Assistant Media screensaver:Home Assistant Media metadata",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Media screensaver > Home Assistant Media metadata"
+      ]
+    }
+  },
   "screensaverMediaHaPage": "Заставка медіа Home Assistant",
   "@screensaverMediaHaPage": {
     "context": "Settings:Screensaver:Home Assistant Media screensaver",
@@ -39998,8 +40918,8 @@
       ]
     }
   },
-  "screensaverMediaHaHint": "Джерело медіа, тривалість, випадковий порядок, заповнення",
-  "@screensaverMediaHaHint": {
+  "screensaverMediaHaPageHint": "Джерело медіа, тривалість, випадковий порядок, заповнення, метадані",
+  "@screensaverMediaHaPageHint": {
     "context": "Settings:Screensaver:Home Assistant Media screensaver",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -40342,6 +41262,201 @@
       ]
     }
   },
+  "settingScreensaverLocalMetadataTitle": "Показувати метадані",
+  "@settingScreensaverLocalMetadataTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataDescription": "Дата та параметри камери поверх фото.",
+  "@settingScreensaverLocalMetadataDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataDateTitle": "Дата зйомки",
+  "@settingScreensaverLocalMetadataDateTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataDateDescription": "Показувати, коли було зроблено фото.",
+  "@settingScreensaverLocalMetadataDateDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataCameraTitle": "Параметри камери",
+  "@settingScreensaverLocalMetadataCameraTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataCameraDescription": "Показувати фокусну відстань, діафрагму та ISO.",
+  "@settingScreensaverLocalMetadataCameraDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataPositionTitle": "Розташування метаданих",
+  "@settingScreensaverLocalMetadataPositionTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataPositionDescription": "У якому кутку показувати відомості.",
+  "@settingScreensaverLocalMetadataPositionDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataTextShadowTitle": "Тінь тексту",
+  "@settingScreensaverLocalMetadataTextShadowTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataTextShadowDescription": "Додати тінь до тексту метаданих для кращої читабельності на фотографіях.",
+  "@settingScreensaverLocalMetadataTextShadowDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataScaleTitle": "Масштаб тексту",
+  "@settingScreensaverLocalMetadataScaleTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalMetadataScaleDescription": "Масштабувати відомості фото відповідно до розміру екрана.",
+  "@settingScreensaverLocalMetadataScaleDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalVignetteStrengthTitle": "Інтенсивність віньєтування",
+  "@settingScreensaverLocalVignetteStrengthTitle": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "settingScreensaverLocalVignetteStrengthDescription": "Затемнення фону за відомостями для читабельності на яскравих фото. 0 вимикає його.",
+  "@settingScreensaverLocalVignetteStrengthDescription": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
+  "screensaverMediaLocalMetadata": "Метадані локальних медіа",
+  "@screensaverMediaLocalMetadata": {
+    "context": "Settings:Screensaver:Local Media screensaver:Local Media metadata",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Local Media screensaver > Local Media metadata"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Local Media screensaver > Local Media metadata"
+      ]
+    }
+  },
   "screensaverMediaLocalPage": "Заставка локальних медіа",
   "@screensaverMediaLocalPage": {
     "context": "Settings:Screensaver:Local Media screensaver",
@@ -40355,8 +41470,8 @@
       ]
     }
   },
-  "screensaverMediaLocalHint": "Папка, тривалість, випадковий порядок, перехід",
-  "@screensaverMediaLocalHint": {
+  "screensaverMediaLocalPageHint": "Папка, тривалість, випадковий порядок, перехід, метадані",
+  "@screensaverMediaLocalPageHint": {
     "context": "Settings:Screensaver:Local Media screensaver",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -40476,6 +41591,71 @@
   "@screensaverDetectionMotionTuning": {
     "context": "Settings > Screensaver > Motion Detection",
     "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionUseEntityTitle": "Використовувати сутність Home Assistant",
+  "@settingMotionUseEntityTitle": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionUseEntityDescription": "Визначає рух за датчиком Home Assistant замість камери.",
+  "@settingMotionUseEntityDescription": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionEntityTitle": "Сутність датчика руху",
+  "@settingMotionEntityTitle": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "settingMotionEntityDescription": "Датчик зайнятості, руху або присутності Home Assistant, за яким слід стежити.",
+  "@settingMotionEntityDescription": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Motion Detection"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Motion Detection"
+      ]
+    }
+  },
+  "screensaverDetectionExternalMotionHeading": "Зовнішній датчик руху",
+  "@screensaverDetectionExternalMotionHeading": {
+    "context": "Settings > Screensaver > Motion Detection",
+    "description": "Section heading.",
     "x-locations": {
       "device": [
         "Settings > Screensaver > Motion Detection"

@@ -153,6 +153,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'dashboardPickerAddViews' => strings.dashboardPickerAddViews,
       'dashboardPickerDefault' => strings.dashboardPickerDefault,
       'dashboardPickerDefaultHelp' => strings.dashboardPickerDefaultHelp,
+      'dashboardPickerOnePage' => strings.dashboardPickerOnePage,
       'dlnaCannotDecode' => strings.dlnaCannotDecode,
       'dlnaCannotRead' => strings.dlnaCannotRead,
       'dlnaCannotPlay' => strings.dlnaCannotPlay,
@@ -770,6 +771,17 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.pluginThisPluginWasInstalledFromZipAndHasNo,
       'pluginImageUnavailable' => strings.pluginImageUnavailable,
       'pluginCouldNotOpenThisLink' => strings.pluginCouldNotOpenThisLink,
+      'pluginShowPassword' => strings.pluginShowPassword,
+      'pluginHidePassword' => strings.pluginHidePassword,
+      'pluginUntitled' => strings.pluginUntitled,
+      'pluginSearchIcons' => strings.pluginSearchIcons,
+      'pluginChooseIcon' => strings.pluginChooseIcon,
+      'pluginSearchCameraViews' => strings.pluginSearchCameraViews,
+      'pluginChooseCameraView' => strings.pluginChooseCameraView,
+      'pluginCameraViewGone' => strings.pluginCameraViewGone,
+      'pluginDragToReorder' => strings.pluginDragToReorder,
+      'pluginDone' => strings.pluginDone,
+      'pluginRequired' => strings.pluginRequired,
       'pluginAddPlugin' => strings.pluginAddPlugin,
       'pluginInstallFromAGithubRepository' =>
         strings.pluginInstallFromAGithubRepository,
@@ -914,6 +926,15 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'pluginErrorInvalidManifest' => strings.pluginErrorInvalidManifest,
       'pluginErrorTooManyTriggers' => strings.pluginErrorTooManyTriggers,
       'pluginErrorTriggerId' => strings.pluginErrorTriggerId,
+      'pluginErrorListSetting' => strings.pluginErrorListSetting,
+      'pluginErrorSettingCondition' => strings.pluginErrorSettingCondition,
+      'pluginErrorIcon' => strings.pluginErrorIcon,
+      'pluginErrorDashboard' => strings.pluginErrorDashboard,
+      'pluginErrorCameraView' => strings.pluginErrorCameraView,
+      'pluginErrorListValue' => strings.pluginErrorListValue,
+      'pluginErrorListCount' => strings.pluginErrorListCount,
+      'pluginErrorRequiredField' => strings.pluginErrorRequiredField,
+      'pluginErrorListSize' => strings.pluginErrorListSize,
       'remoteDisableTitle' => strings.remoteDisableTitle,
       'remoteDisableHelp' => strings.remoteDisableHelp,
       'remoteDisableConfirm' => strings.remoteDisableConfirm,
@@ -1010,6 +1031,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'overviewCpu' => strings.overviewCpu,
       'overviewMemory' => strings.overviewMemory,
       'overviewTemperature' => strings.overviewTemperature,
+      'overviewShowingCustomPages' => strings.overviewShowingCustomPages,
       'overviewNoScreenshot' => strings.overviewNoScreenshot,
       'overviewStill' => strings.overviewStill,
       'overviewLive' => strings.overviewLive,
@@ -1583,6 +1605,11 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingRemoteFleetDiscoveryTitle,
       'settingRemoteFleetDiscoveryDescription' =>
         strings.settingRemoteFleetDiscoveryDescription,
+      'settingRemoteAdminUrlTitle' => strings.settingRemoteAdminUrlTitle,
+      'settingRemoteAdminUrlDescription' =>
+        strings.settingRemoteAdminUrlDescription,
+      'deviceAdminUrlInvalid' => strings.deviceAdminUrlInvalid,
+      'deviceAdminUrlPath' => strings.deviceAdminUrlPath,
       'deviceRemotePage' => strings.deviceRemotePage,
       'deviceAdminAddress' => strings.deviceAdminAddress,
       'deviceAdminAddressHelp' => strings.deviceAdminAddressHelp,
@@ -2029,6 +2056,22 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingGestureRemoteKeysDescription,
       'gestureRemoteKeysServiceOff' => strings.gestureRemoteKeysServiceOff,
       'gestureRemoteKeysHelp' => strings.gestureRemoteKeysHelp,
+      'haCustomPages' => strings.haCustomPages,
+      'haCustomPagesHintDashboard' => strings.haCustomPagesHintDashboard,
+      'haCustomPagesAdd' => strings.haCustomPagesAdd,
+      'haCustomPagesEmpty' => strings.haCustomPagesEmpty,
+      'haCustomPagesGuide' => strings.haCustomPagesGuide,
+      'haCustomPagesGuideHint' => strings.haCustomPagesGuideHint,
+      'haCustomPageAddTitle' => strings.haCustomPageAddTitle,
+      'haCustomPageEditTitle' => strings.haCustomPageEditTitle,
+      'haCustomPageName' => strings.haCustomPageName,
+      'haCustomPagePath' => strings.haCustomPagePath,
+      'haCustomPagePathHint' => strings.haCustomPagePathHint,
+      'haCustomPageNameMissing' => strings.haCustomPageNameMissing,
+      'haCustomPagePathInvalid' => strings.haCustomPagePathInvalid,
+      'haCustomPageDuplicate' => strings.haCustomPageDuplicate,
+      'haCustomPageNotFound' => strings.haCustomPageNotFound,
+      'haCustomPageUnreachable' => strings.haCustomPageUnreachable,
       'settingHaHoldModeTitle' => strings.settingHaHoldModeTitle,
       'settingHaHoldModeDescription' => strings.settingHaHoldModeDescription,
       'settingHaHoldReleaseMinutesTitle' =>
@@ -2064,6 +2107,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'haUnknownEntities' => strings.haUnknownEntities,
       'haWaiting' => strings.haWaiting,
       'haShowScan' => strings.haShowScan,
+      'haCustomPageFilter' => strings.haCustomPageFilter,
       'settingHaReturnHomeEnabledTitle' =>
         strings.settingHaReturnHomeEnabledTitle,
       'settingHaReturnHomeEnabledDescription' =>
@@ -3087,8 +3131,18 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingScreensaverScreenOffMinutesDescription,
       'settingScreensaverScreenOffWakeToScreensaverTitle' =>
         strings.settingScreensaverScreenOffWakeToScreensaverTitle,
-      'settingScreensaverScreenOffWakeToScreensaverDescription' =>
-        strings.settingScreensaverScreenOffWakeToScreensaverDescription,
+      'settingScreensaverScreenOffWakeToScreensaverDescriptionSources' =>
+        strings.settingScreensaverScreenOffWakeToScreensaverDescriptionSources,
+      'screensaverWakeSourcesAll' => strings.screensaverWakeSourcesAll,
+      'screensaverWakeSourceMotion' => strings.screensaverWakeSourceMotion,
+      'screensaverWakeSourceFace' => strings.screensaverWakeSourceFace,
+      'screensaverWakeSourceProximity' =>
+        strings.screensaverWakeSourceProximity,
+      'screensaverWakeSourcePerson' => strings.screensaverWakeSourcePerson,
+      'screensaverWakeSourcePower' => strings.screensaverWakeSourcePower,
+      'screensaverWakeSourceTouch' => strings.screensaverWakeSourceTouch,
+      'screensaverWakeSourceTouchRequires' =>
+        strings.screensaverWakeSourceTouchRequires,
       'screensaverModeDim' => strings.screensaverModeDim,
       'screensaverModeBlack' => strings.screensaverModeBlack,
       'screensaverModeClock' => strings.screensaverModeClock,
@@ -3428,8 +3482,37 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingScreensaverMediaEdgeTapsTitle,
       'settingScreensaverMediaEdgeTapsDescription' =>
         strings.settingScreensaverMediaEdgeTapsDescription,
+      'settingScreensaverMediaMetadataTitle' =>
+        strings.settingScreensaverMediaMetadataTitle,
+      'settingScreensaverMediaMetadataDescription' =>
+        strings.settingScreensaverMediaMetadataDescription,
+      'settingScreensaverMediaMetadataDateTitle' =>
+        strings.settingScreensaverMediaMetadataDateTitle,
+      'settingScreensaverMediaMetadataDateDescription' =>
+        strings.settingScreensaverMediaMetadataDateDescription,
+      'settingScreensaverMediaMetadataCameraTitle' =>
+        strings.settingScreensaverMediaMetadataCameraTitle,
+      'settingScreensaverMediaMetadataCameraDescription' =>
+        strings.settingScreensaverMediaMetadataCameraDescription,
+      'settingScreensaverMediaMetadataPositionTitle' =>
+        strings.settingScreensaverMediaMetadataPositionTitle,
+      'settingScreensaverMediaMetadataPositionDescription' =>
+        strings.settingScreensaverMediaMetadataPositionDescription,
+      'settingScreensaverMediaMetadataTextShadowTitle' =>
+        strings.settingScreensaverMediaMetadataTextShadowTitle,
+      'settingScreensaverMediaMetadataTextShadowDescription' =>
+        strings.settingScreensaverMediaMetadataTextShadowDescription,
+      'settingScreensaverMediaMetadataScaleTitle' =>
+        strings.settingScreensaverMediaMetadataScaleTitle,
+      'settingScreensaverMediaMetadataScaleDescription' =>
+        strings.settingScreensaverMediaMetadataScaleDescription,
+      'settingScreensaverMediaVignetteStrengthTitle' =>
+        strings.settingScreensaverMediaVignetteStrengthTitle,
+      'settingScreensaverMediaVignetteStrengthDescription' =>
+        strings.settingScreensaverMediaVignetteStrengthDescription,
+      'screensaverMediaHaMetadata' => strings.screensaverMediaHaMetadata,
       'screensaverMediaHaPage' => strings.screensaverMediaHaPage,
-      'screensaverMediaHaHint' => strings.screensaverMediaHaHint,
+      'screensaverMediaHaPageHint' => strings.screensaverMediaHaPageHint,
       'screensaverMediaChoose' => strings.screensaverMediaChoose,
       'screensaverMediaRoot' => strings.screensaverMediaRoot,
       'screensaverMediaHaUnavailable' => strings.screensaverMediaHaUnavailable,
@@ -3468,8 +3551,37 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingScreensaverLocalEdgeTapsTitle,
       'settingScreensaverLocalEdgeTapsDescription' =>
         strings.settingScreensaverLocalEdgeTapsDescription,
+      'settingScreensaverLocalMetadataTitle' =>
+        strings.settingScreensaverLocalMetadataTitle,
+      'settingScreensaverLocalMetadataDescription' =>
+        strings.settingScreensaverLocalMetadataDescription,
+      'settingScreensaverLocalMetadataDateTitle' =>
+        strings.settingScreensaverLocalMetadataDateTitle,
+      'settingScreensaverLocalMetadataDateDescription' =>
+        strings.settingScreensaverLocalMetadataDateDescription,
+      'settingScreensaverLocalMetadataCameraTitle' =>
+        strings.settingScreensaverLocalMetadataCameraTitle,
+      'settingScreensaverLocalMetadataCameraDescription' =>
+        strings.settingScreensaverLocalMetadataCameraDescription,
+      'settingScreensaverLocalMetadataPositionTitle' =>
+        strings.settingScreensaverLocalMetadataPositionTitle,
+      'settingScreensaverLocalMetadataPositionDescription' =>
+        strings.settingScreensaverLocalMetadataPositionDescription,
+      'settingScreensaverLocalMetadataTextShadowTitle' =>
+        strings.settingScreensaverLocalMetadataTextShadowTitle,
+      'settingScreensaverLocalMetadataTextShadowDescription' =>
+        strings.settingScreensaverLocalMetadataTextShadowDescription,
+      'settingScreensaverLocalMetadataScaleTitle' =>
+        strings.settingScreensaverLocalMetadataScaleTitle,
+      'settingScreensaverLocalMetadataScaleDescription' =>
+        strings.settingScreensaverLocalMetadataScaleDescription,
+      'settingScreensaverLocalVignetteStrengthTitle' =>
+        strings.settingScreensaverLocalVignetteStrengthTitle,
+      'settingScreensaverLocalVignetteStrengthDescription' =>
+        strings.settingScreensaverLocalVignetteStrengthDescription,
+      'screensaverMediaLocalMetadata' => strings.screensaverMediaLocalMetadata,
       'screensaverMediaLocalPage' => strings.screensaverMediaLocalPage,
-      'screensaverMediaLocalHint' => strings.screensaverMediaLocalHint,
+      'screensaverMediaLocalPageHint' => strings.screensaverMediaLocalPageHint,
       'settingScreensaverDismissOnMotionTitle' =>
         strings.settingScreensaverDismissOnMotionTitle,
       'settingScreensaverDismissOnMotionDescription' =>
@@ -3488,6 +3600,14 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.screensaverDetectionMotionHint,
       'screensaverDetectionMotionTuning' =>
         strings.screensaverDetectionMotionTuning,
+      'settingMotionUseEntityTitle' => strings.settingMotionUseEntityTitle,
+      'settingMotionUseEntityDescription' =>
+        strings.settingMotionUseEntityDescription,
+      'settingMotionEntityTitle' => strings.settingMotionEntityTitle,
+      'settingMotionEntityDescription' =>
+        strings.settingMotionEntityDescription,
+      'screensaverDetectionExternalMotionHeading' =>
+        strings.screensaverDetectionExternalMotionHeading,
       'settingScreensaverDismissOnPersonTitle' =>
         strings.settingScreensaverDismissOnPersonTitle,
       'settingScreensaverDismissOnPersonDescription' =>

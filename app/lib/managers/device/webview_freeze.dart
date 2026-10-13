@@ -32,6 +32,37 @@ class WebViewFreeze {
   /// Suppress or restore the dashboard's native scrollbars — the carousel
   /// hides them around a drag, where drift and the parked preview's widened
   /// content extent awaken bars over an animation that is not a scroll.
+  /// Skip the HTTP cache on the dashboard ([noCache]) or use it again.
+  /// Custom pages load fresh this way (see BrowserManager.prepareLoad).
+  static Future<int> setCacheMode({
+    required bool noCache,
+    required String urlPrefix,
+  }) async {
+    try {
+      return await _channel.invokeMethod<int>('setCacheMode', {
+            'noCache': noCache,
+            'urlPrefix': urlPrefix,
+          }) ??
+          0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// Drop the renderer's in-memory copies of the page's files, keeping the
+  /// disk cache. A reload or a revisit otherwise reuses a script or a
+  /// stylesheet from memory without asking anyone.
+  static Future<int> clearMemoryCache({required String urlPrefix}) async {
+    try {
+      return await _channel.invokeMethod<int>('clearMemoryCache', {
+            'urlPrefix': urlPrefix,
+          }) ??
+          0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   static Future<int> setScrollBars({
     required bool hidden,
     required String urlPrefix,

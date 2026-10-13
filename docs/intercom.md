@@ -83,7 +83,7 @@ The [ESPHome](esphome.md) device carries an **Intercom enabled** switch, and wit
 | **Intercom answer mode** | select | Ring, Answer automatically, Do not disturb. |
 | **Intercom volume** | number | 0 to 100%, the same slider as **Intercom volume** under Screen & Audio. A change during a call takes effect right away. |
 
-Two ESPHome actions put a call through from an automation or a dashboard button. `esphome.<node name>_intercom_call` rings another kiosk from this one, named by its `kiosk` argument, the kiosk's name as the Kiosks card lists it, any case, or its IP address. The call then runs the way one placed from the kiosk menu does: this kiosk's Talk mode, the other kiosk's Answer mode, and the Intercom sensor follows it. The action answers with the `id` and `kiosk` it rang through `response_variable`, and reports an error when the intercom is off here, no kiosk goes by that name, this kiosk is already in a call or the other kiosk refused with its reason (off, on another key, Do not disturb or busy). `esphome.<node name>_intercom_hangup` ends the call, cancels one still ringing or closes an announcement, and reports an error when there is none.
+ESPHome actions put a call through from an automation or a dashboard button. `esphome.<node name>_intercom_call` rings another kiosk from this one, named by its `kiosk` argument, the kiosk's name as the Kiosks card lists it, any case, or its IP address. The call then runs the way one placed from the kiosk menu does: this kiosk's Talk mode, the other kiosk's Answer mode, and the Intercom sensor follows it. The action answers with the `id` and `kiosk` it rang through `response_variable`, and reports an error when the intercom is off here, no kiosk goes by that name, this kiosk is already in a call or the other kiosk refused with its reason (off, on another key, Do not disturb or busy). `esphome.<node name>_intercom_hangup` ends the call, cancels one still ringing or closes an announcement, and reports an error when there is none. `esphome.<node name>_intercom_answer` and `esphome.<node name>_intercom_decline` answer or decline the call ringing on this kiosk, the same as its on-screen buttons, so a kiosk without a screen can be picked up from Home Assistant. Both report an error when nothing is ringing.
 
 ```yaml
 - action: esphome.kitchen_tablet_intercom_call
@@ -92,6 +92,8 @@ Two ESPHome actions put a call through from an automation or a dashboard button.
 ```
 
 Home Assistant cannot talk on a call: the kiosks hold the microphones. To speak on a kiosk from Home Assistant, use the [announce action](esphome.md#announcements) under ESPHome. On the [remote API](remote-api.md) the same two are `intercomCall {kiosk}` and `intercomHangup`.
+
+Apps on the kiosk itself, like Tasker or MacroDroid, can follow calls through [Android Broadcasts](android-broadcasts.md#intercom) instead.
 
 ## Calling by voice
 

@@ -15,5 +15,20 @@
   "settingScreensaverLocalEdgeTapsTitle": "点击边缘切换幻灯片",
   "settingScreensaverLocalEdgeTapsDescription": "点击屏幕左侧或右侧五分之一区域，显示上一张或下一张幻灯片，而非关闭屏保。",
   "screensaverMediaLocalPage": "本地媒体屏保",
-  "screensaverMediaLocalHint": "文件夹、时长、随机播放和切换效果"
+  "screensaverMediaLocalPageHint": "文件夹、时长、随机播放、切换效果和元数据",
+  "settingScreensaverLocalMetadataTitle": "显示元数据",
+  "settingScreensaverLocalMetadataDateTitle": "拍摄日期",
+  "settingScreensaverLocalMetadataDateDescription": "显示照片的拍摄时间。",
+  "settingScreensaverLocalMetadataCameraTitle": "相机详情",
+  "settingScreensaverLocalMetadataCameraDescription": "显示焦距、光圈和 ISO。",
+  "settingScreensaverLocalMetadataPositionTitle": "元数据位置",
+  "settingScreensaverLocalMetadataPositionDescription": "详情显示的屏幕角落。",
+  "settingScreensaverLocalMetadataTextShadowTitle": "文字投影",
+  "settingScreensaverLocalMetadataTextShadowDescription": "为元数据文字添加阴影，使其在照片上更清晰。",
+  "settingScreensaverLocalMetadataScaleTitle": "文字缩放",
+  "settingScreensaverLocalMetadataScaleDescription": "调整照片详情的大小以适应屏幕尺寸。",
+  "settingScreensaverLocalVignetteStrengthTitle": "暗角强度",
+  "settingScreensaverLocalVignetteStrengthDescription": "调整照片详情下方阴影的深浅，使文字在明亮的照片上也能看清。设为 0 时不显示阴影。",
+  "settingScreensaverLocalMetadataDescription": "在照片上显示日期和相机详情。",
+  "screensaverMediaLocalMetadata": "本地媒体元数据"
 }

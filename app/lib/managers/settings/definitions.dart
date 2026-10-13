@@ -208,6 +208,7 @@ const Map<String, String> subpageHints = {
   'Localization Credits': 'Contributors by language',
   'User Interface': 'Kiosk mode, dashboard carousel, haptics, tap sounds',
   'Theme': 'Match the app, or switch dark and light on a schedule',
+  'Custom Pages': 'Your custom HTML pages served as a dashboard',
   'Dashboard View Rotation': 'Cycle through views, dwell time, fade',
   'Return to home dashboard view': 'Go back to the home view when left idle',
   'Hold mode': 'Pin the current view, automatic release, menu entry',
@@ -234,8 +235,9 @@ const Map<String, String> subpageHints = {
   // one selected, since every setting on them gates on it.
   'Clock screensaver':
       'Style, font, size, colors, night mode, background photo',
-  'Home Assistant Media screensaver': 'Media source, timing, shuffle, fill',
-  'Local Media screensaver': 'Folder, timing, shuffle, transition',
+  'Home Assistant Media screensaver':
+      'Media source, timing, shuffle, fill, metadata',
+  'Local Media screensaver': 'Folder, timing, shuffle, transition, metadata',
   'Photo Gallery screensaver': 'Photos, timing, shuffle, transition',
   'Immich Media screensaver': 'Server, media, slideshow, metadata, filters',
   'Camera Streams screensaver': 'Views to show, seconds per view, sound',
@@ -359,6 +361,51 @@ String normalizeUpdateSourceUrl(String value) {
 /// [SettingDef.normalizer] adapter for [normalizeUpdateSourceUrl].
 Object normalizeUpdateSourceUrlSetting(Object value) =>
     value is String ? normalizeUpdateSourceUrl(value) : value;
+
+final _adminHost = RegExp(
+  r'^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$',
+);
+
+/// The remote admin's address as another kiosk's switcher opens it, for
+/// a kiosk behind a reverse proxy: `http(s)://host[:port]` and nothing
+/// else, since the switcher appends the page itself. Null for anything
+/// else, including a value that would not fit the 255-byte mDNS TXT
+/// entry it travels in. Also checks what other kiosks announce.
+String? adminUrlOrigin(String value) {
+  final uri = Uri.tryParse(value.trim());
+  if (uri == null ||
+      (uri.scheme != 'http' && uri.scheme != 'https') ||
+      !_adminHost.hasMatch(uri.host) ||
+      uri.userInfo.isNotEmpty ||
+      (uri.path.isNotEmpty && uri.path != '/') ||
+      uri.hasQuery ||
+      uri.hasFragment) {
+    return null;
+  }
+  final origin = uri.hasPort
+      ? '${uri.scheme}://${uri.host}:${uri.port}'
+      : '${uri.scheme}://${uri.host}';
+  return origin.length > 240 ? null : origin;
+}
+
+String? validateAdminUrl(Object? value) {
+  if (value is! String || value.trim().isEmpty) return null; // empty = unset
+  if (adminUrlOrigin(value) != null) return null;
+  final uri = Uri.tryParse(value.trim());
+  if (uri != null &&
+      (uri.scheme == 'http' || uri.scheme == 'https') &&
+      uri.host.isNotEmpty &&
+      ((uri.path.isNotEmpty && uri.path != '/') ||
+          uri.hasQuery ||
+          uri.hasFragment)) {
+    return 'Enter only the address, without a path. Example: '
+        'https://kiosk.example.com';
+  }
+  return 'Enter a valid address, for example https://kiosk.example.com';
+}
+
+Object normalizeAdminUrlSetting(Object value) =>
+    value is String ? adminUrlOrigin(value) ?? value.trim() : value;
 
 /// The Immich album pick as the `[{id, name}]` list it is stored as. A
 /// bare album id is the shape the setting had while it held one album; it
@@ -3170,6 +3217,108 @@ const screensaverMediaEdgeTaps = SettingDef<bool>(
   dependsOn: 'screensaver.media_is_folder',
 );
 
+// The photo details panel Immich has, read from the photo's own EXIF
+// (issue #953): the date and the camera, never the place, since turning
+// GPS coordinates into a place name takes a lookup service. The same rows
+// and look as the Immich panel, on their own page. Gated on the mode, not
+// the folder flag: a single photo carries its details too.
+const screensaverMediaMetadata = SettingDef<bool>(
+  key: 'screensaver.media_metadata',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Show metadata',
+  description: 'Date and camera details over the photo.',
+  category: 'Screensaver',
+  section: 'Home Assistant Media metadata',
+  subpage: 'Home Assistant Media screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'media',
+);
+
+const screensaverMediaMetadataDate = SettingDef<bool>(
+  key: 'screensaver.media_metadata_date',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Date taken',
+  description: 'Show when the photo was taken.',
+  category: 'Screensaver',
+  section: 'Home Assistant Media metadata',
+  subpage: 'Home Assistant Media screensaver',
+  dependsOn: 'screensaver.media_metadata',
+);
+
+const screensaverMediaMetadataCamera = SettingDef<bool>(
+  key: 'screensaver.media_metadata_camera',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Camera details',
+  description: 'Show focal length, aperture and ISO.',
+  category: 'Screensaver',
+  section: 'Home Assistant Media metadata',
+  subpage: 'Home Assistant Media screensaver',
+  dependsOn: 'screensaver.media_metadata',
+);
+
+const screensaverMediaMetadataPosition = SettingDef<String>(
+  key: 'screensaver.media_metadata_position',
+  type: SettingType.select,
+  defaultValue: 'bottom_left',
+  title: 'Metadata position',
+  description: 'Which corner the details sit in.',
+  category: 'Screensaver',
+  options: cornerOptions,
+  optionLabels: cornerLabels,
+  section: 'Home Assistant Media metadata',
+  subpage: 'Home Assistant Media screensaver',
+  dependsOn: 'screensaver.media_metadata',
+);
+
+const screensaverMediaMetadataTextShadow = SettingDef<bool>(
+  key: 'screensaver.media_metadata_text_shadow',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Text drop shadow',
+  description: 'Add a drop shadow to metadata text for readability on photos.',
+  category: 'Screensaver',
+  section: 'Home Assistant Media metadata',
+  subpage: 'Home Assistant Media screensaver',
+  dependsOn: 'screensaver.media_metadata',
+);
+
+const screensaverMediaMetadataScale = SettingDef<num>(
+  key: 'screensaver.media_metadata_scale',
+  type: SettingType.number,
+  defaultValue: 100,
+  title: 'Text scaling',
+  description: 'Scale the photo details to better fit your screen size.',
+  category: 'Screensaver',
+  section: 'Home Assistant Media metadata',
+  subpage: 'Home Assistant Media screensaver',
+  min: 50,
+  max: 200,
+  step: 5,
+  unit: '%',
+  dependsOn: 'screensaver.media_metadata',
+);
+
+const screensaverMediaVignetteStrength = SettingDef<num>(
+  key: 'screensaver.media_vignette_strength',
+  type: SettingType.number,
+  defaultValue: 40,
+  title: 'Vignette strength',
+  description:
+      'Darkness of the shading behind the details, for readability on '
+      'bright photos. 0 turns it off.',
+  category: 'Screensaver',
+  section: 'Home Assistant Media metadata',
+  subpage: 'Home Assistant Media screensaver',
+  min: 0,
+  max: 100,
+  step: 5,
+  unit: '%',
+  dependsOn: 'screensaver.media_metadata',
+);
+
 // ── Website (mode: website) ──
 
 const screensaverWebsiteUrl = SettingDef<String>(
@@ -3410,6 +3559,104 @@ const screensaverLocalEdgeTaps = SettingDef<bool>(
   subpage: 'Local Media screensaver',
   dependsOn: 'screensaver.mode',
   dependsOnValue: 'local',
+);
+
+// The same EXIF panel as Home Assistant Media's (issue #953).
+const screensaverLocalMetadata = SettingDef<bool>(
+  key: 'screensaver.local_metadata',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Show metadata',
+  description: 'Date and camera details over the photo.',
+  category: 'Screensaver',
+  section: 'Local Media metadata',
+  subpage: 'Local Media screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'local',
+);
+
+const screensaverLocalMetadataDate = SettingDef<bool>(
+  key: 'screensaver.local_metadata_date',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Date taken',
+  description: 'Show when the photo was taken.',
+  category: 'Screensaver',
+  section: 'Local Media metadata',
+  subpage: 'Local Media screensaver',
+  dependsOn: 'screensaver.local_metadata',
+);
+
+const screensaverLocalMetadataCamera = SettingDef<bool>(
+  key: 'screensaver.local_metadata_camera',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Camera details',
+  description: 'Show focal length, aperture and ISO.',
+  category: 'Screensaver',
+  section: 'Local Media metadata',
+  subpage: 'Local Media screensaver',
+  dependsOn: 'screensaver.local_metadata',
+);
+
+const screensaverLocalMetadataPosition = SettingDef<String>(
+  key: 'screensaver.local_metadata_position',
+  type: SettingType.select,
+  defaultValue: 'bottom_left',
+  title: 'Metadata position',
+  description: 'Which corner the details sit in.',
+  category: 'Screensaver',
+  options: cornerOptions,
+  optionLabels: cornerLabels,
+  section: 'Local Media metadata',
+  subpage: 'Local Media screensaver',
+  dependsOn: 'screensaver.local_metadata',
+);
+
+const screensaverLocalMetadataTextShadow = SettingDef<bool>(
+  key: 'screensaver.local_metadata_text_shadow',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Text drop shadow',
+  description: 'Add a drop shadow to metadata text for readability on photos.',
+  category: 'Screensaver',
+  section: 'Local Media metadata',
+  subpage: 'Local Media screensaver',
+  dependsOn: 'screensaver.local_metadata',
+);
+
+const screensaverLocalMetadataScale = SettingDef<num>(
+  key: 'screensaver.local_metadata_scale',
+  type: SettingType.number,
+  defaultValue: 100,
+  title: 'Text scaling',
+  description: 'Scale the photo details to better fit your screen size.',
+  category: 'Screensaver',
+  section: 'Local Media metadata',
+  subpage: 'Local Media screensaver',
+  min: 50,
+  max: 200,
+  step: 5,
+  unit: '%',
+  dependsOn: 'screensaver.local_metadata',
+);
+
+const screensaverLocalVignetteStrength = SettingDef<num>(
+  key: 'screensaver.local_vignette_strength',
+  type: SettingType.number,
+  defaultValue: 40,
+  title: 'Vignette strength',
+  description:
+      'Darkness of the shading behind the details, for readability on '
+      'bright photos. 0 turns it off.',
+  category: 'Screensaver',
+  section: 'Local Media metadata',
+  subpage: 'Local Media screensaver',
+  min: 0,
+  max: 100,
+  step: 5,
+  unit: '%',
+  dependsOn: 'screensaver.local_metadata',
 );
 
 // ── Immich Media (mode: immich) ──
@@ -4142,24 +4389,95 @@ const screensaverScreenOffBlack = SettingDef<bool>(
   dependsOnValue: {'gt': 0},
 );
 
-// Every detection wake from a dark panel lands on the dashboard, which is
-// wrong for a photo frame: someone walking into the room wants the photos
-// back, and a touch is what asks for the dashboard. On, a detection under a
-// dark panel only powers the screen on, the way the ESPHome Screen light
-// does, so the session stays up and the screen-off countdown starts over.
-// Touch, the wake word and the ESPHome dismiss still land on the dashboard.
-const screensaverScreenOffWakeToScreensaver = SettingDef<bool>(
+// Every wake from a dark panel lands on the dashboard, which is wrong for a
+// photo frame: someone walking into the room wants the photos back. The
+// ways of waking picked here only light the screen, the way the ESPHome
+// Screen light does, so the session stays up and the screen-off countdown
+// starts over. The value is a JSON list of [wakeToScreensaverSources].
+// 'power' is every wake the app did not ask for (power button, double-tap
+// to wake), since Android does not say which one it was. 'touch' only
+// reaches a black screen (Use a black screen instead): a powered-off panel
+// takes no touches. The wake word and the ESPHome dismiss still land on
+// the dashboard.
+const screensaverScreenOffWakeToScreensaver = SettingDef<String>(
   key: 'screensaver.screen_off_wake_to_screensaver',
-  type: SettingType.boolean,
-  defaultValue: false,
+  type: SettingType.string,
+  defaultValue: '[]',
   title: 'Wake to screensaver',
   description:
-      'Motion, face, proximity or person detection after the screen has '
-      'turned off brings the screensaver back instead of the dashboard, '
-      'with a fresh Turn screen off after countdown. Touch still opens the '
-      'dashboard.',
+      'Choose what brings the screensaver back instead of the dashboard '
+      'after the screen has turned off. The Turn screen off after countdown '
+      'starts over.',
   category: 'Screensaver',
+  validator: _validateWakeToScreensaver,
+  normalizer: _normalizeWakeToScreensaver,
 );
+
+/// Everything Wake to screensaver can pick, in the order both pickers list
+/// them.
+const wakeToScreensaverSources = [
+  'motion',
+  'face',
+  'proximity',
+  'person',
+  'power',
+  'touch',
+];
+
+/// What the switch this setting used to be stood for when on: every
+/// detection and every wake the app did not start. Touch was never part of
+/// it, so an upgrade keeps touch opening the dashboard.
+const wakeToScreensaverSwitchedOn = [
+  'motion',
+  'face',
+  'proximity',
+  'person',
+  'power',
+];
+
+/// The picked sources, unknown ones and a malformed value dropped.
+Set<String> decodeWakeToScreensaver(String value) {
+  try {
+    final decoded = json.decode(value);
+    if (decoded is List) {
+      return decoded
+          .whereType<String>()
+          .where(wakeToScreensaverSources.contains)
+          .toSet();
+    }
+  } catch (_) {}
+  return {};
+}
+
+/// [sources] as stored: known ones only, in [wakeToScreensaverSources]
+/// order.
+String encodeWakeToScreensaver(Iterable<String> sources) => jsonEncode([
+  for (final source in wakeToScreensaverSources)
+    if (sources.contains(source)) source,
+]);
+
+/// The switch this setting used to be, as the list it stands for. Imports,
+/// fleet pushes and API calls from older versions still send a bool.
+String wakeToScreensaverFromSwitch(bool on) =>
+    encodeWakeToScreensaver(on ? wakeToScreensaverSwitchedOn : const []);
+
+String? _validateWakeToScreensaver(Object? value) {
+  try {
+    final decoded = json.decode(value as String);
+    if (decoded is List &&
+        decoded.every(
+          (source) =>
+              source is String && wakeToScreensaverSources.contains(source),
+        )) {
+      return null;
+    }
+  } catch (_) {}
+  return 'Choose from ${wakeToScreensaverSources.join(', ')}.';
+}
+
+Object _normalizeWakeToScreensaver(Object value) => value is String
+    ? encodeWakeToScreensaver(decodeWakeToScreensaver(value))
+    : value;
 
 /// The brightness to restore when the screensaver ends, persisted so a
 /// process death mid-screensaver cannot turn the dim level into the new
@@ -4404,6 +4722,40 @@ const motionCamera = SettingDef<String>(
   optionLabels: {'front': 'Front', 'back': 'Back'},
   hidden: true,
   perDevice: true,
+);
+
+// ── Screensaver: External Motion Sensor ───────────────────────────────
+// Motion can come from a Home Assistant occupancy, motion or presence
+// sensor instead of the camera (issue #973): a tablet whose camera does
+// not work, or a room with a sensor already in it. With the switch on,
+// the entity drives Dismiss on motion and Postpone on motion in the
+// camera's place, and the camera no longer runs for them. The Motion
+// sensor entity, faces and hands stay on the camera. Not gated on the
+// Camera switch, since replacing the camera is the point.
+const motionUseEntity = SettingDef<bool>(
+  key: 'motion.use_entity',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Use Home Assistant entity',
+  description:
+      'Detect motion with a Home Assistant sensor instead of the camera.',
+  category: 'Screensaver',
+  section: 'External Motion Sensor',
+  subpage: 'Motion Detection',
+);
+
+// Picked with the entity search on both UIs, never typed.
+const motionEntity = SettingDef<String>(
+  key: 'motion.entity',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Motion sensor entity',
+  description:
+      'The Home Assistant occupancy, motion or presence sensor to follow.',
+  category: 'Screensaver',
+  section: 'External Motion Sensor',
+  subpage: 'Motion Detection',
+  dependsOn: 'motion.use_entity',
 );
 
 // ── Screensaver: Face Detection ────────────────────────────────────────
@@ -6280,6 +6632,7 @@ const voiceSkin = SettingDef<String>(
     'waveform',
     'lens-flares',
     'ink-blobs',
+    'jarvis',
     'voice-only',
   ],
   optionLabels: {
@@ -6293,6 +6646,7 @@ const voiceSkin = SettingDef<String>(
     'waveform': 'Waveform',
     'lens-flares': 'Lens Flares',
     'ink-blobs': 'Ink Blobs',
+    'jarvis': 'Jarvis',
     'voice-only': 'Voice Only',
   },
   dependsOn: 'voice.enabled',
@@ -6779,6 +7133,21 @@ const haSatelliteEntity = SettingDef<String>(
   category: 'Home Assistant',
   hidden: true,
   perDevice: true,
+);
+
+// Hidden: the Custom Pages page in both settings surfaces owns this value,
+// a JSON array of {name, path} for the person's own HTML pages under
+// /local/ (see custom_pages.dart). The pickers offer them as one more
+// dashboard. No subpage: both UIs place that page's entry row by hand,
+// under the Default dashboard card.
+const haCustomPages = SettingDef<String>(
+  key: 'ha.custom_pages',
+  type: SettingType.string,
+  defaultValue: '[]',
+  title: 'Custom Pages',
+  description: 'Your own HTML pages from the Home Assistant www folder.',
+  category: 'Home Assistant',
+  hidden: true,
 );
 
 const haKioskMode = SettingDef<bool>(
@@ -7450,7 +7819,7 @@ const cameraAutoDismissSeconds = SettingDef<num>(
   type: SettingType.number,
   defaultValue: 0,
   min: 0,
-  max: 300,
+  max: 3600,
   step: 30,
   unit: ' s',
   title: 'Auto-dismiss after',
@@ -7459,6 +7828,15 @@ const cameraAutoDismissSeconds = SettingDef<num>(
       'screensaver is unaffected.',
   category: 'Cameras',
 );
+
+/// The auto-dismiss slider's stops in seconds: every 30 s up to 5 min for a
+/// quick glance, then every 5 min up to an hour for a view left up on
+/// purpose, like a baby monitor. The remote admin keeps the same list in
+/// rows.js.
+final cameraAutoDismissStops = <int>[
+  for (var s = 0; s <= 300; s += 30) s,
+  for (var s = 600; s <= 3600; s += 300) s,
+];
 
 // Hidden because Cameras has a purpose-built editor on the device and in the
 // remote admin. Marking the versioned document secret keeps server credentials
@@ -9405,6 +9783,28 @@ const remoteFleetDiscovery = SettingDef<bool>(
   perDevice: true,
 );
 
+/// For a kiosk whose admin sits behind a reverse proxy with its own name
+/// and certificate. Only the switcher's link uses it: fleet calls, the
+/// intercom and discovery keep to the IP address, which a proxy name may
+/// not lead back to.
+const remoteAdminUrl = SettingDef<String>(
+  key: 'remote.admin_url',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Admin URL',
+  description:
+      'Address other kiosks open in Switch kiosk to reach this one, such as '
+      'a reverse proxy name. Leave blank to use its network address.',
+  placeholder: 'https://kiosk.example.com',
+  category: 'Device',
+  section: 'Remote Administration',
+  subpage: 'Remote Administration',
+  dependsOn: 'remote.fleet_discovery',
+  validator: validateAdminUrl,
+  normalizer: normalizeAdminUrlSetting,
+  perDevice: true,
+);
+
 // ── Updates ────────────────────────────────────────────────────────────
 // Where releases come from. GitHub is the default and the only source
 // until now; a custom repository is a folder on the user's own web server
@@ -10081,6 +10481,9 @@ const fleetDefaultExcluded = {
   'motion.fps',
   'face.sensitivity',
   'camera.snapshot_resolution',
+  // The room's own motion sensor, like adaptive brightness's light sensor.
+  'motion.use_entity',
+  'motion.entity',
   // The notch handling: a panel thing, but harmless to bring back.
   'browser.cutout_mode',
   // Which way the panel is mounted.
@@ -10279,6 +10682,45 @@ const fleetFormerDefaultExcluded = <Set<String>>[
     'screen.adaptive_max_brightness',
     'screen.adaptive_dark_lux',
     'screen.adaptive_bright_lux',
+    'screensaver.brightness_level',
+    'screensaver.dim_level',
+    'audio.media_volume',
+    'audio.assistant_volume',
+    'notifications.volume',
+    'ha.tap_sound_volume',
+    'screensaver.gallery_items',
+    'screensaver.local_folder',
+    'screensaver.clock_background',
+    'notifications.chime_file',
+    'launcher.apps',
+    'motion.sensitivity',
+    'motion.fps',
+    'face.sensitivity',
+    'camera.snapshot_resolution',
+    'browser.cutout_mode',
+    'screen.orientation',
+    'intercom.volume',
+    'intercom.answer_mode',
+    'voice.mute',
+    'voice.tts_output',
+  },
+  // Before the external motion sensor joined (issue #973).
+  {
+    'browser.zoom',
+    'screensaver.website_zoom',
+    'screensaver.clock_scale',
+    'screensaver.widget_scale',
+    'screensaver.immich_metadata_scale',
+    'screensaver.glance_scale',
+    'face.preview_scale',
+    'sendspin.player_size',
+    'screen.default_brightness',
+    'screen.adaptive_min_brightness',
+    'screen.adaptive_max_brightness',
+    'screen.adaptive_dark_lux',
+    'screen.adaptive_bright_lux',
+    'screen.adaptive_use_entity',
+    'screen.adaptive_light_entity',
     'screensaver.brightness_level',
     'screensaver.dim_level',
     'audio.media_volume',
@@ -11238,6 +11680,13 @@ const List<SettingDef<Object>> allSettings = [
   screensaverMediaTransition,
   screensaverMediaFill,
   screensaverMediaEdgeTaps,
+  screensaverMediaMetadata,
+  screensaverMediaMetadataDate,
+  screensaverMediaMetadataCamera,
+  screensaverMediaMetadataPosition,
+  screensaverMediaMetadataTextShadow,
+  screensaverMediaMetadataScale,
+  screensaverMediaVignetteStrength,
   screensaverLocalFolder,
   screensaverLocalInterval,
   screensaverLocalShuffle,
@@ -11245,6 +11694,13 @@ const List<SettingDef<Object>> allSettings = [
   screensaverLocalTransition,
   screensaverLocalFill,
   screensaverLocalEdgeTaps,
+  screensaverLocalMetadata,
+  screensaverLocalMetadataDate,
+  screensaverLocalMetadataCamera,
+  screensaverLocalMetadataPosition,
+  screensaverLocalMetadataTextShadow,
+  screensaverLocalMetadataScale,
+  screensaverLocalVignetteStrength,
   screensaverGalleryItems,
   screensaverGalleryInterval,
   screensaverGalleryShuffle,
@@ -11315,6 +11771,8 @@ const List<SettingDef<Object>> allSettings = [
   screensaverDismissOnMotionScreenOffOnly,
   screensaverPostponeOnMotion,
   motionCamera,
+  motionUseEntity,
+  motionEntity,
   screensaverDismissOnFace,
   screensaverDismissOnFaceScreenOffOnly,
   screensaverPostponeOnFace,
@@ -11446,6 +11904,7 @@ const List<SettingDef<Object>> allSettings = [
   haToken,
   haAutoLogin,
   haSatelliteEntity,
+  haCustomPages,
   haKioskMode,
   haKioskHideHeader,
   haKioskHideSidebar,
@@ -11607,6 +12066,7 @@ const List<SettingDef<Object>> allSettings = [
   remoteTls,
   remotePassword,
   remoteFleetDiscovery,
+  remoteAdminUrl,
   updateSource,
   updateSourceUrl,
   shizukuInstallUpdates,

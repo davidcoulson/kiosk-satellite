@@ -55,6 +55,8 @@ class PluginHostApi {
     'haStatus',
     'getHaEntityState',
     'getDashboardState',
+    'getCameraViews',
+    'getDashboards',
   ];
   static const controlNames = [
     'startScreensaver',
@@ -119,6 +121,19 @@ class PluginHostApi {
         RegExp(
           r'^/?[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*$',
         ).hasMatch(params[key] as String);
+    // A view path with an optional query and fragment, such as
+    // cameras/0?camera=garage. Segments may hold dots, as custom pages do,
+    // but never stand for a parent folder.
+    bool viewPath(String key) {
+      if (!text(key)) return false;
+      final value = params[key] as String;
+      final route = value.split(RegExp(r'[?#]')).first;
+      return RegExp(
+            r'^/?[a-zA-Z0-9_.-]+(?:/[a-zA-Z0-9_.-]+)*/?(?:\?[^\s#]*)?(?:#\S*)?$',
+          ).hasMatch(value) &&
+          !route.split('/').any((segment) => segment == '.' || segment == '..');
+    }
+
     switch (name) {
       case 'getHaEntityState':
         return keys({'entityId'}) &&
@@ -164,7 +179,7 @@ class PluginHostApi {
       case 'loadDashboard':
         return keys({'dashboard'}) && path('dashboard');
       case 'haNavigate':
-        return keys({'path'}) && path('path');
+        return keys({'path'}) && viewPath('path');
       default:
         return params.isEmpty;
     }
@@ -392,6 +407,30 @@ class PluginHostApi {
       }).toJson();
     }
     try {
+      if (name == 'getCameraViews' || name == 'getDashboards') {
+        final scoped = commands.as('plugin:${session.id}');
+        final data =
+            await (name == 'getCameraViews'
+                    ? _cameraViews(scoped)
+                    : _dashboards(scoped))
+                .timeout(const Duration(seconds: 8));
+        if (_session(args) != session) {
+          return const CommandResult.fail(
+            'Plugin session is no longer active',
+          ).toJson();
+        }
+        if (data == null) {
+          return const CommandResult.fail(
+            'KS could not complete this command. The feature may be unavailable.',
+          ).toJson();
+        }
+        if (utf8.encode(jsonEncode(data)).length > 32768) {
+          return const CommandResult.fail(
+            'Read response is too large',
+          ).toJson();
+        }
+        return CommandResult.ok(data).toJson();
+      }
       final result = await commands
           .as('plugin:${session.id}')
           .execute(
@@ -419,15 +458,15 @@ class PluginHostApi {
       if (isControl) {
         // Camera results contain internal state. Controls return only documented
         // scalar outcomes, with state available separately through host.read.
-        return CommandResult.ok(
-          const [
-                'nextScreensaverSlide',
-                'previousScreensaverSlide',
-                'haNavigate',
-              ].contains(name)
-              ? result.data == true
-              : null,
-        ).toJson();
+        return CommandResult.ok(switch (name) {
+          'nextScreensaverSlide' ||
+          'previousScreensaverSlide' => result.data == true,
+          // haNavigate reports what happened. A page already on the view
+          // counts as arrived.
+          'haNavigate' =>
+            result.data == 'navigated' || result.data == 'already',
+          _ => null,
+        }).toJson();
       }
       Object? data = result.data;
       if (name == 'getHaEntityState') {
@@ -502,6 +541,64 @@ class PluginHostApi {
         'KS command failed or timed out',
       ).toJson();
     }
+  }
+
+  /// The kiosk's camera views by name, without servers, streams or
+  /// credentials.
+  static Future<List<Map<String, Object?>>?> _cameraViews(
+    CommandRegistry commands,
+  ) async {
+    final result = await commands.execute('cameraGetConfig', const {});
+    final views = result.ok && result.data is Map
+        ? (result.data as Map)['views']
+        : null;
+    if (views is! List) return null;
+    return [
+      for (final view in views.whereType<Map>())
+        {
+          'id': '${view['id']}',
+          'name': '${view['name'] ?? ''}',
+          'cameraCount': (view['cameraIds'] as List?)?.length ?? 0,
+        },
+    ];
+  }
+
+  /// Home Assistant's dashboards and their views, through the same commands
+  /// the dashboard picker reads. Each view's path is what haNavigate takes.
+  static Future<List<Map<String, Object?>>?> _dashboards(
+    CommandRegistry commands,
+  ) async {
+    final listed = await commands.execute('haListDashboards', const {});
+    if (!listed.ok || listed.data is! List) return null;
+    final dashboards = [
+      for (final d in (listed.data as List).whereType<Map>())
+        if ('${d['url_path'] ?? ''}'.isNotEmpty) d,
+    ];
+    final views = await Future.wait([
+      for (final d in dashboards)
+        commands.execute('haListDashboardViews', {'url_path': d['url_path']}),
+    ]);
+    String? icon(Object? value) => value is String ? value : null;
+    return [
+      for (final (i, d) in dashboards.indexed)
+        {
+          'urlPath': '${d['url_path']}',
+          'title': '${d['title'] ?? d['url_path']}',
+          'icon': icon(d['icon']),
+          'custom': d['custom'] == true,
+          'views': [
+            if (views[i].ok && views[i].data is List)
+              for (final v in (views[i].data as List).whereType<Map>())
+                if ('${v['route'] ?? ''}'.isNotEmpty)
+                  {
+                    'path': '${d['url_path']}/${v['route']}',
+                    'title': '${v['title'] ?? v['route']}',
+                    'icon': icon(v['icon']),
+                    'subview': v['subview'] == true,
+                  },
+          ],
+        },
+    ];
   }
 
   static (String, Map<String, Object?>)? project(

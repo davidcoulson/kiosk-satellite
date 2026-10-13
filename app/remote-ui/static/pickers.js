@@ -223,6 +223,83 @@ export function openLauncherAppsPicker(current) {
 }
 
 
+/* ---- Wake to screensaver (issue #954) ---- */
+// What can wake a dark panel back to the screensaver, in the device's
+// order (wakeToScreensaverSources in definitions.dart).
+export const WAKE_SOURCES = ['motion', 'face', 'proximity', 'person', 'power', 'touch'];
+
+export function decodeWakeSources(value) {
+  try {
+    const list = JSON.parse(value || '[]');
+    if (Array.isArray(list)) return new Set(list.filter((source) => WAKE_SOURCES.includes(source)));
+  } catch (_) {}
+  return new Set();
+}
+
+function wakeSourceLabel(source) {
+  return {
+    motion: screensaverText('Motion'),
+    face: screensaverText('Face'),
+    proximity: screensaverText('Proximity'),
+    person: screensaverText('Person'),
+    power: screensaverText('Power button'),
+    touch: screensaverText('Touch'),
+  }[source];
+}
+
+// The row's value: Off, All or the picks by name.
+export function wakeSourcesText(picked) {
+  if (!picked.size) return screensaverText('Off');
+  if (picked.size === WAKE_SOURCES.length) return screensaverText('All');
+  return WAKE_SOURCES.filter((source) => picked.has(source)).map(wakeSourceLabel).join(', ');
+}
+
+// The device's checkbox dialog. Resolves to the picked Set, or null on
+// cancel. Touch is disabled, with what it needs as its hint, unless
+// [touchReady].
+export function openWakeSourcesPicker(title, current, touchReady) {
+  return new Promise((resolve) => {
+    const picked = new Set(current);
+    const shell = modalShell({ title, width: 520, onDismiss: () => close(null) });
+    const close = (val) => { shell.close(); resolve(val); };
+    for (const source of WAKE_SOURCES) {
+      const r = document.createElement('label');
+      r.className = 'row';
+      r.style.cursor = 'pointer';
+      const info = document.createElement('div'); info.className = 'info';
+      info.innerHTML = `<div class="name"></div>`;
+      info.querySelector('.name').textContent = wakeSourceLabel(source);
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = picked.has(source);
+      if (source === 'touch' && !touchReady) {
+        box.disabled = true;
+        r.style.cursor = 'default';
+        box.style.opacity = '.45';
+        info.querySelector('.name').style.opacity = '.45';
+        const hint = document.createElement('div');
+        hint.className = 'desc';
+        hint.textContent = screensaverText('Requires both "Turn screen off after" and "Use a black screen instead."');
+        info.appendChild(hint);
+      }
+      box.addEventListener('change', () => {
+        if (box.checked) picked.add(source);
+        else picked.delete(source);
+      });
+      // The checkbox leads the row, the whole row toggles it.
+      r.append(box, info);
+      shell.body.appendChild(r);
+    }
+    const cancel = document.createElement('button');
+    cancel.className = 'btn-text'; cancel.textContent = screensaverText('Cancel');
+    cancel.addEventListener('click', () => close(null));
+    const okBtn = document.createElement('button');
+    okBtn.className = 'btn-primary'; okBtn.textContent = screensaverText('Save');
+    okBtn.addEventListener('click', () => close(picked));
+    shell.foot.append(cancel, okBtn);
+  });
+}
+
 // The struck-out eye a person hidden in Immich wears, the device's
 // Icons.visibility_off_outlined traced in the page's stroke style.
 const HIDDEN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"'

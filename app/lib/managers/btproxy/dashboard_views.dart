@@ -1,3 +1,5 @@
+import '../home_assistant/custom_pages.dart';
+
 /// The dashboard-view select option a URL corresponds to, or null when it
 /// is none of them. A bare dashboard url renders that dashboard's first
 /// view, so it maps to the first option under that url_path.
@@ -8,7 +10,9 @@
 /// through this, so the option list and the page agree on what a view is.
 String? matchDashboardView(String url, List<String> options) {
   if (options.isEmpty) return null;
-  final path = Uri.tryParse(url)?.path.replaceAll(RegExp(r'^/+|/+$'), '') ?? '';
+  final uri = Uri.tryParse(url);
+  // A custom page keeps its query and fragment, which pick its layout.
+  final path = uri == null ? '' : navPathOfUri(uri);
   if (path.isEmpty) return null;
   if (options.contains(path)) return path;
   if (path.contains('/')) return null;

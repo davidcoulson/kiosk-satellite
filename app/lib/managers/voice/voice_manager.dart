@@ -98,7 +98,12 @@ class VoiceManager extends Manager {
     final next = satelliteState(view.value, busy: busy);
     if (next == _satelliteState) return;
     _satelliteState = next;
-    bus.publish(VoiceSatelliteStateChanged(next));
+    bus.publish(
+      VoiceSatelliteStateChanged(
+        next,
+        announcement: view.value.phase == AssistPhase.announcement,
+      ),
+    );
   }
 
   /// Seconds into the answer (or announcement) playing now and its length,

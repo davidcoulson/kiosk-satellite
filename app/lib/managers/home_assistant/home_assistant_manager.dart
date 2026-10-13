@@ -17,6 +17,7 @@ import '../../core/manager.dart';
 import '../browser/rotation_fade_script.dart';
 import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
+import 'custom_pages.dart';
 import 'dashboard_list.dart';
 import 'entity_list.dart';
 import 'plugin_entities.dart';
@@ -315,7 +316,8 @@ class HomeAssistantManager extends Manager {
             'domains': 'optional list of domains to keep',
             'device_class':
                 'optional device class to keep (illuminance also takes '
-                'readings in lux)',
+                'readings in lux, occupancy also takes motion and presence '
+                'binary sensors)',
             'icons':
                 'true to add icon_path, the SVG path of each icon, for '
                 "the remote admin's entity picker",
@@ -423,16 +425,63 @@ class HomeAssistantManager extends Manager {
       )
       ..register(
         Command(
+          name: 'haSaveCustomPage',
+          description:
+              'Add or change a custom page after checking that Home '
+              'Assistant serves it. Backs Save & Validate in the Custom '
+              'Pages editors on both settings surfaces.',
+          params: const {
+            'name': 'the name the pickers show',
+            'path': 'the path under /local/, such as /local/kitchen.html',
+            'original':
+                'optional: the path of the page being changed, absent '
+                'for a new one',
+          },
+          handler: (p) async {
+            final error = await saveCustomPage(
+              name: '${p['name'] ?? ''}',
+              path: '${p['path'] ?? ''}',
+              original: p['original'] is String
+                  ? p['original'] as String
+                  : null,
+            );
+            return error == null
+                ? const CommandResult.ok()
+                : CommandResult.fail(error);
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'haRemoveCustomPage',
+          description: 'Remove a custom page from the list.',
+          params: const {'path': 'the stored path of the page'},
+          handler: (p) async {
+            final path = '${p['path'] ?? ''}';
+            final pages = customPages;
+            if (!pages.any((e) => e.path == path)) {
+              return const CommandResult.fail('no such page');
+            }
+            await _settings.setFromJson(
+              defs.haCustomPages.key,
+              encodeCustomPages([
+                for (final e in pages)
+                  if (e.path != path) e,
+              ]),
+            );
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
           name: 'haNavigate',
           description:
               'Navigate the kiosk to a dashboard view path, dismissing the '
               'screensaver and any overlays so the view is actually seen.',
           params: const {'path': 'the navigation path ("url_path/view-route")'},
           handler: (p) async {
-            final path = '${p['path'] ?? ''}'.trim().replaceAll(
-              RegExp(r'^/+|/+$'),
-              '',
-            );
+            final path = normalizeViewPath('${p['path'] ?? ''}');
             if (path.isEmpty) return const CommandResult.fail('no path');
             if (!configured) {
               return const CommandResult.fail('Home Assistant not configured');
@@ -1139,7 +1188,7 @@ class HomeAssistantManager extends Manager {
   String? homeViewPath() {
     final uri = Uri.tryParse(_settings.get(defs.startUrl));
     if (uri == null) return null;
-    final path = uri.path.replaceAll(RegExp(r'^/+|/+$'), '');
+    final path = navPathOfUri(uri);
     return path.isEmpty ? null : path;
   }
 
@@ -1342,13 +1391,14 @@ class HomeAssistantManager extends Manager {
           '''
 (function () {
   if (!location.href.startsWith(${jsonEncode(base)})) return 'off-origin';
-  return location.pathname;
+  return location.pathname + location.search + location.hash;
 })();
 ''',
     });
     final page = '${where.data}';
     if (!where.ok || !page.startsWith('/')) return null;
-    final path = page.replaceAll(RegExp(r'^/+|/+$'), '');
+    final uri = Uri.tryParse(page);
+    final path = uri == null ? '' : navPathOfUri(uri);
     return path.isEmpty ? null : path;
   }
 
@@ -1397,6 +1447,10 @@ class HomeAssistantManager extends Manager {
   if (!location.href.startsWith(${jsonEncode(base)})) return false;
   var shown = '/' + ${jsonEncode(shown)};
   var path = location.pathname;
+  // A custom page is told apart by its query and fragment too.
+  if (path.indexOf('/local/') === 0) {
+    return path + location.search + location.hash === shown;
+  }
   return path === shown || path.indexOf(shown + '/') === 0;
 })();
 ''',
@@ -1436,6 +1490,9 @@ class HomeAssistantManager extends Manager {
       await commands.execute('loadUrl', {'url': '$baseUrl/$viewPath'});
       return 'navigated';
     }
+    // A custom page is a document of its own, not a route in Home
+    // Assistant's app, so it never takes a soft navigation or the fade.
+    if (isCustomPagePath(viewPath)) return _navigateToCustomPage(viewPath);
     // With the secure context proxy on, the page lives on the loopback
     // origin, not baseUrl — guard against what is actually on screen.
     final effectiveBase = await _pageBase();
@@ -1465,9 +1522,15 @@ class HomeAssistantManager extends Manager {
 (function () {
   var base = ${jsonEncode(effectiveBase)};
   if (!location.href.startsWith(base)) return 'off-origin';
+  // A custom page holds no Home Assistant app to route the path.
+  if (location.pathname.indexOf('/local/') === 0) return 'load';
   var path = '/' + ${jsonEncode(viewPath)};
+  var route = '/' + ${jsonEncode(viewRoute(viewPath))};
+  var rest = path.substring(route.length);
   // A child view is not the dashboard root requested by Go to home (#496).
-  if (location.pathname === path) return 'already';
+  // A path with a query or fragment is there only when they match too.
+  if (location.pathname === route &&
+      (!rest || location.search + location.hash === rest)) return 'already';
   history.pushState(null, '', path);
   window.dispatchEvent(new CustomEvent('location-changed'));
   return 'navigated';
@@ -1476,6 +1539,10 @@ class HomeAssistantManager extends Manager {
     final nav = await commands.execute('evalJs', {'code': js});
     await commands.execute('hideOverlayPage', const {});
     final outcome = nav.ok ? '${nav.data}' : 'failed';
+    if (outcome == 'load') {
+      await commands.execute('loadUrl', {'url': '$baseUrl/$viewPath'});
+      return 'navigated';
+    }
     if (outcome != 'navigated') {
       return outcome == 'already' || outcome == 'off-origin'
           ? outcome
@@ -1486,6 +1553,36 @@ class HomeAssistantManager extends Manager {
     } else {
       unawaited(_selfHeal(viewPath, seq));
     }
+    return 'navigated';
+  }
+
+  /// Move to a custom page. The same file under another fragment only
+  /// changes `location.hash`, which reloads nothing: one page with several
+  /// layouts switches between them in place and hears it as `hashchange`.
+  /// Anything else is a full load of the page.
+  Future<String> _navigateToCustomPage(String viewPath) async {
+    final base = await _pageBase();
+    final hop = await commands.execute('evalJs', {
+      'code':
+          '''
+(function () {
+  if (!location.href.startsWith(${jsonEncode(base)})) return 'off-origin';
+  var target = '/' + ${jsonEncode(viewPath)};
+  var cut = target.indexOf('#');
+  var file = cut < 0 ? target : target.slice(0, cut);
+  var hash = cut < 0 ? '' : target.slice(cut);
+  if (location.pathname + location.search !== file) return 'load';
+  if (location.hash === hash) return 'already';
+  location.hash = hash;
+  return 'navigated';
+})();
+''',
+    });
+    final outcome = hop.ok ? '${hop.data}' : 'load';
+    if (outcome == 'off-origin') return outcome;
+    await commands.execute('hideOverlayPage', const {});
+    if (outcome == 'already' || outcome == 'navigated') return outcome;
+    await commands.execute('loadUrl', {'url': '$baseUrl/$viewPath'});
     return 'navigated';
   }
 
@@ -1503,7 +1600,7 @@ class HomeAssistantManager extends Manager {
           '''
 (function () {
   try {
-    if (location.pathname !== '/' + ${jsonEncode(viewPath)}) return false;
+    if (location.pathname !== '/' + ${jsonEncode(viewRoute(viewPath))}) return false;
     // A page loaded moments ago has no hui-root YET for a perfectly
     // resolvable path (the frontend is still booting), and a verdict
     // taken then mislearned ordinary views as hard loads for the rest of
@@ -2712,18 +2809,88 @@ class HomeAssistantManager extends Manager {
     // offered that broken alias instead of the dashboard that actually
     // renders. Falls back to the WS list when the page has no hass yet.
     final page = await _dashboardsFromPage();
-    if (page != null || pageOnly) return page;
+    if (page != null || pageOnly) return _withCustomPagesEntry(page);
     try {
       final result = await _wsCommand({'type': 'lovelace/dashboards/list'});
       if (result is! List) return null;
       // YAML-mode dashboards included: they read over `lovelace/config`
       // the same as storage ones. Keeping only storage dashboards here
       // dropped every YAML dashboard from the view selects (issue #244).
-      return dashboardsFromWsList(result);
+      return _withCustomPagesEntry(dashboardsFromWsList(result));
     } catch (e) {
       log.warn(name, 'listDashboards failed: $e');
       return null;
     }
+  }
+
+  /// The person's custom pages, in their order.
+  List<CustomPage> get customPages =>
+      parseCustomPages(_settings.get(defs.haCustomPages));
+
+  /// [dashboards] with the Custom Pages entry last, while there are pages
+  /// to list. Its views are the pages (see [listDashboardViews]), so every
+  /// reader of the list offers them without knowing they are not views.
+  List<Map<String, Object?>>? _withCustomPagesEntry(
+    List<Map<String, Object?>>? dashboards,
+  ) {
+    if (dashboards == null || customPages.isEmpty) return dashboards;
+    return [
+      ...dashboards,
+      {
+        'url_path': customPagesDashboardPath,
+        'title': 'Custom Pages',
+        'icon': customPagesIcon,
+        'custom': true,
+      },
+    ];
+  }
+
+  /// Add or change a custom page, once Home Assistant answers for it with
+  /// a 200. Null when it saved, otherwise why not: `name` (no name),
+  /// `path` (nothing under /local/), `duplicate` (another page has the
+  /// path), `not_found` (Home Assistant has no such file), `status:<code>`
+  /// (any other answer) or `unreachable`. [original] names the page being
+  /// changed, which keeps its place in the list.
+  Future<String?> saveCustomPage({
+    required String name,
+    required String path,
+    String? original,
+  }) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return 'name';
+    final normalized = normalizeCustomPagePath(path);
+    if (normalized == null) return 'path';
+    final pages = customPages;
+    if (pages.any((p) => p.path == normalized && p.path != original)) {
+      return 'duplicate';
+    }
+    if (baseUrl.isEmpty) return 'unreachable';
+    try {
+      // /local/ needs no authorization, so no token goes with the check.
+      final response = await http
+          .get(Uri.parse('$baseUrl${customPageFile(normalized)}'))
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode == 404) return 'not_found';
+      if (response.statusCode != 200) return 'status:${response.statusCode}';
+    } catch (e) {
+      log.warn(this.name, 'custom page check failed for $normalized: $e');
+      return 'unreachable';
+    }
+    final page = CustomPage(name: trimmed, path: normalized);
+    final at = original == null
+        ? -1
+        : pages.indexWhere((p) => p.path == original);
+    final next = [...pages];
+    if (at < 0) {
+      next.add(page);
+    } else {
+      next[at] = page;
+    }
+    await _settings.setFromJson(
+      defs.haCustomPages.key,
+      encodeCustomPages(next),
+    );
+    return null;
   }
 
   /// The navigable dashboards from the page's `hass.panels`: every Lovelace
@@ -2802,6 +2969,14 @@ class HomeAssistantManager extends Manager {
   /// view list).
   Future<List<Map<String, Object?>>?> listDashboardViews(String urlPath) async {
     if (!configured || urlPath.isEmpty) return null;
+    // The Custom Pages entry: its views are the pages, read from the
+    // settings rather than Home Assistant.
+    if (urlPath == customPagesDashboardPath) {
+      return [
+        for (final p in customPages)
+          {'title': p.name, 'route': p.route, 'icon': customPageIcon},
+      ];
+    }
     try {
       final result = await _wsCommand({
         'type': 'lovelace/config',
@@ -3368,3 +3543,18 @@ class _PlatformBrightnessWatch with WidgetsBindingObserver {
   @override
   void didChangePlatformBrightness() => onChanged();
 }
+
+/// A navigation path without its outer slashes, "url_path/view-route",
+/// keeping a query or fragment after it ("cameras/0?camera=garage").
+String normalizeViewPath(String raw) {
+  final value = raw.trim();
+  final cut = value.indexOf(RegExp(r'[?#]'));
+  final route = (cut < 0 ? value : value.substring(0, cut)).replaceAll(
+    RegExp(r'^/+|/+$'),
+    '',
+  );
+  return cut < 0 || route.isEmpty ? route : route + value.substring(cut);
+}
+
+/// The route part of a navigation path, the part location.pathname shows.
+String viewRoute(String viewPath) => viewPath.split(RegExp(r'[?#]')).first;

@@ -610,6 +610,14 @@ class UiStringsUk extends UiStrings {
       'Вид, який кіоск показує під час запуску.';
 
   @override
+  String get dashboardPickerOnePage => '1 сторінка';
+
+  @override
+  String dashboardPickerPageCount(String count) {
+    return 'Сторінок: $count';
+  }
+
+  @override
   String get dlnaCannotDecode => 'Цей пристрій не може декодувати це відео.';
 
   @override
@@ -2916,6 +2924,40 @@ class UiStringsUk extends UiStrings {
   }
 
   @override
+  String get pluginShowPassword => 'Показати пароль';
+
+  @override
+  String get pluginHidePassword => 'Сховати пароль';
+
+  @override
+  String get pluginUntitled => 'Без назви';
+
+  @override
+  String get pluginSearchIcons => 'Пошук піктограм';
+
+  @override
+  String get pluginChooseIcon => 'Виберіть піктограму';
+
+  @override
+  String get pluginSearchCameraViews => 'Пошук виглядів камер';
+
+  @override
+  String get pluginChooseCameraView => 'Виберіть вигляд камер';
+
+  @override
+  String get pluginCameraViewGone =>
+      'Цього вигляду камер більше немає. Виберіть інший.';
+
+  @override
+  String get pluginDragToReorder => 'Перетягніть для зміни порядку';
+
+  @override
+  String get pluginDone => 'Готово';
+
+  @override
+  String get pluginRequired => 'Обов\'язково';
+
+  @override
   String get pluginAddPlugin => 'Додати плагін';
 
   @override
@@ -3424,6 +3466,34 @@ class UiStringsUk extends UiStrings {
       'Недійсний або дубльований ідентифікатор тригера';
 
   @override
+  String get pluginErrorListSetting => 'Недійсне налаштування списку';
+
+  @override
+  String get pluginErrorSettingCondition => 'Недійсна умова налаштування';
+
+  @override
+  String get pluginErrorIcon => 'Очікується назва піктограми MDI';
+
+  @override
+  String get pluginErrorDashboard => 'Очікується шлях до панелі керування';
+
+  @override
+  String get pluginErrorCameraView => 'Очікується ідентифікатор вигляду камер';
+
+  @override
+  String get pluginErrorListValue => 'Очікується налаштування списку';
+
+  @override
+  String get pluginErrorListCount => 'У списку забагато або замало елементів';
+
+  @override
+  String get pluginErrorRequiredField => 'Заповніть усі обов\'язкові поля';
+
+  @override
+  String get pluginErrorListSize =>
+      'Налаштування списку можуть займати не більше 32 КБ';
+
+  @override
   String get remoteDisableTitle => 'Вимкнути віддалене керування?';
 
   @override
@@ -3852,6 +3922,9 @@ class UiStringsUk extends UiStrings {
   String overviewMetricDegrees(String value) {
     return '$value°C';
   }
+
+  @override
+  String get overviewShowingCustomPages => 'Показ власних сторінок';
 
   @override
   String get overviewNoScreenshot => 'Немає знімка екрана';
@@ -5657,6 +5730,21 @@ class UiStringsUk extends UiStrings {
       'Оголошувати цей пристрій у мережі та відображати інші кіоски у віддаленому адмініструванні для перемикання між ними.';
 
   @override
+  String get settingRemoteAdminUrlTitle => 'URL адміністрування';
+
+  @override
+  String get settingRemoteAdminUrlDescription =>
+      'Адреса, яку інші кіоски відкривають у «Перемкнути кіоск», щоб перейти до цього, наприклад ім\'я зворотного проксі. Залиште порожнім, щоб використовувати його мережеву адресу.';
+
+  @override
+  String get deviceAdminUrlInvalid =>
+      'Введіть дійсну адресу, наприклад https://kiosk.example.com';
+
+  @override
+  String get deviceAdminUrlPath =>
+      'Введіть лише адресу, без шляху. Приклад: https://kiosk.example.com';
+
+  @override
   String get deviceRemotePage => 'Віддалене адміністрування';
 
   @override
@@ -7133,6 +7221,65 @@ class UiStringsUk extends UiStrings {
   @override
   String get gestureRemoteKeysHelp =>
       'A mapped key runs its action whatever app is in front, and does nothing else.';
+  String get haCustomPages => 'Власні сторінки';
+
+  @override
+  String get haCustomPagesHintDashboard =>
+      'Ваші власні HTML-сторінки як панель керування';
+
+  @override
+  String get haCustomPagesAdd => 'Додати сторінку';
+
+  @override
+  String get haCustomPagesEmpty =>
+      'Додайте HTML-сторінки з теки www Home Assistant, щоб вибирати їх як панель керування.';
+
+  @override
+  String get haCustomPagesGuide => 'Посібник із власних сторінок';
+
+  @override
+  String get haCustomPagesGuideHint =>
+      'Як створити сторінку, що працює з Home Assistant.';
+
+  @override
+  String get haCustomPageAddTitle => 'Додати власну сторінку';
+
+  @override
+  String get haCustomPageEditTitle => 'Змінити власну сторінку';
+
+  @override
+  String get haCustomPageName => 'Назва';
+
+  @override
+  String get haCustomPagePath => 'Шлях';
+
+  @override
+  String get haCustomPagePathHint =>
+      'Файл у теці www Home Assistant, наприклад /local/dashboard.html.';
+
+  @override
+  String get haCustomPageNameMissing => 'Введіть назву.';
+
+  @override
+  String get haCustomPagePathInvalid =>
+      'Введіть шлях у /local/, наприклад /local/dashboard.html.';
+
+  @override
+  String get haCustomPageDuplicate =>
+      'Цей шлях уже використовує інша сторінка.';
+
+  @override
+  String get haCustomPageNotFound =>
+      'У Home Assistant немає файлу за цим шляхом.';
+
+  @override
+  String get haCustomPageUnreachable =>
+      'Не вдалося з\'єднатися з Home Assistant.';
+
+  @override
+  String haCustomPageStatus(String code) {
+    return 'Home Assistant відповів кодом HTTP $code.';
+  }
 
   @override
   String get settingHaHoldModeTitle => 'Режим утримання';
@@ -7269,6 +7416,9 @@ class UiStringsUk extends UiStrings {
   String haThreshold(String count) {
     return 'Цей вид використовує $count сутностей, що перевищує поріг фільтрації. Фільтрацію вимкнено.';
   }
+
+  @override
+  String get haCustomPageFilter => 'Не використовується на власних сторінках.';
 
   @override
   String get settingHaReturnHomeEnabledTitle =>
@@ -9833,8 +9983,33 @@ class UiStringsUk extends UiStrings {
       'Пробудження до заставки';
 
   @override
-  String get settingScreensaverScreenOffWakeToScreensaverDescription =>
-      'Розпізнавання руху, обличчя чи наближення після вимкнення екрана відновлює заставку, а не панель, із новим відліком вимкнення екрана. Дотик все одно відкриває панель керування.';
+  String get settingScreensaverScreenOffWakeToScreensaverDescriptionSources =>
+      'Виберіть, що повертає заставку замість панелі після вимкнення екрана. Відлік «Вимкнути екран через» починається знову.';
+
+  @override
+  String get screensaverWakeSourcesAll => 'Усе';
+
+  @override
+  String get screensaverWakeSourceMotion => 'Рух';
+
+  @override
+  String get screensaverWakeSourceFace => 'Обличчя';
+
+  @override
+  String get screensaverWakeSourceProximity => 'Наближення';
+
+  @override
+  String get screensaverWakeSourcePerson => 'Людина';
+
+  @override
+  String get screensaverWakeSourcePower => 'Кнопка живлення';
+
+  @override
+  String get screensaverWakeSourceTouch => 'Дотик';
+
+  @override
+  String get screensaverWakeSourceTouchRequires =>
+      'Потрібні обидва параметри: «Вимкнути екран через» і «Використовувати чорний екран замість вимкнення».';
 
   @override
   String get screensaverModeDim => 'Затемнення';
@@ -10629,11 +10804,65 @@ class UiStringsUk extends UiStrings {
       'Торкання лівої або правої п\'ятої частини екрана показує попередній або наступний слайд замість закриття заставки.';
 
   @override
+  String get settingScreensaverMediaMetadataTitle => 'Показувати метадані';
+
+  @override
+  String get settingScreensaverMediaMetadataDescription =>
+      'Дата та параметри камери поверх фото.';
+
+  @override
+  String get settingScreensaverMediaMetadataDateTitle => 'Дата зйомки';
+
+  @override
+  String get settingScreensaverMediaMetadataDateDescription =>
+      'Показувати, коли було зроблено фото.';
+
+  @override
+  String get settingScreensaverMediaMetadataCameraTitle => 'Параметри камери';
+
+  @override
+  String get settingScreensaverMediaMetadataCameraDescription =>
+      'Показувати фокусну відстань, діафрагму та ISO.';
+
+  @override
+  String get settingScreensaverMediaMetadataPositionTitle =>
+      'Розташування метаданих';
+
+  @override
+  String get settingScreensaverMediaMetadataPositionDescription =>
+      'У якому кутку показувати відомості.';
+
+  @override
+  String get settingScreensaverMediaMetadataTextShadowTitle => 'Тінь тексту';
+
+  @override
+  String get settingScreensaverMediaMetadataTextShadowDescription =>
+      'Додати тінь до тексту метаданих для кращої читабельності на фотографіях.';
+
+  @override
+  String get settingScreensaverMediaMetadataScaleTitle => 'Масштаб тексту';
+
+  @override
+  String get settingScreensaverMediaMetadataScaleDescription =>
+      'Масштабувати відомості фото відповідно до розміру екрана.';
+
+  @override
+  String get settingScreensaverMediaVignetteStrengthTitle =>
+      'Інтенсивність віньєтування';
+
+  @override
+  String get settingScreensaverMediaVignetteStrengthDescription =>
+      'Затемнення фону за відомостями для читабельності на яскравих фото. 0 вимикає його.';
+
+  @override
+  String get screensaverMediaHaMetadata => 'Метадані медіа Home Assistant';
+
+  @override
   String get screensaverMediaHaPage => 'Заставка медіа Home Assistant';
 
   @override
-  String get screensaverMediaHaHint =>
-      'Джерело медіа, тривалість, випадковий порядок, заповнення';
+  String get screensaverMediaHaPageHint =>
+      'Джерело медіа, тривалість, випадковий порядок, заповнення, метадані';
 
   @override
   String get screensaverMediaChoose => 'Вибрати медіа';
@@ -10722,11 +10951,65 @@ class UiStringsUk extends UiStrings {
       'Торкання лівої або правої п\'ятої частини екрана показує попередній або наступний слайд замість закриття заставки.';
 
   @override
+  String get settingScreensaverLocalMetadataTitle => 'Показувати метадані';
+
+  @override
+  String get settingScreensaverLocalMetadataDescription =>
+      'Дата та параметри камери поверх фото.';
+
+  @override
+  String get settingScreensaverLocalMetadataDateTitle => 'Дата зйомки';
+
+  @override
+  String get settingScreensaverLocalMetadataDateDescription =>
+      'Показувати, коли було зроблено фото.';
+
+  @override
+  String get settingScreensaverLocalMetadataCameraTitle => 'Параметри камери';
+
+  @override
+  String get settingScreensaverLocalMetadataCameraDescription =>
+      'Показувати фокусну відстань, діафрагму та ISO.';
+
+  @override
+  String get settingScreensaverLocalMetadataPositionTitle =>
+      'Розташування метаданих';
+
+  @override
+  String get settingScreensaverLocalMetadataPositionDescription =>
+      'У якому кутку показувати відомості.';
+
+  @override
+  String get settingScreensaverLocalMetadataTextShadowTitle => 'Тінь тексту';
+
+  @override
+  String get settingScreensaverLocalMetadataTextShadowDescription =>
+      'Додати тінь до тексту метаданих для кращої читабельності на фотографіях.';
+
+  @override
+  String get settingScreensaverLocalMetadataScaleTitle => 'Масштаб тексту';
+
+  @override
+  String get settingScreensaverLocalMetadataScaleDescription =>
+      'Масштабувати відомості фото відповідно до розміру екрана.';
+
+  @override
+  String get settingScreensaverLocalVignetteStrengthTitle =>
+      'Інтенсивність віньєтування';
+
+  @override
+  String get settingScreensaverLocalVignetteStrengthDescription =>
+      'Затемнення фону за відомостями для читабельності на яскравих фото. 0 вимикає його.';
+
+  @override
+  String get screensaverMediaLocalMetadata => 'Метадані локальних медіа';
+
+  @override
   String get screensaverMediaLocalPage => 'Заставка локальних медіа';
 
   @override
-  String get screensaverMediaLocalHint =>
-      'Папка, тривалість, випадковий порядок, перехід';
+  String get screensaverMediaLocalPageHint =>
+      'Папка, тривалість, випадковий порядок, перехід, метадані';
 
   @override
   String get settingScreensaverDismissOnMotionTitle => 'Вихід за рухом';
@@ -10761,6 +11044,25 @@ class UiStringsUk extends UiStrings {
   @override
   String get screensaverDetectionMotionTuning =>
       'Чутливість виявлення руху налаштовується в параметрах Камери.';
+
+  @override
+  String get settingMotionUseEntityTitle =>
+      'Використовувати сутність Home Assistant';
+
+  @override
+  String get settingMotionUseEntityDescription =>
+      'Визначає рух за датчиком Home Assistant замість камери.';
+
+  @override
+  String get settingMotionEntityTitle => 'Сутність датчика руху';
+
+  @override
+  String get settingMotionEntityDescription =>
+      'Датчик зайнятості, руху або присутності Home Assistant, за яким слід стежити.';
+
+  @override
+  String get screensaverDetectionExternalMotionHeading =>
+      'Зовнішній датчик руху';
 
   @override
   String get settingScreensaverDismissOnPersonTitle =>

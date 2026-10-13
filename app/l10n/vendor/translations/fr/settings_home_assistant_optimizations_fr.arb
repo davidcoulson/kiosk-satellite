@@ -23,5 +23,6 @@
   "haUnknownEntities": "Les entités de cette vue ne peuvent pas être déterminées : ses mises à jour ne sont donc pas filtrées.",
   "haWaiting": "En attente du chargement du tableau de bord…",
   "haShowScan": "Afficher les détails de l'analyse.",
-  "haThreshold": "Cette vue utilise {count} entités, ce qui dépasse le seuil de filtrage. Le filtrage est désactivé."
+  "haThreshold": "Cette vue utilise {count} entités, ce qui dépasse le seuil de filtrage. Le filtrage est désactivé.",
+  "haCustomPageFilter": "Non utilisé sur les pages personnalisées."
 }

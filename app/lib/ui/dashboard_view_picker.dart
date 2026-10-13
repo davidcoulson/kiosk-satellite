@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_container.dart';
+import '../managers/home_assistant/custom_pages.dart';
 import '../l10n/messages.dart';
 import 'kit.dart';
 import 'mdi_icon.dart';
@@ -36,12 +37,21 @@ class HaDashboard {
     required this.title,
     this.icon,
     this.views = const [],
+    this.custom = false,
   });
 
   /// The dashboard's url_path.
   final String path;
   final String title;
   final String? icon;
+
+  /// The Custom Pages entry: the person's own pages under /local/, listed
+  /// as its views.
+  final bool custom;
+
+  /// The name the pickers show, in the kiosk's language for Custom Pages.
+  String label(BuildContext context) =>
+      custom ? haText(context, 'Custom Pages') : title;
 
   /// Empty for a dashboard that builds its own views (a strategy
   /// dashboard): the kiosk opens it whole, by its bare path.
@@ -105,6 +115,7 @@ abstract final class DashboardCatalog {
             path: '${d['url_path']}',
             title: '${d['title'] ?? d['url_path']}',
             icon: d['icon'] is String ? d['icon'] as String : null,
+            custom: d['custom'] == true,
             views: [
               // A dashboard whose views cannot be read opens whole, the
               // same as one that builds its own.
@@ -142,10 +153,12 @@ abstract final class DashboardCatalog {
 }
 
 /// The navigation path inside a start URL on [base]: what follows the
-/// origin, without a query or fragment. Null for a URL elsewhere.
+/// origin, without a query or fragment, which a custom page keeps since
+/// they pick its layout. Null for a URL elsewhere.
 String? dashboardPathOfUrl(String url, String base) {
   if (base.isEmpty || !url.startsWith('$base/')) return null;
   var path = url.substring(base.length + 1);
+  if (isCustomPagePath(path)) return path;
   final cut = path.indexOf(RegExp('[?#]'));
   if (cut >= 0) path = path.substring(0, cut);
   while (path.endsWith('/')) {
@@ -445,7 +458,7 @@ class _DashboardPickerState extends State<DashboardPicker> {
     final back = dash != null
         ? () => setState(() => _drill = null)
         : widget.onClose;
-    final title = dash?.title ?? widget.title;
+    final title = dash?.label(context) ?? widget.title;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -627,7 +640,7 @@ class _DashboardPickerState extends State<DashboardPicker> {
     final theme = Theme.of(context);
     return LayoutBuilder(
       builder: (context, box) {
-        final columns = box.maxWidth >= 420 ? 3 : 2;
+        const columns = 2;
         SliverGrid grid(List<HaView?> views) => SliverGrid(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
@@ -666,7 +679,7 @@ class _DashboardPickerState extends State<DashboardPicker> {
                     children: [
                       Flexible(
                         child: Text(
-                          d.title,
+                          d.label(context),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -778,7 +791,8 @@ class _DashboardPickerState extends State<DashboardPicker> {
     final groups = <(HaDashboard, List<HaView?>)>[];
     for (final d in list) {
       final all =
-          d.title.toLowerCase().contains(q) || d.path.toLowerCase().contains(q);
+          d.label(context).toLowerCase().contains(q) ||
+          d.path.toLowerCase().contains(q);
       if (d.whole) {
         if (all) groups.add((d, [null]));
         continue;
@@ -810,14 +824,14 @@ class _DashboardPickerState extends State<DashboardPicker> {
                 children: [
                   _Glyph(
                     icon: d.icon ?? 'mdi:view-dashboard',
-                    title: d.title,
+                    title: d.label(context),
                     size: 18,
                     color: scheme.primary,
                   ),
                   const SizedBox(width: 8),
                   Flexible(
                     child: _Highlighted(
-                      d.title,
+                      d.label(context),
                       _query,
                       style: TextStyle(
                         fontSize: 14,
@@ -1050,7 +1064,11 @@ class _DashboardRow extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final d = dashboard;
     final count = d.views.length;
-    final sub = d.whole
+    final sub = d.custom
+        ? count == 1
+              ? haText(context, '1 page')
+              : l10n(context).dashboardPickerPageCount('$count')
+        : d.whole
         ? haText(context, 'Builds its own views')
         : count == 1
         ? haText(context, '1 view')
@@ -1080,7 +1098,7 @@ class _DashboardRow extends StatelessWidget {
                   alignment: Alignment.center,
                   child: _Glyph(
                     icon: d.icon ?? 'mdi:view-dashboard',
-                    title: d.title,
+                    title: d.label(context),
                     size: 20,
                     color: active ? scheme.primary : scheme.onSurfaceVariant,
                   ),
@@ -1091,7 +1109,7 @@ class _DashboardRow extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        d.title,
+                        d.label(context),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -1286,7 +1304,7 @@ class _ViewRow extends StatelessWidget {
                           ? Text.rich(
                               TextSpan(
                                 children: [
-                                  TextSpan(text: dashboard.title),
+                                  TextSpan(text: dashboard.label(context)),
                                   TextSpan(
                                     text: ' · ',
                                     style: TextStyle(color: scheme.outline),
@@ -1631,7 +1649,7 @@ class _DashboardFieldState extends State<DashboardField> {
                   TextSpan(
                     children: [
                       TextSpan(
-                        text: d.title,
+                        text: d.label(context),
                         style: TextStyle(color: scheme.onSurfaceVariant),
                       ),
                       TextSpan(
@@ -1791,7 +1809,7 @@ class DashboardViewListRow extends StatelessWidget {
               Text.rich(
                 TextSpan(
                   children: [
-                    TextSpan(text: d.title),
+                    TextSpan(text: d.label(context)),
                     TextSpan(
                       text: ' · ',
                       style: TextStyle(color: scheme.outline),

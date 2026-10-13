@@ -15,5 +15,20 @@
   "settingScreensaverLocalEdgeTapsTitle": "Tocar los bordes para cambiar de imagen",
   "settingScreensaverLocalEdgeTapsDescription": "Tocar el quinto izquierdo o derecho de la pantalla muestra la imagen anterior o siguiente en lugar de cerrar el protector de pantalla.",
   "screensaverMediaLocalPage": "Protector de pantalla: Contenido multimedia local",
-  "screensaverMediaLocalHint": "Carpeta, duración, orden aleatorio y transición"
+  "screensaverMediaLocalPageHint": "Carpeta, duración, orden aleatorio, transición y metadatos",
+  "settingScreensaverLocalMetadataTitle": "Mostrar metadatos",
+  "settingScreensaverLocalMetadataDateTitle": "Fecha de captura",
+  "settingScreensaverLocalMetadataDateDescription": "Muestra cuándo se tomó la foto.",
+  "settingScreensaverLocalMetadataCameraTitle": "Detalles de la cámara",
+  "settingScreensaverLocalMetadataCameraDescription": "Muestra la distancia focal, la apertura y el ISO.",
+  "settingScreensaverLocalMetadataPositionTitle": "Posición de los metadatos",
+  "settingScreensaverLocalMetadataPositionDescription": "Esquina en la que se muestran los detalles.",
+  "settingScreensaverLocalMetadataTextShadowTitle": "Sombra del texto",
+  "settingScreensaverLocalMetadataTextShadowDescription": "Añade una sombra al texto de los metadatos para facilitar su lectura sobre las fotos.",
+  "settingScreensaverLocalMetadataScaleTitle": "Tamaño del texto",
+  "settingScreensaverLocalMetadataScaleDescription": "Ajusta el tamaño de los detalles de la foto a la pantalla.",
+  "settingScreensaverLocalVignetteStrengthTitle": "Intensidad del sombreado",
+  "settingScreensaverLocalVignetteStrengthDescription": "Oscuridad del sombreado detrás de los detalles para facilitar la lectura sobre fotos claras. Con 0, se desactiva.",
+  "settingScreensaverLocalMetadataDescription": "Muestra la fecha y los detalles de la cámara sobre la foto.",
+  "screensaverMediaLocalMetadata": "Metadatos del contenido multimedia local"
 }

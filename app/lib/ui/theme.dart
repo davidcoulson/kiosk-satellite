@@ -103,7 +103,7 @@ ColorScheme _lightScheme() =>
       errorContainer: const Color(0xFFF6DBCB),
       onErrorContainer: const Color(0xFF54250A),
       surface: _lightBg,
-      onSurface: const Color(0xFF212327),
+      onSurface: const Color(0xFF444444),
       onSurfaceVariant: const Color(0xFF5D6066),
       surfaceContainerLowest: Colors.white,
       surfaceContainerLow: const Color(0xFFFBFAF9),

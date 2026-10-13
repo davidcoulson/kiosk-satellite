@@ -21,5 +21,16 @@
   "pluginThisPluginWasInstalledFromZipAndHasNo": "Dieses Plugin wurde aus einer ZIP-Datei installiert und verfügt über keine README-Datei aus einem Repository.",
   "pluginImageUnavailable": "Bild nicht verfügbar",
   "pluginCouldNotOpenThisLink": "Dieser Link konnte nicht geöffnet werden.",
-  "pluginEnableName": "{name} aktivieren"
+  "pluginEnableName": "{name} aktivieren",
+  "pluginShowPassword": "Passwort anzeigen",
+  "pluginHidePassword": "Passwort ausblenden",
+  "pluginUntitled": "Ohne Namen",
+  "pluginSearchIcons": "Symbole suchen",
+  "pluginChooseIcon": "Symbol auswählen",
+  "pluginSearchCameraViews": "Kameraansichten suchen",
+  "pluginChooseCameraView": "Kameraansicht auswählen",
+  "pluginCameraViewGone": "Diese Kameraansicht gibt es nicht mehr. Wähle eine andere.",
+  "pluginDragToReorder": "Zum Neuordnen ziehen",
+  "pluginDone": "Fertig",
+  "pluginRequired": "Erforderlich"
 }

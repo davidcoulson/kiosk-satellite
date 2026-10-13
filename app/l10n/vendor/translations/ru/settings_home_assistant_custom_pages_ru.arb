@@ -1,0 +1,20 @@
+{
+  "@@locale": "ru",
+  "haCustomPages": "Свои страницы",
+  "haCustomPagesHintDashboard": "Ваши HTML-страницы в качестве панели",
+  "haCustomPagesAdd": "Добавить страницу",
+  "haCustomPagesEmpty": "Добавьте HTML-страницы из папки www Home Assistant, чтобы выбирать их как панель.",
+  "haCustomPagesGuide": "Руководство по своим страницам",
+  "haCustomPagesGuideHint": "Как создать страницу, которая работает с Home Assistant.",
+  "haCustomPageAddTitle": "Добавить свою страницу",
+  "haCustomPageEditTitle": "Изменить свою страницу",
+  "haCustomPageName": "Название",
+  "haCustomPagePath": "Путь",
+  "haCustomPagePathHint": "Файл в папке www Home Assistant, например /local/dashboard.html.",
+  "haCustomPageNameMissing": "Введите название.",
+  "haCustomPagePathInvalid": "Введите путь в /local/, например /local/dashboard.html.",
+  "haCustomPageDuplicate": "Этот путь уже использует другая страница.",
+  "haCustomPageNotFound": "В Home Assistant нет файла по этому пути.",
+  "haCustomPageUnreachable": "Не удалось подключиться к Home Assistant.",
+  "haCustomPageStatus": "Home Assistant ответил кодом HTTP {code}."
+}

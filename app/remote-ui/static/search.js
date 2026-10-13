@@ -25,9 +25,14 @@ export const SEARCH_CATEGORY_TABS = {
 // Satellite integration, not from the definitions, so the page that draws
 // them names them. Mirrors the two pages VsControlsSection places on the
 // device.
-export const DEFLESS_SUBPAGES = [['voicesatellite', 'Appearance'],
+export const DEFLESS_SUBPAGES = [['homeassistant', 'Custom Pages'],
+  ['voicesatellite', 'Appearance'],
   ['device', 'Hardware'], ['device', 'Home Assistant'], ['device', 'WebView']];
 export const SEARCH_EXTRAS = [
+  { tab: 'homeassistant', title: 'Add page', sub: 'Custom Pages', anchor: 'x:custom_pages',
+    desc: 'Add HTML pages from the Home Assistant www folder to pick them like a dashboard.' },
+  { tab: 'homeassistant', title: 'Custom page guide', sub: 'Custom Pages', anchor: 'x:custom_pages_docs',
+    desc: 'How to build a page that talks to Home Assistant.' },
   { tab: 'plugins', title: 'Enable Plugins',
     desc: 'Plugins add additional community developed features to Kiosk Satellite.', anchor: 'x:plugins:master' },
   { tab: 'plugins', title: 'Add plugin',

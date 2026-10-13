@@ -157,6 +157,7 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         realtimeAudio = RealtimeAudio(applicationContext, messenger)
         mediaSessions = MediaSessionBridge(applicationContext, messenger)
         voiceIntents = VoiceIntentBridge(applicationContext, messenger)
+        EventBroadcastBridge(applicationContext, messenger)
         plugins = me.jxl.kiosk_satellite.plugins.PluginBridge(applicationContext, messenger)
         // Plugin overlays are platform views on the cached engine, built
         // with the Activity's context whenever one is attached.

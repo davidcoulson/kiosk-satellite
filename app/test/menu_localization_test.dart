@@ -522,7 +522,7 @@ void main() {
         find.byType(DropdownRow<String>),
       );
       expect(choice.options, contains(('back', 'TEST rear camera')));
-      choice.onChanged('back');
+      choice.onChanged!('back');
       await tester.pump();
       expect(container.settings.get(defs.cameraDevice), 'back');
       await tester.pumpWidget(
@@ -936,7 +936,7 @@ void main() {
       row.options,
       contains(('reverse_portrait', 'TEST reverse portrait')),
     );
-    row.onChanged('reverse_portrait');
+    row.onChanged!('reverse_portrait');
     await tester.pump();
     expect(container.settings.get(defs.screenOrientation), 'reverse_portrait');
     container.device.hasLightSensor = false;
@@ -1006,7 +1006,7 @@ void main() {
       find.byType(DropdownRow<String>),
     );
     expect(row.options.first, ('light', 'TEST gentle vibration'));
-    row.onChanged('light');
+    row.onChanged!('light');
     await tester.pump();
     expect(container.settings.get(defs.haHapticsStrength), 'light');
     await tester.pumpWidget(
@@ -1115,7 +1115,7 @@ void main() {
       ('light', 'TEST light'),
       ('system', 'TEST system'),
     ]);
-    row.onChanged('dark');
+    row.onChanged!('dark');
     await tester.pump();
     expect(container.settings.get(defs.uiTheme), 'dark');
     final definition = container.settings.describe().firstWhere(

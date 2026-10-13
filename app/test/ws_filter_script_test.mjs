@@ -448,3 +448,14 @@ test('repeated injection does not wrap the dashboard setter again', async () => 
   vm.runInContext(source, p.context);
   assert.equal(Object.getOwnPropertyDescriptor(p.Root.prototype, 'hass').set, setter);
 });
+
+test('a custom page under /local/ keeps its own sockets and says so', () => {
+  class Socket {}
+  const window = { WebSocket: Socket };
+  const context = vm.createContext({ window, location: { pathname: '/local/wall.html' },
+    document: { addEventListener() {} } });
+  vm.runInContext(source, context);
+  assert.equal(window.WebSocket, Socket);
+  assert.equal(window.__ksWs.customPage, true);
+  assert.equal(window.__ksWs.stats().mode, 'custom-page');
+});

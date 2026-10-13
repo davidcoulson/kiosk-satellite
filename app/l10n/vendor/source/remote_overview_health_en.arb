@@ -554,5 +554,16 @@
         "type": "String"
       }
     }
+  },
+  "overviewShowingCustomPages": "Showing custom pages",
+  "@overviewShowingCustomPages": {
+    "context": "Remote admin > Overview > Status",
+    "description": "Home Assistant chip status while a custom page (a person's own HTML page) is on screen instead of a Home Assistant dashboard.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Status"
+      ]
+    }
   }
 }

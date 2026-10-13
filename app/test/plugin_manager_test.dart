@@ -1126,19 +1126,34 @@ void main() {
     int width = PluginNativeOverlay.wrap,
     int height = PluginNativeOverlay.wrap,
     int inset = 0,
+    List<int>? insets,
+    int offsetX = 0,
+    int offsetY = 0,
     bool closeOnBack = true,
     bool onTop = false,
     bool touchable = true,
+    bool closeOnOutsideTouch = false,
+    bool passOutsideTouch = false,
+    String enter = 'none',
+    String exit = 'none',
+    int duration = 200,
   }) => {
     'key': key,
     'generation': generation,
     'anchor': anchor,
     'width': width,
     'height': height,
-    'inset': inset,
+    'insets': insets ?? [inset, inset, inset, inset],
+    'offsetX': offsetX,
+    'offsetY': offsetY,
     'closeOnBack': closeOnBack,
     'onTop': onTop,
     'touchable': touchable,
+    'closeOnOutsideTouch': closeOnOutsideTouch,
+    'passOutsideTouch': passOutsideTouch,
+    'enter': enter,
+    'exit': exit,
+    'duration': duration,
   };
   Future<void> overlays(String token, List<Map<String, Object?>> list) =>
       native('overlays', {
@@ -1146,6 +1161,48 @@ void main() {
         'session': token,
         'overlays': list,
       });
+
+  test(
+    'content insets merge across plugins and clear with their session',
+    () async {
+      Future<void> session(String id, String token) => native('hostSession', {
+        'id': id,
+        'session': token,
+        'capabilities': ['overlay'],
+      });
+      Future<void> insets(String id, String token, List<int> sides) => native(
+        'contentInsets',
+        {'id': id, 'session': token, 'insets': sides},
+      );
+      await session('hello-world', 'first');
+      await insets('hello-world', 'first', [0, 0, 0, 80]);
+      expect(plugins.contentInsets.value, const EdgeInsets.only(bottom: 80));
+      await session('navbar', 'one');
+      await insets('navbar', 'one', [72, 0, 0, 64]);
+      // Each edge keeps the largest.
+      expect(
+        plugins.contentInsets.value,
+        const EdgeInsets.fromLTRB(72, 0, 0, 80),
+      );
+      // A stale session is ignored.
+      await insets('navbar', 'old', [0, 300, 0, 0]);
+      expect(plugins.contentInsets.value.top, 0);
+      await native('hostSessionClosed', {
+        'id': 'hello-world',
+        'session': 'first',
+      });
+      expect(
+        plugins.contentInsets.value,
+        const EdgeInsets.fromLTRB(72, 0, 0, 64),
+      );
+      await insets('navbar', 'one', [0, 0, 0, 0]);
+      expect(plugins.contentInsets.value, EdgeInsets.zero);
+      // A restarted session starts with none.
+      await insets('navbar', 'one', [0, 0, 0, 48]);
+      await session('navbar', 'two');
+      expect(plugins.contentInsets.value, EdgeInsets.zero);
+    },
+  );
 
   test('native overlays are session scoped and keep their stacking', () async {
     await overlaySession('first');
@@ -1213,6 +1270,160 @@ void main() {
       'generation': 1,
     });
   });
+
+  testWidgets(
+    'native overlays take per-edge insets, offsets, outside touches and transitions',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      messenger.setMockMethodCallHandler(SystemChannels.platform_views, (
+        call,
+      ) async {
+        final args = call.arguments;
+        return switch (call.method) {
+          'create' => 0,
+          'resize' => {
+            'width': (args as Map)['width'],
+            'height': args['height'],
+          },
+          _ => null,
+        };
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(
+          SystemChannels.platform_views,
+          null,
+        ),
+      );
+      var dashboardTaps = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Stack(
+            fit: StackFit.expand,
+            children: [
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapDown: (_) => dashboardTaps++,
+                child: const SizedBox.expand(),
+              ),
+              PluginNativeOverlays(plugins: plugins),
+            ],
+          ),
+        ),
+      );
+      await overlaySession('first');
+      Rect rect() => tester.getRect(find.byType(AndroidView));
+      // Clear of a 80 dp bar at the bottom, moved along it.
+      await overlays('first', [
+        overlay(
+          'menu',
+          1,
+          anchor: 'bottom-left',
+          width: 200,
+          height: 120,
+          insets: [0, 0, 0, 80],
+          offsetX: 150,
+        ),
+      ]);
+      await tester.pump();
+      expect(rect(), const Rect.fromLTWH(150, 400, 200, 120));
+      // An offset past the edge keeps the overlay on screen.
+      await overlays('first', [
+        overlay(
+          'menu',
+          2,
+          anchor: 'bottom-left',
+          width: 200,
+          height: 120,
+          insets: [0, 0, 0, 80],
+          offsetX: 5000,
+          offsetY: -40,
+        ),
+      ]);
+      await tester.pump();
+      expect(rect(), const Rect.fromLTWH(600, 360, 200, 120));
+
+      // A touch outside closes it and goes no further.
+      await overlays('first', [
+        overlay('menu', 3, width: 200, height: 120, closeOnOutsideTouch: true),
+      ]);
+      await tester.pump();
+      calls.clear();
+      await tester.tapAt(const Offset(700, 500));
+      await tester.pump();
+      expect(find.byType(AndroidView), findsNothing);
+      expect(dashboardTaps, 0);
+      expect(
+        (calls.singleWhere((c) => c.method == 'overlayClosed').arguments
+            as Map)['generation'],
+        3,
+      );
+      // Passed through, the same touch also reaches the dashboard.
+      await overlays('first', [
+        overlay(
+          'menu',
+          4,
+          width: 200,
+          height: 120,
+          closeOnOutsideTouch: true,
+          passOutsideTouch: true,
+        ),
+      ]);
+      await tester.pump();
+      await tester.tapAt(const Offset(700, 500));
+      await tester.pump();
+      expect(find.byType(AndroidView), findsNothing);
+      expect(dashboardTaps, 1);
+
+      // A fade in starts clear, and a fade out keeps the view until it ends.
+      await overlays('first', [
+        overlay(
+          'card',
+          5,
+          anchor: 'center',
+          width: 200,
+          height: 120,
+          enter: 'fade',
+          exit: 'fade',
+          duration: 300,
+        ),
+      ]);
+      await tester.pump();
+      double opacity() => tester
+          .widget<Opacity>(
+            find
+                .ancestor(
+                  of: find.byType(AndroidView),
+                  matching: find.byType(Opacity),
+                )
+                .last,
+          )
+          .opacity;
+      expect(opacity(), 0);
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(opacity(), inExclusiveRange(0, 1));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(opacity(), 1);
+      await overlays('first', []);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(find.byType(AndroidView), findsOneWidget);
+      expect(opacity(), inExclusiveRange(0, 1));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.byType(AndroidView), findsNothing);
+
+      // An ended session leaves at once.
+      await overlays('first', [
+        overlay('card', 6, width: 200, height: 120, exit: 'slide'),
+      ]);
+      await tester.pump();
+      await overlaySession('second');
+      await tester.pump();
+      expect(find.byType(AndroidView), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('native overlays wait for their size and follow their anchor', (
     tester,
@@ -1285,7 +1496,7 @@ void main() {
             )
             as Map;
     expect(params['key'], 'bar');
-    expect(params['inset'], 12);
+    expect(params['insets'], [12, 12, 12, 12]);
     expect((params['theme'] as Map)['dark'], isTrue);
     expect(
       calls.where((c) => c.method == 'overlayTheme').single.arguments,
@@ -1780,6 +1991,274 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('secret settings stay masked and are only replaced', (
+    tester,
+  ) async {
+    installed[0]['settings'] = [
+      {'key': 'token', 'title': 'Token', 'type': 'secret', 'default': ''},
+      {'key': 'host', 'title': 'Host', 'type': 'string', 'default': ''},
+    ];
+    installed[0]['values'] = {'token': '__set__', 'host': 'nas.local'};
+    await plugins.refresh();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: PluginDetailPanel(plugins: plugins, id: 'hello-world'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('••••••••'), findsOneWidget);
+    expect(find.text('__set__'), findsNothing);
+    await tester.tap(find.text('Token'));
+    await tester.pumpAndSettle();
+    final field = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(TextField),
+    );
+    expect(tester.widget<TextField>(field).obscureText, isTrue);
+    expect(tester.widget<TextField>(field).controller!.text, isEmpty);
+    expect(find.byTooltip('Show password'), findsNothing);
+    await tester.enterText(field, 'rotated');
+    await tester.pump();
+    // The eye shows what is typed and hides it again.
+    await tester.tap(find.byTooltip('Show password'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(field).obscureText, isFalse);
+    expect(tester.widget<TextField>(field).controller!.text, 'rotated');
+    await tester.tap(find.byTooltip('Hide password'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(field).obscureText, isTrue);
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(
+      (calls.lastWhere((c) => c.method == 'configure').arguments
+          as Map)['values'],
+      {'token': 'rotated', 'host': 'nas.local'},
+    );
+    // Editing another setting echoes the mask, which the host keeps.
+    installed[0]['values'] = {'token': '__set__', 'host': 'nas.local'};
+    await plugins.refresh();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Host'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Show password'), findsNothing);
+    await tester.enterText(field, 'nas.lan');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(
+      (calls.lastWhere((c) => c.method == 'configure').arguments
+          as Map)['values'],
+      {'token': '__set__', 'host': 'nas.lan'},
+    );
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('select settings use the app dropdown and save the choice', (
+    tester,
+  ) async {
+    installed[0]['settings'] = [
+      {
+        'key': 'position',
+        'title': 'Position',
+        'type': 'select',
+        'options': ['Bottom', 'Top'],
+        'default': 'Bottom',
+      },
+    ];
+    installed[0]['values'] = {'position': 'Bottom'};
+    await plugins.refresh();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: PluginDetailPanel(plugins: plugins, id: 'hello-world'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(DropdownRow<String>), findsOneWidget);
+    expect(find.byType(KsDropdown<String>), findsOneWidget);
+    expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+    await tester.tap(find.text('Bottom'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Top').last);
+    await tester.pumpAndSettle();
+    expect(
+      (calls.lastWhere((c) => c.method == 'configure').arguments
+          as Map)['values'],
+      {'position': 'Top'},
+    );
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('list settings edit rows in a modal and save the whole list', (
+    tester,
+  ) async {
+    const entries = {
+      'key': 'entries',
+      'title': 'Entries',
+      'type': 'list',
+      'addTitle': 'Add entry',
+      'minItems': 1,
+      'visibleWhen': {'key': 'opens', 'equals': 'Menu'},
+      'fields': [
+        {'key': 'label', 'title': 'Label', 'type': 'string', 'required': true},
+        {'key': 'url', 'title': 'Address', 'type': 'string'},
+      ],
+    };
+    installed[0]['settings'] = [
+      {
+        'key': 'collapse',
+        'title': 'Collapse',
+        'type': 'select',
+        'options': ['Off', 'On'],
+        'default': 'Off',
+        'group': 'Behavior',
+      },
+      {
+        'key': 'after',
+        'title': 'Collapse after',
+        'type': 'number',
+        'min': 0,
+        'max': 60,
+        'default': 0,
+        'group': 'Behavior',
+        'visibleWhen': {'key': 'collapse', 'notEquals': 'Off'},
+      },
+      {
+        'key': 'items',
+        'title': 'Items',
+        'type': 'list',
+        'group': 'Items',
+        'addTitle': 'Add item',
+        'row': {
+          'title': 'label',
+          'subtitle': ['url', 'opens'],
+        },
+        'default': [],
+        'fields': [
+          {
+            'key': 'label',
+            'title': 'Label',
+            'type': 'string',
+            'required': true,
+          },
+          {
+            'key': 'opens',
+            'title': 'Opens',
+            'type': 'select',
+            'options': ['Web address', 'Menu'],
+          },
+          {
+            'key': 'url',
+            'title': 'Address',
+            'type': 'string',
+            'required': true,
+            'visibleWhen': {'key': 'opens', 'equals': 'Web address'},
+          },
+          entries,
+        ],
+      },
+    ];
+    installed[0]['values'] = {
+      'collapse': 'Off',
+      'after': 0,
+      'items': [
+        {
+          'label': 'Home',
+          'opens': 'Web address',
+          'url': 'https://example.com',
+          'entries': [],
+        },
+      ],
+    };
+    await plugins.refresh();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: PluginDetailPanel(plugins: plugins, id: 'hello-world'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    List<Object?> savedItems() =>
+        ((calls.lastWhere((c) => c.method == 'configure').arguments
+                    as Map)['values']
+                as Map)['items']
+            as List;
+    // A setting whose condition fails stays off the page, and the list,
+    // alone in its group, has no title row of its own.
+    expect(find.text('Collapse after'), findsNothing);
+    expect(find.text('Items'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('https://example.com'), findsOneWidget);
+
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextFormField, 'Home'), 'House');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect((savedItems().single as Map)['label'], 'House');
+    expect(find.text('House'), findsOneWidget);
+
+    // A new row waits for its required fields, including a nested row.
+    await tester.tap(find.text('Add item'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete'), findsNothing);
+    FilledButton save() =>
+        tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'));
+    expect(save().onPressed, isNull);
+    expect(find.textContaining('Required'), findsNWidgets(2));
+    await tester.enterText(find.byType(TextFormField).first, 'Cameras');
+    await tester.pump();
+    await tester.tap(find.text('Web address'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Menu').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Address'), findsNothing);
+    expect(save().onPressed, isNull);
+    await tester.tap(find.text('Add entry'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Back'), findsOneWidget);
+    await tester.enterText(find.byType(TextFormField).first, 'Front door');
+    await tester.pump();
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(find.text('Front door'), findsOneWidget);
+    expect(save().onPressed, isNotNull);
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(savedItems(), hasLength(2));
+    expect(savedItems().last, {
+      'label': 'Cameras',
+      'opens': 'Menu',
+      'url': '',
+      'entries': [
+        {'label': 'Front door', 'url': ''},
+      ],
+    });
+
+    await tester.tap(find.text('House'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    expect((savedItems().single as Map)['label'], 'Cameras');
+
+    // Turning the condition's setting on brings its dependent back.
+    installed[0]['values'] = {
+      ...installed[0]['values'] as Map<String, Object?>,
+      'collapse': 'On',
+    };
+    await plugins.refresh();
+    await tester.pumpAndSettle();
+    expect(find.text('Collapse after'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('SDK 1 controls retain edits during runtime status updates', (
     tester,
   ) async {

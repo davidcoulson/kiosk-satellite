@@ -77,6 +77,7 @@ void main() {
   /// The second-level pages the Home Assistant page opens, in the order its
   /// entry rows appear.
   const haPages = [
+    'Custom Pages',
     'User Interface',
     'Theme',
     'Dashboard View Rotation',
@@ -187,6 +188,38 @@ void main() {
       // card, which would read as one group of related settings.
       final cards = [for (final page in haPages) cardOf(page)];
       expect(cards.toSet(), hasLength(cards.length));
+
+      await drain(tester);
+    });
+
+    testWidgets('Custom Pages lists the pages and opens the editor', (
+      tester,
+    ) async {
+      await boot();
+      await container.settings.setFromJson(
+        haCustomPages.key,
+        '[{"name":"Wall","path":"/local/wall.html#den"}]',
+      );
+      await openHa(tester, size: const Size(500, 1400));
+
+      await tester.tap(find.widgetWithText(ListTile, 'Custom Pages'));
+      await settle(tester);
+      expect(find.text('Wall'), findsOneWidget);
+      expect(find.text('/local/wall.html#den'), findsOneWidget);
+      expect(find.text('Custom page guide'), findsOneWidget);
+
+      await tester.tap(find.text('Add page'));
+      await settle(tester);
+      expect(find.text('Add custom page'), findsOneWidget);
+      expect(find.text('/local/'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await settle(tester);
+
+      await tester.tap(find.text('Wall'));
+      await settle(tester);
+      expect(find.text('Edit custom page'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await settle(tester);
 
       await drain(tester);
     });

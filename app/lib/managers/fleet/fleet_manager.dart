@@ -21,6 +21,7 @@ class FleetDevice {
     this.tls = false,
     this.agent = false,
     this.dnsName = '',
+    this.adminUrl = '',
   });
 
   final String id;
@@ -41,14 +42,21 @@ class FleetDevice {
   /// The DNS name its imported certificate covers, empty for none.
   final String dnsName;
 
-  /// Where its remote admin answers. Over HTTPS with a CA-signed
-  /// certificate that is its DNS name, since the browser rejects that
-  /// certificate under the IP address (issue #833).
-  String get url => Uri(
-    scheme: tls ? 'https' : 'http',
-    host: tls && dnsName.isNotEmpty ? dnsName : address,
-    port: port,
-  ).toString();
+  /// The Admin URL it was given, such as a reverse proxy name, empty for
+  /// none (issue #967).
+  final String adminUrl;
+
+  /// Where the switcher opens its remote admin: its Admin URL when it has
+  /// one, else over HTTPS with a CA-signed certificate its DNS name, since
+  /// the browser rejects that certificate under the IP address (issue
+  /// #833). Fleet calls and the intercom use [address] and [port] instead.
+  String get url => adminUrl.isNotEmpty
+      ? adminUrl
+      : Uri(
+          scheme: tls ? 'https' : 'http',
+          host: tls && dnsName.isNotEmpty ? dnsName : address,
+          port: port,
+        ).toString();
 
   static final _dnsName = RegExp(
     r'^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$',
@@ -73,6 +81,7 @@ class FleetDevice {
         final n when _dnsName.hasMatch(n) => n,
         _ => '',
       },
+      adminUrl: defs.adminUrlOrigin('${raw['adminUrl'] ?? ''}') ?? '',
     );
   }
 
@@ -85,6 +94,7 @@ class FleetDevice {
     if (tls) 'tls': true,
     if (agent) 'agent': true,
     if (dnsName.isNotEmpty) 'dnsName': dnsName,
+    if (adminUrl.isNotEmpty) 'adminUrl': adminUrl,
     'url': url,
     'self': self,
   };
@@ -99,6 +109,7 @@ class FleetDevice {
     if (tls) 'tls': true,
     if (agent) 'agent': true,
     if (dnsName.isNotEmpty) 'dnsName': dnsName,
+    if (adminUrl.isNotEmpty) 'adminUrl': adminUrl,
   };
 
   static FleetDevice? directoryEntry(Object? raw) {
@@ -151,6 +162,9 @@ class FleetDevice {
 /// announced too, and the other kiosks link here by that name instead of
 /// the IP address their browser would reject the certificate under
 /// (issue #833).
+///
+/// The Admin URL setting is announced the same way, and the other
+/// kiosks' switchers open it ahead of both (issue #967).
 ///
 /// The mDNS name setting is seeded here, the way the ESPHome node name
 /// is at its server's first start: as soon as the device has a name and
@@ -270,6 +284,7 @@ class FleetManager extends Manager {
             e.key == defs.remotePort.key ||
             e.key == defs.remoteTls.key ||
             e.key == defs.remoteFleetDiscovery.key ||
+            e.key == defs.remoteAdminUrl.key ||
             // Onboarding finishing is when the fleet part may start, and
             // an agent is onboarded whatever its start URL.
             e.key == defs.startUrl.key ||
@@ -343,6 +358,7 @@ class FleetManager extends Manager {
     final host = hostname;
     final tls = _settings.get(defs.remoteTls);
     final dnsName = _certificateName;
+    final adminUrl = _settings.get(defs.remoteAdminUrl);
     final args = {
       'name': _settings.get(defs.deviceName),
       'port': _settings.get(defs.remotePort).toInt(),
@@ -351,6 +367,7 @@ class FleetManager extends Manager {
       // So the switcher can say which of these is an agent rather than a
       // panel, without opening each one to find out.
       if (_settings.get(defs.agentMode)) 'agent': true,
+      if (adminUrl.isNotEmpty) 'adminUrl': adminUrl,
       'hostname': host,
       'fleet': enabled,
     };

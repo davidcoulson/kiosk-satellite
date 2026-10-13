@@ -8,5 +8,10 @@
   "settingScreensaverPostponeOnMotionDescription": "Retarder l'activation de l'économiseur d'écran quand un mouvement est détecté. ATTENTION : garde la caméra en fonctionnement en permanence.",
   "screensaverDetectionMotionPage": "Détection de mouvement",
   "screensaverDetectionMotionHint": "Fermer ou reporter l'économiseur d'écran sur mouvement",
-  "screensaverDetectionMotionTuning": "La détection de mouvement se règle dans les paramètres de la Caméra."
+  "screensaverDetectionMotionTuning": "La détection de mouvement se règle dans les paramètres de la Caméra.",
+  "settingMotionUseEntityTitle": "Utiliser une entité Home Assistant",
+  "settingMotionUseEntityDescription": "Détecter le mouvement avec un capteur Home Assistant au lieu de la caméra.",
+  "settingMotionEntityTitle": "Entité du capteur de mouvement",
+  "settingMotionEntityDescription": "Le capteur d'occupation, de mouvement ou de présence Home Assistant à suivre.",
+  "screensaverDetectionExternalMotionHeading": "Capteur de mouvement externe"
 }

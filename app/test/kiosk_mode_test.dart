@@ -206,6 +206,25 @@ void main() {
       expect(kioskModeScript, isNot(contains('--safe-area-inset-top')));
     });
 
+    test('keeps room a plugin reserved for its bar', () {
+      // A bar along the top: only the outer container pads by it, so the
+      // nested pair never counts it twice (#249).
+      expect(
+        kioskModeScript,
+        contains(
+          '#view{padding-top:var(--ks-content-inset-top,0px)!important;}',
+        ),
+      );
+      // With the sidebar hidden a wide layout pads its left side too, which
+      // Home Assistant only does on a narrow one.
+      expect(
+        kioskModeScript,
+        contains(
+          '#view{padding-left:var(--safe-area-inset-left,0px)!important;}',
+        ),
+      );
+    });
+
     test('keeps a hidden sidebar hidden', () {
       // The menu button and the edge swipe both open the drawer, so the
       // toggle event is swallowed and a drawer opened anyway is closed.

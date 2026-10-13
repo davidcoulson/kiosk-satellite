@@ -290,11 +290,22 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
             override fun hideWindow() = emit("hideWindow", mapOf("id" to id), alive)
             override fun showOverlay(key: String, spec: OverlaySpec, factory: OverlayFactory) {
                 check(alive.get() && "overlay" in manifest.capabilities) { "Plugin did not declare overlay access" }
-                overlays.show(key, spec.anchor(), spec.width(), spec.height(), spec.inset(), spec.closeOnBack(), spec.onTop(), spec.touchable(), factory)
+                overlays.show(key, PluginOverlays.Placement(
+                    spec.anchor() ?: "", spec.width(), spec.height(),
+                    listOf(spec.insetLeft(), spec.insetTop(), spec.insetRight(), spec.insetBottom()),
+                    spec.offsetX(), spec.offsetY(), spec.closeOnBack(), spec.onTop(), spec.touchable(),
+                    spec.closeOnOutsideTouch(), spec.passOutsideTouch(), spec.enter() ?: "", spec.exit() ?: "", spec.transitionDuration(),
+                ), factory)
                 notifyOverlays()
             }
             override fun hideOverlay(key: String) {
                 if (overlays.hide(key)) notifyOverlays()
+            }
+            override fun setContentInsets(left: Int, top: Int, right: Int, bottom: Int) {
+                check(alive.get() && "overlay" in manifest.capabilities) { "Plugin did not declare overlay access" }
+                val insets = listOf(left, top, right, bottom)
+                require(insets.all { it in 0..PluginOverlays.MAX_INSET }) { "Content insets must be 0 to 4096 dp" }
+                emit("contentInsets", mapOf("id" to id, "session" to token, "insets" to insets), alive)
             }
             override fun log(message: String) = emit("log", mapOf("id" to id, "message" to message.take(1000)), alive)
             override fun nativeLibraryPath(name: String): String {
@@ -306,6 +317,12 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
                 check(alive.get() && "native" in manifest.capabilities)
                 return File(packageDir, "plugin.jar").absolutePath
             }
+            // Assets were checked against their digests when the session started.
+            override fun assetPath(name: String): String {
+                check(alive.get())
+                return PluginPackage.assetFile(packageDir, name).absolutePath
+            }
+            override fun openAsset(name: String): java.io.InputStream = File(assetPath(name)).inputStream()
             override fun status(message: String, error: Boolean) {
                 require(message.length <= 1000)
                 worker.execute { if (alive.get()) {
@@ -511,7 +528,7 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
                 .put("charts", org.json.JSONArray(sessions[id]?.charts?.snapshot() ?: emptyList<Any>()))
                 .put("statusTiles", org.json.JSONArray(sessions[id]?.statusTiles?.snapshot() ?: emptyList<Any>()))
                 .put("lights", org.json.JSONArray(sessions[id]?.lights?.values?.toList() ?: emptyList<Any>()))
-                .put("values", record.optJSONObject("config") ?: JSONObject())
+                .put("values", manifest.masked(record.optJSONObject("config") ?: JSONObject()))
                 .put("actionOptions", record.optJSONObject("actionOptions") ?: JSONObject())
                 .put("error", record.optString("error"))
             jsonValue(value)
@@ -790,7 +807,8 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
     private fun configure(id: String, args: Map<String, Any?>) {
         val values = args["values"] as? Map<*, *> ?: throw IllegalArgumentException("Missing settings")
         val manifest = manifest(id)
-        val config = manifest.config(JSONObject(values))
+        val saved = records.getJSONObject(id).optJSONObject("config") ?: JSONObject()
+        val config = manifest.config(manifest.unmasked(JSONObject(values), saved))
         sessions[id]?.let { session ->
             try { session.call { session.plugin!!.configure(Collections.unmodifiableMap(config)) } }
             catch (error: Throwable) { fail(id, error); throw error }

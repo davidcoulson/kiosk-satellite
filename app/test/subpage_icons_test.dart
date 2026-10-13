@@ -59,7 +59,9 @@ void main() {
 
   test('a product mark is an SVG asset that exists', () {
     for (final icon in subpageIcons.values) {
-      if (icon is String) {
+      if (icon is String && icon.startsWith('mdi:')) {
+        continue;
+      } else if (icon is String) {
         expect(File(icon).existsSync(), isTrue, reason: icon);
       } else {
         expect(icon, isA<IconData>());

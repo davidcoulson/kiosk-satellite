@@ -79,10 +79,18 @@ export function entitySpec({ domains = [], deviceClass = null } = {}) {
     byGroupName: true,
     keep: (!domains.length && !deviceClass) ? null : (item) =>
       (!domains.length || domains.includes(item.raw.domain))
-      && (!deviceClass || (deviceClass === 'illuminance'
-        ? item.raw.device_class === 'illuminance' || item.raw.unit === 'lx'
-        : item.raw.device_class === deviceClass)),
+      && (!deviceClass || matchesDeviceClass(item.raw, deviceClass)),
   };
+}
+
+// Mirrors the device's matchesDeviceClass (entity_list.dart): illuminance
+// also takes readings in lux, occupancy also takes motion and presence
+// binary sensors (issue #973).
+const OCCUPANCY_CLASSES = new Set(['occupancy', 'motion', 'presence']);
+function matchesDeviceClass(raw, deviceClass) {
+  if (deviceClass === 'illuminance') return raw.device_class === 'illuminance' || raw.unit === 'lx';
+  if (deviceClass === 'occupancy') return raw.domain === 'binary_sensor' && OCCUPANCY_CLASSES.has(raw.device_class);
+  return raw.device_class === deviceClass;
 }
 
 export function loadEntityList() { return loadList(entitySpec()); }

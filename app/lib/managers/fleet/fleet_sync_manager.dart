@@ -182,6 +182,7 @@ class Follower {
     this.version = '',
     this.tls = false,
     this.dnsName = '',
+    this.adminUrl = '',
   }) : addedAt = addedAt ?? DateTime.now().millisecondsSinceEpoch;
 
   final String id;
@@ -215,6 +216,9 @@ class Follower {
   /// The DNS name its imported certificate covers, for the member
   /// directory's links. Fleet calls keep to [address].
   String dnsName;
+
+  /// Its Admin URL, for the member directory's links too.
+  String adminUrl;
 
   // What the last poll learned. Not persisted.
   bool online = false;
@@ -257,6 +261,7 @@ class Follower {
       version: '${raw['version'] ?? ''}',
       tls: raw['tls'] == true,
       dnsName: '${raw['dnsName'] ?? ''}',
+      adminUrl: '${raw['adminUrl'] ?? ''}',
     );
   }
 
@@ -267,6 +272,7 @@ class Follower {
     'port': port,
     if (tls) 'tls': true,
     if (dnsName.isNotEmpty) 'dnsName': dnsName,
+    if (adminUrl.isNotEmpty) 'adminUrl': adminUrl,
     if (token != null) 'token': token,
     if (invite != null) 'invite': invite,
     if (profile != null) 'profile': profile,
@@ -705,6 +711,7 @@ class FleetSyncManager extends Manager {
           final peerName = '${peer['name'] ?? f.name}';
           final tls = peer['tls'] == true;
           final dnsName = '${peer['dnsName'] ?? ''}';
+          final adminUrl = '${peer['adminUrl'] ?? ''}';
           if (address != f.address || port != f.port) {
             // A follower's address is pinned: its fleet token only ever
             // goes there. Anything on the network can announce this id over
@@ -718,11 +725,13 @@ class FleetSyncManager extends Manager {
             };
           } else if (tls != f.tls ||
               dnsName != f.dnsName ||
+              adminUrl != f.adminUrl ||
               version != f.version ||
               peerName != f.name) {
             f
               ..tls = tls
               ..dnsName = dnsName
+              ..adminUrl = adminUrl
               ..version = version
               ..name = peerName;
             changed = true;
@@ -867,6 +876,7 @@ class FleetSyncManager extends Manager {
             port: f.port,
             tls: f.tls,
             dnsName: f.dnsName,
+            adminUrl: f.adminUrl,
           ),
     ]..sort((a, b) => a.id.compareTo(b.id));
     final devices = [for (final member in members) member.toDirectory()];

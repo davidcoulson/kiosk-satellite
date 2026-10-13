@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../app_container.dart';
 import '../l10n/messages.dart';
@@ -339,47 +340,66 @@ class _CameraSettingsPanelState extends State<CameraSettingsPanel> {
     );
   }
 
-  /// Value under the finger mid-drag; null reads the stored setting.
-  double? _autoDismissDrag;
+  /// Stop index under the finger mid-drag; null reads the stored setting.
+  int? _autoDismissDrag;
 
-  /// The auto-dismiss slider (0 = off, shown as such). Mirrors the generic
-  /// def-backed slider; hand-built here because the Playback card is.
+  /// The auto-dismiss slider (0 = off, shown as such). Moves through
+  /// [defs.cameraAutoDismissStops] so short glances keep 30 s steps and an
+  /// hour stays within reach. A stored value between stops sits on the
+  /// nearest one.
   Widget _autoDismissRow(BuildContext context) {
     final def = defs.cameraAutoDismissSeconds;
-    final value =
-        _autoDismissDrag ??
-        (widget.container.settings.get(
-          def,
-        )).toDouble().clamp(def.min!.toDouble(), def.max!.toDouble());
+    final stops = defs.cameraAutoDismissStops;
+    final stored = widget.container.settings.get(def).toInt();
+    var nearest = 0;
+    for (var i = 1; i < stops.length; i++) {
+      if ((stops[i] - stored).abs() < (stops[nearest] - stored).abs()) {
+        nearest = i;
+      }
+    }
+    final index = _autoDismissDrag ?? nearest;
     return Column(
       children: [
         ListTile(
           title: Text(def.localizedTitle(context)),
           subtitle: Text(def.localizedDescription(context)),
           trailing: Text(
-            value <= 0
-                ? cameraStreamsText(context, 'Off')
-                : l10n(context).cameraStreamsSeconds('${value.round()}'),
+            _autoDismissLabel(context, stops[index]),
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
           child: Slider(
-            value: value,
-            min: def.min!.toDouble(),
-            max: def.max!.toDouble(),
-            divisions: ((def.max! - def.min!) / def.step!).round(),
-            onChanged: (v) => setState(() => _autoDismissDrag = v),
+            value: index.toDouble(),
+            max: (stops.length - 1).toDouble(),
+            divisions: stops.length - 1,
+            onChanged: (v) => setState(() => _autoDismissDrag = v.round()),
             onChangeEnd: (v) async {
               setState(() => _autoDismissDrag = null);
-              await widget.container.settings.setFromJson(def.key, v.round());
+              await widget.container.settings.setFromJson(
+                def.key,
+                stops[v.round()],
+              );
               if (mounted) setState(() {});
             },
           ),
         ),
       ],
     );
+  }
+
+  /// Under a minute reads as seconds, whole hours as hours and the rest as
+  /// minutes, halves included ("1.5 min").
+  String _autoDismissLabel(BuildContext context, int seconds) {
+    if (seconds <= 0) return cameraStreamsText(context, 'Off');
+    if (seconds < 60) return l10n(context).cameraStreamsSeconds('$seconds');
+    if (seconds % 3600 == 0) return l10n(context).haHours('${seconds ~/ 3600}');
+    final number = NumberFormat(
+      '0.#',
+      Localizations.localeOf(context).toString(),
+    );
+    return l10n(context).haMinutes(number.format(seconds / 60));
   }
 
   Widget _sectionLabel(BuildContext context, String text) => Align(

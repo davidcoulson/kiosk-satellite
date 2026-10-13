@@ -24,9 +24,11 @@ import 'managers/agent/agent_tools_manager.dart';
 import 'managers/glance/glance_manager.dart';
 import 'managers/home_assistant/home_assistant_manager.dart';
 import 'managers/js_api/js_api_manager.dart';
+import 'managers/js_api/page_state_manager.dart';
 import 'managers/kiosk/kiosk_manager.dart';
 import 'managers/launcher/app_launcher_manager.dart';
 import 'managers/launcher/home_launcher_manager.dart';
+import 'managers/motion/motion_entity_manager.dart';
 import 'managers/motion/motion_manager.dart';
 import 'managers/notifications/notification_manager.dart';
 import 'managers/fleet/fleet_manager.dart';
@@ -34,6 +36,7 @@ import 'managers/fleet/fleet_sync_manager.dart';
 import 'managers/intercom/intercom_manager.dart';
 import 'managers/alarms/alarm_manager.dart';
 import 'managers/analytics/analytics_manager.dart';
+import 'managers/broadcasts/event_broadcast_manager.dart';
 import 'managers/location/location_manager.dart';
 import 'managers/person/person_sensor_manager.dart';
 import 'managers/proximity/proximity_manager.dart';
@@ -98,6 +101,14 @@ class AppContainer {
     // motion manager's gate reads.
     deviceCamera = DeviceCameraManager(bus, commands, log, settings);
     motion = MotionManager(bus, commands, log, settings);
+    // It watches the motion sensor entity through homeAssistant.
+    motionEntity = MotionEntityManager(
+      bus,
+      commands,
+      log,
+      settings,
+      homeAssistant,
+    );
     proximity = ProximityManager(bus, commands, log, settings);
     location = LocationManager(bus, commands, log, settings);
     analytics = AnalyticsManager(bus, commands, log, settings);
@@ -155,6 +166,22 @@ class AppContainer {
     intercom = IntercomManager(bus, commands, log, settings);
     alarms = AlarmManager(bus, commands, log, settings);
     voiceRequests = VoiceRequestsManager(bus, commands, log, settings);
+    broadcasts = EventBroadcastManager(bus, commands, log);
+    // Composition-root wiring: it reads the state other managers own and
+    // reports it to pages (kioskSatellite.getTheme / getKioskState).
+    pageState = PageStateManager(
+      bus,
+      commands,
+      log,
+      settings,
+      dashboardDark: homeAssistant.dashboardDark,
+      kioskLocked: () => kiosk.locked,
+      lockdownActive: () => kiosk.lockdownActive,
+      screensaverActive: () => screensaver.isActive,
+      screensaverView: screensaver.activeView,
+      cameraView: camera.activeViewId,
+      mediaSummary: () => sendspin.mediaSummary,
+    );
   }
 
   final bus = EventBus();
@@ -182,12 +209,14 @@ class AppContainer {
   late final ImmichManager immich;
   late final DeviceCameraManager deviceCamera;
   late final MotionManager motion;
+  late final MotionEntityManager motionEntity;
   late final ProximityManager proximity;
   late final LocationManager location;
   late final AnalyticsManager analytics;
   late final PersonSensorManager personSensor;
   late final HomeAssistantManager homeAssistant;
   late final AudioRoutingManager audio;
+  late final EventBroadcastManager broadcasts;
   late final WakeWordManager wakeWord;
   late final NoiseLevelManager noiseLevel;
   late final AssistPipelineManager pipeline;
@@ -209,6 +238,7 @@ class AppContainer {
   late final IntercomManager intercom;
   late final AlarmManager alarms;
   late final VoiceRequestsManager voiceRequests;
+  late final PageStateManager pageState;
 
   /// Built after [device.init] so it can carry the app version, and only
   /// for a kiosk: the page bridge has nothing to attach to without a
@@ -277,6 +307,8 @@ class AppContainer {
   List<Manager> get _everyManager => [
     settings,
     device,
+    // Before the managers whose events it mirrors start publishing them.
+    broadcasts,
     // After device, whose sensor it reads, and before screen, which starts
     // adaptive brightness from its reading.
     adaptiveLight,
@@ -301,6 +333,8 @@ class AppContainer {
     immich,
     deviceCamera,
     motion,
+    // After screensaver, which takes its motion.
+    motionEntity,
     proximity,
     location,
     // After device (its info feeds every report) and settings; its first
@@ -351,6 +385,8 @@ class AppContainer {
     alarms,
     // After intercom and alarms: it runs their commands.
     voiceRequests,
+    // Last: it reads the state every manager above keeps.
+    pageState,
   ];
 
   /// Agent mode's one borrowed command.

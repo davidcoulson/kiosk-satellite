@@ -182,6 +182,35 @@ class ScreensaverViewChanged extends AppEvent {
   final String? view;
 }
 
+/// The app's and Home Assistant's light or dark state moved (the page
+/// state the JS API reports, see PageStateManager). [state] is what
+/// `kioskSatellite.getTheme()` answers.
+class ThemeStateChanged extends AppEvent {
+  const ThemeStateChanged(this.state);
+  final Map<String, Object?> state;
+
+  @override
+  String get wireName => 'theme';
+
+  @override
+  Map<String, Object?> toJson() => state;
+}
+
+/// Something `kioskSatellite.getKioskState()` reports moved: kiosk mode,
+/// Lockdown Mode, Home Assistant kiosk mode, the screensaver, the screen,
+/// hold mode, rotation, the camera view or the media player. [state] is
+/// the whole snapshot.
+class KioskStateChanged extends AppEvent {
+  const KioskStateChanged(this.state);
+  final Map<String, Object?> state;
+
+  @override
+  String get wireName => 'kiosk-state';
+
+  @override
+  Map<String, Object?> toJson() => state;
+}
+
 /// A full screen view came up or went: the Now Playing view in the
 /// screensaver slot (`nowPlaying`) or the intercom's roster or call screen
 /// (`intercom`). Internal: the remote admin labels its screenshot by it and
@@ -499,8 +528,12 @@ class VoiceInteractionChanged extends AppEvent {
 /// states: idle, listening, processing or responding. Covers Assist turns
 /// and realtime conversations alike.
 class VoiceSatelliteStateChanged extends AppEvent {
-  const VoiceSatelliteStateChanged(this.state);
+  const VoiceSatelliteStateChanged(this.state, {this.announcement = false});
   final String state;
+
+  /// Responding to an announcement rather than answering a turn. Home
+  /// Assistant calls both responding, the VS_ broadcasts tell them apart.
+  final bool announcement;
 }
 
 /// Native Voice Satellite's timers changed: one started, changed, was
@@ -598,6 +631,23 @@ class MotionDetected extends AppEvent {
 
   @override
   String get wireName => 'motion';
+}
+
+/// The Home Assistant motion entity picked in the camera's place (issue
+/// #973) reads detected: [held] false when it just turned on, true for
+/// the repeats while it stays on. The screensaver consumes it as motion,
+/// with the person sensor's rule: an arrival dismisses, a held one only
+/// postpones. Internal: Home Assistant already has the entity.
+class ExternalMotionDetected extends AppEvent {
+  const ExternalMotionDetected({this.held = false});
+  final bool held;
+}
+
+/// The motion entity's state moved (issue #973), for the settings rows:
+/// [detected] null while it has not reported or reads unavailable.
+class ExternalMotionChanged extends AppEvent {
+  const ExternalMotionChanged({required this.detected});
+  final bool? detected;
 }
 
 /// Someone is looking at the kiosk (issue #304): the motion camera's face
