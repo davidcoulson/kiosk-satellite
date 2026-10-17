@@ -43,6 +43,13 @@ android {
     // same 1.15.1 build, and the Dart bindings never use the Java JNI bridge.
     // Only the ARM paths: a pickFirst match wins over excludes, so a wider
     // pattern would bring the AAR's x86 library back past the rule above.
+    // These two also win over the --target-platform excludes below, so an
+    // arm64 build keeps one armeabi-v7a library and an arm build one
+    // arm64-v8a. That lone library is enough for Android's package manager
+    // to accept the APK on a device of the other architecture and report
+    // Success, after which the app crashes at every start without its
+    // libflutter.so (the projector, 32-bit only, 2026-10-13). Check the APK
+    // against the device before installing; see docs/panel-onboarding.md.
     packaging.jniLibs.pickFirsts.add("**/arm64-v8a/libonnxruntime.so")
     packaging.jniLibs.pickFirsts.add("**/armeabi-v7a/libonnxruntime.so")
     packaging.jniLibs.excludes.add("**/libonnxruntime4j_jni.so")

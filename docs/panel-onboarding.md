@@ -50,9 +50,17 @@ Everything after that is the script.
   `cd app && flutter build apk --release --target-platform android-arm64`.
   Every panel here is arm64, and this build is about 90 MB against the
   universal APK's 189 — the rest is 32-bit ARM and x86_64 code no panel can
-  run, which matters over a panel's Wi-Fi. A 32-bit-only device would need
-  the universal build instead; `install` warns when an APK carries ABIs the
-  device cannot use.
+  run, which matters over a panel's Wi-Fi. A 32-bit-only device (check with
+  `adb shell getprop ro.product.cpu.abilist`) needs `--target-platform
+  android-arm` or the universal build instead. Check before installing: the
+  device will not. An arm64 build still carries one 32-bit library
+  (libonnxruntime.so, kept by a `pickFirst` rule), which is enough for
+  Android's package manager to accept the APK on a 32-bit device and report
+  Success; the app then crashes at every start because its own
+  libflutter.so is only there for arm64. `unzip -l app-release.apk | grep
+  libflutter.so` must list an ABI the device runs. `install` warns when an
+  APK carries ABIs the device cannot use (large, not wrong); it does not
+  notice when the one the device needs is missing.
 - An existing panel to copy from, reachable, and the admin password in
   `~/Desktop/ks-remote-pw.txt` or `KS_REMOTE_PW`.
 
