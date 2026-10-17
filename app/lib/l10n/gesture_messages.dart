@@ -75,6 +75,16 @@ String localizedGestureTrigger(
       return trigger['longPress'] == true
           ? s.gestureDescribeRemoteKeyLong(key)
           : s.gestureDescribeRemoteKey(key);
+    case 'button':
+      final button = gestureText(
+        context,
+        buttonNames['${trigger['button']}'] ?? 'Action',
+      );
+      return switch (buttonPress(trigger)) {
+        'double' => s.gestureDescribeButtonDouble(button),
+        'long' => s.gestureDescribeButtonHold(button),
+        _ => s.gestureDescribeButtonPress(button),
+      };
   }
   return gestureText(context, 'Gesture');
 }

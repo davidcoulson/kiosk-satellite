@@ -1024,6 +1024,10 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingSendspinMaTokenTitle",
     "description": "settingSendspinMaTokenDescription",
   },
+  "sendspin.ma_inputs": {
+    "title": "settingSendspinSonosInputsTitle",
+    "description": "settingSendspinSonosInputsDescription",
+  },
   "sendspin.ma_shortcut": {
     "title": "settingSendspinMaShortcutTitle",
     "description": "settingSendspinMaShortcutDescription",
@@ -1108,9 +1112,9 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingSendspinFullscreenButtonScaleTitle",
     "description": "settingSendspinFullscreenButtonScaleDescription",
   },
-  "sendspin.fullscreen_horizontal": {
-    "title": "settingSendspinFullscreenHorizontalTitle",
-    "description": "settingSendspinFullscreenHorizontalDescription",
+  "sendspin.fullscreen_layout": {
+    "title": "settingSendspinFullscreenLayoutTitle",
+    "description": "settingSendspinFullscreenLayoutDescription",
   },
   "sendspin.fullscreen_double_tap": {
     "title": "settingSendspinFullscreenDoubleTapTitle",
@@ -1131,6 +1135,14 @@ const settingMessageIds = <String, Map<String, String>>{
   "sendspin.speaker_pill": {
     "title": "settingSendspinSpeakerPillTitle",
     "description": "settingSendspinSpeakerPillDescription",
+  },
+  "sendspin.speaker_pill_players": {
+    "title": "settingSendspinSpeakerPillPlayersTitle",
+    "description": "settingSendspinSpeakerPillPlayersDescription",
+  },
+  "sendspin.audio_quality": {
+    "title": "settingSendspinAudioQualityTitle",
+    "description": "settingSendspinAudioQualityDescription",
   },
   "sendspin.queue_art": {
     "title": "settingSendspinQueueArtTitle",
@@ -1203,6 +1215,10 @@ const settingMessageIds = <String, Map<String, String>>{
   "intercom.hangup_key": {
     "title": "settingIntercomHangupKeyTitle",
     "description": "settingIntercomHangupKeyDescription",
+  },
+  "intercom.hangup_key_ringing": {
+    "title": "settingIntercomHangupKeyRingingTitle",
+    "description": "settingIntercomHangupKeyRingingDescription",
   },
   "kiosk.enabled": {
     "title": "settingKioskEnabledTitle",
@@ -1564,6 +1580,26 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingTheaterFrameUrlTitle",
     "description": "settingTheaterFrameUrlDescription",
   },
+  "voice_chimes.wake_volume": {
+    "title": "voiceChimeWakeVolumeTitle",
+    "description": "voiceChimeVolumeDescription",
+  },
+  "voice_chimes.done_volume": {
+    "title": "voiceChimeDoneVolumeTitle",
+    "description": "voiceChimeVolumeDescription",
+  },
+  "voice_chimes.error_volume": {
+    "title": "voiceChimeErrorVolumeTitle",
+    "description": "voiceChimeVolumeDescription",
+  },
+  "voice_chimes.alert_volume": {
+    "title": "voiceChimeTimerVolumeTitle",
+    "description": "voiceChimeVolumeDescription",
+  },
+  "voice_chimes.announce_volume": {
+    "title": "voiceChimeAnnounceVolumeTitle",
+    "description": "voiceChimeVolumeDescription",
+  },
   "screensaver.weather_entity": {
     "title": "settingScreensaverWeatherEntityTitle",
     "description": "settingScreensaverWeatherEntityDescription",
@@ -1815,6 +1851,10 @@ const settingMessageIds = <String, Map<String, String>>{
   "voice.wake_arbitration_window_ms": {
     "title": "settingVoiceWakeArbitrationWindowTitle",
     "description": "settingVoiceWakeArbitrationWindowDescription",
+  },
+  "voice.wake_arbitration_offset_db": {
+    "title": "settingVoiceWakeArbitrationOffsetTitle",
+    "description": "settingVoiceWakeArbitrationOffsetDescription",
   },
   "voice.skin": {
     "title": "voiceSkin",
@@ -2119,5 +2159,129 @@ const settingMessageIds = <String, Map<String, String>>{
   "screensaver.local_vignette_strength": {
     "title": "settingScreensaverLocalVignetteStrengthTitle",
     "description": "settingScreensaverLocalVignetteStrengthDescription",
+  },
+  "ha.custom_pages_socket": {
+    "title": "settingHaCustomPagesSocketTitle",
+    "description": "settingHaCustomPagesSocketDescription",
+  },
+  "browser.url_filter_notice": {
+    "title": "settingBrowserUrlFilterNoticeTitle",
+    "description": "settingBrowserUrlFilterNoticeDescription",
+  },
+  "led.voice.enabled": {
+    "title": "settingLedVoiceEnabledTitle",
+    "description": "settingLedVoiceEnabledDescription",
+  },
+  "led.voice.brightness": {
+    "title": "settingLedVoiceBrightnessTitle",
+    "description": "settingLedVoiceBrightnessDescription",
+  },
+  "led.voice.light_color": {
+    "title": "settingLedVoiceLightColorTitle",
+    "description": "settingLedVoiceLightColorDescription",
+  },
+  "led.voice.accent_color": {
+    "title": "settingLedVoiceAccentColorTitle",
+    "description": "settingLedVoiceAccentColorDescription",
+  },
+  "led.voice.muted": {
+    "title": "settingLedVoiceMutedTitle",
+    "description": "settingLedVoiceMutedDescription",
+  },
+  "led.voice.muted_color": {
+    "title": "settingLedVoiceMutedColorTitle",
+    "description": "settingLedVoiceMutedColorDescription",
+  },
+  "led.timers.enabled": {
+    "title": "settingLedTimersEnabledTitle",
+    "description": "settingLedTimersEnabledDescription",
+  },
+  "led.timers.brightness": {
+    "title": "settingLedTimersBrightnessTitle",
+    "description": "settingLedTimersBrightnessDescription",
+  },
+  "led.timers.light_color": {
+    "title": "settingLedTimersLightColorTitle",
+    "description": "settingLedTimersLightColorDescription",
+  },
+  "led.timers.countdown": {
+    "title": "settingLedTimersCountdownTitle",
+    "description": "settingLedTimersCountdownDescription",
+  },
+  "led.alarms.enabled": {
+    "title": "settingLedAlarmsEnabledTitle",
+    "description": "settingLedAlarmsEnabledDescription",
+  },
+  "led.alarms.brightness": {
+    "title": "settingLedAlarmsBrightnessTitle",
+    "description": "settingLedAlarmsBrightnessDescription",
+  },
+  "led.alarms.light_color": {
+    "title": "settingLedAlarmsLightColorTitle",
+    "description": "settingLedAlarmsLightColorDescription",
+  },
+  "led.intercom.enabled": {
+    "title": "settingLedIntercomEnabledTitle",
+    "description": "settingLedIntercomEnabledDescription",
+  },
+  "led.intercom.brightness": {
+    "title": "settingLedIntercomBrightnessTitle",
+    "description": "settingLedIntercomBrightnessDescription",
+  },
+  "led.intercom.light_color": {
+    "title": "settingLedIntercomLightColorTitle",
+    "description": "settingLedIntercomLightColorDescription",
+  },
+  "led.notifications.enabled": {
+    "title": "settingLedNotificationsEnabledTitle",
+    "description": "settingLedNotificationsEnabledDescription",
+  },
+  "led.notifications.brightness": {
+    "title": "settingLedNotificationsBrightnessTitle",
+    "description": "settingLedNotificationsBrightnessDescription",
+  },
+  "led.notifications.light_color": {
+    "title": "settingLedNotificationsLightColorTitle",
+    "description": "settingLedNotificationsLightColorDescription",
+  },
+  "led.media.enabled": {
+    "title": "settingLedMediaEnabledTitle",
+    "description": "settingLedMediaEnabledDescription",
+  },
+  "led.media.brightness": {
+    "title": "settingLedMediaBrightnessTitle",
+    "description": "settingLedMediaBrightnessDescription",
+  },
+  "led.media.light_color": {
+    "title": "settingLedMediaLightColorTitle",
+    "description": "settingLedMediaLightColorDescription",
+  },
+  "led.media.style": {
+    "title": "settingLedMediaStyleTitle",
+    "description": "settingLedMediaStyleDescription",
+  },
+  "led.idle.enabled": {
+    "title": "settingLedIdleEnabledTitle",
+    "description": "settingLedIdleEnabledDescription",
+  },
+  "led.idle.brightness": {
+    "title": "settingLedIdleBrightnessTitle",
+    "description": "settingLedIdleBrightnessDescription",
+  },
+  "led.idle.light_color": {
+    "title": "settingLedIdleLightColorTitle",
+    "description": "settingLedIdleLightColorDescription",
+  },
+  "led.idle.style": {
+    "title": "settingLedIdleStyleTitle",
+    "description": "settingLedIdleStyleDescription",
+  },
+  "led.animations": {
+    "title": "settingLedAnimationsTitle",
+    "description": "settingLedAnimationsDescription",
+  },
+  "led.enabled": {
+    "title": "settingLedEnabledTitle",
+    "description": "settingLedEnabledDescription",
   },
 };

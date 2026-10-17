@@ -256,6 +256,7 @@ void main() {
       for (final name in [
         'haNavigate',
         'showLinkPage',
+        'reload',
         'startScreensaver',
         'stopScreensaver',
         'screenOff',
@@ -267,6 +268,8 @@ void main() {
         'sendspinControl',
         'alarmStop',
         'alarmSnooze',
+        'intercomAnswer',
+        'intercomDecline',
         'launchApp',
         'openUri',
         'openSystemSettings',
@@ -538,6 +541,21 @@ void main() {
       },
     );
 
+    test('refresh reloads the page', () async {
+      await build(
+        '[{"id":"g1","trigger":{"type":"finger_taps","fingers":3,"taps":2},'
+        '"action":{"type":"refresh"}}]',
+      );
+      await fire('g1');
+      expect(executed, hasLength(1));
+      expect(executed.single.$1, 'reload');
+      expect(outcomes, isEmpty);
+      expect(
+        describeGestureAction(const {'type': 'refresh'}),
+        'Refresh the dashboard',
+      );
+    });
+
     test('media_play_pause toggles the player through one command', () async {
       await build(
         '[{"id":"g1","trigger":{"type":"claps","claps":2},'
@@ -569,6 +587,27 @@ void main() {
       expect(
         describeGestureAction(const {'type': 'intercom_hangup'}),
         'End the intercom call',
+      );
+    });
+
+    test('intercom_answer and intercom_decline run the call buttons', () async {
+      await build(
+        '[{"id":"g1","trigger":{"type":"claps","claps":2},'
+        '"action":{"type":"intercom_answer"}},'
+        '{"id":"g2","trigger":{"type":"fingers","fingers":5},'
+        '"action":{"type":"intercom_decline"}}]',
+      );
+      await fire('g1');
+      await fire('g2');
+      expect(executed.map((e) => e.$1), ['intercomAnswer', 'intercomDecline']);
+      expect(outcomes, isEmpty);
+      expect(
+        describeGestureAction(const {'type': 'intercom_answer'}),
+        'Accept intercom call',
+      );
+      expect(
+        describeGestureAction(const {'type': 'intercom_decline'}),
+        'Decline intercom call',
       );
     });
 

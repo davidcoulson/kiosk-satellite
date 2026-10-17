@@ -114,7 +114,15 @@ class KioskApplication : Application(), CameraXConfig.Provider {
             Log.w("KioskApplication", "CameraX was configured before the app could", e)
         }
 
-        val engine = FlutterEngine(this, RendererGuard.engineArgs(this))
+        // A device without a screen renders nothing, so the engine starts
+        // in software and the renderer crash net (which waits for a first
+        // frame that never comes there) stays out of it.
+        val headless = Headless.active(this)
+        if (headless) Headless.useSoftwareRenderer()
+        val engine = FlutterEngine(
+            this,
+            if (headless) Headless.engineArgs else RendererGuard.engineArgs(this),
+        )
         MainThreadEgl.watch(engine)
         // Plugins before the entrypoint: Dart main() starts the admin server and
         // reads shared_preferences immediately, so shared_preferences,
@@ -158,6 +166,8 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         mediaSessions = MediaSessionBridge(applicationContext, messenger)
         voiceIntents = VoiceIntentBridge(applicationContext, messenger)
         EventBroadcastBridge(applicationContext, messenger)
+        HardwareKeys.attach(applicationContext, messenger)
+        LedBridge(applicationContext, messenger)
         plugins = me.jxl.kiosk_satellite.plugins.PluginBridge(applicationContext, messenger)
         // Plugin overlays are platform views on the cached engine, built
         // with the Activity's context whenever one is attached.
@@ -173,5 +183,8 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         AccessibilityKeeper.install(applicationContext)
         // Other apps' playback (now playing); idle without notification access.
         MediaSessions.attach(applicationContext, messenger)
+        // Headless, no Activity ever arms the keep-alive service, so the
+        // process does it as it starts, however it was started.
+        if (headless) KioskSatelliteService.ensureRunning(this)
     }
 }

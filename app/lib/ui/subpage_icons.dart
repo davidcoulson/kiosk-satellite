@@ -22,6 +22,8 @@ const Map<String, Object> subpageIcons = {
   'User Interface': Icons.dashboard_customize_outlined,
   'Theme': Icons.palette_outlined,
   'Custom Pages': customPagesIcon,
+  // Web Browsing.
+  'URL Filter': Icons.public_off_outlined,
   'Dashboard View Rotation': Icons.autorenew,
   'Return to home dashboard view': Icons.home_outlined,
   'Hold mode': Icons.push_pin_outlined,

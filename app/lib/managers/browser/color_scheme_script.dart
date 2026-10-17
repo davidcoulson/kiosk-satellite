@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// Makes a page's `prefers-color-scheme` answer with the dashboard's light
 /// or dark state instead of Android's (issue #907).
 ///
@@ -75,12 +77,19 @@ String colorSchemeSetJs({required bool dark}) =>
 /// query that always or never matches, kept with the original so a flip
 /// rewrites it again. Stylesheets from another host cannot be read and keep
 /// answering from Android. Installed on every document and acting only on
-/// custom pages, so it can ride the dashboard WebView's document-start
-/// scripts.
-String customPageColorSchemeJs({required bool dark}) =>
+/// custom pages (under /local/, or on one of the [origins] of the pages on
+/// other servers), so it can ride the dashboard WebView's document-start
+/// scripts. It also marks such a page with `window.__ksCustomPage`, which
+/// the update filter reads.
+String customPageColorSchemeJs({
+  required bool dark,
+  Iterable<String> origins = const [],
+}) =>
     '''
     (function () {
-      if (location.pathname.indexOf('/local/') !== 0) return;
+      if (location.pathname.indexOf('/local/') !== 0 &&
+          ${jsonEncode(origins.toList())}.indexOf(location.origin) < 0) return;
+      window.__ksCustomPage = true;
       ${colorSchemeJs(dark: dark)}
       if (!window.__ksSetDark || window.__ksCssScheme) return;
       window.__ksCssScheme = true;

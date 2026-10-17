@@ -117,6 +117,7 @@ Wake word configuration is strictly **inherited from Voice Satellite**. It is ne
   needsAppSettings: false,   // True if the microphone is blocked and requires OS settings to fix
   released: true,
   releaseReason: 'muted',
+  muted: true,               // The satellite is muted (releaseReason is 'muted')
   stopWord: 'Stop',
   nativePipeline: false,     // True if voice turns will run their transport natively (the card announced it via `nativePipeline: true` and the app accepted it)
   models: [{ id, wakeWord, manifestUrl, confidenceScale, cutoff }],
@@ -156,6 +157,48 @@ This delegation negotiates completely transparently, just like the wake word han
 | `pipelineStartSending(runId)` | `boolean` | Begins the upload process, transmitting buffered chunks first, followed by live audio. The app handles waiting out the `init` event internally. |
 | `pipelineStopSending()` | `boolean` | Pauses the active upload. The chime window utilizes this function. |
 
+### Home Assistant Connection
+
+`kioskSatellite.ha` gives a [custom page](custom-pages.md) its own Home Assistant websocket without a token in the page. The kiosk opens the connection to its Home Assistant URL, signs in with its long-lived access token and then passes messages through unchanged in both directions. The page owns the message ids, so the standard Home Assistant websocket API works as documented.
+
+It only works on a custom page, in Home Assistant's `/local/` or on another server, and only while **Share Home Assistant connection** is on in Settings > Home Assistant > Custom Pages. A socket belongs to the page that opened it: when the kiosk navigates away, the connection closes and Home Assistant drops its subscriptions. The page acts as the Home Assistant user that owns the kiosk's token.
+
+Credential and user management commands never reach Home Assistant through this connection: `auth/long_lived_access_token`, the other `auth/` commands except `auth/current_user` and `auth/sign_path`, and the `config/auth` user and password commands. The page gets Home Assistant's usual error result with the code `not_allowed` instead, so the kiosk's token cannot be copied into a token of the page's own.
+
+Unlike the rest of this API, these methods reject on failure. A rejection carries `{code, message}`: Home Assistant's own error for a command it refused, or one of these codes from the kiosk.
+
+| Code | Meaning |
+|---|---|
+| `not_allowed` | Share Home Assistant connection is off, or the page is not a custom page. |
+| `not_configured` | The kiosk has no Home Assistant URL or token. |
+| `auth_invalid` | Home Assistant refused the kiosk's token. |
+| `unreachable` | Home Assistant did not answer. |
+| `too_many` | The page already has 4 sockets open. |
+| `connection_lost` | The connection closed while the command waited. |
+
+| Method | Returns | Description |
+|---|---|---|
+| `ha.call(message)` | the result | Sends one command, such as `{type: 'get_states'}`, and resolves with its `result`. |
+| `ha.subscribe(message, callback)` | an unsubscribe function | Sends a subscription, such as `{type: 'subscribe_trigger', ...}`, and calls `callback` with each `event`. The subscription is sent again after a reconnect. |
+| `ha.createSocket()` | a socket | Only for pages built on [home-assistant-js-websocket](https://github.com/home-assistant/home-assistant-js-websocket), which `call` and `subscribe` do not need. Pass it as `createConnection({createSocket: kioskSatellite.ha.createSocket})` and the library runs unchanged, including its reconnects. A `not_allowed`, `not_configured` or `auth_invalid` answer stops them with the library's `ERR_INVALID_AUTH`. |
+
+```javascript
+const states = await kioskSatellite.ha.call({ type: 'get_states' });
+const stop = await kioskSatellite.ha.subscribe(
+  { type: 'subscribe_trigger', trigger: { platform: 'state', entity_id: 'binary_sensor.door' } },
+  (event) => console.log(event.variables.trigger.to_state.state),
+);
+```
+
+With home-assistant-js-websocket:
+
+```javascript
+import { createConnection, subscribeEntities } from 'https://cdn.jsdelivr.net/npm/home-assistant-js-websocket@9.4.0/+esm';
+
+const conn = await createConnection({ createSocket: kioskSatellite.ha.createSocket });
+subscribeEntities(conn, (entities) => render(entities));
+```
+
 ## Events
 
 The API dispatches `CustomEvent`s directly on the `window` object:
@@ -179,6 +222,8 @@ The API dispatches `CustomEvent`s directly on the `window` object:
 | `kiosksatellite:voice-timers` | `{timers}` | Native Voice Satellite's timers changed. See [Native timers on a dashboard](#native-timers-on-a-dashboard). |
 | `kiosksatellite:intercom` | the `intercomStatus` shape | The intercom changed: a call placed, ringing, answered or ended, a broadcast coming in, the kiosks on the network. |
 | `kiosksatellite:intercom-mic` | `{hold}` | With `hold` true the intercom wants the microphone the page holds through `getUserMedia`, for a call or a broadcast, and waits two seconds for the page to stop its tracks before the call goes on listen only. With `hold` false the call is over and the page may open its capture again. Voice Satellite lets go of its own capture on this event and brings it back after. |
+| `kiosksatellite:ha-closed` | `{reason}` | The connection behind `ha.call` and `ha.subscribe` closed. Waiting commands reject with `connection_lost`. With subscriptions open, it reconnects and subscribes them again. |
+| `kiosksatellite:ha-ready` | `{}` | That connection came back after a drop and its subscriptions were sent again. |
 | `kiosksatellite:pipeline` | `{runId, message}` | Delivers one raw event verbatim from a delegated run's subscription. This includes the synthetic `init`, `run-start`, STT partials, `intent-progress` deltas, `tts-end`, and any errors. |
 | `kiosksatellite:pipeline-closed` | `{runId, reason}` | The delegated run's transport died mid-run (meaning the app's websocket abruptly closed). Because subscriptions cannot be resumed, the page must restart the turn entirely, just as the page's own reconnect recovery logic would. |
 | `kiosksatellite:pipeline-level` | `{level, levels?}` | Provides speech weighted microphone levels during a delegated turn, intended for the reactive visual bar. These are batched (~4 times a second). The `levels` array contains `[{o, v}]` where `o` is the millisecond offset from the batch's first entry. The page replays this locally so the bar animates smoothly at chunk cadence, sitting exactly one batch window behind live audio. A single `{level}` payload is processed immediately (used for the absolute zero a mute forces). The app uses the exact same band-split math the page applies to raw chunks, ensuring the visual bar renders identically. |

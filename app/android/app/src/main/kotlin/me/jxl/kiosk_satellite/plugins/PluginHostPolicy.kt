@@ -1,5 +1,8 @@
 package me.jxl.kiosk_satellite.plugins
 
+import org.json.JSONArray
+import org.json.JSONObject
+
 /** SDK event contract and per-session bounds for asynchronous commands. */
 internal object PluginHostPolicy {
     fun entityEvent(event: String) = event.startsWith("ha.entity.") &&
@@ -14,6 +17,40 @@ internal object PluginHostPolicy {
         "wakeword.state", "wakeword.detected", "stopword.detected", "camera.view", "browser.state",
         "audio.noise",
     )
+
+    /** The key of a Home Assistant subscription event, `ha.subscription.KEY`, or null. */
+    fun haSubscriptionKey(event: String) = event.removePrefix("ha.subscription.").takeIf { it != event && haKey(it) }
+    fun haKey(key: String) = key.matches(Regex("[A-Za-z0-9_.-]{1,64}"))
+
+    /**
+     * A detached copy of a plugin's Home Assistant message with JSON values only, at most 32 KB encoded. The app
+     * checks the message itself; this keeps what crosses the channel small and plain.
+     */
+    fun haMessage(message: Map<*, *>): Map<String, Any?> {
+        @Suppress("UNCHECKED_CAST")
+        val copy = haJson(message, 0) as Map<String, Any?>
+        require(JSONObject(copy).toString().toByteArray().size <= 32_768) { "Home Assistant message is larger than 32 KB" }
+        return copy
+    }
+
+    private fun haJson(value: Any?, depth: Int): Any? {
+        require(depth <= 32) { "Home Assistant message is nested too deeply" }
+        return when (value) {
+            null, JSONObject.NULL -> null
+            is String, is Boolean, is Int, is Long -> value
+            is Number -> value.toDouble().also { require(it.isFinite()) { "Home Assistant messages hold finite numbers only" } }
+            is Map<*, *> -> LinkedHashMap<String, Any?>().apply {
+                for ((key, item) in value) {
+                    require(key is String) { "Home Assistant message keys must be strings" }
+                    put(key, haJson(item, depth + 1))
+                }
+            }
+            is Iterable<*> -> value.map { haJson(it, depth + 1) }
+            is Array<*> -> value.map { haJson(it, depth + 1) }
+            is JSONObject, is JSONArray -> haJson(jsonValue(value), depth)
+            else -> throw IllegalArgumentException("Home Assistant messages hold JSON values only")
+        }
+    }
 
     /**
      * The `device.key` payload. Null for printing and modifier keys, so typed

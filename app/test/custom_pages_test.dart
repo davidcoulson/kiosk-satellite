@@ -29,7 +29,10 @@ void main() {
         '  /local/kitchen.html ',
         'https://ha.test:8123/local/kitchen.html',
       ]) {
-        expect(normalizeCustomPagePath(input), '/local/kitchen.html');
+        expect(
+          normalizeCustomPagePath(input, haBase: 'https://ha.test:8123'),
+          '/local/kitchen.html',
+        );
       }
     });
 
@@ -39,7 +42,10 @@ void main() {
         '/local/wall/index.html?room=den#lights',
       );
       expect(
-        normalizeCustomPagePath('http://ha.test/local/a.html#b'),
+        normalizeCustomPagePath(
+          'http://ha.test/local/a.html#b',
+          haBase: 'http://ha.test',
+        ),
         '/local/a.html#b',
       );
     });
@@ -56,8 +62,114 @@ void main() {
         '/local/my page.html',
         r'/local/a\b.html',
       ]) {
-        expect(normalizeCustomPagePath(input), isNull, reason: input);
+        expect(
+          normalizeCustomPagePath(input, haBase: 'https://ha.test'),
+          isNull,
+          reason: input,
+        );
       }
+    });
+
+    test(
+      'a URL on another server is a page there, as the WebView shows it',
+      () {
+        expect(
+          normalizeCustomPagePath(
+            'https://Pages.LAN:443/wall.html?x=1#den',
+            haBase: 'http://ha.test:8123',
+          ),
+          'https://pages.lan/wall.html?x=1#den',
+        );
+        expect(
+          normalizeCustomPagePath('http://pages.lan'),
+          'http://pages.lan/',
+        );
+        // The same host on another port is another server.
+        expect(
+          normalizeCustomPagePath(
+            'http://ha.test:8080/local/a.html',
+            haBase: 'http://ha.test:8123',
+          ),
+          'http://ha.test:8080/local/a.html',
+        );
+        for (final input in [
+          'ftp://pages.lan/a.html',
+          'https://user:pw@pages.lan/a.html',
+          'https:///a.html',
+        ]) {
+          expect(normalizeCustomPagePath(input), isNull, reason: input);
+        }
+      },
+    );
+
+    test('a page on another server navigates by its URL', () {
+      final page = parseCustomPages(
+        jsonEncode([
+          {'name': 'Wall', 'path': 'https://pages.lan/wall.html#den'},
+        ]),
+      ).single;
+      expect(page.external, isTrue);
+      expect(page.navPath, 'local/https://pages.lan/wall.html#den');
+      expect(page.route, 'https://pages.lan/wall.html#den');
+      expect(isCustomPagePath(page.navPath), isTrue);
+      expect(isExternalCustomPagePath(page.navPath), isTrue);
+      expect(isExternalCustomPagePath('local/wall.html'), isFalse);
+      expect(
+        viewPathUrl('http://ha.test', page.navPath),
+        'https://pages.lan/wall.html#den',
+      );
+      expect(
+        viewPathUrl('http://ha.test', 'lovelace/home'),
+        'http://ha.test/lovelace/home',
+      );
+      expect(externalPageOrigins([page]), {'https://pages.lan'});
+    });
+
+    test('the page on screen is found among the external pages', () {
+      final pages = parseCustomPages(
+        jsonEncode([
+          {'name': 'Kitchen', 'path': '/local/kitchen.html'},
+          {'name': 'Den', 'path': 'https://pages.lan/wall.html#den'},
+          {'name': 'Hall', 'path': 'https://pages.lan/wall.html#hall'},
+        ]),
+      );
+      expect(
+        externalPageNavPath('https://pages.lan/wall.html#hall', pages),
+        'local/https://pages.lan/wall.html#hall',
+      );
+      // A layout no page names is still that page.
+      expect(
+        externalPageNavPath('https://pages.lan/wall.html#porch', pages),
+        'local/https://pages.lan/wall.html#porch',
+      );
+      expect(externalPageNavPath('https://pages.lan/other.html', pages), null);
+      expect(
+        externalPageNavPath('http://ha.test/local/kitchen.html', pages),
+        null,
+      );
+      expect(
+        matchDashboardView('https://pages.lan/wall.html#den', [
+          'lovelace/home',
+          'local/https://pages.lan/wall.html#den',
+        ]),
+        'local/https://pages.lan/wall.html#den',
+      );
+      expect(
+        dashboardPathOfUrl(
+          'https://pages.lan/wall.html#den',
+          'http://ha.test',
+          pages: pages,
+        ),
+        'local/https://pages.lan/wall.html#den',
+      );
+      expect(
+        dashboardPathOfUrl(
+          'https://elsewhere.lan/',
+          'http://ha.test',
+          pages: pages,
+        ),
+        null,
+      );
     });
 
     test('the stored list skips malformed and doubled pages', () {
@@ -144,16 +256,14 @@ void main() {
                 );
               }
               // The custom page hop.
-              if (code.contains("var target = '/' +")) {
+              if (code.contains('var target = ')) {
                 final target = RegExp(
-                  r"var target = '/' \+ \x22([^\x22]*)\x22",
+                  r'var target = \x22([^\x22]*)\x22',
                 ).firstMatch(code)!.group(1)!;
                 final cut = target.indexOf('#');
                 final file = cut < 0 ? target : target.substring(0, cut);
                 final hash = cut < 0 ? '' : target.substring(cut + 1);
-                final current =
-                    here.path.substring(1) +
-                    (here.hasQuery ? '?${here.query}' : '');
+                final current = here.removeFragment().toString();
                 if (current != file) return const CommandResult.ok('load');
                 if (here.fragment == hash) {
                   return const CommandResult.ok('already');
@@ -163,6 +273,15 @@ void main() {
               }
               // The view soft navigation.
               if (code.contains('pushState')) {
+                // A page on another server: the kiosk's own when the code
+                // names its origin.
+                if (!location.startsWith('http://ha.test:8123/')) {
+                  return CommandResult.ok(
+                    code.contains(jsonEncode(here.origin))
+                        ? 'load'
+                        : 'off-origin',
+                  );
+                }
                 if (here.path.startsWith('/local/')) {
                   return const CommandResult.ok('load');
                 }
@@ -281,6 +400,90 @@ void main() {
       expect(ha.customPages.single.path, '/local/wall2.html');
     });
 
+    test(
+      'a page on another server loads its URL, and back to a view',
+      () async {
+        await build([
+          {'name': 'Wall', 'path': 'https://pages.lan/wall.html#den'},
+        ]);
+        expect(
+          (await ha.listDashboardViews('local'))!.single['route'],
+          'https://pages.lan/wall.html#den',
+        );
+        expect(
+          await ha.navigateToViewPath('local/https://pages.lan/wall.html#den'),
+          'navigated',
+        );
+        expect(loads, ['https://pages.lan/wall.html#den']);
+        // Another layout of it only changes the fragment.
+        expect(
+          await ha.navigateToViewPath('local/https://pages.lan/wall.html#hall'),
+          'navigated',
+        );
+        expect(loads, hasLength(1));
+        expect(location, 'https://pages.lan/wall.html#hall');
+        // Its server is the kiosk's own to leave.
+        expect(await ha.navigateToViewPath('lovelace/home'), 'navigated');
+        expect(loads.last, 'http://ha.test:8123/lovelace/home');
+      },
+    );
+
+    test('a site nobody added is not navigated away from', () async {
+      await build([
+        {'name': 'Wall', 'path': 'https://pages.lan/wall.html'},
+      ]);
+      location = 'https://elsewhere.lan/';
+      expect(await ha.navigateToViewPath('lovelace/home'), 'off-origin');
+      expect(loads, isEmpty);
+    });
+
+    test('a start page on another server is its custom page', () async {
+      await build([
+        {'name': 'Wall', 'path': 'https://pages.lan/wall.html#den'},
+      ]);
+      await settings.set(defs.startUrl, 'https://pages.lan/wall.html#den');
+      expect(ha.homeViewPath(), 'local/https://pages.lan/wall.html#den');
+    });
+
+    test('Save & Validate asks a page on another server itself', () async {
+      await build([]);
+      final requested = <String>[];
+      Future<String?> save(
+        String path, {
+        int status = 200,
+        bool fail = false,
+      }) => http.runWithClient(
+        () => ha.saveCustomPage(name: 'Wall', path: path),
+        () => MockClient((request) async {
+          requested.add('${request.url}');
+          expect(request.headers['authorization'], isNull);
+          if (fail) throw const SocketExceptionStub();
+          return http.Response('', status);
+        }),
+      );
+
+      expect(
+        await save('https://pages.lan/missing.html', status: 404),
+        'url_not_found',
+      );
+      expect(
+        await save('https://pages.lan/secret.html', status: 401),
+        'url_status:401',
+      );
+      expect(
+        await save('https://pages.lan/a.html', fail: true),
+        'url_unreachable',
+      );
+      expect(ha.customPages, isEmpty);
+
+      expect(await save('https://pages.lan/wall.html#den'), isNull);
+      expect(requested.last, 'https://pages.lan/wall.html');
+      expect(ha.customPages.single.path, 'https://pages.lan/wall.html#den');
+      // A URL on Home Assistant's own origin stays a /local/ page.
+      expect(await save('http://ha.test:8123/local/den.html'), isNull);
+      expect(ha.customPages.last.path, '/local/den.html');
+    });
+
     test('a page is removed by its path', () async {
       await build([
         {'name': 'Kitchen', 'path': '/local/kitchen.html'},
@@ -293,4 +496,8 @@ void main() {
       expect(ha.customPages.map((p) => p.name), ['Den']);
     });
   });
+}
+
+class SocketExceptionStub implements Exception {
+  const SocketExceptionStub();
 }

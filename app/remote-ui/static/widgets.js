@@ -192,6 +192,38 @@ export function hintRow(text, { warn = false, className = '' } = {}) {
   return div;
 }
 
+// A page's opening row, the device's IntroRow: its glyph (an svg string)
+// on a soft primary tile, a headline and a line or two saying what the page
+// is for. The first row of the page's first card. Without a title the line
+// stands alone, centered on the tile (INTRO_INFO_ICON for a page that only
+// needs a note).
+export const INTRO_INFO_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+  + ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + HINT_ICONS.info + '</svg>';
+
+export function introRow(icon, title, sub) {
+  const row = document.createElement('div');
+  row.className = 'row intro-row' + (title ? '' : ' no-title');
+  const glyph = document.createElement('span');
+  glyph.className = 'intro-icon';
+  glyph.innerHTML = icon || '';
+  const text = document.createElement('div');
+  text.className = 'intro-text';
+  if (title) {
+    const head = document.createElement('div');
+    head.className = 'intro-title';
+    head.textContent = title;
+    text.appendChild(head);
+  }
+  if (sub) {
+    const note = document.createElement('div');
+    note.className = 'intro-sub';
+    note.textContent = sub;
+    text.appendChild(note);
+  }
+  row.append(glyph, text);
+  return row;
+}
+
 // A banner above the rows it affects: the device's Banner. `error` for a
 // failure that blocks the page, otherwise the warning tint for a state
 // that makes a section inert.

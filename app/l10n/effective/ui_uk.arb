@@ -5857,6 +5857,66 @@
       ]
     }
   },
+  "fleetPluginsNames": "Плагіни: {names}",
+  "@fleetPluginsNames": {
+    "context": "Settings > Fleet Management > Followers and Leader",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > Followers and Leader"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > Followers and Leader"
+      ]
+    },
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Names and technical values are supplied by the app."
+  },
+  "fleetCouldNotInstallNameReason": "Не вдалося встановити {name}: {reason}",
+  "@fleetCouldNotInstallNameReason": {
+    "context": "Settings > Fleet Management > Followers and Leader",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > Followers and Leader"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > Followers and Leader"
+      ]
+    },
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Names and technical values are supplied by the app."
+  },
+  "fleetReinstallNameOnThisKioskToSyncIt": "Перевстановіть {name} на цьому кіоску, щоб синхронізувати його",
+  "@fleetReinstallNameOnThisKioskToSyncIt": {
+    "context": "Settings > Fleet Management > Followers and Leader",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > Followers and Leader"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > Followers and Leader"
+      ]
+    },
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Names and technical values are supplied by the app."
+  },
   "fleetSwitchKiosk": "Перемкнути кіоск",
   "@fleetSwitchKiosk": {
     "context": "Remote administration > device name > Switch kiosk",
@@ -6224,6 +6284,58 @@
       ]
     }
   },
+  "fleetPlugins": "Плагіни",
+  "@fleetPlugins": {
+    "context": "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ]
+    }
+  },
+  "fleetPluginSecrets": "Секрети плагінів",
+  "@fleetPluginSecrets": {
+    "context": "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ]
+    }
+  },
+  "fleetNoPluginsInstalledOnThisKiosk": "На цьому кіоску не встановлено плагінів",
+  "@fleetNoPluginsInstalledOnThisKiosk": {
+    "context": "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ]
+    }
+  },
+  "fleetKiosksOnThisProfileInstallTheseAndTakeTheir": "Кіоски з цим профілем встановлюють їх і беруть їхні налаштування з цього кіоску.",
+  "@fleetKiosksOnThisProfileInstallTheseAndTakeTheir": {
+    "context": "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ]
+    }
+  },
   "fleetUpdateTheFleet": "Оновити групу",
   "@fleetUpdateTheFleet": {
     "context": "Settings > Fleet Management > Updates",
@@ -6438,6 +6550,32 @@
       ]
     }
   },
+  "gestureIntercomAnswer": "Прийняти виклик інтеркому",
+  "@gestureIntercomAnswer": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureIntercomDecline": "Відхилити виклик інтеркому",
+  "@gestureIntercomDecline": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
   "gestureAlarmStop": "Зупинити будильник",
   "@gestureAlarmStop": {
     "context": "Settings > Gestures > Add gesture > Choose an action",
@@ -6492,6 +6630,19 @@
   },
   "gestureHoldMode": "Перемкнути режим блокування",
   "@gestureHoldMode": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureRefresh": "Оновити панель керування",
+  "@gestureRefresh": {
     "context": "Settings > Gestures > Add gesture > Choose an action",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -6849,6 +7000,45 @@
   },
   "gestureTheaterPeek": "Brighten theater mode for a moment",
   "@gestureTheaterPeek": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureVoiceWake": "Почати голосову команду",
+  "@gestureVoiceWake": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureVoiceStop": "Зупинити голосового асистента",
+  "@gestureVoiceStop": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureVoiceMute": "Вимкнути або ввімкнути звук Voice Satellite",
+  "@gestureVoiceMute": {
     "context": "Settings > Gestures > Add gesture > Choose an action",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -7303,6 +7493,63 @@
     },
     "placeholders": {
       "key": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "gestureDescribeButtonPress": "Натиснути кнопку {button}",
+  "@gestureDescribeButtonPress": {
+    "context": "Settings > Gestures > Configured gestures",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Configured gestures"
+      ],
+      "remoteAdmin": [
+        "Gestures > Configured gestures"
+      ]
+    },
+    "placeholders": {
+      "button": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "gestureDescribeButtonDouble": "Двічі натиснути кнопку {button}",
+  "@gestureDescribeButtonDouble": {
+    "context": "Settings > Gestures > Configured gestures",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Configured gestures"
+      ],
+      "remoteAdmin": [
+        "Gestures > Configured gestures"
+      ]
+    },
+    "placeholders": {
+      "button": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "gestureDescribeButtonHold": "Утримувати кнопку {button}",
+  "@gestureDescribeButtonHold": {
+    "context": "Settings > Gestures > Configured gestures",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Configured gestures"
+      ],
+      "remoteAdmin": [
+        "Gestures > Configured gestures"
+      ]
+    },
+    "placeholders": {
+      "button": {
         "type": "String"
       }
     },
@@ -8664,6 +8911,56 @@
       ],
       "remoteAdmin": [
         "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureButton": "Кнопка",
+  "@gestureButton": {
+    "context": "Gestures > Add gesture",
+    "description": "Gesture type and field label: a hardware button of a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gesturePress": "Натискання",
+  "@gesturePress": {
+    "context": "Gestures > Add gesture",
+    "description": "Field label and option: how the button is pressed (a single press).",
+    "x-locations": {
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureDoublePress": "Подвійне натискання",
+  "@gestureDoublePress": {
+    "context": "Gestures > Add gesture",
+    "description": "Option: two presses of the button in quick succession.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureHoldPress": "Утримання",
+  "@gestureHoldPress": {
+    "context": "Gestures > Add gesture",
+    "description": "Option: the button held down.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureButtonDefaults": "Натискання, яке не використовує жоден жест, зберігає свою роль: Дія відповідає, зупиняє або відхиляє те, що дзвонить, а інакше починає голосову команду, Мікрофон вимикає Voice Satellite, а кнопки гучності змінюють гучність.",
+  "@gestureButtonDefaults": {
+    "context": "Gestures",
+    "description": "Note under the gesture list on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Gestures"
       ]
     }
   },
@@ -10708,6 +11005,84 @@
       ]
     }
   },
+  "mediaAudioHiRes": "Hi-Res",
+  "@mediaAudioHiRes": {
+    "context": "Now Playing > Audio quality",
+    "description": "Badge for lossless audio above CD quality (more than 16 bits or 48 kHz).",
+    "x-locations": {
+      "device": [
+        "Now Playing > Audio quality"
+      ]
+    }
+  },
+  "mediaAudioCdQuality": "CD-якість",
+  "@mediaAudioCdQuality": {
+    "context": "Now Playing > Audio quality",
+    "description": "Badge for lossless audio at 16 bits and 44.1 or 48 kHz.",
+    "x-locations": {
+      "device": [
+        "Now Playing > Audio quality"
+      ]
+    }
+  },
+  "mediaAudioLossy": "Із втратами",
+  "@mediaAudioLossy": {
+    "context": "Now Playing > Audio quality",
+    "description": "Badge for compressed audio such as AAC, Vorbis or MP3.",
+    "x-locations": {
+      "device": [
+        "Now Playing > Audio quality"
+      ]
+    }
+  },
+  "mediaAudioBitDepth": "{bits} біт",
+  "@mediaAudioBitDepth": {
+    "context": "Now Playing > Audio quality",
+    "description": "Bit depth of the playing audio, for example 24-bit.",
+    "x-locations": {
+      "device": [
+        "Now Playing > Audio quality"
+      ]
+    },
+    "placeholders": {
+      "bits": {
+        "type": "String",
+        "description": "Value supplied by the app. Keep numbers, names and technical details unchanged."
+      }
+    }
+  },
+  "mediaAudioSampleRate": "{rate} кГц",
+  "@mediaAudioSampleRate": {
+    "context": "Now Playing > Audio quality",
+    "description": "Sample rate of the playing audio, for example 96 kHz.",
+    "x-locations": {
+      "device": [
+        "Now Playing > Audio quality"
+      ]
+    },
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "description": "Value supplied by the app. Keep numbers, names and technical details unchanged."
+      }
+    }
+  },
+  "mediaAudioBitRate": "{rate} кбіт/с",
+  "@mediaAudioBitRate": {
+    "context": "Now Playing > Audio quality",
+    "description": "Bitrate of the playing audio, for example 320 kbps.",
+    "x-locations": {
+      "device": [
+        "Now Playing > Audio quality"
+      ]
+    },
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "description": "Value supplied by the app. Keep numbers, names and technical details unchanged."
+      }
+    }
+  },
   "mediaNothingQueued": "У черзі нічого немає",
   "@mediaNothingQueued": {
     "context": "Now Playing > Queue and audiobook chapters",
@@ -12698,6 +13073,19 @@
       ]
     }
   },
+  "pluginErrorNeedsScreen": "Цьому плагіну потрібен екран",
+  "@pluginErrorNeedsScreen": {
+    "context": "Settings > Plugin Manager > Install, update or enable a plugin",
+    "description": "Shown on a device without a screen for a plugin that only shows overlays or screensavers. Keep plugin identifiers and diagnostic details unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager"
+      ]
+    }
+  },
   "pluginErrorNativeIntegrity": "Встановлені нативні бібліотеки не пройшли перевірку цілісності",
   "@pluginErrorNativeIntegrity": {
     "context": "Settings > Plugin Manager > Install, update or enable a plugin",
@@ -13802,6 +14190,38 @@
       }
     }
   },
+  "overviewInstallSilentHelp": "Kiosk Satellite {version} готовий до встановлення. Він встановлюється без підтвердження на пристрої.",
+  "@overviewInstallSilentHelp": {
+    "context": "Remote admin > Overview > Needs attention",
+    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Needs attention"
+      ]
+    },
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "overviewInstallHeadlessHelp": "Kiosk Satellite {version} готовий до встановлення. Цей пристрій не має екрана для підтвердження, тож зробіть Kiosk Satellite власником пристрою, скористайтеся Shizuku або встановіть через adb.",
+  "@overviewInstallHeadlessHelp": {
+    "context": "Remote admin > Overview > Needs attention",
+    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Needs attention"
+      ]
+    },
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "overviewHaSetup": "Home Assistant не налаштовано",
   "@overviewHaSetup": {
     "context": "Remote admin > Overview > Needs attention",
@@ -14841,6 +15261,17 @@
   "@overviewShowingCustomPages": {
     "context": "Remote admin > Overview > Status",
     "description": "Home Assistant chip status while a custom page (a person's own HTML page) is on screen instead of a Home Assistant dashboard.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Status"
+      ]
+    }
+  },
+  "overviewHeadlessMode": "Режим без екрана",
+  "@overviewHeadlessMode": {
+    "context": "Remote admin > Overview > Status",
+    "description": "Home Assistant status tile on a device without a screen, which has no dashboard to report on.",
     "x-locations": {
       "device": [],
       "remoteAdmin": [
@@ -20209,6 +20640,116 @@
       "device": [
         "Settings > Device"
       ],
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHardwareButtons": "Апаратні кнопки",
+  "@deviceHardwareButtons": {
+    "context": "Settings:Device",
+    "description": "Permissions Manager row on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHardwareButtonsHeld": "Кнопки пристрою доходять до жестів і Voice Satellite.",
+  "@deviceHardwareButtonsHeld": {
+    "context": "Settings:Device",
+    "description": "Permissions Manager row on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHardwareButtonsMissing": "Кнопки пристрою нічого не роблять, доки не ввімкнено службу кнопок.",
+  "@deviceHardwareButtonsMissing": {
+    "context": "Settings:Device",
+    "description": "Permissions Manager row on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbMicrophone": "Цей пристрій не має екрана. Надайте через adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.RECORD_AUDIO",
+  "@deviceHeadlessAdbMicrophone": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb command unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbNotifications": "Цей пристрій не має екрана. Надайте через adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.POST_NOTIFICATIONS",
+  "@deviceHeadlessAdbNotifications": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb command unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbLocation": "Цей пристрій не має екрана. Надайте через adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.ACCESS_FINE_LOCATION",
+  "@deviceHeadlessAdbLocation": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb command unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbBluetooth": "Цей пристрій не має екрана. Надайте через adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.BLUETOOTH_SCAN, потім те саме для BLUETOOTH_CONNECT",
+  "@deviceHeadlessAdbBluetooth": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb command unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbBattery": "Цей пристрій не має екрана. Надайте через adb: adb shell dumpsys deviceidle whitelist +me.jxl.kiosk_satellite",
+  "@deviceHeadlessAdbBattery": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb command unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbStorage": "Цей пристрій не має екрана. Надайте через adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.READ_EXTERNAL_STORAGE, потім те саме для WRITE_EXTERNAL_STORAGE",
+  "@deviceHeadlessAdbStorage": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb command unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbButtons": "Цей пристрій не має екрана. Увімкніть через adb: adb shell settings put secure enabled_accessibility_services me.jxl.kiosk_satellite/.HeadlessKeyService, потім adb shell settings put secure accessibility_enabled 1",
+  "@deviceHeadlessAdbButtons": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb commands unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbButtonsRestart": "Службу кнопок увімкнено, але вона не запустилася. Перезавантажте пристрій, щоб запустити її: adb reboot",
+  "@deviceHeadlessAdbButtonsRestart": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb commands unchanged.",
+    "x-locations": {
       "remoteAdmin": [
         "Device"
       ]
@@ -27266,6 +27807,32 @@
       ]
     }
   },
+  "settingHaCustomPagesSocketTitle": "Спільне з'єднання з Home Assistant",
+  "@settingHaCustomPagesSocketTitle": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Title of the switch that lets custom pages use the kiosk's own Home Assistant connection.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "settingHaCustomPagesSocketDescription": "Власні сторінки працюють з Home Assistant через з'єднання кіоска, без токена на сторінці.",
+  "@settingHaCustomPagesSocketDescription": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Description under Share Home Assistant connection. A token is the Home Assistant access token a page would otherwise need to hold.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
   "haCustomPagesAdd": "Додати сторінку",
   "@haCustomPagesAdd": {
     "context": "Settings:Home Assistant:Custom Pages",
@@ -27279,8 +27846,8 @@
       ]
     }
   },
-  "haCustomPagesEmpty": "Додайте HTML-сторінки з теки www Home Assistant, щоб вибирати їх як панель керування.",
-  "@haCustomPagesEmpty": {
+  "haCustomPagesEmptyAnyServer": "Додайте HTML-сторінки з теки www Home Assistant або з іншого сервера, щоб вибирати їх як панель керування.",
+  "@haCustomPagesEmptyAnyServer": {
     "context": "Settings:Home Assistant:Custom Pages",
     "description": "Shown while no custom page is added yet. www is a folder name and stays as is.",
     "x-locations": {
@@ -27357,10 +27924,10 @@
       ]
     }
   },
-  "haCustomPagePath": "Шлях",
-  "@haCustomPagePath": {
+  "haCustomPageLocation": "Шлях або URL",
+  "@haCustomPageLocation": {
     "context": "Settings:Home Assistant:Custom Pages",
-    "description": "Field label: the address of the page inside Home Assistant, such as /local/dashboard.html.",
+    "description": "Field label: where the page is, a path inside Home Assistant such as /local/dashboard.html or the full address of a page on another web server.",
     "x-locations": {
       "device": [
         "Settings > Home Assistant > Custom Pages"
@@ -27370,10 +27937,10 @@
       ]
     }
   },
-  "haCustomPagePathHint": "Файл у теці www Home Assistant, наприклад /local/dashboard.html.",
-  "@haCustomPagePathHint": {
+  "haCustomPageLocationHint": "Файл у теці www Home Assistant, наприклад /local/dashboard.html, або URL сторінки на іншому сервері.",
+  "@haCustomPageLocationHint": {
     "context": "Settings:Home Assistant:Custom Pages",
-    "description": "Help under the Path field. Keep www and /local/dashboard.html unchanged.",
+    "description": "Help under the Path or URL field. Keep www and /local/dashboard.html unchanged.",
     "x-locations": {
       "device": [
         "Settings > Home Assistant > Custom Pages"
@@ -27396,10 +27963,10 @@
       ]
     }
   },
-  "haCustomPagePathInvalid": "Введіть шлях у /local/, наприклад /local/dashboard.html.",
-  "@haCustomPagePathInvalid": {
+  "haCustomPageLocationInvalid": "Введіть шлях у /local/ або URL http чи https.",
+  "@haCustomPageLocationInvalid": {
     "context": "Settings:Home Assistant:Custom Pages",
-    "description": "Error in the custom page dialog when the path is not under /local/. Keep /local/ and /local/dashboard.html unchanged.",
+    "description": "Error in the custom page dialog when the text is neither a path under /local/ nor a web address. Keep /local/, http and https unchanged.",
     "x-locations": {
       "device": [
         "Settings > Home Assistant > Custom Pages"
@@ -27435,6 +28002,19 @@
       ]
     }
   },
+  "haCustomPageUrlNotFound": "На сервері немає сторінки за цією URL-адресою.",
+  "@haCustomPageUrlNotFound": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the web server of a page outside Home Assistant answers that it does not exist.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
   "haCustomPageUnreachable": "Не вдалося з'єднатися з Home Assistant.",
   "@haCustomPageUnreachable": {
     "context": "Settings:Home Assistant:Custom Pages",
@@ -27448,10 +28028,42 @@
       ]
     }
   },
+  "haCustomPageUrlUnreachable": "Не вдалося з'єднатися із сервером.",
+  "@haCustomPageUrlUnreachable": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the web server of a page outside Home Assistant does not answer.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
   "haCustomPageStatus": "Home Assistant відповів кодом HTTP {code}.",
   "@haCustomPageStatus": {
     "context": "Settings:Home Assistant:Custom Pages",
     "description": "Error in the custom page dialog when Home Assistant answers the page with an HTTP status other than 200. HTTP stays as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    },
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "description": "The HTTP status code, such as 403."
+      }
+    }
+  },
+  "haCustomPageUrlStatus": "Сервер відповів кодом HTTP {code}.",
+  "@haCustomPageUrlStatus": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the web server of a page outside Home Assistant answers with an HTTP status other than 200. HTTP stays as is.",
     "x-locations": {
       "device": [
         "Settings > Home Assistant > Custom Pages"
@@ -30311,6 +30923,71 @@
       ]
     }
   },
+  "settingIntercomHangupKeyRingingTitle": "Кнопка завершення під час вхідного виклику",
+  "@settingIntercomHangupKeyRingingTitle": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "settingIntercomHangupKeyRingingDescription": "Що робить кнопка, коли сюди надходить виклик.",
+  "@settingIntercomHangupKeyRingingDescription": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionHangupRingingAnswer": "Прийняти",
+  "@intercomOptionHangupRingingAnswer": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option, the button answers the ringing call. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionHangupRingingDecline": "Відхилити",
+  "@intercomOptionHangupRingingDecline": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option, the button declines the ringing call. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionHangupRingingIgnore": "Ігнорувати",
+  "@intercomOptionHangupRingingIgnore": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option, the button keeps its usual action while a call rings. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
   "intercomTalkSection": "Розмова",
   "@intercomTalkSection": {
     "context": "Settings > Intercom > Talk",
@@ -31100,6 +31777,812 @@
       "remoteAdmin": [
         "Kiosk Mode > Required system permissions",
         "Lockdown Mode > Required system permissions"
+      ]
+    }
+  },
+  "settingLedEnabledTitle": "Увімкнути керування LED",
+  "@settingLedEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label: the master switch of the LED Control page.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Enable LED Control"
+      ],
+      "remoteAdmin": [
+        "LED Control > Enable LED Control"
+      ]
+    }
+  },
+  "settingLedEnabledDescription": "Дозволяє Kiosk Satellite керувати індикаторами.",
+  "@settingLedEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Enable LED Control"
+      ],
+      "remoteAdmin": [
+        "LED Control > Enable LED Control"
+      ]
+    }
+  },
+  "settingLedAnimationsTitle": "Анімувати ефекти",
+  "@settingLedAnimationsTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Effects > Animate effects"
+      ],
+      "remoteAdmin": [
+        "LED Control > Effects > Animate effects"
+      ]
+    }
+  },
+  "settingLedAnimationsDescription": "Рухає дуги й плавно змінює пульсації. Вимкніть, щоб усі ефекти були статичними.",
+  "@settingLedAnimationsDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Effects > Animate effects"
+      ],
+      "remoteAdmin": [
+        "LED Control > Effects > Animate effects"
+      ]
+    }
+  },
+  "settingLedIdleEnabledTitle": "Світитися у спокої",
+  "@settingLedIdleEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Light up when idle"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Light up when idle"
+      ]
+    }
+  },
+  "settingLedIdleEnabledDescription": "Світиться, поки нічого іншого не показано.",
+  "@settingLedIdleEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Light up when idle"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Light up when idle"
+      ]
+    }
+  },
+  "settingLedIdleBrightnessTitle": "Яскравість",
+  "@settingLedIdleBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Brightness"
+      ]
+    }
+  },
+  "settingLedIdleBrightnessDescription": "Наскільки яскраво світяться індикатори для цього.",
+  "@settingLedIdleBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Brightness"
+      ]
+    }
+  },
+  "settingLedIdleLightColorTitle": "Колір",
+  "@settingLedIdleLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Color"
+      ]
+    }
+  },
+  "settingLedIdleLightColorDescription": "Колір індикаторів для цього.",
+  "@settingLedIdleLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Color"
+      ]
+    }
+  },
+  "settingLedIdleStyleTitle": "Ефект",
+  "@settingLedIdleStyleTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Effect"
+      ]
+    }
+  },
+  "settingLedIdleStyleDescription": "Як індикатори виглядають у спокої.",
+  "@settingLedIdleStyleDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Effect"
+      ]
+    }
+  },
+  "settingLedIdleStyleOptionSolid": "Постійно",
+  "@settingLedIdleStyleOptionSolid": {
+    "context": "Settings > LED Control",
+    "description": "Option of the Effect setting.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Effect"
+      ]
+    }
+  },
+  "settingLedIdleStyleOptionBreathe": "Дихання",
+  "@settingLedIdleStyleOptionBreathe": {
+    "context": "Settings > LED Control",
+    "description": "Option of the Effect setting.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Effect"
+      ]
+    }
+  },
+  "settingLedVoiceEnabledTitle": "Показувати голосову активність",
+  "@settingLedVoiceEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Show voice activity"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Show voice activity"
+      ]
+    }
+  },
+  "settingLedVoiceEnabledDescription": "Світиться, поки Voice Satellite слухає, думає й відповідає.",
+  "@settingLedVoiceEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Show voice activity"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Show voice activity"
+      ]
+    }
+  },
+  "settingLedVoiceBrightnessTitle": "Яскравість",
+  "@settingLedVoiceBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Brightness"
+      ]
+    }
+  },
+  "settingLedVoiceBrightnessDescription": "Наскільки яскраво світяться індикатори для цього.",
+  "@settingLedVoiceBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Brightness"
+      ]
+    }
+  },
+  "settingLedVoiceLightColorTitle": "Колір",
+  "@settingLedVoiceLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Color"
+      ]
+    }
+  },
+  "settingLedVoiceLightColorDescription": "Під дугою, що обертається під час слухання, чергується під час обмірковування й переливається під час відповіді.",
+  "@settingLedVoiceLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Color"
+      ]
+    }
+  },
+  "settingLedVoiceAccentColorTitle": "Акцентний колір",
+  "@settingLedVoiceAccentColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Accent color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Accent color"
+      ]
+    }
+  },
+  "settingLedVoiceAccentColorDescription": "Дуга, що рухається навколо індикаторів.",
+  "@settingLedVoiceAccentColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Accent color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Accent color"
+      ]
+    }
+  },
+  "settingLedVoiceMutedTitle": "Показувати, коли вимкнено звук",
+  "@settingLedVoiceMutedTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Show when muted"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Show when muted"
+      ]
+    }
+  },
+  "settingLedVoiceMutedDescription": "Світиться, поки звук Voice Satellite вимкнено.",
+  "@settingLedVoiceMutedDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Show when muted"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Show when muted"
+      ]
+    }
+  },
+  "settingLedVoiceMutedColorTitle": "Колір із вимкненим звуком",
+  "@settingLedVoiceMutedColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Muted color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Muted color"
+      ]
+    }
+  },
+  "settingLedVoiceMutedColorDescription": "Колір індикаторів, коли звук вимкнено.",
+  "@settingLedVoiceMutedColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Muted color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Muted color"
+      ]
+    }
+  },
+  "settingLedTimersEnabledTitle": "Показувати таймери",
+  "@settingLedTimersEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Show timers"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Show timers"
+      ]
+    }
+  },
+  "settingLedTimersEnabledDescription": "Пульсує, поки дзвонить таймер.",
+  "@settingLedTimersEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Show timers"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Show timers"
+      ]
+    }
+  },
+  "settingLedTimersBrightnessTitle": "Яскравість",
+  "@settingLedTimersBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Brightness"
+      ]
+    }
+  },
+  "settingLedTimersBrightnessDescription": "Наскільки яскраво світяться індикатори для цього.",
+  "@settingLedTimersBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Brightness"
+      ]
+    }
+  },
+  "settingLedTimersLightColorTitle": "Колір",
+  "@settingLedTimersLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Color"
+      ]
+    }
+  },
+  "settingLedTimersLightColorDescription": "Колір індикаторів для цього.",
+  "@settingLedTimersLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Color"
+      ]
+    }
+  },
+  "settingLedTimersCountdownTitle": "Показувати зворотний відлік",
+  "@settingLedTimersCountdownTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Show the countdown"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Show the countdown"
+      ]
+    }
+  },
+  "settingLedTimersCountdownDescription": "Індикатори гаснуть один за одним, поки спливає найближчий таймер.",
+  "@settingLedTimersCountdownDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Show the countdown"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Show the countdown"
+      ]
+    }
+  },
+  "settingLedAlarmsEnabledTitle": "Показувати будильники",
+  "@settingLedAlarmsEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Alarms > Show alarms"
+      ],
+      "remoteAdmin": [
+        "LED Control > Alarms > Show alarms"
+      ]
+    }
+  },
+  "settingLedAlarmsEnabledDescription": "Пульсує, поки дзвонить будильник.",
+  "@settingLedAlarmsEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Alarms > Show alarms"
+      ],
+      "remoteAdmin": [
+        "LED Control > Alarms > Show alarms"
+      ]
+    }
+  },
+  "settingLedAlarmsBrightnessTitle": "Яскравість",
+  "@settingLedAlarmsBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Alarms > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Alarms > Brightness"
+      ]
+    }
+  },
+  "settingLedAlarmsBrightnessDescription": "Наскільки яскраво світяться індикатори для цього.",
+  "@settingLedAlarmsBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Alarms > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Alarms > Brightness"
+      ]
+    }
+  },
+  "settingLedAlarmsLightColorTitle": "Колір",
+  "@settingLedAlarmsLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Alarms > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Alarms > Color"
+      ]
+    }
+  },
+  "settingLedAlarmsLightColorDescription": "Колір індикаторів для цього.",
+  "@settingLedAlarmsLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Alarms > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Alarms > Color"
+      ]
+    }
+  },
+  "settingLedIntercomEnabledTitle": "Показувати дзвінки інтеркому",
+  "@settingLedIntercomEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Intercom > Show intercom calls"
+      ],
+      "remoteAdmin": [
+        "LED Control > Intercom > Show intercom calls"
+      ]
+    }
+  },
+  "settingLedIntercomEnabledDescription": "Пульсує, поки дзвонить виклик, і обертається, поки він триває.",
+  "@settingLedIntercomEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Intercom > Show intercom calls"
+      ],
+      "remoteAdmin": [
+        "LED Control > Intercom > Show intercom calls"
+      ]
+    }
+  },
+  "settingLedIntercomBrightnessTitle": "Яскравість",
+  "@settingLedIntercomBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Intercom > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Intercom > Brightness"
+      ]
+    }
+  },
+  "settingLedIntercomBrightnessDescription": "Наскільки яскраво світяться індикатори для цього.",
+  "@settingLedIntercomBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Intercom > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Intercom > Brightness"
+      ]
+    }
+  },
+  "settingLedIntercomLightColorTitle": "Колір",
+  "@settingLedIntercomLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Intercom > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Intercom > Color"
+      ]
+    }
+  },
+  "settingLedIntercomLightColorDescription": "Колір індикаторів для цього.",
+  "@settingLedIntercomLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Intercom > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Intercom > Color"
+      ]
+    }
+  },
+  "settingLedNotificationsEnabledTitle": "Показувати сповіщення",
+  "@settingLedNotificationsEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Notifications > Show notifications"
+      ],
+      "remoteAdmin": [
+        "LED Control > Notifications > Show notifications"
+      ]
+    }
+  },
+  "settingLedNotificationsEnabledDescription": "Повільно пульсує, поки чекає сповіщення.",
+  "@settingLedNotificationsEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Notifications > Show notifications"
+      ],
+      "remoteAdmin": [
+        "LED Control > Notifications > Show notifications"
+      ]
+    }
+  },
+  "settingLedNotificationsBrightnessTitle": "Яскравість",
+  "@settingLedNotificationsBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Notifications > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Notifications > Brightness"
+      ]
+    }
+  },
+  "settingLedNotificationsBrightnessDescription": "Наскільки яскраво світяться індикатори для цього.",
+  "@settingLedNotificationsBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Notifications > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Notifications > Brightness"
+      ]
+    }
+  },
+  "settingLedNotificationsLightColorTitle": "Колір",
+  "@settingLedNotificationsLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Notifications > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Notifications > Color"
+      ]
+    }
+  },
+  "settingLedNotificationsLightColorDescription": "Колір індикаторів для цього.",
+  "@settingLedNotificationsLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Notifications > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Notifications > Color"
+      ]
+    }
+  },
+  "settingLedMediaEnabledTitle": "Показувати музику",
+  "@settingLedMediaEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Show music"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Show music"
+      ]
+    }
+  },
+  "settingLedMediaEnabledDescription": "Світиться, поки на цьому пристрої грає музика.",
+  "@settingLedMediaEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Show music"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Show music"
+      ]
+    }
+  },
+  "settingLedMediaBrightnessTitle": "Яскравість",
+  "@settingLedMediaBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Brightness"
+      ]
+    }
+  },
+  "settingLedMediaBrightnessDescription": "Наскільки яскраво світяться індикатори для цього.",
+  "@settingLedMediaBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Brightness"
+      ]
+    }
+  },
+  "settingLedMediaLightColorTitle": "Колір",
+  "@settingLedMediaLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Color"
+      ]
+    }
+  },
+  "settingLedMediaLightColorDescription": "Колір індикаторів для цього.",
+  "@settingLedMediaLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Color"
+      ]
+    }
+  },
+  "settingLedMediaStyleTitle": "Ефект",
+  "@settingLedMediaStyleTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Effect"
+      ]
+    }
+  },
+  "settingLedMediaStyleDescription": "Як індикатори показують музику.",
+  "@settingLedMediaStyleDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Effect"
+      ]
+    }
+  },
+  "settingLedMediaStyleOptionSolid": "Постійно",
+  "@settingLedMediaStyleOptionSolid": {
+    "context": "Settings > LED Control",
+    "description": "Option of the Effect setting.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Effect"
+      ]
+    }
+  },
+  "settingLedMediaStyleOptionBreathe": "Дихання",
+  "@settingLedMediaStyleOptionBreathe": {
+    "context": "Settings > LED Control",
+    "description": "Option of the Effect setting.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Effect"
       ]
     }
   },
@@ -32374,8 +33857,8 @@
       ]
     }
   },
-  "settingSendspinFullscreenHorizontalTitle": "Горизонтальний режим",
-  "@settingSendspinFullscreenHorizontalTitle": {
+  "settingSendspinFullscreenLayoutTitle": "Режим макета",
+  "@settingSendspinFullscreenLayoutTitle": {
     "context": "Settings > Media Player > Now Playing > User Interface",
     "description": "Setting label.",
     "x-locations": {
@@ -32387,10 +33870,49 @@
       ]
     }
   },
-  "settingSendspinFullscreenHorizontalDescription": "Розділити обкладинку та елементи керування на рівні ліву й праву половини. З відкритим текстом пісні або чергою відомості про трек переміщуються під обкладинку. Ігнорується, коли «Зараз грає» показано поруч із заставкою.",
-  "@settingSendspinFullscreenHorizontalDescription": {
+  "settingSendspinFullscreenLayoutDescription": "Як «Зараз грає» розташовує обкладинку, відомості про трек та елементи керування. Горизонтальний розділяє їх на ліву й праву половини. Лише обкладинка заповнює екран обкладинкою й показує відомості про трек та елементи керування на кілька секунд після дотику, а з відкритим текстом пісні або чергою перемикається на Вертикальний. Ігнорується, коли «Зараз грає» показано поруч із заставкою.",
+  "@settingSendspinFullscreenLayoutDescription": {
     "context": "Settings > Media Player > Now Playing > User Interface",
     "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "mediaLayoutVertical": "Вертикальний",
+  "@mediaLayoutVertical": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Option: artwork, track details and controls stacked from top to bottom.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "mediaLayoutHorizontal": "Горизонтальний",
+  "@mediaLayoutHorizontal": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Option: artwork in the left half of the screen, track details and controls in the right half.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "mediaLayoutArtOnly": "Лише обкладинка",
+  "@mediaLayoutArtOnly": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Option: only the artwork shows, centered and filling the screen. Track details and controls appear over it for a few seconds after a tap.",
     "x-locations": {
       "device": [
         "Settings > Media Player > Now Playing > User Interface"
@@ -32599,6 +34121,71 @@
   "@settingSendspinSpeakerPillDescription": {
     "context": "Settings > Media Player > Now Playing > User Interface",
     "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "settingSendspinSpeakerPillPlayersTitle": "Фільтр панелі вибору гучномовців",
+  "@settingSendspinSpeakerPillPlayersTitle": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "settingSendspinSpeakerPillPlayersDescription": "На панелі показуються лише ці гучномовці. Гучномовці, які вже в групі, показуються завжди.",
+  "@settingSendspinSpeakerPillPlayersDescription": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "settingSendspinAudioQualityTitle": "Показувати якість звуку",
+  "@settingSendspinAudioQualityTitle": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "settingSendspinAudioQualityDescription": "Показує формат, бітову глибину, частоту дискретизації, бітрейт і джерело поточного треку внизу режиму «Зараз грає». Потрібен Music Assistant.",
+  "@settingSendspinAudioQualityDescription": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "mediaAllSpeakers": "Усі гучномовці",
+  "@mediaAllSpeakers": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Shown in the speaker filter when no speakers are picked: the pill offers every speaker.",
     "x-locations": {
       "device": [
         "Settings > Media Player > Now Playing > User Interface"
@@ -34250,6 +35837,154 @@
     "x-locations": {
       "remoteAdmin": [
         "Sidebar > theme button"
+      ]
+    }
+  },
+  "settingsMenuOverviewHeadlessSummary": "Стан і швидке керування",
+  "@settingsMenuOverviewHeadlessSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary below Overview on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuHomeAssistantHeadlessSummary": "З'єднання",
+  "@settingsMenuHomeAssistantHeadlessSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary below Home Assistant on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuAudio": "Аудіо",
+  "@settingsMenuAudio": {
+    "context": "Settings:Menu",
+    "description": "The Screen & Audio page on a device without a screen, and its menu group.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuAudioSummary": "Гучність, мікрофон",
+  "@settingsMenuAudioSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary below Audio on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsGroupMedia": "Медіа",
+  "@settingsGroupMedia": {
+    "context": "Settings:Menu",
+    "description": "Menu group on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuDlnaHeadlessSummary": "Відтворення аудіо віддалено",
+  "@settingsMenuDlnaHeadlessSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary below DLNA Renderer on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuGesturesHeadlessSummary": "Жести кнопками й оплесками",
+  "@settingsMenuGesturesHeadlessSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary below Gestures on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuLeds": "Керування LED",
+  "@settingsMenuLeds": {
+    "context": "Settings:Menu",
+    "description": "The LED Control page, on devices with status lights.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuLedsSummary": "Кольори й ефекти індикаторів стану",
+  "@settingsMenuLedsSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary below LED Control in the Settings menu.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsLedTimers": "Таймери",
+  "@settingsLedTimers": {
+    "context": "Settings:Menu",
+    "description": "Group on the LED Control page.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsLedNotifications": "Сповіщення",
+  "@settingsLedNotifications": {
+    "context": "Settings:Menu",
+    "description": "Group on the LED Control page.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsLedIdle": "У спокої",
+  "@settingsLedIdle": {
+    "context": "Settings:Menu",
+    "description": "Group on the LED Control page: what the lights do when nothing else is showing.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control"
+      ],
+      "remoteAdmin": [
+        "LED Control"
+      ]
+    }
+  },
+  "settingsLedEffects": "Ефекти",
+  "@settingsLedEffects": {
+    "context": "Settings:Menu",
+    "description": "Group on the LED Control page: how the lights move.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control"
+      ],
+      "remoteAdmin": [
+        "LED Control"
       ]
     }
   },
@@ -45279,6 +47014,84 @@
     "context": "Settings > Voice Satellite > Chimes",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
+  "voiceChimeWakeVolumeTitle": "Гучність звуку активації",
+  "@voiceChimeWakeVolumeTitle": {
+    "context": "Settings > Voice Satellite > Chimes",
+    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Chimes"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Chimes"
+      ]
+    }
+  },
+  "voiceChimeDoneVolumeTitle": "Гучність звуку завершення",
+  "@voiceChimeDoneVolumeTitle": {
+    "context": "Settings > Voice Satellite > Chimes",
+    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Chimes"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Chimes"
+      ]
+    }
+  },
+  "voiceChimeErrorVolumeTitle": "Гучність звуку помилки",
+  "@voiceChimeErrorVolumeTitle": {
+    "context": "Settings > Voice Satellite > Chimes",
+    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Chimes"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Chimes"
+      ]
+    }
+  },
+  "voiceChimeTimerVolumeTitle": "Гучність звуку таймера",
+  "@voiceChimeTimerVolumeTitle": {
+    "context": "Settings > Voice Satellite > Chimes",
+    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Chimes"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Chimes"
+      ]
+    }
+  },
+  "voiceChimeAnnounceVolumeTitle": "Гучність звуку оголошення",
+  "@voiceChimeAnnounceVolumeTitle": {
+    "context": "Settings > Voice Satellite > Chimes",
+    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Chimes"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Chimes"
+      ]
+    }
+  },
+  "voiceChimeVolumeDescription": "Частка гучності асистента.",
+  "@voiceChimeVolumeDescription": {
+    "context": "Settings > Voice Satellite > Chimes",
+    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Chimes"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Chimes"
+      ]
+    }
+  },
   "settingVoiceShowCommandTitle": "Показувати, що ви сказали",
   "@settingVoiceShowCommandTitle": {
     "context": "Settings > Voice Satellite > Conversation",
@@ -45885,8 +47698,8 @@
     "context": "Settings > Voice Satellite",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
-  "voiceHaAddHint": "Додайте цей кіоск у Home Assistant у розділі Налаштування, Пристрої та служби, де він відображається як виявлений.",
-  "@voiceHaAddHint": {
+  "voiceHaAddAgainHint": "Додайте цей кіоск у Home Assistant у розділі Налаштування, Пристрої та служби, де він відображається як виявлений. Якщо Home Assistant уже мав його, там він попросить новий Ключ шифрування зі сторінки ESPHome.",
+  "@voiceHaAddAgainHint": {
     "context": "Settings > Voice Satellite",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
@@ -47795,6 +49608,16 @@
     "context": "Settings > Voice Satellite > Wake Word",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
+  "settingVoiceWakeArbitrationOffsetTitle": "Поправка арбітражу",
+  "@settingVoiceWakeArbitrationOffsetTitle": {
+    "context": "Settings > Voice Satellite > Wake Word",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceWakeArbitrationOffsetDescription": "Додається до того, наскільки гучно цей кіоск почув слово активації. Збільште, якщо цей кіоск програє, хоча він ближче, і зменште, якщо він відповідає здалеку.",
+  "@settingVoiceWakeArbitrationOffsetDescription": {
+    "context": "Settings > Voice Satellite > Wake Word",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
   "voiceSectionWakeArbitration": "Арбітраж слова активації",
   "@voiceSectionWakeArbitration": {
     "context": "Settings > Voice Satellite > Wake Word",
@@ -48325,6 +50148,394 @@
     },
     "x-notes": "Translate only the comment on the first line. Preserve the executable JavaScript on the second line exactly."
   },
+  "urlFilterTitle": "Фільтр URL",
+  "@urlFilterTitle": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Name of the settings page that blocks or allows the addresses the dashboard and external pages open, and of its entry row.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing",
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing",
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterHint": "Блокування або дозвіл сторінок за шаблоном адреси чи регулярним виразом",
+  "@urlFilterHint": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Hint under the URL Filter entry row.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing"
+      ],
+      "remoteAdmin": [
+        "Web Browsing"
+      ]
+    }
+  },
+  "urlFilterIntroTitle": "Керування тим, які сторінки відкриваються",
+  "@urlFilterIntroTitle": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Headline of the intro at the top of the URL Filter page.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterIntroSub": "Посилання або сторінки, що відповідають правилу «Блокувати», не завантажуються. Додайте правило «Лише дозволити», щоб завантажувалися тільки сторінки, які йому відповідають.",
+  "@urlFilterIntroSub": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Text under the URL Filter intro headline. Block and Allow only are the two choices of a rule's Action field.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterAdd": "Додати правило",
+  "@urlFilterAdd": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Row at the end of the URL Filter list that opens the editor for a new rule.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterAddTitle": "Додати правило фільтра",
+  "@urlFilterAddTitle": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Title of the editor dialog for a new URL Filter rule.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterEditTitle": "Редагувати правило фільтра",
+  "@urlFilterEditTitle": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Title of the editor dialog for an existing URL Filter rule.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterName": "Назва",
+  "@urlFilterName": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Label of the rule's name field in the URL Filter editor.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterPattern": "Шаблон",
+  "@urlFilterPattern": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Label of the field holding the address pattern or regular expression a rule blocks.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterPatternWildcardHint": "Використовуйте * для збігу з будь-чим. Шаблон, що починається з /, збігається зі шляхом на будь-якому сервері, наприклад /history*.",
+  "@urlFilterPatternWildcardHint": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Help under the Pattern field for a wildcard rule. Keep * and /history* as they are.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterPatternRegexHint": "Регулярний вираз, який шукається в будь-якому місці адреси без урахування регістру.",
+  "@urlFilterPatternRegexHint": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Help under the Pattern field for a regular expression rule.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterType": "Тип шаблону",
+  "@urlFilterType": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Label of the choice between a wildcard pattern and a regular expression.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterTypeWildcard": "Шаблон із *",
+  "@urlFilterTypeWildcard": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Pattern type option: a pattern where * matches anything.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterTypeRegex": "Регулярний вираз",
+  "@urlFilterTypeRegex": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Pattern type option: a regular expression.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterAction": "Дія",
+  "@urlFilterAction": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Label of the choice between blocking the pages a rule matches and allowing only them.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterActionBlock": "Блокувати",
+  "@urlFilterActionBlock": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Action option: pages that match the rule do not load.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterActionAllow": "Лише дозволити",
+  "@urlFilterActionAllow": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Action option: only pages that match an Allow only rule load where the rule applies. Also shown on the rule's row in the list.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterActionAllowHint": "Там, де діє це правило, завантажуються лише сторінки, що відповідають правилу «Лише дозволити». Вхід у Home Assistant і стартова панель завантажуються завжди.",
+  "@urlFilterActionAllowHint": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Help under the Action field when Allow only is picked.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterScope": "Застосовується до",
+  "@urlFilterScope": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Label of the choice of where a rule blocks addresses.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterScopeAll": "Панель і зовнішні сторінки",
+  "@urlFilterScopeAll": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Applies to option: both the dashboard and external pages.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterScopeDashboard": "Панель",
+  "@urlFilterScopeDashboard": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Applies to option: the dashboard and custom pages.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterScopeExternal": "Зовнішні сторінки",
+  "@urlFilterScopeExternal": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Applies to option: pages opened from dashboard links and dashboard rotation pages, shown over the dashboard.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterScopeHint": "Зовнішні сторінки: посилання, відкриті з панелі, та сторінки ротації панелі.",
+  "@urlFilterScopeHint": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Help under the Applies to choice.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterErrorName": "Введіть назву.",
+  "@urlFilterErrorName": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Error in the URL Filter editor when the name is empty.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterErrorPattern": "Введіть шаблон.",
+  "@urlFilterErrorPattern": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Error in the URL Filter editor when the pattern is empty.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterErrorRegex": "Цей регулярний вираз недійсний.",
+  "@urlFilterErrorRegex": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Error in the URL Filter editor when the regular expression has a syntax error.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterBlocked": "Сторінку заблоковано",
+  "@urlFilterBlocked": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Title of the notice shown on the kiosk when a link or the page tries to open an address a URL Filter rule blocks. The rule's name shows under it.",
+    "x-locations": {
+      "device": [
+        "Dashboard",
+        "External pages"
+      ]
+    }
+  },
+  "urlFilterNotAllowed": "Немає серед дозволених сторінок",
+  "@urlFilterNotAllowed": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Shown under Page blocked when a page is blocked because no Allow only rule matches it.",
+    "x-locations": {
+      "device": [
+        "Dashboard",
+        "External pages"
+      ]
+    }
+  },
+  "settingBrowserUrlFilterNoticeTitle": "Показувати сповіщення про блокування",
+  "@settingBrowserUrlFilterNoticeTitle": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Title of the switch that shows a notice on the kiosk when a URL Filter rule blocks a page.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "settingBrowserUrlFilterNoticeDescription": "Показувати коротке сповіщення з назвою правила, коли сторінку заблоковано.",
+  "@settingBrowserUrlFilterNoticeDescription": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Description under Show blocked page notice.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
   "setupConnectHeading": "Підключення до Home Assistant",
   "@setupConnectHeading": {
     "context": "First-time setup:Connect",
@@ -48506,6 +50717,16 @@
       ],
       "remoteAdmin": [
         "First-time setup > Dashboard"
+      ]
+    }
+  },
+  "setupHeadlessGrants": "Цей пристрій не має екрана, тому Android не може запитати їх на ньому. Надайте кожен через adb, а потім завершіть тут.",
+  "@setupHeadlessGrants": {
+    "context": "Setup",
+    "description": "Permissions step of the remote setup wizard on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Setup wizard > Permissions"
       ]
     }
   },
@@ -49202,8 +51423,8 @@
     "context": "Setup > Voice Satellite",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
-  "setupVoiceAddHint": "Після налаштування додайте цей кіоск у Home Assistant у розділі Налаштування, Пристрої та служби, де він відображається як виявлений.",
-  "@setupVoiceAddHint": {
+  "setupVoiceAddAgainHint": "Після налаштування додайте цей кіоск у Home Assistant у розділі Налаштування, Пристрої та служби, де він відображається як виявлений. Якщо Home Assistant уже мав його, там він попросить новий Ключ шифрування зі сторінки ESPHome.",
+  "@setupVoiceAddAgainHint": {
     "context": "Setup > Voice Satellite",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },

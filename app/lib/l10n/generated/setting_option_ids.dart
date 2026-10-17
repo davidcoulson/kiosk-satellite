@@ -194,6 +194,11 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "compact": "mediaCompact",
     "large": "mediaLargeControls"
   },
+  "sendspin.fullscreen_layout": {
+    "vertical": "mediaLayoutVertical",
+    "horizontal": "mediaLayoutHorizontal",
+    "art_only": "mediaLayoutArtOnly"
+  },
   "sendspin.fullscreen_photo_fill": {
     "default": "mediaDefaultFill",
     "off": "mediaFillOff",
@@ -238,6 +243,11 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "volume_down": "intercomOptionHangupVolumeDown",
     "volume_mute": "intercomOptionHangupMute",
     "help": "intercomOptionHangupHelp"
+  },
+  "intercom.hangup_key_ringing": {
+    "answer": "intercomOptionHangupRingingAnswer",
+    "decline": "intercomOptionHangupRingingDecline",
+    "ignore": "intercomOptionHangupRingingIgnore"
   },
   "kiosk.exit_gesture": {
     "taps5": "kioskGestureTaps5",
@@ -396,6 +406,14 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "top_right": "screensaverMediaTopRight",
     "bottom_left": "screensaverMediaBottomLeft",
     "bottom_right": "screensaverMediaBottomRight"
+  },
+  "led.media.style": {
+    "solid": "settingLedMediaStyleOptionSolid",
+    "breathe": "settingLedMediaStyleOptionBreathe"
+  },
+  "led.idle.style": {
+    "solid": "settingLedIdleStyleOptionSolid",
+    "breathe": "settingLedIdleStyleOptionBreathe"
   }
 };
 const settingPlaceholderMessageIds = <String, String>{

@@ -5,6 +5,7 @@ import { api, showView, state } from './core.js';
 import { refreshUpdateBadge } from './device.js';
 import { initFleet } from './fleet.js';
 import { applyAgentTrim } from './agent.js';
+import { isHeadless } from './headless.js';
 import { loadConsole } from './logs.js';
 import { initOverview } from './overview.js';
 import { loadScreenshot, loadViewJump } from './panels.js';
@@ -47,7 +48,7 @@ export async function start() {
   await loadSettings();
   await loadConsole();
   await initOverview();
-  loadViewJump();
+  if (!isHeadless()) loadViewJump();
   // Whatever the URL asked for, now that the panels it needs exist.
   const asked = readRoute();
   if (asked?.split('/')[0] === 'plugins') await loadPlugins();
@@ -61,6 +62,8 @@ export async function start() {
   showView('app');
   initFleet();
   applyAgentTrim();
+  // Nothing to capture on a device without a screen.
+  if (isHeadless()) return;
   // The screenshot is the one thing not worth holding the splash for: the
   // tablet reads back and encodes its screen, and the panel has its own
   // placeholder. It lands into the visible page.

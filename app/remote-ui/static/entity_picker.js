@@ -166,10 +166,42 @@ export function onListLoaded(key, node, paint) { follow(key, node, paint); }
 export function playerSpec(source, { speakers = false } = {}) {
   return {
     key: `players:${source}:${speakers}`,
-    loader: () => loadPlayers(source, speakers),
+    loader: () => loadPlayers(source, speakers, false),
     searchHint: mediaText('Search players'),
     noGroup: '', chips: false, headings: false, byGroupName: false, keep: null,
     noteText: mediaError,
+  };
+}
+
+// The players the speaker selection pill can offer: Music Assistant's
+// players and every Sonos room, each under its source's name with chips
+// to show one source. Sonos is left out while it knows no speakers, and
+// one source alone reads as a plain list. The device's speakerPillSpec.
+export function speakerPillSpec() {
+  return {
+    key: 'players:pill',
+    loader: loadPillPlayers,
+    searchHint: mediaText('Search players'),
+    noGroup: '', chips: true, headings: true, byGroupName: false, keep: null,
+    noteText: mediaError,
+  };
+}
+
+async function loadPillPlayers() {
+  const [ma, sonos] = await Promise.all([
+    loadPlayers('ma', false, false),
+    loadPlayers('sonos', false, true),
+  ]);
+  // Product names, the same in every language.
+  const both = sonos.items.length > 0;
+  const maGroup = both ? 'Music Assistant' : '';
+  const under = (group) => (i) => ({ ...i, group, chip: group || null });
+  // Sonos says when it knows no speakers, which is no news to anyone
+  // without them, so only Music Assistant's note stays.
+  const maNote = ma.notes.ma;
+  return {
+    items: [...ma.items.map(under(maGroup)), ...sonos.items.map(under('Sonos'))],
+    notes: maNote ? { [maGroup]: maNote } : {},
   };
 }
 
@@ -185,9 +217,11 @@ export function fixedPlayerSpec(key, items) {
 
 export const PLAYER_ICONS = { speaker: ICONS.speaker, session: ICONS.session };
 
-async function loadPlayers(source, speakers) {
-  const r = await cmd('mediaPlayers', { source, ...(speakers ? { speakers: true } : {}) },
-    { timeoutMs: 15000 });
+// rooms lists every Sonos room on its own, as the speaker selection pill
+// does.
+async function loadPlayers(source, speakers, rooms) {
+  const r = await cmd('mediaPlayers', { source, ...(speakers ? { speakers: true } : {}),
+    ...(rooms ? { rooms: true } : {}) }, { timeoutMs: 15000 });
   if (!r?.ok) return { items: [], notes: { [source]: r?.error || '' } };
   const players = Array.isArray(r.data?.players) ? r.data.players : [];
   const notes = r.data?.notes || {};

@@ -1539,8 +1539,19 @@ class ScreensaverManager extends Manager with WidgetsBindingObserver {
     // everything; carrying on would rebuild the visuals over a session the
     // manager no longer owns, a ghost screensaver no key can dismiss.
     if (!_active) return;
-    log.info(name, 'start ($_effectiveMode)');
-    _armScreenOffTimer();
+    // The idle clock can open a session over a panel that is already off,
+    // turned off from the dashboard. It starts dark then: the screen-off-
+    // only detections must count it as dark and there is no panel left to
+    // power off (issue #980).
+    if ((await commands.execute('isScreenOn', const {})).data == false) {
+      _panelDark = true;
+    }
+    if (!_active) return;
+    log.info(
+      name,
+      'start ($_effectiveMode)${_panelDark ? ', screen off' : ''}',
+    );
+    if (!_screenDark) _armScreenOffTimer();
     await _applyVisuals();
     if (!_active) return;
     bus.publish(

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
+import '../../core/headless.dart';
 import '../../core/tls_identity.dart';
 import '../../core/manager.dart';
 import '../device_camera/camera_resolutions.dart';
@@ -293,7 +294,11 @@ class SettingsManager extends Manager {
             // permission request at a time, so a page racing the prompts
             // below gets some of them silently rejected ("A request for
             // permissions is already running").
-            final heldStartUrl = firstSetup ? map.remove(startUrl.key) : null;
+            // A device without a screen has no page to race and no prompts
+            // to show: its grants come over adb, so the import finishes at
+            // once.
+            final prompts = firstSetup && !Headless.active;
+            final heldStartUrl = prompts ? map.remove(startUrl.key) : null;
             var applied = await import(map);
             // A stale backup can carry Immich credentials with the
             // validated flag off (exported after something reset it).
@@ -326,7 +331,7 @@ class SettingsManager extends Manager {
             // on a system dialog. The start URL stays sequenced after the
             // prompts (see above); callers see pendingSetup and wait for
             // the device to become configured instead.
-            if (firstSetup) {
+            if (prompts) {
               importFinishing = true;
               unawaited(
                 Future(() async {
@@ -444,6 +449,19 @@ class SettingsManager extends Manager {
         log.info(name, 'turned echo cancellation on on upgrade');
       }
       await setInternal(softwareEchoMigration, '1');
+    }
+    // Expose kiosk entities used to be off by default. A configured kiosk
+    // that never chose keeps it off, so ESPHome running only for the
+    // Bluetooth proxy does not suddenly serve every entity. New installs
+    // take the new default.
+    const entitiesDefaultMigration = 'esphome.entities_default_on.migrated';
+    if (internal(entitiesDefaultMigration).isEmpty) {
+      if (_prefs.get(_prefix + esphomeEntities.key) == null &&
+          get(startUrl).isNotEmpty) {
+        await _prefs.setBool(_prefix + esphomeEntities.key, false);
+        log.info(name, 'kept Expose kiosk entities off on upgrade');
+      }
+      await setInternal(entitiesDefaultMigration, '1');
     }
     // The music duck used to go up to 25%, more than the software echo
     // canceller keeps out of the microphone. Bring existing installs down
@@ -580,6 +598,24 @@ class SettingsManager extends Manager {
       log.info(
         name,
         'migrated ${screensaverScreenOffWakeToScreensaver.key} ($wake)',
+      );
+    }
+    // Horizontal mode was a switch and is now a pick of three layouts. Off
+    // was the vertical layout and on the horizontal one.
+    final horizontalKey = '${_prefix}sendspin.fullscreen_horizontal';
+    final horizontal = _prefs.get(horizontalKey);
+    if (horizontal is bool) {
+      if (_prefs.get(_prefix + sendspinFullscreenLayout.key) == null) {
+        await _prefs.setString(
+          _prefix + sendspinFullscreenLayout.key,
+          sendspinLayoutFromSwitch(horizontal),
+        );
+      }
+      await _prefs.remove(horizontalKey);
+      log.info(
+        name,
+        'migrated sendspin.fullscreen_horizontal -> '
+        '${sendspinFullscreenLayout.key} ($horizontal)',
       );
     }
   }
@@ -858,6 +894,11 @@ class SettingsManager extends Manager {
     String? source,
     Map<String, Object?> batch = const {},
   }) async {
+    // The same callers from before Layout mode replaced Horizontal mode.
+    if (key == 'sendspin.fullscreen_horizontal' && value is bool) {
+      key = sendspinFullscreenLayout.key;
+      value = sendspinLayoutFromSwitch(value);
+    }
     final def = defByKey(key);
     if (def == null) return false;
     // A backup, a fleet leader or an API caller from before Wake to

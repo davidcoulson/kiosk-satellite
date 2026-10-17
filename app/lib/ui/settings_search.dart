@@ -74,10 +74,19 @@ const List<SettingsSearchEntry> handBuiltSearchEntries = [
   ),
   SettingsSearchEntry(
     category: 'Home Assistant',
+    title: 'Share Home Assistant connection',
+    description:
+        "Custom pages talk to Home Assistant through the kiosk's connection, "
+        'with no token in the page.',
+    subpage: 'Custom Pages',
+    anchorId: 'ha.custom_pages_socket',
+  ),
+  SettingsSearchEntry(
+    category: 'Home Assistant',
     title: 'Add page',
     description:
-        'Add HTML pages from the Home Assistant www folder to pick them '
-        'like a dashboard.',
+        'Add HTML pages from the Home Assistant www folder or another server '
+        'to pick them like a dashboard.',
     subpage: 'Custom Pages',
     anchorId: 'x:custom_pages',
   ),
@@ -87,6 +96,32 @@ const List<SettingsSearchEntry> handBuiltSearchEntries = [
     description: 'How to build a page that talks to Home Assistant.',
     subpage: 'Custom Pages',
     anchorId: 'x:custom_pages_docs',
+  ),
+  // No setting draws the URL Filter either (remote: DEFLESS_SUBPAGES and
+  // SEARCH_EXTRAS).
+  SettingsSearchEntry(
+    category: 'Browser',
+    title: 'URL Filter',
+    description:
+        'Block or allow pages by address pattern or regular expression',
+    anchorId: 'sub:URL Filter',
+    isPage: true,
+  ),
+  SettingsSearchEntry(
+    category: 'Browser',
+    title: 'Add rule',
+    description:
+        "Links or pages that match a Block rule don't load. Add an Allow only rule to load only the pages it matches.",
+    subpage: 'URL Filter',
+    anchorId: 'x:url_filter',
+  ),
+  SettingsSearchEntry(
+    category: 'Browser',
+    title: 'Show blocked page notice',
+    description:
+        "Show a short notice with the rule's name when a page is blocked.",
+    subpage: 'URL Filter',
+    anchorId: 'browser.url_filter_notice',
   ),
   SettingsSearchEntry(
     category: 'Device',
@@ -659,6 +694,7 @@ List<SettingsSearchEntry> buildSettingsSearchIndex(
   String Function(String)? mediaTextFor,
   String Function(String)? cameraStreamsTextFor,
   String Function(String)? cameraTextFor,
+  String Function(String)? browserTextFor,
   String Function(SettingDef<Object>)? titleFor,
   String Function(SettingDef<Object>)? descriptionFor,
 }) {
@@ -750,6 +786,8 @@ List<SettingsSearchEntry> buildSettingsSearchIndex(
         ? cameraStreamsTextFor
         : entry.category == 'Camera'
         ? cameraTextFor
+        : entry.category == 'Browser'
+        ? browserTextFor
         : null;
     if (translate == null) return entry;
     return SettingsSearchEntry(

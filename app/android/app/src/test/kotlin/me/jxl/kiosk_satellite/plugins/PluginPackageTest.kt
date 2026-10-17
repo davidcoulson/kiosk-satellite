@@ -175,6 +175,43 @@ class PluginPackageTest {
         rejects { PluginManifest(manifest().put("capabilities", org.json.JSONArray(listOf("host.control", "noise")))) }
         assertTrue(PluginHostPolicy.validEvent("audio.noise"))
     }
+    @Test fun overlaysAndScreensaversNeedAScreenUnlessThePluginGoesWithout() {
+        fun caps(vararg names: String) = manifest().put("capabilities", org.json.JSONArray(names.toList()))
+        assertTrue(PluginManifest(caps("overlay")).needsScreen)
+        assertTrue(PluginManifest(caps("screensaver", "entities")).needsScreen)
+        assertFalse(PluginManifest(caps("entities", "ha")).needsScreen)
+        assertFalse(PluginManifest(caps("overlay").put("headless", true)).needsScreen)
+        assertTrue(PluginManifest(caps("overlay").put("headless", false)).needsScreen)
+        rejects { PluginManifest(caps("overlay").put("headless", "yes")) }
+    }
+    @Test fun homeAssistantAccessIsItsOwnCapability() {
+        val ha = PluginManifest(manifest().put("capabilities", org.json.JSONArray(listOf("ha"))))
+        assertTrue("ha" in ha.capabilities)
+        assertEquals("door", PluginHostPolicy.haSubscriptionKey("ha.subscription.door"))
+        assertNull(PluginHostPolicy.haSubscriptionKey("ha.subscription.a b"))
+        assertNull(PluginHostPolicy.haSubscriptionKey("ha.entity.light.a"))
+        assertFalse(PluginHostPolicy.validEvent("ha.subscription.door"))
+    }
+    @Test fun homeAssistantMessagesAreDetachedJson() {
+        val nested = mutableMapOf<String, Any>("entity_id" to listOf("light.a", "light.b"))
+        val message = mapOf<String, Any>(
+            "type" to "call_service", "domain" to "light", "target" to nested,
+            "service_data" to mapOf("brightness" to 120, "transition" to 1.5f, "flash" to false),
+            "array" to arrayOf("x"), "json" to JSONObject().put("a", JSONObject.NULL),
+        )
+        val copy = PluginHostPolicy.haMessage(message)
+        nested["entity_id"] = "changed"
+        assertEquals(listOf("light.a", "light.b"), (copy["target"] as Map<*, *>)["entity_id"])
+        assertEquals(1.5, (copy["service_data"] as Map<*, *>)["transition"])
+        assertEquals(listOf("x"), copy["array"])
+        assertEquals(mapOf("a" to null), copy["json"])
+        rejects { PluginHostPolicy.haMessage(mapOf("type" to "x", "bad" to Any())) }
+        rejects { PluginHostPolicy.haMessage(mapOf("type" to "x", "n" to Double.NaN)) }
+        rejects { PluginHostPolicy.haMessage(mapOf("type" to "x", "data" to "x".repeat(40_000))) }
+        var deep: Any = "end"
+        repeat(40) { deep = listOf(deep) }
+        rejects { PluginHostPolicy.haMessage(mapOf("type" to "x", "deep" to deep)) }
+    }
     @Test fun asynchronousReadBudgetBoundsPendingAndRate() {
         val budget = PluginCommandBudget()
         val now = 2_000_000_000L

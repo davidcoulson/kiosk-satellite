@@ -23,5 +23,10 @@
   "intercomOptionHangupVolumeUp": "Volume omhoog",
   "intercomOptionHangupVolumeDown": "Volume omlaag",
   "intercomOptionHangupMute": "Dempen",
-  "intercomOptionHangupHelp": "Hulp"
+  "intercomOptionHangupHelp": "Hulp",
+  "settingIntercomHangupKeyRingingTitle": "Ophangknop tijdens overgaan",
+  "settingIntercomHangupKeyRingingDescription": "Wat de knop doet als hier een gesprek binnenkomt.",
+  "intercomOptionHangupRingingAnswer": "Aannemen",
+  "intercomOptionHangupRingingDecline": "Afwijzen",
+  "intercomOptionHangupRingingIgnore": "Negeren"
 }

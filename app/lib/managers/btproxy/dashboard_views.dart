@@ -11,6 +11,14 @@ import '../home_assistant/custom_pages.dart';
 String? matchDashboardView(String url, List<String> options) {
   if (options.isEmpty) return null;
   final uri = Uri.tryParse(url);
+  // A custom page on another server is an option by its whole URL.
+  final external = uri == null || !uri.hasAuthority
+      ? null
+      : externalPageUrl(uri);
+  if (external != null &&
+      options.contains('$customPagesDashboardPath/$external')) {
+    return '$customPagesDashboardPath/$external';
+  }
   // A custom page keeps its query and fragment, which pick its layout.
   final path = uri == null ? '' : navPathOfUri(uri);
   if (path.isEmpty) return null;

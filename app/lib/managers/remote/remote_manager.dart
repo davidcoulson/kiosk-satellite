@@ -14,6 +14,7 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import '../../core/headless.dart';
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
 import '../../core/manager.dart';
@@ -548,6 +549,8 @@ class RemoteManager extends Manager {
       final deviceName = data?['name'];
       return _json(200, {
         'setupNeeded': _setupMode,
+        // The wizard skips the dashboard on a device without a screen.
+        'headless': Headless.active,
         'passwordNeeded': _settings.get(defs.remotePassword).isEmpty,
         'deviceName': deviceName is String ? deviceName : '',
         'language': _settings.get(defs.uiLanguage),
@@ -826,6 +829,15 @@ class RemoteManager extends Manager {
       case ('PUT', 'api/fleet/wake-models'):
         final r = await commands.execute('receiveCustomWakeModelFile', {
           'path': request.url.queryParameters['path'] ?? '',
+          'stream': request.read(),
+          'length': request.contentLength,
+        });
+        return _json(r.ok ? 200 : 400, r.toJson());
+      // A plugin package from the leader, the raw body, held until the
+      // push that installs it.
+      case ('PUT', 'api/fleet/plugins'):
+        final r = await commands.execute('fleetStagePlugin', {
+          'sha256': request.url.queryParameters['sha256'] ?? '',
           'stream': request.read(),
           'length': request.contentLength,
         });
@@ -1125,6 +1137,7 @@ class RemoteManager extends Manager {
     'api/fleet/leave',
     'api/fleet/roster',
     'api/fleet/wake-models',
+    'api/fleet/plugins',
     // The leader's fleet backup reads each follower's full configuration.
     'api/config/export',
     'api/commands/getUpdateStatus',

@@ -441,6 +441,8 @@ String settingsPageText(
   'Sendspin' => mediaText(context, english),
   'Launcher' => launcherText(context, english),
   'Gestures' => gestureText(context, english),
+  // Its groups are named after the pages of the features they light up.
+  'LED Control' => navigationText(context, english),
   'Kiosk' || 'Home' || 'Lockdown' => kioskText(context, english),
   'Alarms' => switch (english) {
     'Defaults' => l10n(context).alarmsDefaultsSection,
@@ -450,6 +452,22 @@ String settingsPageText(
     'Needs the Kiosk Satellite alarms blueprint and an LLM conversation '
         'agent in Home Assistant.' =>
       l10n(context).alarmsVoiceHint,
+    _ => english,
+  },
+  'Browser' => switch (english) {
+    'URL Filter' => l10n(context).urlFilterTitle,
+    'Block or allow pages by address pattern or regular expression' => l10n(
+      context,
+    ).urlFilterHint,
+    'Add rule' => l10n(context).urlFilterAdd,
+    'Show blocked page notice' => l10n(
+      context,
+    ).settingBrowserUrlFilterNoticeTitle,
+    "Show a short notice with the rule's name when a page is blocked." => l10n(
+      context,
+    ).settingBrowserUrlFilterNoticeDescription,
+    "Links or pages that match a Block rule don't load. Add an Allow only rule to load only the pages it matches." =>
+      l10n(context).urlFilterIntroSub,
     _ => english,
   },
   'Intercom' => switch (english) {

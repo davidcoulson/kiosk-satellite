@@ -122,10 +122,13 @@ const gestureTextMessageIds = <String, String>{
   "Action": "gestureAction",
   "Go to a dashboard view": "gestureNavigate",
   "Open a web page": "gestureUrl",
+  "Refresh the dashboard": "gestureRefresh",
   "Show a camera view": "gestureCameraView",
   "Open the app launcher": "gestureLauncher",
   "Open Call a kiosk": "gestureIntercomOpen",
   "End the intercom call": "gestureIntercomHangup",
+  "Accept intercom call": "gestureIntercomAnswer",
+  "Decline intercom call": "gestureIntercomDecline",
   "Stop the alarm": "gestureAlarmStop",
   "Snooze the alarm": "gestureAlarmSnooze",
   "Call a kiosk": "gestureIntercomCall",
@@ -194,5 +197,13 @@ const gestureTextMessageIds = <String, String>{
   "Hand Gestures": "gestureHandGestures",
   "Search services": "gestureServiceSearch",
   "Choose a service": "gestureServiceChoose",
-  "Not used by this service": "gestureServiceNoEntity"
+  "Not used by this service": "gestureServiceNoEntity",
+  "Start a voice command": "gestureVoiceWake",
+  "Stop the voice assistant": "gestureVoiceStop",
+  "Mute or unmute Voice Satellite": "gestureVoiceMute",
+  "Button": "gestureButton",
+  "Press": "gesturePress",
+  "Double press": "gestureDoublePress",
+  "Hold": "gestureHoldPress",
+  "A button press no gesture claims keeps its own job: Action answers, stops or dismisses what is ringing and otherwise starts a voice command, Microphone mutes Voice Satellite and the volume buttons change the volume.": "gestureButtonDefaults"
 };

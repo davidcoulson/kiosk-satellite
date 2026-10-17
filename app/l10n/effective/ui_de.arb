@@ -5857,6 +5857,66 @@
       ]
     }
   },
+  "fleetPluginsNames": "Plugins: {names}",
+  "@fleetPluginsNames": {
+    "context": "Settings > Fleet Management > Followers and Leader",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > Followers and Leader"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > Followers and Leader"
+      ]
+    },
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Names and technical values are supplied by the app."
+  },
+  "fleetCouldNotInstallNameReason": "{name} konnte nicht installiert werden: {reason}",
+  "@fleetCouldNotInstallNameReason": {
+    "context": "Settings > Fleet Management > Followers and Leader",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > Followers and Leader"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > Followers and Leader"
+      ]
+    },
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Names and technical values are supplied by the app."
+  },
+  "fleetReinstallNameOnThisKioskToSyncIt": "Installiere {name} auf diesem Kiosk neu, um es zu synchronisieren",
+  "@fleetReinstallNameOnThisKioskToSyncIt": {
+    "context": "Settings > Fleet Management > Followers and Leader",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > Followers and Leader"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > Followers and Leader"
+      ]
+    },
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Names and technical values are supplied by the app."
+  },
   "fleetSwitchKiosk": "Kiosk wechseln",
   "@fleetSwitchKiosk": {
     "context": "Remote administration > device name > Switch kiosk",
@@ -6224,6 +6284,58 @@
       ]
     }
   },
+  "fleetPlugins": "Plugins",
+  "@fleetPlugins": {
+    "context": "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ]
+    }
+  },
+  "fleetPluginSecrets": "Plugin-Geheimnisse",
+  "@fleetPluginSecrets": {
+    "context": "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ]
+    }
+  },
+  "fleetNoPluginsInstalledOnThisKiosk": "Auf diesem Kiosk sind keine Plugins installiert",
+  "@fleetNoPluginsInstalledOnThisKiosk": {
+    "context": "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ]
+    }
+  },
+  "fleetKiosksOnThisProfileInstallTheseAndTakeTheir": "Kiosks mit diesem Profil installieren diese und übernehmen ihre Einstellungen von diesem Kiosk.",
+  "@fleetKiosksOnThisProfileInstallTheseAndTakeTheir": {
+    "context": "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ],
+      "remoteAdmin": [
+        "Fleet Management > a profile > Categories, Credentials or Excluded settings"
+      ]
+    }
+  },
   "fleetUpdateTheFleet": "Flotte aktualisieren",
   "@fleetUpdateTheFleet": {
     "context": "Settings > Fleet Management > Updates",
@@ -6438,6 +6550,32 @@
       ]
     }
   },
+  "gestureIntercomAnswer": "Gegensprechanruf annehmen",
+  "@gestureIntercomAnswer": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureIntercomDecline": "Gegensprechanruf ablehnen",
+  "@gestureIntercomDecline": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
   "gestureAlarmStop": "Wecker stoppen",
   "@gestureAlarmStop": {
     "context": "Settings > Gestures > Add gesture > Choose an action",
@@ -6492,6 +6630,19 @@
   },
   "gestureHoldMode": "Pausenmodus ein- oder ausschalten",
   "@gestureHoldMode": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureRefresh": "Dashboard aktualisieren",
+  "@gestureRefresh": {
     "context": "Settings > Gestures > Add gesture > Choose an action",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -6849,6 +7000,45 @@
   },
   "gestureTheaterPeek": "Brighten theater mode for a moment",
   "@gestureTheaterPeek": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureVoiceWake": "Sprachbefehl starten",
+  "@gestureVoiceWake": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureVoiceStop": "Sprachassistenten stoppen",
+  "@gestureVoiceStop": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureVoiceMute": "Voice Satellite stummschalten oder Stummschaltung aufheben",
+  "@gestureVoiceMute": {
     "context": "Settings > Gestures > Add gesture > Choose an action",
     "description": "Label or guidance in this section.",
     "x-locations": {
@@ -7303,6 +7493,63 @@
     },
     "placeholders": {
       "key": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "gestureDescribeButtonPress": "Taste {button} drücken",
+  "@gestureDescribeButtonPress": {
+    "context": "Settings > Gestures > Configured gestures",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Configured gestures"
+      ],
+      "remoteAdmin": [
+        "Gestures > Configured gestures"
+      ]
+    },
+    "placeholders": {
+      "button": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "gestureDescribeButtonDouble": "Taste {button} zweimal drücken",
+  "@gestureDescribeButtonDouble": {
+    "context": "Settings > Gestures > Configured gestures",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Configured gestures"
+      ],
+      "remoteAdmin": [
+        "Gestures > Configured gestures"
+      ]
+    },
+    "placeholders": {
+      "button": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "gestureDescribeButtonHold": "Taste {button} gedrückt halten",
+  "@gestureDescribeButtonHold": {
+    "context": "Settings > Gestures > Configured gestures",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Configured gestures"
+      ],
+      "remoteAdmin": [
+        "Gestures > Configured gestures"
+      ]
+    },
+    "placeholders": {
+      "button": {
         "type": "String"
       }
     },
@@ -8664,6 +8911,56 @@
       ],
       "remoteAdmin": [
         "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureButton": "Taste",
+  "@gestureButton": {
+    "context": "Gestures > Add gesture",
+    "description": "Gesture type and field label: a hardware button of a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gesturePress": "Drücken",
+  "@gesturePress": {
+    "context": "Gestures > Add gesture",
+    "description": "Field label and option: how the button is pressed (a single press).",
+    "x-locations": {
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureDoublePress": "Doppelt drücken",
+  "@gestureDoublePress": {
+    "context": "Gestures > Add gesture",
+    "description": "Option: two presses of the button in quick succession.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureHoldPress": "Gedrückt halten",
+  "@gestureHoldPress": {
+    "context": "Gestures > Add gesture",
+    "description": "Option: the button held down.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Gestures > Add gesture"
+      ]
+    }
+  },
+  "gestureButtonDefaults": "Ein Tastendruck, den keine Geste belegt, behält seine eigene Aufgabe: Aktion nimmt an, stoppt oder beendet, was klingelt, und startet sonst einen Sprachbefehl, Mikrofon schaltet Voice Satellite stumm und die Lautstärketasten ändern die Lautstärke.",
+  "@gestureButtonDefaults": {
+    "context": "Gestures",
+    "description": "Note under the gesture list on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Gestures"
       ]
     }
   },
@@ -10708,6 +11005,84 @@
       ]
     }
   },
+  "mediaAudioHiRes": "Hi-Res",
+  "@mediaAudioHiRes": {
+    "context": "Now Playing > Audio quality",
+    "description": "Badge for lossless audio above CD quality (more than 16 bits or 48 kHz).",
+    "x-locations": {
+      "device": [
+        "Now Playing > Audio quality"
+      ]
+    }
+  },
+  "mediaAudioCdQuality": "CD-Qualität",
+  "@mediaAudioCdQuality": {
+    "context": "Now Playing > Audio quality",
+    "description": "Badge for lossless audio at 16 bits and 44.1 or 48 kHz.",
+    "x-locations": {
+      "device": [
+        "Now Playing > Audio quality"
+      ]
+    }
+  },
+  "mediaAudioLossy": "Verlustbehaftet",
+  "@mediaAudioLossy": {
+    "context": "Now Playing > Audio quality",
+    "description": "Badge for compressed audio such as AAC, Vorbis or MP3.",
+    "x-locations": {
+      "device": [
+        "Now Playing > Audio quality"
+      ]
+    }
+  },
+  "mediaAudioBitDepth": "{bits} Bit",
+  "@mediaAudioBitDepth": {
+    "context": "Now Playing > Audio quality",
+    "description": "Bit depth of the playing audio, for example 24-bit.",
+    "x-locations": {
+      "device": [
+        "Now Playing > Audio quality"
+      ]
+    },
+    "placeholders": {
+      "bits": {
+        "type": "String",
+        "description": "Value supplied by the app. Keep numbers, names and technical details unchanged."
+      }
+    }
+  },
+  "mediaAudioSampleRate": "{rate} kHz",
+  "@mediaAudioSampleRate": {
+    "context": "Now Playing > Audio quality",
+    "description": "Sample rate of the playing audio, for example 96 kHz.",
+    "x-locations": {
+      "device": [
+        "Now Playing > Audio quality"
+      ]
+    },
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "description": "Value supplied by the app. Keep numbers, names and technical details unchanged."
+      }
+    }
+  },
+  "mediaAudioBitRate": "{rate} kbit/s",
+  "@mediaAudioBitRate": {
+    "context": "Now Playing > Audio quality",
+    "description": "Bitrate of the playing audio, for example 320 kbps.",
+    "x-locations": {
+      "device": [
+        "Now Playing > Audio quality"
+      ]
+    },
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "description": "Value supplied by the app. Keep numbers, names and technical details unchanged."
+      }
+    }
+  },
   "mediaNothingQueued": "Nichts in der Warteschlange",
   "@mediaNothingQueued": {
     "context": "Now Playing > Queue and audiobook chapters",
@@ -12698,6 +13073,19 @@
       ]
     }
   },
+  "pluginErrorNeedsScreen": "Dieses Plugin benötigt einen Bildschirm",
+  "@pluginErrorNeedsScreen": {
+    "context": "Settings > Plugin Manager > Install, update or enable a plugin",
+    "description": "Shown on a device without a screen for a plugin that only shows overlays or screensavers. Keep plugin identifiers and diagnostic details unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Settings > Plugin Manager"
+      ]
+    }
+  },
   "pluginErrorNativeIntegrity": "Die installierten nativen Bibliotheken haben die Integritätsprüfung nicht bestanden",
   "@pluginErrorNativeIntegrity": {
     "context": "Settings > Plugin Manager > Install, update or enable a plugin",
@@ -13802,6 +14190,38 @@
       }
     }
   },
+  "overviewInstallSilentHelp": "Kiosk Satellite {version} ist bereit zur Installation. Es wird ohne Bestätigung auf dem Gerät installiert.",
+  "@overviewInstallSilentHelp": {
+    "context": "Remote admin > Overview > Needs attention",
+    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Needs attention"
+      ]
+    },
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "overviewInstallHeadlessHelp": "Kiosk Satellite {version} ist bereit zur Installation. Dieses Gerät hat keinen Bildschirm zum Bestätigen. Mache Kiosk Satellite daher zum Geräteeigentümer, nutze Shizuku oder installiere es über adb.",
+  "@overviewInstallHeadlessHelp": {
+    "context": "Remote admin > Overview > Needs attention",
+    "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Needs attention"
+      ]
+    },
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "overviewHaSetup": "Home Assistant nicht eingerichtet",
   "@overviewHaSetup": {
     "context": "Remote admin > Overview > Needs attention",
@@ -14841,6 +15261,17 @@
   "@overviewShowingCustomPages": {
     "context": "Remote admin > Overview > Status",
     "description": "Home Assistant chip status while a custom page (a person's own HTML page) is on screen instead of a Home Assistant dashboard.",
+    "x-locations": {
+      "device": [],
+      "remoteAdmin": [
+        "Overview > Status"
+      ]
+    }
+  },
+  "overviewHeadlessMode": "Modus ohne Bildschirm",
+  "@overviewHeadlessMode": {
+    "context": "Remote admin > Overview > Status",
+    "description": "Home Assistant status tile on a device without a screen, which has no dashboard to report on.",
     "x-locations": {
       "device": [],
       "remoteAdmin": [
@@ -20209,6 +20640,116 @@
       "device": [
         "Settings > Device"
       ],
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHardwareButtons": "Hardwaretasten",
+  "@deviceHardwareButtons": {
+    "context": "Settings:Device",
+    "description": "Permissions Manager row on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHardwareButtonsHeld": "Die Tasten des Geräts erreichen Gesten und Voice Satellite.",
+  "@deviceHardwareButtonsHeld": {
+    "context": "Settings:Device",
+    "description": "Permissions Manager row on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHardwareButtonsMissing": "Die Tasten des Geräts tun nichts, bis der Tastendienst eingeschaltet ist.",
+  "@deviceHardwareButtonsMissing": {
+    "context": "Settings:Device",
+    "description": "Permissions Manager row on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbMicrophone": "Dieses Gerät hat keinen Bildschirm. Über adb erteilen: adb shell pm grant me.jxl.kiosk_satellite android.permission.RECORD_AUDIO",
+  "@deviceHeadlessAdbMicrophone": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb command unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbNotifications": "Dieses Gerät hat keinen Bildschirm. Über adb erteilen: adb shell pm grant me.jxl.kiosk_satellite android.permission.POST_NOTIFICATIONS",
+  "@deviceHeadlessAdbNotifications": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb command unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbLocation": "Dieses Gerät hat keinen Bildschirm. Über adb erteilen: adb shell pm grant me.jxl.kiosk_satellite android.permission.ACCESS_FINE_LOCATION",
+  "@deviceHeadlessAdbLocation": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb command unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbBluetooth": "Dieses Gerät hat keinen Bildschirm. Über adb erteilen: adb shell pm grant me.jxl.kiosk_satellite android.permission.BLUETOOTH_SCAN, dann dasselbe für BLUETOOTH_CONNECT",
+  "@deviceHeadlessAdbBluetooth": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb command unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbBattery": "Dieses Gerät hat keinen Bildschirm. Über adb erteilen: adb shell dumpsys deviceidle whitelist +me.jxl.kiosk_satellite",
+  "@deviceHeadlessAdbBattery": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb command unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbStorage": "Dieses Gerät hat keinen Bildschirm. Über adb erteilen: adb shell pm grant me.jxl.kiosk_satellite android.permission.READ_EXTERNAL_STORAGE, dann dasselbe für WRITE_EXTERNAL_STORAGE",
+  "@deviceHeadlessAdbStorage": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb command unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbButtons": "Dieses Gerät hat keinen Bildschirm. Über adb einschalten: adb shell settings put secure enabled_accessibility_services me.jxl.kiosk_satellite/.HeadlessKeyService, dann adb shell settings put secure accessibility_enabled 1",
+  "@deviceHeadlessAdbButtons": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb commands unchanged.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device"
+      ]
+    }
+  },
+  "deviceHeadlessAdbButtonsRestart": "Der Tastendienst ist eingeschaltet, wurde aber nicht gestartet. Starte das Gerät neu, um ihn zu starten: adb reboot",
+  "@deviceHeadlessAdbButtonsRestart": {
+    "context": "Settings:Device",
+    "description": "Grant instructions on a device without a screen. Keep the adb commands unchanged.",
+    "x-locations": {
       "remoteAdmin": [
         "Device"
       ]
@@ -27266,6 +27807,32 @@
       ]
     }
   },
+  "settingHaCustomPagesSocketTitle": "Home-Assistant-Verbindung teilen",
+  "@settingHaCustomPagesSocketTitle": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Title of the switch that lets custom pages use the kiosk's own Home Assistant connection.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
+  "settingHaCustomPagesSocketDescription": "Eigene Seiten sprechen über die Verbindung des Kiosks mit Home Assistant, ohne Token in der Seite.",
+  "@settingHaCustomPagesSocketDescription": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Description under Share Home Assistant connection. A token is the Home Assistant access token a page would otherwise need to hold.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
   "haCustomPagesAdd": "Seite hinzufügen",
   "@haCustomPagesAdd": {
     "context": "Settings:Home Assistant:Custom Pages",
@@ -27279,8 +27846,8 @@
       ]
     }
   },
-  "haCustomPagesEmpty": "Füge HTML-Seiten aus dem www-Ordner von Home Assistant hinzu, um sie wie ein Dashboard auszuwählen.",
-  "@haCustomPagesEmpty": {
+  "haCustomPagesEmptyAnyServer": "Füge HTML-Seiten aus dem www-Ordner von Home Assistant oder von einem anderen Server hinzu, um sie wie ein Dashboard auszuwählen.",
+  "@haCustomPagesEmptyAnyServer": {
     "context": "Settings:Home Assistant:Custom Pages",
     "description": "Shown while no custom page is added yet. www is a folder name and stays as is.",
     "x-locations": {
@@ -27357,10 +27924,10 @@
       ]
     }
   },
-  "haCustomPagePath": "Pfad",
-  "@haCustomPagePath": {
+  "haCustomPageLocation": "Pfad oder URL",
+  "@haCustomPageLocation": {
     "context": "Settings:Home Assistant:Custom Pages",
-    "description": "Field label: the address of the page inside Home Assistant, such as /local/dashboard.html.",
+    "description": "Field label: where the page is, a path inside Home Assistant such as /local/dashboard.html or the full address of a page on another web server.",
     "x-locations": {
       "device": [
         "Settings > Home Assistant > Custom Pages"
@@ -27370,10 +27937,10 @@
       ]
     }
   },
-  "haCustomPagePathHint": "Eine Datei im www-Ordner von Home Assistant, z. B. /local/dashboard.html.",
-  "@haCustomPagePathHint": {
+  "haCustomPageLocationHint": "Eine Datei im www-Ordner von Home Assistant, z. B. /local/dashboard.html, oder die URL einer Seite auf einem anderen Server.",
+  "@haCustomPageLocationHint": {
     "context": "Settings:Home Assistant:Custom Pages",
-    "description": "Help under the Path field. Keep www and /local/dashboard.html unchanged.",
+    "description": "Help under the Path or URL field. Keep www and /local/dashboard.html unchanged.",
     "x-locations": {
       "device": [
         "Settings > Home Assistant > Custom Pages"
@@ -27396,10 +27963,10 @@
       ]
     }
   },
-  "haCustomPagePathInvalid": "Gib einen Pfad unter /local/ ein, z. B. /local/dashboard.html.",
-  "@haCustomPagePathInvalid": {
+  "haCustomPageLocationInvalid": "Gib einen Pfad unter /local/ oder eine http- oder https-URL ein.",
+  "@haCustomPageLocationInvalid": {
     "context": "Settings:Home Assistant:Custom Pages",
-    "description": "Error in the custom page dialog when the path is not under /local/. Keep /local/ and /local/dashboard.html unchanged.",
+    "description": "Error in the custom page dialog when the text is neither a path under /local/ nor a web address. Keep /local/, http and https unchanged.",
     "x-locations": {
       "device": [
         "Settings > Home Assistant > Custom Pages"
@@ -27435,6 +28002,19 @@
       ]
     }
   },
+  "haCustomPageUrlNotFound": "Der Server hat unter dieser URL keine Seite.",
+  "@haCustomPageUrlNotFound": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the web server of a page outside Home Assistant answers that it does not exist.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
   "haCustomPageUnreachable": "Home Assistant nicht erreichbar.",
   "@haCustomPageUnreachable": {
     "context": "Settings:Home Assistant:Custom Pages",
@@ -27448,10 +28028,42 @@
       ]
     }
   },
+  "haCustomPageUrlUnreachable": "Server nicht erreichbar.",
+  "@haCustomPageUrlUnreachable": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the web server of a page outside Home Assistant does not answer.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    }
+  },
   "haCustomPageStatus": "Home Assistant hat mit HTTP {code} geantwortet.",
   "@haCustomPageStatus": {
     "context": "Settings:Home Assistant:Custom Pages",
     "description": "Error in the custom page dialog when Home Assistant answers the page with an HTTP status other than 200. HTTP stays as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Custom Pages"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Custom Pages"
+      ]
+    },
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "description": "The HTTP status code, such as 403."
+      }
+    }
+  },
+  "haCustomPageUrlStatus": "Der Server hat mit HTTP {code} geantwortet.",
+  "@haCustomPageUrlStatus": {
+    "context": "Settings:Home Assistant:Custom Pages",
+    "description": "Error in the custom page dialog when the web server of a page outside Home Assistant answers with an HTTP status other than 200. HTTP stays as is.",
     "x-locations": {
       "device": [
         "Settings > Home Assistant > Custom Pages"
@@ -30311,6 +30923,71 @@
       ]
     }
   },
+  "settingIntercomHangupKeyRingingTitle": "Auflegetaste beim Klingeln",
+  "@settingIntercomHangupKeyRingingTitle": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "settingIntercomHangupKeyRingingDescription": "Was die Taste tut, wenn hier ein Anruf klingelt.",
+  "@settingIntercomHangupKeyRingingDescription": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionHangupRingingAnswer": "Annehmen",
+  "@intercomOptionHangupRingingAnswer": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option, the button answers the ringing call. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionHangupRingingDecline": "Ablehnen",
+  "@intercomOptionHangupRingingDecline": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option, the button declines the ringing call. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
+  "intercomOptionHangupRingingIgnore": "Ignorieren",
+  "@intercomOptionHangupRingingIgnore": {
+    "context": "Settings > Intercom > Talk",
+    "description": "Visible option, the button keeps its usual action while a call rings. Its stored value stays unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Talk"
+      ],
+      "remoteAdmin": [
+        "Intercom > Talk"
+      ]
+    }
+  },
   "intercomTalkSection": "Gespräch",
   "@intercomTalkSection": {
     "context": "Settings > Intercom > Talk",
@@ -31100,6 +31777,812 @@
       "remoteAdmin": [
         "Kiosk Mode > Required system permissions",
         "Lockdown Mode > Required system permissions"
+      ]
+    }
+  },
+  "settingLedEnabledTitle": "LED-Steuerung aktivieren",
+  "@settingLedEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label: the master switch of the LED Control page.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Enable LED Control"
+      ],
+      "remoteAdmin": [
+        "LED Control > Enable LED Control"
+      ]
+    }
+  },
+  "settingLedEnabledDescription": "Lässt Kiosk Satellite die Leuchten steuern.",
+  "@settingLedEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Enable LED Control"
+      ],
+      "remoteAdmin": [
+        "LED Control > Enable LED Control"
+      ]
+    }
+  },
+  "settingLedAnimationsTitle": "Effekte animieren",
+  "@settingLedAnimationsTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Effects > Animate effects"
+      ],
+      "remoteAdmin": [
+        "LED Control > Effects > Animate effects"
+      ]
+    }
+  },
+  "settingLedAnimationsDescription": "Bewegt die Bögen und lässt die Pulse ein- und ausblenden. Ausschalten, damit alle Effekte stattdessen statisch sind.",
+  "@settingLedAnimationsDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Effects > Animate effects"
+      ],
+      "remoteAdmin": [
+        "LED Control > Effects > Animate effects"
+      ]
+    }
+  },
+  "settingLedIdleEnabledTitle": "Im Leerlauf leuchten",
+  "@settingLedIdleEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Light up when idle"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Light up when idle"
+      ]
+    }
+  },
+  "settingLedIdleEnabledDescription": "Leuchtet, solange nichts anderes angezeigt wird.",
+  "@settingLedIdleEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Light up when idle"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Light up when idle"
+      ]
+    }
+  },
+  "settingLedIdleBrightnessTitle": "Helligkeit",
+  "@settingLedIdleBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Brightness"
+      ]
+    }
+  },
+  "settingLedIdleBrightnessDescription": "Wie hell die Leuchten dafür leuchten.",
+  "@settingLedIdleBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Brightness"
+      ]
+    }
+  },
+  "settingLedIdleLightColorTitle": "Farbe",
+  "@settingLedIdleLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Color"
+      ]
+    }
+  },
+  "settingLedIdleLightColorDescription": "Die Farbe der Leuchten dafür.",
+  "@settingLedIdleLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Color"
+      ]
+    }
+  },
+  "settingLedIdleStyleTitle": "Effekt",
+  "@settingLedIdleStyleTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Effect"
+      ]
+    }
+  },
+  "settingLedIdleStyleDescription": "Wie die Leuchten im Leerlauf aussehen.",
+  "@settingLedIdleStyleDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Effect"
+      ]
+    }
+  },
+  "settingLedIdleStyleOptionSolid": "Durchgehend",
+  "@settingLedIdleStyleOptionSolid": {
+    "context": "Settings > LED Control",
+    "description": "Option of the Effect setting.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Effect"
+      ]
+    }
+  },
+  "settingLedIdleStyleOptionBreathe": "Atmend",
+  "@settingLedIdleStyleOptionBreathe": {
+    "context": "Settings > LED Control",
+    "description": "Option of the Effect setting.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Idle > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Idle > Effect"
+      ]
+    }
+  },
+  "settingLedVoiceEnabledTitle": "Sprachaktivität anzeigen",
+  "@settingLedVoiceEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Show voice activity"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Show voice activity"
+      ]
+    }
+  },
+  "settingLedVoiceEnabledDescription": "Leuchtet, während Voice Satellite zuhört, nachdenkt und antwortet.",
+  "@settingLedVoiceEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Show voice activity"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Show voice activity"
+      ]
+    }
+  },
+  "settingLedVoiceBrightnessTitle": "Helligkeit",
+  "@settingLedVoiceBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Brightness"
+      ]
+    }
+  },
+  "settingLedVoiceBrightnessDescription": "Wie hell die Leuchten dafür leuchten.",
+  "@settingLedVoiceBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Brightness"
+      ]
+    }
+  },
+  "settingLedVoiceLightColorTitle": "Farbe",
+  "@settingLedVoiceLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Color"
+      ]
+    }
+  },
+  "settingLedVoiceLightColorDescription": "Unter einem Bogen, der beim Zuhören kreist, beim Nachdenken abwechselt und beim Antworten überblendet.",
+  "@settingLedVoiceLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Color"
+      ]
+    }
+  },
+  "settingLedVoiceAccentColorTitle": "Akzentfarbe",
+  "@settingLedVoiceAccentColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Accent color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Accent color"
+      ]
+    }
+  },
+  "settingLedVoiceAccentColorDescription": "Der Bogen, der um die Leuchten wandert.",
+  "@settingLedVoiceAccentColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Accent color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Accent color"
+      ]
+    }
+  },
+  "settingLedVoiceMutedTitle": "Bei Stummschaltung anzeigen",
+  "@settingLedVoiceMutedTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Show when muted"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Show when muted"
+      ]
+    }
+  },
+  "settingLedVoiceMutedDescription": "Leuchtet, solange Voice Satellite stummgeschaltet ist.",
+  "@settingLedVoiceMutedDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Show when muted"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Show when muted"
+      ]
+    }
+  },
+  "settingLedVoiceMutedColorTitle": "Farbe bei Stummschaltung",
+  "@settingLedVoiceMutedColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Muted color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Muted color"
+      ]
+    }
+  },
+  "settingLedVoiceMutedColorDescription": "Die Farbe der Leuchten bei Stummschaltung.",
+  "@settingLedVoiceMutedColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Voice Satellite > Muted color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Voice Satellite > Muted color"
+      ]
+    }
+  },
+  "settingLedTimersEnabledTitle": "Timer anzeigen",
+  "@settingLedTimersEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Show timers"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Show timers"
+      ]
+    }
+  },
+  "settingLedTimersEnabledDescription": "Pulsiert, während ein Timer klingelt.",
+  "@settingLedTimersEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Show timers"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Show timers"
+      ]
+    }
+  },
+  "settingLedTimersBrightnessTitle": "Helligkeit",
+  "@settingLedTimersBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Brightness"
+      ]
+    }
+  },
+  "settingLedTimersBrightnessDescription": "Wie hell die Leuchten dafür leuchten.",
+  "@settingLedTimersBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Brightness"
+      ]
+    }
+  },
+  "settingLedTimersLightColorTitle": "Farbe",
+  "@settingLedTimersLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Color"
+      ]
+    }
+  },
+  "settingLedTimersLightColorDescription": "Die Farbe der Leuchten dafür.",
+  "@settingLedTimersLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Color"
+      ]
+    }
+  },
+  "settingLedTimersCountdownTitle": "Countdown anzeigen",
+  "@settingLedTimersCountdownTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Show the countdown"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Show the countdown"
+      ]
+    }
+  },
+  "settingLedTimersCountdownDescription": "Die Leuchten gehen nacheinander aus, während der nächste Timer abläuft.",
+  "@settingLedTimersCountdownDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Timers > Show the countdown"
+      ],
+      "remoteAdmin": [
+        "LED Control > Timers > Show the countdown"
+      ]
+    }
+  },
+  "settingLedAlarmsEnabledTitle": "Wecker anzeigen",
+  "@settingLedAlarmsEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Alarms > Show alarms"
+      ],
+      "remoteAdmin": [
+        "LED Control > Alarms > Show alarms"
+      ]
+    }
+  },
+  "settingLedAlarmsEnabledDescription": "Pulsiert, während ein Wecker klingelt.",
+  "@settingLedAlarmsEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Alarms > Show alarms"
+      ],
+      "remoteAdmin": [
+        "LED Control > Alarms > Show alarms"
+      ]
+    }
+  },
+  "settingLedAlarmsBrightnessTitle": "Helligkeit",
+  "@settingLedAlarmsBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Alarms > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Alarms > Brightness"
+      ]
+    }
+  },
+  "settingLedAlarmsBrightnessDescription": "Wie hell die Leuchten dafür leuchten.",
+  "@settingLedAlarmsBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Alarms > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Alarms > Brightness"
+      ]
+    }
+  },
+  "settingLedAlarmsLightColorTitle": "Farbe",
+  "@settingLedAlarmsLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Alarms > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Alarms > Color"
+      ]
+    }
+  },
+  "settingLedAlarmsLightColorDescription": "Die Farbe der Leuchten dafür.",
+  "@settingLedAlarmsLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Alarms > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Alarms > Color"
+      ]
+    }
+  },
+  "settingLedIntercomEnabledTitle": "Gegensprechanlage anzeigen",
+  "@settingLedIntercomEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Intercom > Show intercom calls"
+      ],
+      "remoteAdmin": [
+        "LED Control > Intercom > Show intercom calls"
+      ]
+    }
+  },
+  "settingLedIntercomEnabledDescription": "Pulsiert, während ein Anruf klingelt, und kreist, solange er läuft.",
+  "@settingLedIntercomEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Intercom > Show intercom calls"
+      ],
+      "remoteAdmin": [
+        "LED Control > Intercom > Show intercom calls"
+      ]
+    }
+  },
+  "settingLedIntercomBrightnessTitle": "Helligkeit",
+  "@settingLedIntercomBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Intercom > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Intercom > Brightness"
+      ]
+    }
+  },
+  "settingLedIntercomBrightnessDescription": "Wie hell die Leuchten dafür leuchten.",
+  "@settingLedIntercomBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Intercom > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Intercom > Brightness"
+      ]
+    }
+  },
+  "settingLedIntercomLightColorTitle": "Farbe",
+  "@settingLedIntercomLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Intercom > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Intercom > Color"
+      ]
+    }
+  },
+  "settingLedIntercomLightColorDescription": "Die Farbe der Leuchten dafür.",
+  "@settingLedIntercomLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Intercom > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Intercom > Color"
+      ]
+    }
+  },
+  "settingLedNotificationsEnabledTitle": "Benachrichtigungen anzeigen",
+  "@settingLedNotificationsEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Notifications > Show notifications"
+      ],
+      "remoteAdmin": [
+        "LED Control > Notifications > Show notifications"
+      ]
+    }
+  },
+  "settingLedNotificationsEnabledDescription": "Pulsiert langsam, solange eine Benachrichtigung wartet.",
+  "@settingLedNotificationsEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Notifications > Show notifications"
+      ],
+      "remoteAdmin": [
+        "LED Control > Notifications > Show notifications"
+      ]
+    }
+  },
+  "settingLedNotificationsBrightnessTitle": "Helligkeit",
+  "@settingLedNotificationsBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Notifications > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Notifications > Brightness"
+      ]
+    }
+  },
+  "settingLedNotificationsBrightnessDescription": "Wie hell die Leuchten dafür leuchten.",
+  "@settingLedNotificationsBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Notifications > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Notifications > Brightness"
+      ]
+    }
+  },
+  "settingLedNotificationsLightColorTitle": "Farbe",
+  "@settingLedNotificationsLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Notifications > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Notifications > Color"
+      ]
+    }
+  },
+  "settingLedNotificationsLightColorDescription": "Die Farbe der Leuchten dafür.",
+  "@settingLedNotificationsLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Notifications > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Notifications > Color"
+      ]
+    }
+  },
+  "settingLedMediaEnabledTitle": "Musik anzeigen",
+  "@settingLedMediaEnabledTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Show music"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Show music"
+      ]
+    }
+  },
+  "settingLedMediaEnabledDescription": "Leuchtet, während Musik auf diesem Gerät läuft.",
+  "@settingLedMediaEnabledDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Show music"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Show music"
+      ]
+    }
+  },
+  "settingLedMediaBrightnessTitle": "Helligkeit",
+  "@settingLedMediaBrightnessTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Brightness"
+      ]
+    }
+  },
+  "settingLedMediaBrightnessDescription": "Wie hell die Leuchten dafür leuchten.",
+  "@settingLedMediaBrightnessDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Brightness"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Brightness"
+      ]
+    }
+  },
+  "settingLedMediaLightColorTitle": "Farbe",
+  "@settingLedMediaLightColorTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Color"
+      ]
+    }
+  },
+  "settingLedMediaLightColorDescription": "Die Farbe der Leuchten dafür.",
+  "@settingLedMediaLightColorDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Color"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Color"
+      ]
+    }
+  },
+  "settingLedMediaStyleTitle": "Effekt",
+  "@settingLedMediaStyleTitle": {
+    "context": "Settings > LED Control",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Effect"
+      ]
+    }
+  },
+  "settingLedMediaStyleDescription": "Wie die Leuchten Musik zeigen.",
+  "@settingLedMediaStyleDescription": {
+    "context": "Settings > LED Control",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Effect"
+      ]
+    }
+  },
+  "settingLedMediaStyleOptionSolid": "Durchgehend",
+  "@settingLedMediaStyleOptionSolid": {
+    "context": "Settings > LED Control",
+    "description": "Option of the Effect setting.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Effect"
+      ]
+    }
+  },
+  "settingLedMediaStyleOptionBreathe": "Atmend",
+  "@settingLedMediaStyleOptionBreathe": {
+    "context": "Settings > LED Control",
+    "description": "Option of the Effect setting.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control > Media Player > Effect"
+      ],
+      "remoteAdmin": [
+        "LED Control > Media Player > Effect"
       ]
     }
   },
@@ -32374,8 +33857,8 @@
       ]
     }
   },
-  "settingSendspinFullscreenHorizontalTitle": "Horizontales Layout",
-  "@settingSendspinFullscreenHorizontalTitle": {
+  "settingSendspinFullscreenLayoutTitle": "Layout-Modus",
+  "@settingSendspinFullscreenLayoutTitle": {
     "context": "Settings > Media Player > Now Playing > User Interface",
     "description": "Setting label.",
     "x-locations": {
@@ -32387,10 +33870,49 @@
       ]
     }
   },
-  "settingSendspinFullscreenHorizontalDescription": "Teilt Cover und Bedienelemente in zwei gleich große Bereiche links und rechts auf. Wenn Songtexte oder die Warteschlange geöffnet sind, werden die Titelinformationen unter dem Cover angezeigt. Gilt nicht, wenn „Jetzt läuft“ neben dem Bildschirmschoner angezeigt wird.",
-  "@settingSendspinFullscreenHorizontalDescription": {
+  "settingSendspinFullscreenLayoutDescription": "Legt fest, wie „Jetzt läuft“ Cover, Titelinformationen und Bedienelemente anordnet. Horizontal teilt sie in eine linke und eine rechte Hälfte. Nur Cover füllt den Bildschirm mit dem Cover und zeigt Titelinformationen und Bedienelemente nach einem Tippen einige Sekunden lang an. Wenn Songtexte oder die Warteschlange geöffnet sind, wird Vertikal verwendet. Gilt nicht, wenn „Jetzt läuft“ neben dem Bildschirmschoner angezeigt wird.",
+  "@settingSendspinFullscreenLayoutDescription": {
     "context": "Settings > Media Player > Now Playing > User Interface",
     "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "mediaLayoutVertical": "Vertikal",
+  "@mediaLayoutVertical": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Option: artwork, track details and controls stacked from top to bottom.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "mediaLayoutHorizontal": "Horizontal",
+  "@mediaLayoutHorizontal": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Option: artwork in the left half of the screen, track details and controls in the right half.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "mediaLayoutArtOnly": "Nur Cover",
+  "@mediaLayoutArtOnly": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Option: only the artwork shows, centered and filling the screen. Track details and controls appear over it for a few seconds after a tap.",
     "x-locations": {
       "device": [
         "Settings > Media Player > Now Playing > User Interface"
@@ -32599,6 +34121,71 @@
   "@settingSendspinSpeakerPillDescription": {
     "context": "Settings > Media Player > Now Playing > User Interface",
     "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "settingSendspinSpeakerPillPlayersTitle": "Lautsprecherauswahl filtern",
+  "@settingSendspinSpeakerPillPlayersTitle": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "settingSendspinSpeakerPillPlayersDescription": "Nur diese Lautsprecher werden in der Lautsprecherauswahl angezeigt. Lautsprecher, die bereits in der Gruppe sind, werden immer angezeigt.",
+  "@settingSendspinSpeakerPillPlayersDescription": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "settingSendspinAudioQualityTitle": "Audioqualität anzeigen",
+  "@settingSendspinAudioQualityTitle": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "settingSendspinAudioQualityDescription": "Zeigt Format, Bittiefe, Abtastrate, Bitrate und Quelle des aktuellen Titels unten in „Jetzt läuft“ an. Erfordert Music Assistant.",
+  "@settingSendspinAudioQualityDescription": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "mediaAllSpeakers": "Alle Lautsprecher",
+  "@mediaAllSpeakers": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Shown in the speaker filter when no speakers are picked: the pill offers every speaker.",
     "x-locations": {
       "device": [
         "Settings > Media Player > Now Playing > User Interface"
@@ -34250,6 +35837,154 @@
     "x-locations": {
       "remoteAdmin": [
         "Sidebar > theme button"
+      ]
+    }
+  },
+  "settingsMenuOverviewHeadlessSummary": "Status und Schnellsteuerung",
+  "@settingsMenuOverviewHeadlessSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary below Overview on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuHomeAssistantHeadlessSummary": "Verbindung",
+  "@settingsMenuHomeAssistantHeadlessSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary below Home Assistant on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuAudio": "Audio",
+  "@settingsMenuAudio": {
+    "context": "Settings:Menu",
+    "description": "The Screen & Audio page on a device without a screen, and its menu group.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuAudioSummary": "Lautstärke, Mikrofon",
+  "@settingsMenuAudioSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary below Audio on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsGroupMedia": "Medien",
+  "@settingsGroupMedia": {
+    "context": "Settings:Menu",
+    "description": "Menu group on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuDlnaHeadlessSummary": "Audio aus der Ferne abspielen",
+  "@settingsMenuDlnaHeadlessSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary below DLNA Renderer on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuGesturesHeadlessSummary": "Tasten- und Klatschgesten",
+  "@settingsMenuGesturesHeadlessSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary below Gestures on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuLeds": "LED-Steuerung",
+  "@settingsMenuLeds": {
+    "context": "Settings:Menu",
+    "description": "The LED Control page, on devices with status lights.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuLedsSummary": "Farben und Effekte der Statusleuchten",
+  "@settingsMenuLedsSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary below LED Control in the Settings menu.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsLedTimers": "Timer",
+  "@settingsLedTimers": {
+    "context": "Settings:Menu",
+    "description": "Group on the LED Control page.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsLedNotifications": "Benachrichtigungen",
+  "@settingsLedNotifications": {
+    "context": "Settings:Menu",
+    "description": "Group on the LED Control page.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsLedIdle": "Leerlauf",
+  "@settingsLedIdle": {
+    "context": "Settings:Menu",
+    "description": "Group on the LED Control page: what the lights do when nothing else is showing.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control"
+      ],
+      "remoteAdmin": [
+        "LED Control"
+      ]
+    }
+  },
+  "settingsLedEffects": "Effekte",
+  "@settingsLedEffects": {
+    "context": "Settings:Menu",
+    "description": "Group on the LED Control page: how the lights move.",
+    "x-locations": {
+      "device": [
+        "Settings > LED Control"
+      ],
+      "remoteAdmin": [
+        "LED Control"
       ]
     }
   },
@@ -45279,6 +47014,84 @@
     "context": "Settings > Voice Satellite > Chimes",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
+  "voiceChimeWakeVolumeTitle": "Lautstärke des Aktivierungstons",
+  "@voiceChimeWakeVolumeTitle": {
+    "context": "Settings > Voice Satellite > Chimes",
+    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Chimes"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Chimes"
+      ]
+    }
+  },
+  "voiceChimeDoneVolumeTitle": "Lautstärke des Abschlusstons",
+  "@voiceChimeDoneVolumeTitle": {
+    "context": "Settings > Voice Satellite > Chimes",
+    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Chimes"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Chimes"
+      ]
+    }
+  },
+  "voiceChimeErrorVolumeTitle": "Lautstärke des Fehlertons",
+  "@voiceChimeErrorVolumeTitle": {
+    "context": "Settings > Voice Satellite > Chimes",
+    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Chimes"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Chimes"
+      ]
+    }
+  },
+  "voiceChimeTimerVolumeTitle": "Lautstärke des Timer-Tons",
+  "@voiceChimeTimerVolumeTitle": {
+    "context": "Settings > Voice Satellite > Chimes",
+    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Chimes"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Chimes"
+      ]
+    }
+  },
+  "voiceChimeAnnounceVolumeTitle": "Lautstärke des Ansagetons",
+  "@voiceChimeAnnounceVolumeTitle": {
+    "context": "Settings > Voice Satellite > Chimes",
+    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Chimes"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Chimes"
+      ]
+    }
+  },
+  "voiceChimeVolumeDescription": "Ein Anteil der Assistentenlautstärke.",
+  "@voiceChimeVolumeDescription": {
+    "context": "Settings > Voice Satellite > Chimes",
+    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Chimes"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Chimes"
+      ]
+    }
+  },
   "settingVoiceShowCommandTitle": "Zeigen, was du gesagt hast",
   "@settingVoiceShowCommandTitle": {
     "context": "Settings > Voice Satellite > Conversation",
@@ -45885,8 +47698,8 @@
     "context": "Settings > Voice Satellite",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
-  "voiceHaAddHint": "Füge diesen Kiosk in Home Assistant unter Einstellungen, Geräte & Dienste hinzu, wo er als erkannt erscheint.",
-  "@voiceHaAddHint": {
+  "voiceHaAddAgainHint": "Füge diesen Kiosk in Home Assistant unter Einstellungen, Geräte & Dienste hinzu, wo er als erkannt erscheint. Kannte Home Assistant ihn schon, fragt es dort nach dem neuen Verschlüsselungsschlüssel von der ESPHome-Seite.",
+  "@voiceHaAddAgainHint": {
     "context": "Settings > Voice Satellite",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
@@ -47795,6 +49608,16 @@
     "context": "Settings > Voice Satellite > Wake Word",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
+  "settingVoiceWakeArbitrationOffsetTitle": "Arbitrierungsausgleich",
+  "@settingVoiceWakeArbitrationOffsetTitle": {
+    "context": "Settings > Voice Satellite > Wake Word",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceWakeArbitrationOffsetDescription": "Wird dazu addiert, wie laut dieser Kiosk das Aktivierungswort gehört hat. Erhöhe den Wert, wenn dieser Kiosk verliert, obwohl er näher ist, und senke ihn, wenn er aus zu großer Entfernung antwortet.",
+  "@settingVoiceWakeArbitrationOffsetDescription": {
+    "context": "Settings > Voice Satellite > Wake Word",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
   "voiceSectionWakeArbitration": "Aktivierungswort-Arbitrierung",
   "@voiceSectionWakeArbitration": {
     "context": "Settings > Voice Satellite > Wake Word",
@@ -48325,6 +50148,394 @@
     },
     "x-notes": "Translate only the comment on the first line. Preserve the executable JavaScript on the second line exactly."
   },
+  "urlFilterTitle": "URL-Filter",
+  "@urlFilterTitle": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Name of the settings page that blocks or allows the addresses the dashboard and external pages open, and of its entry row.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing",
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing",
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterHint": "Seiten nach Adressmuster oder regulärem Ausdruck sperren oder erlauben",
+  "@urlFilterHint": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Hint under the URL Filter entry row.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing"
+      ],
+      "remoteAdmin": [
+        "Web Browsing"
+      ]
+    }
+  },
+  "urlFilterIntroTitle": "Festlegen, welche Seiten sich öffnen",
+  "@urlFilterIntroTitle": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Headline of the intro at the top of the URL Filter page.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterIntroSub": "Links oder Seiten, die zu einer Sperren-Regel passen, werden nicht geladen. Füge eine Nur erlauben-Regel hinzu, damit nur passende Seiten laden.",
+  "@urlFilterIntroSub": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Text under the URL Filter intro headline. Block and Allow only are the two choices of a rule's Action field.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterAdd": "Regel hinzufügen",
+  "@urlFilterAdd": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Row at the end of the URL Filter list that opens the editor for a new rule.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterAddTitle": "Filterregel hinzufügen",
+  "@urlFilterAddTitle": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Title of the editor dialog for a new URL Filter rule.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterEditTitle": "Filterregel bearbeiten",
+  "@urlFilterEditTitle": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Title of the editor dialog for an existing URL Filter rule.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterName": "Name",
+  "@urlFilterName": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Label of the rule's name field in the URL Filter editor.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterPattern": "Muster",
+  "@urlFilterPattern": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Label of the field holding the address pattern or regular expression a rule blocks.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterPatternWildcardHint": "Verwende * als Platzhalter für beliebige Zeichen. Ein Muster, das mit / beginnt, passt auf den Pfad auf jedem Server, etwa /history*.",
+  "@urlFilterPatternWildcardHint": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Help under the Pattern field for a wildcard rule. Keep * and /history* as they are.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterPatternRegexHint": "Ein regulärer Ausdruck, der irgendwo in der Adresse gesucht wird, ohne Beachtung der Groß- und Kleinschreibung.",
+  "@urlFilterPatternRegexHint": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Help under the Pattern field for a regular expression rule.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterType": "Mustertyp",
+  "@urlFilterType": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Label of the choice between a wildcard pattern and a regular expression.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterTypeWildcard": "Platzhalter",
+  "@urlFilterTypeWildcard": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Pattern type option: a pattern where * matches anything.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterTypeRegex": "Regulärer Ausdruck",
+  "@urlFilterTypeRegex": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Pattern type option: a regular expression.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterAction": "Aktion",
+  "@urlFilterAction": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Label of the choice between blocking the pages a rule matches and allowing only them.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterActionBlock": "Sperren",
+  "@urlFilterActionBlock": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Action option: pages that match the rule do not load.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterActionAllow": "Nur erlauben",
+  "@urlFilterActionAllow": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Action option: only pages that match an Allow only rule load where the rule applies. Also shown on the rule's row in the list.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterActionAllowHint": "Wo diese Regel gilt, laden nur Seiten, die zu einer Nur erlauben-Regel passen. Die Anmeldung bei Home Assistant und das Start-Dashboard laden immer.",
+  "@urlFilterActionAllowHint": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Help under the Action field when Allow only is picked.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterScope": "Gilt für",
+  "@urlFilterScope": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Label of the choice of where a rule blocks addresses.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterScopeAll": "Dashboard und externe Seiten",
+  "@urlFilterScopeAll": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Applies to option: both the dashboard and external pages.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterScopeDashboard": "Dashboard",
+  "@urlFilterScopeDashboard": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Applies to option: the dashboard and custom pages.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterScopeExternal": "Externe Seiten",
+  "@urlFilterScopeExternal": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Applies to option: pages opened from dashboard links and dashboard rotation pages, shown over the dashboard.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterScopeHint": "Externe Seiten sind Links, die aus dem Dashboard geöffnet werden, und Seiten der Dashboard-Rotation.",
+  "@urlFilterScopeHint": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Help under the Applies to choice.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterErrorName": "Gib einen Namen ein.",
+  "@urlFilterErrorName": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Error in the URL Filter editor when the name is empty.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterErrorPattern": "Gib ein Muster ein.",
+  "@urlFilterErrorPattern": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Error in the URL Filter editor when the pattern is empty.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterErrorRegex": "Dieser reguläre Ausdruck ist ungültig.",
+  "@urlFilterErrorRegex": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Error in the URL Filter editor when the regular expression has a syntax error.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "urlFilterBlocked": "Seite gesperrt",
+  "@urlFilterBlocked": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Title of the notice shown on the kiosk when a link or the page tries to open an address a URL Filter rule blocks. The rule's name shows under it.",
+    "x-locations": {
+      "device": [
+        "Dashboard",
+        "External pages"
+      ]
+    }
+  },
+  "urlFilterNotAllowed": "Nicht unter den erlaubten Seiten",
+  "@urlFilterNotAllowed": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Shown under Page blocked when a page is blocked because no Allow only rule matches it.",
+    "x-locations": {
+      "device": [
+        "Dashboard",
+        "External pages"
+      ]
+    }
+  },
+  "settingBrowserUrlFilterNoticeTitle": "Hinweis bei gesperrter Seite anzeigen",
+  "@settingBrowserUrlFilterNoticeTitle": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Title of the switch that shows a notice on the kiosk when a URL Filter rule blocks a page.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
+  "settingBrowserUrlFilterNoticeDescription": "Zeigt einen kurzen Hinweis mit dem Namen der Regel, wenn eine Seite gesperrt wird.",
+  "@settingBrowserUrlFilterNoticeDescription": {
+    "context": "Settings:Web Browsing:URL Filter",
+    "description": "Description under Show blocked page notice.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > URL Filter"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > URL Filter"
+      ]
+    }
+  },
   "setupConnectHeading": "Mit Home Assistant verbinden",
   "@setupConnectHeading": {
     "context": "First-time setup:Connect",
@@ -48506,6 +50717,16 @@
       ],
       "remoteAdmin": [
         "First-time setup > Dashboard"
+      ]
+    }
+  },
+  "setupHeadlessGrants": "Dieses Gerät hat keinen Bildschirm, deshalb kann Android dort nicht danach fragen. Erteile jede Berechtigung über adb und schließe dann hier ab.",
+  "@setupHeadlessGrants": {
+    "context": "Setup",
+    "description": "Permissions step of the remote setup wizard on a device without a screen.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Setup wizard > Permissions"
       ]
     }
   },
@@ -49202,8 +51423,8 @@
     "context": "Setup > Voice Satellite",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
-  "setupVoiceAddHint": "Füge diesen Kiosk nach der Einrichtung in Home Assistant unter Einstellungen, Geräte & Dienste hinzu, wo er als erkannt erscheint.",
-  "@setupVoiceAddHint": {
+  "setupVoiceAddAgainHint": "Füge diesen Kiosk nach der Einrichtung in Home Assistant unter Einstellungen, Geräte & Dienste hinzu, wo er als erkannt erscheint. Kannte Home Assistant ihn schon, fragt es dort nach dem neuen Verschlüsselungsschlüssel von der ESPHome-Seite.",
+  "@setupVoiceAddAgainHint": {
     "context": "Setup > Voice Satellite",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },

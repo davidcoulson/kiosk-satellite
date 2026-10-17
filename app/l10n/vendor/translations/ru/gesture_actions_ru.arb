@@ -3,11 +3,14 @@
   "gestureAction": "Действие",
   "gestureNavigate": "Перейти к виду панели",
   "gestureUrl": "Открыть веб-страницу",
+  "gestureRefresh": "Обновить панель",
   "gestureCameraView": "Показать вид камер",
   "gestureLauncher": "Открыть лаунчер приложений",
   "gestureIntercomOpen": "Открыть «Позвонить киоску»",
   "gestureIntercomCall": "Позвонить киоску",
   "gestureIntercomHangup": "Завершить звонок интеркома",
+  "gestureIntercomAnswer": "Принять звонок интеркома",
+  "gestureIntercomDecline": "Отклонить звонок интеркома",
   "gestureAlarmStop": "Остановить будильник",
   "gestureAlarmSnooze": "Отложить будильник",
   "gestureScreensaver": "Запустить заставку",
@@ -35,5 +38,8 @@
   "gestureCameraShow": "Показать {name}",
   "gestureCameraClose": "Закрыть вид камер",
   "gestureCameraEmpty": "Виды камер пока не настроены.",
-  "gestureIntercomEmpty": "Киоски в сети пока не найдены."
+  "gestureIntercomEmpty": "Киоски в сети пока не найдены.",
+  "gestureVoiceWake": "Начать голосовую команду",
+  "gestureVoiceStop": "Остановить голосового ассистента",
+  "gestureVoiceMute": "Выключить или включить звук Voice Satellite"
 }

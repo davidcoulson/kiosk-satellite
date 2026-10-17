@@ -25,7 +25,14 @@ const sinkProtocolInfo =
     // media browser hides cameras as "incompatible with the selected
     // player".
     'http-get:*:application/vnd.apple.mpegurl:*,'
-    'http-get:*:application/x-mpegurl:*,http-get:*:audio/mpegurl:*,'
+    'http-get:*:application/x-mpegurl:*,'
+    '$audioSinkProtocolInfo';
+
+/// The audio half, which is all a device without a screen accepts:
+/// controllers and Home Assistant's media browser then offer it only what
+/// it can play.
+const audioSinkProtocolInfo =
+    'http-get:*:audio/mpegurl:*,'
     'http-get:*:audio/mpeg:*,http-get:*:audio/mp4:*,http-get:*:audio/flac:*,'
     'http-get:*:audio/x-flac:*,http-get:*:audio/wav:*,http-get:*:audio/ogg:*,'
     'http-get:*:audio/aac:*';

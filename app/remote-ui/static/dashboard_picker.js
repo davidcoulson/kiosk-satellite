@@ -1,5 +1,5 @@
 import { haText, t } from './localization.js';
-import { api, cmd } from './core.js';
+import { api, cmd, state } from './core.js';
 import { modalShell, queueEdgeFades } from './widgets.js';
 
 /* The dashboard picker, the device's DashboardPicker in the browser:
@@ -90,14 +90,62 @@ export function matchDashboard(list, path) {
   return null;
 }
 
-// The navigation path inside a start URL on [base], without a query.
+// The stored custom pages, whose paths are full URLs for a page on another
+// server.
+function customPagePaths() {
+  const raw = (state.settings || []).find((s) => s.key === 'ha.custom_pages')?.value;
+  try {
+    const list = JSON.parse(raw || '[]');
+    return Array.isArray(list) ? list.map((p) => `${p?.path || ''}`) : [];
+  } catch (_) { return []; }
+}
+
+// The URL a navigation path loads: a custom page on another server is its
+// own URL ("local/https://..."), anything else lives on [base].
+export function viewPathUrl(base, path) {
+  if (/^local\/https?:\/\//.test(path)) return path.slice('local/'.length);
+  return `${(base || '').replace(/\/$/, '')}/${path}`;
+}
+
+// The navigation path inside a start URL on [base], without a query. A URL
+// elsewhere is one of the custom pages on another server, or null.
 export function dashboardPathOfUrl(url, base) {
   base = (base || '').replace(/\/$/, '');
+  if (url && /^https?:\/\//.test(url) && !(base && url.startsWith(base + '/'))) {
+    return externalPagePath(url);
+  }
   if (!base || !url || !url.startsWith(base + '/')) return null;
   const path = url.slice(base.length + 1);
   // A custom page keeps its query and fragment, which pick its layout.
   if (path.startsWith('local/')) return path;
   return path.replace(/[?#].*$/, '').replace(/\/+$/, '');
+}
+
+// The device's externalPageNavPath: the custom page on another server that
+// [url] shows, or the same file under a fragment no page names.
+function externalPagePath(url) {
+  let shown;
+  try {
+    const u = new URL(url);
+    shown = u.href;
+  } catch (_) { return null; }
+  const file = shown.replace(/#.*$/, '');
+  let sameFile = null;
+  for (const path of customPagePaths()) {
+    if (!/^https?:\/\//.test(path)) continue;
+    if (path === shown) return `local/${path}`;
+    if (!sameFile && path.replace(/#.*$/, '') === file) sameFile = path;
+  }
+  return sameFile ? `local/${shown}` : null;
+}
+
+// A route or navigation path as the picker prints it: a path on Home
+// Assistant with its leading slash, a custom page on another server as its
+// URL.
+function shownPath(path) {
+  path = String(path || '');
+  if (/^local\/https?:\/\//.test(path)) return path.slice('local/'.length);
+  return /^https?:\/\//.test(path) ? path : '/' + path;
 }
 
 /* ------------------------------------------------------------ pieces */
@@ -185,7 +233,7 @@ function tile(d, v, { picked, mode, showing, onClick }) {
   b.setAttribute('aria-pressed', picked ? 'true' : 'false');
   b.appendChild(square(d, v));
   const text = el('span', 'dp-text');
-  text.append(el('span', 'dp-title', viewTitle(v)), mono('/' + (v ? v.route : d.path)));
+  text.append(el('span', 'dp-title', viewTitle(v)), mono(shownPath(v ? v.route : d.path)));
   b.appendChild(text);
   if (mode === 'several') {
     const cb = el('input');
@@ -219,7 +267,7 @@ function viewRow(d, v, { picked, mode, showing, withDashboard, query = '', onCli
   title.appendChild(highlighted(viewTitle(v), query));
   const sub = el('span', 'dp-sub');
   if (withDashboard) sub.append(d.title, el('span', 'dp-sep', ' · '));
-  sub.appendChild(mono('/' + pathOf(d, v)));
+  sub.appendChild(mono(shownPath(pathOf(d, v))));
   text.append(title, sub);
   b.appendChild(text);
   if (v?.subview) b.appendChild(el('span', 'dp-tag', haText('Subview')));
@@ -673,7 +721,7 @@ export function dashboardViewListRow(value, trailing) {
       row.appendChild(square(m.dashboard, m.view));
       const text = el('span', 'dp-text');
       const sub = el('span', 'dp-sub');
-      sub.append(m.dashboard.title, el('span', 'dp-sep', ' · '), mono('/' + value));
+      sub.append(m.dashboard.title, el('span', 'dp-sep', ' · '), mono(shownPath(value)));
       text.append(el('span', 'dp-title', viewTitle(m.view)), sub);
       row.appendChild(text);
     } else {
@@ -683,7 +731,7 @@ export function dashboardViewListRow(value, trailing) {
         : svgPath(DASHBOARD_ICON, 22));
       row.appendChild(sq);
       const text = el('span', 'dp-text');
-      text.appendChild(mono('/' + value));
+      text.appendChild(mono(shownPath(value)));
       row.appendChild(text);
     }
     if (trailing) row.appendChild(trailing);

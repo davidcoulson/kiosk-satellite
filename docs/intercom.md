@@ -55,7 +55,9 @@ During a call the kiosk holds the screensaver, the dashboard rotation and the re
 
 **Maximum call duration** ends a live call or announcement after 1 to 60 minutes, Unlimited by default. Each kiosk counts on its own, so the shorter limit ends the call for both, and the call screen reads Maximum call duration reached.
 
-**Hang up call when pressing this button** picks a hardware button that ends the call: Volume up, Volume down, Mute or Help. It ends a call being placed, a live call and either end of an announcement. A ringing call still needs Decline on the screen. Outside a call the button keeps its usual job. It is a pick of this device's hardware, so Fleet Management never syncs it. A button only works when Android sees it: `adb shell getevent -l` lists the keys a device reports, and a key the device's key layout leaves unmapped never reaches the app.
+**Hang up call when pressing this button** picks a hardware button that ends the call: Volume up, Volume down, Mute or Help. It ends a call being placed, a live call and either end of an announcement. Outside a call the button keeps its usual job. It is a pick of this device's hardware, so Fleet Management never syncs it.
+
+**Hang up button while ringing** shows once a button is picked and sets what the button does while a call rings here: **Accept** answers the call, **Decline** declines it and **Ignore**, the default, leaves the button its usual job until the call is live. With Accept, a single button handles the whole call: press to answer, press again to hang up. A button only works when Android sees it: `adb shell getevent -l` lists the keys a device reports, and a key the device's key layout leaves unmapped never reaches the app.
 
 Voice is raw 16 kHz audio over one WebSocket per call, about 256 kbit/s each way on the local network, and reaches the other kiosk in roughly a quarter of a second.
 
@@ -93,7 +95,7 @@ ESPHome actions put a call through from an automation or a dashboard button. `es
 
 Home Assistant cannot talk on a call: the kiosks hold the microphones. To speak on a kiosk from Home Assistant, use the [announce action](esphome.md#announcements) under ESPHome. On the [remote API](remote-api.md) the same two are `intercomCall {kiosk}` and `intercomHangup`.
 
-Apps on the kiosk itself, like Tasker or MacroDroid, can follow calls through [Android Broadcasts](android-broadcasts.md#intercom) instead.
+Automations can follow calls through the `esphome.kiosk_satellite_intercom` [event](events.md#intercom). Apps on the kiosk itself, like Tasker or MacroDroid, can use [Android Broadcasts](android-broadcasts.md#intercom) instead.
 
 ## Calling by voice
 
@@ -110,7 +112,7 @@ The built-in **Home Assistant** conversation agent does not work for this, since
 
 Name the kiosk the way you think of it: its name, the name its device has in Home Assistant or the area Home Assistant puts it in. "Call the master bedroom" finds the kiosk in the Master Bedroom area. The kiosk checks the other kiosk first, and the agent tells you when it is on Do not disturb, has its intercom off or cannot be reached. When the name fits several kiosks, like two kiosks in one room, the agent asks which one, and "which kiosks can I call?" lists them with their areas. The call rings once the agent has finished its answer, so the reply is never cut off. A [realtime conversation](voice-satellite.md#realtime-conversations) ends right after its answer instead of waiting out its closing silence.
 
-Wake word detection pauses for the whole call, so the kiosk cannot hear "hang up". To end a call without touching the screen, map claps or Show fingers to the **End the intercom call** [gesture action](gestures.md), or pick a hardware button under **Hang up call when pressing this button**.
+Wake word detection pauses for the whole call, so the kiosk cannot hear "hang up". To end a call without touching the screen, map claps or Show fingers to the **End the intercom call** [gesture action](gestures.md), or pick a hardware button under **Hang up call when pressing this button**. The **Accept intercom call** and **Decline intercom call** gesture actions answer a ringing call the same way.
 
 The call goes out from the kiosk you are talking to. A request typed into Home Assistant's own chat reaches no kiosk until it names the one that should call, as in "call the kitchen from the bedroom kiosk", which matches the kiosk's device name or ESPHome name.
 

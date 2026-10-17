@@ -151,6 +151,16 @@ void main() {
     expect((state.data as Map)['engine'], isNull);
   });
 
+  test('needs the microphone only while something can listen', () async {
+    // A new install: native runtime with Voice Satellite off.
+    expect(wakeWord.inUse, isFalse);
+    await settings.set(defs.voiceEnabled, true);
+    expect(wakeWord.inUse, isTrue);
+    await settings.set(defs.voiceEnabled, false);
+    await settings.set(defs.voiceRuntime, 'dashboard');
+    expect(wakeWord.inUse, isTrue, reason: 'the page starts the engine');
+  });
+
   test('rejects malformed configs', () async {
     final result = await commands.execute('setWakeWordConfig', const {
       'engine': 'bogus',

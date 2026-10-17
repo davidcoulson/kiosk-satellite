@@ -32,7 +32,7 @@ const wsFilterScript = r'''
   // A custom page under /local/ is the person's own code, not Home
   // Assistant's frontend: its sockets are left alone and the status rows
   // say why there is nothing to report.
-  if (location.pathname.indexOf('/local/') === 0) {
+  if (location.pathname.indexOf('/local/') === 0 || window.__ksCustomPage) {
     window.__ksWs = { enabled: true, built: true, allow: null,
       customPage: true, setEnabled: function () {},
       stats: function () {
@@ -65,6 +65,11 @@ const wsFilterScript = r'''
     S.cTotal = 0; S.cFwd = 0; S.evSeen = 0; S.evDropped = 0; S.longMs = 0; S.startTs = now();
   };
   S.stats = function () {
+    // A custom page on another server, marked after this script ran.
+    if (window.__ksCustomPage) {
+      return { enabled: true, allow: null, mode: 'custom-page',
+        customPage: true, subs: [], stateChangedSubs: 0 };
+    }
     // mode: 'filtering' (allowlist active), 'passthrough' (this view's
     // entities cannot be determined, updates flow unfiltered), 'boot'
     // (allowlist not built yet). The UIs word their telemetry from this.

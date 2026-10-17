@@ -133,6 +133,80 @@ class HintRow extends StatelessWidget {
   }
 }
 
+/// A page's opening row: its glyph on a soft primary tile, a headline and a
+/// line or two under it saying what the page is for. The first row of the
+/// page's first card. Without a [title] the line stands alone, centered on
+/// the tile (an information glyph for a page that only needs a note).
+/// Mirrored by the remote admin's introRow (widgets.js).
+class IntroRow extends StatelessWidget {
+  const IntroRow({super.key, required this.icon, this.title, this.subtitle});
+
+  /// The page's glyph, drawn in the primary color.
+  final Widget icon;
+  final String? title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final head = title;
+    final sub = subtitle;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Ks.inset, vertical: 20),
+      child: Row(
+        crossAxisAlignment: head == null
+            ? CrossAxisAlignment.center
+            : CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(Ks.radiusRow),
+            ),
+            alignment: Alignment.center,
+            child: IconTheme(
+              data: IconThemeData(color: scheme.primary, size: 26),
+              child: icon,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (head != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    head,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+                if (sub != null && sub.isNotEmpty) ...[
+                  if (head != null) const SizedBox(height: 4),
+                  Text(
+                    sub,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// [HintRow]'s cautionary sibling: same shape, warning color.
 class WarnRow extends StatelessWidget {
   const WarnRow(this.text, {super.key});

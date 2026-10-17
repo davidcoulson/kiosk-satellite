@@ -1,10 +1,11 @@
+import { isHeadless } from './headless.js';
 import { cameraStreamsError } from './localization.js';
 import { overviewLabel, overviewMessageBox, overviewModalShell } from './overview_labels.js';
 import { mediaText, mediaError, deviceText, t, screenAudioText, screensaverText, immichError, overviewText } from './localization.js';
 import { receiveUpdate, watchUpdates } from './live.js';
 import { $, api, cmd, state } from './core.js';
 import { readOnlyRow } from './device.js';
-import { hintRow, showToast } from './widgets.js';
+import { INTRO_INFO_ICON, hintRow, introRow, showToast } from './widgets.js';
 import { loadSettings } from './settings.js';
 import { radioRow } from './views.js';
 import { currentDashboardPath, dashboardField } from './dashboard_picker.js';
@@ -129,13 +130,13 @@ export async function updatePlayerRow() {
   const tab = document.getElementById('tab-sendspin');
   if (!tab) return;
   // What every source has in common, said once at the top of the page.
-  if (!tab.querySelector('.media-player-intro')) {
-    const intro = hintRow(mediaText('The floating player and Now Playing show only while '
+  // Both surfaces it names need a screen.
+  if (!isHeadless() && !tab.querySelector('.media-player-intro')) {
+    const intro = document.createElement('div');
+    intro.className = 'card media-player-intro';
+    intro.appendChild(introRow(INTRO_INFO_ICON, '', mediaText('The floating player and Now Playing show only while '
       + 'the picked player has a track playing or a queue loaded. With nothing '
-      + 'playing or queued, neither appears.'));
-    intro.classList.add('media-player-intro');
-    // On the page title's line: the title sits 4 in from the card edge.
-    intro.style.cssText = 'margin: 0 0 4px 4px;';
+      + 'playing or queued, neither appears.')));
     tab.prepend(intro);
   }
   const byKey = Object.fromEntries(
@@ -454,6 +455,8 @@ export async function updateBrightnessGrantNotices() {
     granted = !!(res.data || {}).writeSettings;
   } catch (_) { return; }
   $('#brightnessGrantRow').style.display = granted ? 'none' : '';
+  // No panel to light on a device without a screen.
+  if (isHeadless()) return;
   const root = document.getElementById('tab-screenaudio');
   const existing = root.querySelector('.brightness-grant-card');
   if (granted) { root.querySelectorAll('.brightness-grant-card').forEach((el) => el.remove()); return; }
@@ -665,6 +668,8 @@ document.getElementById('tileCameraView')?.addEventListener('click', () => {
 });
 
 export async function loadScreenshot() {
+  // Nothing to capture on a device without a screen.
+  if (isHeadless()) return;
   try {
     const res = await api('/api/screenshot');
     if (!res.ok) return false;

@@ -1525,6 +1525,21 @@ class UiStringsNl extends UiStrings {
   String get fleetErrorOtherLeader => 'Die kiosk volgt al een andere leider.';
 
   @override
+  String fleetPluginsNames(String names) {
+    return 'Plug-ins: $names';
+  }
+
+  @override
+  String fleetCouldNotInstallNameReason(String name, String reason) {
+    return 'Kan $name niet installeren: $reason';
+  }
+
+  @override
+  String fleetReinstallNameOnThisKioskToSyncIt(String name) {
+    return 'Installeer $name opnieuw op deze kiosk om het te synchroniseren';
+  }
+
+  @override
   String get fleetSwitchKiosk => 'Kiosk wisselen';
 
   @override
@@ -1621,6 +1636,20 @@ class UiStringsNl extends UiStrings {
   String get fleetMcpServerToken => 'MCP-servertoken';
 
   @override
+  String get fleetPlugins => 'Plug-ins';
+
+  @override
+  String get fleetPluginSecrets => 'Geheimen van plug-ins';
+
+  @override
+  String get fleetNoPluginsInstalledOnThisKiosk =>
+      'Geen plug-ins geïnstalleerd op deze kiosk';
+
+  @override
+  String get fleetKiosksOnThisProfileInstallTheseAndTakeTheir =>
+      'Kiosken met dit profiel installeren deze en nemen hun instellingen over van deze kiosk.';
+
+  @override
   String get fleetUpdateTheFleet => 'De vloot bijwerken';
 
   @override
@@ -1674,6 +1703,12 @@ class UiStringsNl extends UiStrings {
   String get gestureIntercomHangup => 'Intercomgesprek beëindigen';
 
   @override
+  String get gestureIntercomAnswer => 'Intercomgesprek aannemen';
+
+  @override
+  String get gestureIntercomDecline => 'Intercomgesprek afwijzen';
+
+  @override
   String get gestureAlarmStop => 'Stop het alarm';
 
   @override
@@ -1687,6 +1722,9 @@ class UiStringsNl extends UiStrings {
 
   @override
   String get gestureHoldMode => 'Wachtstand aan/uit';
+
+  @override
+  String get gestureRefresh => 'Dashboard vernieuwen';
 
   @override
   String get gestureMediaPlayPause => 'Media afspelen of pauzeren';
@@ -1772,6 +1810,16 @@ class UiStringsNl extends UiStrings {
 
   @override
   String get gestureTheaterPeek => 'Brighten theater mode for a moment';
+
+  @override
+  String get gestureVoiceWake => 'Een spraakopdracht starten';
+
+  @override
+  String get gestureVoiceStop => 'De spraakassistent stoppen';
+
+  @override
+  String get gestureVoiceMute =>
+      'Voice Satellite dempen of het dempen opheffen';
 
   @override
   String gestureDescribeCornerTaps(String count, String corner) {
@@ -1884,6 +1932,21 @@ class UiStringsNl extends UiStrings {
   @override
   String gestureDescribeRemoteKeyLong(String key) {
     return 'Long press the $key key';
+  }
+
+  @override
+  String gestureDescribeButtonPress(String button) {
+    return 'Op de knop $button drukken';
+  }
+
+  @override
+  String gestureDescribeButtonDouble(String button) {
+    return 'Twee keer op de knop $button drukken';
+  }
+
+  @override
+  String gestureDescribeButtonHold(String button) {
+    return 'De knop $button ingedrukt houden';
   }
 
   @override
@@ -2243,6 +2306,22 @@ class UiStringsNl extends UiStrings {
   @override
   String get gestureLongPressHelp =>
       'Runs when the key is held for half a second. While a key has a long press action, a short press runs only its own action, if it has one.';
+
+  @override
+  String get gestureButton => 'Knop';
+
+  @override
+  String get gesturePress => 'Drukken';
+
+  @override
+  String get gestureDoublePress => 'Dubbel drukken';
+
+  @override
+  String get gestureHoldPress => 'Ingedrukt houden';
+
+  @override
+  String get gestureButtonDefaults =>
+      'Een druk die geen gebaar gebruikt, houdt zijn eigen taak: Actie neemt op, stopt of negeert wat er overgaat en start anders een spraakopdracht, Microfoon dempt Voice Satellite en de volumeknoppen wijzigen het volume.';
 
   @override
   String get intercomCall => 'Oproep';
@@ -2780,6 +2859,30 @@ class UiStringsNl extends UiStrings {
   @override
   String get mediaCannotControl =>
       'opdracht niet ondersteund of niet verzonden';
+
+  @override
+  String get mediaAudioHiRes => 'Hi-Res';
+
+  @override
+  String get mediaAudioCdQuality => 'Cd-kwaliteit';
+
+  @override
+  String get mediaAudioLossy => 'Met verlies';
+
+  @override
+  String mediaAudioBitDepth(String bits) {
+    return '$bits-bit';
+  }
+
+  @override
+  String mediaAudioSampleRate(String rate) {
+    return '$rate kHz';
+  }
+
+  @override
+  String mediaAudioBitRate(String rate) {
+    return '$rate kbps';
+  }
 
   @override
   String get mediaNothingQueued => 'Niets in de wachtrij';
@@ -3328,6 +3431,9 @@ class UiStringsNl extends UiStrings {
   String get pluginErrorAndroidOld => 'De Android-versie is te oud';
 
   @override
+  String get pluginErrorNeedsScreen => 'Deze plugin heeft een scherm nodig';
+
+  @override
   String get pluginErrorNativeIntegrity =>
       'De integriteitscontrole van de geïnstalleerde systeemeigen bibliotheken is mislukt';
 
@@ -3628,6 +3734,16 @@ class UiStringsNl extends UiStrings {
   @override
   String overviewInstallHelp(String version) {
     return 'Kiosk Satellite $version kan worden geïnstalleerd. Bevestig de installatie op het tabletscherm.';
+  }
+
+  @override
+  String overviewInstallSilentHelp(String version) {
+    return 'Kiosk Satellite $version is klaar om te installeren. Het wordt zonder bevestiging op het apparaat geïnstalleerd.';
+  }
+
+  @override
+  String overviewInstallHeadlessHelp(String version) {
+    return 'Kiosk Satellite $version is klaar om te installeren. Dit apparaat heeft geen scherm om dit te bevestigen. Maak Kiosk Satellite daarom apparaateigenaar, gebruik Shizuku of installeer het via adb.';
   }
 
   @override
@@ -3939,6 +4055,9 @@ class UiStringsNl extends UiStrings {
 
   @override
   String get overviewShowingCustomPages => 'Toont eigen pagina\'s';
+
+  @override
+  String get overviewHeadlessMode => 'Modus zonder scherm';
 
   @override
   String get overviewNoScreenshot => 'Geen schermafdruk';
@@ -5343,6 +5462,49 @@ class UiStringsNl extends UiStrings {
 
   @override
   String get deviceOpenSettingsDevice => 'Instellingen openen op apparaat';
+
+  @override
+  String get deviceHardwareButtons => 'Hardwareknoppen';
+
+  @override
+  String get deviceHardwareButtonsHeld =>
+      'De knoppen van het apparaat bereiken gebaren en Voice Satellite.';
+
+  @override
+  String get deviceHardwareButtonsMissing =>
+      'De knoppen van het apparaat doen niets tot de knoppendienst is ingeschakeld.';
+
+  @override
+  String get deviceHeadlessAdbMicrophone =>
+      'Dit apparaat heeft geen scherm. Verleen het via adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.RECORD_AUDIO';
+
+  @override
+  String get deviceHeadlessAdbNotifications =>
+      'Dit apparaat heeft geen scherm. Verleen het via adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.POST_NOTIFICATIONS';
+
+  @override
+  String get deviceHeadlessAdbLocation =>
+      'Dit apparaat heeft geen scherm. Verleen het via adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.ACCESS_FINE_LOCATION';
+
+  @override
+  String get deviceHeadlessAdbBluetooth =>
+      'Dit apparaat heeft geen scherm. Verleen het via adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.BLUETOOTH_SCAN, en daarna hetzelfde voor BLUETOOTH_CONNECT';
+
+  @override
+  String get deviceHeadlessAdbBattery =>
+      'Dit apparaat heeft geen scherm. Verleen het via adb: adb shell dumpsys deviceidle whitelist +me.jxl.kiosk_satellite';
+
+  @override
+  String get deviceHeadlessAdbStorage =>
+      'Dit apparaat heeft geen scherm. Verleen het via adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.READ_EXTERNAL_STORAGE, en daarna hetzelfde voor WRITE_EXTERNAL_STORAGE';
+
+  @override
+  String get deviceHeadlessAdbButtons =>
+      'Dit apparaat heeft geen scherm. Schakel het in via adb: adb shell settings put secure enabled_accessibility_services me.jxl.kiosk_satellite/.HeadlessKeyService, en daarna adb shell settings put secure accessibility_enabled 1';
+
+  @override
+  String get deviceHeadlessAdbButtonsRestart =>
+      'De knoppendienst staat aan maar is niet gestart. Start het apparaat opnieuw op om de dienst te starten: adb reboot';
 
   @override
   String get settingRemoteKeysReportTitle =>
@@ -7240,6 +7402,8 @@ class UiStringsNl extends UiStrings {
   @override
   String get gestureRemoteKeysHelp =>
       'A mapped key runs its action whatever app is in front, and does nothing else.';
+
+  @override
   String get haCustomPages => 'Eigen pagina\'s';
 
   @override
@@ -7247,11 +7411,19 @@ class UiStringsNl extends UiStrings {
       'Je eigen HTML-pagina\'s als dashboard';
 
   @override
+  String get settingHaCustomPagesSocketTitle =>
+      'Home Assistant-verbinding delen';
+
+  @override
+  String get settingHaCustomPagesSocketDescription =>
+      'Eigen pagina\'s praten met Home Assistant via de verbinding van de kiosk, zonder token in de pagina.';
+
+  @override
   String get haCustomPagesAdd => 'Pagina toevoegen';
 
   @override
-  String get haCustomPagesEmpty =>
-      'Voeg HTML-pagina\'s uit de www-map van Home Assistant toe om ze als een dashboard te kiezen.';
+  String get haCustomPagesEmptyAnyServer =>
+      'Voeg HTML-pagina\'s uit de www-map van Home Assistant of van een andere server toe om ze als een dashboard te kiezen.';
 
   @override
   String get haCustomPagesGuide => 'Handleiding voor eigen pagina\'s';
@@ -7270,18 +7442,18 @@ class UiStringsNl extends UiStrings {
   String get haCustomPageName => 'Naam';
 
   @override
-  String get haCustomPagePath => 'Pad';
+  String get haCustomPageLocation => 'Pad of URL';
 
   @override
-  String get haCustomPagePathHint =>
-      'Een bestand in de www-map van Home Assistant, zoals /local/dashboard.html.';
+  String get haCustomPageLocationHint =>
+      'Een bestand in de www-map van Home Assistant, zoals /local/dashboard.html, of de URL van een pagina op een andere server.';
 
   @override
   String get haCustomPageNameMissing => 'Voer een naam in.';
 
   @override
-  String get haCustomPagePathInvalid =>
-      'Voer een pad onder /local/ in, zoals /local/dashboard.html.';
+  String get haCustomPageLocationInvalid =>
+      'Voer een pad onder /local/ of een http- of https-URL in.';
 
   @override
   String get haCustomPageDuplicate => 'Een andere pagina gebruikt dit pad al.';
@@ -7291,11 +7463,23 @@ class UiStringsNl extends UiStrings {
       'Home Assistant heeft geen bestand op dit pad.';
 
   @override
+  String get haCustomPageUrlNotFound =>
+      'De server heeft geen pagina op deze URL.';
+
+  @override
   String get haCustomPageUnreachable => 'Kan Home Assistant niet bereiken.';
+
+  @override
+  String get haCustomPageUrlUnreachable => 'Kan de server niet bereiken.';
 
   @override
   String haCustomPageStatus(String code) {
     return 'Home Assistant antwoordde met HTTP $code.';
+  }
+
+  @override
+  String haCustomPageUrlStatus(String code) {
+    return 'De server antwoordde met HTTP $code.';
   }
 
   @override
@@ -8059,6 +8243,23 @@ class UiStringsNl extends UiStrings {
   String get intercomOptionHangupHelp => 'Hulp';
 
   @override
+  String get settingIntercomHangupKeyRingingTitle =>
+      'Ophangknop tijdens overgaan';
+
+  @override
+  String get settingIntercomHangupKeyRingingDescription =>
+      'Wat de knop doet als hier een gesprek binnenkomt.';
+
+  @override
+  String get intercomOptionHangupRingingAnswer => 'Aannemen';
+
+  @override
+  String get intercomOptionHangupRingingDecline => 'Afwijzen';
+
+  @override
+  String get intercomOptionHangupRingingIgnore => 'Negeren';
+
+  @override
   String get intercomTalkSection => 'Praten';
 
   @override
@@ -8274,6 +8475,220 @@ class UiStringsNl extends UiStrings {
 
   @override
   String get kioskOpenSettingsDevice => 'Instellingen openen op apparaat';
+
+  @override
+  String get settingLedEnabledTitle => 'LED-bediening inschakelen';
+
+  @override
+  String get settingLedEnabledDescription =>
+      'Laat Kiosk Satellite de lampjes bedienen.';
+
+  @override
+  String get settingLedAnimationsTitle => 'Effecten animeren';
+
+  @override
+  String get settingLedAnimationsDescription =>
+      'Laat de bogen draaien en de pulsen vervagen. Zet dit uit om alle effecten stil te zetten.';
+
+  @override
+  String get settingLedIdleEnabledTitle => 'Branden bij inactiviteit';
+
+  @override
+  String get settingLedIdleEnabledDescription =>
+      'Blijft branden zolang er niets anders wordt getoond.';
+
+  @override
+  String get settingLedIdleBrightnessTitle => 'Helderheid';
+
+  @override
+  String get settingLedIdleBrightnessDescription =>
+      'Hoe fel de lampjes hiervoor branden.';
+
+  @override
+  String get settingLedIdleLightColorTitle => 'Kleur';
+
+  @override
+  String get settingLedIdleLightColorDescription =>
+      'De kleur van de lampjes hiervoor.';
+
+  @override
+  String get settingLedIdleStyleTitle => 'Effect';
+
+  @override
+  String get settingLedIdleStyleDescription =>
+      'Hoe de lampjes er bij inactiviteit uitzien.';
+
+  @override
+  String get settingLedIdleStyleOptionSolid => 'Vast';
+
+  @override
+  String get settingLedIdleStyleOptionBreathe => 'Ademend';
+
+  @override
+  String get settingLedVoiceEnabledTitle => 'Spraakactiviteit tonen';
+
+  @override
+  String get settingLedVoiceEnabledDescription =>
+      'Licht op terwijl Voice Satellite luistert, nadenkt en antwoordt.';
+
+  @override
+  String get settingLedVoiceBrightnessTitle => 'Helderheid';
+
+  @override
+  String get settingLedVoiceBrightnessDescription =>
+      'Hoe fel de lampjes hiervoor branden.';
+
+  @override
+  String get settingLedVoiceLightColorTitle => 'Kleur';
+
+  @override
+  String get settingLedVoiceLightColorDescription =>
+      'Onder een boog die draait tijdens het luisteren, wisselt tijdens het nadenken en vervaagt tijdens het antwoorden.';
+
+  @override
+  String get settingLedVoiceAccentColorTitle => 'Accentkleur';
+
+  @override
+  String get settingLedVoiceAccentColorDescription =>
+      'De boog die rond de lampjes beweegt.';
+
+  @override
+  String get settingLedVoiceMutedTitle => 'Tonen als gedempt';
+
+  @override
+  String get settingLedVoiceMutedDescription =>
+      'Blijft branden zolang Voice Satellite gedempt is.';
+
+  @override
+  String get settingLedVoiceMutedColorTitle => 'Kleur bij dempen';
+
+  @override
+  String get settingLedVoiceMutedColorDescription =>
+      'De kleur van de lampjes als gedempt.';
+
+  @override
+  String get settingLedTimersEnabledTitle => 'Timers tonen';
+
+  @override
+  String get settingLedTimersEnabledDescription =>
+      'Pulseert terwijl een timer afgaat.';
+
+  @override
+  String get settingLedTimersBrightnessTitle => 'Helderheid';
+
+  @override
+  String get settingLedTimersBrightnessDescription =>
+      'Hoe fel de lampjes hiervoor branden.';
+
+  @override
+  String get settingLedTimersLightColorTitle => 'Kleur';
+
+  @override
+  String get settingLedTimersLightColorDescription =>
+      'De kleur van de lampjes hiervoor.';
+
+  @override
+  String get settingLedTimersCountdownTitle => 'Aftellen tonen';
+
+  @override
+  String get settingLedTimersCountdownDescription =>
+      'De lampjes gaan een voor een uit terwijl de volgende timer afloopt.';
+
+  @override
+  String get settingLedAlarmsEnabledTitle => 'Alarmen tonen';
+
+  @override
+  String get settingLedAlarmsEnabledDescription =>
+      'Pulseert terwijl een alarm afgaat.';
+
+  @override
+  String get settingLedAlarmsBrightnessTitle => 'Helderheid';
+
+  @override
+  String get settingLedAlarmsBrightnessDescription =>
+      'Hoe fel de lampjes hiervoor branden.';
+
+  @override
+  String get settingLedAlarmsLightColorTitle => 'Kleur';
+
+  @override
+  String get settingLedAlarmsLightColorDescription =>
+      'De kleur van de lampjes hiervoor.';
+
+  @override
+  String get settingLedIntercomEnabledTitle => 'Intercomgesprekken tonen';
+
+  @override
+  String get settingLedIntercomEnabledDescription =>
+      'Pulseert terwijl een gesprek overgaat en draait zolang het loopt.';
+
+  @override
+  String get settingLedIntercomBrightnessTitle => 'Helderheid';
+
+  @override
+  String get settingLedIntercomBrightnessDescription =>
+      'Hoe fel de lampjes hiervoor branden.';
+
+  @override
+  String get settingLedIntercomLightColorTitle => 'Kleur';
+
+  @override
+  String get settingLedIntercomLightColorDescription =>
+      'De kleur van de lampjes hiervoor.';
+
+  @override
+  String get settingLedNotificationsEnabledTitle => 'Meldingen tonen';
+
+  @override
+  String get settingLedNotificationsEnabledDescription =>
+      'Pulseert langzaam zolang er een melding wacht.';
+
+  @override
+  String get settingLedNotificationsBrightnessTitle => 'Helderheid';
+
+  @override
+  String get settingLedNotificationsBrightnessDescription =>
+      'Hoe fel de lampjes hiervoor branden.';
+
+  @override
+  String get settingLedNotificationsLightColorTitle => 'Kleur';
+
+  @override
+  String get settingLedNotificationsLightColorDescription =>
+      'De kleur van de lampjes hiervoor.';
+
+  @override
+  String get settingLedMediaEnabledTitle => 'Muziek tonen';
+
+  @override
+  String get settingLedMediaEnabledDescription =>
+      'Licht op terwijl er muziek speelt op dit apparaat.';
+
+  @override
+  String get settingLedMediaBrightnessTitle => 'Helderheid';
+
+  @override
+  String get settingLedMediaBrightnessDescription =>
+      'Hoe fel de lampjes hiervoor branden.';
+
+  @override
+  String get settingLedMediaLightColorTitle => 'Kleur';
+
+  @override
+  String get settingLedMediaLightColorDescription =>
+      'De kleur van de lampjes hiervoor.';
+
+  @override
+  String get settingLedMediaStyleTitle => 'Effect';
+
+  @override
+  String get settingLedMediaStyleDescription => 'Hoe de lampjes muziek tonen.';
+
+  @override
+  String get settingLedMediaStyleOptionSolid => 'Vast';
+
+  @override
+  String get settingLedMediaStyleOptionBreathe => 'Ademend';
 
   @override
   String get settingLockdownEnabledTitle => 'Vergrendelingsmodus inschakelen';
@@ -8627,11 +9042,20 @@ class UiStringsNl extends UiStrings {
       'Grootte van de afspeelknoppen en voortgangsbalk, onafhankelijk van de tekstgrootte. Geldt voor beide indelingen en naast de schermbeveiliging. De bediening past zich aan de beschikbare ruimte aan.';
 
   @override
-  String get settingSendspinFullscreenHorizontalTitle => 'Horizontale modus';
+  String get settingSendspinFullscreenLayoutTitle => 'Indelingsmodus';
 
   @override
-  String get settingSendspinFullscreenHorizontalDescription =>
-      'Verdeel de albumhoes en bediening over twee gelijke helften. Wanneer de songtekst of wachtrij geopend is, worden de nummergegevens onder de albumhoes geplaatst. Wordt genegeerd als Speelt nu naast een schermbeveiliging staat.';
+  String get settingSendspinFullscreenLayoutDescription =>
+      'Hoe Speelt nu de albumhoes, nummergegevens en bediening indeelt. Horizontaal verdeelt ze over een linker- en rechterhelft. Alleen albumhoes vult het scherm met de albumhoes en toont de nummergegevens en bediening een paar seconden na een tik, en schakelt naar Verticaal zolang de songtekst of wachtrij geopend is. Wordt genegeerd als Speelt nu naast een schermbeveiliging staat.';
+
+  @override
+  String get mediaLayoutVertical => 'Verticaal';
+
+  @override
+  String get mediaLayoutHorizontal => 'Horizontaal';
+
+  @override
+  String get mediaLayoutArtOnly => 'Alleen albumhoes';
 
   @override
   String get settingSendspinFullscreenDoubleTapTitle =>
@@ -8690,6 +9114,24 @@ class UiStringsNl extends UiStrings {
   @override
   String get settingSendspinSpeakerPillDescription =>
       'Toon de luidsprekerkeuze 5 seconden nadat het scherm is aangeraakt. Voeg luidsprekers toe aan de huidige groep of verwijder ze eruit.';
+
+  @override
+  String get settingSendspinSpeakerPillPlayersTitle =>
+      'Luidsprekerkeuze filteren';
+
+  @override
+  String get settingSendspinSpeakerPillPlayersDescription =>
+      'Alleen deze luidsprekers verschijnen in de luidsprekerkeuze. Luidsprekers die al in de groep zitten, verschijnen altijd.';
+
+  @override
+  String get settingSendspinAudioQualityTitle => 'Audiokwaliteit tonen';
+
+  @override
+  String get settingSendspinAudioQualityDescription =>
+      'Toont het formaat, de bitdiepte, de samplefrequentie, de bitrate en de bron van het huidige nummer onderaan Speelt nu. Vereist Music Assistant.';
+
+  @override
+  String get mediaAllSpeakers => 'Alle luidsprekers';
 
   @override
   String get settingSendspinQueueArtTitle => 'Albumhoezen in de wachtrij tonen';
@@ -9118,6 +9560,47 @@ class UiStringsNl extends UiStrings {
 
   @override
   String get settingsMenuThemeAuto => 'Automatisch';
+
+  @override
+  String get settingsMenuOverviewHeadlessSummary =>
+      'Status en snelle bediening';
+
+  @override
+  String get settingsMenuHomeAssistantHeadlessSummary => 'Verbinding';
+
+  @override
+  String get settingsMenuAudio => 'Audio';
+
+  @override
+  String get settingsMenuAudioSummary => 'Volume, microfoon';
+
+  @override
+  String get settingsGroupMedia => 'Media';
+
+  @override
+  String get settingsMenuDlnaHeadlessSummary => 'Audio op afstand afspelen';
+
+  @override
+  String get settingsMenuGesturesHeadlessSummary => 'Knop- en klapgebaren';
+
+  @override
+  String get settingsMenuLeds => 'LED-bediening';
+
+  @override
+  String get settingsMenuLedsSummary =>
+      'Kleuren en effecten van de statuslampjes';
+
+  @override
+  String get settingsLedTimers => 'Timers';
+
+  @override
+  String get settingsLedNotifications => 'Meldingen';
+
+  @override
+  String get settingsLedIdle => 'Inactief';
+
+  @override
+  String get settingsLedEffects => 'Effecten';
 
   @override
   String get settingAdaptiveBrightnessTitle => 'Adaptieve helderheid';
@@ -12118,6 +12601,26 @@ class UiStringsNl extends UiStrings {
       'De wek-, gereed- en foutgeluiden.';
 
   @override
+  String get voiceChimeWakeVolumeTitle => 'Volume van het wekgeluid';
+
+  @override
+  String get voiceChimeDoneVolumeTitle => 'Volume van het gereedgeluid';
+
+  @override
+  String get voiceChimeErrorVolumeTitle => 'Volume van het foutgeluid';
+
+  @override
+  String get voiceChimeTimerVolumeTitle => 'Volume van het timergeluid';
+
+  @override
+  String get voiceChimeAnnounceVolumeTitle =>
+      'Volume van het aankondigingsgeluid';
+
+  @override
+  String get voiceChimeVolumeDescription =>
+      'Een aandeel van het assistentvolume.';
+
+  @override
   String get settingVoiceShowCommandTitle => 'Tonen wat je hebt gezegd';
 
   @override
@@ -12354,8 +12857,8 @@ class UiStringsNl extends UiStrings {
   String get voiceWordAdded => 'Toegevoegd';
 
   @override
-  String get voiceHaAddHint =>
-      'Voeg deze kiosk toe in Home Assistant via Instellingen → Apparaten en diensten. De kiosk verschijnt daar als ontdekt apparaat.';
+  String get voiceHaAddAgainHint =>
+      'Voeg deze kiosk toe in Home Assistant via Instellingen → Apparaten en diensten. De kiosk verschijnt daar als ontdekt apparaat. Kende Home Assistant de kiosk al, dan vraagt het daar om de nieuwe Versleutelingssleutel van de ESPHome-pagina.';
 
   @override
   String get voiceHaEsphomeOff =>
@@ -13219,6 +13722,13 @@ class UiStringsNl extends UiStrings {
       'Hoelang er op de andere kiosken wordt gewacht. Verleng deze periode als een tragere kiosk verliest terwijl die dichterbij staat.';
 
   @override
+  String get settingVoiceWakeArbitrationOffsetTitle => 'Arbitragecorrectie';
+
+  @override
+  String get settingVoiceWakeArbitrationOffsetDescription =>
+      'Wordt opgeteld bij hoe luid deze kiosk het activeringswoord hoorde. Verhoog deze als deze kiosk verliest terwijl die dichterbij staat en verlaag deze als die van te ver weg antwoordt.';
+
+  @override
   String get voiceSectionWakeArbitration => 'Wekwoordarbitrage';
 
   @override
@@ -13417,6 +13927,104 @@ class UiStringsNl extends UiStrings {
       '// Voorbeeld: zoom een site die het zoomniveau van het dashboard negeert\ndocument.documentElement.style.zoom = \'1.25\';';
 
   @override
+  String get urlFilterTitle => 'URL-filter';
+
+  @override
+  String get urlFilterHint =>
+      'Pagina\'s blokkeren of toestaan op adrespatroon of reguliere expressie';
+
+  @override
+  String get urlFilterIntroTitle => 'Bepalen welke pagina\'s openen';
+
+  @override
+  String get urlFilterIntroSub =>
+      'Links of pagina\'s die overeenkomen met een Blokkeren-regel laden niet. Voeg een Alleen toestaan-regel toe om alleen overeenkomende pagina\'s te laden.';
+
+  @override
+  String get urlFilterAdd => 'Regel toevoegen';
+
+  @override
+  String get urlFilterAddTitle => 'Filterregel toevoegen';
+
+  @override
+  String get urlFilterEditTitle => 'Filterregel bewerken';
+
+  @override
+  String get urlFilterName => 'Naam';
+
+  @override
+  String get urlFilterPattern => 'Patroon';
+
+  @override
+  String get urlFilterPatternWildcardHint =>
+      'Gebruik * voor willekeurige tekens. Een patroon dat met / begint, komt overeen met het pad op elke server, zoals /history*.';
+
+  @override
+  String get urlFilterPatternRegexHint =>
+      'Een reguliere expressie die overal in het adres wordt gezocht, ongeacht hoofdletters.';
+
+  @override
+  String get urlFilterType => 'Patroontype';
+
+  @override
+  String get urlFilterTypeWildcard => 'Jokerteken';
+
+  @override
+  String get urlFilterTypeRegex => 'Reguliere expressie';
+
+  @override
+  String get urlFilterAction => 'Actie';
+
+  @override
+  String get urlFilterActionBlock => 'Blokkeren';
+
+  @override
+  String get urlFilterActionAllow => 'Alleen toestaan';
+
+  @override
+  String get urlFilterActionAllowHint =>
+      'Waar deze regel geldt, laden alleen pagina\'s die overeenkomen met een Alleen toestaan-regel. Aanmelden bij Home Assistant en het startdashboard laden altijd.';
+
+  @override
+  String get urlFilterScope => 'Geldt voor';
+
+  @override
+  String get urlFilterScopeAll => 'Dashboard en externe pagina\'s';
+
+  @override
+  String get urlFilterScopeDashboard => 'Dashboard';
+
+  @override
+  String get urlFilterScopeExternal => 'Externe pagina\'s';
+
+  @override
+  String get urlFilterScopeHint =>
+      'Externe pagina\'s zijn links die vanaf het dashboard worden geopend en pagina\'s voor dashboardrotatie.';
+
+  @override
+  String get urlFilterErrorName => 'Voer een naam in.';
+
+  @override
+  String get urlFilterErrorPattern => 'Voer een patroon in.';
+
+  @override
+  String get urlFilterErrorRegex => 'Deze reguliere expressie is ongeldig.';
+
+  @override
+  String get urlFilterBlocked => 'Pagina geblokkeerd';
+
+  @override
+  String get urlFilterNotAllowed => 'Niet bij de toegestane pagina\'s';
+
+  @override
+  String get settingBrowserUrlFilterNoticeTitle =>
+      'Melding bij geblokkeerde pagina tonen';
+
+  @override
+  String get settingBrowserUrlFilterNoticeDescription =>
+      'Toon een korte melding met de naam van de regel wanneer een pagina wordt geblokkeerd.';
+
+  @override
   String get setupConnectHeading => 'Verbinden met Home Assistant';
 
   @override
@@ -13514,6 +14122,10 @@ class UiStringsNl extends UiStrings {
   @override
   String get setupSelectDashboardHelp =>
       'Kies het dashboard dat de kiosk moet weergeven. Je kunt dit later wijzigen via Instellingen.';
+
+  @override
+  String get setupHeadlessGrants =>
+      'Dit apparaat heeft geen scherm, dus Android kan er niet om vragen. Verleen ze elk via adb en rond dan hier af.';
 
   @override
   String get setupWelcome => 'Welkom';
@@ -13731,8 +14343,8 @@ class UiStringsNl extends UiStrings {
       'Maak van deze kiosk een spraakassistent voor Home Assistant. Alles kan later worden gewijzigd.';
 
   @override
-  String get setupVoiceAddHint =>
-      'Voeg deze kiosk na de installatie toe in Home Assistant via Instellingen → Apparaten en diensten. De kiosk verschijnt daar als ontdekt apparaat.';
+  String get setupVoiceAddAgainHint =>
+      'Voeg deze kiosk na de installatie toe in Home Assistant via Instellingen → Apparaten en diensten. De kiosk verschijnt daar als ontdekt apparaat. Kende Home Assistant de kiosk al, dan vraagt het daar om de nieuwe Versleutelingssleutel van de ESPHome-pagina.';
 
   @override
   String get setupRecommendedWall =>

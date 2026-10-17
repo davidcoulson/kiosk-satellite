@@ -3,14 +3,16 @@ import { cmd, state } from './core.js';
 import { cameraAction, cameraListRow } from './cameras.js';
 import { loadDashboards } from './dashboard_picker.js';
 import { readOnlyRow } from './device.js';
+import { settingRow } from './rows.js';
 import { banner, modalShell } from './widgets.js';
 
 /* ---- Custom Pages ----
-   Home Assistant > Custom Pages, the device's CustomPagesCard: the
-   person's own HTML pages under /local/, each with the name the dashboard
-   pickers show. A row opens the editor, Add page opens it empty. The
-   list repaints itself on the device's echo, so a change on the device
-   or in another admin shows here without rebuilding the tab. */
+   Home Assistant > Custom Pages, the device's CustomPagesCard: the Share
+   Home Assistant connection switch, then the person's own HTML pages, in
+   Home Assistant's /local/ or on another server, each with the name the
+   dashboard pickers show. A row opens the editor, Add page opens it
+   empty. The list repaints itself on the device's echo, so a change on
+   the device or in another admin shows here without rebuilding the tab. */
 
 export const CUSTOM_PAGES_DOCS_URL = 'https://kiosksatellite.com/docs/custom-pages/';
 
@@ -39,10 +41,16 @@ function pageError(code) {
   }
   switch (code) {
     case 'name': return haText('Enter a name.');
-    case 'path': return haText('Enter a path under /local/, such as /local/dashboard.html.');
+    case 'path': return haText('Enter a path under /local/ or an http or https URL.');
     case 'duplicate': return haText('Another page already uses this path.');
     case 'not_found': return haText('Home Assistant has no file at this path.');
-    default: return haText('Could not reach Home Assistant.');
+    case 'url_not_found': return haText('The server has no page at this URL.');
+    case 'url_unreachable': return haText('Could not reach the server.');
+    default:
+      if (code.startsWith('url_status:')) {
+        return t('haCustomPageUrlStatus', { code: code.slice('url_status:'.length) });
+      }
+      return haText('Could not reach Home Assistant.');
   }
 }
 
@@ -88,8 +96,8 @@ export function openCustomPageEditor(page, onSaved) {
   const issue = document.createElement('div');
   issue.setAttribute('role', 'alert');
   form.append(field(haText('Name'), name),
-    field(haText('Path'), path,
-      haText('A file in the Home Assistant www folder, such as /local/dashboard.html.')),
+    field(haText('Path or URL'), path,
+      haText('A file in the Home Assistant www folder, such as /local/dashboard.html, or the URL of a page on another server.')),
     issue);
   shell.body.append(form);
   const cancel = document.createElement('button');
@@ -128,10 +136,24 @@ export function openCustomPageEditor(page, onSaved) {
   (page ? path : name).focus();
 }
 
-/* The page itself: the list card, then the guide. */
+/* The page itself: the connection switch in a group of its own, then the
+   Custom Pages group with the list card and the guide. */
 export function renderCustomPagesPage(panel) {
   if (!panel) return;
   panel.replaceChildren();
+  const share = (state.settings || []).find((s) => s.key === 'ha.custom_pages_socket');
+  if (share) {
+    const shareCard = document.createElement('div');
+    shareCard.className = 'card';
+    const row = settingRow(share);
+    row.dataset.searchId = 'ha.custom_pages_socket';
+    shareCard.appendChild(row);
+    panel.appendChild(shareCard);
+    const heading = document.createElement('h2');
+    heading.className = 'card-title';
+    heading.textContent = haText('Custom Pages');
+    panel.appendChild(heading);
+  }
   const card = document.createElement('div');
   card.className = 'card';
   card.dataset.searchId = 'x:custom_pages';
@@ -146,7 +168,7 @@ export function renderCustomPagesPage(panel) {
       const note = document.createElement('div');
       note.className = 'group-note';
       note.style.padding = '12px 0 4px';
-      note.textContent = haText('Add HTML pages from the Home Assistant www folder to pick them like a dashboard.');
+      note.textContent = haText('Add HTML pages from the Home Assistant www folder or another server to pick them like a dashboard.');
       list.appendChild(note);
     }
     for (const page of pages) {

@@ -98,6 +98,7 @@ void main() {
           required onSnapshot,
           required log,
           String label = 'remote player',
+          bool showInputs = false,
         }) => watcher = _Watcher(
           playerId: playerId,
           onSnapshot: onSnapshot,

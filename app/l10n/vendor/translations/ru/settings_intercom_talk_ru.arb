@@ -23,5 +23,10 @@
   "intercomOptionHangupVolumeDown": "Тише",
   "intercomOptionHangupMute": "Выключение звука",
   "intercomOptionHangupHelp": "Справка",
+  "settingIntercomHangupKeyRingingTitle": "Кнопка завершения при входящем звонке",
+  "settingIntercomHangupKeyRingingDescription": "Что делает кнопка, когда сюда поступает звонок.",
+  "intercomOptionHangupRingingAnswer": "Принять",
+  "intercomOptionHangupRingingDecline": "Отклонить",
+  "intercomOptionHangupRingingIgnore": "Игнорировать",
   "intercomTalkSection": "Разговор"
 }

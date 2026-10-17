@@ -9,15 +9,17 @@ import '../managers/home_assistant/custom_pages.dart';
 import '../managers/settings/definitions.dart';
 import 'kit.dart';
 import 'mdi_icon.dart';
+import 'settings_screen.dart' show SettingTile;
 import 'settings_search.dart';
 
 /// The custom pages guide on the docs site.
 const customPagesDocsUrl = 'https://kiosksatellite.com/docs/custom-pages/';
 
-/// Settings > Home Assistant > Custom Pages: the person's own HTML pages
-/// under /local/, each with the name the dashboard pickers show. Tapping a
-/// page edits it, Add page opens the same dialog empty. The list follows
-/// changes made in the remote admin while it is open.
+/// Settings > Home Assistant > Custom Pages: the Share Home Assistant
+/// connection switch, then the person's own HTML pages, in Home Assistant's
+/// /local/ or on another server, each with the name the dashboard pickers
+/// show. Tapping a page edits it, Add page opens the same dialog empty. The
+/// page follows changes made in the remote admin while it is open.
 class CustomPagesCard extends StatefulWidget {
   const CustomPagesCard({super.key, required this.container});
 
@@ -35,7 +37,10 @@ class _CustomPagesCardState extends State<CustomPagesCard> {
   void initState() {
     super.initState();
     _echo = c.bus.on<SettingChanged>().listen((e) {
-      if (e.key == haCustomPages.key && mounted) setState(() {});
+      if ((e.key == haCustomPages.key || e.key == haCustomPagesSocket.key) &&
+          mounted) {
+        setState(() {});
+      }
     });
   }
 
@@ -63,6 +68,16 @@ class _CustomPagesCardState extends State<CustomPagesCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        SettingsCard(
+          children: [
+            SettingTile(
+              container: c,
+              def: haCustomPagesSocket,
+              onChanged: () => setState(() {}),
+            ),
+          ],
+        ),
+        SectionHeading(haText(context, 'Custom Pages')),
         SearchLandingTarget(
           id: 'x:custom_pages',
           child: SettingsCard(
@@ -71,8 +86,8 @@ class _CustomPagesCardState extends State<CustomPagesCard> {
                 HintRow(
                   haText(
                     context,
-                    'Add HTML pages from the Home Assistant www folder to '
-                    'pick them like a dashboard.',
+                    'Add HTML pages from the Home Assistant www folder or '
+                    'another server to pick them like a dashboard.',
                   ),
                 ),
               for (final page in pages)
@@ -153,10 +168,15 @@ String customPageError(BuildContext context, String code) {
     'name' => haText(context, 'Enter a name.'),
     'path' => haText(
       context,
-      'Enter a path under /local/, such as /local/dashboard.html.',
+      'Enter a path under /local/ or an http or https URL.',
     ),
     'duplicate' => haText(context, 'Another page already uses this path.'),
     'not_found' => haText(context, 'Home Assistant has no file at this path.'),
+    'url_not_found' => haText(context, 'The server has no page at this URL.'),
+    'url_unreachable' => haText(context, 'Could not reach the server.'),
+    _ when code.startsWith('url_status:') => l10n(
+      context,
+    ).haCustomPageUrlStatus(code.substring('url_status:'.length)),
     _ => haText(context, 'Could not reach Home Assistant.'),
   };
 }
@@ -227,11 +247,12 @@ Future<bool> showCustomPageDialog(
                       ),
                     ),
                     LabeledField(
-                      label: haText(ctx, 'Path'),
+                      label: haText(ctx, 'Path or URL'),
                       helper: haText(
                         ctx,
                         'A file in the Home Assistant www folder, such as '
-                        '/local/dashboard.html.',
+                        '/local/dashboard.html, or the URL of a page on '
+                        'another server.',
                       ),
                       child: TextField(
                         controller: path,

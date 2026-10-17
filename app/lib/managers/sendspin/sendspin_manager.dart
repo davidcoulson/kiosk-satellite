@@ -60,6 +60,10 @@ class SendspinManager extends Manager {
   bool _playing = false;
   Map<String, Object?> _status = const {};
 
+  /// Whether this device's own Sendspin player is playing, whichever player
+  /// the Now Playing surfaces follow. The status lights read it.
+  final localPlaying = ValueNotifier<bool>(false);
+
   /// Live now-playing snapshot for the floating player overlay: the merged
   /// status plus 'playing' and 'receivedAt' (epoch ms of the last metadata
   /// update, for on-screen position extrapolation). Null when idle.
@@ -305,6 +309,7 @@ class SendspinManager extends Manager {
     required void Function(Map<String, Object?>?) onSnapshot,
     required Logger log,
     String label,
+    bool showInputs,
   })
   remoteFactory = MaRemotePlayer.new;
 
@@ -413,8 +418,27 @@ class SendspinManager extends Manager {
               _settings.get(defs.sendspinClientId).trim().isNotEmpty;
   }
 
-  /// The shown player's group and its candidates, for the chip's menu.
-  Future<RemoteGroup?> fetchGroup() async {
+  /// The shown player's group and its candidates, for the chip's menu,
+  /// down to the speakers the pill is set to offer.
+  Future<RemoteGroup?> fetchGroup() async =>
+      (await _fetchGroup())?.allowing(_pillAllowed());
+
+  /// The ids [defs.sendspinSpeakerPillPlayers] lets the menu offer, for
+  /// the source the menu reads from: a followed Sonos room lists Sonos
+  /// rooms, every other menu Music Assistant players. Picks made under
+  /// the other source are kept but do not count, so switching sources
+  /// never empties the menu.
+  Set<String> _pillAllowed() {
+    final prefix = _source.kind == PlayerSourceKind.sonos ? 'sonos:' : 'ma:';
+    return {
+      for (final id in defs.decodeSpeakerPillPlayers(
+        _settings.get(defs.sendspinSpeakerPillPlayers),
+      ))
+        if (id.startsWith(prefix)) id.substring(prefix.length),
+    };
+  }
+
+  Future<RemoteGroup?> _fetchGroup() async {
     final remote = _remote;
     if (remote != null) return remote.fetchGroup();
     if (!groupAvailable) return null;
@@ -711,8 +735,9 @@ class SendspinManager extends Manager {
 
   void _setNowPlaying(Map<String, Object?>? value) {
     if (_remote == null && value != null) {
-      // Sendspin omits chapters. Match the queue to the audible title so
-      // chapter metadata survives progress deltas and leaves with the book.
+      // Sendspin omits chapters and the source's audio format. Match the
+      // queue to the audible title so both survive progress deltas and
+      // leave with the track.
       final queue = _localQueueSnapshot;
       final matches = queue != null && queue['title'] == value['title'];
       // The engine's progress for a radio station counts from the moment
@@ -726,6 +751,7 @@ class SendspinManager extends Manager {
         'mediaType': matches ? queue['mediaType'] : null,
         'mediaUri': matches ? queue['mediaUri'] : null,
         'chapters': matches ? queue['chapters'] : null,
+        'audioQuality': matches ? queue['audioQuality'] : null,
         // The group this device plays in, whatever the track.
         'groupVolume': queue?['groupVolume'],
         'groupMuted': queue?['groupMuted'],
@@ -978,6 +1004,7 @@ class SendspinManager extends Manager {
           final playing = map['playing'] == true;
           if (playing != _playing) {
             _playing = playing;
+            localPlaying.value = playing;
             // The position stood still while nothing played, and the
             // native side reports playing once the music starts, so it
             // runs on from here rather than from when it was stamped.
@@ -1116,6 +1143,7 @@ class SendspinManager extends Manager {
           e.key == defs.sendspinSonosHosts.key ||
           e.key == defs.sendspinSonosGroupVolume.key ||
           e.key == defs.sendspinSonosInputs.key ||
+          e.key == defs.sendspinMaInputs.key ||
           e.key == defs.haUrl.key ||
           e.key == defs.haToken.key) {
         _syncRemote();
@@ -1144,7 +1172,7 @@ class SendspinManager extends Manager {
         'sendspin.fullscreen_controls',
         'sendspin.fullscreen_text_scale',
         'sendspin.fullscreen_button_scale',
-        'sendspin.fullscreen_horizontal',
+        'sendspin.fullscreen_layout',
         'sendspin.fullscreen_split',
         'sendspin.fullscreen_photo_fill',
         'sendspin.fullscreen_override_brightness',
@@ -1185,7 +1213,9 @@ class SendspinManager extends Manager {
         'sendspin.sonos_group_volume',
         'sendspin.group_volume',
         'sendspin.sonos_inputs',
+        'sendspin.ma_inputs',
         'sendspin.speaker_pill',
+        'sendspin.speaker_pill_players',
         'sendspin.queue_art',
         'sendspin.lyrics_enabled',
         'sendspin.lyrics_source',
@@ -1426,10 +1456,13 @@ class SendspinManager extends Manager {
             'player and a note per group that could not be listed. With '
             'source set, only that group. With speakers true, the Home '
             'Assistant group keeps Music Assistant\'s own entities, for '
-            'pickers that play sounds on a player.',
+            'pickers that play sounds on a player. With rooms true, the '
+            'Sonos group lists every room on its own instead of one row '
+            'per group, the way the speaker selection pill lists them.',
         params: const {
           'source': 'ma | ha | sonos, default all',
           'speakers': 'true to keep Music Assistant entities in ha',
+          'rooms': 'true to list every Sonos room on its own',
         },
         handler: (p) async {
           final only = '${p['source'] ?? ''}'.trim();
@@ -1469,7 +1502,10 @@ class SendspinManager extends Manager {
           if (want('sonos')) {
             // The rooms of the speakers the Sonos page knows; the search
             // there finds new ones.
-            final sonos = await _sonosPlayers(discover: false);
+            final sonos = await _sonosPlayers(
+              discover: false,
+              rooms: p['rooms'] == true,
+            );
             if (sonos.isEmpty) {
               notes['sonos'] =
                   'No Sonos speakers known yet. Find or add one on the '
@@ -1701,12 +1737,33 @@ class SendspinManager extends Manager {
         ),
       );
 
+  /// Picker rows for every room of [groups] on its own, the rows the
+  /// speaker selection pill's menu shows for a followed Sonos room.
+  static List<Map<String, Object?>> _sonosRoomRows(List<SonosGroup> groups) =>
+      [
+        for (final g in groups)
+          for (final m in g.members)
+            {
+              'id': 'sonos:${m.uuid}',
+              'name': m.name,
+              'sub': m.host,
+              'group': 'sonos',
+              'available': true,
+            },
+      ]..sort(
+        (a, b) => '${a['name']}'.toLowerCase().compareTo(
+          '${b['name']}'.toLowerCase(),
+        ),
+      );
+
   /// The Sonos groups on the network: the households of every speaker
   /// this device knows, plus, with [discover], whatever answers a
   /// multicast search on the tablet's own VLAN. One topology read per
-  /// household answers for all its rooms.
+  /// household answers for all its rooms. With [rooms], a row per room
+  /// instead of per group.
   Future<List<Map<String, Object?>>> _sonosPlayers({
     required bool discover,
+    bool rooms = false,
   }) async {
     final hosts = <String>{
       for (final h in _sonosHosts.values)
@@ -1732,7 +1789,7 @@ class SendspinManager extends Manager {
       }
     }
     if (groups.isNotEmpty) await _rememberSonos(groups);
-    return _sonosRows(groups);
+    return rooms ? _sonosRoomRows(groups) : _sonosRows(groups);
   }
 
   /// Another source is picked, whether or not a player of it is yet, or
@@ -1963,7 +2020,8 @@ class SendspinManager extends Manager {
     final key = want
         ? switch (source.kind) {
             PlayerSourceKind.musicAssistant =>
-              'ma|${source.id}|$maUrl|$maToken',
+              'ma|${source.id}|$maUrl|$maToken|'
+                  '${_settings.get(defs.sendspinMaInputs)}',
             PlayerSourceKind.homeAssistant => 'ha|${source.id}|$haUrl|$haToken',
             PlayerSourceKind.sonos =>
               'sonos|${source.id}|$sonosHost|'
@@ -2025,6 +2083,7 @@ class SendspinManager extends Manager {
         playerId: source.id,
         onSnapshot: snapshot,
         log: log,
+        showInputs: _settings.get(defs.sendspinMaInputs),
       ),
     };
     _remote = remote;
@@ -2778,6 +2837,7 @@ class SendspinManager extends Manager {
     }
     if (_playing) {
       _playing = false;
+      localPlaying.value = false;
       bus.publish(
         const VoiceInteractionChanged(
           active: false,

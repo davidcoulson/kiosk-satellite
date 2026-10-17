@@ -9,7 +9,8 @@ import { updatePluginReadings } from './plugin-readings.js';
 import { currentPath, showTab, subpageEntry } from './tabs.js';
 import { dashboardField } from './dashboard_picker.js';
 import { cameraViewSpec, fieldVisible, iconField, listSetting } from './plugin_lists.js';
-import { hintRow, messageBox, modalShell, showToast, swatch } from './widgets.js';
+import { hintRow, introRow, messageBox, modalShell, showToast, swatch } from './widgets.js';
+import { SUBPAGE_ICONS } from './icons.js';
 import { marked } from './vendor-marked.js';
 import DOMPurify from './vendor-purify.js';
 
@@ -60,6 +61,41 @@ export function refreshPluginSearchState() {
     }).finally(() => { searchStateRequest = null; });
   }
   return searchStateRequest;
+}
+
+// The entry to the selected plugin screensaver's settings, above Widgets
+// where the stock modes put theirs. A plugin's settings live on its Plugin
+// Manager page, so the row opens that page. Left out while Enable Plugins
+// is off, which closes that page. Mirrors the device (settings_screen.dart,
+// _pluginScreensaverEntry).
+let screensaverEntryRender = 0;
+export function renderPluginScreensaverEntry(root, mode) {
+  const render = ++screensaverEntryRender;
+  const id = /^plugin:([^:]+):/.exec(mode || '')?.[1];
+  const place = (pluginState) => {
+    if (render !== screensaverEntryRender) return;
+    root?.querySelectorAll('[data-plugin-screensaver]').forEach((card) => card.remove());
+    const plugin = id && pluginState?.enabled === true && (pluginState.plugins || []).find((p) => p.id === id);
+    const anchor = root?.querySelector('[data-subpage-entry="Widgets"]')?.closest('.card');
+    if (!plugin || !anchor) return;
+    const row = subpageEntry('plugins', plugin.id, { iconName: 'Plugins' });
+    row.querySelector('.name').textContent = plugin.name;
+    row.querySelector('.desc').textContent = plugin.description || '';
+    // The plugin pages are built on first visit: build them before opening one.
+    row.addEventListener('click', async (event) => {
+      event.stopImmediatePropagation();
+      await loadPlugins();
+      showTab(`plugins/${plugin.id}`, { refresh: false });
+    }, true);
+    const card = element('div', undefined, 'card');
+    card.dataset.pluginScreensaver = plugin.id;
+    card.append(row);
+    anchor.before(card);
+  };
+  // The cached list draws the row at once, then a fresh read catches a
+  // plugin or the master switch changed on the device since.
+  place(pluginSearchState);
+  if (id) refreshPluginSearchState().then(place).catch(() => {});
 }
 
 export async function loadPlugins() {
@@ -189,6 +225,8 @@ function render(root, state) {
   const pluginsEnabled = state.enabled === true;
   const scroll = document.scrollingElement?.scrollTop || 0;
   root.replaceChildren();
+  // A follower's fleet banner goes back on top (fleetsync.js).
+  document.dispatchEvent(new CustomEvent('ks-plugins-rendered'));
   const introduction = element('div', undefined, 'card');
   const masterRow = element('div', undefined, 'row');
   masterRow.dataset.searchId = 'x:plugins:master';
@@ -315,7 +353,8 @@ function render(root, state) {
       modal.foot.append(close);
     };
     const check = iconButton(t("pluginCheckForUpdatesForName", {name: plugin.name}), 'M3 11a9 9 0 1 1 2.6 7.4M3 4v7h7M12 7v5l3 2');
-    check.disabled = !plugin.source?.repository; check.dataset.pluginDisabled = String(check.disabled);
+    // A fleet leader keeps a synced plugin in step.
+    check.disabled = !plugin.source?.repository || plugin.fleetManaged === true; check.dataset.pluginDisabled = String(check.disabled);
     check.onclick = (event) => {
       event.stopPropagation();
       run(async () => {
@@ -337,10 +376,9 @@ function render(root, state) {
     list.append(row);
     const page = element('div', undefined, 'subpage'); page.dataset.subpage = plugin.id; page.dataset.title = plugin.name;
     const description = element('div', undefined, 'card');
-    const introRow = element('div', undefined, 'row');
-    introRow.dataset.searchId = `plugin:${plugin.id}:intro`;
-    introRow.append(info(plugin.description || ''));
-    description.append(introRow);
+    const intro = introRow(SUBPAGE_ICONS.Plugins, plugin.name || plugin.id, plugin.description || '');
+    intro.dataset.searchId = `plugin:${plugin.id}:intro`;
+    description.append(intro);
     if (plugin.status) {
       const status = hintRow(plugin.status, { warn: plugin.statusError === true });
       status.classList.add('plugin-runtime-status'); description.append(status);

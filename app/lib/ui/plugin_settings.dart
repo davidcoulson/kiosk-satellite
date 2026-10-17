@@ -477,7 +477,11 @@ class _PluginSettingsPanelState extends State<PluginSettingsPanel> {
                           icon: _busy && _busyId == '${plugin['id']}:update'
                               ? const _PluginProgress()
                               : const Icon(Icons.update_rounded),
-                          onPressed: _busy || plugin['source'] is! Map
+                          // A fleet leader keeps a synced plugin in step.
+                          onPressed:
+                              _busy ||
+                                  plugin['source'] is! Map ||
+                                  widget.plugins.fleetManaged('${plugin['id']}')
                               ? null
                               : () => _run(
                                   () => _checkUpdate(plugin),
@@ -707,8 +711,10 @@ class _PluginDetailPanelState extends State<PluginDetailPanel> {
             children: [
               SearchLandingTarget(
                 id: 'plugin:${widget.id}:intro',
-                child: SettingsRow(
-                  title: Text('${plugin['description'] ?? ''}'),
+                child: IntroRow(
+                  icon: const Icon(Icons.extension_rounded),
+                  title: '${plugin['name'] ?? widget.id}',
+                  subtitle: '${plugin['description'] ?? ''}',
                 ),
               ),
               if ('${plugin['status'] ?? ''}'.isNotEmpty)

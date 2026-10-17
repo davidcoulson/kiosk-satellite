@@ -151,6 +151,8 @@
   input[type=range]:focus-visible::-webkit-slider-thumb {
     outline: 2px solid var(--primary); outline-offset: 3px; }
   .hidden { display: none !important; }
+  /* A device without a screen (headless.js). */
+  html[data-headless] .no-headless { display: none !important; }
 
   /* Boot splash: the banner wordmark centered and still with a spinner
      right below it, until the boot decides which section owns the page.
@@ -1700,6 +1702,28 @@
 .custom-page-icon { color: var(--primary); }
 .row.camera-list-row .desc.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* A page's opening row (introRow in widgets.js, the device's IntroRow):
+   the glyph on a soft primary tile, a headline and its sub. */
+.row.intro-row { align-items: flex-start; gap: 16px; padding: 20px 0;
+  flex-wrap: nowrap; }
+.intro-icon { width: 48px; height: 48px; flex: none; border-radius: 14px;
+  display: grid; place-items: center; background: var(--primary-soft);
+  color: var(--primary); }
+.intro-icon svg { width: 26px; height: 26px; display: block; }
+.intro-text { flex: 1; min-width: 0; padding-top: 2px; }
+.intro-title { font-size: 17px; font-weight: 600; line-height: 1.3;
+  overflow-wrap: anywhere; }
+.intro-sub { margin-top: 4px; font-size: 14px; line-height: 1.4;
+  color: var(--muted); overflow-wrap: anywhere; }
+.row.intro-row.no-title { align-items: center; }
+.intro-row.no-title .intro-text { padding-top: 0; }
+.intro-row.no-title .intro-sub { margin-top: 0; }
+
+/* URL Filter (url_filter.js): each rule wears the device's block
+   glyph and shows its pattern in mono, in the list and in the editor. */
+.url-rule-icon { color: var(--primary); }
+.modal-form input.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
 /* Plugin list settings: the rows inline on the plugin page, the editor's
    nested list in a bordered box, and the icon picker's grid. */

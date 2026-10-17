@@ -26,6 +26,9 @@ export const SUBPAGE_ICONS = {
     + '<circle cx="14.5" cy="7.5" r="1"/><circle cx="17" cy="11" r="1"/>'),
   'Custom Pages': svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/>'
     + '<path d="M10 12.5 8 14.5l2 2M14 12.5l2 2-2 2"/>'),
+  // Web Browsing.
+  'URL Filter': svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/>'
+    + '<path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18"/><path d="m4 4 16 16"/>'),
   'Dashboard View Rotation': svg('<path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/>'
     + '<path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/>'
     + '<path d="M21 3v5h-5"/>'),

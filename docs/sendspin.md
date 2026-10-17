@@ -59,6 +59,7 @@ The Sendspin protocol transmits audio data along with basic track name, artist, 
 | Server address | empty | The web interface address of the Music Assistant server (typically HTTPS on port 8095). Self-signed SSL certificates are accepted. |
 | Auth token | empty | A long-lived access token generated in Music Assistant under **Settings > Users**. Read-only permissions suffice for lyrics, while menu shortcuts browse using the privileges of the token owner. |
 | Validate connection | button | Authenticates against the server API to verify credentials and port settings. |
+| Show TV and line-in | off | The floating player and Now Playing while a followed Music Assistant player, such as a Sonos soundbar, plays its TV (HDMI ARC or optical) or line-in input, named as such with stop and volume. Off, the room reads as idle while one plays, so a soundbar under a television leaves the screensaver in place. Music Assistant's own streams to the same speaker always show. |
 | Show in the kiosk menu | on | Toggles the Music Assistant web shortcut in the kiosk drawer menu. |
 | Open directly to Now Playing | off | Opens Music Assistant's full-screen player from the drawer shortcut or the Open Music Assistant gesture. |
 | Close after inactivity | 0s | Inactivity timer (in seconds) before the opened Music Assistant web overlay automatically closes and returns to the dashboard. Setting this to `0s` keeps the view open until closed manually. |
@@ -91,9 +92,9 @@ Configures direct integration with local Sonos hardware.
 | Setting | Default | Notes |
 | --- | --- | --- |
 | Launch Now Playing when music starts playing | on | Instantly launches the full screen view when playback starts rather than waiting for the idle screensaver timeout. |
-| Text scale | 100% | Scales the track title, artist, album, lyrics and queue text from 50% to 200%. Applies in vertical mode, horizontal mode and alongside a screensaver. Artwork adjusts to leave room for the text. |
+| Text scale | 100% | Scales the track title, artist, album, lyrics and queue text from 50% to 200%. Applies in every layout mode and alongside a screensaver. Artwork adjusts to leave room for the text. |
 | Button scale | 100% | Scales playback buttons and the progress bar from 50% to 200%, independently of text. Controls adjust to the available space and move onto separate rows in narrow panels. |
-| Horizontal mode | off | Splits standalone Now Playing into equal artwork and controls halves. Track details move below the artwork when lyrics or the queue open. Ignored while shown alongside a screensaver. |
+| Layout mode | Vertical | Vertical stacks artwork, track details and controls. Horizontal splits standalone Now Playing into equal artwork and controls halves. Album art only fills the screen with artwork and shows track details and controls for a few seconds after a tap. Ignored while shown alongside a screensaver. |
 | Show media controls | on | Displays transport buttons and a progress bar over the background artwork. When enabled, a top-right close button appears and paused tracks remain on screen until the paused timeout expires. |
 | Double tap to dismiss | off | Allows a double tap anywhere on the standalone Now Playing view to dismiss it, removing the close button. Taps on controls or queue rows do not trigger dismissal. Ignored while shown alongside a screensaver. |
 | Dismiss "Now Playing" on motion | off | When disabled, motion events will not dismiss the standalone music display. Ignored while Now Playing is shown alongside a screensaver. Shared layouts follow the screensaver's detection settings. |
@@ -102,6 +103,8 @@ Configures direct integration with local Sonos hardware.
 | Show in the kiosk menu | off | Adds a menu shortcut to open the full screen view directly. Remains hidden if no media is playing or queued. |
 | Show album art in the queue | on | A cover on every row of the queue panel, the server's or the speaker's own thumbnail, fetched as the rows come into view. Off, the rows tighten back up. |
 | Show speaker selection pill | on | Floats in the top left corner without reserving space. Appears for 5 seconds after a touch or navigation key press, then fades out. Names the player and opens the speaker group menu. Off, the view shows neither. |
+| Filter the speaker selection pill | all speakers | Shown with the pill on and a source that has a group menu. Pick the speakers the menu offers to join the group. Speakers already in the group always show so they can be taken out. Leave it empty to offer every speaker. See [Speaker groups](#speaker-groups). |
+| Show audio quality | off | Pills along the bottom edge of the view show the current track's audio format, bit depth, sample rate, bitrate and source. Requires Music Assistant. See [Audio quality](#audio-quality). |
 
 **Screensaver**
 
@@ -111,6 +114,18 @@ Configures direct integration with local Sonos hardware.
 | Show alongside screensaver | on | Keeps the screensaver on the left and Now Playing on the right. Portrait screens stack the two views. Small screens keep the full screen player. |
 | Fill the screen | Always | Overrides photo filling while sharing the display with Now Playing. Default follows each screensaver's setting. Off, Smart and Always use the same rules as the photo screensavers. |
 | Override screensaver brightness | off | Uses normal brightness while Now Playing is shown alongside a screensaver, overriding its brightness and any scheduled brightness. |
+
+### Audio quality
+
+With **Show audio quality** on, a row of pills along the bottom edge of the Now Playing view shows the audio Music Assistant streams for the current track, in every layout and alongside a screensaver:
+
+* **Hi-Res** for lossless audio above 16 bits or 48 kHz, **CD quality** for lossless audio at 16 bits and 44.1 or 48 kHz, or **Lossy** for compressed audio such as AAC, Vorbis or MP3.
+* The codec, such as FLAC, ALAC, AAC, Vorbis or MP3.
+* The bit depth. For lossy audio this is the depth Music Assistant decodes the stream to.
+* The sample rate and the bitrate, when Music Assistant knows them.
+* The source, the name of the Music Assistant provider the track streams from, such as Qobuz, Tidal or Spotify.
+
+The pills describe the source as Music Assistant reads it from the provider, before Music Assistant converts it for the player. They work for this device's own player and for any player the kiosk follows through Music Assistant, and need the server address and token on the Music Assistant page. A Sonos followed directly or a Home Assistant media player reports none of this, so the row stays empty for them. Music Assistant fills in the details once the stream starts, so the pills can arrive a moment after a new track.
 
 ### Lyrics
 
@@ -192,13 +207,17 @@ When enabled, the full screen "Now Playing" view activates during active playbac
 
 **Show alongside screensaver**, enabled by default under **Settings > Media Player > Now Playing > Screensaver**, lets you keep photos, clocks or other screensaver content visible while music plays. In landscape, the screensaver takes about two thirds of the display and Now Playing fills the right panel. In portrait, the screensaver fills the top half and the player fills the bottom half. Screens smaller than 700 logical pixels along the split direction keep the full screen player. The Dim screensaver uses a black panel beside Now Playing and keeps its configured dim level.
 
-Enable **Horizontal mode** under **Now Playing > User Interface** for a standalone layout with artwork in the left half and track details above the transport controls in the right half. The title, artist and album name appear on separate lines. With the queue and lyrics closed, the details and controls are centered together on the right. Opening either panel moves track details beneath the artwork and places the controls at the bottom right, leaving the space above them for the queue or lyrics. This setting is off by default and is ignored while Now Playing is shown alongside a screensaver.
+**Layout mode** under **Now Playing > User Interface** picks how the standalone view is arranged. It defaults to **Vertical** and is ignored while Now Playing is shown alongside a screensaver.
+
+- **Vertical** stacks the artwork, track details and controls from top to bottom.
+- **Horizontal** puts the artwork in the left half and track details above the transport controls in the right half. The title, artist and album name appear on separate lines. With the queue and lyrics closed, the details and controls are centered together on the right. Opening either panel moves track details beneath the artwork and places the controls at the bottom right, leaving the space above them for the queue or lyrics.
+- **Album art only** shows just the artwork, centered and as large as the screen allows. Tap the screen or press a key to dim the view and bring up the title, artist and album name, the transport controls and the close button. The controls dock to the bottom of the screen with the details right above them, and everything fades out again 5 seconds after the last touch, like the speaker pill. Opening the queue or lyrics switches to the Vertical layout until the panel closes.
 
 **Fill the screen** in the same group defaults to **Always**, so photos fill the smaller panel. Choose **Default** to follow each photo screensaver's saved fill setting or select **Off** or **Smart** for a shared override. The override applies only while Now Playing shares the display and leaves each screensaver's saved setting unchanged.
 
 Each [scheduled screensaver](screensavers.md#schedule) also has a **Show Now Playing next to the screensaver** override. **Default** follows the global layout setting, **On** requests the shared layout when Now Playing is enabled and **Off** hides Now Playing during those hours. Use **Off** for a nighttime screensaver to keep its brightness and prevent automatic launches when music starts. Playback continues normally.
 
-**Text scale** and **Button scale** under **Now Playing > User Interface** adjust text and controls independently in 5% steps, from 50% to 200%. Both default to 100% and update the view immediately in vertical mode, horizontal mode and alongside a screensaver. Text scale affects the title, artist, album, lyrics and queue text. Button scale affects playback buttons, the progress bar and its time labels. Shared screensaver layouts start with full-size controls at 100% Button scale. When space is tight, artwork and spacing shrink and controls fit the available panel.
+**Text scale** and **Button scale** under **Now Playing > User Interface** adjust text and controls independently in 5% steps, from 50% to 200%. Both default to 100% and update the view immediately in every layout mode and alongside a screensaver. Text scale affects the title, artist, album, lyrics and queue text. Button scale affects playback buttons, the progress bar and its time labels. Shared screensaver layouts start with full-size controls at 100% Button scale. When space is tight, artwork and spacing shrink and controls fit the available panel.
 
 Artwork, track text and controls adapt to the player panel. Narrow panels put playback controls and secondary buttons on separate rows. Lyrics and the queue use the artwork space when the panel cannot fit both. Screensaver widgets stay inside the screensaver panel. When Now Playing closes after playback ends, the screensaver expands to fill the display.
 
@@ -229,6 +248,8 @@ For Music Assistant players, every player in the group also gets a volume slider
 | Music Assistant player | Whatever Music Assistant lets that player sync with. |
 | Sonos, direct | Every other room of the household, over the speakers' own interface. |
 | Home Assistant media player | No menu: grouping stays with the integration behind the entity. |
+
+**Filter the speaker selection pill** limits which players the menu offers, for example to keep bedroom speakers out of a kitchen tablet's menu. The picker lists Music Assistant players and Sonos rooms together, under a heading for each, with **All**, **Music Assistant** and **Sonos** chips to show one source at a time. Without any Sonos speakers set up it is a plain list of Music Assistant players. Each pick counts only for its own source: Music Assistant picks filter the menu for this device and for a followed Music Assistant player, Sonos picks filter it for a Sonos room followed directly. A Sonos speaker that Music Assistant drives appears under both, so pick it under the source the kiosk follows it through. The filter is per kiosk and never synced by Fleet Management.
 
 ### Lyrics
 

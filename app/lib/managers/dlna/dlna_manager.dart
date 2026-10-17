@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
+import '../../core/headless.dart';
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
 import '../../core/manager.dart';
@@ -719,7 +720,7 @@ class DlnaManager extends Manager {
   Map<String, String>? _connectionManager(String action) {
     switch (action) {
       case 'GetProtocolInfo':
-        return {'Source': '', 'Sink': sinkProtocolInfo};
+        return {'Source': '', 'Sink': _sinkProtocols};
       case 'GetCurrentConnectionIDs':
         return {'ConnectionIDs': '0'};
       case 'GetCurrentConnectionInfo':
@@ -829,7 +830,7 @@ class DlnaManager extends Manager {
       default:
         return {
           'SourceProtocolInfo': '',
-          'SinkProtocolInfo': escapeXml(sinkProtocolInfo),
+          'SinkProtocolInfo': escapeXml(_sinkProtocols),
           'CurrentConnectionIDs': '0',
         };
     }
@@ -937,6 +938,10 @@ class DlnaManager extends Manager {
 
   /// A user tap on the overlay is the same as a controller Stop.
   void userDismiss() => stopPlayback();
+
+  /// Audio only on a device without a screen.
+  String get _sinkProtocols =>
+      Headless.active ? audioSinkProtocolInfo : sinkProtocolInfo;
 
   /// The state event goes out on every stop: a controller-initiated Stop
   /// being echoed back is harmless, and a local stop (tap, media end) MUST

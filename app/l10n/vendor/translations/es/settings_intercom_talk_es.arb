@@ -23,5 +23,10 @@
   "intercomOptionHangupVolumeUp": "Subir volumen",
   "intercomOptionHangupVolumeDown": "Bajar volumen",
   "intercomOptionHangupMute": "Silenciar",
-  "intercomOptionHangupHelp": "Ayuda"
+  "intercomOptionHangupHelp": "Ayuda",
+  "settingIntercomHangupKeyRingingTitle": "Botón de colgar mientras suena",
+  "settingIntercomHangupKeyRingingDescription": "Lo que hace el botón cuando entra una llamada.",
+  "intercomOptionHangupRingingAnswer": "Aceptar",
+  "intercomOptionHangupRingingDecline": "Rechazar",
+  "intercomOptionHangupRingingIgnore": "Ignorar"
 }

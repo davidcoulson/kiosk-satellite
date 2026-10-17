@@ -3,11 +3,14 @@
   "gestureAction": "Actie",
   "gestureNavigate": "Ga naar een dashboardweergave",
   "gestureUrl": "Een webpagina openen",
+  "gestureRefresh": "Dashboard vernieuwen",
   "gestureCameraView": "Een cameraweergave tonen",
   "gestureLauncher": "De appstarter openen",
   "gestureIntercomOpen": "Een kiosk bellen openen",
   "gestureIntercomCall": "Bel een kiosk",
   "gestureIntercomHangup": "Intercomgesprek beëindigen",
+  "gestureIntercomAnswer": "Intercomgesprek aannemen",
+  "gestureIntercomDecline": "Intercomgesprek afwijzen",
   "gestureAlarmStop": "Stop het alarm",
   "gestureAlarmSnooze": "Laat het alarm sluimeren",
   "gestureScreensaver": "Start de schermbeveiliging",
@@ -35,5 +38,8 @@
   "gestureCameraShow": "{name} tonen",
   "gestureCameraClose": "Cameraweergave sluiten",
   "gestureCameraEmpty": "Nog geen cameraweergave ingesteld.",
-  "gestureIntercomEmpty": "Er is nog geen kiosk op het netwerk gevonden."
+  "gestureIntercomEmpty": "Er is nog geen kiosk op het netwerk gevonden.",
+  "gestureVoiceWake": "Een spraakopdracht starten",
+  "gestureVoiceStop": "De spraakassistent stoppen",
+  "gestureVoiceMute": "Voice Satellite dempen of het dempen opheffen"
 }

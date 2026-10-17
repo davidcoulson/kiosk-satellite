@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_satellite/managers/sendspin/music_assistant_api.dart';
+import 'package:kiosk_satellite/managers/sendspin/remote_player.dart';
+import 'package:kiosk_satellite/managers/settings/definitions.dart';
 import 'package:kiosk_satellite/managers/sendspin/sonos_client.dart';
 import 'package:kiosk_satellite/managers/sendspin/sonos_player.dart';
 
@@ -225,6 +227,74 @@ void main() {
     test('a room the household does not know is no group', () {
       final groups = SonosClient.parseZoneGroups(topology);
       expect(SonosPlayer.groupFrom(groups, 'RINCON_Z'), isNull);
+    });
+  });
+
+  // The speaker selection pill filter (issue #974): only the picked
+  // players are offered, while the group itself always shows.
+  group('RemoteGroup.allowing', () {
+    const group = RemoteGroup(
+      selfId: 'office',
+      leaderId: 'tablet',
+      leaderName: 'Tablet',
+      leaderVolume: 40,
+      members: [
+        GroupMember(id: 'office', name: 'Office', inGroup: true),
+        GroupMember(id: 'bedroom', name: 'Bedroom', inGroup: true),
+        GroupMember(id: 'garden', name: 'Garden Room', inGroup: false),
+        GroupMember(id: 'kids', name: 'Kids Room', inGroup: false),
+        GroupMember(id: 'lounge', name: 'Lounge', inGroup: false),
+      ],
+    );
+
+    test('only the allowed players can join', () {
+      final menu = group.allowing({'lounge', 'garden'});
+      expect(menu.members.map((m) => m.id), [
+        'office',
+        'bedroom',
+        'garden',
+        'lounge',
+      ]);
+      expect(menu.leaderId, 'tablet');
+      expect(menu.leaderName, 'Tablet');
+      expect(menu.leaderVolume, 40);
+    });
+
+    test('the shown player keeps its row even when it is not grouped', () {
+      const alone = RemoteGroup(
+        selfId: 'office',
+        leaderId: 'office',
+        leaderName: 'Office',
+        members: [
+          GroupMember(id: 'kids', name: 'Kids Room', inGroup: false),
+          GroupMember(id: 'lounge', name: 'Lounge', inGroup: false),
+        ],
+      );
+      expect(alone.allowing({'lounge'}).members.map((m) => m.id), ['lounge']);
+    });
+
+    test('no picks offers every player', () {
+      expect(identical(group.allowing(const {}), group), isTrue);
+    });
+  });
+
+  group('sendspin.speaker_pill_players', () {
+    test('reads back a list of ids and drops anything else', () {
+      expect(decodeSpeakerPillPlayers('["ma:a","sonos:B"]'), [
+        'ma:a',
+        'sonos:B',
+      ]);
+      expect(decodeSpeakerPillPlayers('[1,"",null,"ma:a"]'), ['ma:a']);
+      expect(decodeSpeakerPillPlayers('{"ma:a":true}'), isEmpty);
+      expect(decodeSpeakerPillPlayers('not json'), isEmpty);
+    });
+
+    test('stores a clean list, each id once', () {
+      expect(
+        normalizeSpeakerPillPlayers('["ma:a",3,"ma:a","sonos:B"]'),
+        '["ma:a","sonos:B"]',
+      );
+      expect(normalizeSpeakerPillPlayers('oops'), '[]');
     });
   });
 }

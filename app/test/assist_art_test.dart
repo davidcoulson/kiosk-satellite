@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_satellite/ui/assist/art_jarvis.dart';
+import 'package:kiosk_satellite/ui/assist/art_kitt.dart';
 import 'package:kiosk_satellite/ui/assist/art_lens_flares.dart';
 import 'package:kiosk_satellite/ui/assist/art_logo.dart';
 import 'package:kiosk_satellite/ui/assist/art_waveform.dart';
@@ -125,6 +126,27 @@ void main() {
                                 clock: clock,
                                 compact: compact,
                                 countdown: compact ? level : null,
+                              ),
+                            ),
+                        if (skin.art == SkinArt.kitt)
+                          for (final (compact, reactive, box) in [
+                            (false, true, null),
+                            (
+                              false,
+                              false,
+                              const Rect.fromLTWH(240, 24, 800, 600),
+                            ),
+                            (true, true, null),
+                          ])
+                            Positioned.fill(
+                              child: KittArt(
+                                mode: mode,
+                                reactive: reactive,
+                                level: level,
+                                clock: clock,
+                                compact: compact,
+                                countdown: compact ? level : null,
+                                box: box,
                               ),
                             ),
                         if (skin.voiceOnly)

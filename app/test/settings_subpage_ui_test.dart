@@ -224,6 +224,58 @@ void main() {
       await drain(tester);
     });
 
+    testWidgets('URL Filter lists the rules and saves a new one', (
+      tester,
+    ) async {
+      await boot();
+      // Registers the rule commands the editor saves through.
+      await container.browser.init();
+      await container.settings.setFromJson(
+        browserUrlFilter.key,
+        '[{"name":"History","pattern":"/history*","scope":"dashboard"}]',
+      );
+      tester.view.physicalSize = const Size(500, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(home: SettingsScreen(container: container)),
+      );
+      await settle(tester);
+      await tester.tap(find.text('Web Browsing'));
+      await settle(tester);
+
+      final entry = find.widgetWithText(ListTile, 'URL Filter');
+      await tester.ensureVisible(entry);
+      await settle(tester);
+      await tester.tap(entry);
+      await settle(tester);
+      expect(find.text('Control which pages open'), findsOneWidget);
+      expect(find.text('Show blocked page notice'), findsOneWidget);
+      expect(find.text('History'), findsOneWidget);
+      expect(find.text('/history*'), findsOneWidget);
+      expect(find.text('Dashboard'), findsOneWidget);
+
+      await tester.tap(find.text('Add rule'));
+      await settle(tester);
+      expect(find.text('Add filter rule'), findsOneWidget);
+      await tester.tap(find.text('Save'));
+      await settle(tester);
+      expect(find.text('Enter a name.'), findsOneWidget);
+      final fields = find.byType(TextField);
+      await tester.enterText(fields.at(0), 'Logbook');
+      await tester.enterText(fields.at(1), '/logbook');
+      await tester.tap(find.text('Save'));
+      await settle(tester);
+      expect(find.text('Add filter rule'), findsNothing);
+      expect(find.text('Logbook'), findsOneWidget);
+      expect(
+        container.settings.get(browserUrlFilter),
+        contains('"pattern":"/logbook"'),
+      );
+      await container.browser.dispose();
+      await drain(tester);
+    });
+
     testWidgets('the entry row opens the page, and Back returns', (
       tester,
     ) async {

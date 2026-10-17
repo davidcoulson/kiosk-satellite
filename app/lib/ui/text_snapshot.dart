@@ -14,7 +14,12 @@ import 'package:flutter/widgets.dart';
 ///
 /// [bleed] is how far the shadows reach past the child's box. The image
 /// takes that margin in too, without changing the layout.
-class TextSnapshot extends StatelessWidget {
+///
+/// The child stays mounted across content changes and only the image is
+/// retaken, so a child that settles over a few frames (an icon read from
+/// the bundle) keeps what it already loaded. Such a child calls [refresh]
+/// once it has drawn its final look.
+class TextSnapshot extends StatefulWidget {
   const TextSnapshot({
     super.key,
     required this.content,
@@ -26,19 +31,55 @@ class TextSnapshot extends StatelessWidget {
   final double bleed;
   final Widget child;
 
-  static final _controller = SnapshotController(allowSnapshotting: true);
+  /// Retakes the image of the snapshot around [context], if there is one.
+  static void refresh(BuildContext context) => context
+      .getInheritedWidgetOfExactType<_SnapshotScope>()
+      ?.controller
+      .clear();
+
+  @override
+  State<TextSnapshot> createState() => _TextSnapshotState();
+}
+
+class _TextSnapshotState extends State<TextSnapshot> {
+  final _controller = SnapshotController(allowSnapshotting: true);
+
+  @override
+  void didUpdateWidget(TextSnapshot old) {
+    super.didUpdateWidget(old);
+    if (old.content != widget.content) _controller.clear();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => _Bleed(
-    bleed: bleed,
+    bleed: widget.bleed,
     child: SnapshotWidget(
-      key: ValueKey(content),
       controller: _controller,
       mode: SnapshotMode.permissive,
       autoresize: true,
-      child: Padding(padding: EdgeInsets.all(bleed), child: child),
+      child: _SnapshotScope(
+        controller: _controller,
+        child: Padding(
+          padding: EdgeInsets.all(widget.bleed),
+          child: widget.child,
+        ),
+      ),
     ),
   );
+}
+
+class _SnapshotScope extends InheritedWidget {
+  const _SnapshotScope({required this.controller, required super.child});
+  final SnapshotController controller;
+
+  @override
+  bool updateShouldNotify(_SnapshotScope old) => false;
 }
 
 /// Lays out and paints its child as if [bleed] of margin on every side

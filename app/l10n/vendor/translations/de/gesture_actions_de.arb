@@ -3,11 +3,14 @@
   "gestureAction": "Aktion",
   "gestureNavigate": "Zu einer Dashboard-Ansicht wechseln",
   "gestureUrl": "Eine Webseite öffnen",
+  "gestureRefresh": "Dashboard aktualisieren",
   "gestureCameraView": "Eine Kameraansicht anzeigen",
   "gestureLauncher": "Den App-Launcher öffnen",
   "gestureIntercomOpen": "„Kiosk anrufen“ öffnen",
   "gestureIntercomCall": "Einen Kiosk anrufen",
   "gestureIntercomHangup": "Gegensprechanruf beenden",
+  "gestureIntercomAnswer": "Gegensprechanruf annehmen",
+  "gestureIntercomDecline": "Gegensprechanruf ablehnen",
   "gestureAlarmStop": "Wecker stoppen",
   "gestureAlarmSnooze": "Wecker schlummern lassen",
   "gestureScreensaver": "Bildschirmschoner starten",
@@ -35,5 +38,8 @@
   "gestureCameraShow": "{name} anzeigen",
   "gestureCameraClose": "Kameraansicht schließen",
   "gestureCameraEmpty": "Es sind noch keine Kameraansichten konfiguriert.",
-  "gestureIntercomEmpty": "Es wurde noch kein Kiosk im Netzwerk gefunden."
+  "gestureIntercomEmpty": "Es wurde noch kein Kiosk im Netzwerk gefunden.",
+  "gestureVoiceWake": "Sprachbefehl starten",
+  "gestureVoiceStop": "Sprachassistenten stoppen",
+  "gestureVoiceMute": "Voice Satellite stummschalten oder Stummschaltung aufheben"
 }

@@ -3,11 +3,14 @@
   "gestureAction": "Дія",
   "gestureNavigate": "Перейти до вигляду панелі керування",
   "gestureUrl": "Відкрити веб-сторінку",
+  "gestureRefresh": "Оновити панель керування",
   "gestureCameraView": "Показати перегляд камери",
   "gestureLauncher": "Відкрити панель запуску програм",
   "gestureIntercomOpen": "Відкрити \"Виклик кіоска\"",
   "gestureIntercomCall": "Викликати кіоск",
   "gestureIntercomHangup": "Завершити виклик інтеркому",
+  "gestureIntercomAnswer": "Прийняти виклик інтеркому",
+  "gestureIntercomDecline": "Відхилити виклик інтеркому",
   "gestureAlarmStop": "Зупинити будильник",
   "gestureAlarmSnooze": "Відкласти будильник",
   "gestureScreensaver": "Запустити заставку",
@@ -35,5 +38,8 @@
   "gestureCameraShow": "Показати {name}",
   "gestureCameraClose": "Закрити перегляд камери",
   "gestureCameraEmpty": "Перегляди камер ще не налаштовані.",
-  "gestureIntercomEmpty": "У мережі ще не знайдено жодного кіоска."
+  "gestureIntercomEmpty": "У мережі ще не знайдено жодного кіоска.",
+  "gestureVoiceWake": "Почати голосову команду",
+  "gestureVoiceStop": "Зупинити голосового асистента",
+  "gestureVoiceMute": "Вимкнути або ввімкнути звук Voice Satellite"
 }

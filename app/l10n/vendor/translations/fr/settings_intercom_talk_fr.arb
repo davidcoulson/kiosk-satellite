@@ -23,5 +23,10 @@
   "intercomOptionHangupVolumeUp": "Volume +",
   "intercomOptionHangupVolumeDown": "Volume -",
   "intercomOptionHangupMute": "Couper le son",
-  "intercomOptionHangupHelp": "Aide"
+  "intercomOptionHangupHelp": "Aide",
+  "settingIntercomHangupKeyRingingTitle": "Bouton de raccrochage pendant la sonnerie",
+  "settingIntercomHangupKeyRingingDescription": "Ce que fait le bouton quand un appel sonne ici.",
+  "intercomOptionHangupRingingAnswer": "Accepter",
+  "intercomOptionHangupRingingDecline": "Refuser",
+  "intercomOptionHangupRingingIgnore": "Ignorer"
 }

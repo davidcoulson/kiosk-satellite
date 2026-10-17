@@ -109,5 +109,6 @@ export const overviewTextMessageIds = {
   "RAM": "overviewMemory",
   "Temp": "overviewTemperature",
   "Add to Home Assistant": "overviewEsphomeAdd",
-  "Showing custom pages": "overviewShowingCustomPages"
+  "Showing custom pages": "overviewShowingCustomPages",
+  "Headless mode": "overviewHeadlessMode"
 };

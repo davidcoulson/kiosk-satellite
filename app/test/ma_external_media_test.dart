@@ -154,6 +154,61 @@ void main() {
     expect(emitted.last, isNull);
   });
 
+  // Music Assistant's Sonos provider names a home theater input `tv` and
+  // a line-in `line_in`, with the input's name as the title.
+  Map<String, Object?> input(String source, String name) => {
+    ..._player(),
+    'active_source': source,
+    'current_media': {'uri': 'x-sonos-htastream:RINCON_1:spdif', 'title': name},
+    'source_list': [
+      {
+        'id': source,
+        'can_play_pause': false,
+        'can_next_previous': false,
+        'can_seek': false,
+      },
+    ],
+  };
+
+  test('a TV or line-in input reads as idle by default', () {
+    remote.publishQueue(null);
+    update(_player());
+    expect(emitted.last, isNotNull);
+    update(input('tv', 'TV'));
+    expect(emitted.last, isNull);
+    update(input('line_in', 'Line-in'));
+    expect(emitted.last, isNull);
+    // Back to music, the card returns.
+    update(_player());
+    expect(emitted.last!['title'], 'Hey Jude');
+  });
+
+  test('a shown input is named for it with only stop and volume', () async {
+    await remote.stop();
+    remote = MaRemotePlayer(
+      baseUrl: 'http://ma.local',
+      token: 'test',
+      playerId: 'p1',
+      onSnapshot: emitted.add,
+      log: Logger(),
+      showInputs: true,
+    );
+    remote.publishQueue(null);
+    update({...input('tv', ''), 'current_media': null});
+    final tv = emitted.last!;
+    expect(tv['title'], 'TV');
+    expect(tv['artist'], isNull);
+    expect(tv['stream'], isTrue);
+    expect(tv['playing'], isTrue);
+    expect(tv['volume'], 35);
+    expect(tv['supportedCommands'], ['stop', 'volume']);
+    update({...input('line_in', 'Line-in'), 'playback_state': 'paused'});
+    expect(emitted.last!['title'], 'Line-in');
+    expect(emitted.last!['playing'], isFalse);
+    update({...input('tv', 'TV'), 'playback_state': 'idle'});
+    expect(emitted.last, isNull);
+  });
+
   test(
     'external position uses its timestamp and does not advance paused audio',
     () {

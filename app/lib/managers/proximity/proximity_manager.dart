@@ -287,29 +287,30 @@ class ProximityManager extends Manager {
     if (_sub != null) return;
     log.info(
       name,
-      'sensor on${sensorName != null ? ' ($sensorName)' : ''}'
+      'sensor on${_describeSensor()}'
       '${_screensaverActive ? '' : ', between screensavers'}',
     );
     _sub = _stream.receiveBroadcastStream().listen(
       (raw) {
         if (raw is! Map) return;
         final near = raw['near'] == true;
+        final distance = raw['distance'] is num ? ' (${raw['distance']})' : '';
         if (raw['initial'] == true) {
           // The resting state at registration: something already on the
           // sensor is not an approach, and a far is nothing at all. The
           // entity still wants it, since "already near at startup" is a
           // true answer to its question even though it is not an arrival.
-          log.debug(name, 'resting ${near ? 'near' : 'far'}');
+          log.debug(name, 'resting ${near ? 'near' : 'far'}$distance');
           if (near) _touchNear();
           return;
         }
         _hold?.cancel();
         _hold = null;
         if (!near) {
-          log.debug(name, 'far');
-          return;  // The entity clears on its own timer, not on this edge.
+          log.debug(name, 'far$distance');
+          return; // The entity clears on its own timer, not on this edge.
         }
-        log.debug(name, 'near');
+        log.debug(name, 'near$distance');
         _touchNear();
         bus.publish(const ProximityDetected());
         _hold = Timer.periodic(holdInterval, (_) {
@@ -325,6 +326,18 @@ class ProximityManager extends Manager {
         _stop();
       },
     );
+  }
+
+  /// The name, range and resolution, so a log shows the sensor's shape.
+  String _describeSensor() {
+    final s = _support;
+    if (s == null) return '';
+    final parts = [
+      ?s.name,
+      if (s.maximumRange case final r?) 'range $r',
+      if (s.resolution case final r?) 'resolution $r',
+    ];
+    return parts.isEmpty ? '' : ' (${parts.join(', ')})';
   }
 
   void _stop() {

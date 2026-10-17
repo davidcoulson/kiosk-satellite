@@ -3,11 +3,14 @@
   "gestureAction": "Acción",
   "gestureNavigate": "Ir a una vista del panel de control",
   "gestureUrl": "Abrir una página web",
+  "gestureRefresh": "Actualizar el panel de control",
   "gestureCameraView": "Mostrar una vista de cámaras",
   "gestureLauncher": "Abrir el lanzador de aplicaciones",
   "gestureIntercomOpen": "Abrir Llamar a un kiosko",
   "gestureIntercomCall": "Llamar a un kiosko",
   "gestureIntercomHangup": "Finalizar la llamada del intercomunicador",
+  "gestureIntercomAnswer": "Aceptar la llamada del intercomunicador",
+  "gestureIntercomDecline": "Rechazar la llamada del intercomunicador",
   "gestureAlarmStop": "Detener la alarma",
   "gestureAlarmSnooze": "Posponer la alarma",
   "gestureScreensaver": "Iniciar el protector de pantalla",
@@ -35,5 +38,8 @@
   "gestureCameraShow": "Mostrar {name}",
   "gestureCameraClose": "Cerrar la vista de cámaras",
   "gestureCameraEmpty": "Aún no hay vistas de cámaras configuradas.",
-  "gestureIntercomEmpty": "Aún no se ha encontrado ningún kiosko en la red."
+  "gestureIntercomEmpty": "Aún no se ha encontrado ningún kiosko en la red.",
+  "gestureVoiceWake": "Iniciar un comando de voz",
+  "gestureVoiceStop": "Detener el asistente de voz",
+  "gestureVoiceMute": "Silenciar o reactivar Voice Satellite"
 }

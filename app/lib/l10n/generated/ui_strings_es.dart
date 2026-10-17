@@ -1528,6 +1528,21 @@ class UiStringsEs extends UiStrings {
   String get fleetErrorOtherLeader => 'Ese kiosko ya sigue a otro líder.';
 
   @override
+  String fleetPluginsNames(String names) {
+    return 'Plugins: $names';
+  }
+
+  @override
+  String fleetCouldNotInstallNameReason(String name, String reason) {
+    return 'No se pudo instalar $name: $reason';
+  }
+
+  @override
+  String fleetReinstallNameOnThisKioskToSyncIt(String name) {
+    return 'Reinstala $name en este kiosko para sincronizarlo';
+  }
+
+  @override
   String get fleetSwitchKiosk => 'Cambiar de kiosko';
 
   @override
@@ -1624,6 +1639,20 @@ class UiStringsEs extends UiStrings {
   String get fleetMcpServerToken => 'Token del servidor MCP';
 
   @override
+  String get fleetPlugins => 'Plugins';
+
+  @override
+  String get fleetPluginSecrets => 'Secretos de plugins';
+
+  @override
+  String get fleetNoPluginsInstalledOnThisKiosk =>
+      'No hay plugins instalados en este kiosko';
+
+  @override
+  String get fleetKiosksOnThisProfileInstallTheseAndTakeTheir =>
+      'Los kioskos con este perfil los instalan y toman su configuración de este kiosko.';
+
+  @override
   String get fleetUpdateTheFleet => 'Actualizar la flota';
 
   @override
@@ -1679,6 +1708,13 @@ class UiStringsEs extends UiStrings {
       'Finalizar la llamada del intercomunicador';
 
   @override
+  String get gestureIntercomAnswer => 'Aceptar la llamada del intercomunicador';
+
+  @override
+  String get gestureIntercomDecline =>
+      'Rechazar la llamada del intercomunicador';
+
+  @override
   String get gestureAlarmStop => 'Detener la alarma';
 
   @override
@@ -1692,6 +1728,9 @@ class UiStringsEs extends UiStrings {
 
   @override
   String get gestureHoldMode => 'Activar o desactivar el modo de pausa';
+
+  @override
+  String get gestureRefresh => 'Actualizar el panel de control';
 
   @override
   String get gestureMediaPlayPause =>
@@ -1779,6 +1818,15 @@ class UiStringsEs extends UiStrings {
 
   @override
   String get gestureTheaterPeek => 'Brighten theater mode for a moment';
+
+  @override
+  String get gestureVoiceWake => 'Iniciar un comando de voz';
+
+  @override
+  String get gestureVoiceStop => 'Detener el asistente de voz';
+
+  @override
+  String get gestureVoiceMute => 'Silenciar o reactivar Voice Satellite';
 
   @override
   String gestureDescribeCornerTaps(String count, String corner) {
@@ -1891,6 +1939,21 @@ class UiStringsEs extends UiStrings {
   @override
   String gestureDescribeRemoteKeyLong(String key) {
     return 'Long press the $key key';
+  }
+
+  @override
+  String gestureDescribeButtonPress(String button) {
+    return 'Pulsar el botón $button';
+  }
+
+  @override
+  String gestureDescribeButtonDouble(String button) {
+    return 'Pulsar dos veces el botón $button';
+  }
+
+  @override
+  String gestureDescribeButtonHold(String button) {
+    return 'Mantener pulsado el botón $button';
   }
 
   @override
@@ -2250,6 +2313,22 @@ class UiStringsEs extends UiStrings {
   @override
   String get gestureLongPressHelp =>
       'Runs when the key is held for half a second. While a key has a long press action, a short press runs only its own action, if it has one.';
+
+  @override
+  String get gestureButton => 'Botón';
+
+  @override
+  String get gesturePress => 'Pulsar';
+
+  @override
+  String get gestureDoublePress => 'Doble pulsación';
+
+  @override
+  String get gestureHoldPress => 'Mantener pulsado';
+
+  @override
+  String get gestureButtonDefaults =>
+      'Una pulsación que ningún gesto usa conserva su función: Acción contesta, detiene o descarta lo que suena y, si no, inicia un comando de voz, Micrófono silencia Voice Satellite y los botones de volumen cambian el volumen.';
 
   @override
   String get intercomCall => 'Llamar';
@@ -2788,6 +2867,30 @@ class UiStringsEs extends UiStrings {
   @override
   String get mediaCannotControl =>
       'El comando no es compatible o no se pudo enviar.';
+
+  @override
+  String get mediaAudioHiRes => 'Hi-Res';
+
+  @override
+  String get mediaAudioCdQuality => 'Calidad CD';
+
+  @override
+  String get mediaAudioLossy => 'Con pérdida';
+
+  @override
+  String mediaAudioBitDepth(String bits) {
+    return '$bits bits';
+  }
+
+  @override
+  String mediaAudioSampleRate(String rate) {
+    return '$rate kHz';
+  }
+
+  @override
+  String mediaAudioBitRate(String rate) {
+    return '$rate kbps';
+  }
 
   @override
   String get mediaNothingQueued => 'No hay nada en cola';
@@ -3335,6 +3438,9 @@ class UiStringsEs extends UiStrings {
       'La versión de Android es demasiado antigua';
 
   @override
+  String get pluginErrorNeedsScreen => 'Este plugin necesita una pantalla';
+
+  @override
   String get pluginErrorNativeIntegrity =>
       'Las bibliotecas nativas instaladas no pasaron la verificación de integridad';
 
@@ -3642,6 +3748,16 @@ class UiStringsEs extends UiStrings {
   @override
   String overviewInstallHelp(String version) {
     return 'Kiosk Satellite $version está listo para instalar. La instalación se confirma en la pantalla de la tablet.';
+  }
+
+  @override
+  String overviewInstallSilentHelp(String version) {
+    return 'Kiosk Satellite $version está listo para instalarse. Se instala sin confirmación en el dispositivo.';
+  }
+
+  @override
+  String overviewInstallHeadlessHelp(String version) {
+    return 'Kiosk Satellite $version está listo para instalarse. Este dispositivo no tiene pantalla para confirmarlo, así que haz que Kiosk Satellite sea el propietario del dispositivo, usa Shizuku o instálalo por adb.';
   }
 
   @override
@@ -3954,6 +4070,9 @@ class UiStringsEs extends UiStrings {
 
   @override
   String get overviewShowingCustomPages => 'Mostrando páginas personalizadas';
+
+  @override
+  String get overviewHeadlessMode => 'Modo sin pantalla';
 
   @override
   String get overviewNoScreenshot => 'Sin captura de pantalla';
@@ -5370,6 +5489,49 @@ class UiStringsEs extends UiStrings {
   @override
   String get deviceOpenSettingsDevice =>
       'Abrir configuración en el dispositivo';
+
+  @override
+  String get deviceHardwareButtons => 'Botones físicos';
+
+  @override
+  String get deviceHardwareButtonsHeld =>
+      'Los botones del dispositivo llegan a los gestos y a Voice Satellite.';
+
+  @override
+  String get deviceHardwareButtonsMissing =>
+      'Los botones del dispositivo no hacen nada hasta que se activa el servicio de botones.';
+
+  @override
+  String get deviceHeadlessAdbMicrophone =>
+      'Este dispositivo no tiene pantalla. Concédelo por adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.RECORD_AUDIO';
+
+  @override
+  String get deviceHeadlessAdbNotifications =>
+      'Este dispositivo no tiene pantalla. Concédelo por adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.POST_NOTIFICATIONS';
+
+  @override
+  String get deviceHeadlessAdbLocation =>
+      'Este dispositivo no tiene pantalla. Concédelo por adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.ACCESS_FINE_LOCATION';
+
+  @override
+  String get deviceHeadlessAdbBluetooth =>
+      'Este dispositivo no tiene pantalla. Concédelo por adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.BLUETOOTH_SCAN, y lo mismo para BLUETOOTH_CONNECT';
+
+  @override
+  String get deviceHeadlessAdbBattery =>
+      'Este dispositivo no tiene pantalla. Concédelo por adb: adb shell dumpsys deviceidle whitelist +me.jxl.kiosk_satellite';
+
+  @override
+  String get deviceHeadlessAdbStorage =>
+      'Este dispositivo no tiene pantalla. Concédelo por adb: adb shell pm grant me.jxl.kiosk_satellite android.permission.READ_EXTERNAL_STORAGE, y lo mismo para WRITE_EXTERNAL_STORAGE';
+
+  @override
+  String get deviceHeadlessAdbButtons =>
+      'Este dispositivo no tiene pantalla. Actívalo por adb: adb shell settings put secure enabled_accessibility_services me.jxl.kiosk_satellite/.HeadlessKeyService, y luego adb shell settings put secure accessibility_enabled 1';
+
+  @override
+  String get deviceHeadlessAdbButtonsRestart =>
+      'El servicio de botones está activado pero no se ha iniciado. Reinicia el dispositivo para iniciarlo: adb reboot';
 
   @override
   String get settingRemoteKeysReportTitle =>
@@ -7286,6 +7448,8 @@ class UiStringsEs extends UiStrings {
   @override
   String get gestureRemoteKeysHelp =>
       'A mapped key runs its action whatever app is in front, and does nothing else.';
+
+  @override
   String get haCustomPages => 'Páginas personalizadas';
 
   @override
@@ -7293,11 +7457,19 @@ class UiStringsEs extends UiStrings {
       'Tus páginas HTML personalizadas mostradas como un panel de control';
 
   @override
+  String get settingHaCustomPagesSocketTitle =>
+      'Compartir la conexión de Home Assistant';
+
+  @override
+  String get settingHaCustomPagesSocketDescription =>
+      'Las páginas personalizadas hablan con Home Assistant a través de la conexión del kiosko, sin ningún token en la página.';
+
+  @override
   String get haCustomPagesAdd => 'Añadir página';
 
   @override
-  String get haCustomPagesEmpty =>
-      'Añade páginas HTML de la carpeta www de Home Assistant para elegirlas como un panel de control.';
+  String get haCustomPagesEmptyAnyServer =>
+      'Añade páginas HTML de la carpeta www de Home Assistant o de otro servidor para elegirlas como un panel de control.';
 
   @override
   String get haCustomPagesGuide => 'Guía de páginas personalizadas';
@@ -7316,18 +7488,18 @@ class UiStringsEs extends UiStrings {
   String get haCustomPageName => 'Nombre';
 
   @override
-  String get haCustomPagePath => 'Ruta';
+  String get haCustomPageLocation => 'Ruta o URL';
 
   @override
-  String get haCustomPagePathHint =>
-      'Un archivo de la carpeta www de Home Assistant, como /local/dashboard.html.';
+  String get haCustomPageLocationHint =>
+      'Un archivo de la carpeta www de Home Assistant, como /local/dashboard.html, o la URL de una página en otro servidor.';
 
   @override
   String get haCustomPageNameMissing => 'Introduce un nombre.';
 
   @override
-  String get haCustomPagePathInvalid =>
-      'Introduce una ruta dentro de /local/, como /local/dashboard.html.';
+  String get haCustomPageLocationInvalid =>
+      'Introduce una ruta dentro de /local/ o una URL http o https.';
 
   @override
   String get haCustomPageDuplicate => 'Otra página ya usa esta ruta.';
@@ -7337,12 +7509,25 @@ class UiStringsEs extends UiStrings {
       'Home Assistant no tiene ningún archivo en esta ruta.';
 
   @override
+  String get haCustomPageUrlNotFound =>
+      'El servidor no tiene ninguna página en esta URL.';
+
+  @override
   String get haCustomPageUnreachable =>
       'No se pudo conectar con Home Assistant.';
 
   @override
+  String get haCustomPageUrlUnreachable =>
+      'No se pudo conectar con el servidor.';
+
+  @override
   String haCustomPageStatus(String code) {
     return 'Home Assistant respondió con HTTP $code.';
+  }
+
+  @override
+  String haCustomPageUrlStatus(String code) {
+    return 'El servidor respondió con HTTP $code.';
   }
 
   @override
@@ -8112,6 +8297,23 @@ class UiStringsEs extends UiStrings {
   String get intercomOptionHangupHelp => 'Ayuda';
 
   @override
+  String get settingIntercomHangupKeyRingingTitle =>
+      'Botón de colgar mientras suena';
+
+  @override
+  String get settingIntercomHangupKeyRingingDescription =>
+      'Lo que hace el botón cuando entra una llamada.';
+
+  @override
+  String get intercomOptionHangupRingingAnswer => 'Aceptar';
+
+  @override
+  String get intercomOptionHangupRingingDecline => 'Rechazar';
+
+  @override
+  String get intercomOptionHangupRingingIgnore => 'Ignorar';
+
+  @override
   String get intercomTalkSection => 'Conversación';
 
   @override
@@ -8329,6 +8531,223 @@ class UiStringsEs extends UiStrings {
 
   @override
   String get kioskOpenSettingsDevice => 'Abrir configuración en el dispositivo';
+
+  @override
+  String get settingLedEnabledTitle => 'Activar el control de LED';
+
+  @override
+  String get settingLedEnabledDescription =>
+      'Permite que Kiosk Satellite controle las luces.';
+
+  @override
+  String get settingLedAnimationsTitle => 'Animar los efectos';
+
+  @override
+  String get settingLedAnimationsDescription =>
+      'Mueve los arcos y desvanece los pulsos. Desactívalo para que todos los efectos sean estáticos.';
+
+  @override
+  String get settingLedIdleEnabledTitle => 'Encender en reposo';
+
+  @override
+  String get settingLedIdleEnabledDescription =>
+      'Permanece encendido mientras no se muestra nada más.';
+
+  @override
+  String get settingLedIdleBrightnessTitle => 'Brillo';
+
+  @override
+  String get settingLedIdleBrightnessDescription =>
+      'Cuánto brillan las luces para esto.';
+
+  @override
+  String get settingLedIdleLightColorTitle => 'Color';
+
+  @override
+  String get settingLedIdleLightColorDescription =>
+      'El color de las luces para esto.';
+
+  @override
+  String get settingLedIdleStyleTitle => 'Efecto';
+
+  @override
+  String get settingLedIdleStyleDescription =>
+      'Cómo se muestran las luces en reposo.';
+
+  @override
+  String get settingLedIdleStyleOptionSolid => 'Fijo';
+
+  @override
+  String get settingLedIdleStyleOptionBreathe => 'Respiración';
+
+  @override
+  String get settingLedVoiceEnabledTitle => 'Mostrar la actividad de voz';
+
+  @override
+  String get settingLedVoiceEnabledDescription =>
+      'Se enciende mientras Voice Satellite escucha, piensa y responde.';
+
+  @override
+  String get settingLedVoiceBrightnessTitle => 'Brillo';
+
+  @override
+  String get settingLedVoiceBrightnessDescription =>
+      'Cuánto brillan las luces para esto.';
+
+  @override
+  String get settingLedVoiceLightColorTitle => 'Color';
+
+  @override
+  String get settingLedVoiceLightColorDescription =>
+      'Bajo un arco que gira mientras escucha, alternando mientras piensa y desvaneciéndose mientras responde.';
+
+  @override
+  String get settingLedVoiceAccentColorTitle => 'Color de acento';
+
+  @override
+  String get settingLedVoiceAccentColorDescription =>
+      'El arco que se mueve alrededor de las luces.';
+
+  @override
+  String get settingLedVoiceMutedTitle => 'Mostrar cuando está silenciado';
+
+  @override
+  String get settingLedVoiceMutedDescription =>
+      'Permanece encendido mientras Voice Satellite está silenciado.';
+
+  @override
+  String get settingLedVoiceMutedColorTitle => 'Color en silencio';
+
+  @override
+  String get settingLedVoiceMutedColorDescription =>
+      'El color de las luces mientras está silenciado.';
+
+  @override
+  String get settingLedTimersEnabledTitle => 'Mostrar los temporizadores';
+
+  @override
+  String get settingLedTimersEnabledDescription =>
+      'Palpita mientras suena un temporizador.';
+
+  @override
+  String get settingLedTimersBrightnessTitle => 'Brillo';
+
+  @override
+  String get settingLedTimersBrightnessDescription =>
+      'Cuánto brillan las luces para esto.';
+
+  @override
+  String get settingLedTimersLightColorTitle => 'Color';
+
+  @override
+  String get settingLedTimersLightColorDescription =>
+      'El color de las luces para esto.';
+
+  @override
+  String get settingLedTimersCountdownTitle => 'Mostrar la cuenta atrás';
+
+  @override
+  String get settingLedTimersCountdownDescription =>
+      'Las luces se apagan una a una mientras se agota el siguiente temporizador.';
+
+  @override
+  String get settingLedAlarmsEnabledTitle => 'Mostrar las alarmas';
+
+  @override
+  String get settingLedAlarmsEnabledDescription =>
+      'Palpita mientras suena una alarma.';
+
+  @override
+  String get settingLedAlarmsBrightnessTitle => 'Brillo';
+
+  @override
+  String get settingLedAlarmsBrightnessDescription =>
+      'Cuánto brillan las luces para esto.';
+
+  @override
+  String get settingLedAlarmsLightColorTitle => 'Color';
+
+  @override
+  String get settingLedAlarmsLightColorDescription =>
+      'El color de las luces para esto.';
+
+  @override
+  String get settingLedIntercomEnabledTitle =>
+      'Mostrar las llamadas del intercomunicador';
+
+  @override
+  String get settingLedIntercomEnabledDescription =>
+      'Palpita mientras suena una llamada y gira mientras está activa.';
+
+  @override
+  String get settingLedIntercomBrightnessTitle => 'Brillo';
+
+  @override
+  String get settingLedIntercomBrightnessDescription =>
+      'Cuánto brillan las luces para esto.';
+
+  @override
+  String get settingLedIntercomLightColorTitle => 'Color';
+
+  @override
+  String get settingLedIntercomLightColorDescription =>
+      'El color de las luces para esto.';
+
+  @override
+  String get settingLedNotificationsEnabledTitle =>
+      'Mostrar las notificaciones';
+
+  @override
+  String get settingLedNotificationsEnabledDescription =>
+      'Palpita despacio mientras espera una notificación.';
+
+  @override
+  String get settingLedNotificationsBrightnessTitle => 'Brillo';
+
+  @override
+  String get settingLedNotificationsBrightnessDescription =>
+      'Cuánto brillan las luces para esto.';
+
+  @override
+  String get settingLedNotificationsLightColorTitle => 'Color';
+
+  @override
+  String get settingLedNotificationsLightColorDescription =>
+      'El color de las luces para esto.';
+
+  @override
+  String get settingLedMediaEnabledTitle => 'Mostrar la música';
+
+  @override
+  String get settingLedMediaEnabledDescription =>
+      'Se enciende mientras suena música en este dispositivo.';
+
+  @override
+  String get settingLedMediaBrightnessTitle => 'Brillo';
+
+  @override
+  String get settingLedMediaBrightnessDescription =>
+      'Cuánto brillan las luces para esto.';
+
+  @override
+  String get settingLedMediaLightColorTitle => 'Color';
+
+  @override
+  String get settingLedMediaLightColorDescription =>
+      'El color de las luces para esto.';
+
+  @override
+  String get settingLedMediaStyleTitle => 'Efecto';
+
+  @override
+  String get settingLedMediaStyleDescription =>
+      'Cómo muestran la música las luces.';
+
+  @override
+  String get settingLedMediaStyleOptionSolid => 'Fijo';
+
+  @override
+  String get settingLedMediaStyleOptionBreathe => 'Respiración';
 
   @override
   String get settingLockdownEnabledTitle => 'Activar modo de bloqueo';
@@ -8688,11 +9107,20 @@ class UiStringsEs extends UiStrings {
       'Tamaño de los botones de reproducción y la barra de progreso, independiente del tamaño del texto. Se aplica en ambas distribuciones y junto al protector de pantalla. Los controles se adaptan al espacio disponible.';
 
   @override
-  String get settingSendspinFullscreenHorizontalTitle => 'Modo horizontal';
+  String get settingSendspinFullscreenLayoutTitle => 'Modo de diseño';
 
   @override
-  String get settingSendspinFullscreenHorizontalDescription =>
-      'Divide la portada y los controles en dos mitades iguales, izquierda y derecha. Con las letras o la cola abiertas, los datos de la pista pasan debajo de la portada. No se aplica cuando Reproduciendo Ahora se muestra junto al protector de pantalla.';
+  String get settingSendspinFullscreenLayoutDescription =>
+      'Cómo Reproduciendo Ahora organiza la portada, los datos de la pista y los controles. Horizontal los divide en mitades izquierda y derecha. Solo portada llena la pantalla con la portada y muestra los datos de la pista y los controles durante unos segundos después de tocar la pantalla, y cambia a Vertical mientras las letras o la cola están abiertas. No se aplica cuando Reproduciendo Ahora se muestra junto al protector de pantalla.';
+
+  @override
+  String get mediaLayoutVertical => 'Vertical';
+
+  @override
+  String get mediaLayoutHorizontal => 'Horizontal';
+
+  @override
+  String get mediaLayoutArtOnly => 'Solo portada';
 
   @override
   String get settingSendspinFullscreenDoubleTapTitle =>
@@ -8753,6 +9181,24 @@ class UiStringsEs extends UiStrings {
   @override
   String get settingSendspinSpeakerPillDescription =>
       'Muestra el selector de altavoces durante 5 segundos después de interactuar con la pantalla. Permite añadir o quitar altavoces del grupo actual.';
+
+  @override
+  String get settingSendspinSpeakerPillPlayersTitle =>
+      'Filtrar el selector de altavoces';
+
+  @override
+  String get settingSendspinSpeakerPillPlayersDescription =>
+      'Solo estos altavoces aparecen en el selector. Los altavoces que ya están en el grupo siempre aparecen.';
+
+  @override
+  String get settingSendspinAudioQualityTitle => 'Mostrar calidad de audio';
+
+  @override
+  String get settingSendspinAudioQualityDescription =>
+      'Muestra el formato, la profundidad de bits, la frecuencia de muestreo, la tasa de bits y el origen de la pista actual en la parte inferior de Reproduciendo Ahora. Requiere Music Assistant.';
+
+  @override
+  String get mediaAllSpeakers => 'Todos los altavoces';
 
   @override
   String get settingSendspinQueueArtTitle => 'Mostrar portadas en la cola';
@@ -9185,6 +9631,48 @@ class UiStringsEs extends UiStrings {
 
   @override
   String get settingsMenuThemeAuto => 'Automático';
+
+  @override
+  String get settingsMenuOverviewHeadlessSummary =>
+      'Estado y controles rápidos';
+
+  @override
+  String get settingsMenuHomeAssistantHeadlessSummary => 'Conexión';
+
+  @override
+  String get settingsMenuAudio => 'Audio';
+
+  @override
+  String get settingsMenuAudioSummary => 'Volumen, micrófono';
+
+  @override
+  String get settingsGroupMedia => 'Multimedia';
+
+  @override
+  String get settingsMenuDlnaHeadlessSummary => 'Reproducir audio a distancia';
+
+  @override
+  String get settingsMenuGesturesHeadlessSummary =>
+      'Gestos con botones y palmadas';
+
+  @override
+  String get settingsMenuLeds => 'Control de LED';
+
+  @override
+  String get settingsMenuLedsSummary =>
+      'Colores y efectos de las luces de estado';
+
+  @override
+  String get settingsLedTimers => 'Temporizadores';
+
+  @override
+  String get settingsLedNotifications => 'Notificaciones';
+
+  @override
+  String get settingsLedIdle => 'En reposo';
+
+  @override
+  String get settingsLedEffects => 'Efectos';
 
   @override
   String get settingAdaptiveBrightnessTitle => 'Brillo adaptativo';
@@ -12219,6 +12707,26 @@ class UiStringsEs extends UiStrings {
       'Los sonidos de activación, fin y error.';
 
   @override
+  String get voiceChimeWakeVolumeTitle => 'Volumen del sonido de activación';
+
+  @override
+  String get voiceChimeDoneVolumeTitle => 'Volumen del sonido de finalización';
+
+  @override
+  String get voiceChimeErrorVolumeTitle => 'Volumen del sonido de error';
+
+  @override
+  String get voiceChimeTimerVolumeTitle =>
+      'Volumen del sonido del temporizador';
+
+  @override
+  String get voiceChimeAnnounceVolumeTitle => 'Volumen del sonido de anuncio';
+
+  @override
+  String get voiceChimeVolumeDescription =>
+      'Una proporción del volumen del asistente.';
+
+  @override
   String get settingVoiceShowCommandTitle => 'Mostrar lo que dijiste';
 
   @override
@@ -12455,8 +12963,8 @@ class UiStringsEs extends UiStrings {
   String get voiceWordAdded => 'Añadido';
 
   @override
-  String get voiceHaAddHint =>
-      'Añade este kiosko en Ajustes, Dispositivos y servicios de Home Assistant, donde aparece como descubierto.';
+  String get voiceHaAddAgainHint =>
+      'Añade este kiosko en Ajustes, Dispositivos y servicios de Home Assistant, donde aparece como descubierto. Si Home Assistant ya lo tenía, ahí te pide la nueva Clave de cifrado de la página ESPHome.';
 
   @override
   String get voiceHaEsphomeOff =>
@@ -13330,6 +13838,13 @@ class UiStringsEs extends UiStrings {
       'Cuánto esperar a los otros kioskos. Súbela si un kiosko más lento pierde cuando está más cerca.';
 
   @override
+  String get settingVoiceWakeArbitrationOffsetTitle => 'Ajuste de arbitraje';
+
+  @override
+  String get settingVoiceWakeArbitrationOffsetDescription =>
+      'Se suma a lo fuerte que este kiosko oyó la palabra de activación. Súbelo si este kiosko pierde cuando está más cerca y bájalo si responde desde demasiado lejos.';
+
+  @override
   String get voiceSectionWakeArbitration =>
       'Arbitraje de la palabra de activación';
 
@@ -13529,6 +14044,104 @@ class UiStringsEs extends UiStrings {
       '// Ejemplo: ampliar un sitio que ignora el nivel de zoom del panel de control\ndocument.documentElement.style.zoom = \'1.25\';';
 
   @override
+  String get urlFilterTitle => 'Filtro de URL';
+
+  @override
+  String get urlFilterHint =>
+      'Bloquea o permite páginas por patrón de dirección o expresión regular';
+
+  @override
+  String get urlFilterIntroTitle => 'Controla qué páginas se abren';
+
+  @override
+  String get urlFilterIntroSub =>
+      'Los enlaces o páginas que coincidan con una regla Bloquear no se cargan. Añade una regla Permitir solo para cargar únicamente las páginas que coincidan.';
+
+  @override
+  String get urlFilterAdd => 'Añadir regla';
+
+  @override
+  String get urlFilterAddTitle => 'Añadir regla de filtro';
+
+  @override
+  String get urlFilterEditTitle => 'Editar regla de filtro';
+
+  @override
+  String get urlFilterName => 'Nombre';
+
+  @override
+  String get urlFilterPattern => 'Patrón';
+
+  @override
+  String get urlFilterPatternWildcardHint =>
+      'Usa * para coincidir con cualquier cosa. Un patrón que empieza por / coincide con la ruta en cualquier servidor, como /history*.';
+
+  @override
+  String get urlFilterPatternRegexHint =>
+      'Una expresión regular que se busca en cualquier parte de la dirección, sin distinguir mayúsculas y minúsculas.';
+
+  @override
+  String get urlFilterType => 'Tipo de patrón';
+
+  @override
+  String get urlFilterTypeWildcard => 'Comodín';
+
+  @override
+  String get urlFilterTypeRegex => 'Expresión regular';
+
+  @override
+  String get urlFilterAction => 'Acción';
+
+  @override
+  String get urlFilterActionBlock => 'Bloquear';
+
+  @override
+  String get urlFilterActionAllow => 'Permitir solo';
+
+  @override
+  String get urlFilterActionAllowHint =>
+      'Donde se aplica esta regla, solo se cargan las páginas que coincidan con una regla Permitir solo. El inicio de sesión de Home Assistant y el panel de control de inicio siempre se cargan.';
+
+  @override
+  String get urlFilterScope => 'Se aplica a';
+
+  @override
+  String get urlFilterScopeAll => 'Panel de control y páginas externas';
+
+  @override
+  String get urlFilterScopeDashboard => 'Panel de control';
+
+  @override
+  String get urlFilterScopeExternal => 'Páginas externas';
+
+  @override
+  String get urlFilterScopeHint =>
+      'Las páginas externas son los enlaces abiertos desde el panel de control y las páginas de la rotación de paneles de control.';
+
+  @override
+  String get urlFilterErrorName => 'Introduce un nombre.';
+
+  @override
+  String get urlFilterErrorPattern => 'Introduce un patrón.';
+
+  @override
+  String get urlFilterErrorRegex => 'Esta expresión regular no es válida.';
+
+  @override
+  String get urlFilterBlocked => 'Página bloqueada';
+
+  @override
+  String get urlFilterNotAllowed => 'No está en las páginas permitidas';
+
+  @override
+  String get settingBrowserUrlFilterNoticeTitle =>
+      'Mostrar aviso de página bloqueada';
+
+  @override
+  String get settingBrowserUrlFilterNoticeDescription =>
+      'Muestra un breve aviso con el nombre de la regla cuando se bloquea una página.';
+
+  @override
   String get setupConnectHeading => 'Conectar con Home Assistant';
 
   @override
@@ -13627,6 +14240,10 @@ class UiStringsEs extends UiStrings {
   @override
   String get setupSelectDashboardHelp =>
       'Elige el panel de control que mostrará el kiosko. Puedes cambiarlo después en Configuración.';
+
+  @override
+  String get setupHeadlessGrants =>
+      'Este dispositivo no tiene pantalla, así que Android no puede pedirlos en él. Concede cada uno por adb y luego termina aquí.';
 
   @override
   String get setupWelcome => 'Bienvenido';
@@ -13848,8 +14465,8 @@ class UiStringsEs extends UiStrings {
       'Convierte este kiosko en un asistente de voz para Home Assistant. Todo se puede cambiar después.';
 
   @override
-  String get setupVoiceAddHint =>
-      'Después de la configuración, añade este kiosko en Home Assistant en Ajustes, Dispositivos y servicios, donde aparece como descubierto.';
+  String get setupVoiceAddAgainHint =>
+      'Después de la configuración, añade este kiosko en Home Assistant en Ajustes, Dispositivos y servicios, donde aparece como descubierto. Si Home Assistant ya lo tenía, ahí te pide la nueva Clave de cifrado de la página ESPHome.';
 
   @override
   String get setupRecommendedWall =>

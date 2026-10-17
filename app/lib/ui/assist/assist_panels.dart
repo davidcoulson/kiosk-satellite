@@ -281,6 +281,22 @@ const _panels = <String, (PanelShape, PanelStyle, PanelStyle?)>{
     ),
     null,
   ),
+  'kitt': (
+    PanelShape(radius: 4, imageRadius: 2, blur: 12, glass: true),
+    PanelStyle(
+      surface: Color(0x99160606),
+      text: Color(0xFFFFE9E6),
+      secondary: Color(0xFFD9645A),
+      muted: Color(0xFFD9645A),
+      divider: Color(0x33FF2B1C),
+      badge: Color(0x1AFF2B1C),
+      badgeText: Color(0xFFFF8A7E),
+      up: Color(0xFF4DDC94),
+      down: Color(0xFFFF6480),
+      border: Color(0x80FF2B1C),
+    ),
+    null,
+  ),
   'ink-blobs': (
     PanelShape(radius: 14, blur: 12, glass: true),
     PanelStyle(

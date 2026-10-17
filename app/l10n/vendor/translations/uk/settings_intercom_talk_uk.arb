@@ -23,5 +23,10 @@
   "intercomOptionHangupVolumeUp": "Гучніше",
   "intercomOptionHangupVolumeDown": "Тихіше",
   "intercomOptionHangupMute": "Вимкнути звук",
-  "intercomOptionHangupHelp": "Довідка"
+  "intercomOptionHangupHelp": "Довідка",
+  "settingIntercomHangupKeyRingingTitle": "Кнопка завершення під час вхідного виклику",
+  "settingIntercomHangupKeyRingingDescription": "Що робить кнопка, коли сюди надходить виклик.",
+  "intercomOptionHangupRingingAnswer": "Прийняти",
+  "intercomOptionHangupRingingDecline": "Відхилити",
+  "intercomOptionHangupRingingIgnore": "Ігнорувати"
 }

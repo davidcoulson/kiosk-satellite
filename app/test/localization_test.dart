@@ -63,8 +63,13 @@ void main() {
       // Keep accessibility service on is too: both Gestures pages show it
       // in their Remote keys card, beside the warning it answers. Home
       // Assistant's mirrored selects show in the fleet exclusion list.
+      // Share Home Assistant connection is drawn by hand on the Custom Pages
+      // page of both interfaces, Show blocked page notice on the URL Filter
+      // page.
       if (def.key != esphomeMacOverride.key &&
           def.key != keepAccessibility.key &&
+          def.key != haCustomPagesSocket.key &&
+          def.key != browserUrlFilterNotice.key &&
           !voiceHaSelectSettings.values.contains(def)) {
         expect(
           def.hidden,

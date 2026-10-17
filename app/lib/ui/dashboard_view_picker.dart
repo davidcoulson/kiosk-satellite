@@ -154,9 +154,16 @@ abstract final class DashboardCatalog {
 
 /// The navigation path inside a start URL on [base]: what follows the
 /// origin, without a query or fragment, which a custom page keeps since
-/// they pick its layout. Null for a URL elsewhere.
-String? dashboardPathOfUrl(String url, String base) {
-  if (base.isEmpty || !url.startsWith('$base/')) return null;
+/// they pick its layout. A URL elsewhere is one of the custom [pages] on
+/// another server, or null.
+String? dashboardPathOfUrl(
+  String url,
+  String base, {
+  List<CustomPage> pages = const [],
+}) {
+  if (base.isEmpty || !url.startsWith('$base/')) {
+    return externalPageNavPath(url, pages);
+  }
   var path = url.substring(base.length + 1);
   if (isCustomPagePath(path)) return path;
   final cut = path.indexOf(RegExp('[?#]'));
@@ -1210,7 +1217,7 @@ class _ViewTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  _Mono('/${view?.route ?? dashboard.path}'),
+                  _Mono(_shownRoute(view?.route ?? dashboard.path)),
                 ],
               ),
             ),
@@ -1787,7 +1794,7 @@ class DashboardViewListRow extends StatelessWidget {
               color: list == null ? scheme.onSurfaceVariant : scheme.error,
             ),
           );
-          text = _Mono('/$value', size: 13);
+          text = _Mono(_shownRoute(value), size: 13);
         } else {
           final d = match.dashboard;
           final v = match.view;
@@ -1847,4 +1854,16 @@ class DashboardViewListRow extends StatelessWidget {
       },
     );
   }
+}
+
+/// A route or navigation path as the picker prints it: a path on Home
+/// Assistant with its leading slash, a custom page on another server as its
+/// URL.
+String _shownRoute(String route) {
+  if (isExternalCustomPagePath(route)) {
+    return route.substring('$customPagesDashboardPath/'.length);
+  }
+  return route.startsWith('http://') || route.startsWith('https://')
+      ? route
+      : '/$route';
 }

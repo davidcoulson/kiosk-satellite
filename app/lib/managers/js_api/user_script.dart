@@ -1,4 +1,5 @@
 import 'browser_microphone_script.dart';
+import 'page_ha_socket_script.dart';
 import 'remote_settings_script.dart';
 import 'theater_relay_script.dart';
 
@@ -28,6 +29,7 @@ String buildKioskSatelliteScript({
   $browserMicrophoneScript
   $remoteSettingsScript
   $theaterRelayScript
+  $pageHaSocketScript
 
   window.kioskSatellite = {
     platform: 'kiosksatellite',
@@ -186,7 +188,13 @@ String buildKioskSatelliteScript({
     stopSound: function (id) { return call('stopSound', { id: id }); },
     setSoundVolume: function (id, volume) {
       return call('setSoundVolume', { id: id, volume: volume });
-    }
+    },
+
+    // The managed Home Assistant connection, for custom pages while Share
+    // Home Assistant connection is on: createSocket for
+    // home-assistant-js-websocket, or call and subscribe. The kiosk signs
+    // in, so the page holds no token. See page_ha_socket_script.dart.
+    ha: ha
   };
 })();
 ''';

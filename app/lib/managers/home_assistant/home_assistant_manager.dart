@@ -428,11 +428,13 @@ class HomeAssistantManager extends Manager {
           name: 'haSaveCustomPage',
           description:
               'Add or change a custom page after checking that Home '
-              'Assistant serves it. Backs Save & Validate in the Custom '
-              'Pages editors on both settings surfaces.',
+              'Assistant or its own server serves it. Backs Save & Validate '
+              'in the Custom Pages editors on both settings surfaces.',
           params: const {
             'name': 'the name the pickers show',
-            'path': 'the path under /local/, such as /local/kitchen.html',
+            'path':
+                'the path under /local/, such as /local/kitchen.html, or '
+                'the http or https URL of a page on another server',
             'original':
                 'optional: the path of the page being changed, absent '
                 'for a new one',
@@ -1186,8 +1188,15 @@ class HomeAssistantManager extends Manager {
   /// it carries none (a bare origin has no view to soft-navigate to).
   /// Public: the settings UIs show it as the return target.
   String? homeViewPath() {
-    final uri = Uri.tryParse(_settings.get(defs.startUrl));
+    final start = _settings.get(defs.startUrl);
+    final uri = Uri.tryParse(start);
     if (uri == null) return null;
+    // A start page on another server is one of the custom pages, or no
+    // view at all.
+    if (baseUrl.isNotEmpty && !start.startsWith('$baseUrl/')) {
+      final external = externalPageNavPath(start, customPages);
+      if (external != null) return external;
+    }
     final path = navPathOfUri(uri);
     return path.isEmpty ? null : path;
   }
@@ -1381,6 +1390,13 @@ class HomeAssistantManager extends Manager {
     return mapped.ok && mapped.data is String ? mapped.data as String : baseUrl;
   }
 
+  /// Page script: whether the page on screen is a custom page on another
+  /// server, by its origin. Such a page is the kiosk's own to leave, like
+  /// Home Assistant's, where any other site is not.
+  String _onExternalPageJs() =>
+      '${jsonEncode(externalPageOrigins(customPages).toList())}'
+      '.indexOf(location.origin) >= 0';
+
   /// The view the page shows ("url_path/view-route"), or null when it is
   /// not this Home Assistant.
   Future<String?> _currentViewPath() async {
@@ -1390,13 +1406,17 @@ class HomeAssistantManager extends Manager {
       'code':
           '''
 (function () {
-  if (!location.href.startsWith(${jsonEncode(base)})) return 'off-origin';
+  if (!location.href.startsWith(${jsonEncode(base)})) {
+    return ${_onExternalPageJs()} ? location.href : 'off-origin';
+  }
   return location.pathname + location.search + location.hash;
 })();
 ''',
     });
     final page = '${where.data}';
-    if (!where.ok || !page.startsWith('/')) return null;
+    if (!where.ok) return null;
+    if (page.contains('://')) return externalPageNavPath(page, customPages);
+    if (!page.startsWith('/')) return null;
     final uri = Uri.tryParse(page);
     final path = uri == null ? '' : navPathOfUri(uri);
     return path.isEmpty ? null : path;
@@ -1444,6 +1464,10 @@ class HomeAssistantManager extends Manager {
       'code':
           '''
 (function () {
+  // A page on another server is still up while its own URL is.
+  if (${jsonEncode(isExternalCustomPagePath(shown))}) {
+    return location.href === ${jsonEncode(viewPathUrl(base, shown))};
+  }
   if (!location.href.startsWith(${jsonEncode(base)})) return false;
   var shown = '/' + ${jsonEncode(shown)};
   var path = location.pathname;
@@ -1487,7 +1511,9 @@ class HomeAssistantManager extends Manager {
     // A path a soft navigation cannot resolve goes straight to a full load
     // (loadUrl drops the overlay itself). One-time discovery below.
     if (_hardLoadPaths.contains(viewPath)) {
-      await commands.execute('loadUrl', {'url': '$baseUrl/$viewPath'});
+      await commands.execute('loadUrl', {
+        'url': viewPathUrl(baseUrl, viewPath),
+      });
       return 'navigated';
     }
     // A custom page is a document of its own, not a route in Home
@@ -1521,8 +1547,10 @@ class HomeAssistantManager extends Manager {
         '''
 (function () {
   var base = ${jsonEncode(effectiveBase)};
-  if (!location.href.startsWith(base)) return 'off-origin';
   // A custom page holds no Home Assistant app to route the path.
+  if (!location.href.startsWith(base)) {
+    return ${_onExternalPageJs()} ? 'load' : 'off-origin';
+  }
   if (location.pathname.indexOf('/local/') === 0) return 'load';
   var path = '/' + ${jsonEncode(viewPath)};
   var route = '/' + ${jsonEncode(viewRoute(viewPath))};
@@ -1531,7 +1559,8 @@ class HomeAssistantManager extends Manager {
   // A path with a query or fragment is there only when they match too.
   if (location.pathname === route &&
       (!rest || location.search + location.hash === rest)) return 'already';
-  history.pushState(null, '', path);
+  // Around the URL Filter's check (urlFilterJs).
+  (history.__ksPushState || history.pushState).call(history, null, '', path);
   window.dispatchEvent(new CustomEvent('location-changed'));
   return 'navigated';
 })();
@@ -1540,7 +1569,9 @@ class HomeAssistantManager extends Manager {
     await commands.execute('hideOverlayPage', const {});
     final outcome = nav.ok ? '${nav.data}' : 'failed';
     if (outcome == 'load') {
-      await commands.execute('loadUrl', {'url': '$baseUrl/$viewPath'});
+      await commands.execute('loadUrl', {
+        'url': viewPathUrl(baseUrl, viewPath),
+      });
       return 'navigated';
     }
     if (outcome != 'navigated') {
@@ -1566,12 +1597,15 @@ class HomeAssistantManager extends Manager {
       'code':
           '''
 (function () {
-  if (!location.href.startsWith(${jsonEncode(base)})) return 'off-origin';
-  var target = '/' + ${jsonEncode(viewPath)};
+  if (!location.href.startsWith(${jsonEncode(base)}) &&
+      !(${_onExternalPageJs()})) return 'off-origin';
+  var target = ${jsonEncode(viewPathUrl(base, viewPath))};
   var cut = target.indexOf('#');
   var file = cut < 0 ? target : target.slice(0, cut);
   var hash = cut < 0 ? '' : target.slice(cut);
-  if (location.pathname + location.search !== file) return 'load';
+  var here = location.href;
+  var at = here.indexOf('#');
+  if ((at < 0 ? here : here.slice(0, at)) !== file) return 'load';
   if (location.hash === hash) return 'already';
   location.hash = hash;
   return 'navigated';
@@ -1582,7 +1616,7 @@ class HomeAssistantManager extends Manager {
     if (outcome == 'off-origin') return outcome;
     await commands.execute('hideOverlayPage', const {});
     if (outcome == 'already' || outcome == 'navigated') return outcome;
-    await commands.execute('loadUrl', {'url': '$baseUrl/$viewPath'});
+    await commands.execute('loadUrl', {'url': viewPathUrl(baseUrl, viewPath)});
     return 'navigated';
   }
 
@@ -1627,7 +1661,9 @@ class HomeAssistantManager extends Manager {
         '"$viewPath" needs a full load (strategy dashboard or '
         'alias); remembering for future passes',
       );
-      await commands.execute('loadUrl', {'url': '$baseUrl/$viewPath'});
+      await commands.execute('loadUrl', {
+        'url': viewPathUrl(baseUrl, viewPath),
+      });
     }
   }
 
@@ -1839,7 +1875,7 @@ class HomeAssistantManager extends Manager {
   /// honoring the Display precision setting, shows 69.
   ///
   /// [onTranslations] receives Home Assistant's own wording for the states
-  /// of [translationDomain], in the server's language, fetched over the same
+  /// of [translationDomain], in the user's language, fetched over the same
   /// socket (issue #268). A lookup on a separate socket could fail while the
   /// states still arrived, and the widget then spoke English for the rest of
   /// the run (issue #900). Riding the subscription means every reconnect
@@ -1847,7 +1883,7 @@ class HomeAssistantManager extends Manager {
   /// labels already speak it.
   ///
   /// [onStateLabels] receives Home Assistant's wording for the entities'
-  /// states, in the server's language, so a window sensor reads "Closed"
+  /// states, in the user's language, so a window sensor reads "Closed"
   /// rather than "Off" (issue #919). English is fetched too: device class
   /// wording is a translation even there.
   Future<GlanceSubscription?> subscribeEntities(
@@ -2003,8 +2039,15 @@ class HomeAssistantManager extends Manager {
                   if (language != null) {
                     languageKnown(language);
                   } else {
+                    // The user's profile language comes first, as on the
+                    // dashboard. The server's own language only applies
+                    // when the user never picked one.
                     channel.sink.add(
-                      jsonEncode({'id': 3, 'type': 'get_config'}),
+                      jsonEncode({
+                        'id': 7,
+                        'type': 'frontend/get_user_data',
+                        'key': 'language',
+                      }),
                     );
                   }
                 }
@@ -2027,6 +2070,10 @@ class HomeAssistantManager extends Manager {
                     askLabels();
                   } else if (msg['id'] == 5 || msg['id'] == 6) {
                     labelsArrived(msg['id'] as int, null);
+                  } else if (msg['id'] == 7) {
+                    channel.sink.add(
+                      jsonEncode({'id': 3, 'type': 'get_config'}),
+                    );
                   }
                   break;
                 }
@@ -2056,6 +2103,15 @@ class HomeAssistantManager extends Manager {
                     );
                   case 5 || 6:
                     labelsArrived(msg['id'] as int, msg['result']);
+                  case 7:
+                    final language = userLanguage(msg['result']);
+                    if (language != null) {
+                      languageKnown(_language = language);
+                    } else {
+                      channel.sink.add(
+                        jsonEncode({'id': 3, 'type': 'get_config'}),
+                      );
+                    }
                 }
               case 'pong':
                 subscription._pong();
@@ -2845,12 +2901,15 @@ class HomeAssistantManager extends Manager {
     ];
   }
 
-  /// Add or change a custom page, once Home Assistant answers for it with
-  /// a 200. Null when it saved, otherwise why not: `name` (no name),
-  /// `path` (nothing under /local/), `duplicate` (another page has the
-  /// path), `not_found` (Home Assistant has no such file), `status:<code>`
-  /// (any other answer) or `unreachable`. [original] names the page being
-  /// changed, which keeps its place in the list.
+  /// Add or change a custom page, once its server answers for it with a
+  /// 200. Null when it saved, otherwise why not: `name` (no name), `path`
+  /// (neither a file under /local/ nor an http or https URL), `duplicate`
+  /// (another page has the path), `not_found` (Home Assistant has no such
+  /// file), `status:<code>` (any other answer) or `unreachable`. A page on
+  /// another server answers with `url_not_found`, `url_status:<code>` and
+  /// `url_unreachable` instead, since Home Assistant is not the one asked.
+  /// [original] names the page being changed, which keeps its place in the
+  /// list.
   Future<String?> saveCustomPage({
     required String name,
     required String path,
@@ -2858,25 +2917,35 @@ class HomeAssistantManager extends Manager {
   }) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return 'name';
-    final normalized = normalizeCustomPagePath(path);
+    final normalized = normalizeCustomPagePath(path, haBase: baseUrl);
     if (normalized == null) return 'path';
     final pages = customPages;
     if (pages.any((p) => p.path == normalized && p.path != original)) {
       return 'duplicate';
     }
-    if (baseUrl.isEmpty) return 'unreachable';
+    final page = CustomPage(name: trimmed, path: normalized);
+    final prefix = page.external ? 'url_' : '';
+    if (!page.external && baseUrl.isEmpty) return 'unreachable';
     try {
-      // /local/ needs no authorization, so no token goes with the check.
+      // /local/ needs no authorization, so no token goes with the check,
+      // and a page elsewhere never gets one.
       final response = await http
-          .get(Uri.parse('$baseUrl${customPageFile(normalized)}'))
+          .get(
+            Uri.parse(
+              page.external
+                  ? customPageFile(normalized)
+                  : '$baseUrl${customPageFile(normalized)}',
+            ),
+          )
           .timeout(const Duration(seconds: 10));
-      if (response.statusCode == 404) return 'not_found';
-      if (response.statusCode != 200) return 'status:${response.statusCode}';
+      if (response.statusCode == 404) return '${prefix}not_found';
+      if (response.statusCode != 200) {
+        return '${prefix}status:${response.statusCode}';
+      }
     } catch (e) {
       log.warn(this.name, 'custom page check failed for $normalized: $e');
-      return 'unreachable';
+      return '${prefix}unreachable';
     }
-    final page = CustomPage(name: trimmed, path: normalized);
     final at = original == null
         ? -1
         : pages.indexWhere((p) => p.path == original);
@@ -3252,8 +3321,9 @@ class HomeAssistantManager extends Manager {
     }
   }
 
-  /// The language Home Assistant itself is configured in ("it", "en-GB"),
-  /// from its core config. Cached for the run once the server answers.
+  /// The language Home Assistant speaks to this token's user ("it",
+  /// "en-GB"): the profile language, or the server's own when the user
+  /// never picked one. Cached for the run once the server answers.
   String? _language;
 
   /// Per-domain state translations, keyed by domain. An empty map is a
@@ -3327,6 +3397,15 @@ class HomeAssistantManager extends Manager {
     _holdReleaseTimer?.cancel();
     WidgetsBinding.instance.removeObserver(_brightnessWatch);
   }
+}
+
+/// The profile language out of a `frontend/get_user_data` reply for the
+/// `language` key, as the frontend saves it: `{value: {language: "nl"}}`.
+/// Null when the user never picked one and follows the server.
+String? userLanguage(Object? result) {
+  final value = result is Map ? result['value'] : null;
+  final language = value is Map ? '${value['language'] ?? ''}'.trim() : '';
+  return language.isEmpty ? null : language;
 }
 
 /// The state translations out of a `frontend/get_translations` result, keyed

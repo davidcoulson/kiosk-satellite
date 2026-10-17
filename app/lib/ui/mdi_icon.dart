@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'text_snapshot.dart';
+
 /// Material Design Icons by name, the way Home Assistant names them.
 ///
 /// Home Assistant's own icons are MDI, so anything a user types into an
@@ -296,12 +298,31 @@ class _MdiIconState extends State<MdiIcon> {
   Future<void> _resolve() async {
     final name = widget.name;
     final path = await MdiIcons.path(name);
+    // The SVG is compiled on a background isolate the first time, and
+    // until then the glyph draws as nothing. Waiting for it here keeps
+    // the fallback up meanwhile and lets the glyph paint within a frame
+    // of replacing it.
+    if (path != null) {
+      try {
+        await SvgStringLoader(_svg(path)).loadBytes(null);
+      } catch (_) {}
+    }
     if (!mounted || widget.name != name) return;
     setState(() {
       _path = path;
       _looked = true;
     });
+    // A snapshot around the icon (the shadowed At a Glance chips) would
+    // otherwise keep the fallback it captured, since a child repainting
+    // does not retake it.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) TextSnapshot.refresh(context);
+    });
   }
+
+  static String _svg(String path) =>
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+      '<path d="$path"/></svg>';
 
   @override
   Widget build(BuildContext context) {
@@ -315,8 +336,7 @@ class _MdiIconState extends State<MdiIcon> {
       );
     }
     Widget glyph(Color color) => SvgPicture.string(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-      '<path d="$path"/></svg>',
+      _svg(path),
       width: widget.size,
       height: widget.size,
       colorFilter: ColorFilter.mode(color, BlendMode.srcIn),

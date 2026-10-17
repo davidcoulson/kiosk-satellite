@@ -204,11 +204,19 @@ class SettingDef<T> {
 /// the remote's `describe()` alike, so both UIs hide the same rows.
 final Set<String> deviceHiddenKeys = {};
 
+/// Settings this device holds at one value whatever is saved, such as the
+/// screensaver switch on a device without a screen. A fleet follower
+/// leaves the leader's value for them out, or it would put its own back
+/// after every push and look changed here, so the leader would push again.
+final Set<String> devicePinnedKeys = {};
+
 const Map<String, String> subpageHints = {
   'Localization Credits': 'Contributors by language',
   'User Interface': 'Kiosk mode, dashboard carousel, haptics, tap sounds',
   'Theme': 'Match the app, or switch dark and light on a schedule',
   'Custom Pages': 'Your custom HTML pages served as a dashboard',
+  // Web Browsing.
+  'URL Filter': 'Block or allow pages by address pattern or regular expression',
   'Dashboard View Rotation': 'Cycle through views, dwell time, fade',
   'Return to home dashboard view': 'Go back to the home view when left idle',
   'Hold mode': 'Pin the current view, automatic release, menu entry',
@@ -788,6 +796,36 @@ const webviewDebugging = SettingDef<bool>(
       'something a wall panel needs running. Takes effect at the next '
       'restart. A userdebug panel has this on regardless of this switch.',
   category: 'Browser',
+);
+
+// Hidden: the URL Filter page in both settings surfaces owns this value,
+// a JSON array of {name, pattern, type, scope, action} rules for the
+// addresses the web views block, or the only ones they open (see
+// url_filter.dart). No subpage: both UIs place that page's entry row by
+// hand, at the end of Web Browsing.
+const browserUrlFilter = SettingDef<String>(
+  key: 'browser.url_filter',
+  type: SettingType.string,
+  defaultValue: '[]',
+  title: 'URL Filter',
+  description:
+      'Addresses the dashboard and external pages block, or the only ones '
+      'they open.',
+  category: 'Browser',
+  hidden: true,
+);
+
+// Hidden: drawn by hand as the switch on the URL Filter page on both
+// surfaces. Off, a blocked navigation is only logged.
+const browserUrlFilterNotice = SettingDef<bool>(
+  key: 'browser.url_filter_notice',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show blocked page notice',
+  description:
+      "Show a short notice with the rule's name when a page is blocked.",
+  category: 'Browser',
+  hidden: true,
 );
 
 // ── Web content (permissions, à la Fully Kiosk) ────────────────────────
@@ -6613,6 +6651,31 @@ const voiceWakeArbitrationWindowMs = SettingDef<num>(
   dependsOn: 'voice.wake_arbitration',
 );
 
+/// Added to how loud this kiosk claims it heard a wake word. Hardware
+/// that processes its microphone before the app sees it (a Portal Go's
+/// array) hears a wake word far louder over its floor than a plain
+/// microphone at the same distance, which no measurement here can undo.
+/// It describes this kiosk's hardware, so it stays out of fleet syncs.
+const voiceWakeArbitrationOffsetDb = SettingDef<num>(
+  key: 'voice.wake_arbitration_offset_db',
+  type: SettingType.number,
+  defaultValue: 0,
+  title: 'Arbitration offset',
+  description:
+      'Added to how loud this kiosk heard the wake word. Raise it if this '
+      'kiosk loses when it is closer, lower it if it answers from too far '
+      'away.',
+  category: 'Voice Satellite',
+  subpage: 'Wake Word',
+  section: 'Wake Word Arbitration',
+  min: -30,
+  max: 30,
+  step: 1,
+  unit: 'dB',
+  dependsOn: 'voice.wake_arbitration',
+  perDevice: true,
+);
+
 const voiceSkin = SettingDef<String>(
   key: 'voice.skin',
   type: SettingType.select,
@@ -6633,6 +6696,7 @@ const voiceSkin = SettingDef<String>(
     'lens-flares',
     'ink-blobs',
     'jarvis',
+    'kitt',
     'voice-only',
   ],
   optionLabels: {
@@ -6647,6 +6711,7 @@ const voiceSkin = SettingDef<String>(
     'lens-flares': 'Lens Flares',
     'ink-blobs': 'Ink Blobs',
     'jarvis': 'Jarvis',
+    'kitt': 'KITT',
     'voice-only': 'Voice Only',
   },
   dependsOn: 'voice.enabled',
@@ -7030,6 +7095,86 @@ const voiceChimeSettings = <String, SettingDef<String>>{
   'announce': voiceChimeAnnounce,
 };
 
+// Each chime's level as a share of the assistant volume (issue #998), so a
+// loud custom sound can sit under the voice responses.
+const voiceChimeWakeVolume = SettingDef<num>(
+  key: 'voice_chimes.wake_volume',
+  type: SettingType.number,
+  defaultValue: 100,
+  min: 0,
+  max: 100,
+  step: 5,
+  unit: '%',
+  title: 'Wake sound volume',
+  description: 'A share of the assistant volume.',
+  category: 'Voice Satellite',
+  subpage: 'Chimes',
+);
+
+const voiceChimeDoneVolume = SettingDef<num>(
+  key: 'voice_chimes.done_volume',
+  type: SettingType.number,
+  defaultValue: 100,
+  min: 0,
+  max: 100,
+  step: 5,
+  unit: '%',
+  title: 'Done sound volume',
+  description: 'A share of the assistant volume.',
+  category: 'Voice Satellite',
+  subpage: 'Chimes',
+);
+
+const voiceChimeErrorVolume = SettingDef<num>(
+  key: 'voice_chimes.error_volume',
+  type: SettingType.number,
+  defaultValue: 100,
+  min: 0,
+  max: 100,
+  step: 5,
+  unit: '%',
+  title: 'Error sound volume',
+  description: 'A share of the assistant volume.',
+  category: 'Voice Satellite',
+  subpage: 'Chimes',
+);
+
+const voiceChimeTimerVolume = SettingDef<num>(
+  key: 'voice_chimes.alert_volume',
+  type: SettingType.number,
+  defaultValue: 100,
+  min: 0,
+  max: 100,
+  step: 5,
+  unit: '%',
+  title: 'Timer sound volume',
+  description: 'A share of the assistant volume.',
+  category: 'Voice Satellite',
+  subpage: 'Chimes',
+);
+
+const voiceChimeAnnounceVolume = SettingDef<num>(
+  key: 'voice_chimes.announce_volume',
+  type: SettingType.number,
+  defaultValue: 100,
+  min: 0,
+  max: 100,
+  step: 5,
+  unit: '%',
+  title: 'Announcement sound volume',
+  description: 'A share of the assistant volume.',
+  category: 'Voice Satellite',
+  subpage: 'Chimes',
+);
+
+const voiceChimeVolumes = <String, SettingDef<num>>{
+  'wake': voiceChimeWakeVolume,
+  'done': voiceChimeDoneVolume,
+  'error': voiceChimeErrorVolume,
+  'alert': voiceChimeTimerVolume,
+  'announce': voiceChimeAnnounceVolume,
+};
+
 // Hidden: rendered as hand-built dropdowns (device settings screen and the
 // remote UI both) because the option lists are live hardware, not constants.
 // Value is AudioRouting's stable selector "type|address|name"; empty means
@@ -7145,7 +7290,24 @@ const haCustomPages = SettingDef<String>(
   type: SettingType.string,
   defaultValue: '[]',
   title: 'Custom Pages',
-  description: 'Your own HTML pages from the Home Assistant www folder.',
+  description:
+      'Your own HTML pages from the Home Assistant www folder or another '
+      'server.',
+  category: 'Home Assistant',
+  hidden: true,
+);
+
+// Hidden: drawn by hand as the first row of the Custom Pages page on both
+// surfaces. Lets custom pages open Home Assistant sockets through the
+// kiosk's own connection (kioskSatellite.ha, see page_ha_socket.dart).
+const haCustomPagesSocket = SettingDef<bool>(
+  key: 'ha.custom_pages_socket',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Share Home Assistant connection',
+  description:
+      "Custom pages talk to Home Assistant through the kiosk's connection, "
+      'with no token in the page.',
   category: 'Home Assistant',
   hidden: true,
 );
@@ -8196,6 +8358,23 @@ const sendspinMaToken = SettingDef<String>(
   secret: true,
 );
 
+/// The Music Assistant follower's side of [sendspinSonosInputs]: Music
+/// Assistant names a Sonos input as the player's active source, `tv` or
+/// `line_in`, with the input's name for a title. Off, the followed room
+/// reads as idle while one plays, as it does on the Sonos source.
+const sendspinMaInputs = SettingDef<bool>(
+  key: 'sendspin.ma_inputs',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Show TV and line-in',
+  description:
+      'Show activity in the media player when eARC or line-in inputs are '
+      'active.',
+  category: 'Sendspin',
+  subpage: 'Music Assistant',
+  section: 'Music Assistant',
+);
+
 /// The name the local player last registered with in Music Assistant —
 /// the device name or the hardware model when none is set. Stored by
 /// SendspinManager at every player start so the Music Assistant shortcut
@@ -8534,20 +8713,42 @@ const sendspinFullscreenButtonScale = SettingDef<num>(
   dependsOn: 'sendspin.fullscreen_controls',
 );
 
-const sendspinFullscreenHorizontal = SettingDef<bool>(
-  key: 'sendspin.fullscreen_horizontal',
-  type: SettingType.boolean,
-  defaultValue: false,
-  title: 'Horizontal mode',
+/// How the standalone view arranges the cover, the track details and the
+/// transport. Horizontal and Centered replaced a Horizontal mode switch:
+/// [SettingsManager] rewrites a stored or imported switch to the matching
+/// layout. Album art only shows the cover alone and brings the details and
+/// transport up over it for a few seconds after a touch, which leaves no
+/// room for lyrics or the queue, so it shows the vertical layouts while
+/// either is open.
+const sendspinFullscreenLayout = SettingDef<String>(
+  key: 'sendspin.fullscreen_layout',
+  type: SettingType.select,
+  defaultValue: 'vertical',
+  title: 'Layout mode',
   description:
-      'Split artwork and controls into equal left and right halves. '
-      'With lyrics or the queue open, track details move below the artwork. '
-      'Ignored while Now Playing is shown alongside a screensaver.',
+      'How Now Playing arranges artwork, track details and controls. '
+      'Horizontal splits them into left and right halves. Album art only '
+      'fills the screen with artwork and shows track details and controls '
+      'for a few seconds after a tap, switching to Vertical while lyrics '
+      'or the queue are open. Ignored while Now Playing is shown alongside '
+      'a screensaver.',
   category: 'Sendspin',
   section: 'User Interface',
   subpage: 'Now Playing',
+  options: ['vertical', 'horizontal', 'art_only'],
+  optionLabels: {
+    'vertical': 'Vertical',
+    'horizontal': 'Horizontal',
+    'art_only': 'Album art only',
+  },
   dependsOn: 'sendspin.fullscreen',
 );
+
+/// The Horizontal mode switch [sendspinFullscreenLayout] replaced, as
+/// the layout it stands for. Backups, fleet pushes and API calls from
+/// older versions still send it.
+String sendspinLayoutFromSwitch(bool horizontal) =>
+    horizontal ? 'horizontal' : 'vertical';
 
 /// Dismiss the view with a double tap anywhere on it instead of the close
 /// button, which goes away (issue #409: hunting for the button on a
@@ -8673,6 +8874,72 @@ const sendspinSpeakerPill = SettingDef<bool>(
   section: 'User Interface',
   dependsOn: 'sendspin.fullscreen',
 );
+
+/// The speakers the pill's group menu offers (issue #974), a JSON list of
+/// picker ids (`ma:<player id>`, `sonos:<room id>`). Empty offers every
+/// player. Only the ids of the source the menu reads from count, and a
+/// player already in the group keeps its row so it can still leave. Its
+/// row is hand-built on each surface: a multiple pick over Music
+/// Assistant's players and the Sonos rooms, a chip per source. A Home
+/// Assistant player has no menu, so no row.
+const sendspinSpeakerPillPlayers = SettingDef<String>(
+  key: 'sendspin.speaker_pill_players',
+  type: SettingType.string,
+  defaultValue: '[]',
+  title: 'Filter the speaker selection pill',
+  description:
+      'Only these speakers show in the pill. Speakers already in the group '
+      'always show.',
+  category: 'Sendspin',
+  subpage: 'Now Playing',
+  section: 'User Interface',
+  dependsOn: 'sendspin.speaker_pill',
+  alsoDependsOn: 'sendspin.player_source',
+  alsoDependsOnValue: ['', 'ma', 'sonos'],
+  perDevice: true,
+  normalizer: normalizeSpeakerPillPlayers,
+);
+
+/// Pills along the bottom edge of the Now Playing view with the current
+/// track's audio quality: Hi-Res or CD quality, codec, bit depth, sample
+/// rate, bitrate and source. Music Assistant is the only source that
+/// reports them, so the row stays empty for other players.
+const sendspinAudioQuality = SettingDef<bool>(
+  key: 'sendspin.audio_quality',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Show audio quality',
+  description:
+      'Shows the format, bit depth, sample rate, bitrate and source of the '
+      'current track at the bottom of Now Playing. Requires Music '
+      'Assistant.',
+  category: 'Sendspin',
+  subpage: 'Now Playing',
+  section: 'User Interface',
+  dependsOn: 'sendspin.fullscreen',
+);
+
+/// Stores [sendspinSpeakerPillPlayers] as a clean list: strings only, each
+/// once, so a hand-written API value that is not a list reads as empty.
+Object normalizeSpeakerPillPlayers(Object value) => jsonEncode(
+  decodeSpeakerPillPlayers(value is String ? value : '').toSet().toList(),
+);
+
+/// [sendspinSpeakerPillPlayers] read back: the stored ids, in order, with
+/// anything that is not a string dropped. Empty for a value that does not
+/// parse.
+List<String> decodeSpeakerPillPlayers(String value) {
+  try {
+    final decoded = jsonDecode(value);
+    if (decoded is! List) return const [];
+    return [
+      for (final id in decoded)
+        if (id is String && id.isNotEmpty) id,
+    ];
+  } catch (_) {
+    return const [];
+  }
+}
 
 /// A cover on every row of the queue panel: the server's or the
 /// speaker's own thumbnail, fetched as the rows come into view.
@@ -8921,14 +9188,14 @@ const esphomeEnabled = SettingDef<bool>(
   category: 'ESPHome',
 );
 
-/// Decoupled from the master switch, and off by default, on purpose: a
-/// household that turns on ESPHome just for the Bluetooth proxy must not
-/// wake up to a full entity set it never asked for; entities are an
-/// explicit step.
+/// Decoupled from the master switch, so ESPHome can run just for the
+/// Bluetooth proxy. On for new installs: a kiosk added to Home Assistant
+/// arrives with its controls. Installs from before keep what they had
+/// (SettingsManager's migration writes off where nothing was chosen).
 const esphomeEntities = SettingDef<bool>(
   key: 'esphome.entities',
   type: SettingType.boolean,
-  defaultValue: false,
+  defaultValue: true,
   title: 'Expose kiosk entities',
   description:
       'Serve the sensors and controls of this device as ESPHome entities.',
@@ -10081,6 +10348,23 @@ const intercomHangupKey = SettingDef<String>(
   perDevice: true,
 );
 
+/// What [intercomHangupKey] does while a call rings here: answer it,
+/// decline it or leave the button its usual job until the call is live.
+const intercomHangupKeyRinging = SettingDef<String>(
+  key: 'intercom.hangup_key_ringing',
+  type: SettingType.select,
+  defaultValue: 'ignore',
+  title: 'Hang up button while ringing',
+  description: 'What the button does when a call rings here.',
+  category: 'Intercom',
+  section: 'Talk',
+  options: ['answer', 'decline', 'ignore'],
+  optionLabels: {'answer': 'Accept', 'decline': 'Decline', 'ignore': 'Ignore'},
+  dependsOn: 'intercom.hangup_key',
+  dependsOnValue: {'ne': 'off'},
+  perDevice: true,
+);
+
 /// Android KeyEvent codes for [intercomHangupKey]'s options.
 const intercomHangupKeyCodes = {
   'volume_up': 24,
@@ -10403,7 +10687,12 @@ const fleetCredentials = <(String, String)>[
   ('voice.realtime_xai_api_key', 'xAI API key'),
   ('voice.realtime_gemini_api_key', 'Gemini API key'),
   ('voice.realtime_mcp_token', 'MCP server token'),
+  (fleetPluginSecrets, 'Plugin secrets'),
 ];
+
+/// Not a setting: the secret fields of the plugins a profile syncs. Off,
+/// a follower keeps its own values for them.
+const fleetPluginSecrets = 'plugins.secrets';
 
 const fleetCredentialKeys = {
   'ha.token',
@@ -10414,6 +10703,7 @@ const fleetCredentialKeys = {
   'voice.realtime_xai_api_key',
   'voice.realtime_gemini_api_key',
   'voice.realtime_mcp_token',
+  fleetPluginSecrets,
 };
 
 /// Credentials that traveled with a category before they had a switch of
@@ -10470,6 +10760,11 @@ const fleetDefaultExcluded = {
   'audio.assistant_volume',
   'notifications.volume',
   'ha.tap_sound_volume',
+  'voice_chimes.wake_volume',
+  'voice_chimes.done_volume',
+  'voice_chimes.error_volume',
+  'voice_chimes.alert_volume',
+  'voice_chimes.announce_volume',
   // Files and picks that only resolve on the device that made them.
   'screensaver.gallery_items',
   'screensaver.local_folder',
@@ -10743,6 +11038,47 @@ const fleetFormerDefaultExcluded = <Set<String>>[
     'voice.mute',
     'voice.tts_output',
   },
+  // Before the per-chime volumes joined (issue #998).
+  {
+    'browser.zoom',
+    'screensaver.website_zoom',
+    'screensaver.clock_scale',
+    'screensaver.widget_scale',
+    'screensaver.immich_metadata_scale',
+    'screensaver.glance_scale',
+    'face.preview_scale',
+    'sendspin.player_size',
+    'screen.default_brightness',
+    'screen.adaptive_min_brightness',
+    'screen.adaptive_max_brightness',
+    'screen.adaptive_dark_lux',
+    'screen.adaptive_bright_lux',
+    'screen.adaptive_use_entity',
+    'screen.adaptive_light_entity',
+    'screensaver.brightness_level',
+    'screensaver.dim_level',
+    'audio.media_volume',
+    'audio.assistant_volume',
+    'notifications.volume',
+    'ha.tap_sound_volume',
+    'screensaver.gallery_items',
+    'screensaver.local_folder',
+    'screensaver.clock_background',
+    'notifications.chime_file',
+    'launcher.apps',
+    'motion.sensitivity',
+    'motion.fps',
+    'face.sensitivity',
+    'camera.snapshot_resolution',
+    'motion.use_entity',
+    'motion.entity',
+    'browser.cutout_mode',
+    'screen.orientation',
+    'intercom.volume',
+    'intercom.answer_mode',
+    'voice.mute',
+    'voice.tts_output',
+  },
 ];
 
 /// Hidden settings that travel in a fleet exactly when another one does:
@@ -10900,6 +11236,33 @@ const fleetSyncedKeys = SettingDef<String>(
   defaultValue: '',
   title: 'Synced keys',
   description: 'Internal: the settings the leader pushes here.',
+  category: 'Fleet',
+  hidden: true,
+  perDevice: true,
+);
+
+/// The plugins the leader syncs here, by id: what was applied (`fp`),
+/// whether their secrets came along and whether the fleet installed them,
+/// so only those are removed when the leader stops sending them.
+const fleetSyncedPlugins = SettingDef<String>(
+  key: 'fleet.synced_plugins',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Synced plugins',
+  description: 'Internal: the plugins the leader syncs here.',
+  category: 'Fleet',
+  hidden: true,
+  perDevice: true,
+);
+
+/// The plugins the leader sent that did not install or apply here, by id,
+/// with the package hash and why. The leader reads them from the status.
+const fleetPluginErrors = SettingDef<String>(
+  key: 'fleet.plugin_errors',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Plugin errors',
+  description: 'Internal: the synced plugins that failed here.',
   category: 'Fleet',
   hidden: true,
   perDevice: true,
@@ -11495,6 +11858,407 @@ const powerDialogChoice = SettingDef<String>(
   perDevice: true,
 );
 
+
+// ── LED Control ────────────────────────────────────────────────────────
+// The device's status lights (LedManager), such as an Echo Dot's light ring.
+// One group per feature, each with its own switch and brightness. The
+// colors default to the ones an Echo device uses. Hidden on devices without
+// lights the app can drive.
+
+const ledEnabled = SettingDef<bool>(
+  key: 'led.enabled',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Enable LED Control',
+  description: 'Let Kiosk Satellite control the lights.',
+  category: 'LED Control',
+);
+
+const ledAnimations = SettingDef<bool>(
+  key: 'led.animations',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Animate effects',
+  description:
+      'Move the arcs and fade the pulses. Turn off to make every effect '
+      'static instead.',
+  category: 'LED Control',
+  section: 'Effects',
+  dependsOn: 'led.enabled',
+);
+
+const ledIdleEnabled = SettingDef<bool>(
+  key: 'led.idle.enabled',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Light up when idle',
+  description: 'Stay lit while nothing else is showing.',
+  category: 'LED Control',
+  section: 'Idle',
+  dependsOn: 'led.enabled',
+);
+
+const ledIdleBrightness = SettingDef<num>(
+  key: 'led.idle.brightness',
+  type: SettingType.number,
+  defaultValue: 10,
+  min: 5,
+  max: 100,
+  step: 5,
+  unit: '%',
+  title: 'Brightness',
+  description: 'How bright the lights shine for this.',
+  category: 'LED Control',
+  section: 'Idle',
+  dependsOn: 'led.idle.enabled',
+);
+
+const ledIdleLightColor = SettingDef<String>(
+  key: 'led.idle.light_color',
+  type: SettingType.string,
+  // Stored as "r,g,b"; both UIs render a color picker for it.
+  defaultValue: '255,255,255',
+  title: 'Color',
+  description: 'The color of the lights for this.',
+  category: 'LED Control',
+  section: 'Idle',
+  dependsOn: 'led.idle.enabled',
+);
+
+const ledIdleStyle = SettingDef<String>(
+  key: 'led.idle.style',
+  type: SettingType.select,
+  defaultValue: 'solid',
+  title: 'Effect',
+  description: 'How the lights show while idle.',
+  category: 'LED Control',
+  section: 'Idle',
+  options: ['solid', 'breathe'],
+  optionLabels: {'solid': 'Solid', 'breathe': 'Breathing'},
+  dependsOn: 'led.idle.enabled',
+);
+
+const ledVoiceEnabled = SettingDef<bool>(
+  key: 'led.voice.enabled',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show voice activity',
+  description: 'Light up while Voice Satellite listens, thinks and answers.',
+  category: 'LED Control',
+  section: 'Voice Satellite',
+  dependsOn: 'led.enabled',
+);
+
+const ledVoiceBrightness = SettingDef<num>(
+  key: 'led.voice.brightness',
+  type: SettingType.number,
+  defaultValue: 100,
+  min: 5,
+  max: 100,
+  step: 5,
+  unit: '%',
+  title: 'Brightness',
+  description: 'How bright the lights shine for this.',
+  category: 'LED Control',
+  section: 'Voice Satellite',
+  dependsOn: 'led.voice.enabled',
+);
+
+const ledVoiceLightColor = SettingDef<String>(
+  key: 'led.voice.light_color',
+  type: SettingType.string,
+  // Stored as "r,g,b"; both UIs render a color picker for it.
+  defaultValue: '0,0,255',
+  title: 'Color',
+  description:
+      'Under an arc that turns while listening, alternating while thinking and fading while answering.',
+  category: 'LED Control',
+  section: 'Voice Satellite',
+  dependsOn: 'led.voice.enabled',
+);
+
+const ledVoiceAccentColor = SettingDef<String>(
+  key: 'led.voice.accent_color',
+  type: SettingType.string,
+  // Stored as "r,g,b"; both UIs render a color picker for it.
+  defaultValue: '0,200,255',
+  title: 'Accent color',
+  description: 'The arc that moves around the lights.',
+  category: 'LED Control',
+  section: 'Voice Satellite',
+  dependsOn: 'led.voice.enabled',
+);
+
+const ledVoiceMuted = SettingDef<bool>(
+  key: 'led.voice.muted',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show when muted',
+  description: 'Stay lit while Voice Satellite is muted.',
+  category: 'LED Control',
+  section: 'Voice Satellite',
+  dependsOn: 'led.voice.enabled',
+);
+
+const ledVoiceMutedColor = SettingDef<String>(
+  key: 'led.voice.muted_color',
+  type: SettingType.string,
+  defaultValue: '255,0,0',
+  title: 'Muted color',
+  description: 'The color of the lights while muted.',
+  category: 'LED Control',
+  section: 'Voice Satellite',
+  dependsOn: 'led.voice.muted',
+  alsoDependsOn: 'led.voice.enabled',
+);
+
+const ledTimersEnabled = SettingDef<bool>(
+  key: 'led.timers.enabled',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show timers',
+  description: 'Pulse while a timer rings.',
+  category: 'LED Control',
+  section: 'Timers',
+  dependsOn: 'led.enabled',
+);
+
+const ledTimersBrightness = SettingDef<num>(
+  key: 'led.timers.brightness',
+  type: SettingType.number,
+  defaultValue: 100,
+  min: 5,
+  max: 100,
+  step: 5,
+  unit: '%',
+  title: 'Brightness',
+  description: 'How bright the lights shine for this.',
+  category: 'LED Control',
+  section: 'Timers',
+  dependsOn: 'led.timers.enabled',
+);
+
+const ledTimersLightColor = SettingDef<String>(
+  key: 'led.timers.light_color',
+  type: SettingType.string,
+  // Stored as "r,g,b"; both UIs render a color picker for it.
+  defaultValue: '0,200,255',
+  title: 'Color',
+  description: 'The color of the lights for this.',
+  category: 'LED Control',
+  section: 'Timers',
+  dependsOn: 'led.timers.enabled',
+);
+
+const ledTimersCountdown = SettingDef<bool>(
+  key: 'led.timers.countdown',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Show the countdown',
+  description: 'The lights go out one by one as the next timer runs down.',
+  category: 'LED Control',
+  section: 'Timers',
+  dependsOn: 'led.timers.enabled',
+);
+
+const ledAlarmsEnabled = SettingDef<bool>(
+  key: 'led.alarms.enabled',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show alarms',
+  description: 'Pulse while an alarm rings.',
+  category: 'LED Control',
+  section: 'Alarms',
+  dependsOn: 'led.enabled',
+);
+
+const ledAlarmsBrightness = SettingDef<num>(
+  key: 'led.alarms.brightness',
+  type: SettingType.number,
+  defaultValue: 100,
+  min: 5,
+  max: 100,
+  step: 5,
+  unit: '%',
+  title: 'Brightness',
+  description: 'How bright the lights shine for this.',
+  category: 'LED Control',
+  section: 'Alarms',
+  dependsOn: 'led.alarms.enabled',
+);
+
+const ledAlarmsLightColor = SettingDef<String>(
+  key: 'led.alarms.light_color',
+  type: SettingType.string,
+  // Stored as "r,g,b"; both UIs render a color picker for it.
+  defaultValue: '0,200,255',
+  title: 'Color',
+  description: 'The color of the lights for this.',
+  category: 'LED Control',
+  section: 'Alarms',
+  dependsOn: 'led.alarms.enabled',
+);
+
+const ledIntercomEnabled = SettingDef<bool>(
+  key: 'led.intercom.enabled',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show intercom calls',
+  description: 'Pulse while a call rings and turn while it is live.',
+  category: 'LED Control',
+  section: 'Intercom',
+  dependsOn: 'led.enabled',
+);
+
+const ledIntercomBrightness = SettingDef<num>(
+  key: 'led.intercom.brightness',
+  type: SettingType.number,
+  defaultValue: 100,
+  min: 5,
+  max: 100,
+  step: 5,
+  unit: '%',
+  title: 'Brightness',
+  description: 'How bright the lights shine for this.',
+  category: 'LED Control',
+  section: 'Intercom',
+  dependsOn: 'led.intercom.enabled',
+);
+
+const ledIntercomLightColor = SettingDef<String>(
+  key: 'led.intercom.light_color',
+  type: SettingType.string,
+  // Stored as "r,g,b"; both UIs render a color picker for it.
+  defaultValue: '0,255,0',
+  title: 'Color',
+  description: 'The color of the lights for this.',
+  category: 'LED Control',
+  section: 'Intercom',
+  dependsOn: 'led.intercom.enabled',
+);
+
+const ledNotificationsEnabled = SettingDef<bool>(
+  key: 'led.notifications.enabled',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show notifications',
+  description: 'Pulse slowly while a notification is waiting.',
+  category: 'LED Control',
+  section: 'Notifications',
+  dependsOn: 'led.enabled',
+);
+
+const ledNotificationsBrightness = SettingDef<num>(
+  key: 'led.notifications.brightness',
+  type: SettingType.number,
+  defaultValue: 100,
+  min: 5,
+  max: 100,
+  step: 5,
+  unit: '%',
+  title: 'Brightness',
+  description: 'How bright the lights shine for this.',
+  category: 'LED Control',
+  section: 'Notifications',
+  dependsOn: 'led.notifications.enabled',
+);
+
+const ledNotificationsLightColor = SettingDef<String>(
+  key: 'led.notifications.light_color',
+  type: SettingType.string,
+  // Stored as "r,g,b"; both UIs render a color picker for it.
+  defaultValue: '255,170,0',
+  title: 'Color',
+  description: 'The color of the lights for this.',
+  category: 'LED Control',
+  section: 'Notifications',
+  dependsOn: 'led.notifications.enabled',
+);
+
+const ledMediaEnabled = SettingDef<bool>(
+  key: 'led.media.enabled',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Show music',
+  description: 'Light up while music plays on this device.',
+  category: 'LED Control',
+  section: 'Media Player',
+  dependsOn: 'led.enabled',
+);
+
+const ledMediaBrightness = SettingDef<num>(
+  key: 'led.media.brightness',
+  type: SettingType.number,
+  defaultValue: 30,
+  min: 5,
+  max: 100,
+  step: 5,
+  unit: '%',
+  title: 'Brightness',
+  description: 'How bright the lights shine for this.',
+  category: 'LED Control',
+  section: 'Media Player',
+  dependsOn: 'led.media.enabled',
+);
+
+const ledMediaLightColor = SettingDef<String>(
+  key: 'led.media.light_color',
+  type: SettingType.string,
+  // Stored as "r,g,b"; both UIs render a color picker for it.
+  defaultValue: '255,255,255',
+  title: 'Color',
+  description: 'The color of the lights for this.',
+  category: 'LED Control',
+  section: 'Media Player',
+  dependsOn: 'led.media.enabled',
+);
+
+const ledMediaStyle = SettingDef<String>(
+  key: 'led.media.style',
+  type: SettingType.select,
+  defaultValue: 'breathe',
+  title: 'Effect',
+  description: 'How the lights show music.',
+  category: 'LED Control',
+  section: 'Media Player',
+  options: ['solid', 'breathe'],
+  optionLabels: {'solid': 'Solid', 'breathe': 'Breathing'},
+  dependsOn: 'led.media.enabled',
+);
+
+/// Every LED Control setting, hidden together where there are no lights.
+const ledSettings = <SettingDef<Object>>[
+  ledEnabled,
+  ledAnimations,
+  ledIdleEnabled,
+  ledIdleBrightness,
+  ledIdleLightColor,
+  ledIdleStyle,
+  ledVoiceEnabled,
+  ledVoiceBrightness,
+  ledVoiceLightColor,
+  ledVoiceAccentColor,
+  ledVoiceMuted,
+  ledVoiceMutedColor,
+  ledTimersEnabled,
+  ledTimersBrightness,
+  ledTimersLightColor,
+  ledTimersCountdown,
+  ledAlarmsEnabled,
+  ledAlarmsBrightness,
+  ledAlarmsLightColor,
+  ledIntercomEnabled,
+  ledIntercomBrightness,
+  ledIntercomLightColor,
+  ledNotificationsEnabled,
+  ledNotificationsBrightness,
+  ledNotificationsLightColor,
+  ledMediaEnabled,
+  ledMediaBrightness,
+  ledMediaLightColor,
+  ledMediaStyle,
+];
+
 const List<SettingDef<Object>> allSettings = [
   startUrl,
   secureProxy,
@@ -11510,6 +12274,8 @@ const List<SettingDef<Object>> allSettings = [
   allowMixedContent,
   ignoreSslErrors,
   webviewDebugging,
+  browserUrlFilter,
+  browserUrlFilterNotice,
   webMicrophone,
   webCamera,
   webGeolocation,
@@ -11530,6 +12296,7 @@ const List<SettingDef<Object>> allSettings = [
   gestureRemoteKeysEnabled,
   clapStrictness,
   handGestureHoldSeconds,
+  ...ledSettings,
   kioskAllowDrawer,
   kioskAllowDashboard,
   kioskAllowHaKiosk,
@@ -11877,6 +12644,7 @@ const List<SettingDef<Object>> allSettings = [
   voiceStopWord,
   voiceWakeArbitration,
   voiceWakeArbitrationWindowMs,
+  voiceWakeArbitrationOffsetDb,
   voiceSkin,
   voiceTheme,
   voiceOverlayMode,
@@ -11905,6 +12673,7 @@ const List<SettingDef<Object>> allSettings = [
   haAutoLogin,
   haSatelliteEntity,
   haCustomPages,
+  haCustomPagesSocket,
   haKioskMode,
   haKioskHideHeader,
   haKioskHideSidebar,
@@ -11964,6 +12733,7 @@ const List<SettingDef<Object>> allSettings = [
   sendspinGroupVolume,
   sendspinMaUrl,
   sendspinMaToken,
+  sendspinMaInputs,
   sendspinMaShortcut,
   sendspinMaOpenFullscreen,
   sendspinMaAutoClose,
@@ -11981,13 +12751,15 @@ const List<SettingDef<Object>> allSettings = [
   sendspinFullscreenControls,
   sendspinFullscreenTextScale,
   sendspinFullscreenButtonScale,
-  sendspinFullscreenHorizontal,
+  sendspinFullscreenLayout,
   sendspinFullscreenDoubleTap,
   sendspinFullscreenMotion,
   sendspinFullscreenReturn,
   sendspinFullscreenReturnView,
   sendspinFullscreenShortcut,
   sendspinSpeakerPill,
+  sendspinSpeakerPillPlayers,
+  sendspinAudioQuality,
   sendspinQueueArt,
   sendspinLyrics,
   sendspinFullscreenQueue,
@@ -12018,10 +12790,15 @@ const List<SettingDef<Object>> allSettings = [
   notificationsBlur,
   voiceWakeSound,
   voiceChimeWake,
+  voiceChimeWakeVolume,
   voiceChimeDone,
+  voiceChimeDoneVolume,
   voiceChimeError,
+  voiceChimeErrorVolume,
   voiceChimeTimer,
+  voiceChimeTimerVolume,
   voiceChimeAnnounce,
+  voiceChimeAnnounceVolume,
   notificationsChimeFile,
   notificationsVolume,
   announcementsEnabled,
@@ -12093,6 +12870,8 @@ const List<SettingDef<Object>> allSettings = [
   fleetRoster,
   fleetAppliedRevision,
   fleetSyncedKeys,
+  fleetSyncedPlugins,
+  fleetPluginErrors,
   fleetLastSyncAt,
   intercomEnabled,
   intercomKey,
@@ -12117,6 +12896,7 @@ const List<SettingDef<Object>> allSettings = [
   customStartUrl,
   intercomMaxCallMinutes,
   intercomHangupKey,
+  intercomHangupKeyRinging,
   intercomTls,
   alarmsList,
   alarmsRuntime,

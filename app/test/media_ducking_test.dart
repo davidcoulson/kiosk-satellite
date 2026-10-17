@@ -118,6 +118,7 @@ void main() {
           required onSnapshot,
           required log,
           String label = 'remote player',
+          bool showInputs = false,
         }) => create(playerId, onSnapshot);
     manager.haRemoteFactory =
         ({

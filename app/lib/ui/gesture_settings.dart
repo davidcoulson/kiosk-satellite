@@ -35,6 +35,7 @@ const _actionGroups = <(String, List<(String, String, IconData)>)>[
     'Kiosk Satellite',
     [
       ('navigate', 'Go to a dashboard view', Icons.dashboard_outlined),
+      ('refresh', 'Refresh the dashboard', Icons.refresh),
       ('url', 'Open a web page', Icons.public),
       ('camera_view', 'Show a camera view', Icons.videocam_outlined),
       ('sendspin_player', 'Show the floating player', Icons.speaker_outlined),
@@ -45,8 +46,17 @@ const _actionGroups = <(String, List<(String, String, IconData)>)>[
       ('intercom_open', 'Open Call a kiosk', Icons.speaker_phone_outlined),
       ('intercom_call', 'Call a kiosk', Icons.phone_outlined),
       ('intercom_hangup', 'End the intercom call', Icons.call_end_outlined),
+      ('intercom_answer', 'Accept intercom call', Icons.call_outlined),
+      (
+        'intercom_decline',
+        'Decline intercom call',
+        Icons.phone_disabled_outlined,
+      ),
       ('alarm_stop', 'Stop the alarm', Icons.alarm_off_outlined),
       ('alarm_snooze', 'Snooze the alarm', Icons.snooze_outlined),
+      ('voice_wake', 'Start a voice command', Icons.mic_none_outlined),
+      ('voice_stop', 'Stop the voice assistant', Icons.stop_circle_outlined),
+      ('voice_mute', 'Mute or unmute Voice Satellite', Icons.mic_off_outlined),
       ('screensaver', 'Start the screensaver', Icons.nightlight_outlined),
       ('screensaver_stop', 'Stop the screensaver', Icons.light_mode_outlined),
       ('hold_mode', 'Toggle hold mode', Icons.pause_circle_outline),
@@ -152,6 +162,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                   'fingers' => Icons.waving_hand_outlined,
                   'plugin' => Icons.extension_outlined,
                   'remote_key' => Icons.settings_remote_outlined,
+                  'button' => Icons.radio_button_checked,
                   _ => Icons.gesture,
                 }),
                 title: Text(localizedGestureTrigger(context, mapping.trigger)),
@@ -931,6 +942,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
       'plugin_action' => _configurePluginAction(),
       // Actions with nothing to configure skip the second dialog.
       'android_settings' ||
+      'refresh' ||
       'sendspin_player' ||
       'now_playing' ||
       'music_assistant' ||
@@ -938,8 +950,13 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
       'app_launcher' ||
       'intercom_open' ||
       'intercom_hangup' ||
+      'intercom_answer' ||
+      'intercom_decline' ||
       'alarm_stop' ||
       'alarm_snooze' ||
+      'voice_wake' ||
+      'voice_stop' ||
+      'voice_mute' ||
       'screensaver' ||
       'screensaver_stop' ||
       'hold_mode' ||

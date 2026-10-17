@@ -166,7 +166,8 @@ String rotationCrossfadeJs({
         // container holds NOW; the swap is detected by that reference
         // changing to a new element that has produced DOM.
         var before = container.lastElementChild;
-        history.pushState(null, '', path);
+        // Around the URL Filter's check (urlFilterJs).
+        (history.__ksPushState || history.pushState).call(history, null, '', path);
         window.dispatchEvent(new CustomEvent('location-changed'));
         var waited = 0;
         var poll = function () {

@@ -12,6 +12,7 @@ import 'core/certificate_log.dart';
 import 'core/error_log.dart';
 import 'core/events.dart';
 import 'core/frame_watchdog.dart';
+import 'core/headless.dart';
 import 'core/ha_http_overrides.dart';
 import 'core/locale_dates.dart';
 import 'core/user_authorities.dart';
@@ -37,6 +38,9 @@ Future<void> main() async {
   // Date strings (clock screensaver, photo metadata) follow the device's
   // locale (issue #108).
   await initLocaleDates();
+
+  // Before the container: managers read it while they start.
+  await Headless.detect();
 
   final container = AppContainer();
   // Self-signed certificates are the norm for LAN Home Assistant servers;
@@ -81,6 +85,13 @@ Future<void> main() async {
     osVersion: container.device.osVersion,
   );
   WebSocket.userAgent = AppIdentity.userAgent;
+
+  // A device without a screen has no UI to build and no frames to watch
+  // for. The managers, the service and the remote admin are the app.
+  if (Headless.active) {
+    container.log.info('app', 'running headless: no screen on this device');
+    return;
+  }
 
   // Chrome DevTools over ADB, when the panel has been asked for it.
   //

@@ -96,6 +96,7 @@ void main() {
           required onSnapshot,
           required log,
           String label = 'remote player',
+          bool showInputs = false,
         }) => _IdleRemote(
           baseUrl: baseUrl,
           token: token,

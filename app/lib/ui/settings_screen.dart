@@ -61,7 +61,9 @@ import 'camera_views_picker.dart';
 import 'dashboard_view_picker.dart';
 import 'import_options_dialog.dart';
 import 'intercom_settings.dart';
+import '../managers/home_assistant/custom_pages.dart' show viewPathUrl;
 import 'custom_pages_settings.dart';
+import 'url_filter_settings.dart';
 import 'custom_wake_models.dart';
 import 'kit.dart';
 import 'time_picker.dart';
@@ -95,6 +97,10 @@ List<Widget> _sectionedCards(
   // the generic tile (the motion switch shown disabled while the Camera
   // section's master switch is off).
   Map<String, Widget> replace = const {},
+  // Cards keyed by setting key, placed on their own just ahead of that
+  // setting's row or page entry (a plugin screensaver's page entry above
+  // Widgets).
+  Map<String, Widget> before = const {},
   // The second-level page being rendered, if any. Definitions declaring a
   // *different* subpage collapse into one entry card here (the row that
   // opens their page); definitions declaring *this* subpage render normally.
@@ -120,6 +126,12 @@ List<Widget> _sectionedCards(
 
   final subpagesEmitted = <String>{};
   for (final def in visible) {
+    if (before[def.key] case final card?) {
+      flush();
+      current = null;
+      entryRun = true;
+      out.add(card);
+    }
     if (def.subpage != subpage) {
       // Lives on a second-level page: the first def of each subpage puts
       // the entry row where the group used to sit; the rest add nothing.
@@ -162,7 +174,8 @@ List<Widget> _sectionedCards(
                   def.category == 'Home Assistant' ||
                   def.category == 'Screen & Audio' ||
                   def.category == 'Screensaver' ||
-                  def.category == 'Voice Satellite')
+                  def.category == 'Voice Satellite' ||
+                  def.category == 'LED Control')
               ? Builder(
                   builder: (context) => SectionHeading(
                     settingsPageText(context, def.category, heading),
@@ -292,6 +305,12 @@ const _categories = <(String, String, Object, String)>[
   ),
   ('Gestures', 'Gestures', Icons.gesture, 'Touch, palm and clap gestures'),
   (
+    'LED Control',
+    'LED Control',
+    Icons.blur_circular,
+    'Status light colors and effects',
+  ),
+  (
     'Device',
     'Device',
     Icons.tablet_android_outlined,
@@ -324,6 +343,27 @@ const _railGroups = <String, String>{
   'Kiosk': 'Kiosk',
   'Device': 'System',
 };
+
+/// The Chimes page: each sound with its volume under it.
+final List<SettingDef<Object>> _chimeRows = [
+  for (final kind in voiceChimeSettings.keys) ...[
+    voiceChimeSettings[kind]!,
+    voiceChimeVolumes[kind]!,
+  ],
+];
+
+/// Whether a category's page is listed. LED Control only exists on a
+/// device with lights the app can drive (LedManager hides its settings
+/// everywhere else).
+bool _categoryShown(String category) =>
+    category != 'LED Control' || _defsFor(category).isNotEmpty;
+
+/// Where the category at [index] sits among the ones listed: what its icon
+/// color cycles by, so a hidden page never leaves two neighbors alike.
+int _shownPosition(int index) => [
+  for (final c in _categories.take(index))
+    if (_categoryShown(c.$1)) c,
+].length;
 
 List<SettingDef<Object>> _defsFor(String category) => [
   for (final def in allSettings)
@@ -503,7 +543,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _cachedSearchIndex = buildSettingsSearchIndex(
         [
           for (final (category, title, _, subtitle) in _categories)
-            (category, title, subtitle),
+            if (_categoryShown(category)) (category, title, subtitle),
         ],
         pageText: (text) => navigationText(context, text),
         deviceTextFor: (text) => deviceText(context, text),
@@ -522,6 +562,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         mediaTextFor: (text) => mediaText(context, text),
         cameraStreamsTextFor: (text) => cameraStreamsText(context, text),
         cameraTextFor: (text) => cameraText(context, text),
+        browserTextFor: (text) => settingsPageText(context, 'Browser', text),
         titleFor: (def) => def.localizedTitle(context),
         descriptionFor: (def) => def.localizedDescription(context),
       );
@@ -540,7 +581,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Set<String> get _hidden =>
       decodeStringSet(widget.container.settings.get(uiHiddenPages));
 
-  bool _isHidden(String category) => _hidden.contains(category);
+  /// Whether a page stays off the rail and the hub: the owner hid it, or the
+  /// device has nothing to show there (see [_categoryShown]).
+  bool _isHidden(String category) =>
+      _hidden.contains(category) || !_categoryShown(category);
 
   /// Rail groups the owner has rolled up, by heading. Read at render like
   /// [_hidden], so a change from Remote Admin or another surface shows up
@@ -1158,7 +1202,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _openSubpage(String category, String subpage) {
+    // A page of another category (a plugin screensaver's plugin page) moves
+    // the rail there too, as a search result does.
+    final index = _categories.indexWhere((c) => c.$1 == category);
     setState(() {
+      if (index >= 0) _selected = index;
       _subpage = subpage;
       _landing = null;
     });
@@ -1197,7 +1245,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                _CategoryIcon(index: index, icon: icon),
+                _CategoryIcon(index: _shownPosition(index), icon: icon),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -1238,6 +1286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   get _hubGroups {
     final groups = <(String, List<(int, (String, String, Object, String))>)>[];
     for (final entry in _categories.indexed) {
+      if (!_categoryShown(entry.$2.$1)) continue;
       final heading = _railGroups[entry.$2.$1];
       if (heading != null) groups.add((heading, []));
       groups.last.$2.add(entry);
@@ -1490,6 +1539,37 @@ Widget _subpageEntryCard(
   ],
 );
 
+/// The entry to the selected plugin screensaver's settings, where the stock
+/// modes put theirs. A plugin's settings live on its Plugin Manager page, so
+/// the row opens that page. Null while the mode is not a plugin's, its
+/// plugin is gone or Enable Plugins is off, which closes that page.
+/// Mirrored on the remote (plugins.js, renderPluginScreensaverEntry).
+Widget? _pluginScreensaverEntry(AppContainer container) {
+  final mode = container.settings.get(screensaverMode);
+  if (!isPluginScreensaver(mode) || !container.plugins.enabled.value) {
+    return null;
+  }
+  final id = mode.split(':')[1];
+  final plugin = container.plugins.installed.value
+      .where((p) => p['id'] == id)
+      .firstOrNull;
+  if (plugin == null) return null;
+  final description = '${plugin['description'] ?? ''}';
+  return SettingsCard(
+    children: [
+      Builder(
+        builder: (context) => ListTile(
+          leading: const Icon(Icons.extension_rounded),
+          title: Text('${plugin['name']}'),
+          subtitle: description.isEmpty ? null : Text(description),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => openSettingsSubpage(context, container, 'Plugins', id),
+        ),
+      ),
+    ],
+  );
+}
+
 /// The One UI second-level entry: one row standing in for every setting that
 /// declares this subpage, with a hint listing what moved inside. Tapping
 /// opens the page; Back (arrow or gesture) returns to this row.
@@ -1725,6 +1805,9 @@ class _CategoryContentState extends State<_CategoryContent> {
     widget.container.plugins.screensavers.addListener(
       _pluginScreensaversChanged,
     );
+    // The plugin screensaver's entry row comes and goes with the plugins.
+    widget.container.plugins.installed.addListener(_pluginScreensaversChanged);
+    widget.container.plugins.enabled.addListener(_pluginScreensaversChanged);
     // The Managed banner comes and goes with the leader's pushes.
     _fleetEcho = widget.container.bus.on<FleetSyncChanged>().listen((_) {
       if (mounted) setState(() {});
@@ -1802,6 +1885,10 @@ class _CategoryContentState extends State<_CategoryContent> {
     widget.container.plugins.screensavers.removeListener(
       _pluginScreensaversChanged,
     );
+    widget.container.plugins.installed.removeListener(
+      _pluginScreensaversChanged,
+    );
+    widget.container.plugins.enabled.removeListener(_pluginScreensaversChanged);
     _btAdapterTimer?.cancel();
     _fleetEcho?.cancel();
     _settingsEcho?.cancel();
@@ -2582,15 +2669,14 @@ class _CategoryContentState extends State<_CategoryContent> {
         ] else ...[
           // What every source has in common, said once at the top: the
           // surfaces only show for a player with something to show.
-          // Its icon on the page title's line: the title sits 4 in from
-          // the card edge, so the hint does too.
           if (widget.category == 'Sendspin')
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: HintRow(
-                mediaText(context, _mediaPlayerIntro),
-                inset: false,
-              ),
+            SettingsCard(
+              children: [
+                IntroRow(
+                  icon: const Icon(Icons.info_outline),
+                  subtitle: mediaText(context, _mediaPlayerIntro),
+                ),
+              ],
             ),
           ..._withEsphomeStartError(
             _sectionedCards(
@@ -2608,8 +2694,16 @@ class _CategoryContentState extends State<_CategoryContent> {
               () => setState(() {}),
               replace: _rowReplacements(container),
               after: _rowExtras(container),
+              before: {
+                if (widget.category == 'Screensaver')
+                  screensaverWidgets.key: ?_pluginScreensaverEntry(container),
+              },
             ),
           ),
+          // No setting draws the URL Filter, so its row is placed here,
+          // last on the page.
+          if (widget.category == 'Browser')
+            _subpageEntryCard(container, 'Browser', 'URL Filter'),
         ],
         // Last and on their own card, like the Voice Satellite permissions:
         // the OS's to give, not ours to set. Always shown - Lockdown Mode
@@ -3988,7 +4082,7 @@ class _CategoryContentState extends State<_CategoryContent> {
         case 'Chimes':
           return [
             ...sectioned([voiceWakeSound]),
-            ...sectioned(voiceChimeSettings.values.toList()),
+            ...sectioned(_chimeRows),
           ];
         case 'Wake word diagnostics':
           break;
@@ -3998,7 +4092,7 @@ class _CategoryContentState extends State<_CategoryContent> {
     }
 
     if (widget.category == 'Voice Satellite' && subpage == 'Chimes') {
-      return [...sectioned(voiceChimeSettings.values.toList())];
+      return [...sectioned(_chimeRows)];
     }
 
     // The dashboard runtime's Timers page holds only what the kiosk draws
@@ -4028,6 +4122,8 @@ class _CategoryContentState extends State<_CategoryContent> {
     switch (subpage) {
       case 'Custom Pages':
         return [CustomPagesCard(container: container)];
+      case 'URL Filter':
+        return [UrlFilterCard(container: container)];
       case 'Dashboard View Rotation':
         // Hand-built: the view checkboxes need the live dashboards from Home
         // Assistant, which the generic renderer cannot supply.
@@ -7242,6 +7338,113 @@ class _PlayerRowState extends State<_PlayerRow> {
   }
 }
 
+/// The speakers the Now Playing pill offers (issue #974), ticked off
+/// Music Assistant's players and the Sonos rooms in one picker, with a
+/// chip per source. Each pick counts only for its own source's menu.
+/// Mirrored on the remote (rows.js).
+class _SpeakerPillPlayersRow extends StatefulWidget {
+  const _SpeakerPillPlayersRow({
+    required this.container,
+    required this.onChanged,
+  });
+
+  final AppContainer container;
+  final VoidCallback onChanged;
+
+  @override
+  State<_SpeakerPillPlayersRow> createState() => _SpeakerPillPlayersRowState();
+}
+
+class _SpeakerPillPlayersRowState extends State<_SpeakerPillPlayersRow> {
+  AppContainer get c => widget.container;
+
+  /// Whether the list was asked for yet.
+  bool _loaded = false;
+
+  List<String> _stored() =>
+      decodeSpeakerPillPlayers(c.settings.get(sendspinSpeakerPillPlayers));
+
+  Future<void> _pick(PickSpec spec) async {
+    final ids = await showItemMultiPicker(
+      context,
+      title: sendspinSpeakerPillPlayers.localizedTitle(context),
+      spec: spec,
+      selected: _stored(),
+    );
+    if (ids == null) return;
+    await c.settings.set(sendspinSpeakerPillPlayers, jsonEncode(ids));
+    if (mounted) setState(() {});
+    widget.onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = speakerPillSpec(context, c.commands);
+    if (!_loaded) {
+      _loaded = true;
+      if (PickCatalog.of(spec.key).value == null) {
+        PickCatalog.load(spec.key, spec.loader);
+      }
+    }
+    final picks = _stored();
+    return ValueListenableBuilder<PickList?>(
+      valueListenable: PickCatalog.of(spec.key),
+      builder: (context, list, _) {
+        final scheme = Theme.of(context).colorScheme;
+        // A pick the list lacks (not loaded yet, or away) reads its id.
+        final names = [
+          for (final id in picks)
+            list?.find(id)?.name ?? id.substring(id.indexOf(':') + 1),
+        ];
+        final field = ControlBox(
+          onTap: () => _pick(spec),
+          child: Row(
+            children: [
+              Icon(
+                picks.length > 1 ? Icons.speaker_group_outlined : Icons.speaker,
+                size: 20,
+                color: picks.isEmpty ? scheme.onSurfaceVariant : scheme.primary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  picks.isEmpty
+                      ? mediaText(context, 'All speakers')
+                      : names.join(', '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: picks.isEmpty
+                        ? scheme.onSurfaceVariant
+                        : scheme.onSurface,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.keyboard_arrow_down,
+                size: 20,
+                color: scheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        );
+        return SettingsRow(
+          title: Text(sendspinSpeakerPillPlayers.localizedTitle(context)),
+          stack: true,
+          subtitle: Text(
+            sendspinSpeakerPillPlayers.localizedDescription(context),
+          ),
+          trailing: tightPane(context)
+              ? field
+              : SizedBox(width: 300, child: field),
+        );
+      },
+    );
+  }
+}
+
 /// Where Voice Satellite speaks its answers: this kiosk, or a Home
 /// Assistant media player picked from the live list.
 class _TtsOutputRow extends StatefulWidget {
@@ -8213,7 +8416,7 @@ class _DashboardPickerCardState extends State<_DashboardPickerCard> {
   String get _base => c.homeAssistant.baseUrl;
 
   Future<void> _apply(String path) async {
-    final url = '$_base/$path';
+    final url = viewPathUrl(_base, path);
     await c.settings.set(startUrl, url);
     await c.commands.execute('loadUrl', {'url': url});
     if (mounted) setState(() {});
@@ -8221,7 +8424,13 @@ class _DashboardPickerCardState extends State<_DashboardPickerCard> {
 
   @override
   Widget build(BuildContext context) {
-    final current = dashboardPathOfUrl(c.settings.get(startUrl), _base) ?? '';
+    final current =
+        dashboardPathOfUrl(
+          c.settings.get(startUrl),
+          _base,
+          pages: c.homeAssistant.customPages,
+        ) ??
+        '';
     return SettingsCard(
       children: [
         DashboardViewRow(
@@ -9248,14 +9457,14 @@ class _DevicePermissionsTileState extends State<_DevicePermissionsTile>
   Widget build(BuildContext context) {
     final settings = widget.container.settings;
     final perms = _perms;
-    final background =
-        settings.get(wakeWordEnabled) && settings.get(wakeWordBackground);
+    final listening = widget.container.wakeWord.inUse;
+    final background = listening && settings.get(wakeWordBackground);
     final micBlocked = perms?.microphoneBlocked == true;
     return Column(
       children: separatedRows([
         _row(
           granted: perms?.microphone,
-          needed: settings.get(wakeWordEnabled),
+          needed: listening,
           missingIcon: Icons.mic_off_outlined,
           title: devicePermissionDescriptions['microphone']!.title,
           held: devicePermissionDescriptions['microphone']!.description,
@@ -10844,6 +11053,11 @@ class SettingTile extends StatelessWidget {
         // The external motion sensor (issue #973), picked the same way.
         if (def.key == motionEntity.key) {
           return _MotionEntityRow(container: c, def: def, onChanged: onChanged);
+        }
+        // The speakers the Now Playing pill offers, ticked off the players
+        // of the source its menu reads from, never typed as JSON.
+        if (def.key == sendspinSpeakerPillPlayers.key) {
+          return _SpeakerPillPlayersRow(container: c, onChanged: onChanged);
         }
         // The Home Assistant Dashboard screensaver's view and Now Playing's
         // chosen view are picked from the instance's dashboards in the

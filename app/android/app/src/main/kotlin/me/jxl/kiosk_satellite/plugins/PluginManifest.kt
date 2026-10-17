@@ -23,12 +23,19 @@ class PluginManifest(val json: JSONObject) {
     val capabilities = json.getJSONArray("capabilities").let { array ->
         (0 until array.length()).map { array.getString(it) }.toSet()
     }
+    /** The plugin runs on a device without a screen: it checks isHeadless() and skips its overlays and screensavers there. */
+    val headless = json.opt("headless").let { value ->
+        require(value == null || value is Boolean) { "Invalid headless" }
+        value == true
+    }
+    /** Overlays and screensavers are all a device without a screen would load such a plugin for, unless it says otherwise. */
+    val needsScreen get() = !headless && ("overlay" in capabilities || "screensaver" in capabilities)
 
     init {
         require(json.getInt("schemaVersion") == 1) { "Unsupported manifest schema" }
         require(apiVersion == 1) { "This plugin needs a different SDK version" }
         require(minAndroidSdk >= 24) { "Minimum Android SDK must be at least 24" }
-        require(capabilities.all { it in setOf("overlay", "native", "entities", "host.read", "host.control", "shizuku", "screensaver", "noise") }) { "Unsupported plugin capability" }
+        require(capabilities.all { it in setOf("overlay", "native", "entities", "host.read", "host.control", "shizuku", "screensaver", "noise", "ha") }) { "Unsupported plugin capability" }
         // The room's noise level is a host read, opted into on its own.
         require("noise" !in capabilities || "host.read" in capabilities) { "Unsupported plugin capability" }
         text(json, "description", 1000)

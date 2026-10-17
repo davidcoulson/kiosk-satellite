@@ -1,20 +1,25 @@
 import 'dart:convert';
 
-// Custom pages: a person's own HTML files in Home Assistant's `www`
-// folder, which Home Assistant serves at `/local/` on its own origin.
+// Custom pages: a person's own HTML pages, either files in Home
+// Assistant's `www` folder, which Home Assistant serves at `/local/` on its
+// own origin, or pages on another web server.
 //
-// Being on the dashboard's origin is what makes them simple to host here.
-// The page shares the dashboard's localStorage, so the session auto-login
-// seeds (`hassTokens`) signs a `home-assistant-js-websocket` page in with
-// no token in its code. Every origin rule the kiosk applies to the
-// dashboard (links, the secure context proxy, a base URL change) covers
-// the page too.
+// A page in Home Assistant shares the dashboard's localStorage, so the
+// session auto-login seeds (`hassTokens`) signs a
+// `home-assistant-js-websocket` page in with no token in its code, and
+// every origin rule the kiosk applies to the dashboard (links, the secure
+// context proxy, a base URL change) covers the page too. A page on another
+// server gets no Home Assistant session. It reaches Home Assistant through
+// the kiosk's own connection instead (see PageHaSocket), when the person
+// allows it.
 //
-// A page is stored by its path ("/local/kitchen.html", optionally with a
-// query and a fragment) and navigated to by that path without its leading
-// slash, the same shape as a dashboard view path. The dashboard lists show
-// the pages as one more dashboard on [customPagesDashboardPath], so every
-// dashboard picker, the rotation and the ESPHome selects offer them.
+// A page in Home Assistant is stored by its path ("/local/kitchen.html",
+// optionally with a query and a fragment) and navigated to by that path
+// without its leading slash, the same shape as a dashboard view path. A
+// page elsewhere is stored by its full URL and navigated to as "local/"
+// followed by that URL. The dashboard lists show the pages as one more
+// dashboard on [customPagesDashboardPath], so every dashboard picker, the
+// rotation and the ESPHome selects offer them.
 
 /// The url_path the pages are listed under. Home Assistant requires a
 /// hyphen in the url_path of a dashboard someone adds and none of its own
@@ -34,15 +39,21 @@ class CustomPage {
 
   final String name;
 
-  /// "/local/kitchen.html#lights": always under /local/.
+  /// "/local/kitchen.html#lights" for a page in Home Assistant, or the full
+  /// URL of a page on another server, "https://pages.lan/wall.html#den".
   final String path;
 
-  /// The navigation path, "local/kitchen.html#lights".
-  String get navPath => path.substring(1);
+  /// Whether the page lives on another server than Home Assistant.
+  bool get external => !path.startsWith('/');
 
-  /// What follows "/local/", the page's route inside the Custom Pages
+  /// The navigation path, "local/kitchen.html#lights" or
+  /// "local/https://pages.lan/wall.html#den".
+  String get navPath =>
+      external ? '$customPagesDashboardPath/$path' : path.substring(1);
+
+  /// What follows "local/", the page's route inside the Custom Pages
   /// dashboard.
-  String get route => path.substring('/local/'.length);
+  String get route => navPath.substring('$customPagesDashboardPath/'.length);
 
   Map<String, Object?> toJson() => {'name': name, 'path': path};
 }
@@ -71,17 +82,23 @@ List<CustomPage> parseCustomPages(String raw) {
 String encodeCustomPages(List<CustomPage> pages) =>
     jsonEncode([for (final p in pages) p.toJson()]);
 
-/// [input] as a stored page path ("/local/kitchen.html") or null when it
-/// names nothing under /local/. Takes the path as typed ("/local/a.html",
-/// "local/a.html" or a bare "a.html") or a whole URL pasted from a
-/// browser, whose origin is dropped: the page is always loaded from the
-/// Home Assistant base URL.
-String? normalizeCustomPagePath(String input) {
+/// [input] as a stored page path ("/local/kitchen.html" or a full URL) or
+/// null when it names no page. Takes the path as typed ("/local/a.html",
+/// "local/a.html" or a bare "a.html") or a whole URL. A URL on [haBase]'s
+/// origin is a page in Home Assistant and keeps only its path, so it loads
+/// from the Home Assistant base URL. Any other http or https URL is a page
+/// on another server. Without [haBase], every URL is one elsewhere, which
+/// is how a stored list is read back.
+String? normalizeCustomPagePath(String input, {String haBase = ''}) {
   var text = input.trim();
   if (text.isEmpty || text.contains(RegExp(r'\s|\\'))) return null;
   if (text.contains('://')) {
     final uri = Uri.tryParse(text);
-    if (uri == null || !uri.hasAuthority) return null;
+    if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return null;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return null;
+    final base = Uri.tryParse(haBase.trim());
+    final inHa = base != null && base.hasAuthority && base.origin == uri.origin;
+    if (!inHa) return externalPageUrl(uri);
     text =
         uri.path +
         (uri.hasQuery ? '?${uri.query}' : '') +
@@ -105,10 +122,55 @@ String? normalizeCustomPagePath(String input) {
   return '/local/$text';
 }
 
+/// [uri] as a stored external page: the URL the WebView reports for it,
+/// with no user info, a lowercase host, no default port and "/" for an
+/// empty path, so a page on screen compares equal to its stored form.
+String? externalPageUrl(Uri uri) {
+  if (uri.userInfo.isNotEmpty) return null;
+  return uri.replace(path: uri.path.isEmpty ? '/' : uri.path).toString();
+}
+
 /// Whether a navigation path ("local/kitchen.html") names a custom page
 /// rather than a dashboard view.
 bool isCustomPagePath(String navPath) =>
     navPath.startsWith('$customPagesDashboardPath/');
+
+/// Whether a navigation path names a custom page on another server,
+/// "local/https://pages.lan/wall.html".
+bool isExternalCustomPagePath(String navPath) =>
+    navPath.startsWith('$customPagesDashboardPath/http://') ||
+    navPath.startsWith('$customPagesDashboardPath/https://');
+
+/// The URL a navigation path loads: a page on another server is its own
+/// URL, anything else lives on the Home Assistant [base].
+String viewPathUrl(String base, String navPath) =>
+    isExternalCustomPagePath(navPath)
+    ? navPath.substring('$customPagesDashboardPath/'.length)
+    : '$base/$navPath';
+
+/// The navigation path of the external page [url] shows, or null when it
+/// is none of [pages]. The same file under a fragment no page names is
+/// still that page, in a layout of its own, so it keeps the fragment.
+String? externalPageNavPath(String url, List<CustomPage> pages) {
+  final uri = Uri.tryParse(url);
+  if (uri == null || !uri.hasAuthority) return null;
+  final shown = externalPageUrl(uri);
+  if (shown == null) return null;
+  final file = customPageFile(shown);
+  CustomPage? sameFile;
+  for (final p in pages) {
+    if (!p.external) continue;
+    if (p.path == shown) return p.navPath;
+    if (customPageFile(p.path) == file) sameFile ??= p;
+  }
+  return sameFile == null ? null : '$customPagesDashboardPath/$shown';
+}
+
+/// The origins of the pages on other servers, "https://pages.lan".
+Set<String> externalPageOrigins(List<CustomPage> pages) => {
+  for (final p in pages)
+    if (p.external) Uri.parse(p.path).origin,
+};
 
 /// The navigation path a URL's path names: the path without its slashes,
 /// plus the query and the fragment for a custom page, where they pick a
@@ -122,7 +184,7 @@ String navPathOfUri(Uri uri) {
       (uri.hasFragment && uri.fragment.isNotEmpty ? '#${uri.fragment}' : '');
 }
 
-/// The page's file, its path without the fragment: what Home Assistant
+/// The page's file, its path or URL without the fragment: what the server
 /// serves and the validation asks for.
 String customPageFile(String path) {
   final cut = path.indexOf('#');

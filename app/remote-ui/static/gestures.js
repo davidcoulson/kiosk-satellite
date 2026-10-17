@@ -1,3 +1,4 @@
+import { isHeadless } from './headless.js';
 import { gestureText, cameraText, localizeSetting, t } from './localization.js';
 import { watchUpdates } from './live.js';
 import {
@@ -40,11 +41,28 @@ export const GESTURE_TRIGGERS = [
   ['fingers', 'Show fingers'],
   ['plugin', 'Plugin trigger'],
   ['remote_key', 'Remote key'],
+  ['button', 'Button'],
+];
+// What a device without a screen can do: its buttons, claps and plugins
+// trigger, and the actions that show, open or navigate something are left
+// out (headless.js).
+const HEADLESS_TRIGGERS = new Set(['button', 'claps', 'plugin']);
+const DISPLAY_ACTIONS = new Set([
+  'navigate', 'refresh', 'url', 'camera_view', 'sendspin_player', 'now_playing',
+  'music_assistant', 'app_launcher', 'intercom_open', 'screensaver', 'screensaver_stop',
+  'hold_mode', 'ha_kiosk', 'launch_app', 'open_uri', 'android_settings',
+]);
+// The buttons that reach the app. The Echo Dot's LineageOS build keeps the
+// microphone and volume buttons for itself (they mute and change the volume
+// there), so the Action button is the one to map.
+export const GESTURE_BUTTONS = [['action', 'Action']];
+export const GESTURE_PRESSES = [
+  ['single', 'Press'], ['double', 'Double press'], ['long', 'Hold'],
 ];
 
 // What an agent can map: it has no touch dashboard, microphone or camera,
 // only its remote - and only the actions whose commands it registers.
-const AGENT_TRIGGERS = ['remote_key'];
+const AGENT_TRIGGERS = ['remote_key', 'button'];
 const AGENT_ACTIONS = new Set([
   'plugin_action', 'launch_app', 'open_uri', 'android_settings',
   'ha_service', 'ha_script', 'ha_automation', 'ha_event',
@@ -52,6 +70,7 @@ const AGENT_ACTIONS = new Set([
 export const GESTURE_ACTION_GROUPS = [
   ['Kiosk Satellite', [
     ['navigate', 'Go to a dashboard view', 'grid'],
+    ['refresh', 'Refresh the dashboard', 'refresh'],
     ['url', 'Open a web page', 'globe'],
     ['camera_view', 'Show a camera view', 'video'],
     ['sendspin_player', 'Show the floating player', 'speaker'],
@@ -62,8 +81,13 @@ export const GESTURE_ACTION_GROUPS = [
     ['intercom_open', 'Open Call a kiosk', 'speaker'],
     ['intercom_call', 'Call a kiosk', 'speaker'],
     ['intercom_hangup', 'End the intercom call', 'callEnd'],
+    ['intercom_answer', 'Accept intercom call', 'call'],
+    ['intercom_decline', 'Decline intercom call', 'callOff'],
     ['alarm_stop', 'Stop the alarm', 'alarmOff'],
     ['alarm_snooze', 'Snooze the alarm', 'snooze'],
+    ['voice_wake', 'Start a voice command', 'mic'],
+    ['voice_stop', 'Stop the voice assistant', 'stop'],
+    ['voice_mute', 'Mute or unmute Voice Satellite', 'micOff'],
     ['screensaver', 'Start the screensaver', 'moon'],
     ['screensaver_stop', 'Stop the screensaver', 'sun'],
     ['hold_mode', 'Toggle hold mode', 'pauseCircle'],
@@ -114,6 +138,13 @@ export function describeGestureTrigger(trigger) {
     case 'remote_key':
       return t(trigger.longPress === true ? 'gestureDescribeRemoteKeyLong' : 'gestureDescribeRemoteKey',
         {key: remoteKeyName(trigger)});
+    case 'button': {
+      const name = GESTURE_BUTTONS.find(([id]) => id === trigger.button)?.[1] || 'Action';
+      const button = gestureText(name);
+      if (trigger.press === 'double') return t('gestureDescribeButtonDouble', {button});
+      if (trigger.press === 'long') return t('gestureDescribeButtonHold', {button});
+      return t('gestureDescribeButtonPress', {button});
+    }
   }
   return gestureText('Gesture');
 }
@@ -129,6 +160,7 @@ export function describeGestureAction(a) {
   switch (a.type) {
     case 'navigate': return t('gestureGoTo', {value: a.path});
     case 'url': return t('gestureOpen', {value: a.url});
+    case 'refresh': return gestureText('Refresh the dashboard');
     case 'camera_view':
       if (a.mode === 'hide') return gestureText('Close the camera view');
       return a.viewName ? t('gestureCameraToggleName', {name: a.viewName}) : gestureText('Toggle the camera view');
@@ -140,8 +172,13 @@ export function describeGestureAction(a) {
     case 'intercom_open': return gestureText('Open Call a kiosk');
     case 'intercom_call': return t('gestureCall', {value: a.kioskName || a.kioskId});
     case 'intercom_hangup': return gestureText('End the intercom call');
+    case 'intercom_answer': return gestureText('Accept intercom call');
+    case 'intercom_decline': return gestureText('Decline intercom call');
     case 'alarm_stop': return gestureText('Stop the alarm');
     case 'alarm_snooze': return gestureText('Snooze the alarm');
+    case 'voice_wake': return gestureText('Start a voice command');
+    case 'voice_stop': return gestureText('Stop the voice assistant');
+    case 'voice_mute': return gestureText('Mute or unmute Voice Satellite');
     case 'screensaver': return gestureText('Start the screensaver');
     case 'screensaver_stop': return gestureText('Stop the screensaver');
     case 'hold_mode': return gestureText('Toggle hold mode');
@@ -474,7 +511,8 @@ export async function pickGestureAction(current) {
   const items = [];
   const agent = isAgent();
   for (const [group, all] of GESTURE_ACTION_GROUPS) {
-    const actions = agent ? all.filter(([value]) => AGENT_ACTIONS.has(value)) : all;
+    let actions = agent ? all.filter(([value]) => AGENT_ACTIONS.has(value)) : all;
+    if (isHeadless()) actions = actions.filter(([value]) => !DISPLAY_ACTIONS.has(value));
     if (!actions.length) continue;
     items.push({ header: group });
     for (const [value, label, icon] of actions) {
@@ -502,7 +540,9 @@ export async function pickGestureAction(current) {
     case 'screensaver': case 'screensaver_stop': case 'hold_mode':
     case 'ha_kiosk': case 'now_playing': case 'music_assistant':
     case 'media_play_pause': case 'intercom_open': case 'intercom_hangup':
-    case 'alarm_stop': case 'alarm_snooze':
+    case 'intercom_answer': case 'intercom_decline':
+    case 'alarm_stop': case 'alarm_snooze': case 'refresh':
+    case 'voice_wake': case 'voice_stop': case 'voice_mute':
       return { type };
     case 'navigate': return configureGestureNavigate(carried);
     case 'url': return configureGestureText(carried, {
@@ -556,12 +596,24 @@ export async function editGesture(existing) {
   // (issue #331): not offered, though an existing mapping still opens.
   const handsOk = !(state.visionSupport && state.visionSupport.hands === false);
   const agent = isAgent();
+  // The buttons are a headless device's, and touch and hands need a screen
+  // and a camera.
+  const headless = isHeadless();
+  const offered = ([value]) => value === triggerValue.type
+    || (headless ? HEADLESS_TRIGGERS.has(value) : value !== 'button');
   const typeSel = cameraSelectField(gestureText('Gesture'),
     GESTURE_TRIGGERS
+      .filter(offered)
       .filter(([value]) => handsOk || value !== 'fingers' || triggerValue.type === 'fingers')
       .filter(([value]) => !agent || AGENT_TRIGGERS.includes(value) || triggerValue.type === value)
       .map(([value, label]) => ({ value, label: gestureText(label) })),
-    triggerValue.type || (agent ? 'remote_key' : 'corner_taps'));
+    triggerValue.type || (headless ? 'button' : agent ? 'remote_key' : 'corner_taps'));
+  const buttonSel = cameraSelectField(gestureText('Button'),
+    GESTURE_BUTTONS.map(([value, label]) => ({ value, label: gestureText(label) })),
+    GESTURE_BUTTONS.some(([id]) => id === triggerValue.button) ? triggerValue.button : 'action');
+  const pressSel = cameraSelectField(gestureText('Press'),
+    GESTURE_PRESSES.map(([value, label]) => ({ value, label: gestureText(label) })),
+    GESTURE_PRESSES.some(([id]) => id === triggerValue.press) ? triggerValue.press : 'single');
   const cornerSel = cameraSelectField(gestureText('Corner'),
     Object.entries(GESTURE_CORNERS).map(([value, label]) => ({
       value, label: gestureCorner(value),
@@ -728,11 +780,13 @@ export async function editGesture(existing) {
     }
   }));
 
-  body.append(typeSel.wrap, cornerSel.wrap, tapsSel.wrap, fingersSel.wrap,
+  body.append(typeSel.wrap, buttonSel.wrap, pressSel.wrap, cornerSel.wrap, tapsSel.wrap, fingersSel.wrap,
     fingerTapsSel.wrap, clapsSel.wrap, clapsNote, fingerCountSel.wrap,
     holdWrap, palmNote, pluginSel.wrap, pluginNote, seqWrap, keyRow, longWrap, actionRow);
   const update = () => {
     const type = typeSel.select.value;
+    buttonSel.wrap.style.display = type === 'button' ? '' : 'none';
+    pressSel.wrap.style.display = type === 'button' ? '' : 'none';
     cornerSel.wrap.style.display =
       type === 'corner_taps' || type === 'corner_hold' ? '' : 'none';
     tapsSel.wrap.style.display = type === 'corner_taps' ? '' : 'none';
@@ -788,6 +842,10 @@ export async function editGesture(existing) {
         trigger.keyCode = key.keyCode;
         if (key.keyName) trigger.keyName = key.keyName;
         trigger.longPress = longInput.checked;
+      }
+      if (type === 'button') {
+        trigger.button = buttonSel.select.value;
+        trigger.press = pressSel.select.value;
       }
       const mappings = readGestureMappings();
       const mapping = {
@@ -857,7 +915,7 @@ export async function loadGestures() {
         }, false, 'delete'),
       ],
       {
-        icon: { claps: 'clap', fingers: 'hand', plugin: 'extension', remote_key: 'remote' }[mapping.trigger?.type] || 'gesture',
+        icon: { claps: 'clap', fingers: 'hand', plugin: 'extension', remote_key: 'remote', button: 'button' }[mapping.trigger?.type] || 'gesture',
         onClick: async () => {
           if (await editGesture(mapping)) refresh();
         },
@@ -878,7 +936,9 @@ export async function loadGestures() {
   if (!agent) {
     const note = document.createElement('div');
     note.className = 'group-note';
-    note.textContent = gestureText('Gestures are observed, not blocked: the taps also reach the dashboard, so corners and multi-finger shapes keep them from firing anything there.');
+    note.textContent = isHeadless()
+      ? gestureText('A button press no gesture claims keeps its own job: Action answers, stops or dismisses what is ringing and otherwise starts a voice command, Microphone mutes Voice Satellite and the volume buttons change the volume.')
+      : gestureText('Gestures are observed, not blocked: the taps also reach the dashboard, so corners and multi-finger shapes keep them from firing anything there.');
     root.appendChild(note);
   }
 
@@ -927,7 +987,7 @@ export async function loadGestures() {
     root.appendChild(clapperCard);
   }
   const hold = settings.find((s) => s.key === 'gestures.hand_hold_seconds');
-  if (hold) {
+  if (hold && !hold.hidden) {
     const heading = document.createElement('h2');
     heading.className = 'card-title';
     heading.textContent = gestureText('Hand Gestures');
@@ -944,7 +1004,8 @@ export async function loadGestures() {
 // Satellite shares the Home Assistant tab, as it shares that pane on the
 // device.
 export const CATEGORY_TABS = [
-  ['tab-browser', ['Browser']],
+  // The URL Filter page, which no setting draws (url_filter.js).
+  ['tab-browser', ['Browser'], { extra: ['URL Filter'] }],
   ['tab-kiosk', ['Kiosk']],
   ['tab-lockdown', ['Lockdown']],
   ['tab-launcher', ['Launcher']],
@@ -958,6 +1019,7 @@ export const CATEGORY_TABS = [
   ['tab-intercom', ['Intercom']],
   ['tab-alarms', ['Alarms']],
   ['tab-esphome', ['ESPHome']],
+  ['tab-leds', ['LED Control']],
   ['device-settings', ['Device'],
     // Read-only reports, filled by loadDeviceInfo: no setting declares
     // them, so the tab names them here.

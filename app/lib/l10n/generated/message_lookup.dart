@@ -438,6 +438,12 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'fleetXaiApiKey' => strings.fleetXaiApiKey,
       'fleetGeminiApiKey' => strings.fleetGeminiApiKey,
       'fleetMcpServerToken' => strings.fleetMcpServerToken,
+      'fleetPlugins' => strings.fleetPlugins,
+      'fleetPluginSecrets' => strings.fleetPluginSecrets,
+      'fleetNoPluginsInstalledOnThisKiosk' =>
+        strings.fleetNoPluginsInstalledOnThisKiosk,
+      'fleetKiosksOnThisProfileInstallTheseAndTakeTheir' =>
+        strings.fleetKiosksOnThisProfileInstallTheseAndTakeTheir,
       'fleetUpdateTheFleet' => strings.fleetUpdateTheFleet,
       'fleetUpdateTheWholeFleetToTheKioskSatelliteVersion' =>
         strings.fleetUpdateTheWholeFleetToTheKioskSatelliteVersion,
@@ -456,11 +462,14 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'gestureIntercomOpen' => strings.gestureIntercomOpen,
       'gestureIntercomCall' => strings.gestureIntercomCall,
       'gestureIntercomHangup' => strings.gestureIntercomHangup,
+      'gestureIntercomAnswer' => strings.gestureIntercomAnswer,
+      'gestureIntercomDecline' => strings.gestureIntercomDecline,
       'gestureAlarmStop' => strings.gestureAlarmStop,
       'gestureAlarmSnooze' => strings.gestureAlarmSnooze,
       'gestureScreensaver' => strings.gestureScreensaver,
       'gestureScreensaverStop' => strings.gestureScreensaverStop,
       'gestureHoldMode' => strings.gestureHoldMode,
+      'gestureRefresh' => strings.gestureRefresh,
       'gestureMediaPlayPause' => strings.gestureMediaPlayPause,
       'gestureHaKiosk' => strings.gestureHaKiosk,
       'gesturePluginRun' => strings.gesturePluginRun,
@@ -487,6 +496,9 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'gestureTheaterOn' => strings.gestureTheaterOn,
       'gestureTheaterOff' => strings.gestureTheaterOff,
       'gestureTheaterPeek' => strings.gestureTheaterPeek,
+      'gestureVoiceWake' => strings.gestureVoiceWake,
+      'gestureVoiceStop' => strings.gestureVoiceStop,
+      'gestureVoiceMute' => strings.gestureVoiceMute,
       'gestureDescribeOpenHand' => strings.gestureDescribeOpenHand,
       'gestureTopLeft' => strings.gestureTopLeft,
       'gestureTopRight' => strings.gestureTopRight,
@@ -580,6 +592,11 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'gestureKeyError' => strings.gestureKeyError,
       'gestureLongPress' => strings.gestureLongPress,
       'gestureLongPressHelp' => strings.gestureLongPressHelp,
+      'gestureButton' => strings.gestureButton,
+      'gesturePress' => strings.gesturePress,
+      'gestureDoublePress' => strings.gestureDoublePress,
+      'gestureHoldPress' => strings.gestureHoldPress,
+      'gestureButtonDefaults' => strings.gestureButtonDefaults,
       'intercomCall' => strings.intercomCall,
       'intercomNoReady' => strings.intercomNoReady,
       'intercomOneReady' => strings.intercomOneReady,
@@ -728,6 +745,9 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'mediaShowFloatingPlayer' => strings.mediaShowFloatingPlayer,
       'mediaOpenMusicAssistant' => strings.mediaOpenMusicAssistant,
       'mediaCannotControl' => strings.mediaCannotControl,
+      'mediaAudioHiRes' => strings.mediaAudioHiRes,
+      'mediaAudioCdQuality' => strings.mediaAudioCdQuality,
+      'mediaAudioLossy' => strings.mediaAudioLossy,
       'mediaNothingQueued' => strings.mediaNothingQueued,
       'mediaChapters' => strings.mediaChapters,
       'mediaNowPlaying' => strings.mediaNowPlaying,
@@ -884,6 +904,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'pluginErrorRestartEnable' => strings.pluginErrorRestartEnable,
       'pluginErrorInstalledIntegrity' => strings.pluginErrorInstalledIntegrity,
       'pluginErrorAndroidOld' => strings.pluginErrorAndroidOld,
+      'pluginErrorNeedsScreen' => strings.pluginErrorNeedsScreen,
       'pluginErrorNativeIntegrity' => strings.pluginErrorNativeIntegrity,
       'pluginErrorNativeFileIntegrity' =>
         strings.pluginErrorNativeFileIntegrity,
@@ -1032,6 +1053,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'overviewMemory' => strings.overviewMemory,
       'overviewTemperature' => strings.overviewTemperature,
       'overviewShowingCustomPages' => strings.overviewShowingCustomPages,
+      'overviewHeadlessMode' => strings.overviewHeadlessMode,
       'overviewNoScreenshot' => strings.overviewNoScreenshot,
       'overviewStill' => strings.overviewStill,
       'overviewLive' => strings.overviewLive,
@@ -1476,6 +1498,19 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'devicePasswordSet' => strings.devicePasswordSet,
       'deviceSaveFailed' => strings.deviceSaveFailed,
       'deviceOpenSettingsDevice' => strings.deviceOpenSettingsDevice,
+      'deviceHardwareButtons' => strings.deviceHardwareButtons,
+      'deviceHardwareButtonsHeld' => strings.deviceHardwareButtonsHeld,
+      'deviceHardwareButtonsMissing' => strings.deviceHardwareButtonsMissing,
+      'deviceHeadlessAdbMicrophone' => strings.deviceHeadlessAdbMicrophone,
+      'deviceHeadlessAdbNotifications' =>
+        strings.deviceHeadlessAdbNotifications,
+      'deviceHeadlessAdbLocation' => strings.deviceHeadlessAdbLocation,
+      'deviceHeadlessAdbBluetooth' => strings.deviceHeadlessAdbBluetooth,
+      'deviceHeadlessAdbBattery' => strings.deviceHeadlessAdbBattery,
+      'deviceHeadlessAdbStorage' => strings.deviceHeadlessAdbStorage,
+      'deviceHeadlessAdbButtons' => strings.deviceHeadlessAdbButtons,
+      'deviceHeadlessAdbButtonsRestart' =>
+        strings.deviceHeadlessAdbButtonsRestart,
       'settingRemoteKeysReportTitle' => strings.settingRemoteKeysReportTitle,
       'settingRemoteKeysReportDescription' =>
         strings.settingRemoteKeysReportDescription,
@@ -2058,20 +2093,26 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'gestureRemoteKeysHelp' => strings.gestureRemoteKeysHelp,
       'haCustomPages' => strings.haCustomPages,
       'haCustomPagesHintDashboard' => strings.haCustomPagesHintDashboard,
+      'settingHaCustomPagesSocketTitle' =>
+        strings.settingHaCustomPagesSocketTitle,
+      'settingHaCustomPagesSocketDescription' =>
+        strings.settingHaCustomPagesSocketDescription,
       'haCustomPagesAdd' => strings.haCustomPagesAdd,
-      'haCustomPagesEmpty' => strings.haCustomPagesEmpty,
+      'haCustomPagesEmptyAnyServer' => strings.haCustomPagesEmptyAnyServer,
       'haCustomPagesGuide' => strings.haCustomPagesGuide,
       'haCustomPagesGuideHint' => strings.haCustomPagesGuideHint,
       'haCustomPageAddTitle' => strings.haCustomPageAddTitle,
       'haCustomPageEditTitle' => strings.haCustomPageEditTitle,
       'haCustomPageName' => strings.haCustomPageName,
-      'haCustomPagePath' => strings.haCustomPagePath,
-      'haCustomPagePathHint' => strings.haCustomPagePathHint,
+      'haCustomPageLocation' => strings.haCustomPageLocation,
+      'haCustomPageLocationHint' => strings.haCustomPageLocationHint,
       'haCustomPageNameMissing' => strings.haCustomPageNameMissing,
-      'haCustomPagePathInvalid' => strings.haCustomPagePathInvalid,
+      'haCustomPageLocationInvalid' => strings.haCustomPageLocationInvalid,
       'haCustomPageDuplicate' => strings.haCustomPageDuplicate,
       'haCustomPageNotFound' => strings.haCustomPageNotFound,
+      'haCustomPageUrlNotFound' => strings.haCustomPageUrlNotFound,
       'haCustomPageUnreachable' => strings.haCustomPageUnreachable,
+      'haCustomPageUrlUnreachable' => strings.haCustomPageUrlUnreachable,
       'settingHaHoldModeTitle' => strings.settingHaHoldModeTitle,
       'settingHaHoldModeDescription' => strings.settingHaHoldModeDescription,
       'settingHaHoldReleaseMinutesTitle' =>
@@ -2328,6 +2369,16 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.intercomOptionHangupVolumeDown,
       'intercomOptionHangupMute' => strings.intercomOptionHangupMute,
       'intercomOptionHangupHelp' => strings.intercomOptionHangupHelp,
+      'settingIntercomHangupKeyRingingTitle' =>
+        strings.settingIntercomHangupKeyRingingTitle,
+      'settingIntercomHangupKeyRingingDescription' =>
+        strings.settingIntercomHangupKeyRingingDescription,
+      'intercomOptionHangupRingingAnswer' =>
+        strings.intercomOptionHangupRingingAnswer,
+      'intercomOptionHangupRingingDecline' =>
+        strings.intercomOptionHangupRingingDecline,
+      'intercomOptionHangupRingingIgnore' =>
+        strings.intercomOptionHangupRingingIgnore,
       'intercomTalkSection' => strings.intercomTalkSection,
       'settingKioskAllowDrawerTitle' => strings.settingKioskAllowDrawerTitle,
       'settingKioskAllowDrawerDescription' =>
@@ -2422,6 +2473,117 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'kioskGuardRemote' => strings.kioskGuardRemote,
       'kioskGrantDevice' => strings.kioskGrantDevice,
       'kioskOpenSettingsDevice' => strings.kioskOpenSettingsDevice,
+      'settingLedEnabledTitle' => strings.settingLedEnabledTitle,
+      'settingLedEnabledDescription' => strings.settingLedEnabledDescription,
+      'settingLedAnimationsTitle' => strings.settingLedAnimationsTitle,
+      'settingLedAnimationsDescription' =>
+        strings.settingLedAnimationsDescription,
+      'settingLedIdleEnabledTitle' => strings.settingLedIdleEnabledTitle,
+      'settingLedIdleEnabledDescription' =>
+        strings.settingLedIdleEnabledDescription,
+      'settingLedIdleBrightnessTitle' => strings.settingLedIdleBrightnessTitle,
+      'settingLedIdleBrightnessDescription' =>
+        strings.settingLedIdleBrightnessDescription,
+      'settingLedIdleLightColorTitle' => strings.settingLedIdleLightColorTitle,
+      'settingLedIdleLightColorDescription' =>
+        strings.settingLedIdleLightColorDescription,
+      'settingLedIdleStyleTitle' => strings.settingLedIdleStyleTitle,
+      'settingLedIdleStyleDescription' =>
+        strings.settingLedIdleStyleDescription,
+      'settingLedIdleStyleOptionSolid' =>
+        strings.settingLedIdleStyleOptionSolid,
+      'settingLedIdleStyleOptionBreathe' =>
+        strings.settingLedIdleStyleOptionBreathe,
+      'settingLedVoiceEnabledTitle' => strings.settingLedVoiceEnabledTitle,
+      'settingLedVoiceEnabledDescription' =>
+        strings.settingLedVoiceEnabledDescription,
+      'settingLedVoiceBrightnessTitle' =>
+        strings.settingLedVoiceBrightnessTitle,
+      'settingLedVoiceBrightnessDescription' =>
+        strings.settingLedVoiceBrightnessDescription,
+      'settingLedVoiceLightColorTitle' =>
+        strings.settingLedVoiceLightColorTitle,
+      'settingLedVoiceLightColorDescription' =>
+        strings.settingLedVoiceLightColorDescription,
+      'settingLedVoiceAccentColorTitle' =>
+        strings.settingLedVoiceAccentColorTitle,
+      'settingLedVoiceAccentColorDescription' =>
+        strings.settingLedVoiceAccentColorDescription,
+      'settingLedVoiceMutedTitle' => strings.settingLedVoiceMutedTitle,
+      'settingLedVoiceMutedDescription' =>
+        strings.settingLedVoiceMutedDescription,
+      'settingLedVoiceMutedColorTitle' =>
+        strings.settingLedVoiceMutedColorTitle,
+      'settingLedVoiceMutedColorDescription' =>
+        strings.settingLedVoiceMutedColorDescription,
+      'settingLedTimersEnabledTitle' => strings.settingLedTimersEnabledTitle,
+      'settingLedTimersEnabledDescription' =>
+        strings.settingLedTimersEnabledDescription,
+      'settingLedTimersBrightnessTitle' =>
+        strings.settingLedTimersBrightnessTitle,
+      'settingLedTimersBrightnessDescription' =>
+        strings.settingLedTimersBrightnessDescription,
+      'settingLedTimersLightColorTitle' =>
+        strings.settingLedTimersLightColorTitle,
+      'settingLedTimersLightColorDescription' =>
+        strings.settingLedTimersLightColorDescription,
+      'settingLedTimersCountdownTitle' =>
+        strings.settingLedTimersCountdownTitle,
+      'settingLedTimersCountdownDescription' =>
+        strings.settingLedTimersCountdownDescription,
+      'settingLedAlarmsEnabledTitle' => strings.settingLedAlarmsEnabledTitle,
+      'settingLedAlarmsEnabledDescription' =>
+        strings.settingLedAlarmsEnabledDescription,
+      'settingLedAlarmsBrightnessTitle' =>
+        strings.settingLedAlarmsBrightnessTitle,
+      'settingLedAlarmsBrightnessDescription' =>
+        strings.settingLedAlarmsBrightnessDescription,
+      'settingLedAlarmsLightColorTitle' =>
+        strings.settingLedAlarmsLightColorTitle,
+      'settingLedAlarmsLightColorDescription' =>
+        strings.settingLedAlarmsLightColorDescription,
+      'settingLedIntercomEnabledTitle' =>
+        strings.settingLedIntercomEnabledTitle,
+      'settingLedIntercomEnabledDescription' =>
+        strings.settingLedIntercomEnabledDescription,
+      'settingLedIntercomBrightnessTitle' =>
+        strings.settingLedIntercomBrightnessTitle,
+      'settingLedIntercomBrightnessDescription' =>
+        strings.settingLedIntercomBrightnessDescription,
+      'settingLedIntercomLightColorTitle' =>
+        strings.settingLedIntercomLightColorTitle,
+      'settingLedIntercomLightColorDescription' =>
+        strings.settingLedIntercomLightColorDescription,
+      'settingLedNotificationsEnabledTitle' =>
+        strings.settingLedNotificationsEnabledTitle,
+      'settingLedNotificationsEnabledDescription' =>
+        strings.settingLedNotificationsEnabledDescription,
+      'settingLedNotificationsBrightnessTitle' =>
+        strings.settingLedNotificationsBrightnessTitle,
+      'settingLedNotificationsBrightnessDescription' =>
+        strings.settingLedNotificationsBrightnessDescription,
+      'settingLedNotificationsLightColorTitle' =>
+        strings.settingLedNotificationsLightColorTitle,
+      'settingLedNotificationsLightColorDescription' =>
+        strings.settingLedNotificationsLightColorDescription,
+      'settingLedMediaEnabledTitle' => strings.settingLedMediaEnabledTitle,
+      'settingLedMediaEnabledDescription' =>
+        strings.settingLedMediaEnabledDescription,
+      'settingLedMediaBrightnessTitle' =>
+        strings.settingLedMediaBrightnessTitle,
+      'settingLedMediaBrightnessDescription' =>
+        strings.settingLedMediaBrightnessDescription,
+      'settingLedMediaLightColorTitle' =>
+        strings.settingLedMediaLightColorTitle,
+      'settingLedMediaLightColorDescription' =>
+        strings.settingLedMediaLightColorDescription,
+      'settingLedMediaStyleTitle' => strings.settingLedMediaStyleTitle,
+      'settingLedMediaStyleDescription' =>
+        strings.settingLedMediaStyleDescription,
+      'settingLedMediaStyleOptionSolid' =>
+        strings.settingLedMediaStyleOptionSolid,
+      'settingLedMediaStyleOptionBreathe' =>
+        strings.settingLedMediaStyleOptionBreathe,
       'settingLockdownEnabledTitle' => strings.settingLockdownEnabledTitle,
       'settingLockdownEnabledDescription' =>
         strings.settingLockdownEnabledDescription,
@@ -2570,10 +2732,13 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingSendspinFullscreenButtonScaleTitle,
       'settingSendspinFullscreenButtonScaleDescription' =>
         strings.settingSendspinFullscreenButtonScaleDescription,
-      'settingSendspinFullscreenHorizontalTitle' =>
-        strings.settingSendspinFullscreenHorizontalTitle,
-      'settingSendspinFullscreenHorizontalDescription' =>
-        strings.settingSendspinFullscreenHorizontalDescription,
+      'settingSendspinFullscreenLayoutTitle' =>
+        strings.settingSendspinFullscreenLayoutTitle,
+      'settingSendspinFullscreenLayoutDescription' =>
+        strings.settingSendspinFullscreenLayoutDescription,
+      'mediaLayoutVertical' => strings.mediaLayoutVertical,
+      'mediaLayoutHorizontal' => strings.mediaLayoutHorizontal,
+      'mediaLayoutArtOnly' => strings.mediaLayoutArtOnly,
       'settingSendspinFullscreenDoubleTapTitle' =>
         strings.settingSendspinFullscreenDoubleTapTitle,
       'settingSendspinFullscreenDoubleTapDescription' =>
@@ -2604,6 +2769,15 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingSendspinSpeakerPillTitle,
       'settingSendspinSpeakerPillDescription' =>
         strings.settingSendspinSpeakerPillDescription,
+      'settingSendspinSpeakerPillPlayersTitle' =>
+        strings.settingSendspinSpeakerPillPlayersTitle,
+      'settingSendspinSpeakerPillPlayersDescription' =>
+        strings.settingSendspinSpeakerPillPlayersDescription,
+      'settingSendspinAudioQualityTitle' =>
+        strings.settingSendspinAudioQualityTitle,
+      'settingSendspinAudioQualityDescription' =>
+        strings.settingSendspinAudioQualityDescription,
+      'mediaAllSpeakers' => strings.mediaAllSpeakers,
       'settingSendspinQueueArtTitle' => strings.settingSendspinQueueArtTitle,
       'settingSendspinQueueArtDescription' =>
         strings.settingSendspinQueueArtDescription,
@@ -2754,6 +2928,23 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'settingsMenuLogout' => strings.settingsMenuLogout,
       'settingsMenuSwitchKiosk' => strings.settingsMenuSwitchKiosk,
       'settingsMenuThemeAuto' => strings.settingsMenuThemeAuto,
+      'settingsMenuOverviewHeadlessSummary' =>
+        strings.settingsMenuOverviewHeadlessSummary,
+      'settingsMenuHomeAssistantHeadlessSummary' =>
+        strings.settingsMenuHomeAssistantHeadlessSummary,
+      'settingsMenuAudio' => strings.settingsMenuAudio,
+      'settingsMenuAudioSummary' => strings.settingsMenuAudioSummary,
+      'settingsGroupMedia' => strings.settingsGroupMedia,
+      'settingsMenuDlnaHeadlessSummary' =>
+        strings.settingsMenuDlnaHeadlessSummary,
+      'settingsMenuGesturesHeadlessSummary' =>
+        strings.settingsMenuGesturesHeadlessSummary,
+      'settingsMenuLeds' => strings.settingsMenuLeds,
+      'settingsMenuLedsSummary' => strings.settingsMenuLedsSummary,
+      'settingsLedTimers' => strings.settingsLedTimers,
+      'settingsLedNotifications' => strings.settingsLedNotifications,
+      'settingsLedIdle' => strings.settingsLedIdle,
+      'settingsLedEffects' => strings.settingsLedEffects,
       'settingAdaptiveBrightnessTitle' =>
         strings.settingAdaptiveBrightnessTitle,
       'settingAdaptiveBrightnessDescription' =>
@@ -4026,6 +4217,12 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'settingVoiceWakeSoundTitle' => strings.settingVoiceWakeSoundTitle,
       'settingVoiceWakeSoundDescription' =>
         strings.settingVoiceWakeSoundDescription,
+      'voiceChimeWakeVolumeTitle' => strings.voiceChimeWakeVolumeTitle,
+      'voiceChimeDoneVolumeTitle' => strings.voiceChimeDoneVolumeTitle,
+      'voiceChimeErrorVolumeTitle' => strings.voiceChimeErrorVolumeTitle,
+      'voiceChimeTimerVolumeTitle' => strings.voiceChimeTimerVolumeTitle,
+      'voiceChimeAnnounceVolumeTitle' => strings.voiceChimeAnnounceVolumeTitle,
+      'voiceChimeVolumeDescription' => strings.voiceChimeVolumeDescription,
       'settingVoiceShowCommandTitle' => strings.settingVoiceShowCommandTitle,
       'settingVoiceShowCommandDescription' =>
         strings.settingVoiceShowCommandDescription,
@@ -4110,7 +4307,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'voiceWordListening' => strings.voiceWordListening,
       'voiceWordNotListening' => strings.voiceWordNotListening,
       'voiceWordAdded' => strings.voiceWordAdded,
-      'voiceHaAddHint' => strings.voiceHaAddHint,
+      'voiceHaAddAgainHint' => strings.voiceHaAddAgainHint,
       'voiceHaEsphomeOff' => strings.voiceHaEsphomeOff,
       'voiceWordReloadNeeded' => strings.voiceWordReloadNeeded,
       'voiceHaSelectsReloadHint' => strings.voiceHaSelectsReloadHint,
@@ -4409,6 +4606,10 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingVoiceWakeArbitrationWindowTitle,
       'settingVoiceWakeArbitrationWindowDescription' =>
         strings.settingVoiceWakeArbitrationWindowDescription,
+      'settingVoiceWakeArbitrationOffsetTitle' =>
+        strings.settingVoiceWakeArbitrationOffsetTitle,
+      'settingVoiceWakeArbitrationOffsetDescription' =>
+        strings.settingVoiceWakeArbitrationOffsetDescription,
       'voiceSectionWakeArbitration' => strings.voiceSectionWakeArbitration,
       'voiceOptionSlightly' => strings.voiceOptionSlightly,
       'voiceOptionModerately' => strings.voiceOptionModerately,
@@ -4459,6 +4660,38 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'browserInjectJsPlaceholder' => strings.browserInjectJsPlaceholder,
       'browserInjectJsExternalPlaceholder' =>
         strings.browserInjectJsExternalPlaceholder,
+      'urlFilterTitle' => strings.urlFilterTitle,
+      'urlFilterHint' => strings.urlFilterHint,
+      'urlFilterIntroTitle' => strings.urlFilterIntroTitle,
+      'urlFilterIntroSub' => strings.urlFilterIntroSub,
+      'urlFilterAdd' => strings.urlFilterAdd,
+      'urlFilterAddTitle' => strings.urlFilterAddTitle,
+      'urlFilterEditTitle' => strings.urlFilterEditTitle,
+      'urlFilterName' => strings.urlFilterName,
+      'urlFilterPattern' => strings.urlFilterPattern,
+      'urlFilterPatternWildcardHint' => strings.urlFilterPatternWildcardHint,
+      'urlFilterPatternRegexHint' => strings.urlFilterPatternRegexHint,
+      'urlFilterType' => strings.urlFilterType,
+      'urlFilterTypeWildcard' => strings.urlFilterTypeWildcard,
+      'urlFilterTypeRegex' => strings.urlFilterTypeRegex,
+      'urlFilterAction' => strings.urlFilterAction,
+      'urlFilterActionBlock' => strings.urlFilterActionBlock,
+      'urlFilterActionAllow' => strings.urlFilterActionAllow,
+      'urlFilterActionAllowHint' => strings.urlFilterActionAllowHint,
+      'urlFilterScope' => strings.urlFilterScope,
+      'urlFilterScopeAll' => strings.urlFilterScopeAll,
+      'urlFilterScopeDashboard' => strings.urlFilterScopeDashboard,
+      'urlFilterScopeExternal' => strings.urlFilterScopeExternal,
+      'urlFilterScopeHint' => strings.urlFilterScopeHint,
+      'urlFilterErrorName' => strings.urlFilterErrorName,
+      'urlFilterErrorPattern' => strings.urlFilterErrorPattern,
+      'urlFilterErrorRegex' => strings.urlFilterErrorRegex,
+      'urlFilterBlocked' => strings.urlFilterBlocked,
+      'urlFilterNotAllowed' => strings.urlFilterNotAllowed,
+      'settingBrowserUrlFilterNoticeTitle' =>
+        strings.settingBrowserUrlFilterNoticeTitle,
+      'settingBrowserUrlFilterNoticeDescription' =>
+        strings.settingBrowserUrlFilterNoticeDescription,
       'setupConnectHeading' => strings.setupConnectHeading,
       'setupConnectLead' => strings.setupConnectLead,
       'setupBaseUrl' => strings.setupBaseUrl,
@@ -4486,6 +4719,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'setupDashboardHelp' => strings.setupDashboardHelp,
       'setupSelectDashboard' => strings.setupSelectDashboard,
       'setupSelectDashboardHelp' => strings.setupSelectDashboardHelp,
+      'setupHeadlessGrants' => strings.setupHeadlessGrants,
       'setupWelcome' => strings.setupWelcome,
       'setupConnect' => strings.setupConnect,
       'setupConnectSummary' => strings.setupConnectSummary,
@@ -4548,7 +4782,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'setupAutoplay' => strings.setupAutoplay,
       'setupVoiceSkipped' => strings.setupVoiceSkipped,
       'setupVoiceLead' => strings.setupVoiceLead,
-      'setupVoiceAddHint' => strings.setupVoiceAddHint,
+      'setupVoiceAddAgainHint' => strings.setupVoiceAddAgainHint,
       'setupRecommendedWall' => strings.setupRecommendedWall,
       'setupVoiceFound' => strings.setupVoiceFound,
       'setupVoiceFoundHelp' => strings.setupVoiceFoundHelp,

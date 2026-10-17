@@ -585,19 +585,23 @@ class IntercomStateChanged extends AppEvent {
 }
 
 /// The hardware button that hangs up the intercom call, as an Android
-/// key code, or 0 for none. Published while a call is placed or live and
-/// set back to 0 when it ends, so the button keeps its usual job the rest
-/// of the time. The kiosk manager hands it to the native key handler.
+/// key code, or 0 for none. Published while a call is placed or live, or
+/// while one rings here when Hang up button while ringing picks Accept or
+/// Decline, and set back to 0 when it ends, so the button keeps its usual
+/// job the rest of the time. The kiosk manager hands it to the native key
+/// handler.
 class IntercomHangupKeyArmed extends AppEvent {
   const IntercomHangupKeyArmed(this.keyCode);
   final int keyCode;
 }
 
-/// The armed hang up button was pressed or a hang up gesture fired. Only
-/// a call being placed, a live call or an announcement ends: a ringing
-/// call is answered or declined on the screen.
+/// The armed hang up button was pressed or a hang up gesture fired. A
+/// call being placed, a live call or an announcement ends. A ringing call
+/// is left alone unless [button] says the press came from the hang up
+/// button, which then does what Hang up button while ringing picks.
 class IntercomHangupRequested extends AppEvent {
-  const IntercomHangupRequested();
+  const IntercomHangupRequested({this.button = false});
+  final bool button;
 }
 
 /// The intercom wants the microphone the page holds, or is done with it.

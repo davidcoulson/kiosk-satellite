@@ -8,6 +8,7 @@ import '../../core/command_registry.dart';
 import '../../core/events.dart';
 import '../../core/manager.dart';
 import '../audio/mic_hub.dart';
+import 'page_ha_socket.dart';
 import 'user_script.dart';
 
 /// The `window.kioskSatellite` bridge (see docs/js-api.md).
@@ -29,6 +30,18 @@ class JsApiManager extends Manager {
 
   InAppWebViewController? _controller;
   final _pageInteractions = <String>{};
+
+  /// The managed Home Assistant connection custom pages open through
+  /// `kioskSatellite.ha` (see page_ha_socket.dart). Set by the composition
+  /// root; without it the page hears `not_allowed`.
+  PageHaSockets? get haSockets => _haSockets;
+  set haSockets(PageHaSockets? value) {
+    _haSockets?.dispose();
+    _haSockets = value;
+    value?.run = _controller == null ? null : _runInPage;
+  }
+
+  PageHaSockets? _haSockets;
   final _browserMicrophones = <String>{};
 
   /// Methods pages may call, mapped to registry command names. Anything not
@@ -145,6 +158,7 @@ class JsApiManager extends Manager {
   void attach(InAppWebViewController controller) {
     detach();
     _controller = controller;
+    _haSockets?.run = _runInPage;
     controller.addJavaScriptHandler(
       handlerName: 'ksApi',
       // The form that says who is calling, not only what they sent.
@@ -153,6 +167,52 @@ class JsApiManager extends Manager {
           ? _onCall(data.args, origin: data.origin, mainFrame: data.isMainFrame)
           : null,
     );
+    // The managed Home Assistant connection, on a handler of its own: its
+    // answers are not the ksApi call shapes, and only the top document of
+    // the page may use it.
+    controller.addJavaScriptHandler(
+      handlerName: 'ksHaSocket',
+      callback: (JavaScriptHandlerFunctionData data) =>
+          identical(_controller?.platform, controller.platform) &&
+              data.isMainFrame
+          ? handleHaSocket(data.args)
+          : null,
+    );
+  }
+
+  void _runInPage(String js) {
+    final controller = _controller;
+    if (controller == null) return;
+    controller.evaluateJavascript(source: js).catchError((Object e) {
+      log.debug(name, 'page socket delivery failed: $e');
+      return null;
+    });
+  }
+
+  /// The ksHaSocket handler body: `[op, doc, sid, frame?]` with op `open`,
+  /// `send` or `close`.
+  @visibleForTesting
+  Future<Object?> handleHaSocket(List<dynamic> args) async {
+    if (args.length < 3) return null;
+    final op = args[0], doc = args[1], sid = args[2];
+    if (op is! String || doc is! String || sid is! String) return null;
+    if (doc.isEmpty || doc.length > 64 || sid.isEmpty || sid.length > 64) {
+      return null;
+    }
+    final sockets = _haSockets;
+    switch (op) {
+      case 'open':
+        return sockets == null
+            ? {'ok': false, 'error': 'not_allowed'}
+            : await sockets.open(doc, sid);
+      case 'send':
+        final frame = args.length > 3 ? args[3] : null;
+        return frame is String && (sockets?.send(doc, sid, frame) ?? false);
+      case 'close':
+        sockets?.close(doc, sid);
+        return true;
+    }
+    return null;
   }
 
   /// Whether the page at an origin is one the kiosk was pointed at: Home
@@ -255,6 +315,10 @@ class JsApiManager extends Manager {
 
   /// A full navigation replaces the document. SPA view switches do not.
   void onPageStarted() {
+    // The document's Home Assistant sockets go with it. The page is told,
+    // in case the new document already opened one before this news
+    // arrived: it opens it again.
+    _haSockets?.closeAll('navigation', notify: true);
     bus.publish(const VoiceTimersCleared());
     _browserMicrophones.clear();
     unawaited(MicHub.instance.setBrowserCapturing(false));
@@ -279,12 +343,17 @@ class JsApiManager extends Manager {
 
   /// Stop dispatching to a discarded WebView and release its holds.
   void detach() {
+    _haSockets?.closeAll('webview detached');
+    _haSockets?.run = null;
     _controller = null;
     onPageStarted();
   }
 
   @override
-  Future<void> dispose() async => detach();
+  Future<void> dispose() async {
+    detach();
+    _haSockets?.dispose();
+  }
 
   /// The ksApi handler body, reachable for tests (attach needs a live
   /// WebView controller).

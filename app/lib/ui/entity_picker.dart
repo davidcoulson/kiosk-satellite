@@ -246,13 +246,61 @@ PickSpec playerSpec(
 }) {
   return PickSpec(
     key: 'players:$source:$speakers',
-    loader: () => _loadPlayers(commands, source, speakers),
+    loader: () => _loadPlayers(commands, source, speakers, false),
     searchHint: mediaText(context, 'Search players'),
     noGroup: '',
     byGroupName: false,
     chips: false,
     headings: false,
     noteText: mediaError,
+  );
+}
+
+/// The players the speaker selection pill can offer (issue #974): Music
+/// Assistant's players and every Sonos room, each under its source's
+/// name with chips to show one source. Sonos is left out while it knows
+/// no speakers, and one source alone reads as a plain list.
+PickSpec speakerPillSpec(BuildContext context, CommandRegistry commands) =>
+    PickSpec(
+      key: 'players:pill',
+      loader: () => _loadPillPlayers(commands),
+      searchHint: mediaText(context, 'Search players'),
+      noGroup: '',
+      byGroupName: false,
+      noteText: mediaError,
+    );
+
+Future<PickList?> _loadPillPlayers(CommandRegistry commands) async {
+  final lists = await Future.wait([
+    _loadPlayers(commands, 'ma', false, false),
+    _loadPlayers(commands, 'sonos', false, true),
+  ]);
+  final ma = lists[0];
+  final sonos = lists[1]?.items ?? const <PickItem>[];
+  // Product names, the same in every language.
+  final both = sonos.isNotEmpty;
+  final maGroup = both ? 'Music Assistant' : '';
+  PickItem under(PickItem i, String group) => PickItem(
+    id: i.id,
+    name: i.name,
+    sub: i.sub,
+    subMono: i.subMono,
+    icon: i.icon,
+    group: group,
+    chip: group.isEmpty ? null : group,
+    available: i.available,
+    raw: i.raw,
+  );
+  final maNote = ma?.notes['ma'];
+  return PickList(
+    [
+      for (final i in ma?.items ?? const <PickItem>[]) under(i, maGroup),
+      for (final i in sonos) under(i, 'Sonos'),
+    ],
+    // Sonos says when it knows no speakers, which is no news to anyone
+    // without them, so only Music Assistant's note stays.
+    notes: {if (maNote != null && maNote.isNotEmpty) maGroup: maNote},
+    groupOrder: [maGroup, 'Sonos'],
   );
 }
 
@@ -271,14 +319,18 @@ PickSpec fixedPlayerSpec(
   headings: false,
 );
 
+/// [rooms] lists every Sonos room on its own, as the speaker selection
+/// pill does.
 Future<PickList?> _loadPlayers(
   CommandRegistry commands,
   String source,
   bool speakers,
+  bool rooms,
 ) async {
   final result = await commands.execute('mediaPlayers', {
     'source': source,
     if (speakers) 'speakers': true,
+    if (rooms) 'rooms': true,
   });
   if (!result.ok) {
     return PickList(const [], notes: {source: result.error ?? ''});

@@ -3,11 +3,14 @@
   "gestureAction": "Action",
   "gestureNavigate": "Aller à une vue du tableau de bord",
   "gestureUrl": "Ouvrir une page web",
+  "gestureRefresh": "Actualiser le tableau de bord",
   "gestureCameraView": "Afficher une vue caméra",
   "gestureLauncher": "Ouvrir le lanceur d'applications",
   "gestureIntercomOpen": "Ouvrir Appeler un kiosque",
   "gestureIntercomCall": "Appeler un kiosque",
   "gestureIntercomHangup": "Terminer l'appel d'interphone",
+  "gestureIntercomAnswer": "Accepter l'appel d'interphone",
+  "gestureIntercomDecline": "Refuser l'appel d'interphone",
   "gestureAlarmStop": "Arrêter l'alarme",
   "gestureAlarmSnooze": "Reporter l'alarme",
   "gestureScreensaver": "Démarrer l'économiseur d'écran",
@@ -35,5 +38,8 @@
   "gestureCameraShow": "Afficher {name}",
   "gestureCameraClose": "Fermer la vue caméra",
   "gestureCameraEmpty": "Aucune vue caméra configurée pour l'instant.",
-  "gestureIntercomEmpty": "Aucun kiosque trouvé sur le réseau pour l'instant."
+  "gestureIntercomEmpty": "Aucun kiosque trouvé sur le réseau pour l'instant.",
+  "gestureVoiceWake": "Lancer une commande vocale",
+  "gestureVoiceStop": "Arrêter l'assistant vocal",
+  "gestureVoiceMute": "Couper ou rétablir le son de Voice Satellite"
 }

@@ -1,3 +1,4 @@
+import { isHeadless } from './headless.js';
 import { renderTlsSettings } from './tls.js';
 import { localizeSetting, voiceText, esphomeError, esphomeDeviceIdentity, esphomeText, launcherText, kioskText, intercomText, intercomError, cameraText, cameraError, cameraResolutionNotice, screensaverText, deviceText, haText, screenAudioText, haConnectionError, settingsPageText, setupImportError, t } from './localization.js';
 import { preserveDraft } from './drafts.js';
@@ -13,7 +14,7 @@ import { MIC_GROUP_NOTE, cameraAction, exportFileName } from './cameras.js';
 import { $, api, cacheSettings, cmd, depSatisfied, state } from './core.js';
 import { readOnlyRow, renderAnalyticsIntro, renderUpdateHelper, renderUpdateSourceDocs } from './device.js';
 import { initNavGroups } from './navgroups.js';
-import { permissionSpecs } from './permissions.js';
+import { adbHint, permissionSpecs } from './permissions.js';
 import { renderServicePage } from './service.js';
 import { renderShizukuPage } from './shizuku.js';
 import { renderStartPage } from './startpage.js';
@@ -46,12 +47,15 @@ import { applyManagedBanners, renderFleetPage } from './fleetsync.js';
 import { decorateAnnouncementsPage, renderIntercomPage } from './intercom.js';
 import { renderAlarmsPage } from './alarms.js';
 import { renderCustomPagesPage } from './custom_pages.js';
+import { renderUrlFilterPage } from './url_filter.js';
+import { renderPluginScreensaverEntry } from './plugins.js';
 import { askImportOptions } from './pickers.js';
 import { settingRow, syncGatedRows } from './rows.js';
 import { applySubpageView, currentPath, setCurrentPath, subpageEntry, refreshNavigationText } from './tabs.js';
 import { showScanDiagnostic, showWatchedEntities } from './views.js';
 import {
   dashboardPathOfUrl,
+  viewPathUrl,
   dashboardViewListRow,
   dashboardViewRow,
   loadDashboards,
@@ -303,6 +307,16 @@ async function flushSettingsUpdates() {
         continue;
       }
     }
+    // Hang up call when pressing this button reveals Hang up button while
+    // ringing in its own card (issue #991), in place like the switches
+    // above.
+    if (!shapeChanged && setting.key === 'intercom.hangup_key') {
+      const byKey = Object.fromEntries(state.settings.map(s => [s.key, s]));
+      if ((!rows.length && !depSatisfied(setting, byKey)) || (rows.length
+          && rows.every(row => row.updateSetting?.() && syncGatedRows(setting.key, row)))) {
+        continue;
+      }
+    }
     // The same for the external motion sensor's switch (issue #973), which
     // also frees Dismiss on motion from the camera on the Screensaver tab.
     if (!shapeChanged && setting.key === 'motion.use_entity') {
@@ -336,6 +350,8 @@ async function flushSettingsUpdates() {
     if (!shapeChanged && rotationCardSettings.has(setting.key)) continue;
     // The Custom Pages list repaints itself (custom_pages.js).
     if (!shapeChanged && setting.key === 'ha.custom_pages') continue;
+    // So does the URL Filter (url_filter.js).
+    if (!shapeChanged && setting.key === 'browser.url_filter') continue;
     // Only the choices of a dropdown moved (a provider's model list came
     // in): its row refreshes them in place rather than the page rebuilding
     // under whatever is being typed elsewhere on it.
@@ -556,12 +572,17 @@ async function renderSettings({ cached = false } = {}) {
     return panels;
   };
 
+  // LED Control exists only where the device has lights to drive: its
+  // settings come back hidden everywhere else.
+  document.querySelector('#tabs button[data-tab="leds"]')?.classList.toggle('hidden',
+    !settings.some((s) => s.category === 'LED Control' && !s.hidden));
+
   for (const [tabId, cats, opts] of CATEGORY_TABS) {
     if (tabId === 'tab-homeassistant') continue; // custom render below
     if (tabId === 'tab-voicesatellite') continue; // custom render below
     const helperPage = tabId === 'device-settings' && helperStatus?.nativeSilent === false;
     const panels = render(document.getElementById(tabId), cats.filter((c) => byCat[c]),
-      tabId === 'device-settings' ? { ...opts, handBuilt: ['Shizuku'], extra: ['TLS', ...(helperPage ? ['Optional update helper'] : []), ...(opts?.extra || [])] } : opts);
+      tabId === 'device-settings' ? { ...opts, handBuilt: ['Shizuku'], extra: ['TLS', ...(helperPage ? ['Optional update helper'] : []), ...(opts?.extra || []).filter((page) => page !== 'WebView' || !isHeadless())] } : opts);
     if (tabId === 'device-settings') {
       renderShizukuPage(panels.get('Shizuku'));
       const adminEntry = document.querySelector('#device-pages [data-subpage-entry="Remote Administration"]');
@@ -582,6 +603,8 @@ async function renderSettings({ cached = false } = {}) {
       renderUpdateSourceDocs(panels.get('Updates'));
     }
     if (helperPage) renderUpdateHelper(panels.get('Optional update helper'), helperStatus);
+    if (tabId === 'tab-browser') renderUrlFilterPage(panels.get('URL Filter'));
+    if (tabId === 'tab-screensaver') renderPluginScreensaverEntry(document.getElementById(tabId), byKey['screensaver.mode']?.value);
   }
 
   // ── Required system permissions (Kiosk and Lockdown tabs) ────────────
@@ -1573,6 +1596,13 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
         const g = await cmd('hasUiGuard');
         out.uiGuard = g.data === true;
       } catch (_) {}
+      if (isHeadless()) {
+        try {
+          const b = await cmd('getHardwareButtons');
+          out.hardwareButtons = b.data?.listening === true;
+          out.hardwareButtonsOn = b.data?.switchedOn === true;
+        } catch (_) {}
+      }
       return out;
     };
 
@@ -1618,10 +1648,12 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
         const text = (t) => deviceText(typeof t === 'function' ? t(all) : t);
         // The device has no screen for the grant: the adb command stands
         // in for the button, and the row is not an error nobody can fix.
-        const noScreen = !ok && spec.requestable && all[spec.requestable] === false;
+        const noScreen = !ok && (isHeadless()
+          ? !!spec.adb
+          : spec.requestable && all[spec.requestable] === false);
         info.querySelector('.desc').textContent = unknownState
           ? deviceText('Status unavailable.')
-          : noScreen ? deviceText(spec.adb)
+          : noScreen ? deviceText(adbHint(spec, all))
           : text(ok ? spec.held : (spec.needed ? spec.missing : spec.idle));
         state.textContent = unknownState ? ''
           : ok ? deviceText('Granted') : noScreen ? deviceText('Not offered')
@@ -1810,7 +1842,8 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
     // from the URL scheme (https needs no proxy, so it sits disabled and
     // off; plain http enables it, validation turns it on with a modal).
     const spSetting = settings.find((s) => s.key === 'browser.secure_proxy');
-    {
+    // A device without a screen has no page that needs a secure context.
+    if (!isHeadless()) {
       const urlVal = (ha.find((s) => s.key === 'ha.url')?.value || '').trim();
       const spu = (() => { try { return new URL(urlVal); } catch (_) { return null; } })();
       const spHttp = spu && spu.protocol === 'http:'
@@ -1888,6 +1921,10 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
 
     if (!state.haConnected) {
       vdesc.textContent = haText('Not validated yet. The settings below unlock once the connection checks out.');
+    } else if (isHeadless()) {
+      // Everything past the connection is the dashboard, which a device
+      // without a screen does not have.
+      vdesc.textContent = haText('Connected.');
     } else {
       vdesc.textContent = haText('Connected.');
       // Dashboard picker: what the kiosk shows. Radio rows; picking one sets
@@ -1917,7 +1954,7 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
         desc: haText('The view the kiosk shows when it starts.'),
         value: startPath,
         onPick: async (path) => {
-          const url = `${rawBase}/${path}`;
+          const url = viewPathUrl(rawBase, path);
           await api('/api/settings', { method: 'PATCH',
             body: JSON.stringify({ 'browser.start_url': url }) });
           await api('/api/commands/loadUrl', { method: 'POST',
