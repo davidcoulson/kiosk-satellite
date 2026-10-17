@@ -11737,7 +11737,7 @@ const remoteKeysReport = SettingDef<bool>(
       'the remote: navigation, media, volume, colour and function keys, '
       'never letters or digits. Needs the accessibility service.',
   category: 'Device',
-  section: 'Headless',
+  section: 'Agent mode',
   perDevice: true,
 );
 
@@ -11752,7 +11752,7 @@ const nowPlaying = SettingDef<bool>(
       'notification access, which Kiosk Satellite turns on itself when it '
       'holds WRITE_SECURE_SETTINGS.',
   category: 'Device',
-  section: 'Headless',
+  section: 'Agent mode',
   perDevice: true,
 );
 
@@ -11765,7 +11765,7 @@ const homeApp = SettingDef<String>(
       'The package this device should normally show, such as '
       'com.spocky.projengmenu. Empty for none.',
   category: 'Device',
-  section: 'Headless',
+  section: 'Agent mode',
   perDevice: true,
 );
 
@@ -11776,7 +11776,7 @@ const homeAppAtBoot = SettingDef<bool>(
   title: 'Open the home app at boot',
   description: 'Start the home app once the device has booted.',
   category: 'Device',
-  section: 'Headless',
+  section: 'Agent mode',
   perDevice: true,
 );
 
@@ -11793,7 +11793,7 @@ const homeAppIdleMinutes = SettingDef<num>(
       'After this many minutes with no remote key pressed and nothing '
       'playing, bring the home app back to the front. 0 turns it off.',
   category: 'Device',
-  section: 'Headless',
+  section: 'Agent mode',
   perDevice: true,
 );
 
@@ -11807,7 +11807,7 @@ const rebootTime = SettingDef<String>(
       'for never. Needs Kiosk Satellite to be able to restart the device '
       '(device owner).',
   category: 'Device',
-  section: 'Headless',
+  section: 'Agent mode',
   perDevice: true,
 );
 
@@ -11823,7 +11823,7 @@ const hotThreshold = SettingDef<num>(
   description:
       'The Running hot sensor turns on while the CPU is hotter than this.',
   category: 'Device',
-  section: 'Headless',
+  section: 'Agent mode',
   perDevice: true,
 );
 
@@ -11837,7 +11837,7 @@ const powerDialogPackage = SettingDef<String>(
       'when its power key is pressed, such as com.htc.closedialog on an '
       'HY260 projector. Empty does nothing.',
   category: 'Device',
-  section: 'Headless',
+  section: 'Agent mode',
   perDevice: true,
 );
 
@@ -11854,7 +11854,7 @@ const powerDialogChoice = SettingDef<String>(
       'that appears right after the screen wakes is only dismissed. Needs '
       'the accessibility service.',
   category: 'Device',
-  section: 'Headless',
+  section: 'Agent mode',
   perDevice: true,
 );
 

@@ -19638,6 +19638,240 @@
       ]
     }
   },
+  "settingRemoteKeysReportTitle": "Send remote keys to Home Assistant",
+  "@settingRemoteKeysReportTitle": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingRemoteKeysReportDescription": "Fire the Remote key event in Home Assistant for each key pressed on the remote: navigation, media, volume, colour and function keys, never letters or digits. Needs the accessibility service.",
+  "@settingRemoteKeysReportDescription": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingNowPlayingTitle": "Report what is playing",
+  "@settingNowPlayingTitle": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingNowPlayingDescription": "Publish the app, title, artist and state of whatever plays on this device to Home Assistant, with play, pause and skip controls. Needs notification access, which Kiosk Satellite turns on itself when it holds WRITE_SECURE_SETTINGS.",
+  "@settingNowPlayingDescription": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingHomeAppTitle": "Home app",
+  "@settingHomeAppTitle": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingHomeAppDescription": "The package this device should normally show, such as com.spocky.projengmenu. Empty for none.",
+  "@settingHomeAppDescription": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingHomeAppAtBootTitle": "Open the home app at boot",
+  "@settingHomeAppAtBootTitle": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingHomeAppAtBootDescription": "Start the home app once the device has booted.",
+  "@settingHomeAppAtBootDescription": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingHomeAppIdleMinutesTitle": "Return to the home app when idle",
+  "@settingHomeAppIdleMinutesTitle": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingHomeAppIdleMinutesDescription": "After this many minutes with no remote key pressed and nothing playing, bring the home app back to the front. 0 turns it off.",
+  "@settingHomeAppIdleMinutesDescription": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingRebootTimeTitle": "Daily restart",
+  "@settingRebootTimeTitle": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingRebootTimeDescription": "Restart the device every day at this time (24-hour, HH:MM). Empty for never. Needs Kiosk Satellite to be able to restart the device (device owner).",
+  "@settingRebootTimeDescription": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingHotThresholdTitle": "Running hot above",
+  "@settingHotThresholdTitle": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingHotThresholdDescription": "The Running hot sensor turns on while the CPU is hotter than this.",
+  "@settingHotThresholdDescription": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingPowerDialogPackageTitle": "Power dialog app",
+  "@settingPowerDialogPackageTitle": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingPowerDialogPackageDescription": "The Android package of a vendor power-off dialog this device shows when its power key is pressed, such as com.htc.closedialog on an HY260 projector. Empty does nothing.",
+  "@settingPowerDialogPackageDescription": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingPowerDialogChoiceTitle": "Power dialog answer",
+  "@settingPowerDialogChoiceTitle": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
+  "settingPowerDialogChoiceDescription": "What Kiosk Satellite does the moment that dialog appears: sleep closes it and puts the device to sleep (Android 9 or later), dismiss only closes it, and anything else is the view id (without the package prefix) of a button to tap, such as rl_reboot. A dialog that appears right after the screen wakes is only dismissed. Needs the accessibility service.",
+  "@settingPowerDialogChoiceDescription": {
+    "context": "Settings > Device > Agent mode",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > Agent mode"
+      ],
+      "remoteAdmin": [
+        "Device > Agent mode"
+      ]
+    }
+  },
   "settingAnalyticsBasicTitle": "Basisanalyse",
   "@settingAnalyticsBasicTitle": {
     "context": "Settings:Device:Kiosk Satellite Analytics",
@@ -20752,240 +20986,6 @@
     "x-locations": {
       "remoteAdmin": [
         "Device"
-      ]
-    }
-  },
-  "settingRemoteKeysReportTitle": "Send remote keys to Home Assistant",
-  "@settingRemoteKeysReportTitle": {
-    "context": "Settings > Device > Headless",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingRemoteKeysReportDescription": "Fire the Remote key event in Home Assistant for each key pressed on the remote: navigation, media, volume, colour and function keys, never letters or digits. Needs the accessibility service.",
-  "@settingRemoteKeysReportDescription": {
-    "context": "Settings > Device > Headless",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingNowPlayingTitle": "Report what is playing",
-  "@settingNowPlayingTitle": {
-    "context": "Settings > Device > Headless",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingNowPlayingDescription": "Publish the app, title, artist and state of whatever plays on this device to Home Assistant, with play, pause and skip controls. Needs notification access, which Kiosk Satellite turns on itself when it holds WRITE_SECURE_SETTINGS.",
-  "@settingNowPlayingDescription": {
-    "context": "Settings > Device > Headless",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingHomeAppTitle": "Home app",
-  "@settingHomeAppTitle": {
-    "context": "Settings > Device > Headless",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingHomeAppDescription": "The package this device should normally show, such as com.spocky.projengmenu. Empty for none.",
-  "@settingHomeAppDescription": {
-    "context": "Settings > Device > Headless",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingHomeAppAtBootTitle": "Open the home app at boot",
-  "@settingHomeAppAtBootTitle": {
-    "context": "Settings > Device > Headless",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingHomeAppAtBootDescription": "Start the home app once the device has booted.",
-  "@settingHomeAppAtBootDescription": {
-    "context": "Settings > Device > Headless",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingHomeAppIdleMinutesTitle": "Return to the home app when idle",
-  "@settingHomeAppIdleMinutesTitle": {
-    "context": "Settings > Device > Headless",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingHomeAppIdleMinutesDescription": "After this many minutes with no remote key pressed and nothing playing, bring the home app back to the front. 0 turns it off.",
-  "@settingHomeAppIdleMinutesDescription": {
-    "context": "Settings > Device > Headless",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingRebootTimeTitle": "Daily restart",
-  "@settingRebootTimeTitle": {
-    "context": "Settings > Device > Headless",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingRebootTimeDescription": "Restart the device every day at this time (24-hour, HH:MM). Empty for never. Needs Kiosk Satellite to be able to restart the device (device owner).",
-  "@settingRebootTimeDescription": {
-    "context": "Settings > Device > Headless",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingHotThresholdTitle": "Running hot above",
-  "@settingHotThresholdTitle": {
-    "context": "Settings > Device > Headless",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingHotThresholdDescription": "The Running hot sensor turns on while the CPU is hotter than this.",
-  "@settingHotThresholdDescription": {
-    "context": "Settings > Device > Headless",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingPowerDialogPackageTitle": "Power dialog app",
-  "@settingPowerDialogPackageTitle": {
-    "context": "Settings > Device > Headless",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingPowerDialogPackageDescription": "The Android package of a vendor power-off dialog this device shows when its power key is pressed, such as com.htc.closedialog on an HY260 projector. Empty does nothing.",
-  "@settingPowerDialogPackageDescription": {
-    "context": "Settings > Device > Headless",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingPowerDialogChoiceTitle": "Power dialog answer",
-  "@settingPowerDialogChoiceTitle": {
-    "context": "Settings > Device > Headless",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
-      ]
-    }
-  },
-  "settingPowerDialogChoiceDescription": "What Kiosk Satellite does the moment that dialog appears: sleep closes it and puts the device to sleep (Android 9 or later), dismiss only closes it, and anything else is the view id (without the package prefix) of a button to tap, such as rl_reboot. A dialog that appears right after the screen wakes is only dismissed. Needs the accessibility service.",
-  "@settingPowerDialogChoiceDescription": {
-    "context": "Settings > Device > Headless",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Device > Headless"
-      ],
-      "remoteAdmin": [
-        "Device > Headless"
       ]
     }
   },

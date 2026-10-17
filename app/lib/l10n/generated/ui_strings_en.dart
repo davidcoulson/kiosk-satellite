@@ -5141,6 +5141,71 @@ class UiStringsEn extends UiStrings {
   String get cameraStreamsStop => 'Stop';
 
   @override
+  String get settingRemoteKeysReportTitle =>
+      'Send remote keys to Home Assistant';
+
+  @override
+  String get settingRemoteKeysReportDescription =>
+      'Fire the Remote key event in Home Assistant for each key pressed on the remote: navigation, media, volume, colour and function keys, never letters or digits. Needs the accessibility service.';
+
+  @override
+  String get settingNowPlayingTitle => 'Report what is playing';
+
+  @override
+  String get settingNowPlayingDescription =>
+      'Publish the app, title, artist and state of whatever plays on this device to Home Assistant, with play, pause and skip controls. Needs notification access, which Kiosk Satellite turns on itself when it holds WRITE_SECURE_SETTINGS.';
+
+  @override
+  String get settingHomeAppTitle => 'Home app';
+
+  @override
+  String get settingHomeAppDescription =>
+      'The package this device should normally show, such as com.spocky.projengmenu. Empty for none.';
+
+  @override
+  String get settingHomeAppAtBootTitle => 'Open the home app at boot';
+
+  @override
+  String get settingHomeAppAtBootDescription =>
+      'Start the home app once the device has booted.';
+
+  @override
+  String get settingHomeAppIdleMinutesTitle =>
+      'Return to the home app when idle';
+
+  @override
+  String get settingHomeAppIdleMinutesDescription =>
+      'After this many minutes with no remote key pressed and nothing playing, bring the home app back to the front. 0 turns it off.';
+
+  @override
+  String get settingRebootTimeTitle => 'Daily restart';
+
+  @override
+  String get settingRebootTimeDescription =>
+      'Restart the device every day at this time (24-hour, HH:MM). Empty for never. Needs Kiosk Satellite to be able to restart the device (device owner).';
+
+  @override
+  String get settingHotThresholdTitle => 'Running hot above';
+
+  @override
+  String get settingHotThresholdDescription =>
+      'The Running hot sensor turns on while the CPU is hotter than this.';
+
+  @override
+  String get settingPowerDialogPackageTitle => 'Power dialog app';
+
+  @override
+  String get settingPowerDialogPackageDescription =>
+      'The Android package of a vendor power-off dialog this device shows when its power key is pressed, such as com.htc.closedialog on an HY260 projector. Empty does nothing.';
+
+  @override
+  String get settingPowerDialogChoiceTitle => 'Power dialog answer';
+
+  @override
+  String get settingPowerDialogChoiceDescription =>
+      'What Kiosk Satellite does the moment that dialog appears: sleep closes it and puts the device to sleep (Android 9 or later), dismiss only closes it, and anything else is the view id (without the package prefix) of a button to tap, such as rl_reboot. A dialog that appears right after the screen wakes is only dismissed. Needs the accessibility service.';
+
+  @override
   String get settingAnalyticsBasicTitle => 'Basic analytics';
 
   @override
@@ -5437,71 +5502,6 @@ class UiStringsEn extends UiStrings {
   @override
   String get deviceHeadlessAdbButtonsRestart =>
       'The button service is switched on but has not started. Restart the device to start it: adb reboot';
-
-  @override
-  String get settingRemoteKeysReportTitle =>
-      'Send remote keys to Home Assistant';
-
-  @override
-  String get settingRemoteKeysReportDescription =>
-      'Fire the Remote key event in Home Assistant for each key pressed on the remote: navigation, media, volume, colour and function keys, never letters or digits. Needs the accessibility service.';
-
-  @override
-  String get settingNowPlayingTitle => 'Report what is playing';
-
-  @override
-  String get settingNowPlayingDescription =>
-      'Publish the app, title, artist and state of whatever plays on this device to Home Assistant, with play, pause and skip controls. Needs notification access, which Kiosk Satellite turns on itself when it holds WRITE_SECURE_SETTINGS.';
-
-  @override
-  String get settingHomeAppTitle => 'Home app';
-
-  @override
-  String get settingHomeAppDescription =>
-      'The package this device should normally show, such as com.spocky.projengmenu. Empty for none.';
-
-  @override
-  String get settingHomeAppAtBootTitle => 'Open the home app at boot';
-
-  @override
-  String get settingHomeAppAtBootDescription =>
-      'Start the home app once the device has booted.';
-
-  @override
-  String get settingHomeAppIdleMinutesTitle =>
-      'Return to the home app when idle';
-
-  @override
-  String get settingHomeAppIdleMinutesDescription =>
-      'After this many minutes with no remote key pressed and nothing playing, bring the home app back to the front. 0 turns it off.';
-
-  @override
-  String get settingRebootTimeTitle => 'Daily restart';
-
-  @override
-  String get settingRebootTimeDescription =>
-      'Restart the device every day at this time (24-hour, HH:MM). Empty for never. Needs Kiosk Satellite to be able to restart the device (device owner).';
-
-  @override
-  String get settingHotThresholdTitle => 'Running hot above';
-
-  @override
-  String get settingHotThresholdDescription =>
-      'The Running hot sensor turns on while the CPU is hotter than this.';
-
-  @override
-  String get settingPowerDialogPackageTitle => 'Power dialog app';
-
-  @override
-  String get settingPowerDialogPackageDescription =>
-      'The Android package of a vendor power-off dialog this device shows when its power key is pressed, such as com.htc.closedialog on an HY260 projector. Empty does nothing.';
-
-  @override
-  String get settingPowerDialogChoiceTitle => 'Power dialog answer';
-
-  @override
-  String get settingPowerDialogChoiceDescription =>
-      'What Kiosk Satellite does the moment that dialog appears: sleep closes it and puts the device to sleep (Android 9 or later), dismiss only closes it, and anything else is the view id (without the package prefix) of a button to tap, such as rl_reboot. A dialog that appears right after the screen wakes is only dismissed. Needs the accessibility service.';
 
   @override
   String get deviceHardwarePage => 'Hardware';

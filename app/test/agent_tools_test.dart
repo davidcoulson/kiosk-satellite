@@ -162,14 +162,14 @@ void main() {
     expect(defs.rebootTime.defaultValue, '');
   });
 
-  test('the power dialog settings sit with the headless ones, per device', () {
+  test('the power dialog settings sit with the agent mode ones, per device', () {
     // No package: nothing is answered. The answer defaults to the HY260's
     // Sleep row, which is the one a projector owner wants.
     expect(defs.powerDialogPackage.defaultValue, '');
     expect(defs.powerDialogChoice.defaultValue, 'sleep');
     for (final def in [defs.powerDialogPackage, defs.powerDialogChoice]) {
       expect(def.category, 'Device', reason: def.key);
-      expect(def.section, 'Headless', reason: def.key);
+      expect(def.section, 'Agent mode', reason: def.key);
       expect(def.subpage, isNull, reason: def.key);
       // A dialog is one box's quirk: fleet sync never copies it.
       expect(def.perDevice, isTrue, reason: def.key);

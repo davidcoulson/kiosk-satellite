@@ -1418,6 +1418,32 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'cameraStreamsCannotUndo' => strings.cameraStreamsCannotUndo,
       'cameraStreamsShow' => strings.cameraStreamsShow,
       'cameraStreamsStop' => strings.cameraStreamsStop,
+      'settingRemoteKeysReportTitle' => strings.settingRemoteKeysReportTitle,
+      'settingRemoteKeysReportDescription' =>
+        strings.settingRemoteKeysReportDescription,
+      'settingNowPlayingTitle' => strings.settingNowPlayingTitle,
+      'settingNowPlayingDescription' => strings.settingNowPlayingDescription,
+      'settingHomeAppTitle' => strings.settingHomeAppTitle,
+      'settingHomeAppDescription' => strings.settingHomeAppDescription,
+      'settingHomeAppAtBootTitle' => strings.settingHomeAppAtBootTitle,
+      'settingHomeAppAtBootDescription' =>
+        strings.settingHomeAppAtBootDescription,
+      'settingHomeAppIdleMinutesTitle' =>
+        strings.settingHomeAppIdleMinutesTitle,
+      'settingHomeAppIdleMinutesDescription' =>
+        strings.settingHomeAppIdleMinutesDescription,
+      'settingRebootTimeTitle' => strings.settingRebootTimeTitle,
+      'settingRebootTimeDescription' => strings.settingRebootTimeDescription,
+      'settingHotThresholdTitle' => strings.settingHotThresholdTitle,
+      'settingHotThresholdDescription' =>
+        strings.settingHotThresholdDescription,
+      'settingPowerDialogPackageTitle' =>
+        strings.settingPowerDialogPackageTitle,
+      'settingPowerDialogPackageDescription' =>
+        strings.settingPowerDialogPackageDescription,
+      'settingPowerDialogChoiceTitle' => strings.settingPowerDialogChoiceTitle,
+      'settingPowerDialogChoiceDescription' =>
+        strings.settingPowerDialogChoiceDescription,
       'settingAnalyticsBasicTitle' => strings.settingAnalyticsBasicTitle,
       'settingAnalyticsBasicDescription' =>
         strings.settingAnalyticsBasicDescription,
@@ -1511,32 +1537,6 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'deviceHeadlessAdbButtons' => strings.deviceHeadlessAdbButtons,
       'deviceHeadlessAdbButtonsRestart' =>
         strings.deviceHeadlessAdbButtonsRestart,
-      'settingRemoteKeysReportTitle' => strings.settingRemoteKeysReportTitle,
-      'settingRemoteKeysReportDescription' =>
-        strings.settingRemoteKeysReportDescription,
-      'settingNowPlayingTitle' => strings.settingNowPlayingTitle,
-      'settingNowPlayingDescription' => strings.settingNowPlayingDescription,
-      'settingHomeAppTitle' => strings.settingHomeAppTitle,
-      'settingHomeAppDescription' => strings.settingHomeAppDescription,
-      'settingHomeAppAtBootTitle' => strings.settingHomeAppAtBootTitle,
-      'settingHomeAppAtBootDescription' =>
-        strings.settingHomeAppAtBootDescription,
-      'settingHomeAppIdleMinutesTitle' =>
-        strings.settingHomeAppIdleMinutesTitle,
-      'settingHomeAppIdleMinutesDescription' =>
-        strings.settingHomeAppIdleMinutesDescription,
-      'settingRebootTimeTitle' => strings.settingRebootTimeTitle,
-      'settingRebootTimeDescription' => strings.settingRebootTimeDescription,
-      'settingHotThresholdTitle' => strings.settingHotThresholdTitle,
-      'settingHotThresholdDescription' =>
-        strings.settingHotThresholdDescription,
-      'settingPowerDialogPackageTitle' =>
-        strings.settingPowerDialogPackageTitle,
-      'settingPowerDialogPackageDescription' =>
-        strings.settingPowerDialogPackageDescription,
-      'settingPowerDialogChoiceTitle' => strings.settingPowerDialogChoiceTitle,
-      'settingPowerDialogChoiceDescription' =>
-        strings.settingPowerDialogChoiceDescription,
       'deviceHardwarePage' => strings.deviceHardwarePage,
       'deviceWebViewPage' => strings.deviceWebViewPage,
       'deviceModel' => strings.deviceModel,

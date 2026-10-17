@@ -5,7 +5,7 @@ with no screen at all (an Echo Dot) runs upstream's headless mode instead, which
 by itself from the display; see [Echo Dot](echo-dot.md). The two are unrelated: agent mode is a
 setting, headless mode is hardware.
 
-Some boxes run Kiosk Satellite without showing it: a projector, a media box, anything whose screen belongs to another app. Usually these run in agent mode (**Settings**, **Device**, **Agent mode**), which drops the dashboard, voice and cameras but keeps the device in Home Assistant, the remote admin and the fleet. The settings below, under **Settings**, **Device**, **Headless**, make such a box manageable from Home Assistant. Each is off until turned on, and each belongs to one device (fleet sync never copies it).
+Some boxes run Kiosk Satellite without showing it: a projector, a media box, anything whose screen belongs to another app. Usually these run in agent mode (**Settings**, **Device**, **Agent mode**), which drops the dashboard, voice and cameras but keeps the device in Home Assistant, the remote admin and the fleet. The settings below, under **Settings**, **Device**, **Agent mode**, make such a box manageable from Home Assistant. Each is off until turned on, and each belongs to one device (fleet sync never copies it).
 
 Several of these rest on the Kiosk Satellite accessibility service (see [Remote keys](gestures.md#remote-keys) for enabling it). On firmware that turns it off again, grant `WRITE_SECURE_SETTINGS` once over adb and Kiosk Satellite keeps it on by itself:
 
