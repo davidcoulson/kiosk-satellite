@@ -644,7 +644,7 @@ class EspEntitySurface {
     _listedStartPage = _hasCustomStartPage;
     final catalog = <Map<String, Object?>>[
       // ── Controls ─────────────────────────────────────────────────────
-      // Headless management (AgentToolsManager, RemoteKeys.kt): the remote
+      // Agent mode (AgentToolsManager, RemoteKeys.kt): the remote
       // as an event, and whatever another app is playing.
       if (_settings.get(defs.remoteKeysReport))
         {

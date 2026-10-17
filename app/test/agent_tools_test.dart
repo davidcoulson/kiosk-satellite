@@ -9,7 +9,7 @@ import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
 import 'package:kiosk_satellite/managers/settings/settings_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Headless management: the home app coming back when the remote sits idle,
+/// Agent mode: the home app coming back when the remote sits idle,
 /// and the daily restart. The media and key plumbing is native; this is the
 /// part that decides.
 void main() {

@@ -11720,7 +11720,7 @@ const theaterMaxHours = SettingDef<num>(
   unit: ' h',
 );
 
-// ── Headless management ────────────────────────────────────────────────
+// ── Agent mode ──────────────────────────────────────────────────────────
 //
 // For a box whose screen belongs to another app - a projector, a media
 // box - usually in agent mode: the remote, the playback and the app in

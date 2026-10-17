@@ -1,4 +1,9 @@
-# Headless management
+# Agent mode
+
+This page is about a box that has a screen, but the screen belongs to another app. A device
+with no screen at all (an Echo Dot) runs upstream's headless mode instead, which the kiosk detects
+by itself from the display; see [Echo Dot](echo-dot.md). The two are unrelated: agent mode is a
+setting, headless mode is hardware.
 
 Some boxes run Kiosk Satellite without showing it: a projector, a media box, anything whose screen belongs to another app. Usually these run in agent mode (**Settings**, **Device**, **Agent mode**), which drops the dashboard, voice and cameras but keeps the device in Home Assistant, the remote admin and the fleet. The settings below, under **Settings**, **Device**, **Headless**, make such a box manageable from Home Assistant. Each is off until turned on, and each belongs to one device (fleet sync never copies it).
 

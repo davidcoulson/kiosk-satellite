@@ -9,7 +9,7 @@ import '../../core/manager.dart';
 import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 
-/// Headless management: what a box whose screen belongs to another app -
+/// Agent mode: what a box whose screen belongs to another app -
 /// a projector, a media box - needs from Kiosk Satellite. Mostly for agent
 /// mode, where it runs in place of everything on-screen, but nothing here
 /// assumes it: each part is off until its own setting turns it on.
