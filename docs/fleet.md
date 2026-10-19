@@ -132,7 +132,7 @@ Certain settings remain unique to each kiosk regardless of the profile configura
 
 | Group | Keys |
 | --- | --- |
-| Identity | `device.name`, `device.hostname`, `esphome.node_name`, `esphome.mac_override`, `esphome.real_mac`, `btproxy.key`, `sendspin.client_id`, `sendspin.local_player_name`, `ha.satellite_entity` |
+| Identity | `device.name`, `device.hostname`, `esphome.node_name`, `esphome.mac_override`, `esphome.real_mac`, `btproxy.key`, `sendspin.client_id`, `sendspin.local_player_name`, `airplay.name`, `ha.satellite_entity` |
 | Shizuku | `shizuku.install_updates` |
 | Interface language | `ui.language` |
 | Remote admin & fleet | `remote.enabled`, `remote.port`, `remote.tls`, `remote.password`, `remote.fleet_discovery`, `remote.admin_url`, `fleet.*` |

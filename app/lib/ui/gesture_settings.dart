@@ -268,6 +268,7 @@ class _GestureSettingsPanelState extends State<GestureSettingsPanel> {
                 options: [
                   ('standard', gestureText(context, 'Standard')),
                   ('strict', gestureText(context, 'Strict')),
+                  ('large_room', gestureText(context, 'Large room')),
                 ],
                 onChanged: (value) async {
                   if (value == null) return;

@@ -55,7 +55,7 @@ Use **Settings > ESPHome > Excluded entities** to pick entities that should stay
 | **Volume** | number | Controls the media volume percentage. |
 | **Voice Satellite** | switch | Voice Satellite integration on the dashboard only. Starts and stops the voice engine on the page, identical to the Start and Stop buttons found in the kiosk's Voice Satellite settings. Requires a satellite bound to the kiosk (which is handled during the setup wizard or on the Voice Satellite settings page). Binding or unbinding a satellite will refresh the entity list on the next server start. |
 | **Postpone screensaver** | button | Restarts the idle countdown timer. |
-| **Screensaver next slide**, **Screensaver previous slide** | button | Steps a Home Assistant Media, Local Media, Photo Gallery, or Immich Media slideshow forward or backward by one slide, holding the new slide for its full interval. If Camera Streams are active, it steps between camera views. Pressing this does nothing if any other mode (or no screensaver) is active. |
+| **Screensaver next slide**, **Screensaver previous slide** | button | Steps a Home Assistant Media, Local Media, Photo Gallery, Image URL or Immich Media slideshow forward or backward by one slide, holding the new slide for its full interval. If Camera Streams are active, it steps between camera views. Pressing this does nothing if any other mode (or no screensaver) is active. |
 | **Notifications dismiss all** | button | The button equivalent of the `notification_dismiss` action below: acknowledging a leak on one display can clear the alerts on all the rest. |
 | **Reload page**, **Go to dashboard**, **Clear cache**, **Restart app**, **Bring to front** | button | Triggers the exact same actions available in the kiosk's side drawer. |
 | **Restart device** | button | Restarts the whole device, not just the app. Listed only where the restart can land: with Kiosk Satellite provisioned as the [device owner](kiosk.md#going-further-device-ownership), or with a granted [Shizuku](shizuku.md) connection. A Shizuku started over ADB stops at the reboot, so on such a kiosk the button is gone until Shizuku runs again. |
@@ -366,7 +366,7 @@ Two actions follow a player from an automation, the way the Media Player page's 
 
 `esphome.<node name>_media_player_list` takes no arguments and answers with every player the kiosk can follow, read through `response_variable`: each with its `source` (`device`, `home_assistant`, `music_assistant` or `sonos`), its `name`, its `id` and whether it is `available`, plus `current`, the pick in force. A Sonos room's id is the serial the Sonos page shows under its address.
 
-`esphome.<node name>_media_player_set` takes a `source` and a `player`, the player by its name as listed or by its id, and answers with what it picked. The `device` source puts the kiosk back on its own Sendspin player; its `player` is then ignored but must still be given, since no ESPHome action argument is optional.
+`esphome.<node name>_media_player_set` takes a `source` and a `player`, the player by its name as listed or by its id, and answers with what it picked. The `device` source puts the kiosk back on its own Sendspin player, or with `player` set to `media_session` on the Local Media Session and `airplay` on the AirPlay receiver. Any other `player` picks the Sendspin player, but one must still be given, since no ESPHome action argument is optional.
 
 ```yaml
 - action: esphome.kitchen_tablet_media_player_set

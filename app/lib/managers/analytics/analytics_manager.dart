@@ -743,6 +743,11 @@ class AnalyticsManager extends Manager {
           : s.get(defs.sendspinPlayerSource),
       'lyrics': s.get(defs.sendspinLyricsEnabled),
       'dlna': s.get(defs.dlnaEnabled),
+      // The receiver serves only while it is the Media Player pick.
+      'airplay':
+          s.get(defs.airplayEnabled) &&
+          s.get(defs.sendspinPlayerSource).isEmpty &&
+          s.get(defs.sendspinPlayer) == 'airplay',
       'device_camera': s.get(defs.cameraEnabled),
       'rtsp_stream': s.get(defs.cameraEnabled) && s.get(defs.cameraRtspEnabled),
       'camera_streams': cameraViews > 0,
@@ -842,7 +847,13 @@ class AnalyticsManager extends Manager {
     final s = _settings;
     if (s.get(defs.voiceRuntime) == 'native') {
       return s.get(defs.voiceEnabled)
-          ? (state: 'native', skin: s.get(defs.voiceSkin))
+          // A plugin's skin counts as 'plugin', without its id.
+          ? (
+              state: 'native',
+              skin: defs.isPluginVoiceSkin(s.get(defs.voiceSkin))
+                  ? 'plugin'
+                  : s.get(defs.voiceSkin),
+            )
           : (state: 'off', skin: '');
     }
     Map? page;

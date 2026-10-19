@@ -10,6 +10,7 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
 import android.view.KeyEvent
@@ -63,8 +64,18 @@ object HardwareKeys {
         audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         // Listed in Accessibility settings only where it has a job.
         if (Headless.active(context)) {
-            enableService(context)
+            if (Headless.actionBroadcast) {
+                // An earlier version may have enabled the service: both
+                // would hand over every press, so it goes.
+                setService(context, false)
+                watchActionButton(context)
+            } else {
+                setService(context, true)
+            }
             watchMicMute(context)
+            BiscuitVolumeButtons.attach(context) { direction ->
+                main.post { channel?.invokeMethod("volumeKey", mapOf("direction" to direction)) }
+            }
         }
         channel = MethodChannel(messenger, CHANNEL).apply {
             setMethodCallHandler { call, result ->
@@ -75,10 +86,16 @@ object HardwareKeys {
                     }
                     "status" -> result.success(
                         mapOf(
-                            "listening" to HeadlessKeyService.running,
-                            "switchedOn" to switchedOn(context),
+                            "listening" to (HeadlessKeyService.running || broadcastButtons),
+                            "switchedOn" to (broadcastButtons || switchedOn(context)),
                         ),
                     )
+                    // Dart's answer to whether the volume buttons steer a
+                    // player or a group right now.
+                    "claimVolumeButtons" -> {
+                        BiscuitVolumeButtons.claim(call.arguments as? Boolean ?: false)
+                        result.success(null)
+                    }
                     // Set even when the mute reads the same: the Dot's
                     // audio HAL reports it unreliably.
                     "setMicMuted" -> {
@@ -115,16 +132,43 @@ object HardwareKeys {
         return list.split(':').any { ComponentName.unflattenFromString(it.trim()) == ours }
     }
 
-    private fun enableService(context: Context) {
+    private fun setService(context: Context, enabled: Boolean) {
         try {
             context.packageManager.setComponentEnabledSetting(
                 ComponentName(context, HeadlessKeyService::class.java),
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                if (enabled) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                 PackageManager.DONT_KILL_APP,
             )
         } catch (e: Exception) {
-            Log.w(TAG, "could not enable the button service: $e")
+            Log.w(TAG, "could not switch the button service: $e")
         }
+    }
+
+    /** Whether the Action button arrives as the ROM's broadcast. */
+    private var broadcastButtons = false
+
+    /**
+     * The Kiosk Satellite Edition ROM's Action button: every press and
+     * release, also while the device sleeps, fed to the same press logic as
+     * the accessibility service's keys.
+     */
+    private fun watchActionButton(context: Context) {
+        context.registerReceiver(
+            object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    val at = intent.getLongExtra("eventTime", SystemClock.uptimeMillis())
+                    val action = if (intent.getBooleanExtra("down", false)) {
+                        KeyEvent.ACTION_DOWN
+                    } else {
+                        KeyEvent.ACTION_UP
+                    }
+                    onKey(KeyEvent(at, at, action, KeyEvent.KEYCODE_HELP, 0))
+                }
+            },
+            IntentFilter(BISCUIT_ACTION_BUTTON),
+        )
+        broadcastButtons = true
     }
 
     private fun watchMicMute(context: Context) {
@@ -153,6 +197,7 @@ object HardwareKeys {
 
     /** What the Echo Dot's LineageOS framework broadcasts when its
      *  microphone button (or any app) changes the microphone mute. */
+    private const val BISCUIT_ACTION_BUTTON = "com.amazon.biscuit.service.ACTION_BUTTON"
     private const val BISCUIT_MIC_MUTE_CHANGED =
         "com.amazon.biscuit.service.MICROPHONE_MUTE_CHANGED"
     private const val BISCUIT_EXTRA_MUTED =

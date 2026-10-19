@@ -37,8 +37,9 @@ import {
   openWakeSourcesPicker,
   wakeSourcesText,
 } from './pickers.js';
-import { loadSettings, refreshRealMacNote, updatePersonSensorRows, updateRtspRows } from './settings.js';
+import { loadSettings, refreshRealMacNote, syncSubpages, updatePersonSensorRows, updateRtspRows } from './settings.js';
 import { dashboardField } from './dashboard_picker.js';
+import { updatePlayerRow } from './panels.js';
 import {
   attachSlider,
   dateBox,
@@ -114,11 +115,18 @@ export function syncGatedRows(key, anchorRow) {
   // it reaches live: only a row whose presence must change counts.
   const changes = (o) => visible(o) !== !!document.querySelector(`[data-key="${o.key}"]`);
   if (!reached.some(changes)) return true;
-  if (!reached.every(sameCard)) return false;
+  // Rows on second-level pages of the tab this row is on (the Player pick
+  // swapping the Sendspin Player page for the AirPlay one) come and go with
+  // their pages, drawn in place too.
+  const away = reached.filter((o) => !sameCard(o) && changes(o));
+  if (away.length && (anchor.subpage || !away.every((o) => o.subpage)
+      || !syncSubpages(away))) {
+    return false;
+  }
   // Schema order within the card decides where a returning row goes back:
   // in front of the first row after it that is currently on screen.
   const order = all.filter(sameCard);
-  for (const o of reached) {
+  for (const o of reached.filter(sameCard)) {
     const existing = card.querySelector(`[data-key="${o.key}"]`);
     if (!visible(o)) { existing?.remove(); continue; }
     if (existing) continue;
@@ -302,6 +310,8 @@ export function settingRow(s) {
     if (gatedOn(state.settings || [], s.key).length) {
       if (!syncGatedRows(s.key, row)) await loadSettings();
     }
+    // The Player row lists the new source's players.
+    if (s.key === 'sendspin.player_source') updatePlayerRow();
     if (s.key === 'screensaver.screen_off_black' || s.key === 'screensaver.screen_off_minutes') {
       syncScreenOffAdminNotice();
     }
@@ -1011,7 +1021,7 @@ export function settingRow(s) {
       ['alarm', t('alarmsNextWidget')]];
     const DEFAULTS = {
       clock: { color: '250,250,250', scale: 0, font: 'default',
-        font_weight: 'default', h24: false, date: false },
+        font_weight: 'default', h24: false, ampm: true, date: false },
       weather: { entity: '', name: '', label: '', color: '250,250,250',
         scale: 0, font: 'default', font_weight: 'default',
         feels_like: false, feels_like_only: false, location: true,
@@ -1158,10 +1168,19 @@ export function settingRow(s) {
         if (type === 'clock') {
           refs.h24 = cameraToggle(screensaverText('24-hour clock'),
             config.h24 === true, screensaverText('Show a 24-hour time instead of AM/PM.'));
+          // On unless switched off: entries saved before the switch
+          // existed carry no key. Only a 12-hour time has a period.
+          refs.ampm = cameraToggle(screensaverText('Show AM/PM'),
+            config.ampm !== false, screensaverText('Add AM or PM after the time.'));
+          const syncAmPm = () => {
+            refs.ampm.wrap.style.display = refs.h24.input.checked ? 'none' : '';
+          };
+          refs.h24.input.addEventListener('change', syncAmPm);
+          syncAmPm();
           refs.date = cameraToggle(screensaverText('Show date'),
             config.date === true, screensaverText('Add a short date under the clock.'));
           typeBlock.append(refs.color.wrap, refs.scale.wrap, refs.font.wrap,
-            refs.weight.wrap, refs.h24.wrap, refs.date.wrap);
+            refs.weight.wrap, refs.h24.wrap, refs.ampm.wrap, refs.date.wrap);
           return;
         }
         if (type === 'battery') {
@@ -1326,7 +1345,8 @@ export function settingRow(s) {
           let entryConfig;
           if (type === 'clock') {
             entryConfig = { color, scale, font, font_weight,
-              h24: refs.h24.input.checked, date: refs.date.input.checked };
+              h24: refs.h24.input.checked, ampm: refs.ampm.input.checked,
+              date: refs.date.input.checked };
           } else if (type === 'battery') {
             entryConfig = { color, scale, font, font_weight,
               percent: refs.percent.input.checked,

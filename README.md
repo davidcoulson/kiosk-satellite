@@ -40,7 +40,7 @@
 
 &bull; **Dashboard performance:** Optional [optimizations](https://kiosksatellite.com/docs/optimizations/) reduce unnecessary dashboard updates and pause rendering during screensavers to lower CPU and GPU usage on older devices. Voice and the Home Assistant connection stay active.
 
-&bull; **[Music playback](https://kiosksatellite.com/docs/sendspin/):** Synchronized Music Assistant audio through Sendspin, with the option to follow a Home Assistant or Sonos player. The full-screen Now Playing view shows album art, playback controls and supported lyrics.
+&bull; **[Music playback](https://kiosksatellite.com/docs/sendspin/):** Synchronized Music Assistant audio through Sendspin, AirPlay from an iPhone, iPad or Mac and the option to follow a Home Assistant or Sonos player. The full-screen Now Playing view shows album art, playback controls and supported lyrics.
 
 <p align="center">
   <a href="assets/screenshots/screensaver-np.png"><img src="assets/screenshots/screensaver-np.png" alt="Settings in Kiosk Satellite" width="650" /></a>

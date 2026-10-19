@@ -1732,7 +1732,7 @@ class RemoteManager extends Manager {
   /// back each time by ETag: an update that changes a picture shows it
   /// right away instead of a day later.
   Future<Response> _voiceSkin(Request request, String file) async {
-    if (!RegExp(r'^[a-z-]+\.webp$').hasMatch(file)) {
+    if (!RegExp(r'^[a-z0-9-]+\.webp$').hasMatch(file)) {
       return Response.notFound('not found');
     }
     try {

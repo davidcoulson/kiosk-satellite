@@ -74,6 +74,7 @@ class KioskApplication : Application(), CameraXConfig.Provider {
     private lateinit var intercomAudio: IntercomAudio
     private lateinit var realtimeAudio: RealtimeAudio
     private lateinit var mediaSessions: MediaSessionBridge
+    private lateinit var airPlay: AirPlayBridge
     private lateinit var voiceIntents: VoiceIntentBridge
 
     override fun onCreate() {
@@ -164,6 +165,7 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         intercomAudio = IntercomAudio(applicationContext, messenger)
         realtimeAudio = RealtimeAudio(applicationContext, messenger)
         mediaSessions = MediaSessionBridge(applicationContext, messenger)
+        airPlay = AirPlayBridge(applicationContext, messenger)
         voiceIntents = VoiceIntentBridge(applicationContext, messenger)
         EventBroadcastBridge(applicationContext, messenger)
         HardwareKeys.attach(applicationContext, messenger)

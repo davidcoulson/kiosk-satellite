@@ -17,6 +17,7 @@ import '../../managers/voice/voice_manager.dart';
 import '../../managers/voice/voice_notice.dart';
 import '../theme.dart';
 import '../toast.dart';
+import 'art_hal.dart';
 import 'art_ink_blobs.dart';
 import 'art_jarvis.dart';
 import 'art_kitt.dart';
@@ -40,6 +41,40 @@ class AssistOverlay extends StatefulWidget {
 
   @override
   State<AssistOverlay> createState() => _AssistOverlayState();
+}
+
+/// Double tap dismisses a turn a plugin skin draws. It sits under the
+/// plugin overlays that draw it, so a touchable one takes its own touches,
+/// and over the screen under the turn, which a full screen turn keeps from
+/// being touched.
+class AssistPluginSkinTouch extends StatelessWidget {
+  const AssistPluginSkinTouch({super.key, required this.container});
+
+  final AppContainer container;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = container;
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        c.voice.view,
+        c.plugins.installed,
+        c.plugins.enabled,
+      ]),
+      builder: (context, _) {
+        final view = c.voice.view.value;
+        if (!view.visible ||
+            view.docked ||
+            !c.plugins.voiceSkinRunning(c.settings.get(defs.voiceSkin))) {
+          return const SizedBox.shrink();
+        }
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onDoubleTap: c.voice.dismiss,
+        );
+      },
+    );
+  }
 }
 
 class _AssistOverlayState extends State<AssistOverlay>
@@ -134,6 +169,8 @@ class _AssistOverlayState extends State<AssistOverlay>
     super.initState();
     _clock = ArtClock(this, running: false);
     c.voice.view.addListener(_onView);
+    c.plugins.installed.addListener(_onPlugins);
+    c.plugins.enabled.addListener(_onPlugins);
     _readDockPosition();
     _settingsSub = c.bus.on<SettingChanged>().listen((e) {
       if (!e.key.startsWith('voice.') || !mounted) return;
@@ -148,6 +185,8 @@ class _AssistOverlayState extends State<AssistOverlay>
   @override
   void dispose() {
     c.voice.view.removeListener(_onView);
+    c.plugins.installed.removeListener(_onPlugins);
+    c.plugins.enabled.removeListener(_onPlugins);
     _watchFrames(false);
     _frozenGen++;
     _frozen?.dispose();
@@ -157,6 +196,16 @@ class _AssistOverlayState extends State<AssistOverlay>
     _clock.dispose();
     _glide.dispose();
     super.dispose();
+  }
+
+  /// A plugin draws the turn: the Skin setting picks a plugin's voice skin
+  /// and that plugin runs. Otherwise the overlay falls back to a built-in
+  /// skin.
+  bool get _pluginSkin =>
+      c.plugins.voiceSkinRunning(c.settings.get(defs.voiceSkin));
+
+  void _onPlugins() {
+    if (mounted && _shown.visible) setState(() {});
   }
 
   void _onView() {
@@ -181,6 +230,8 @@ class _AssistOverlayState extends State<AssistOverlay>
 
   Future<void> _freezeBackdrop() async {
     final gen = ++_frozenGen;
+    // A plugin skin draws over the live screen.
+    if (_pluginSkin) return;
     final skin = assistSkinById(c.settings.get(defs.voiceSkin));
     final chosen = c.settings.get(defs.voiceBackgroundOpacity).toDouble();
     final opacity = chosen < 0 ? skin.light.opacity : chosen / 100;
@@ -284,6 +335,12 @@ class _AssistOverlayState extends State<AssistOverlay>
         },
         child: !_shown.visible
             ? const SizedBox.shrink()
+            // A plugin skin draws the turn in its own overlays, under this
+            // one, and touches reach them. Results still show here.
+            : _pluginSkin
+            ? _shown.docked
+                  ? const SizedBox.shrink()
+                  : _pluginContent(context, _shown)
             // Docked, touches reach the screen under it: only the caption
             // and the close button take them.
             : _shown.docked
@@ -420,8 +477,8 @@ class _AssistOverlayState extends State<AssistOverlay>
           ),
         if (skin.art == SkinArt.lensFlares)
           LensFlaresArt(mode: mode, reactive: reactive, level: c.voice.level),
-        // Jarvis's reactor and KITT's voice box give way to a result panel
-        // standing over them in portrait.
+        // Jarvis's reactor, KITT's voice box and HAL's eye give way to a
+        // result panel standing over them in portrait.
         if (skin.art.hasTopSlot)
           IgnorePointer(
             child: AnimatedOpacity(
@@ -445,13 +502,36 @@ class _AssistOverlayState extends State<AssistOverlay>
         if (view.phase == AssistPhase.announcement)
           _announcement(context, skin, palette, scale, view)
         else ...[
-          // With the whole conversation hidden, Jarvis and KITT show only
-          // their art: no thinking dots either.
+          // With the whole conversation hidden, Jarvis, KITT and HAL show
+          // only their art: no thinking dots either.
           if (!skin.art.hasTopSlot || !_conversationHidden)
             _chat(context, skin, palette, scale, view, reactive),
           if (primaryResult(view.results) case final result?)
             _panel(context, skin, dark, scale, result),
         ],
+        if (_lightbox case (final kind, final value))
+          Positioned.fill(child: _lightboxView(context, kind, value)),
+      ],
+    );
+  }
+
+  /// Under a plugin skin: only the results, which a plugin does not get.
+  Widget _pluginContent(BuildContext context, AssistView view) {
+    final settings = c.settings;
+    final theme = settings.get(defs.voiceTheme);
+    final dark = switch (theme) {
+      'dark' => true,
+      'light' => false,
+      _ => Theme.of(context).brightness == Brightness.dark,
+    };
+    final skin = assistSkins.first;
+    final scale = settings.get(defs.voiceTextScale).toDouble() / 100;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (view.phase != AssistPhase.announcement)
+          if (primaryResult(view.results) case final result?)
+            _panel(context, skin, dark, scale, result),
         if (_lightbox case (final kind, final value))
           Positioned.fill(child: _lightboxView(context, kind, value)),
       ],
@@ -464,8 +544,9 @@ class _AssistOverlayState extends State<AssistOverlay>
       !c.settings.get(defs.voiceShowAnswer) &&
       !c.settings.get(defs.voiceShowTools);
 
-  /// The art at the top of the screen, Jarvis's reactor or KITT's voice
-  /// box: full screen in [box], or docked ([compact]) over the bubble.
+  /// The art at the top of the screen, Jarvis's reactor, KITT's voice box
+  /// or HAL's eye: full screen in [box], or docked ([compact]) over the
+  /// bubble.
   Widget _topArt(
     AssistSkin skin,
     ArtMode mode,
@@ -474,25 +555,35 @@ class _AssistOverlayState extends State<AssistOverlay>
     bool compact = false,
   }) {
     final countdown = compact ? c.voice.dockCountdown : null;
-    return skin.art == SkinArt.kitt
-        ? KittArt(
-            mode: mode,
-            reactive: reactive,
-            level: _glide,
-            clock: _clock,
-            compact: compact,
-            countdown: countdown,
-            box: box,
-          )
-        : JarvisArt(
-            mode: mode,
-            reactive: reactive,
-            level: _glide,
-            clock: _clock,
-            compact: compact,
-            countdown: countdown,
-            box: box,
-          );
+    return switch (skin.art) {
+      SkinArt.kitt => KittArt(
+        mode: mode,
+        reactive: reactive,
+        level: _glide,
+        clock: _clock,
+        compact: compact,
+        countdown: countdown,
+        box: box,
+      ),
+      SkinArt.hal => HalArt(
+        mode: mode,
+        reactive: reactive,
+        level: _glide,
+        clock: _clock,
+        compact: compact,
+        countdown: countdown,
+        box: box,
+      ),
+      _ => JarvisArt(
+        mode: mode,
+        reactive: reactive,
+        level: _glide,
+        clock: _clock,
+        compact: compact,
+        countdown: countdown,
+        box: box,
+      ),
+    };
   }
 
   /// Where the top art goes full screen: room kept under it for the
@@ -654,8 +745,9 @@ class _AssistOverlayState extends State<AssistOverlay>
     // while nothing has been said. Voice Only shows the mark alone, no
     // bubble around it, fading as the conversation ends. Jarvis puts its
     // reactor above the exchange instead of a bar, its outer ring
-    // unwinding as the conversation ends, and KITT its voice box, the bar
-    // under its columns shrinking.
+    // unwinding as the conversation ends, KITT its voice box, the bar
+    // under its columns shrinking, and HAL its eye, a red ring around the
+    // chrome unwinding.
     final logoSide = (math.min(size.width, size.height) * 0.24).clamp(
       72.0,
       140.0,
@@ -1129,8 +1221,8 @@ class _AssistOverlayState extends State<AssistOverlay>
     // In portrait a result panel stands at the top, down to half the
     // screen at most: the chat stays under it rather than running across.
     final underPanel = portrait && result != null;
-    // Jarvis's and KITT's chat starts under their art, so no line crosses
-    // it.
+    // Jarvis's, KITT's and HAL's chat starts under their art, so no line
+    // crosses it.
     final underArt = skin.art.hasTopSlot && !underPanel;
     final top = underPanel
         ? math.max(

@@ -338,6 +338,16 @@ async function flushSettingsUpdates() {
         continue;
       }
     }
+    // The Player source and pick swap whole pages (the Sendspin Player page
+    // for the AirPlay one, or neither for the Local Media Session): the
+    // rows repaint themselves and the pages come and go in place, so a
+    // change echoed back from the device does not rebuild every tab.
+    if (!shapeChanged && ['sendspin.player_source', 'sendspin.player'].includes(setting.key)
+        && rows.length
+        && rows.every(row => row.updateSetting?.() && syncGatedRows(setting.key, row))) {
+      updatePlayerRow();
+      continue;
+    }
     // Voice Satellite's selects repaint themselves on the ks-settings event
     // below (vs_native.js): Home Assistant's mirrored selects and the
     // realtime choice have no row of their own to update.
@@ -389,6 +399,162 @@ async function flushSettingsUpdates() {
     liveSettingsRendering = false;
     if (liveSettings.size) flushSettingsUpdates();
   }
+}
+
+// The cards of a tab, or with `subpage` of one of its second-level pages,
+// from `list` (the visible settings by category). One UI shape, mirroring
+// the device's settings panes: a small heading floats above each rounded
+// card, and settings sharing a `section` get a card of their own (e.g. the
+// motion controls under "Motion Detection"). A `subpage` goes one further
+// and takes its settings off this page. Module scope so a single page can
+// be drawn in place (syncSubpages) exactly as the full render draws it.
+function renderCardsInto(target, cats, list, tab, { subpage = null } = {}) {
+  for (const cat of cats) {
+    const base = cat === cats[0] ? null : cat;
+    let heading = base;
+    let rows = [];
+    // Whether the last thing emitted was a page entry. Each one is a
+    // destination of its own, so it gets its own card: stacking unrelated
+    // destinations in one card reads as a group of related settings.
+    let entryRun = false;
+    const flush = () => {
+      if (!rows.length) return;
+      // A page whose only group repeats its own title says it twice; the
+      // page title already carries the name, so the heading goes.
+      if (heading && !(heading === subpage && !target.children.length)) {
+        const h = document.createElement('h2');
+        h.className = 'card-title';
+        h.textContent = settingsPageText(cat, heading);
+        target.appendChild(h);
+      }
+      const card = document.createElement('div');
+      card.className = 'card';
+      rows.forEach((r) => card.appendChild(r));
+      target.appendChild(card);
+      rows = [];
+    };
+    const seen = new Set();
+    (list[cat] || []).forEach((s) => {
+      const sub = s.subpage || null;
+      if (sub !== subpage) {
+        // Off to its own page: the first setting of each subpage leaves
+        // the entry row standing where the group used to be.
+        if (sub && tab && !subpage && !seen.has(sub)) {
+          seen.add(sub);
+          flush();
+          heading = null;
+          entryRun = true;
+          rows.push(subpageEntry(tab, sub));
+        }
+        return;
+      }
+      const want = s.section || base;
+      if (entryRun || want !== heading) { flush(); entryRun = false; heading = want; }
+      rows.push(settingRow(s));
+    });
+    flush();
+  }
+}
+
+// How each generic tab was last rendered (its categories and render
+// options), so syncSubpages draws a page the same way.
+const renderedTabs = new Map();
+
+// A flip that adds or takes away whole second-level pages, drawn in place
+// instead of re-rendering every tab: picking another player under Player
+// swaps the Sendspin Player page for the AirPlay one, and the full render
+// that took (a fetch, every tab, every decorator) blanked the picker for
+// seconds. `rows` are the settings whose presence changes, all on pages of
+// one tab. A page left with nothing to show loses its entry row and panel,
+// a page that comes back gets them where the full render puts them, and a
+// page that stays is redrawn. False when the change is not of that shape
+// (a page the tab builds by hand, a row on the tab itself), for the caller
+// to fall back to the full render.
+export function syncSubpages(rows) {
+  const category = rows[0]?.category;
+  const found = [...renderedTabs.entries()].find(([, r]) => r.cats.includes(category));
+  if (!found) return false;
+  const [tabId, { cats, opts }] = found;
+  if (opts?.entryRoot) return false;
+  const tabEl = document.getElementById(tabId);
+  if (!tabEl) return false;
+  const tab = tabId.replace(/^tab-/, '');
+  const fixed = [...(opts?.handBuilt || []), ...(opts?.extra || [])];
+  const subs = [...new Set(rows.map((o) => o.subpage || ''))];
+  if (rows.some((o) => !cats.includes(o.category))) return false;
+  if (subs.some((sub) => !sub || fixed.includes(sub))) return false;
+  const all = state.settings || [];
+  const byKey = Object.fromEntries(all.map((o) => [o.key, o]));
+  const byCat = {};
+  all.filter((o) => !o.hidden && depSatisfied(o, byKey))
+    .forEach((o) => (byCat[o.category] ??= []).push(o));
+  const entryOf = (sub) => [...tabEl.querySelectorAll(':scope > .card [data-subpage-entry]')]
+    .find((e) => e.dataset.subpageEntry === sub);
+  const panelOf = (sub) => [...tabEl.querySelectorAll(':scope > .subpage')]
+    .find((p) => p.dataset.subpage === sub);
+  // The order the full render emits the tab in: a marker per entry row and
+  // per row on the tab itself.
+  const order = [];
+  for (const cat of cats) {
+    for (const o of byCat[cat] || []) {
+      const marker = o.subpage ? `sub:${o.subpage}` : `key:${o.key}`;
+      if (!order.includes(marker)) order.push(marker);
+    }
+  }
+  const onTab = (marker) => marker.startsWith('sub:')
+    ? entryOf(marker.slice(4))?.closest('.card')
+    : tabEl.querySelector(`:scope > .card [data-key="${CSS.escape(marker.slice(4))}"]`)?.closest('.card');
+  // Where a new entry card goes: before the card of the next marker on
+  // screen (and its heading), else after the card of the previous one.
+  const placeFor = (sub) => {
+    const at = order.indexOf(`sub:${sub}`);
+    for (let i = at + 1; i < order.length; i++) {
+      const card = onTab(order[i]);
+      if (!card) continue;
+      const heading = card.previousElementSibling;
+      const target = heading?.matches('h2.card-title') ? heading : card;
+      return (entry) => target.before(entry);
+    }
+    for (let i = at - 1; i >= 0; i--) {
+      const card = onTab(order[i]);
+      if (card) return (entry) => card.after(entry);
+    }
+    return null;
+  };
+  // Decide everything before touching the page, so a page that cannot be
+  // placed leaves it as it was for the full render.
+  const plan = subs.map((sub) => {
+    const shown = cats.some((cat) => (byCat[cat] || []).some((o) => o.subpage === sub));
+    const place = shown && !entryOf(sub) ? placeFor(sub) : null;
+    return { sub, shown, place };
+  });
+  if (plan.some((p) => p.shown && !entryOf(p.sub) && !p.place)) return false;
+  for (const { sub, shown, place } of plan) {
+    const panel = panelOf(sub);
+    const open = !!panel?.classList.contains('open');
+    if (!shown) {
+      entryOf(sub)?.closest('.card')?.remove();
+      panel?.remove();
+      if (open) {
+        applySubpageView(tab, '');
+        setCurrentPath(tab);
+      }
+      continue;
+    }
+    const fresh = document.createElement('div');
+    fresh.className = 'subpage';
+    fresh.dataset.subpage = sub;
+    renderCardsInto(fresh, cats, byCat, tab, { subpage: sub });
+    fresh.classList.toggle('open', open);
+    if (panel) panel.replaceWith(fresh); else tabEl.appendChild(fresh);
+    if (place) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.appendChild(subpageEntry(tab, sub));
+      place(card);
+    }
+  }
+  return true;
 }
 
 export async function loadSettings(options = {}) {
@@ -463,58 +629,7 @@ async function renderSettings({ cached = false } = {}) {
     // settings between two hand-built cards).
     const tabEl = root.closest('.tab');
     const tab = tabEl ? tabEl.id.replace(/^tab-/, '') : null;
-    // One UI shape, mirroring the device's settings panes: a small heading
-    // floats above each rounded card, and settings sharing a `section` get a
-    // card of their own (e.g. the motion controls under "Motion Detection").
-    // A `subpage` goes one further and takes its settings off this page.
-    const renderInto = (target, list, { subpage = null } = {}) => {
-      for (const cat of cats) {
-        const base = cat === cats[0] ? null : cat;
-        let heading = base;
-        let rows = [];
-        // Whether the last thing emitted was a page entry. Each one is a
-        // destination of its own, so it gets its own card: stacking unrelated
-        // destinations in one card reads as a group of related settings.
-        let entryRun = false;
-        const flush = () => {
-          if (!rows.length) return;
-          // A page whose only group repeats its own title says it twice; the
-          // page title already carries the name, so the heading goes.
-          if (heading && !(heading === subpage && !target.children.length)) {
-            const h = document.createElement('h2');
-            h.className = 'card-title';
-            h.textContent = settingsPageText(cat, heading);
-            target.appendChild(h);
-          }
-          const card = document.createElement('div');
-          card.className = 'card';
-          rows.forEach((r) => card.appendChild(r));
-          target.appendChild(card);
-          rows = [];
-        };
-        const seen = new Set();
-        (list[cat] || []).forEach((s) => {
-          const sub = s.subpage || null;
-          if (sub !== subpage) {
-            // Off to its own page: the first setting of each subpage leaves
-            // the entry row standing where the group used to be.
-            if (sub && tab && !subpage && !seen.has(sub)) {
-              seen.add(sub);
-              flush();
-              heading = null;
-              entryRun = true;
-              rows.push(subpageEntry(tab, sub));
-            }
-            return;
-          }
-          const want = s.section || base;
-          if (entryRun || want !== heading) { flush(); entryRun = false; heading = want; }
-          rows.push(settingRow(s));
-        });
-        flush();
-      }
-    };
-    renderInto(root, byCat);
+    renderCardsInto(root, cats, byCat, tab);
     // `entryRoot` gathers this tab's page entry rows somewhere else (the
     // Device page wants all of them together, just above the grants). It is
     // not this render's root, so it is cleared here, and the rows the
@@ -550,7 +665,7 @@ async function renderSettings({ cached = false } = {}) {
       panel.className = 'subpage';
       panel.dataset.subpage = sub;
       if (!handBuilt.includes(sub) && !extra.includes(sub)) {
-        renderInto(panel, byCat, { subpage: sub });
+        renderCardsInto(panel, cats, byCat, tab, { subpage: sub });
       }
       tabEl.appendChild(panel);
       panels.set(sub, panel);
@@ -581,8 +696,10 @@ async function renderSettings({ cached = false } = {}) {
     if (tabId === 'tab-homeassistant') continue; // custom render below
     if (tabId === 'tab-voicesatellite') continue; // custom render below
     const helperPage = tabId === 'device-settings' && helperStatus?.nativeSilent === false;
-    const panels = render(document.getElementById(tabId), cats.filter((c) => byCat[c]),
-      tabId === 'device-settings' ? { ...opts, handBuilt: ['Shizuku'], extra: ['TLS', ...(helperPage ? ['Optional update helper'] : []), ...(opts?.extra || []).filter((page) => page !== 'WebView' || !isHeadless())] } : opts);
+    const tabOpts = tabId === 'device-settings' ? { ...opts, handBuilt: ['Shizuku'], extra: ['TLS', ...(helperPage ? ['Optional update helper'] : []), ...(opts?.extra || []).filter((page) => page !== 'WebView' || !isHeadless())] } : opts;
+    const tabCats = cats.filter((c) => byCat[c]);
+    renderedTabs.set(tabId, { cats: tabCats, opts: tabOpts });
+    const panels = render(document.getElementById(tabId), tabCats, tabOpts);
     if (tabId === 'device-settings') {
       renderShizukuPage(panels.get('Shizuku'));
       const adminEntry = document.querySelector('#device-pages [data-subpage-entry="Remote Administration"]');

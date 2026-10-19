@@ -46,6 +46,7 @@ const Map<String, Object> subpageIcons = {
   'Home Assistant Media screensaver': Icons.play_circle_outline,
   'Local Media screensaver': Icons.folder_outlined,
   'Photo Gallery screensaver': Icons.photo_library_outlined,
+  'Image URL screensaver': Icons.link_outlined,
   // The one page named after a product: it wears the Immich mark, drawn
   // in the glyph color like the product marks in the rail.
   'Immich Media screensaver': 'assets/svg/immich.svg',
@@ -65,6 +66,8 @@ const Map<String, Object> subpageIcons = {
   'Sendspin Player': 'assets/svg/sendspin.svg',
   'Music Assistant': 'assets/svg/music-assistant.svg',
   'Sonos': Icons.speaker_outlined,
+  // The audio mark, which Material does not draw.
+  'AirPlay': 'assets/svg/airplay.svg',
   'Floating Player': Icons.picture_in_picture_alt_outlined,
   'Now Playing': Icons.fullscreen,
   'Lyrics': Icons.lyrics_outlined,

@@ -133,12 +133,22 @@ class UdpArbitrationTransport implements ArbitrationTransport {
   }
 
   @override
-  void send(Uint8List data) => _socket?.send(data, _broadcast, port);
+  void send(Uint8List data) => _send(data, _broadcast);
 
   @override
   void sendTo(Uint8List data, String address) {
     final to = InternetAddress.tryParse(address);
-    if (to != null) _socket?.send(data, to, port);
+    if (to != null) _send(data, to);
+  }
+
+  /// With no network, such as Wi-Fi still joining at boot, the send throws.
+  /// That is a lost datagram like any other, which arbitration expects.
+  void _send(Uint8List data, InternetAddress to) {
+    try {
+      _socket?.send(data, to, port);
+    } on SocketException {
+      // Dropped.
+    }
   }
 
   @override
@@ -221,8 +231,8 @@ class WakeArbiter {
       _log.warn(_tag, 'cannot listen on UDP $port: $e');
     }
     if (!_running) return;
-    _sayHello();
     _hello = Timer.periodic(_helloEvery, (_) => _sayHello());
+    _sayHello();
   }
 
   Uint8List _helloPacket() => Uint8List.fromList(

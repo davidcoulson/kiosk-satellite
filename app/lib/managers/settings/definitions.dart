@@ -115,7 +115,10 @@ class SettingDef<T> {
     if (wanted is Map && wanted['gt'] is num) {
       return value is num && value > (wanted['gt'] as num);
     }
-    if (wanted is Map && wanted.containsKey('ne')) return value != wanted['ne'];
+    if (wanted is Map && wanted.containsKey('ne')) {
+      final ne = wanted['ne'];
+      return ne is List ? !ne.contains(value) : value != ne;
+    }
     return value == wanted;
   }
 
@@ -204,6 +207,12 @@ class SettingDef<T> {
 /// the remote's `describe()` alike, so both UIs hide the same rows.
 final Set<String> deviceHiddenKeys = {};
 
+/// Options of a select left out on this particular device, keyed by the
+/// setting: a choice that cannot work here, such as a mode that needs the
+/// screen on a device without one. Filled at boot like [deviceHiddenKeys]
+/// and applied by [SettingsManager.optionsFor], which both UIs read.
+final Map<String, Set<String>> deviceHiddenOptions = {};
+
 /// Settings this device holds at one value whatever is saved, such as the
 /// screensaver switch on a device without a screen. A fleet follower
 /// leaves the leader's value for them out, or it would put its own back
@@ -239,7 +248,7 @@ const Map<String, String> subpageHints = {
   // Screen & Audio.
   'Microphone settings': 'Echo cancellation, noise, gain, format, live level',
   'Adaptive brightness': 'Follow the room light with the ambient light sensor',
-  // Screensaver. The six mode pages only exist while that mode is the
+  // Screensaver. The mode pages only exist while that mode is the
   // one selected, since every setting on them gates on it.
   'Clock screensaver':
       'Style, font, size, colors, night mode, background photo',
@@ -247,6 +256,7 @@ const Map<String, String> subpageHints = {
       'Media source, timing, shuffle, fill, metadata',
   'Local Media screensaver': 'Folder, timing, shuffle, transition, metadata',
   'Photo Gallery screensaver': 'Photos, timing, shuffle, transition',
+  'Image URL screensaver': 'URL, timing, transition, metadata',
   'Immich Media screensaver': 'Server, media, slideshow, metadata, filters',
   'Camera Streams screensaver': 'Views to show, seconds per view, sound',
   'Weather Mood screensaver': 'Weather entity, lightning, preview',
@@ -268,6 +278,7 @@ const Map<String, String> subpageHints = {
   'Sendspin Player': 'Make this device a synchronized Music Assistant player',
   'Music Assistant': 'Server, token, kiosk menu shortcut',
   'Sonos': 'Speakers on the network, add one by address',
+  'AirPlay': 'Play audio from an iPhone, iPad or Mac',
   'Floating Player': 'The small card over the dashboard',
   'Now Playing': 'Full-screen view while music plays',
   'Lyrics': 'Synchronized lyrics, their source and timing',
@@ -1067,16 +1078,22 @@ const gestureRemoteKeysEnabled = SettingDef<bool>(
 // playing with toys near the device produced enough clap-shaped impulses to
 // false-trigger). Standard already requires a quiet lead-in and consistent
 // rhythm and loudness; Strict tightens all three and wants louder claps.
+// Large room (#1026) gives a clap that is still ringing in a big, hard room
+// time to fade instead of reading it as sustained sound.
 const clapStrictness = SettingDef<String>(
   key: 'gestures.clap_strictness',
   type: SettingType.select,
   defaultValue: 'standard',
-  options: ['standard', 'strict'],
-  optionLabels: {'standard': 'Standard', 'strict': 'Strict'},
+  options: ['standard', 'strict', 'large_room'],
+  optionLabels: {
+    'standard': 'Standard',
+    'strict': 'Strict',
+    'large_room': 'Large room',
+  },
   title: 'Clap detection',
   description:
-      'Strict needs louder, evenly spaced claps; try it if household '
-      'noise false-triggers.',
+      'Strict needs louder, evenly spaced claps. Large room gives claps '
+      'time to fade in an echoey room.',
   category: 'Gestures',
 );
 
@@ -2093,6 +2110,7 @@ const screensaverMode = SettingDef<String>(
     'media',
     'local',
     'gallery',
+    'url',
     'immich',
     'website',
     'camera',
@@ -2106,6 +2124,7 @@ const screensaverMode = SettingDef<String>(
     'media': 'Home Assistant Media',
     'local': 'Local Media',
     'gallery': 'Photo Gallery',
+    'url': 'Image URL',
     'immich': 'Immich Media',
     'website': 'Website',
     'camera': 'Camera Streams',
@@ -2241,6 +2260,19 @@ const screensaverWeatherClock24h = SettingDef<bool>(
   section: 'Clock',
   subpage: 'Weather Mood screensaver',
   dependsOn: 'screensaver.weather_clock',
+);
+
+const screensaverWeatherClockAmPm = SettingDef<bool>(
+  key: 'screensaver.weather_clock_ampm',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show AM/PM',
+  description: 'Add AM or PM after the time.',
+  category: 'Screensaver',
+  section: 'Clock',
+  subpage: 'Weather Mood screensaver',
+  dependsOn: 'screensaver.weather_clock_24h',
+  dependsOnValue: false,
 );
 
 const screensaverWeatherClockSeconds = SettingDef<bool>(
@@ -2731,6 +2763,24 @@ const screensaverClock24h = SettingDef<bool>(
   subpage: 'Clock screensaver',
   dependsOn: 'screensaver.mode',
   dependsOnValue: 'clock',
+);
+
+// A 12-hour clock without the period (issue #1038): the room already
+// knows whether it is morning. Only the digital face draws one, so the row
+// leaves with the other faces.
+const screensaverClockAmPm = SettingDef<bool>(
+  key: 'screensaver.clock_ampm',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Show AM/PM',
+  description: 'Add AM or PM after the time.',
+  category: 'Screensaver',
+  section: 'Clock screensaver',
+  subpage: 'Clock screensaver',
+  dependsOn: 'screensaver.clock_24h',
+  dependsOnValue: false,
+  alsoDependsOn: 'screensaver.clock_style',
+  alsoDependsOnValue: 'digital',
 );
 
 const screensaverClockSeconds = SettingDef<bool>(
@@ -3695,6 +3745,191 @@ const screensaverLocalVignetteStrength = SettingDef<num>(
   step: 5,
   unit: '%',
   dependsOn: 'screensaver.local_metadata',
+);
+
+// ── Image URL (mode: url) ──
+//
+// One address that answers with a different image on every request (a
+// random photo endpoint, a camera snapshot, a rendered dashboard image),
+// fetched again for every slide (issue #1038). Nothing to list up front,
+// so the slideshow only knows the photos it has already fetched.
+
+const screensaverUrlImage = SettingDef<String>(
+  key: 'screensaver.url_image',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Image URL',
+  description: 'An image address the device fetches again for every slide.',
+  category: 'Screensaver',
+  section: 'Image URL screensaver',
+  subpage: 'Image URL screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'url',
+  validator: validateScreensaverUrlImage,
+);
+
+String? validateScreensaverUrlImage(Object? value) {
+  final text = '${value ?? ''}'.trim();
+  if (text.isEmpty) return null;
+  final uri = Uri.tryParse(text);
+  if (!isClockBackgroundUrl(text) || uri == null || uri.host.isEmpty) {
+    return 'Enter a full image URL';
+  }
+  return null;
+}
+
+const screensaverUrlInterval = SettingDef<num>(
+  key: 'screensaver.url_interval_seconds',
+  type: SettingType.number,
+  defaultValue: 60,
+  title: 'Seconds per photo',
+  description: 'How long each photo shows before the next fetch.',
+  category: 'Screensaver',
+  section: 'Image URL screensaver',
+  subpage: 'Image URL screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'url',
+);
+
+const screensaverUrlTransition = SettingDef<String>(
+  key: 'screensaver.url_transition',
+  type: SettingType.select,
+  defaultValue: 'fade',
+  title: 'Transition',
+  description: 'How one photo hands off to the next.',
+  category: 'Screensaver',
+  section: 'Image URL screensaver',
+  subpage: 'Image URL screensaver',
+  options: _transitionOptions,
+  optionLabels: _transitionLabels,
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'url',
+);
+
+const screensaverUrlFill = SettingDef<String>(
+  key: 'screensaver.url_fill',
+  type: SettingType.select,
+  defaultValue: 'smart',
+  title: 'Fill the screen',
+  description: _fillDescription,
+  category: 'Screensaver',
+  section: 'Image URL screensaver',
+  subpage: 'Image URL screensaver',
+  options: _fillOptions,
+  optionLabels: _fillLabels,
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'url',
+);
+
+const screensaverUrlEdgeTaps = SettingDef<bool>(
+  key: 'screensaver.url_edge_taps',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Tap edges to change slides',
+  description: _edgeTapsDescription,
+  category: 'Screensaver',
+  section: 'Image URL screensaver',
+  subpage: 'Image URL screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'url',
+);
+
+// The same EXIF panel as Local Media's, read from the fetched bytes.
+const screensaverUrlMetadata = SettingDef<bool>(
+  key: 'screensaver.url_metadata',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Show metadata',
+  description: 'Date and camera details over the photo.',
+  category: 'Screensaver',
+  section: 'Image URL metadata',
+  subpage: 'Image URL screensaver',
+  dependsOn: 'screensaver.mode',
+  dependsOnValue: 'url',
+);
+
+const screensaverUrlMetadataDate = SettingDef<bool>(
+  key: 'screensaver.url_metadata_date',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Date taken',
+  description: 'Show when the photo was taken.',
+  category: 'Screensaver',
+  section: 'Image URL metadata',
+  subpage: 'Image URL screensaver',
+  dependsOn: 'screensaver.url_metadata',
+);
+
+const screensaverUrlMetadataCamera = SettingDef<bool>(
+  key: 'screensaver.url_metadata_camera',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Camera details',
+  description: 'Show focal length, aperture and ISO.',
+  category: 'Screensaver',
+  section: 'Image URL metadata',
+  subpage: 'Image URL screensaver',
+  dependsOn: 'screensaver.url_metadata',
+);
+
+const screensaverUrlMetadataPosition = SettingDef<String>(
+  key: 'screensaver.url_metadata_position',
+  type: SettingType.select,
+  defaultValue: 'bottom_left',
+  title: 'Metadata position',
+  description: 'Which corner the details sit in.',
+  category: 'Screensaver',
+  options: cornerOptions,
+  optionLabels: cornerLabels,
+  section: 'Image URL metadata',
+  subpage: 'Image URL screensaver',
+  dependsOn: 'screensaver.url_metadata',
+);
+
+const screensaverUrlMetadataTextShadow = SettingDef<bool>(
+  key: 'screensaver.url_metadata_text_shadow',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Text drop shadow',
+  description: 'Add a drop shadow to metadata text for readability on photos.',
+  category: 'Screensaver',
+  section: 'Image URL metadata',
+  subpage: 'Image URL screensaver',
+  dependsOn: 'screensaver.url_metadata',
+);
+
+const screensaverUrlMetadataScale = SettingDef<num>(
+  key: 'screensaver.url_metadata_scale',
+  type: SettingType.number,
+  defaultValue: 100,
+  title: 'Text scaling',
+  description: 'Scale the photo details to better fit your screen size.',
+  category: 'Screensaver',
+  section: 'Image URL metadata',
+  subpage: 'Image URL screensaver',
+  min: 50,
+  max: 200,
+  step: 5,
+  unit: '%',
+  dependsOn: 'screensaver.url_metadata',
+);
+
+const screensaverUrlVignetteStrength = SettingDef<num>(
+  key: 'screensaver.url_vignette_strength',
+  type: SettingType.number,
+  defaultValue: 40,
+  title: 'Vignette strength',
+  description:
+      'Darkness of the shading behind the details, for readability on '
+      'bright photos. 0 turns it off.',
+  category: 'Screensaver',
+  section: 'Image URL metadata',
+  subpage: 'Image URL screensaver',
+  min: 0,
+  max: 100,
+  step: 5,
+  unit: '%',
+  dependsOn: 'screensaver.url_metadata',
 );
 
 // ── Immich Media (mode: immich) ──
@@ -6676,6 +6911,12 @@ const voiceWakeArbitrationOffsetDb = SettingDef<num>(
   perDevice: true,
 );
 
+/// A plugin's voice skin: `plugin:` and the plugin's id. While that plugin
+/// runs, it draws the turn and the overlay draws none of its own.
+bool isPluginVoiceSkin(Object? value) =>
+    value is String &&
+    RegExp(r'^plugin:[a-z][a-z0-9_-]{0,63}$').hasMatch(value);
+
 const voiceSkin = SettingDef<String>(
   key: 'voice.skin',
   type: SettingType.select,
@@ -6697,6 +6938,7 @@ const voiceSkin = SettingDef<String>(
     'ink-blobs',
     'jarvis',
     'kitt',
+    'hal-9000',
     'voice-only',
   ],
   optionLabels: {
@@ -6712,6 +6954,7 @@ const voiceSkin = SettingDef<String>(
     'ink-blobs': 'Ink Blobs',
     'jarvis': 'Jarvis',
     'kitt': 'KITT',
+    'hal-9000': 'HAL 9000',
     'voice-only': 'Voice Only',
   },
   dependsOn: 'voice.enabled',
@@ -8050,9 +8293,9 @@ const sendspinPlayerSource = SettingDef<String>(
 /// `ma:<player id>` for a Music Assistant player, `ha:<entity id>` for a
 /// Home Assistant media player or `sonos:<player id>` for a Sonos speaker
 /// followed directly, always of the source picked above. With this device
-/// as the source, empty is its own Sendspin player and `session:*` the
-/// Local Media Session: whichever other app plays on the device, through
-/// its Android media session. Visible so both
+/// as the source, empty is its own Sendspin player, `session:*` the
+/// Local Media Session (whichever other app plays on the device, through
+/// its Android media session) and `airplay` the AirPlay receiver. Visible so both
 /// settings surfaces place it under the source, but its row is
 /// hand-built on each: a picker fed by that source's live player list,
 /// never a text field. Always on the page, so a source change never
@@ -8114,9 +8357,11 @@ const sendspinEsphomeEntities = SettingDef<bool>(
 /// of the tablet's own volume (issue #544): a kiosk that only shows and
 /// remotes a speaker elsewhere has nothing of its own to make louder,
 /// and the buttons are the one control that needs no look at the
-/// screen. Only for a player elsewhere; with this device as the source
-/// the keys keep their Android meaning, since the music comes out of
-/// this device and the master volume is the right thing to move.
+/// screen. With this device's Sendspin player as the pick, the keys move
+/// the Music Assistant group it plays in (issue #1032), so the rooms keep
+/// their balance, and keep their Android meaning while it plays alone.
+/// The Local Media Session and the AirPlay receiver play out of this
+/// device with no group, so the row is gone for them.
 const sendspinVolumeKeys = SettingDef<String>(
   key: 'sendspin.volume_keys',
   type: SettingType.select,
@@ -8124,8 +8369,9 @@ const sendspinVolumeKeys = SettingDef<String>(
   title: 'Volume buttons control the player',
   description:
       "This device's volume buttons change the followed player's volume "
-      'instead of its own. Only while the Now Playing view is on screen, '
-      'or whenever the player is playing.',
+      'instead of its own. While this device plays in a group they change '
+      "the group's volume. Only while the Now Playing view is on screen or "
+      'whenever the player is playing.',
   category: 'Sendspin',
   options: ['off', 'now_playing', 'playing'],
   optionLabels: {
@@ -8134,7 +8380,11 @@ const sendspinVolumeKeys = SettingDef<String>(
     'playing': 'While the player is playing',
   },
   dependsOn: 'sendspin.player_source',
-  dependsOnValue: ['ha', 'ma', 'sonos'],
+  dependsOnValue: ['', 'ha', 'ma', 'sonos'],
+  alsoDependsOn: 'sendspin.player',
+  alsoDependsOnValue: {
+    'ne': ['session:*', 'airplay'],
+  },
 );
 
 /// How far one volume key press moves the followed player, in percent
@@ -8218,6 +8468,99 @@ const sendspinSonosHosts = SettingDef<String>(
   perDevice: true,
 );
 
+/// The AirPlay 1 receiver (airplay/ in Kotlin): an iPhone, iPad or Mac
+/// plays to the device as it would to any AirPlay speaker. It is one of
+/// this device's players, picked under Player like the Sendspin player
+/// and the Local Media Session, and runs only while it is the pick and
+/// this switch is on, so the two never play over each other. Its page
+/// shows only while it is the pick, the way the Sendspin player's does.
+const airplayEnabled = SettingDef<bool>(
+  key: 'airplay.enabled',
+  dependsOn: 'sendspin.player_source',
+  dependsOnValue: '',
+  alsoDependsOn: 'sendspin.player',
+  alsoDependsOnValue: 'airplay',
+  type: SettingType.boolean,
+  defaultValue: false,
+  title: 'Enable AirPlay receiver',
+  description:
+      'The device shows up as an AirPlay speaker in the AirPlay menu of an '
+      'iPhone, iPad or Mac.',
+  category: 'Sendspin',
+  subpage: 'AirPlay',
+  section: 'AirPlay',
+);
+
+/// The name senders list the receiver under. Empty is the device name,
+/// the way the Sendspin player is named in Music Assistant.
+const airplayName = SettingDef<String>(
+  key: 'airplay.name',
+  type: SettingType.string,
+  defaultValue: '',
+  title: 'Speaker name',
+  description: 'The name in the AirPlay menu. Empty uses the device name.',
+  category: 'Sendspin',
+  subpage: 'AirPlay',
+  section: 'AirPlay',
+  dependsOn: 'airplay.enabled',
+  perDevice: true,
+);
+
+/// Whether the sender's volume control scales what this device plays.
+/// Off, the sender's slider does nothing here and only the device's own
+/// media volume counts, for a kiosk whose level is set once for the room.
+const airplaySenderVolume = SettingDef<bool>(
+  key: 'airplay.sender_volume',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: "Follow the sender's volume",
+  description:
+      'The volume control on the iPhone, iPad or Mac changes how loud this '
+      "device plays. Off, only this device's volume does.",
+  category: 'Sendspin',
+  subpage: 'AirPlay',
+  section: 'AirPlay',
+  dependsOn: 'airplay.enabled',
+);
+
+/// Moves the receiver's playout against the sender's clock, for a speaker
+/// path that adds its own delay (Bluetooth) and lip sync with video on
+/// the sender. Negative plays earlier, as the Sendspin offset does.
+const airplaySyncOffset = SettingDef<num>(
+  key: 'airplay.sync_offset_ms',
+  type: SettingType.number,
+  defaultValue: 0,
+  min: -1000,
+  max: 1000,
+  step: 10,
+  unit: 'ms',
+  title: 'Audio sync offset (ms)',
+  description:
+      'Negative plays this device earlier, to line the sound up with video '
+      'on the sender. Applies live.',
+  category: 'Sendspin',
+  subpage: 'AirPlay',
+  section: 'AirPlay',
+  dependsOn: 'airplay.enabled',
+);
+
+/// Whether a second sender can take the speaker from one that plays, the
+/// way picking a speaker on a second phone does on most AirPlay
+/// speakers. Off, the second one is turned away until the first stops.
+const airplayTakeover = SettingDef<bool>(
+  key: 'airplay.takeover',
+  type: SettingType.boolean,
+  defaultValue: true,
+  title: 'Let another sender take over',
+  description:
+      'A second iPhone, iPad or Mac can take over while one plays. Off, it '
+      'has to wait until the first one disconnects.',
+  category: 'Sendspin',
+  subpage: 'AirPlay',
+  section: 'AirPlay',
+  dependsOn: 'airplay.enabled',
+);
+
 const sendspinEnabled = SettingDef<bool>(
   key: 'sendspin.enabled',
   // Gone while another source is picked (issue #265): the local player
@@ -8226,10 +8569,13 @@ const sendspinEnabled = SettingDef<bool>(
   // page entry goes with them.
   dependsOn: 'sendspin.player_source',
   dependsOnValue: '',
-  // Gone the same way while this device's Local Media Session is the
-  // pick: the surfaces follow another app then, not the Sendspin player.
+  // Gone the same way while this device's Local Media Session or AirPlay
+  // receiver is the pick: the surfaces follow that, not the Sendspin
+  // player.
   alsoDependsOn: 'sendspin.player',
-  alsoDependsOnValue: {'ne': 'session:*'},
+  alsoDependsOnValue: {
+    'ne': ['session:*', 'airplay'],
+  },
   type: SettingType.boolean,
   defaultValue: false,
   title: 'Enable Sendspin player',
@@ -12388,6 +12734,7 @@ const List<SettingDef<Object>> allSettings = [
   screensaverWeatherClockFont,
   screensaverWeatherClockFontWeight,
   screensaverWeatherClock24h,
+  screensaverWeatherClockAmPm,
   screensaverWeatherClockSeconds,
   screensaverWeatherClockDate,
   screensaverWeatherClockScale,
@@ -12419,6 +12766,7 @@ const List<SettingDef<Object>> allSettings = [
   screensaverClockFont,
   screensaverClockFontWeight,
   screensaverClock24h,
+  screensaverClockAmPm,
   screensaverClockSeconds,
   screensaverClockDate,
   screensaverClockScale,
@@ -12474,6 +12822,18 @@ const List<SettingDef<Object>> allSettings = [
   screensaverGalleryTransition,
   screensaverGalleryFill,
   screensaverGalleryEdgeTaps,
+  screensaverUrlImage,
+  screensaverUrlInterval,
+  screensaverUrlTransition,
+  screensaverUrlFill,
+  screensaverUrlEdgeTaps,
+  screensaverUrlMetadata,
+  screensaverUrlMetadataDate,
+  screensaverUrlMetadataCamera,
+  screensaverUrlMetadataPosition,
+  screensaverUrlMetadataTextShadow,
+  screensaverUrlMetadataScale,
+  screensaverUrlVignetteStrength,
   screensaverImmichUrl,
   screensaverImmichApiKey,
   screensaverImmichValidated,
@@ -12731,6 +13091,12 @@ const List<SettingDef<Object>> allSettings = [
   sendspinCodec,
   sendspinSyncOffset,
   sendspinGroupVolume,
+  // The AirPlay page takes the Sendspin Player page's place when picked.
+  airplayEnabled,
+  airplayName,
+  airplaySenderVolume,
+  airplaySyncOffset,
+  airplayTakeover,
   sendspinMaUrl,
   sendspinMaToken,
   sendspinMaInputs,

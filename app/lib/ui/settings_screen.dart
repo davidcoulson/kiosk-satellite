@@ -79,6 +79,7 @@ import '../managers/wake_word/permission_descriptions.dart';
 import 'wake_word_tester.dart';
 import 'wake_activations.dart';
 import 'update_helper_settings.dart';
+import 'plugin_directory.dart';
 import 'plugin_settings.dart';
 import 'package:kiosk_satellite/core/lifecycle.dart';
 
@@ -1112,6 +1113,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           _subpage!,
                                         )
                                       : pluginSubpageTitle(
+                                          context,
                                           widget.container,
                                           category,
                                           _subpage!,
@@ -1624,11 +1626,15 @@ class _SubpageEntryTile extends StatelessWidget {
 /// bar carries the entry row's title and the implicit back arrow; the system
 /// back gesture pops the same route.
 String pluginSubpageTitle(
+  BuildContext context,
   AppContainer container,
   String category,
   String subpage,
 ) {
   if (category != 'Plugins') return subpage;
+  if (subpage == pluginDirectoryPage) {
+    return pluginText(context, 'Browse plugins');
+  }
   return container.plugins.installed.value
               .where((p) => p['id'] == subpage)
               .firstOrNull?['name']
@@ -1681,7 +1687,7 @@ class SubpageSettingsScreen extends StatelessWidget {
                         category,
                         subpage,
                       )
-                    : pluginSubpageTitle(container, category, subpage),
+                    : pluginSubpageTitle(context, container, category, subpage),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -3482,21 +3488,13 @@ class _CategoryContentState extends State<_CategoryContent> {
     // and Immich cards put theirs.
     if (widget.category == 'Sendspin')
       sendspinMaToken.key: _MaValidateRow(container: container),
-    // Say what the pick just did to this device, under the row that
-    // holds it: its own player is gone from Music Assistant and the rows
-    // about it are gone from this page.
+    // Say what the pick turns off on this device, under the row that holds
+    // it: the Sendspin player and the AirPlay receiver, each while switched
+    // on and not the pick itself. Mirrored on the remote (panels.js,
+    // offlineNotice).
     if (widget.category == 'Sendspin' &&
-        (container.settings.get(sendspinPlayerSource).isNotEmpty ||
-            _localSessionPicked(container)))
-      sendspinPlayer.key: WarnRow(
-        l10n(context).mediaLocalOffline(
-          _localSessionPicked(container)
-              ? mediaText(context, SendspinManager.localSessionName)
-              : container.settings.get(sendspinPlayerName).trim().isEmpty
-              ? l10n(context).mediaAnotherPlayer
-              : container.settings.get(sendspinPlayerName).trim(),
-        ),
-      ),
+        _offlineNotice(context, container) != null)
+      sendspinPlayer.key: WarnRow(_offlineNotice(context, container)!),
     // The live list right under the sort picker that orders it.
     // Rides the section's dependsOn: with the proxy off there is
     // nothing to list and none of these rows render.
@@ -3579,6 +3577,16 @@ class _CategoryContentState extends State<_CategoryContent> {
           ),
         ],
         _MadeByFooter(container: container),
+      ];
+    }
+    if (widget.category == 'Plugins' && subpage == pluginDirectoryPage) {
+      return [
+        PluginDirectoryPanel(
+          plugins: container.plugins,
+          settings: container.settings,
+          onOpen: (id) =>
+              openSettingsSubpage(context, container, 'Plugins', id),
+        ),
       ];
     }
     if (widget.category == 'Plugins') {
@@ -6048,6 +6056,16 @@ class _WidgetsEditorState extends State<_WidgetsEditor> {
                       fontRow(),
                       fontWeightRow(),
                       toggle(screensaverText(context, '24-hour clock'), 'h24'),
+                      // On unless switched off: entries saved before the
+                      // switch existed carry no key.
+                      if (config['h24'] != true)
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(screensaverText(context, 'Show AM/PM')),
+                          value: config['ampm'] != false,
+                          onChanged: (v) =>
+                              setDialogState(() => config['ampm'] = v),
+                        ),
                       toggle(screensaverText(context, 'Show date'), 'date'),
                     ],
                     if (type == 'weather') ...[
@@ -7235,11 +7253,54 @@ bool _localSessionPicked(AppContainer container) =>
     container.settings.get(sendspinPlayerSource).isEmpty &&
     container.settings.get(sendspinPlayer) == SendspinManager.localSessionPick;
 
+/// What the Player pick turns off on this device: the Sendspin player and
+/// the AirPlay receiver, each only while switched on and not the pick
+/// itself. Null for a pick that leaves both as they were.
+String? _offlineNotice(BuildContext context, AppContainer container) {
+  final settings = container.settings;
+  final source = settings.get(sendspinPlayerSource);
+  final local = source.isEmpty;
+  final pick = settings.get(sendspinPlayer);
+  final sendspinOff = settings.get(sendspinEnabled) && !(local && pick.isEmpty);
+  final airplayOff =
+      settings.get(airplayEnabled) &&
+      !(local && pick == SendspinManager.airplayPick);
+  if (!sendspinOff && !airplayOff) return null;
+  final name = settings.get(sendspinPlayerName).trim();
+  final player = local && pick.isEmpty
+      ? mediaText(context, 'Sendspin Player')
+      : _localSessionPicked(container)
+      ? mediaText(context, SendspinManager.localSessionName)
+      : _airplayPicked(container)
+      ? SendspinManager.airplayName
+      : name.isNotEmpty
+      ? name
+      // A source with no player picked yet: the source by name.
+      : sendspinPlayerSource.localizedOption(
+          context,
+          source,
+          sendspinPlayerSource.optionLabels?[source] ??
+              l10n(context).mediaAnotherPlayer,
+        );
+  final strings = l10n(context);
+  return sendspinOff && airplayOff
+      ? strings.mediaOfflineBoth(player)
+      : sendspinOff
+      ? strings.mediaOfflineSendspin(player)
+      : strings.mediaOfflineAirplay(player);
+}
+
+/// Whether this device's AirPlay receiver is the pick: the surfaces follow
+/// whichever iPhone, iPad or Mac plays to it.
+bool _airplayPicked(AppContainer container) =>
+    container.settings.get(sendspinPlayerSource).isEmpty &&
+    container.settings.get(sendspinPlayer) == SendspinManager.airplayPick;
+
 /// Which player of the picked source the Now Playing surfaces follow
 /// (issue #265): a wall tablet showing and controlling the kitchen
 /// speakers instead of itself. The list is the source's, fetched when the
-/// row is tapped. This device offers its own two: the Sendspin player and
-/// the Local Media Session (issue #722).
+/// row is tapped. This device offers its own three: the Sendspin player,
+/// the Local Media Session (issue #722) and the AirPlay receiver.
 class _PlayerRow extends StatefulWidget {
   const _PlayerRow({required this.container, required this.onChanged});
 
@@ -7259,7 +7320,7 @@ class _PlayerRowState extends State<_PlayerRow> {
     'sonos': 'Sonos room',
   };
 
-  /// This device's own two players, or the picked source's.
+  /// This device's own three players, or the picked source's.
   PickSpec _spec(BuildContext context, String source) => source.isEmpty
       ? fixedPlayerSpec(
           context,
@@ -7269,6 +7330,12 @@ class _PlayerRowState extends State<_PlayerRow> {
               id: '',
               name: mediaText(context, 'Sendspin Player'),
               icon: 'mdi:speaker',
+            ),
+            const PickItem(
+              id: SendspinManager.airplayPick,
+              name: SendspinManager.airplayName,
+              // The AirPlay audio mark: a triangle under sound waves.
+              icon: 'mdi:cast-audio-variant',
             ),
             PickItem(
               id: SendspinManager.localSessionPick,
@@ -7290,6 +7357,8 @@ class _PlayerRowState extends State<_PlayerRow> {
       sendspinPlayerName,
       id == SendspinManager.localSessionPick
           ? SendspinManager.localSessionName
+          : id == SendspinManager.airplayPick
+          ? SendspinManager.airplayName
           : name,
     );
     // The manager maintains this flag from the same inputs, but over the

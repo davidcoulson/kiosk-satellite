@@ -756,6 +756,8 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'mediaGroupReadFailed' => strings.mediaGroupReadFailed,
       'mediaGroupEmpty' => strings.mediaGroupEmpty,
       'mediaSpeakerSelection' => strings.mediaSpeakerSelection,
+      'pluginScanTitle' => strings.pluginScanTitle,
+      'pluginScanHelp' => strings.pluginScanHelp,
       'pluginActions' => strings.pluginActions,
       'pluginKioskDrawer' => strings.pluginKioskDrawer,
       'pluginToAssignAGestureOpenGesturesAndChooseRun' =>
@@ -766,6 +768,12 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'pluginExposeToHomeAssistant' => strings.pluginExposeToHomeAssistant,
       'pluginAddsAButtonToTheKioskEsphomeDeviceRequires' =>
         strings.pluginAddsAButtonToTheKioskEsphomeDeviceRequires,
+      'pluginThePluginDidNotAnswerInTime' =>
+        strings.pluginThePluginDidNotAnswerInTime,
+      'pluginNoChoicesYetRefreshToLookForThem' =>
+        strings.pluginNoChoicesYetRefreshToLookForThem,
+      'pluginThisChoiceIsNoLongerListed' =>
+        strings.pluginThisChoiceIsNoLongerListed,
       'pluginPlugin' => strings.pluginPlugin,
       'pluginEnablePlugins' => strings.pluginEnablePlugins,
       'pluginPluginsAddAdditionalCommunityDevelopedFeaturesToKioskSatellite' =>
@@ -825,6 +833,40 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.pluginPluginZipMustBeAtMost4Mb,
       'pluginCouldNotReadTheSelectedZip' =>
         strings.pluginCouldNotReadTheSelectedZip,
+      'pluginBrowsePlugins' => strings.pluginBrowsePlugins,
+      'pluginFindPluginsMadeByTheCommunity' =>
+        strings.pluginFindPluginsMadeByTheCommunity,
+      'pluginSearchPlugins' => strings.pluginSearchPlugins,
+      'pluginUpdate' => strings.pluginUpdate,
+      'pluginInstalled' => strings.pluginInstalled,
+      'pluginStars' => strings.pluginStars,
+      'pluginDownloads' => strings.pluginDownloads,
+      'pluginActiveInstalls' => strings.pluginActiveInstalls,
+      'pluginNoPluginsMatchYourSearch' =>
+        strings.pluginNoPluginsMatchYourSearch,
+      'pluginCommunityPluginsHasNoPluginsYet' =>
+        strings.pluginCommunityPluginsHasNoPluginsYet,
+      'pluginSubmitYourPlugin' => strings.pluginSubmitYourPlugin,
+      'pluginListYourPluginInCommunityPlugins' =>
+        strings.pluginListYourPluginInCommunityPlugins,
+      'pluginCouldNotReachCommunityPlugins' =>
+        strings.pluginCouldNotReachCommunityPlugins,
+      'pluginCouldNotLoadCommunityPlugins' =>
+        strings.pluginCouldNotLoadCommunityPlugins,
+      'pluginTurnOn' => strings.pluginTurnOn,
+      'pluginTurnOnEnablePluginsToInstall' =>
+        strings.pluginTurnOnEnablePluginsToInstall,
+      'pluginPreviousPage' => strings.pluginPreviousPage,
+      'pluginNextPage' => strings.pluginNextPage,
+      'pluginSortBy' => strings.pluginSortBy,
+      'pluginSortMostStars' => strings.pluginSortMostStars,
+      'pluginSortRecentlyUpdated' => strings.pluginSortRecentlyUpdated,
+      'pluginSortNewest' => strings.pluginSortNewest,
+      'pluginSortName' => strings.pluginSortName,
+      'pluginSortMostDownloads' => strings.pluginSortMostDownloads,
+      'pluginPluginsPerPage' => strings.pluginPluginsPerPage,
+      'pluginListedChip' => strings.pluginListedChip,
+      'pluginNotListedChip' => strings.pluginNotListedChip,
       'pluginCharts' => strings.pluginCharts,
       'pluginReadings' => strings.pluginReadings,
       'pluginWaitingForSamples' => strings.pluginWaitingForSamples,
@@ -875,7 +917,6 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'pluginErrorIdVersion' => strings.pluginErrorIdVersion,
       'pluginErrorChecksumFilename' => strings.pluginErrorChecksumFilename,
       'pluginErrorGithubDigest' => strings.pluginErrorGithubDigest,
-      'pluginErrorTagRevision' => strings.pluginErrorTagRevision,
       'pluginErrorTrustAuthor' => strings.pluginErrorTrustAuthor,
       'pluginErrorPreviewExpired' => strings.pluginErrorPreviewExpired,
       'pluginErrorReviewedChecksum' => strings.pluginErrorReviewedChecksum,
@@ -891,7 +932,6 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'pluginErrorDifferentRepository' =>
         strings.pluginErrorDifferentRepository,
       'pluginErrorRestartReplace' => strings.pluginErrorRestartReplace,
-      'pluginErrorPluginLimit' => strings.pluginErrorPluginLimit,
       'pluginErrorAlreadyInstalled' => strings.pluginErrorAlreadyInstalled,
       'pluginErrorLoadedIntegrity' => strings.pluginErrorLoadedIntegrity,
       'pluginErrorRemovePackage' => strings.pluginErrorRemovePackage,
@@ -1073,6 +1113,8 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'screensaverNoMediaSource' => strings.screensaverNoMediaSource,
       'screensaverImmichUnreachable' => strings.screensaverImmichUnreachable,
       'screensaverVideosTooLarge' => strings.screensaverVideosTooLarge,
+      'screensaverUrlNotSet' => strings.screensaverUrlNotSet,
+      'screensaverUrlLoadFailed' => strings.screensaverUrlLoadFailed,
       'settingKioskAllowAlarmsTitle' => strings.settingKioskAllowAlarmsTitle,
       'settingKioskAllowAlarmsDescription' =>
         strings.settingKioskAllowAlarmsDescription,
@@ -2065,10 +2107,11 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'esphomeExcludedInvalid' => strings.esphomeExcludedInvalid,
       'settingsBuyCoffee' => strings.settingsBuyCoffee,
       'settingClapStrictnessTitle' => strings.settingClapStrictnessTitle,
-      'settingClapStrictnessDescription' =>
-        strings.settingClapStrictnessDescription,
+      'settingClapDetectionDescription' =>
+        strings.settingClapDetectionDescription,
       'gestureStrictnessStandard' => strings.gestureStrictnessStandard,
       'gestureStrictnessStrict' => strings.gestureStrictnessStrict,
+      'gestureStrictnessLargeRoom' => strings.gestureStrictnessLargeRoom,
       'gestureOff' => strings.gestureOff,
       'gestureOffHelp' => strings.gestureOffHelp,
       'gestureEmpty' => strings.gestureEmpty,
@@ -2607,6 +2650,21 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'lockdownOverlayHeld' => strings.lockdownOverlayHeld,
       'lockdownOverlayMissing' => strings.lockdownOverlayMissing,
       'lockdownPermissionsSearch' => strings.lockdownPermissionsSearch,
+      'settingAirplayEnabledTitle' => strings.settingAirplayEnabledTitle,
+      'settingAirplayEnabledDescription' =>
+        strings.settingAirplayEnabledDescription,
+      'settingAirplayNameTitle' => strings.settingAirplayNameTitle,
+      'settingAirplayNameDescription' => strings.settingAirplayNameDescription,
+      'settingAirplaySenderVolumeTitle' =>
+        strings.settingAirplaySenderVolumeTitle,
+      'settingAirplaySenderVolumeDescription' =>
+        strings.settingAirplaySenderVolumeDescription,
+      'settingAirplaySyncOffsetDescription' =>
+        strings.settingAirplaySyncOffsetDescription,
+      'settingAirplayTakeoverTitle' => strings.settingAirplayTakeoverTitle,
+      'settingAirplayTakeoverDescription' =>
+        strings.settingAirplayTakeoverDescription,
+      'mediaAirplayHint' => strings.mediaAirplayHint,
       'mediaCacheTitle' => strings.mediaCacheTitle,
       'mediaCacheReadFailed' => strings.mediaCacheReadFailed,
       'mediaCacheClearFailed' => strings.mediaCacheClearFailed,
@@ -2653,8 +2711,8 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingSendspinEsphomeEntitiesDescription,
       'settingSendspinVolumeKeysTitle' =>
         strings.settingSendspinVolumeKeysTitle,
-      'settingSendspinVolumeKeysDescription' =>
-        strings.settingSendspinVolumeKeysDescription,
+      'settingSendspinVolumeKeysGroupDescription' =>
+        strings.settingSendspinVolumeKeysGroupDescription,
       'settingSendspinVolumeKeyStepTitle' =>
         strings.settingSendspinVolumeKeyStepTitle,
       'settingSendspinVolumeKeyStepDescription' =>
@@ -3227,6 +3285,10 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'screensaverBackgroundHint' => strings.screensaverBackgroundHint,
       'screensaverImageUrlError' => strings.screensaverImageUrlError,
       'screensaverRefreshError' => strings.screensaverRefreshError,
+      'settingScreensaverClockAmPmTitle' =>
+        strings.settingScreensaverClockAmPmTitle,
+      'settingScreensaverClockAmPmDescription' =>
+        strings.settingScreensaverClockAmPmDescription,
       'screensaverOverlayEntity' => strings.screensaverOverlayEntity,
       'screensaverOverlayNotSet' => strings.screensaverOverlayNotSet,
       'screensaverOverlayName' => strings.screensaverOverlayName,
@@ -3363,6 +3425,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'settingScreensaverDashboardViewDescription' =>
         strings.settingScreensaverDashboardViewDescription,
       'screensaverDashboardSection' => strings.screensaverDashboardSection,
+      'screensaverModeUrl' => strings.screensaverModeUrl,
       'settingScreensaverGlanceScaleTitle' =>
         strings.settingScreensaverGlanceScaleTitle,
       'settingScreensaverGlanceScaleDescription' =>
@@ -3773,6 +3836,13 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'screensaverMediaLocalMetadata' => strings.screensaverMediaLocalMetadata,
       'screensaverMediaLocalPage' => strings.screensaverMediaLocalPage,
       'screensaverMediaLocalPageHint' => strings.screensaverMediaLocalPageHint,
+      'settingScreensaverUrlImageDescription' =>
+        strings.settingScreensaverUrlImageDescription,
+      'settingScreensaverUrlIntervalDescription' =>
+        strings.settingScreensaverUrlIntervalDescription,
+      'screensaverMediaUrlPage' => strings.screensaverMediaUrlPage,
+      'screensaverMediaUrlPageHint' => strings.screensaverMediaUrlPageHint,
+      'screensaverMediaUrlMetadata' => strings.screensaverMediaUrlMetadata,
       'settingScreensaverDismissOnMotionTitle' =>
         strings.settingScreensaverDismissOnMotionTitle,
       'settingScreensaverDismissOnMotionDescription' =>
@@ -4147,6 +4217,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'voiceScaleHelp' => strings.voiceScaleHelp,
       'voiceUpdateIntegration' => strings.voiceUpdateIntegration,
       'voiceDashboardRequired' => strings.voiceDashboardRequired,
+      'voiceSkinUnavailablePlugin' => strings.voiceSkinUnavailablePlugin,
       'voiceSkinDefault' => strings.voiceSkinDefault,
       'voiceBackground' => strings.voiceBackground,
       'voiceBackgroundHelp' => strings.voiceBackgroundHelp,

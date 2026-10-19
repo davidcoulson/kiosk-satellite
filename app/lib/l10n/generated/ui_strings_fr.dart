@@ -2928,6 +2928,17 @@ class UiStringsFr extends UiStrings {
   }
 
   @override
+  String get pluginScanTitle => 'Scanner un code';
+
+  @override
+  String get pluginScanHelp => 'Placez le code dans le cadre.';
+
+  @override
+  String pluginScanSource(String name) {
+    return 'Demandé par $name';
+  }
+
+  @override
   String get pluginActions => 'Actions';
 
   @override
@@ -2955,6 +2966,18 @@ class UiStringsFr extends UiStrings {
   String pluginConfigureName(String name) {
     return 'Configurer $name';
   }
+
+  @override
+  String get pluginThePluginDidNotAnswerInTime =>
+      'Le plugin n\'a pas répondu à temps.';
+
+  @override
+  String get pluginNoChoicesYetRefreshToLookForThem =>
+      'Aucun choix pour l\'instant. Actualisez pour en rechercher.';
+
+  @override
+  String get pluginThisChoiceIsNoLongerListed =>
+      'Ce choix ne figure plus dans la liste.';
 
   @override
   String get pluginPlugin => 'Plugin';
@@ -3129,6 +3152,109 @@ class UiStringsFr extends UiStrings {
   @override
   String get pluginCouldNotReadTheSelectedZip =>
       'Impossible de lire le ZIP sélectionné';
+
+  @override
+  String get pluginBrowsePlugins => 'Parcourir les plugins';
+
+  @override
+  String get pluginFindPluginsMadeByTheCommunity =>
+      'Trouver des plugins créés par la communauté';
+
+  @override
+  String get pluginSearchPlugins => 'Rechercher des plugins';
+
+  @override
+  String get pluginUpdate => 'Mettre à jour';
+
+  @override
+  String get pluginInstalled => 'Installé';
+
+  @override
+  String get pluginStars => 'Étoiles';
+
+  @override
+  String get pluginDownloads => 'Téléchargements';
+
+  @override
+  String get pluginActiveInstalls => 'Installations actives';
+
+  @override
+  String get pluginNoPluginsMatchYourSearch =>
+      'Aucun plugin ne correspond à votre recherche.';
+
+  @override
+  String get pluginCommunityPluginsHasNoPluginsYet =>
+      'Plugins de la communauté ne contient encore aucun plugin.';
+
+  @override
+  String get pluginSubmitYourPlugin => 'Proposer votre plugin';
+
+  @override
+  String get pluginListYourPluginInCommunityPlugins =>
+      'Ajoutez votre plugin à Plugins de la communauté.';
+
+  @override
+  String get pluginCouldNotReachCommunityPlugins =>
+      'Impossible de joindre Plugins de la communauté. Vérifiez la connexion Internet.';
+
+  @override
+  String get pluginCouldNotLoadCommunityPlugins =>
+      'Impossible de charger Plugins de la communauté. Réessayez plus tard.';
+
+  @override
+  String get pluginTurnOn => 'Activer';
+
+  @override
+  String get pluginTurnOnEnablePluginsToInstall =>
+      'Activez « Activer les plugins » pour installer ce plugin.';
+
+  @override
+  String get pluginPreviousPage => 'Page précédente';
+
+  @override
+  String get pluginNextPage => 'Page suivante';
+
+  @override
+  String pluginPageOfPages(String page, String pages) {
+    return 'Page $page sur $pages';
+  }
+
+  @override
+  String get pluginSortBy => 'Trier par';
+
+  @override
+  String get pluginSortMostStars => 'Plus d\'étoiles';
+
+  @override
+  String get pluginSortRecentlyUpdated => 'Mis à jour récemment';
+
+  @override
+  String get pluginSortNewest => 'Plus récents';
+
+  @override
+  String get pluginSortName => 'Nom';
+
+  @override
+  String get pluginSortMostDownloads => 'Plus téléchargés';
+
+  @override
+  String get pluginPluginsPerPage => 'Plugins par page';
+
+  @override
+  String pluginCountPerPage(String count) {
+    return '$count par page';
+  }
+
+  @override
+  String pluginByAuthor(String author) {
+    return 'par $author';
+  }
+
+  @override
+  String get pluginListedChip => 'Répertorié dans Plugins de la communauté';
+
+  @override
+  String get pluginNotListedChip => 'Absent de Plugins de la communauté';
 
   @override
   String get pluginCharts => 'Graphiques';
@@ -3309,10 +3435,6 @@ class UiStringsFr extends UiStrings {
       'La somme de contrôle de la version doit correspondre à l\'empreinte SHA-256 de la ressource GitHub';
 
   @override
-  String get pluginErrorTagRevision =>
-      'GitHub n\'a pas renvoyé la révision de l\'étiquette de version';
-
-  @override
   String get pluginErrorTrustAuthor =>
       'Confirmez que vous faites confiance à l\'auteur du plugin';
 
@@ -3388,10 +3510,6 @@ class UiStringsFr extends UiStrings {
   @override
   String get pluginErrorRestartReplace =>
       'Ce plugin ne s\'est pas arrêté proprement. Redémarrez Kiosk Satellite avant de le remplacer.';
-
-  @override
-  String get pluginErrorPluginLimit =>
-      '8 plugins maximum peuvent être installés';
 
   @override
   String get pluginErrorAlreadyInstalled => 'Ce paquet est déjà installé';
@@ -4159,6 +4277,13 @@ class UiStringsFr extends UiStrings {
   @override
   String get screensaverVideosTooLarge =>
       'Toutes les vidéos de cette liste de lecture sont trop volumineuses pour être lues sur cet appareil.';
+
+  @override
+  String get screensaverUrlNotSet =>
+      'Aucune URL d\'image définie. Ajoutez-en une dans les Paramètres.';
+
+  @override
+  String get screensaverUrlLoadFailed => 'Impossible de charger l\'image.';
 
   @override
   String get settingKioskAllowAlarmsTitle => 'Alarmes';
@@ -7356,14 +7481,17 @@ class UiStringsFr extends UiStrings {
   String get settingClapStrictnessTitle => 'Détection des claquements';
 
   @override
-  String get settingClapStrictnessDescription =>
-      'Le mode Strict exige des claquements plus forts et régulièrement espacés ; essayez-le si le bruit ambiant provoque de faux déclenchements.';
+  String get settingClapDetectionDescription =>
+      'Le mode Strict exige des claquements plus forts et régulièrement espacés. Grande pièce laisse aux claquements le temps de s\'estomper dans une pièce qui résonne.';
 
   @override
   String get gestureStrictnessStandard => 'Standard';
 
   @override
   String get gestureStrictnessStrict => 'Strict';
+
+  @override
+  String get gestureStrictnessLargeRoom => 'Grande pièce';
 
   @override
   String get gestureOff => 'Les gestes sont désactivés';
@@ -8802,6 +8930,44 @@ class UiStringsFr extends UiStrings {
       'Les autorisations dont les protections du verrouillage ont besoin.';
 
   @override
+  String get settingAirplayEnabledTitle => 'Activer le récepteur AirPlay';
+
+  @override
+  String get settingAirplayEnabledDescription =>
+      'L\'appareil apparaît comme une enceinte AirPlay dans le menu AirPlay d\'un iPhone, d\'un iPad ou d\'un Mac.';
+
+  @override
+  String get settingAirplayNameTitle => 'Nom de l\'enceinte';
+
+  @override
+  String get settingAirplayNameDescription =>
+      'Le nom dans le menu AirPlay. Vide, le nom de l\'appareil est utilisé.';
+
+  @override
+  String get settingAirplaySenderVolumeTitle =>
+      'Suivre le volume de l\'émetteur';
+
+  @override
+  String get settingAirplaySenderVolumeDescription =>
+      'Le réglage du volume de l\'iPhone, de l\'iPad ou du Mac change le volume de cet appareil. Si l\'option est désactivée, seul le volume de cet appareil compte.';
+
+  @override
+  String get settingAirplaySyncOffsetDescription =>
+      'Une valeur négative fait jouer cet appareil plus tôt, pour caler le son sur la vidéo de l\'émetteur. S\'applique en direct.';
+
+  @override
+  String get settingAirplayTakeoverTitle =>
+      'Laisser un autre émetteur prendre la main';
+
+  @override
+  String get settingAirplayTakeoverDescription =>
+      'Un deuxième iPhone, iPad ou Mac peut prendre la main pendant qu\'un autre joue. Si l\'option est désactivée, il doit attendre que le premier se déconnecte.';
+
+  @override
+  String get mediaAirplayHint =>
+      'Lire l\'audio d\'un iPhone, d\'un iPad ou d\'un Mac';
+
+  @override
   String get mediaCacheTitle => 'Cache des pochettes d\'album';
 
   @override
@@ -8907,8 +9073,8 @@ class UiStringsFr extends UiStrings {
       'Les boutons de volume contrôlent le lecteur';
 
   @override
-  String get settingSendspinVolumeKeysDescription =>
-      'Les boutons de volume de cet appareil modifient le volume du lecteur suivi plutôt que le sien. Uniquement tant que la vue Lecture en cours est à l\'écran, ou tant que le lecteur joue.';
+  String get settingSendspinVolumeKeysGroupDescription =>
+      'Les boutons de volume de cet appareil modifient le volume du lecteur suivi plutôt que le sien. Tant que cet appareil joue au sein d\'un groupe, ils règlent le volume du groupe. Uniquement tant que la vue Lecture en cours est à l\'écran, ou tant que le lecteur joue.';
 
   @override
   String get settingSendspinVolumeKeyStepTitle => 'Pas des boutons de volume';
@@ -8937,8 +9103,18 @@ class UiStringsFr extends UiStrings {
   String get mediaAnotherPlayer => 'un autre lecteur';
 
   @override
-  String mediaLocalOffline(String player) {
-    return 'Le propre lecteur Sendspin de cet appareil reste hors ligne tant que $player est contrôlé.';
+  String mediaOfflineSendspin(String player) {
+    return 'Le lecteur Sendspin reste hors ligne tant que $player est sélectionné.';
+  }
+
+  @override
+  String mediaOfflineAirplay(String player) {
+    return 'Le récepteur AirPlay reste désactivé tant que $player est sélectionné.';
+  }
+
+  @override
+  String mediaOfflineBoth(String player) {
+    return 'Le lecteur Sendspin et le récepteur AirPlay restent hors ligne tant que $player est sélectionné.';
   }
 
   @override
@@ -10338,6 +10514,13 @@ class UiStringsFr extends UiStrings {
   }
 
   @override
+  String get settingScreensaverClockAmPmTitle => 'Afficher AM/PM';
+
+  @override
+  String get settingScreensaverClockAmPmDescription =>
+      'Ajouter AM ou PM après l\'heure.';
+
+  @override
   String get screensaverOverlayEntity => 'Entité';
 
   @override
@@ -10649,6 +10832,9 @@ class UiStringsFr extends UiStrings {
   @override
   String get screensaverDashboardSection =>
       'Économiseur d\'écran tableau de bord Home Assistant';
+
+  @override
+  String get screensaverModeUrl => 'URL d\'image';
 
   @override
   String get settingScreensaverGlanceScaleTitle =>
@@ -11596,6 +11782,24 @@ class UiStringsFr extends UiStrings {
       'Dossier, cadence, aléatoire, transition, métadonnées';
 
   @override
+  String get settingScreensaverUrlImageDescription =>
+      'Adresse d\'une image que l\'appareil récupère à nouveau pour chaque diapositive.';
+
+  @override
+  String get settingScreensaverUrlIntervalDescription =>
+      'Durée d\'affichage de chaque photo avant la récupération suivante.';
+
+  @override
+  String get screensaverMediaUrlPage => 'Économiseur d\'écran URL d\'image';
+
+  @override
+  String get screensaverMediaUrlPageHint =>
+      'URL, cadence, transition, métadonnées';
+
+  @override
+  String get screensaverMediaUrlMetadata => 'Métadonnées de l\'URL d\'image';
+
+  @override
   String get settingScreensaverDismissOnMotionTitle => 'Fermer sur mouvement';
 
   @override
@@ -12499,6 +12703,9 @@ class UiStringsFr extends UiStrings {
   @override
   String get voiceDashboardRequired =>
       'Disponible tant que le kiosque affiche votre tableau de bord Home Assistant.';
+
+  @override
+  String get voiceSkinUnavailablePlugin => 'Habillage de plugin indisponible';
 
   @override
   String get voiceSkinDefault => 'Selon l\'habillage';
