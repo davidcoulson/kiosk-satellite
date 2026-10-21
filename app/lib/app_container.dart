@@ -362,6 +362,8 @@ class AppContainer {
     // An alarm rings on screen, and an agent must never bring its
     // Activity forward (on a projector that lights the laser).
     alarms,
+    // Opening it fronts the Activity and wakes the screen.
+    calendar,
   ];
 
   List<Manager> get _ordered {

@@ -266,6 +266,15 @@ class CalendarAvatar extends StatelessWidget {
       ),
     );
     final picture = source == null ? null : cal.pictures.value[source.person];
+    bool isHomeAssistant(String url) {
+      final ha = Uri.tryParse(container.settings.get(defs.haUrl).trim());
+      final u = Uri.tryParse(url);
+      return ha != null &&
+          u != null &&
+          ha.hasAuthority &&
+          u.origin == ha.origin;
+    }
+
     return Container(
       width: size,
       height: size,
@@ -283,10 +292,14 @@ class CalendarAvatar extends StatelessWidget {
                 width: size,
                 height: size,
                 fit: BoxFit.cover,
-                headers: {
-                  'Authorization':
-                      'Bearer ${container.settings.get(defs.haToken)}',
-                },
+                // The token goes to Home Assistant only: a person's picture
+                // may be hosted anywhere.
+                headers: isHomeAssistant(picture)
+                    ? {
+                        'Authorization':
+                            'Bearer ${container.settings.get(defs.haToken)}',
+                      }
+                    : null,
                 errorBuilder: (_, _, _) => Center(child: initial),
               ),
             ),

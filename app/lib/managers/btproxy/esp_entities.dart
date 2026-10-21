@@ -1599,6 +1599,7 @@ class EspEntitySurface {
     'alarm_snooze',
     'alarm_ringing',
     'alarm_snoozed_until',
+    'calendar_view',
     'screen',
     'panel_brightness',
     'adaptive_brightness',
