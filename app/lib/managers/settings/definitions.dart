@@ -10759,6 +10759,13 @@ const btproxyPort = SettingDef<String>(
 /// device pairing from a rotating address still gets through (filter
 /// v1.7.0).
 ///
+/// `allowHomekit` is on unless set to `false`. `allowFindmy` also takes
+/// AirPods' proximity adverts (Apple subtype 0x07). An iBeacon rule's
+/// `minor` may be a list and needs its `major`; the most specific rule
+/// (minor, then major, then UUID) wins whatever order they are written in.
+/// An AD field of length zero is padding, not the end of the data. At most
+/// 32 IRKs are used (filter v2.0.3).
+///
 /// `irksEntity` takes the keys from Home Assistant instead, the way the ESP
 /// proxies' irks-from-ha.yaml does: the panel asks for that entity's
 /// `irksAttribute` (empty for its state) over the native API and uses every

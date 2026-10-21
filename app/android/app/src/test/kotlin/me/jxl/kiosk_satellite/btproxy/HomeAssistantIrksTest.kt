@@ -49,7 +49,7 @@ class HomeAssistantIrksTest {
 
     @Test
     fun `the key count is bounded`() {
-        val many = (0 until 20).joinToString(" ") { "%032x".format(it + 1) }
+        val many = (0 until 40).joinToString(" ") { "%032x".format(it + 1) }
         assertEquals(HomeAssistantIrks.MAX_KEYS, HomeAssistantIrks.extract(many)!!.size)
     }
 

@@ -2981,6 +2981,9 @@ void main() {
         'btproxy_adv_forwarded',
         'btproxy_adv_dropped',
         'btproxy_adv_dropped_rpa',
+        'btproxy_adv_forwarded_irk',
+        'btproxy_adv_dropped_floor',
+        'btproxy_adv_dropped_gate',
         'btproxy_drop_rate',
       ]) {
         expect(all[id]?['disabled'], true, reason: id);

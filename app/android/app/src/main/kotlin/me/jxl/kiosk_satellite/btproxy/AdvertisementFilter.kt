@@ -102,6 +102,11 @@ internal data class IBeaconRule(
      *  as well, so a beacon the house owns can be forwarded at any strength. */
     val rssi: Int = 0,
 ) {
+    /** Minor 4, major 2, UUID 1: how narrowly the rule names a beacon. */
+    val specificity: Int
+        get() = (if (minor != null) 4 else 0) + (if (major != null) 2 else 0) +
+            (if (uuidPrefix.isNotEmpty()) 1 else 0)
+
     fun matches(uuidHex: String, major: Int, minor: Int): Boolean =
         uuidHex.startsWith(uuidPrefix) &&
             (this.major == null || this.major == major) &&
@@ -137,6 +142,9 @@ internal class AdvertisementFilter private constructor(
     @Volatile var forwarded: Long = 0L; private set
     @Volatile var dropped: Long = 0L; private set
     @Volatile var droppedRpa: Long = 0L; private set
+    @Volatile var forwardedIrk: Long = 0L; private set
+    @Volatile var droppedFloor: Long = 0L; private set
+    @Volatile var droppedGate: Long = 0L; private set
 
     /** Advertisements forwarded *only* because a service UUID matched. It
      *  sits at zero while nothing is pairing, so any movement is direct
@@ -254,6 +262,9 @@ internal class AdvertisementFilter private constructor(
             "forwarded" to forwarded,
             "dropped" to dropped,
             "droppedRpa" to droppedRpa,
+            "forwardedIrk" to forwardedIrk,
+            "droppedFloor" to droppedFloor,
+            "droppedGate" to droppedGate,
             "allowedServiceUuid" to allowedServiceUuid,
             "irks" to keys.keys.size,
             // "home_assistant", "setting" or "none": which list [irks]
@@ -283,7 +294,10 @@ internal class AdvertisementFilter private constructor(
         if (macBlocklist.contains(address)) return false
         // Read once: the keys may be swapped from another thread mid-call.
         val keys = irkSet
-        if (keys.gate != 0 && rssi < keys.gate) return false
+        if (keys.gate != 0 && rssi < keys.gate) {
+            droppedGate++
+            return false
+        }
 
         var category = Category.DEFAULT
         // Cheapest first: a set lookup, then AES only for actual RPAs, then
@@ -330,7 +344,6 @@ internal class AdvertisementFilter private constructor(
             payloadHasAllowedServiceUuid(payload)
         ) {
             category = Category.UUID
-            allowedServiceUuid++
         }
         // An RPA no key resolved and no other rule claimed: it rotates, so it
         // can never be tracked here. Dropped regardless of RSSI -- proximity
@@ -351,7 +364,10 @@ internal class AdvertisementFilter private constructor(
         }
         // The floor still bounds every category that did not bring its own.
         if (ownLimit == 0) limit = bound(limit)
-        if (limit != 0 && rssi < limit) return false
+        if (limit != 0 && rssi < limit) {
+            if (limit == rssiFloor) droppedFloor++
+            return false
+        }
 
         if (allowlistExclusive && !protectedAdv) return false
         if (dropNonResolvable && !protectedAdv && isNonResolvable(address, addressType)) return false
@@ -360,6 +376,10 @@ internal class AdvertisementFilter private constructor(
         ) {
             return false
         }
+        // Counted here, not on the match: a service UUID advert the RSSI
+        // limit or the blocklists then dropped was not allowed through.
+        if (category == Category.IRK) forwardedIrk++
+        if (category == Category.UUID) allowedServiceUuid++
         return true
     }
 
@@ -377,7 +397,12 @@ internal class AdvertisementFilter private constructor(
         var index = 0
         while (index < payload.size) {
             val fieldLen = payload[index].toInt() and 0xFF
-            if (fieldLen == 0) return false
+            // Padding, not the end: the advert and its scan response arrive
+            // as one buffer, so stopping here would skip the scan response.
+            if (fieldLen == 0) {
+                index++
+                continue
+            }
             if (index + 1 + fieldLen > payload.size) return false
             if (body(payload[index + 1].toInt() and 0xFF, index + 2, fieldLen - 1)) return true
             index += 1 + fieldLen
@@ -394,8 +419,9 @@ internal class AdvertisementFilter private constructor(
     private fun matchIbeacon(payload: ByteArray): IBeaconRule? {
         var found: IBeaconRule? = null
         walkAd(payload) { type, start, length ->
-            // 004C, 02, 15, 16-byte uuid, major, minor = 24 data bytes.
-            if (type == 0xFF && length >= 24 &&
+            // 004C, 02, 15, 16-byte uuid, major, minor, tx power = 25 data
+            // bytes; a field without the tx-power byte is not a beacon.
+            if (type == 0xFF && length >= 25 &&
                 (payload[start].toInt() and 0xFF) == 0x4C &&
                 (payload[start + 1].toInt() and 0xFF) == 0x00 &&
                 (payload[start + 2].toInt() and 0xFF) == 0x02 &&
@@ -419,7 +445,8 @@ internal class AdvertisementFilter private constructor(
 
     /**
      * Apple Offline Finding: manufacturer data, company 0x004C, subtype
-     * 0x12. AirTags, AirPods in separated mode and licensed third-party tags
+     * 0x12, or 0x07 -- the AirPods proximity pairing advert, sent from the
+     * same FindMy-rotated address by AirPods near their owner. AirTags, AirPods in separated mode and licensed third-party tags
      * advertise this from a random static address, so neither the IRK test
      * nor [dropNonResolvable] sees them and only an Apple entry in
      * [manufacturerBlocklist] ever stands in their way.
@@ -435,7 +462,7 @@ internal class AdvertisementFilter private constructor(
             type == 0xFF && length >= 3 &&
                 (payload[start].toInt() and 0xFF) == 0x4C &&
                 (payload[start + 1].toInt() and 0xFF) == 0x00 &&
-                (payload[start + 2].toInt() and 0xFF) == 0x12
+                (payload[start + 2].toInt() and 0xFF).let { it == 0x12 || it == 0x07 }
         }
 
     /**
@@ -635,16 +662,32 @@ internal class AdvertisementFilter private constructor(
                     val rule = array.optJSONObject(i) ?: continue
                     val prefix = rule.optString("uuidPrefix")
                         .replace("-", "").replace(":", "").lowercase()
-                    ibeacons.add(
-                        IBeaconRule(
-                            uuidPrefix = prefix,
-                            major = if (rule.has("major")) rule.optInt("major") else null,
-                            minor = if (rule.has("minor")) rule.optInt("minor") else null,
-                            rssi = rule.optInt("rssi", 0),
+                    val major = if (rule.has("major")) rule.optInt("major") else null
+                    // One value or a list; a minor means nothing without its major.
+                    val minors: List<Int?> = when {
+                        major == null || !rule.has("minor") -> listOf(null)
+                        else -> rule.optJSONArray("minor")
+                            ?.let { list -> (0 until list.length()).map { list.optInt(it) } }
+                            ?.takeIf { it.isNotEmpty() }
+                            ?: listOf(rule.optInt("minor"))
+                    }
+                    for (minor in minors) {
+                        ibeacons.add(
+                            IBeaconRule(
+                                uuidPrefix = prefix,
+                                major = major,
+                                minor = minor,
+                                rssi = rule.optInt("rssi", 0),
+                            )
                         )
-                    )
+                    }
                 }
             }
+            // Most specific first, config order among equals: the first hit
+            // is then the one that wins, and a broad rule cannot shadow a
+            // narrow one with a limit of its own. A rule naming nothing admits
+            // every beacon and sorts last.
+            ibeacons.sortByDescending { it.specificity }
             // allowFindmy takes true, or an object carrying a limit of its
             // own -- the same two spellings the ESPHome option accepts.
             val findmy = root.opt("allowFindmy")
@@ -663,7 +706,7 @@ internal class AdvertisementFilter private constructor(
                 nameBlocklist = names,
                 serviceUuids16 = uuids16,
                 serviceUuids128 = uuids128,
-                allowHomekit = root.optBoolean("allowHomekit", false),
+                allowHomekit = root.optBoolean("allowHomekit", true),
                 allowFindmy = allowFindmy,
                 findmyRssi = findmyRssi,
                 dropNonResolvable = root.optBoolean("dropNonResolvable", false),

@@ -1327,6 +1327,35 @@ class EspEntitySurface {
           stateClass: 1,
           disabled: true,
         ),
+        // Let through because one of the IRKs resolved the address. Going
+        // flat while the owner is home means the keys stopped matching.
+        diagnostic(
+          'btproxy_adv_forwarded_irk',
+          'BLE adverts forwarded for IRKs',
+          icon: 'mdi:key-wireless',
+          unit: 'adv/min',
+          stateClass: 1,
+          disabled: true,
+        ),
+        // Dropped by the RSSI floor: climbing means the floor is cutting off
+        // devices that are tracked.
+        diagnostic(
+          'btproxy_adv_dropped_floor',
+          'BLE adverts dropped by the floor',
+          icon: 'mdi:signal-cellular-outline',
+          unit: 'adv/min',
+          stateClass: 1,
+          disabled: true,
+        ),
+        // Dropped for being weaker than any limit the filter has.
+        diagnostic(
+          'btproxy_adv_dropped_gate',
+          'BLE adverts dropped by the gate',
+          icon: 'mdi:signal-off',
+          unit: 'adv/min',
+          stateClass: 1,
+          disabled: true,
+        ),
         // Adverts forwarded ONLY because a service UUID matched. It sits at
         // zero while nothing is pairing, so any movement is direct evidence
         // the passthrough fired -- which is what makes a failed
@@ -3649,6 +3678,9 @@ class EspEntitySurface {
         'forwarded',
         'dropped',
         'droppedRpa',
+        'forwardedIrk',
+        'droppedFloor',
+        'droppedGate',
         'allowedServiceUuid',
       ])
         if (filter[key] is num) key: filter[key] as num,
@@ -3685,6 +3717,13 @@ class EspEntitySurface {
       rate('droppedRpa').round(),
       at,
     );
+    for (final (id, key) in const [
+      ('btproxy_adv_forwarded_irk', 'forwardedIrk'),
+      ('btproxy_adv_dropped_floor', 'droppedFloor'),
+      ('btproxy_adv_dropped_gate', 'droppedGate'),
+    ]) {
+      await _sendFilterValue(id, rate(key).round(), at);
+    }
     await _send('btproxy_adv_service_uuid', rate('allowedServiceUuid').round());
     final heard = delta('forwarded') + delta('dropped');
     // Unknown rather than 0% when the panel heard nothing at all, so an

@@ -95,7 +95,7 @@ internal class HomeAssistantIrks(
     companion object {
         /** The ESP proxies' bound: every key costs an AES block per
          *  unresolved advertisement, and this text arrives from outside. */
-        const val MAX_KEYS = 16
+        const val MAX_KEYS = 32
 
         /** Exactly 32 hex digits with no hex digit either side. */
         private val KEY = Regex("(?<![0-9A-Fa-f])[0-9A-Fa-f]{32}(?![0-9A-Fa-f])")

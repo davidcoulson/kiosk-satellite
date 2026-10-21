@@ -426,4 +426,82 @@ class AdvertisementFilterTest {
         assertTrue(f.allows(0x1L, 1, -85, ibeacon("FDA50693-A4E2-4FB1-AFCF-C6EB07647825", 1, 2)))
         assertFalse(f.allows(0x1L, 1, -95, ibeacon("FDA50693-A4E2-4FB1-AFCF-C6EB07647825", 1, 2)))
     }
+
+    private val random = 0xC0DEL shl 8 // a static random address: no IRK, not an RPA
+
+    @Test
+    fun `a zero-length AD field is padding and the scan response behind it is read`() {
+        val f = filter("""{"serviceUuids":["0xFFF6"],"manufacturers":["0x004C"]}""")
+        val payload = byteArrayOf(0x00, 0x00) + serviceUuid16(0xFFF6)
+        assertTrue(f.allows(random, 1, -55, payload))
+    }
+
+    @Test
+    fun `FindMy also takes the AirPods proximity subtype`() {
+        val f = filter("""{"allowFindmy":true,"manufacturers":["0x004C"]}""")
+        assertTrue(f.allows(random, 1, -55, appleFrame(0x07, ByteArray(22))))
+        assertFalse(f.allows(random, 1, -55, appleFrame(0x10, ByteArray(22))))
+    }
+
+    @Test
+    fun `HomeKit is exempt from an Apple blocklist unless switched off`() {
+        val hap = appleFrame(0x06, ByteArray(10))
+        assertTrue(filter("""{"manufacturers":["0x004C"]}""").allows(random, 1, -55, hap))
+        assertFalse(
+            filter("""{"manufacturers":["0x004C"],"allowHomekit":false}""")
+                .allows(random, 1, -55, hap)
+        )
+    }
+
+    @Test
+    fun `an iBeacon field without its tx power byte is not a beacon`() {
+        val f = filter(
+            """{"manufacturers":["0x004C"],"ibeacons":[{"uuidPrefix":"fde3b1502f6443ba"}]}"""
+        )
+        val beacon = ibeacon("fde3b150-2f64-43ba-8d2c-000000000000", 1, 2)
+        assertTrue(f.allows(random, 1, -55, beacon))
+        val short = byteArrayOf(0x19) + beacon.copyOfRange(1, beacon.size - 1)
+        assertFalse(f.allows(random, 1, -55, short))
+    }
+
+    @Test
+    fun `the most specific iBeacon rule wins whatever order they are written in`() {
+        val f = filter(
+            """{"rssiThreshold":-70,"ibeacons":[
+                {"uuidPrefix":"fde3b150"},
+                {"uuidPrefix":"fde3b150","major":1,"minor":[2,3],"rssi":-95}]}"""
+        )
+        // -90 passes only the narrow rule's own limit; the broad rule would
+        // inherit -70 and drop it.
+        assertTrue(f.allows(random, 1, -90, ibeacon("fde3b150-0000-0000-0000-000000000000", 1, 3)))
+        assertFalse(f.allows(random, 1, -90, ibeacon("fde3b150-0000-0000-0000-000000000000", 1, 4)))
+    }
+
+    @Test
+    fun `a minor without its major is ignored`() {
+        val f = filter(
+            """{"manufacturers":["0x004C"],"ibeacons":[{"uuidPrefix":"fde3b150","minor":5}]}"""
+        )
+        assertTrue(f.allows(random, 1, -55, ibeacon("fde3b150-0000-0000-0000-000000000000", 9, 8)))
+    }
+
+    @Test
+    fun `the service UUID counter only counts what was forwarded`() {
+        val f = filter("""{"serviceUuids":["0xFFF6"],"rssiServiceUuid":-60}""")
+        assertFalse(f.allows(random, 1, -80, serviceUuid16(0xFFF6)))
+        assertEquals(0L, f.counters()["allowedServiceUuid"])
+        assertTrue(f.allows(random, 1, -50, serviceUuid16(0xFFF6)))
+        assertEquals(1L, f.counters()["allowedServiceUuid"])
+    }
+
+    @Test
+    fun `IRK, floor and gate drops are counted`() {
+        val f = filter("""{"irks":["$specIrk"],"rssiFloor":-90,"rssiThreshold":-70}""")
+        assertTrue(f.allows(specRpa, 1, -55, ByteArray(0)))
+        assertEquals(1L, f.counters()["forwardedIrk"])
+        // Below every limit: the gate. Between: a plain threshold drop.
+        assertFalse(f.allows(random, 1, -100, ByteArray(0)))
+        assertEquals(1L, f.counters()["droppedGate"])
+        assertEquals(0L, f.counters()["droppedFloor"])
+    }
 }
