@@ -16,6 +16,8 @@ import 'package:kiosk_satellite/core/event_bus.dart';
 import 'package:kiosk_satellite/core/events.dart';
 import 'package:kiosk_satellite/core/logging.dart';
 import 'package:kiosk_satellite/managers/plugins/plugin_manager.dart';
+import 'package:kiosk_satellite/managers/settings/definitions.dart'
+    show screensaverMode;
 import 'package:kiosk_satellite/ui/plugin_overlay.dart';
 import 'package:kiosk_satellite/ui/ui_scale.dart';
 import 'package:kiosk_satellite/ui/kit.dart';
@@ -130,6 +132,42 @@ void main() {
     await publish('second');
     expect(plugins.screensavers.value, isEmpty);
   });
+
+  test(
+    'screensaver mode options notify remote admin only when the list changes',
+    () async {
+      final keys = <String>[];
+      final sub = bus.on<SettingOptionsChanged>().listen(
+        (event) => keys.add(event.key),
+      );
+      Future<void> publish(String title, String html) =>
+          native('screensavers', {
+            'id': 'hello-world',
+            'session': 'first',
+            'screensavers': [
+              {'key': 'dvd', 'title': title, 'html': html},
+            ],
+          });
+      await native('hostSession', {
+        'id': 'hello-world',
+        'session': 'first',
+        'capabilities': ['screensaver'],
+      });
+      await publish('DVD Logo', '<p>1</p>');
+      await Future<void>.delayed(Duration.zero);
+      expect(keys, [screensaverMode.key]);
+      await publish('DVD Logo', '<p>2</p>');
+      await Future<void>.delayed(Duration.zero);
+      expect(keys, hasLength(1));
+      await publish('Bouncing Logo', '<p>2</p>');
+      await Future<void>.delayed(Duration.zero);
+      expect(keys, hasLength(2));
+      await plugins.setEnabled(false);
+      await Future<void>.delayed(Duration.zero);
+      expect(keys, hasLength(3));
+      await sub.cancel();
+    },
+  );
 
   testWidgets('Shizuku is opt-in and permission requests require a user tap', (
     tester,
@@ -2400,6 +2438,70 @@ void main() {
     expect(find.text('Home Assistant readings'), findsNothing);
     expect(find.text('Shizuku readings'), findsNothing);
     expect(find.text('Chart readings'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the plugin page shows the icon the plugin names', (
+    tester,
+  ) async {
+    final png = base64Decode(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    );
+    messenger.setMockMethodCallHandler(PluginManager.channel, (call) async {
+      calls.add(call);
+      if (call.method == 'icon') return png;
+      return {'enabled': true, 'plugins': installed};
+    });
+    Future<Finder> open() async {
+      await plugins.refresh();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PluginDetailPanel(
+                key: UniqueKey(),
+                plugins: plugins,
+                id: 'hello-world',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return find.byType(IntroRow);
+    }
+
+    // Without an icon the page keeps the generic glyph and never asks.
+    var intro = await open();
+    expect(
+      find.descendant(
+        of: intro,
+        matching: find.byIcon(Icons.extension_rounded),
+      ),
+      findsOneWidget,
+    );
+    expect(calls.where((c) => c.method == 'icon'), isEmpty);
+
+    installed[0] = {
+      ...installed[0],
+      'icon': 'assets/icon.png',
+      'sha256': 'a' * 64,
+    };
+    intro = await open();
+    expect(
+      find.descendant(of: intro, matching: find.byType(Image)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: intro,
+        matching: find.byIcon(Icons.extension_rounded),
+      ),
+      findsNothing,
+    );
+    expect(calls.where((c) => c.method == 'icon').single.arguments, {
+      'id': 'hello-world',
+    });
     expect(tester.takeException(), isNull);
   });
 

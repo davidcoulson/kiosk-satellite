@@ -309,6 +309,22 @@ const DIRECTORY_SORTS = {
   name: ['Name', byName],
 };
 
+// Installed plugin icons as data URLs by plugin ID and package digest, so a
+// page rebuilt on every refresh reads each one once and an update shows its new one.
+const installedIcons = new Map();
+
+function installedIcon(plugin) {
+  if (!plugin.icon) return Promise.resolve(null);
+  const key = `${plugin.id}@${plugin.sha256}`;
+  if (!installedIcons.has(key)) {
+    installedIcons.set(key, cmd('getPluginIcon', { id: plugin.id }, { timeoutMs: 15000 })
+      .then((r) => (r?.ok && r.data?.data ? `data:${r.data.mime};base64,${r.data.data}` : null))
+      .catch(() => null)
+      .then((src) => { if (!src) installedIcons.delete(key); return src; }));
+  }
+  return installedIcons.get(key);
+}
+
 function directoryRow(entry) {
   const row = element('div', undefined, 'row plugin-directory-row');
   row.tabIndex = 0; row.setAttribute('role', 'button');
@@ -727,6 +743,12 @@ function render(root, state) {
     const intro = introRow(SUBPAGE_ICONS.Plugins, plugin.name || plugin.id, plugin.description || '');
     intro.dataset.searchId = `plugin:${plugin.id}:intro`;
     description.append(intro);
+    // The plugin's own icon replaces the generic glyph once it arrives.
+    installedIcon(plugin).then((src) => {
+      if (!src) return;
+      const img = element('img'); img.alt = ''; img.src = src;
+      intro.querySelector('.intro-icon').replaceChildren(img);
+    });
     if (plugin.status) {
       const status = hintRow(plugin.status, { warn: plugin.statusError === true });
       status.classList.add('plugin-runtime-status'); description.append(status);

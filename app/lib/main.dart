@@ -17,6 +17,7 @@ import 'core/ha_http_overrides.dart';
 import 'core/locale_dates.dart';
 import 'core/user_authorities.dart';
 import 'managers/settings/definitions.dart' as defs;
+import 'managers/wake_word/pryon/pryon_catalog.dart';
 import 'ui/key_nav.dart';
 import 'ui/agent_screen.dart';
 import 'ui/kiosk_screen.dart';
@@ -63,6 +64,9 @@ Future<void> main() async {
   // Private CAs the user installed on the device, for the same reason
   // before init: every connection from here on should trust them.
   await trustUserAuthorities();
+  // Before init: the settings it serves hide Amazon's wake word engine
+  // unless the Echo Dot image's service answered.
+  await PryonCatalog.init(container.log);
   await container.init();
   // Framework and uncaught Dart errors into the app log, where reports
   // and the watchdog's restart note can see them.

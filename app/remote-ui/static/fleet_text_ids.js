@@ -173,5 +173,6 @@ export const fleetTextMessageIds = {
   "Plugins": "fleetPlugins",
   "Plugin secrets": "fleetPluginSecrets",
   "No plugins installed on this kiosk": "fleetNoPluginsInstalledOnThisKiosk",
-  "Kiosks on this profile install these and take their settings from this kiosk.": "fleetKiosksOnThisProfileInstallTheseAndTakeTheir"
+  "Kiosks on this profile install these and take their settings from this kiosk.": "fleetKiosksOnThisProfileInstallTheseAndTakeTheir",
+  "the calendars hidden with their chips": "fleetTheCalendarsHiddenWithTheirChips"
 };

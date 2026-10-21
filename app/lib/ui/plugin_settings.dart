@@ -1,6 +1,7 @@
 import '../l10n/messages.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 
@@ -20,6 +21,7 @@ import 'plugin_chart.dart';
 import 'plugin_readings.dart';
 import 'plugin_setup.dart';
 import 'plugin_shizuku.dart';
+import 'theme.dart';
 import 'color_picker.dart';
 import 'toast.dart';
 import 'settings_search.dart';
@@ -955,7 +957,10 @@ class _PluginDetailPanelState extends State<PluginDetailPanel> {
               SearchLandingTarget(
                 id: 'plugin:${widget.id}:intro',
                 child: IntroRow(
-                  icon: const Icon(Icons.extension_rounded),
+                  icon: _InstalledPluginIcon(
+                    plugins: widget.plugins,
+                    id: widget.id,
+                  ),
                   title: '${plugin['name'] ?? widget.id}',
                   subtitle: '${plugin['description'] ?? ''}',
                 ),
@@ -1636,6 +1641,34 @@ class _PluginGroupOutput extends StatelessWidget {
             title: layout?['readingsTitle']?.toString(),
           ),
         ],
+      );
+    },
+  );
+}
+
+/// The icon an installed plugin names in its manifest, filling the intro
+/// row's tile, or the generic plugin glyph without one.
+class _InstalledPluginIcon extends StatelessWidget {
+  const _InstalledPluginIcon({required this.plugins, required this.id});
+  final PluginManager plugins;
+  final String id;
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<Uint8List?>(
+    future: plugins.pluginIcon(id),
+    builder: (context, snapshot) {
+      final bytes = snapshot.data;
+      if (bytes == null) return const Icon(Icons.extension_rounded);
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(Ks.radiusRow),
+        child: Image.memory(
+          bytes,
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          errorBuilder: (_, _, _) => const Icon(Icons.extension_rounded),
+        ),
       );
     },
   );

@@ -4,6 +4,7 @@ Run with Python 3 and Playwright's Chromium installed. No device is contacted.
 Mirrors the device (plugin_directory_ui_test.dart).
 """
 from functools import partial
+import re
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
@@ -36,7 +37,9 @@ directory = {'generated': '2026-10-19T06:00:00Z', 'plugins': [
 plugins_enabled = True
 requests = []
 installed = [{'id': 'quiet', 'name': 'Quiet Clock', 'version': '1.0.0', 'enabled': True, 'running': True,
-              'settings': [], 'commands': [], 'values': {}, 'source': {'repository': 'https://github.com/alice/quiet'}}]
+              'settings': [], 'commands': [], 'values': {}, 'source': {'repository': 'https://github.com/alice/quiet'},
+              'icon': 'assets/icon.png', 'sha256': 'a' * 64}]
+PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
 
 def preview(url):
@@ -63,6 +66,8 @@ def api(route):
         result = preview(params['url'])
     elif name == 'installPluginRepository':
         result = installed
+    elif name == 'getPluginIcon':
+        result = {'mime': 'image/png', 'data': PNG} if params.get('id') == 'quiet' else None
     else:
         result = None
     route.fulfill(json={'ok': True, 'data': result})
@@ -138,6 +143,11 @@ try:
         expect(rows.nth(1)).to_contain_text('Installed')
         rows.filter(has_text='Quiet Clock').click()
         assert page.url.endswith('#plugins/quiet')
+        # Its page shows the icon the plugin names in place of the generic glyph.
+        intro_icon = page.locator('[data-search-id="plugin:quiet:intro"] .intro-icon')
+        expect(intro_icon.locator('img')).to_have_attribute('src', re.compile(r'^data:image/png;base64,'))
+        expect(intro_icon.locator('svg')).to_have_count(0)
+        assert [p for n, p in requests if n == 'getPluginIcon'] == [{'id': 'quiet'}]
         assert not errors, errors
         page.close()
 
