@@ -203,17 +203,34 @@ void main() {
   });
 
   group('haAutoLoginClearScript', () {
+    final script = haAutoLoginClearScript(origins: ['http://ha:8123']);
+
     test('removes a seed, never a hand login', () {
       // A seed has no refresh token and Home Assistant's Log out cannot end
       // it; a login done by hand carries one and stays.
       expect(
-        haAutoLoginClearScript,
+        script,
         contains(
           'if (!s || !s.refresh_token) '
           'localStorage.removeItem("hassTokens");',
         ),
       );
-      expect(haAutoLoginClearScript, isNot(contains('setItem')));
+      expect(script, isNot(contains('setItem')));
     });
+
+    test('runs on the listed origins only, compared exactly', () {
+      expect(
+        script,
+        contains('["http://ha:8123"].indexOf(location.origin) < 0'),
+      );
+    });
+  });
+
+  test('the session copy checks the page origin at run time', () {
+    final script = buildHaSessionScript(
+      tokens: '{"access_token":"a"}',
+      url: 'http://ha:8123/x',
+    )!;
+    expect(script, contains('location.origin !== "http://ha:8123"'));
   });
 }

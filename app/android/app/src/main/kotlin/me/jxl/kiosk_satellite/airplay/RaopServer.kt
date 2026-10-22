@@ -235,11 +235,12 @@ internal class RaopServer(
             try {
                 while (!closed) {
                     val req = RtspRequest.read(input) ?: break
-                    // Only the live session may sit quiet; a connection that is not
-                    // one cannot hold a slot of the cap forever.
-                    socket.soTimeout = if (synchronized(lock) { current === this }) 0 else IDLE_TIMEOUT_MS
                     val res = handle(req)
                     res.write(output, req.cseq)
+                    // Only the live session may sit quiet; a connection that is not
+                    // one cannot hold a slot of the cap forever. Decided after the
+                    // request, which is what makes ANNOUNCE's connection current.
+                    socket.soTimeout = if (synchronized(lock) { current === this }) 0 else IDLE_TIMEOUT_MS
                     if (req.method == "TEARDOWN") break
                 }
             } catch (e: Exception) {

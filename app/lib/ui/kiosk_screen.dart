@@ -996,13 +996,15 @@ class _KioskScreenState extends State<KioskScreen>
   /// loopback proxy. A custom or external page the WebView navigates to gets
   /// none of it.
   Set<String> get _haOriginRules => {
+    // The proxy maps the start URL, so its loopback address is Home Assistant
+    // only while the start page is.
+    if (c.settings.get(defs.startPage) != 'custom') ?c.proxy.loopbackOrigin,
     for (final u in [
       c.settings.get(defs.haUrl),
       // A custom start page is some other site, not Home Assistant.
       if (c.settings.get(defs.startPage) != 'custom') _initialUrl,
     ])
       if (Uri.tryParse(u.trim()) case final p? when p.hasAuthority) p.origin,
-    ?c.proxy.loopbackOrigin,
   };
 
   /// The kiosk went light or dark: a custom page on screen, and the next
@@ -1205,7 +1207,7 @@ class _KioskScreenState extends State<KioskScreen>
     // Off, the seeded session goes too, so the page asks for a login.
     if (!c.settings.get(defs.haAutoLogin))
       UserScript(
-        source: haAutoLoginClearScript,
+        source: haAutoLoginClearScript(origins: _haOriginRules),
         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
         allowedOriginRules: _haOriginRules,
       ),

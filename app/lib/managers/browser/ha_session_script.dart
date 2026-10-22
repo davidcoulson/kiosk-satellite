@@ -105,9 +105,10 @@ String? buildHaAutoLoginScript({
 /// dashboard shows the login form and someone can sign in as another user.
 /// Home Assistant's own Log out cannot end a seeded session: it revokes the
 /// refresh token, which a seed does not have. A login someone did by hand
-/// carries one and is left alone.
-const haAutoLoginClearScript =
+/// carries one and is left alone. Runs only on [origins], compared exactly.
+String haAutoLoginClearScript({required Iterable<String> origins}) =>
     'try {'
+    'if (${jsonEncode(origins.toList())}.indexOf(location.origin) < 0) throw 0;'
     'var stored = localStorage.getItem("hassTokens");'
     'if (stored) {'
     'var s = null;'
@@ -129,7 +130,10 @@ String? buildHaSessionScript({required String? tokens, required String url}) {
   if (decoded is! Map<String, dynamic>) return null;
   if (decoded['access_token'] is! String) return null;
   final session = jsonEncode({...decoded, 'hassUrl': target.origin});
+  // The page may navigate or redirect away from [url]'s origin after the
+  // script is installed; the copy belongs to that origin only.
   return 'try {'
+      'if (location.origin !== ${jsonEncode(target.origin)}) throw 0;'
       'if (!localStorage.getItem("hassTokens")) {'
       'localStorage.setItem("hassTokens", ${jsonEncode(session)});'
       '}'
