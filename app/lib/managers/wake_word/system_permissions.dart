@@ -265,7 +265,13 @@ class SystemPermissions {
   static void invalidate() {
     _cached = null;
     _cachedAt = null;
+    _generation++;
+    _inFlight = null;
   }
+
+  /// Bumped by [invalidate], so a read that started before it cannot cache
+  /// or clear what a later read set up.
+  static int _generation = 0;
 
   /// A recent read, a read already running, or a fresh one -- in that order.
   /// Concurrent callers share one pass over the platform channels rather
@@ -280,13 +286,18 @@ class SystemPermissions {
     }
     final running = _inFlight;
     if (running != null) return running;
+    final generation = _generation;
     final pass = _read()
         .then((permissions) {
-          _cached = permissions;
-          _cachedAt = DateTime.now();
+          if (generation == _generation) {
+            _cached = permissions;
+            _cachedAt = DateTime.now();
+          }
           return permissions;
         })
-        .whenComplete(() => _inFlight = null);
+        .whenComplete(() {
+          if (generation == _generation) _inFlight = null;
+        });
     _inFlight = pass;
     return pass;
   }

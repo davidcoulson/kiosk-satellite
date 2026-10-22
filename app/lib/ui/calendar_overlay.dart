@@ -444,9 +444,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
   /// The day moves on at midnight even with nobody touching it.
   void _armMidnight() {
     final now = DateTime.now();
-    _midnight = Timer(addDays(now, 1).difference(now), () {
+    final today = dateOnly(now);
+    _midnight = Timer(untilMidnight(now), () {
       if (!mounted) return;
-      setState(() {});
+      // A view sitting on the old today follows it to the new one.
+      setState(() {
+        if (_anchor == today) _anchor = dateOnly(DateTime.now());
+      });
       _armMidnight();
     });
   }

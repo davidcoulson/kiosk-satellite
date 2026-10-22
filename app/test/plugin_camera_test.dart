@@ -53,6 +53,7 @@ void main() {
   late SettingsManager settings;
   late MotionManager motion;
   late PluginCamera camera;
+  late CommandRegistry commands;
   late List<Map<String, Object?>> closed;
 
   Future<void> pump() async {
@@ -68,7 +69,7 @@ void main() {
     SharedPreferences.setMockInitialValues({'ks.camera.enabled': cameraOn});
     final bus = EventBus();
     final log = Logger();
-    final commands = CommandRegistry(log);
+    commands = CommandRegistry(log);
     settings = SettingsManager(bus, commands, log);
     await settings.init();
     motion = MotionManager(bus, commands, log, settings);
@@ -209,6 +210,40 @@ void main() {
     expect(await result, {'ok': false, 'error': 'canceled'});
     expect(motion.scannerHeld, isFalse);
   });
+
+  test(
+    'a stop while camera availability is pending never opens the scanner',
+    () async {
+      await build();
+      final gate = Completer<void>();
+      commands.register(
+        Command(
+          name: 'getCameraFacings',
+          description: 'test',
+          handler: (_) async {
+            await gate.future;
+            return CommandResult.ok(['back']);
+          },
+        ),
+      );
+      var presented = false;
+      camera.presenter = (request, cancel) async {
+        presented = true;
+        return {'ok': true};
+      };
+      final result = camera.scan({
+        'id': 'scanner',
+        'session': 's1',
+        'scan': 'a',
+      });
+      await pump();
+      camera.cancelScan({'id': 'scanner', 'session': 's1', 'scan': 'a'});
+      gate.complete();
+      expect(await result, {'ok': false, 'error': 'canceled'});
+      expect(presented, isFalse);
+      expect(motion.scannerHeld, isFalse);
+    },
+  );
 
   test('a scan needs the camera and the kiosk screen', () async {
     await build(cameraOn: false);

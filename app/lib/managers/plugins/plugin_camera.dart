@@ -159,16 +159,19 @@ class PluginCamera {
     if (id is! String || session is! String || scan is! String) {
       return failed('unavailable');
     }
-    final unavailable = await _unavailable();
-    if (unavailable != null) return failed(unavailable);
     if (_scan != null || motion.scannerHeld) return failed('busy');
     final present = presenter;
     if (present == null) return failed('unavailable');
     final cancel = Completer<String>();
     final current = (id: id, session: session, scan: scan, cancel: cancel);
+    // Registered before the first await, so a stop while the checks below
+    // run reaches [cancel].
     _scan = current;
     var held = false;
     try {
+      final unavailable = await _unavailable();
+      if (cancel.isCompleted) return failed(await cancel.future);
+      if (unavailable != null) return failed(unavailable);
       if (!await _permitted()) return failed('permission');
       if (cancel.isCompleted) return failed(await cancel.future);
       // Someone has to see the scanner.
@@ -177,6 +180,7 @@ class PluginCamera {
       if (cancel.isCompleted) return failed(await cancel.future);
       await motion.holdForScanner();
       held = true;
+      if (cancel.isCompleted) return failed(await cancel.future);
       final facing = args['facing'];
       final timeout = args['timeoutMs'];
       log.info('plugin:$id', 'barcode scan open');

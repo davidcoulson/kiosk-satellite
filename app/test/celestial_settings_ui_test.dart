@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kiosk_satellite/managers/wake_word/system_permissions.dart';
 import 'package:kiosk_satellite/app_container.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart';
 import 'package:kiosk_satellite/ui/celestial_settings.dart';
@@ -86,6 +87,9 @@ void main() {
   testWidgets('approximate location reads missing and says why', (
     tester,
   ) async {
+    // The permission read is cached for a moment and shared while running;
+    // an earlier test's answer must not stand in for this one's mocks.
+    SystemPermissions.invalidate();
     final messenger = tester.binding.defaultBinaryMessenger;
     const permissions = MethodChannel(
       'flutter.baseflow.com/permissions/methods',

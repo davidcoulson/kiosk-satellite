@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show HttpException;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -72,6 +73,60 @@ void main() {
     expect(defs.screensaverUrlImage.perDevice, isFalse);
     expect(slideEdgeTapDefs['url'], defs.screensaverUrlEdgeTaps);
     expect(photoMetadataDefs['url']?.enabled, defs.screensaverUrlMetadata);
+  });
+
+  test('an oversize image is refused as it streams, not buffered', () async {
+    var pulled = 0;
+    await http.runWithClient(
+      () async {
+        await expectLater(
+          fetchScreensaverImage(
+            url,
+            timeout: const Duration(seconds: 5),
+            maxBytes: 1000,
+          ),
+          throwsA(isA<HttpException>()),
+        );
+      },
+      () => MockClient.streaming((request, body) async {
+        Stream<List<int>> chunks() async* {
+          for (var i = 0; i < 100; i++) {
+            pulled++;
+            yield List.filled(100, 0);
+          }
+        }
+
+        return http.StreamedResponse(chunks(), 200);
+      }),
+    );
+    expect(pulled, lessThan(100));
+  });
+
+  test('a timeout or an abort cancels the request itself', () async {
+    final triggers = <Future<void>>[];
+    await http.runWithClient(
+      () async {
+        await expectLater(
+          fetchScreensaverImage(url, timeout: const Duration(milliseconds: 50)),
+          throwsA(isA<TimeoutException>()),
+        );
+        final abort = Completer<void>();
+        final fetch = fetchScreensaverImage(
+          url,
+          timeout: const Duration(seconds: 30),
+          abort: abort.future,
+        );
+        abort.complete();
+        await expectLater(fetch, throwsA(isA<TimeoutException>()));
+      },
+      () => MockClient.streaming((request, body) async {
+        final trigger = (request as http.Abortable).abortTrigger!;
+        triggers.add(trigger);
+        await trigger;
+        throw http.RequestAbortedException(request.url);
+      }),
+    );
+    expect(triggers, hasLength(2));
   });
 
   testWidgets('every slide is a new fetch, and Previous steps back through '

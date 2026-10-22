@@ -133,7 +133,7 @@ void main() {
         );
         expect(container.plugins.enabled.value, false);
         expect(
-          calls.every((call) => ['list', 'state'].contains(call)),
+          calls.every((call) => ['list', 'state', 'settingsPage'].contains(call)),
           true,
           reason: calls.toString(),
         );

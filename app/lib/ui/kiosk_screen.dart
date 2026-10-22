@@ -2749,9 +2749,35 @@ class _OverlayWebViewState extends State<_OverlayWebView> {
   /// built. Only then are full loads routed through shouldOverrideUrlLoading:
   /// the plugin cancels and reissues every load it is asked about, which
   /// nothing else on this page needs.
-  late final bool _filtered = widget.container.browser.urlFilter.any(
+  late bool _filtered = _externalRules();
+
+  static const _filterGroup = 'ks-external-url-filter';
+
+  bool _externalRules() => widget.container.browser.urlFilter.any(
     (r) => r.appliesTo(const {urlFilterExternal}),
   );
+
+  /// The rules changed: re-read whether they cover external pages, turn
+  /// native navigation interception on or off to match, and swap the
+  /// document-start script so the next page starts with the current rules.
+  Future<void> _applyFilter(InAppWebViewController controller) async {
+    final source = widget.container.browser.urlFilterSource(urlFilterExternal);
+    _filtered = _externalRules();
+    try {
+      await controller.setSettings(
+        settings: InAppWebViewSettings(useShouldOverrideUrlLoading: _filtered),
+      );
+      await controller.removeUserScriptsByGroupName(groupName: _filterGroup);
+      await controller.addUserScript(
+        userScript: UserScript(
+          groupName: _filterGroup,
+          source: source,
+          injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+        ),
+      );
+    } catch (_) {}
+    await controller.evaluateJavascript(source: source);
+  }
 
   @override
   void initState() {
@@ -2766,11 +2792,7 @@ class _OverlayWebViewState extends State<_OverlayWebView> {
         unawaited(_applyMaZoom(controller));
       }
       if (e.key == defs.browserUrlFilter.key) {
-        unawaited(
-          controller.evaluateJavascript(
-            source: widget.container.browser.urlFilterSource(urlFilterExternal),
-          ),
-        );
+        unawaited(_applyFilter(controller));
       }
     });
   }
@@ -2850,6 +2872,7 @@ class _OverlayWebViewState extends State<_OverlayWebView> {
     return UnmodifiableListView([
       ...?own,
       UserScript(
+        groupName: _filterGroup,
         source: widget.container.browser.urlFilterSource(urlFilterExternal),
         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
       ),

@@ -47,6 +47,16 @@ final cases = <(UrlFilterRule, String, bool)>[
 ];
 
 void main() {
+  test('sign-in and start path exemptions stay on the HA origin', () {
+    final ex = urlFilterExemptions('http://ha.local:8123/kiosk/0');
+    bool hit(String u) => ex.any((r) => r.matches(u));
+    expect(hit('http://ha.local:8123/auth/authorize?x=1'), isTrue);
+    expect(hit('http://ha.local:8123/kiosk/0'), isTrue);
+    expect(hit('https://evil.example/auth/x'), isFalse);
+    expect(hit('https://evil.example/onboarding'), isFalse);
+    expect(hit('https://evil.example/kiosk/0'), isFalse);
+  });
+
   test('wildcards and regular expressions match the documented way', () {
     for (final (rule, url, blocked) in cases) {
       expect(rule.matches(url), blocked, reason: '${rule.pattern} on $url');
@@ -91,6 +101,21 @@ void main() {
     expect(check([lovelace], '$ha/auth/authorize?client_id=x', dash), isNull);
     expect(check([lovelace], '$ha/?auth_callback=1&code=x', dash), isNull);
     expect(check([lovelace], '$ha/kiosk/0', dash), isNull);
+    // The auth_callback return is no bypass for other sites or HA pages.
+    expect(
+      check([lovelace], 'https://evil.example/?auth_callback=1', dash),
+      '',
+    );
+    expect(check([lovelace], '$ha/config/users?auth_callback=1', dash), '');
+    expect(check([lovelace], '$ha/history?x=auth_callback=1', dash), '');
+    expect(
+      check(
+        [allow('*example.com*', scope: urlFilterExternal)],
+        'https://evil.example/?auth_callback=1',
+        {urlFilterExternal},
+      ),
+      '',
+    );
     // A Block rule wins over an Allow only rule.
     expect(
       check(

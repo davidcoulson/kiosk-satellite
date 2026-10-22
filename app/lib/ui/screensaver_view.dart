@@ -4230,16 +4230,52 @@ class _LocalMediaScreensaverState extends State<LocalMediaScreensaver>
 Future<Uint8List> fetchScreensaverImage(
   String url, {
   required Duration timeout,
+  Future<void>? abort,
+  int maxBytes = screensaverImageMaxBytes,
 }) async {
   final uri = Uri.parse(url.trim());
-  final response = await http
-      .get(uri, headers: const {'Cache-Control': 'no-cache'})
-      .timeout(timeout);
-  if (response.statusCode != 200) {
-    throw HttpException('HTTP ${response.statusCode}', uri: uri);
+  // The timeout and the caller's [abort] both cancel the request itself, so
+  // a stalled server does not keep downloading after the caller gave up.
+  final aborted = Completer<void>();
+  void stop() {
+    if (!aborted.isCompleted) aborted.complete();
   }
-  return response.bodyBytes;
+
+  unawaited(abort?.then((_) => stop()));
+  final timer = Timer(timeout, stop);
+  final client = http.Client();
+  try {
+    final request = http.AbortableRequest(
+      'GET',
+      uri,
+      abortTrigger: aborted.future,
+    )..headers['Cache-Control'] = 'no-cache';
+    final response = await client.send(request);
+    if (response.statusCode != 200) {
+      throw HttpException('HTTP ${response.statusCode}', uri: uri);
+    }
+    if ((response.contentLength ?? 0) > maxBytes) {
+      throw HttpException('image larger than $maxBytes bytes', uri: uri);
+    }
+    final out = BytesBuilder(copy: false);
+    await for (final chunk in response.stream) {
+      out.add(chunk);
+      if (out.length > maxBytes) {
+        throw HttpException('image larger than $maxBytes bytes', uri: uri);
+      }
+    }
+    return out.takeBytes();
+  } on http.RequestAbortedException {
+    throw TimeoutException('image fetch aborted', timeout);
+  } finally {
+    timer.cancel();
+    stop();
+    client.close();
+  }
 }
+
+/// The most one screensaver image may weigh on the wire.
+const screensaverImageMaxBytes = 20 * 1024 * 1024;
 
 /// One photo the Image URL screensaver fetched, numbered in fetch order so
 /// two answers from the same address still read as two slides.
@@ -4300,6 +4336,9 @@ class _ImageUrlScreensaverState extends State<ImageUrlScreensaver>
 
   /// The address a fetch in flight asked for.
   String? _fetching;
+
+  /// Completes on dispose, which aborts a fetch still downloading.
+  final _disposed = Completer<void>();
 
   AppContainer get c => widget.container;
 
@@ -4369,7 +4408,11 @@ class _ImageUrlScreensaverState extends State<ImageUrlScreensaver>
       _fetching = url;
       slide = _UrlSlide(
         ++_serial,
-        await fetchScreensaverImage(url, timeout: _fetchTimeout),
+        await fetchScreensaverImage(
+          url,
+          timeout: _fetchTimeout,
+          abort: _disposed.future,
+        ),
       );
       if (!mounted || !await _present(slide)) return;
     } catch (e) {
@@ -4487,6 +4530,7 @@ class _ImageUrlScreensaverState extends State<ImageUrlScreensaver>
 
   @override
   void dispose() {
+    if (!_disposed.isCompleted) _disposed.complete();
     c.screensaver.detachSlides(_step);
     _urlSub?.cancel();
     _timer?.cancel();

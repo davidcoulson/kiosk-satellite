@@ -209,6 +209,10 @@ class CalendarEvent {
 
 DateTime dateOnly(DateTime t) => DateTime(t.year, t.month, t.day);
 
+/// How long from [now] until the next local midnight.
+Duration untilMidnight(DateTime now) =>
+    addDays(dateOnly(now), 1).difference(now);
+
 /// [days] later, by the calendar rather than by 24 hour steps, so a daylight
 /// saving change never lands an hour off midnight.
 DateTime addDays(DateTime day, int days) =>
@@ -313,7 +317,14 @@ List<CalendarEvent> mergeEvents(
       final uidKey = event.uid == null
           ? null
           : '${event.uid}|${event.recurrenceId ?? event.start.toIso8601String()}';
-      final at = (uidKey == null ? null : byUid[uidKey]) ?? byShape[shape];
+      var at = (uidKey == null ? null : byUid[uidKey]) ?? byShape[shape];
+      // The title, start and end fallback only joins copies from different
+      // calendars: two events without a uid on one calendar are distinct.
+      if (at != null &&
+          uidKey == null &&
+          merged[at].calendars.contains(calendar)) {
+        at = null;
+      }
       if (at != null) {
         final existing = merged[at];
         if (!existing.calendars.contains(calendar)) {

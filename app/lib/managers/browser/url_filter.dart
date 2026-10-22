@@ -227,14 +227,34 @@ String? urlFilterRuleError(UrlFilterRule rule) {
 /// kiosk's [startUrl], so a link home always works. Path patterns, so the
 /// secure context proxy's loopback address matches too.
 List<UrlFilterRule> urlFilterExemptions(String startUrl) {
-  final start = Uri.tryParse(startUrl)?.path ?? '';
+  final uri = Uri.tryParse(startUrl);
+  final start = uri?.path ?? '';
+  // The sign-in return lands on the HA origin (or the loopback proxy) at the
+  // root or the start page, never on another site or an admin path.
+  final hosts = [
+    RegExp.escape(uri?.authority ?? ''),
+    r'(?:127\.0\.0\.1|localhost)(?::\d+)?',
+  ].where((h) => h.isNotEmpty).join('|');
+  final paths = [
+    '/',
+    if (start.startsWith('/') && start != '/') RegExp.escape(start),
+  ];
   UrlFilterRule allow(String pattern, {String type = urlFilterWildcard}) =>
       UrlFilterRule(name: '', pattern: pattern, type: type, exempt: true);
   return [
-    allow('/auth/*'),
-    allow('/onboarding*'),
-    allow(r'[?&]auth_callback=1', type: urlFilterRegex),
-    if (start.startsWith('/')) allow(start),
+    allow(
+      '^https?://(?:$hosts)/(?:auth|onboarding)(?:[/?#]|\$)',
+      type: urlFilterRegex,
+    ),
+    allow(
+      '^https?://(?:$hosts)(?:${paths.join('|')})\\?(?:[^#]*&)?auth_callback=1(?:[&#]|\$)',
+      type: urlFilterRegex,
+    ),
+    if (start.startsWith('/'))
+      allow(
+        '^https?://(?:$hosts)${RegExp.escape(start)}(?:[?#]|\$)',
+        type: urlFilterRegex,
+      ),
   ];
 }
 

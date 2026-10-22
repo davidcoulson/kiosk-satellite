@@ -10,6 +10,14 @@ import java.net.InetSocketAddress
 internal class AudioPacket(val seq: Int, val rtp: Long, val pcm: ShortArray, val frames: Int)
 
 /** Signed distance from [b] to [a] on a 16-bit sequence counter. */
+/** Spreads [frames] packed mono samples in [pcm] into stereo pairs, in place (playback is always stereo). */
+internal fun upmixMono(pcm: ShortArray, frames: Int) {
+    for (i in frames - 1 downTo 0) {
+        pcm[i * 2] = pcm[i]
+        pcm[i * 2 + 1] = pcm[i]
+    }
+}
+
 internal fun seqDiff(a: Int, b: Int): Int = ((a - b + 0x8000) and 0xFFFF) - 0x8000
 
 /** Signed distance from [b] to [a] on a 32-bit RTP clock. */
@@ -299,6 +307,7 @@ internal class RaopStream(
             }
             count
         }
+        if (format.alac && format.fmtp[7] == 1) upmixMono(pcm, n)
         buffer.put(AudioPacket(seq, rtp, pcm, n))
     }
 

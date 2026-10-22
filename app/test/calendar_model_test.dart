@@ -155,6 +155,28 @@ void main() {
       ]);
     });
 
+    test('two uid-less events alike on one calendar stay two', () {
+      final merged = mergeEvents(
+        {
+          'calendar.a': [
+            _event('calendar.a', 'Shift', start, end),
+            _event('calendar.a', 'Shift', start, end),
+          ],
+          'calendar.b': [_event('calendar.b', 'Shift', start, end)],
+        },
+        ['calendar.a', 'calendar.b'],
+      );
+      expect(merged, hasLength(2));
+      expect(merged.map((e) => e.calendars.length).toList()..sort(), [1, 2]);
+    });
+
+    test('the midnight timer waits for the next midnight, not 24 hours', () {
+      expect(
+        untilMidnight(DateTime(2026, 10, 19, 22, 30)),
+        const Duration(hours: 1, minutes: 30),
+      );
+    });
+
     test('all-day events sort first, then by start', () {
       final merged = mergeEvents(
         {
