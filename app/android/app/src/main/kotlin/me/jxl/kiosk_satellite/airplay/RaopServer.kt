@@ -111,6 +111,7 @@ internal class RaopServer(
         server = null
         val c = synchronized(lock) { current.also { current = null } }
         c?.close()
+        synchronized(connections) { connections.toList() }.forEach { it.close() }
     }
 
     /** A transport command through the sender's remote control. */
@@ -191,6 +192,9 @@ internal class RaopServer(
     /** The live session's playout diagnostics, null with no session. */
     fun stats(): Map<String, Any?>? = synchronized(lock) { current }?.stats()
 
+    /** Every open RTSP connection, so [stop] can close the ones that never became the session. */
+    private val connections = HashSet<Connection>()
+
     private fun acceptLoop(socket: ServerSocket) {
         while (running) {
             val client = try {
@@ -200,7 +204,14 @@ internal class RaopServer(
                 break
             }
             client.tcpNoDelay = true
-            Thread({ Connection(client).serve() }, "airplay-rtsp-conn").apply { isDaemon = true }.start()
+            val conn = Connection(client)
+            val admitted = synchronized(connections) { (connections.size < MAX_CONNECTIONS).also { if (it) connections.add(conn) } }
+            if (!admitted) {
+                Log.w(TAG, "too many connections, refusing ${client.inetAddress}")
+                runCatching { client.close() }
+                continue
+            }
+            Thread({ conn.serve() }, "airplay-rtsp-conn").apply { isDaemon = true }.start()
         }
     }
 
@@ -218,9 +229,13 @@ internal class RaopServer(
         fun serve() {
             val input = BufferedInputStream(socket.getInputStream())
             val output = BufferedOutputStream(socket.getOutputStream())
+            // A connection that never sends a request is dropped; once a sender
+            // has spoken, it may stay quiet for as long as its session lasts.
+            socket.soTimeout = FIRST_REQUEST_TIMEOUT_MS
             try {
                 while (!closed) {
                     val req = RtspRequest.read(input) ?: break
+                    socket.soTimeout = 0
                     val res = handle(req)
                     res.write(output, req.cseq)
                     if (req.method == "TEARDOWN") break
@@ -235,6 +250,7 @@ internal class RaopServer(
         fun close() {
             if (closed) return
             closed = true
+            synchronized(connections) { connections.remove(this) }
             runCatching { socket.close() }
             endSession()
         }
@@ -557,6 +573,8 @@ internal class RaopServer(
 
     companion object {
         private const val TAG = "AirPlay"
+        private const val MAX_CONNECTIONS = 16
+        private const val FIRST_REQUEST_TIMEOUT_MS = 15_000
 
         /** How long one status request waits for a change before asking again. */
         private const val STATUS_WAIT_MS = 30_000
@@ -586,11 +604,15 @@ internal object Dmap {
     /** The string items of a listing (`mlit`), by tag. */
     fun items(body: ByteArray): Map<String, String> {
         val out = HashMap<String, String>()
-        walk(body, 0, body.size, out)
+        walk(body, 0, body.size, out, 0)
         return out
     }
 
-    private fun walk(b: ByteArray, from: Int, to: Int, out: MutableMap<String, String>) {
+    /** Deeper nesting than any real listing has; a sender's bytes must not set the recursion depth. */
+    private const val MAX_DEPTH = 8
+
+    private fun walk(b: ByteArray, from: Int, to: Int, out: MutableMap<String, String>, depth: Int) {
+        if (depth > MAX_DEPTH) return
         var pos = from
         while (pos + 8 <= to) {
             val tag = String(b, pos, 4, Charsets.ISO_8859_1)
@@ -599,7 +621,7 @@ internal object Dmap {
             pos += 8
             if (len < 0 || pos + len > to) return
             if (tag in CONTAINERS) {
-                walk(b, pos, pos + len, out)
+                walk(b, pos, pos + len, out, depth + 1)
             } else if (tag in STRINGS) {
                 out[tag] = String(b, pos, len, Charsets.UTF_8)
             }
@@ -610,7 +632,8 @@ internal object Dmap {
     /** The numeric items of a status (`cmst`, `cmgt`), by tag. */
     fun numbers(body: ByteArray): Map<String, Long> {
         val out = HashMap<String, Long>()
-        fun walk(from: Int, to: Int) {
+        fun walk(from: Int, to: Int, depth: Int) {
+            if (depth > MAX_DEPTH) return
             var pos = from
             while (pos + 8 <= to) {
                 val tag = String(body, pos, 4, Charsets.ISO_8859_1)
@@ -619,7 +642,7 @@ internal object Dmap {
                 pos += 8
                 if (len < 0 || pos + len > to) return
                 if (tag in STATUS_CONTAINERS) {
-                    walk(pos, pos + len)
+                    walk(pos, pos + len, depth + 1)
                 } else if (len in 1..8) {
                     var v = 0L
                     for (i in 0 until len) v = (v shl 8) or (body[pos + i].toLong() and 0xFF)
@@ -628,7 +651,7 @@ internal object Dmap {
                 pos += len
             }
         }
-        walk(0, body.size)
+        walk(0, body.size, 0)
         return out
     }
 
@@ -639,7 +662,8 @@ internal object Dmap {
      */
     fun queueItems(body: ByteArray): List<Map<String, Any?>> {
         val out = ArrayList<Map<String, Any?>>()
-        fun walk(from: Int, to: Int, inList: Boolean) {
+        fun walk(from: Int, to: Int, inList: Boolean, depth: Int) {
+            if (depth > MAX_DEPTH) return
             var pos = from
             while (pos + 8 <= to) {
                 val tag = String(body, pos, 4, Charsets.ISO_8859_1)
@@ -648,14 +672,14 @@ internal object Dmap {
                 pos += 8
                 if (len < 0 || pos + len > to) return
                 when {
-                    tag == "ceQR" -> walk(pos, pos + len, false)
-                    tag == "mlcl" -> walk(pos, pos + len, true)
+                    tag == "ceQR" -> walk(pos, pos + len, false, depth + 1)
+                    tag == "mlcl" -> walk(pos, pos + len, true, depth + 1)
                     tag == "mlit" && inList -> out.add(queueItem(body, pos, pos + len))
                 }
                 pos += len
             }
         }
-        walk(0, body.size, false)
+        walk(0, body.size, false, 0)
         return out
     }
 

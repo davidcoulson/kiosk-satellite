@@ -186,6 +186,17 @@ class RaopProtocolTest {
     }
 
     @Test
+    fun `DMAP nested far deeper than any listing does not overflow the stack`() {
+        fun box(tag: String, inner: ByteArray) =
+            tag.toByteArray(Charsets.ISO_8859_1) + java.nio.ByteBuffer.allocate(4).putInt(inner.size).array() + inner
+        var body = box("minm", "x".toByteArray())
+        repeat(20_000) { body = box("mlit", body) }
+        assertTrue(Dmap.items(body).isEmpty())
+        assertTrue(Dmap.numbers(body).isEmpty())
+        assertTrue(Dmap.queueItems(body).isEmpty())
+    }
+
+    @Test
     fun mapsTheSenderVolume() {
         assertEquals(1f, RaopServer.volumeToGain(0f), 1e-6f)
         assertEquals(0f, RaopServer.volumeToGain(-144f), 1e-6f)

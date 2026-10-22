@@ -992,6 +992,15 @@ class _KioskScreenState extends State<KioskScreen>
 
   String get _initialUrl => c.settings.get(defs.startUrl);
 
+  /// Origins that may receive the HA token: the HA URL, the start URL and the
+  /// loopback proxy. A custom or external page the WebView navigates to gets
+  /// none of it.
+  Set<String> get _haOriginRules => {
+    for (final u in [c.settings.get(defs.haUrl), _initialUrl])
+      if (Uri.tryParse(u.trim()) case final p? when p.hasAuthority) p.origin,
+    ?c.proxy.loopbackOrigin,
+  };
+
   /// The kiosk went light or dark: a custom page on screen, and the next
   /// one, follow.
   void _pageDarkChanged() =>
@@ -1186,12 +1195,14 @@ class _KioskScreenState extends State<KioskScreen>
           replace: _autoLoginReplace,
         )!,
         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+        allowedOriginRules: _haOriginRules,
       ),
     // Off, the seeded session goes too, so the page asks for a login.
     if (!c.settings.get(defs.haAutoLogin))
       UserScript(
         source: haAutoLoginClearScript,
         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+        allowedOriginRules: _haOriginRules,
       ),
     // The wizard's satellite choice, handed to Voice Satellite before its
     // code runs: VS reads localStorage['vs-satellite-entity'], selects that
