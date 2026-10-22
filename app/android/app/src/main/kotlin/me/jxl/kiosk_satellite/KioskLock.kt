@@ -194,6 +194,9 @@ class KioskLock(private val activity: Activity, messenger: BinaryMessenger) {
                     call.argument<String>("orientation")?.let {
                         ScreenOrientation.apply(activity, it)
                     }
+                    call.argument<Boolean>("fullScreen")?.let {
+                        SystemBars.apply(activity, it)
+                    }
                     result.success(null)
                 }
                 "volumeKeys" -> {

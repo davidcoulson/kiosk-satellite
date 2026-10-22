@@ -4,6 +4,8 @@
   "settingBrowserCutoutModeDescription": "Что делать с областью экрана вокруг выреза или отверстия камеры. Выберите «Обходить вырез», если камера наезжает на кнопки вверху панели.",
   "settingScreenOrientationTitle": "Ориентация экрана",
   "settingScreenOrientationDescription": "Принудительно держать экран в одной ориентации. Для устройства без датчика поворота или смонтированного так, что датчик ошибается.",
+  "settingScreenFullScreenTitle": "Полноэкранный режим",
+  "settingScreenFullScreenDescription": "Скрывать строку состояния и панель навигации. Выключите, чтобы они оставались видны вместе с панелью задач на планшетах. Режим киоска всегда их скрывает.",
   "settingKeepScreenOnTitle": "Не выключать экран",
   "settingKeepScreenOnDescription": "Не давать ОС выключать экран.",
   "settingSetBrightnessOnLaunchTitle": "Задавать яркость при запуске",

@@ -111,6 +111,13 @@ class MainActivity : FlutterActivity() {
         // shared_preferences mirror here means the window never flashes the
         // wrong shape.
         val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        // Whether the bars stay hidden decides the content padding below
+        // (issue #1076): the Full screen setting, overruled by kiosk mode
+        // and lockdown, as hidesSystemBars in kiosk_manager.dart has it.
+        SystemBars.hidden =
+            prefs.getBoolean("flutter.ks.screen.full_screen", true) ||
+                prefs.getBoolean("flutter.ks.kiosk.enabled", false) ||
+                prefs.getBoolean("flutter.ks.lockdown.enabled", false)
         val mode = prefs.getString("flutter.ks.browser.cutout_mode", null) ?: "always"
         CutoutLayout.apply(this, mode)
         findViewById<View>(FLUTTER_VIEW_ID)?.let {

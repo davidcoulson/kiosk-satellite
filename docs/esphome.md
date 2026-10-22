@@ -126,10 +126,11 @@ Every item in this list corresponds directly to a kiosk setting. They are fully 
 |---|---|---|
 | **Battery** | sensor | Reports battery percentage. Only devices with a physical battery receive this entity; a mains powered device without a battery will only report the Charging status. |
 | **Charging** | binary sensor | Indicates if the device is currently receiving power. Left out when **No battery** is on. |
-| **CPU usage** | sensor | Reports current CPU load as a percentage, from how long the cores sat idle. |
-| **CPU clock** | sensor | In place of CPU usage on a device whose kernel does not report idle time: how far the cores' clock sits between its slowest and fastest speed, as a percentage. That is speed, not load: a chip stepping between three speeds reads 0, 66 or 100% whatever it is doing. |
+| **CPU usage** | sensor | Reports how busy the CPU is as a percentage. Only available on devices that let an app measure CPU load. |
+| **CPU clock** | sensor | Reports the average clock speed of the active CPU cores in MHz. |
 | **Theater phase** | text sensor | `off`, `dim`, `peek` or `black`. |
 | **CPU temperature** | sensor | Only available on devices that report thermal data. |
+| **Battery temperature** | sensor | Reports the battery temperature in °C from Android's battery report. Only devices with a battery that has a temperature sensor receive this entity. |
 | **RAM available**, **RAM total** | sensor | Reported in Megabytes (MB). |
 | **Internal storage free**, **Internal storage total** | sensor | Available space and capacity of Android's internal data partition in mebibytes (MiB). Refresh every minute. Free space includes a valid zero when the partition is full. |
 | **Current page** | text sensor | Displays the URL currently on screen, perfectly tracking Single Page Application (SPA) navigations. |

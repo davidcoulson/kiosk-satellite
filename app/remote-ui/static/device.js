@@ -291,9 +291,12 @@ export async function loadDeviceInfo() {
     // uptime; Android does not tell an app when the router associated.
     [deviceText('Network uptime'), dur(info?.uptime?.network)],
     [deviceText('CPU usage'), info?.cpu == null ? '-' : `${Math.round(info.cpu)}%`],
+    [deviceText('CPU clock'), info?.cpuClock == null ? '-' : `${Math.round(info.cpuClock)} MHz`],
     [deviceText('CPU temperature'), info?.temp == null ? '-' : `${Math.round(info.temp)}°C`],
     [deviceText('Battery level'), info?.battery == null ? '-'
       : `${info.battery}%${info.charging ? ` (${deviceText('plugged')})` : ''}`],
+    [deviceText('Battery temperature'), info?.batteryTemp == null ? '-'
+      : `${info.batteryTemp.toFixed(1)}°C`],
     [deviceText('Screen brightness'), info?.brightness == null ? '-'
       : `${Math.round(info.brightness * 100)}% (${Math.round(info.brightness * 255)}/255)`],
     [deviceText('Screen status'), yn(screenOn)],

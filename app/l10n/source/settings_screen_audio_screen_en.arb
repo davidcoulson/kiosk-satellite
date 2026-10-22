@@ -52,6 +52,32 @@
       ]
     }
   },
+  "settingScreenFullScreenTitle": "Full screen",
+  "@settingScreenFullScreenTitle": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Screen"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Screen"
+      ]
+    }
+  },
+  "settingScreenFullScreenDescription": "Hide the status and navigation bars. Turn off to keep them visible, along with the taskbar on tablets. Kiosk mode always hides them.",
+  "@settingScreenFullScreenDescription": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Screen"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Screen"
+      ]
+    }
+  },
   "settingKeepScreenOnTitle": "Keep screen on",
   "@settingKeepScreenOnTitle": {
     "context": "Settings:Screen & Audio:Screen",

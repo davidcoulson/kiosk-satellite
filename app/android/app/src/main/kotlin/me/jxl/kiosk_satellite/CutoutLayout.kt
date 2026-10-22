@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Insets
 import android.graphics.Rect
 import android.os.Build
+import android.view.View
 import android.view.WindowInsets
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterView
@@ -20,8 +21,8 @@ import io.flutter.embedding.android.FlutterViewDelegate
  * what survives:
  *
  *  - System bar insets (status bar, navigation bar and caption bar) are
- *    withheld ALWAYS, on every mode. The app keeps the bars permanently
- *    hidden, so a page padding for them is never right; on healthy ROMs
+ *    withheld ALWAYS, on every mode. The app keeps the bars hidden, so a
+ *    page padding for them is never right; on healthy ROMs
  *    their insets are zero while hidden and this is a no-op. The whole
  *    systemBars group is stripped, not just status and navigation, because
  *    Chromium's safe area is displayCutout plus systemBars, and that group
@@ -43,6 +44,12 @@ import io.flutter.embedding.android.FlutterViewDelegate
  *
  * IME insets always pass through for Flutter's keyboard handling.
  *
+ * With the Full screen setting off (issue #1076, SystemBars.hidden false)
+ * the bars stay up, and the content view is padded by them instead. The
+ * window keeps its edge-to-edge layout, the bar strips show the black
+ * window background and everything inside (Flutter, the dashboard page)
+ * still sees zero bar insets, so no layout of the app's own has to change.
+ *
  * Some ROMs overrule the mode: One UI forces the window into the cutout row
  * regardless of a NEVER request (verified on One UI 8: the window-level
  * attribute reads NEVER post-set, yet the relayout the WindowManager receives
@@ -60,7 +67,18 @@ object CutoutLayout {
     @Volatile private var stripCutout = true
 
     fun apply(activity: Activity, mode: String) {
-        if (Build.VERSION.SDK_INT < 28) return
+        if (Build.VERSION.SDK_INT >= 28) applyCutoutMode(activity, mode)
+        // Idempotent: a second apply() replaces the previous listener.
+        activity.window.decorView.setOnApplyWindowInsetsListener { view, insets ->
+            padForBars(activity, insets)
+            view.onApplyWindowInsets(stripped(insets))
+        }
+        // Re-dispatch so a runtime mode change reaches the page immediately;
+        // the WebView re-evaluates env(safe-area-inset-*) on the spot.
+        activity.window.decorView.requestApplyInsets()
+    }
+
+    private fun applyCutoutMode(activity: Activity, mode: String) {
         stripCutout = mode == "always" || mode == "short_edges"
         // A fresh copy, not an in-place mutation: getAttributes returns the
         // window's own instance, and setAttributes copies the argument onto
@@ -87,13 +105,39 @@ object CutoutLayout {
                 }
             }
         }
-        // Idempotent: a second apply() replaces the previous listener.
-        activity.window.decorView.setOnApplyWindowInsetsListener { view, insets ->
-            view.onApplyWindowInsets(stripped(insets))
+    }
+
+    /**
+     * The room the visible status and navigation bars take while Full screen
+     * is off, empty while the bars are hidden. Only those two bars: the
+     * caption bar is a handle some ROMs float over a full-screen app (issue
+     * #961), not a bar to make room for. Before Android 11 the stable insets
+     * give the bar sizes without the keyboard, which the legacy system window
+     * insets fold in.
+     */
+    private fun barPadding(insets: WindowInsets): Rect {
+        if (SystemBars.hidden) return Rect()
+        if (Build.VERSION.SDK_INT >= 30) {
+            val bars = insets.getInsets(
+                WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+            return Rect(bars.left, bars.top, bars.right, bars.bottom)
         }
-        // Re-dispatch so a runtime mode change reaches the page immediately;
-        // the WebView re-evaluates env(safe-area-inset-*) on the spot.
-        activity.window.decorView.requestApplyInsets()
+        @Suppress("DEPRECATION")
+        return Rect(
+            insets.stableInsetLeft,
+            insets.stableInsetTop,
+            insets.stableInsetRight,
+            insets.stableInsetBottom,
+        )
+    }
+
+    private fun padForBars(activity: Activity, insets: WindowInsets) {
+        val content = activity.findViewById<View>(android.R.id.content) ?: return
+        val pad = barPadding(insets)
+        if (content.paddingLeft != pad.left || content.paddingTop != pad.top ||
+            content.paddingRight != pad.right || content.paddingBottom != pad.bottom) {
+            content.setPadding(pad.left, pad.top, pad.right, pad.bottom)
+        }
     }
 
     /**
@@ -117,19 +161,37 @@ object CutoutLayout {
         if (Build.VERSION.SDK_INT >= 30) {
             var types = WindowInsets.Type.systemBars()
             if (stripCutout) types = types or WindowInsets.Type.displayCutout()
-            WindowInsets.Builder(insets)
+            // Inside the padded content every inset shrinks by the padding,
+            // the keyboard's too, or Flutter would leave a navigation bar's
+            // height of gap above the keyboard.
+            val pad = barPadding(insets)
+            WindowInsets.Builder(insets.inset(pad.left, pad.top, pad.right, pad.bottom))
                 .setInsets(types, Insets.NONE)
                 .setInsetsIgnoringVisibility(types, Insets.NONE)
                 .setVisible(types, false)
                 .apply { if (stripCutout) setDisplayCutout(null) }
                 .build()
-        } else if (stripCutout) {
+        } else {
             // Only the cutout on the legacy dispatch: the pre-30 systemWindow
             // insets fold the keyboard in with the bars, so consuming them
-            // would leave text fields covered by the IME.
-            @Suppress("DEPRECATION")
-            insets.consumeDisplayCutout()
-        } else {
-            insets
+            // would leave text fields covered by the IME. While the content
+            // is padded for the bars, the bar part comes off them instead,
+            // leaving the keyboard's share.
+            var legacy = insets
+            if (Build.VERSION.SDK_INT >= 28 && stripCutout) {
+                @Suppress("DEPRECATION")
+                legacy = legacy.consumeDisplayCutout()
+            }
+            if (!SystemBars.hidden) legacy = withoutStableBars(legacy)
+            legacy
         }
+
+    @Suppress("DEPRECATION")
+    private fun withoutStableBars(insets: WindowInsets): WindowInsets =
+        insets.replaceSystemWindowInsets(
+            maxOf(0, insets.systemWindowInsetLeft - insets.stableInsetLeft),
+            maxOf(0, insets.systemWindowInsetTop - insets.stableInsetTop),
+            maxOf(0, insets.systemWindowInsetRight - insets.stableInsetRight),
+            maxOf(0, insets.systemWindowInsetBottom - insets.stableInsetBottom),
+        )
 }

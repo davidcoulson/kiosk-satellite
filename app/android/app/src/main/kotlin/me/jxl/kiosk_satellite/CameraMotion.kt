@@ -651,6 +651,8 @@ class CameraMotion(
                     deviceId, context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
                     deviceName = deviceName,
                     tls = config["tls"] == true,
+                    h264Profile = preferences.getString("h264_profile", null) ?: "Baseline",
+                    onH264Profile = { preferences.edit().putString("h264_profile", it).apply() },
                 ) else null
                 val tls = if (config["tls"] == true) {
                     TlsMaterial.parse(config["certificate"] as? String ?: "", config["privateKey"] as? String ?: "").sslContext()

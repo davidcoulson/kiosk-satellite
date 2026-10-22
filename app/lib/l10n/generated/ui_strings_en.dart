@@ -5938,10 +5938,16 @@ class UiStringsEn extends UiStrings {
   String get deviceCpuUsage => 'CPU usage';
 
   @override
+  String get deviceCpuClock => 'CPU clock';
+
+  @override
   String get deviceCpuTemp => 'CPU temperature';
 
   @override
   String get deviceBatteryLevel => 'Battery level';
+
+  @override
+  String get deviceBatteryTemp => 'Battery temperature';
 
   @override
   String get deviceScreenBrightness => 'Screen brightness';
@@ -10200,6 +10206,13 @@ class UiStringsEn extends UiStrings {
       'Force the screen into one orientation. Use this on a device without a rotation sensor, or one mounted a way the sensor gets wrong.';
 
   @override
+  String get settingScreenFullScreenTitle => 'Full screen';
+
+  @override
+  String get settingScreenFullScreenDescription =>
+      'Hide the status and navigation bars. Turn off to keep them visible, along with the taskbar on tablets. Kiosk mode always hides them.';
+
+  @override
   String get settingKeepScreenOnTitle => 'Keep screen on';
 
   @override
@@ -10924,6 +10937,34 @@ class UiStringsEn extends UiStrings {
       'The color behind the digits.';
 
   @override
+  String get settingScreensaverHandNumbersTitle => 'Numbers';
+
+  @override
+  String get settingScreensaverHandNumbersDescription =>
+      'Which hours the dial shows as numbers.';
+
+  @override
+  String get settingScreensaverHandSecondsTitle => 'Show seconds hand';
+
+  @override
+  String get settingScreensaverHandSecondsDescription =>
+      'Draw a seconds hand on the dial.';
+
+  @override
+  String get settingScreensaverHandColorTitle => 'Clock color';
+
+  @override
+  String get settingScreensaverHandColorDescription =>
+      'The color of the hands, numbers and ticks.';
+
+  @override
+  String get settingScreensaverHandBgColorTitle => 'Background color';
+
+  @override
+  String get settingScreensaverHandBgColorDescription =>
+      'The color behind the clock.';
+
+  @override
   String get settingScreensaverClockNightTitle => 'Night mode';
 
   @override
@@ -10989,6 +11030,15 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get screensaverStyleRoller => 'Roller Clock';
+
+  @override
+  String get screensaverStyleHand => 'Hand Clock';
+
+  @override
+  String get screensaverHandNumbersQuarters => '12, 3, 6 and 9';
+
+  @override
+  String get screensaverHandNumbersAll => 'All hours';
 
   @override
   String get screensaverFontDefault => 'Default';

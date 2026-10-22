@@ -22657,6 +22657,16 @@
       ]
     }
   },
+  "deviceCpuClock": "CPU-Takt",
+  "@deviceCpuClock": {
+    "context": "Settings:Device:Hardware / Home Assistant / WebView",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device > Hardware / Home Assistant / WebView"
+      ]
+    }
+  },
   "deviceCpuTemp": "CPU-Temperatur",
   "@deviceCpuTemp": {
     "context": "Settings:Device:Hardware / Home Assistant / WebView",
@@ -22669,6 +22679,16 @@
   },
   "deviceBatteryLevel": "Akkustand",
   "@deviceBatteryLevel": {
+    "context": "Settings:Device:Hardware / Home Assistant / WebView",
+    "description": "Label or explanation on this Device settings page.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Device > Hardware / Home Assistant / WebView"
+      ]
+    }
+  },
+  "deviceBatteryTemp": "Akkutemperatur",
+  "@deviceBatteryTemp": {
     "context": "Settings:Device:Hardware / Home Assistant / WebView",
     "description": "Label or explanation on this Device settings page.",
     "x-locations": {
@@ -38731,6 +38751,32 @@
       ]
     }
   },
+  "settingScreenFullScreenTitle": "Vollbild",
+  "@settingScreenFullScreenTitle": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Screen"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Screen"
+      ]
+    }
+  },
+  "settingScreenFullScreenDescription": "Blendet die Statusleiste und die Navigationsleiste aus. Deaktivieren, damit sie sichtbar bleiben, auf Tablets auch die Taskleiste. Der Kioskmodus blendet sie immer aus.",
+  "@settingScreenFullScreenDescription": {
+    "context": "Settings:Screen & Audio:Screen",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Screen"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Screen"
+      ]
+    }
+  },
   "settingKeepScreenOnTitle": "Bildschirm eingeschaltet lassen",
   "@settingKeepScreenOnTitle": {
     "context": "Settings:Screen & Audio:Screen",
@@ -41157,6 +41203,110 @@
       ]
     }
   },
+  "settingScreensaverHandNumbersTitle": "Zahlen",
+  "@settingScreensaverHandNumbersTitle": {
+    "context": "Settings:Screensaver:Clock screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Clock screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Clock screensaver"
+      ]
+    }
+  },
+  "settingScreensaverHandNumbersDescription": "Welche Stunden das Zifferblatt als Zahlen zeigt.",
+  "@settingScreensaverHandNumbersDescription": {
+    "context": "Settings:Screensaver:Clock screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Clock screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Clock screensaver"
+      ]
+    }
+  },
+  "settingScreensaverHandSecondsTitle": "Sekundenzeiger anzeigen",
+  "@settingScreensaverHandSecondsTitle": {
+    "context": "Settings:Screensaver:Clock screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Clock screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Clock screensaver"
+      ]
+    }
+  },
+  "settingScreensaverHandSecondsDescription": "Zeichnet einen Sekundenzeiger auf das Zifferblatt.",
+  "@settingScreensaverHandSecondsDescription": {
+    "context": "Settings:Screensaver:Clock screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Clock screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Clock screensaver"
+      ]
+    }
+  },
+  "settingScreensaverHandColorTitle": "Uhrfarbe",
+  "@settingScreensaverHandColorTitle": {
+    "context": "Settings:Screensaver:Clock screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Clock screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Clock screensaver"
+      ]
+    }
+  },
+  "settingScreensaverHandColorDescription": "Farbe der Zeiger, Zahlen und Striche.",
+  "@settingScreensaverHandColorDescription": {
+    "context": "Settings:Screensaver:Clock screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Clock screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Clock screensaver"
+      ]
+    }
+  },
+  "settingScreensaverHandBgColorTitle": "Hintergrundfarbe",
+  "@settingScreensaverHandBgColorTitle": {
+    "context": "Settings:Screensaver:Clock screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Clock screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Clock screensaver"
+      ]
+    }
+  },
+  "settingScreensaverHandBgColorDescription": "Farbe hinter der Uhr.",
+  "@settingScreensaverHandBgColorDescription": {
+    "context": "Settings:Screensaver:Clock screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Clock screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Clock screensaver"
+      ]
+    }
+  },
   "settingScreensaverClockNightTitle": "Nachtmodus",
   "@settingScreensaverClockNightTitle": {
     "context": "Settings:Screensaver:Clock screensaver",
@@ -41393,6 +41543,45 @@
   },
   "screensaverStyleRoller": "Rollenuhr",
   "@screensaverStyleRoller": {
+    "context": "Settings:Screensaver:Clock screensaver",
+    "description": "Label, status or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Clock screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Clock screensaver"
+      ]
+    }
+  },
+  "screensaverStyleHand": "Zeigeruhr",
+  "@screensaverStyleHand": {
+    "context": "Settings:Screensaver:Clock screensaver",
+    "description": "Label, status or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Clock screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Clock screensaver"
+      ]
+    }
+  },
+  "screensaverHandNumbersQuarters": "12, 3, 6 und 9",
+  "@screensaverHandNumbersQuarters": {
+    "context": "Settings:Screensaver:Clock screensaver",
+    "description": "Label, status or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Clock screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Clock screensaver"
+      ]
+    }
+  },
+  "screensaverHandNumbersAll": "Alle Stunden",
+  "@screensaverHandNumbersAll": {
     "context": "Settings:Screensaver:Clock screensaver",
     "description": "Label, status or guidance in this section.",
     "x-locations": {

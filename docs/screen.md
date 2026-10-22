@@ -9,6 +9,7 @@ Navigate to **Settings > Screen & Audio > Screen**.
 | Default brightness | 80% | Sets the display brightness applied on startup. Adjusting this slider changes the screen brightness immediately. This setting is also controlled by Home Assistant's Screen light entity and the remote admin slider. It is automatically disabled while Adaptive brightness is active. |
 | Display cutout | Use the cutout area | Decides what the dashboard does with the screen area around a camera cutout or punch hole. Pick Avoid the cutout if the camera sits on top of buttons at the top of the dashboard. |
 | Screen orientation | Automatic | Forces the screen into Landscape, Portrait or either of them reversed. Automatic follows the rotation sensor, or the boot orientation on a device without one. Use a forced orientation on a device that has no rotation sensor or is mounted a way the sensor gets wrong. |
+| Full screen | on | Hides the status and navigation bars. Turn it off to keep them on screen, with the dashboard between them. On a tablet with a taskbar, such as Samsung's One UI taskbar, this keeps the taskbar in view so you can switch to another app with one tap. Kiosk mode and Lockdown always hide the bars, whatever this says. |
 
 ## Default Brightness
 

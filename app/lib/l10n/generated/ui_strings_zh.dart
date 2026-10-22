@@ -5729,10 +5729,16 @@ class UiStringsZh extends UiStrings {
   String get deviceCpuUsage => 'CPU 使用率';
 
   @override
+  String get deviceCpuClock => 'CPU 频率';
+
+  @override
   String get deviceCpuTemp => 'CPU 温度';
 
   @override
   String get deviceBatteryLevel => '电池电量';
+
+  @override
+  String get deviceBatteryTemp => '电池温度';
 
   @override
   String get deviceScreenBrightness => '屏幕亮度';
@@ -9738,6 +9744,13 @@ class UiStringsZh extends UiStrings {
       '强制屏幕使用指定方向。适用于没有旋转传感器，或安装方向导致传感器判断错误的设备。';
 
   @override
+  String get settingScreenFullScreenTitle => '全屏';
+
+  @override
+  String get settingScreenFullScreenDescription =>
+      '隐藏状态栏和导航栏。关闭后它们会保持可见，平板上的任务栏也会显示。Kiosk 模式始终会隐藏它们。';
+
+  @override
   String get settingKeepScreenOnTitle => '保持屏幕开启';
 
   @override
@@ -10424,6 +10437,30 @@ class UiStringsZh extends UiStrings {
   String get settingScreensaverRollerBgColorDescription => '数字后方的颜色。';
 
   @override
+  String get settingScreensaverHandNumbersTitle => '数字';
+
+  @override
+  String get settingScreensaverHandNumbersDescription => '表盘上以数字显示哪些小时。';
+
+  @override
+  String get settingScreensaverHandSecondsTitle => '显示秒针';
+
+  @override
+  String get settingScreensaverHandSecondsDescription => '在表盘上绘制秒针。';
+
+  @override
+  String get settingScreensaverHandColorTitle => '时钟颜色';
+
+  @override
+  String get settingScreensaverHandColorDescription => '指针、数字和刻度的颜色。';
+
+  @override
+  String get settingScreensaverHandBgColorTitle => '背景颜色';
+
+  @override
+  String get settingScreensaverHandBgColorDescription => '时钟后方的颜色。';
+
+  @override
   String get settingScreensaverClockNightTitle => '夜间模式';
 
   @override
@@ -10482,6 +10519,15 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get screensaverStyleRoller => '滚动时钟';
+
+  @override
+  String get screensaverStyleHand => '指针时钟';
+
+  @override
+  String get screensaverHandNumbersQuarters => '12、3、6 和 9';
+
+  @override
+  String get screensaverHandNumbersAll => '所有小时';
 
   @override
   String get screensaverFontDefault => '默认';
@@ -20320,10 +20366,16 @@ class UiStringsZhCn extends UiStringsZh {
   String get deviceCpuUsage => 'CPU 使用率';
 
   @override
+  String get deviceCpuClock => 'CPU 频率';
+
+  @override
   String get deviceCpuTemp => 'CPU 温度';
 
   @override
   String get deviceBatteryLevel => '电池电量';
+
+  @override
+  String get deviceBatteryTemp => '电池温度';
 
   @override
   String get deviceScreenBrightness => '屏幕亮度';
@@ -24329,6 +24381,13 @@ class UiStringsZhCn extends UiStringsZh {
       '强制屏幕使用指定方向。适用于没有旋转传感器，或安装方向导致传感器判断错误的设备。';
 
   @override
+  String get settingScreenFullScreenTitle => '全屏';
+
+  @override
+  String get settingScreenFullScreenDescription =>
+      '隐藏状态栏和导航栏。关闭后它们会保持可见，平板上的任务栏也会显示。Kiosk 模式始终会隐藏它们。';
+
+  @override
   String get settingKeepScreenOnTitle => '保持屏幕开启';
 
   @override
@@ -25015,6 +25074,30 @@ class UiStringsZhCn extends UiStringsZh {
   String get settingScreensaverRollerBgColorDescription => '数字后方的颜色。';
 
   @override
+  String get settingScreensaverHandNumbersTitle => '数字';
+
+  @override
+  String get settingScreensaverHandNumbersDescription => '表盘上以数字显示哪些小时。';
+
+  @override
+  String get settingScreensaverHandSecondsTitle => '显示秒针';
+
+  @override
+  String get settingScreensaverHandSecondsDescription => '在表盘上绘制秒针。';
+
+  @override
+  String get settingScreensaverHandColorTitle => '时钟颜色';
+
+  @override
+  String get settingScreensaverHandColorDescription => '指针、数字和刻度的颜色。';
+
+  @override
+  String get settingScreensaverHandBgColorTitle => '背景颜色';
+
+  @override
+  String get settingScreensaverHandBgColorDescription => '时钟后方的颜色。';
+
+  @override
   String get settingScreensaverClockNightTitle => '夜间模式';
 
   @override
@@ -25073,6 +25156,15 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get screensaverStyleRoller => '滚动时钟';
+
+  @override
+  String get screensaverStyleHand => '指针时钟';
+
+  @override
+  String get screensaverHandNumbersQuarters => '12、3、6 和 9';
+
+  @override
+  String get screensaverHandNumbersAll => '所有小时';
 
   @override
   String get screensaverFontDefault => '默认';

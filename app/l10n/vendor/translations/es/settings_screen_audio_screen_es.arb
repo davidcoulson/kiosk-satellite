@@ -4,6 +4,8 @@
   "settingBrowserCutoutModeDescription": "Qué hacer con el área de la pantalla alrededor de la cámara frontal. Elige Evitar el área de la cámara si esta cubre los botones de la parte superior del panel de control.",
   "settingScreenOrientationTitle": "Orientación de la pantalla",
   "settingScreenOrientationDescription": "Fuerza la pantalla a una orientación. Úsalo en un dispositivo sin sensor de rotación o instalado de una forma que el sensor no detecta correctamente.",
+  "settingScreenFullScreenTitle": "Pantalla completa",
+  "settingScreenFullScreenDescription": "Oculta la barra de estado y la barra de navegación. Desactívalo para mantenerlas visibles, junto con la barra de tareas en las tabletas. El modo kiosko siempre las oculta.",
   "settingKeepScreenOnTitle": "Mantener la pantalla encendida",
   "settingKeepScreenOnDescription": "Evita que el sistema operativo apague la pantalla.",
   "settingSetBrightnessOnLaunchTitle": "Establecer el brillo al iniciar",

@@ -4,6 +4,8 @@
   "settingBrowserCutoutModeDescription": "Legt fest, wie der Bildschirmbereich um die Frontkamera behandelt wird. Wähle „Kamerabereich vermeiden“, wenn die Kamera Schaltflächen im oberen Bereich des Dashboards verdeckt.",
   "settingScreenOrientationTitle": "Bildschirmausrichtung",
   "settingScreenOrientationDescription": "Erzwingt eine bestimmte Bildschirmausrichtung. Nützlich auf Geräten ohne Rotationssensor oder bei Installationen, bei denen der Sensor die Ausrichtung nicht korrekt erkennt.",
+  "settingScreenFullScreenTitle": "Vollbild",
+  "settingScreenFullScreenDescription": "Blendet die Statusleiste und die Navigationsleiste aus. Deaktivieren, damit sie sichtbar bleiben, auf Tablets auch die Taskleiste. Der Kioskmodus blendet sie immer aus.",
   "settingKeepScreenOnTitle": "Bildschirm eingeschaltet lassen",
   "settingKeepScreenOnDescription": "Verhindert, dass das Betriebssystem den Bildschirm ausschaltet.",
   "settingSetBrightnessOnLaunchTitle": "Helligkeit beim Start festlegen",

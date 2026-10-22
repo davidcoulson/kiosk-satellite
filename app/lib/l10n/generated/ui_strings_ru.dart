@@ -5975,10 +5975,16 @@ class UiStringsRu extends UiStrings {
   String get deviceCpuUsage => 'Загрузка ЦП';
 
   @override
+  String get deviceCpuClock => 'Частота ЦП';
+
+  @override
   String get deviceCpuTemp => 'Температура ЦП';
 
   @override
   String get deviceBatteryLevel => 'Уровень заряда';
+
+  @override
+  String get deviceBatteryTemp => 'Температура аккумулятора';
 
   @override
   String get deviceScreenBrightness => 'Яркость экрана';
@@ -10286,6 +10292,13 @@ class UiStringsRu extends UiStrings {
       'Принудительно держать экран в одной ориентации. Для устройства без датчика поворота или смонтированного так, что датчик ошибается.';
 
   @override
+  String get settingScreenFullScreenTitle => 'Полноэкранный режим';
+
+  @override
+  String get settingScreenFullScreenDescription =>
+      'Скрывать строку состояния и панель навигации. Выключите, чтобы они оставались видны вместе с панелью задач на планшетах. Режим киоска всегда их скрывает.';
+
+  @override
   String get settingKeepScreenOnTitle => 'Не выключать экран';
 
   @override
@@ -11012,6 +11025,34 @@ class UiStringsRu extends UiStrings {
   String get settingScreensaverRollerBgColorDescription => 'Цвет позади цифр.';
 
   @override
+  String get settingScreensaverHandNumbersTitle => 'Цифры';
+
+  @override
+  String get settingScreensaverHandNumbersDescription =>
+      'Какие часы циферблат показывает цифрами.';
+
+  @override
+  String get settingScreensaverHandSecondsTitle =>
+      'Показывать секундную стрелку';
+
+  @override
+  String get settingScreensaverHandSecondsDescription =>
+      'Рисовать секундную стрелку на циферблате.';
+
+  @override
+  String get settingScreensaverHandColorTitle => 'Цвет часов';
+
+  @override
+  String get settingScreensaverHandColorDescription =>
+      'Цвет стрелок, цифр и делений.';
+
+  @override
+  String get settingScreensaverHandBgColorTitle => 'Цвет фона';
+
+  @override
+  String get settingScreensaverHandBgColorDescription => 'Цвет позади часов.';
+
+  @override
   String get settingScreensaverClockNightTitle => 'Ночной режим';
 
   @override
@@ -11078,6 +11119,15 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get screensaverStyleRoller => 'Часы с прокруткой';
+
+  @override
+  String get screensaverStyleHand => 'Стрелочные часы';
+
+  @override
+  String get screensaverHandNumbersQuarters => '12, 3, 6 и 9';
+
+  @override
+  String get screensaverHandNumbersAll => 'Все часы';
 
   @override
   String get screensaverFontDefault => 'По умолчанию';

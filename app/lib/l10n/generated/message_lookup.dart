@@ -1685,8 +1685,10 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'deviceAppUptime' => strings.deviceAppUptime,
       'deviceNetworkUptime' => strings.deviceNetworkUptime,
       'deviceCpuUsage' => strings.deviceCpuUsage,
+      'deviceCpuClock' => strings.deviceCpuClock,
       'deviceCpuTemp' => strings.deviceCpuTemp,
       'deviceBatteryLevel' => strings.deviceBatteryLevel,
+      'deviceBatteryTemp' => strings.deviceBatteryTemp,
       'deviceScreenBrightness' => strings.deviceScreenBrightness,
       'deviceScreenStatus' => strings.deviceScreenStatus,
       'deviceScreenSize' => strings.deviceScreenSize,
@@ -3189,6 +3191,9 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'settingScreenOrientationTitle' => strings.settingScreenOrientationTitle,
       'settingScreenOrientationDescription' =>
         strings.settingScreenOrientationDescription,
+      'settingScreenFullScreenTitle' => strings.settingScreenFullScreenTitle,
+      'settingScreenFullScreenDescription' =>
+        strings.settingScreenFullScreenDescription,
       'settingKeepScreenOnTitle' => strings.settingKeepScreenOnTitle,
       'settingKeepScreenOnDescription' =>
         strings.settingKeepScreenOnDescription,
@@ -3541,6 +3546,22 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingScreensaverRollerBgColorTitle,
       'settingScreensaverRollerBgColorDescription' =>
         strings.settingScreensaverRollerBgColorDescription,
+      'settingScreensaverHandNumbersTitle' =>
+        strings.settingScreensaverHandNumbersTitle,
+      'settingScreensaverHandNumbersDescription' =>
+        strings.settingScreensaverHandNumbersDescription,
+      'settingScreensaverHandSecondsTitle' =>
+        strings.settingScreensaverHandSecondsTitle,
+      'settingScreensaverHandSecondsDescription' =>
+        strings.settingScreensaverHandSecondsDescription,
+      'settingScreensaverHandColorTitle' =>
+        strings.settingScreensaverHandColorTitle,
+      'settingScreensaverHandColorDescription' =>
+        strings.settingScreensaverHandColorDescription,
+      'settingScreensaverHandBgColorTitle' =>
+        strings.settingScreensaverHandBgColorTitle,
+      'settingScreensaverHandBgColorDescription' =>
+        strings.settingScreensaverHandBgColorDescription,
       'settingScreensaverClockNightTitle' =>
         strings.settingScreensaverClockNightTitle,
       'settingScreensaverClockNightDescription' =>
@@ -3574,6 +3595,10 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'screensaverStyleDigital' => strings.screensaverStyleDigital,
       'screensaverStyleFlip' => strings.screensaverStyleFlip,
       'screensaverStyleRoller' => strings.screensaverStyleRoller,
+      'screensaverStyleHand' => strings.screensaverStyleHand,
+      'screensaverHandNumbersQuarters' =>
+        strings.screensaverHandNumbersQuarters,
+      'screensaverHandNumbersAll' => strings.screensaverHandNumbersAll,
       'screensaverFontDefault' => strings.screensaverFontDefault,
       'screensaverFontLight' => strings.screensaverFontLight,
       'screensaverFontRegular' => strings.screensaverFontRegular,

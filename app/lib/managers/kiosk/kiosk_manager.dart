@@ -17,6 +17,15 @@ import '../settings/settings_manager.dart';
 import 'package:kiosk_satellite/core/lifecycle.dart';
 import '../wake_word/system_permissions.dart' show SystemPermissions;
 
+/// Whether the status and navigation bars stay hidden: the Full screen
+/// setting, or kiosk mode and lockdown, which always hide them (a visible
+/// navigation bar or taskbar is a way out of the kiosk). main.dart picks the
+/// system UI mode from it and the native side gets it as "fullScreen".
+bool hidesSystemBars(SettingsManager settings) =>
+    settings.get(defs.screenFullScreen) ||
+    settings.get(defs.kioskEnabled) ||
+    settings.get(defs.lockdownEnabled);
+
 /// Lockdown: keeping the device in the app and the app on the device.
 ///
 /// The declarative half lives in the Kiosk settings; this manager folds them
@@ -752,7 +761,8 @@ class KioskManager extends Manager with WidgetsBindingObserver {
           !e.key.startsWith('lockdown.') &&
           !e.key.startsWith('home.') &&
           e.key != defs.browserCutoutMode.key &&
-          e.key != defs.screenOrientation.key) {
+          e.key != defs.screenOrientation.key &&
+          e.key != defs.screenFullScreen.key) {
         return;
       }
       // Lockdown flips on: reclaim the foreground first, so an app opened
@@ -914,7 +924,9 @@ class KioskManager extends Manager with WidgetsBindingObserver {
   /// every sleep and that dream launches HOME, which with the kiosk as the
   /// home app arrived here a second after the kiosk's own screenOff; the
   /// screensaver dismissal it triggered lit the panel again, so an
-  /// explicit screen off never held (issue #553).
+  /// explicit screen off never held (issue #553). That HOME is now dropped
+  /// natively by its extra (HomeRole.isHomePress), since after a power
+  /// button press its SCREEN_OFF arrives here seconds after it.
   void onHomePressed() {
     if (!_screenOn) {
       log.info(name, 'HOME while the screen is off: ignored');
@@ -1036,6 +1048,7 @@ class KioskManager extends Manager with WidgetsBindingObserver {
       // including the force=false bundle on exit (the window keeps its shape).
       'cutout': _settings.get(defs.browserCutoutMode),
       'orientation': _settings.get(defs.screenOrientation),
+      'fullScreen': hidesSystemBars(_settings),
     });
   }
 

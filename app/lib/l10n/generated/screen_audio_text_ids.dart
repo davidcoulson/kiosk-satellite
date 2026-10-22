@@ -4,6 +4,8 @@ const screenAudioTextMessageIds = <String, String>{
   "What to do with the screen area around a camera cutout or punch hole. Pick Avoid the cutout if the camera sits on top of buttons at the top of the dashboard.": "settingBrowserCutoutModeDescription",
   "Screen orientation": "settingScreenOrientationTitle",
   "Force the screen into one orientation. Use this on a device without a rotation sensor, or one mounted a way the sensor gets wrong.": "settingScreenOrientationDescription",
+  "Full screen": "settingScreenFullScreenTitle",
+  "Hide the status and navigation bars. Turn off to keep them visible, along with the taskbar on tablets. Kiosk mode always hides them.": "settingScreenFullScreenDescription",
   "Keep screen on": "settingKeepScreenOnTitle",
   "Prevent the OS from turning the screen off.": "settingKeepScreenOnDescription",
   "Set brightness on launch": "settingSetBrightnessOnLaunchTitle",

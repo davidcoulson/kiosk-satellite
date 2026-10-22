@@ -122,19 +122,21 @@ Displays a completely black screen while leaving the underlying application runn
 
 ### Clock
 
-Renders a full screen clock with three selectable styles via **Style**: **Digital Clock**, **Flip Clock** (split-flap cards), or **Roller Clock** (rolling digits styled after the Lenovo Smart Clock 2). Date formats adapt automatically to the device's system language.
+Renders a full screen clock with four selectable styles via **Style**: **Digital Clock**, **Flip Clock** (split-flap cards), **Roller Clock** (rolling digits styled after the Lenovo Smart Clock 2) or **Hand Clock** (a dial with hands, ticks and numbers). Date formats adapt automatically to the device's system language.
 
 | Setting | Notes |
 | --- | --- |
 | Font Family | Available across all faces. Options include Rubik (default app font), Nunito (rounded style similar to Apple StandBy), Inter (clean grotesque style), Oswald (tall condensed digits, the wall clock look), Roboto Slab (a warm slab serif), system font families (System, Serif, Condensed, Monospace, Casual, Cursive), or LCD (segmented LED alarm clock font covering digits, date, and AM/PM). |
 | Font weight | Available across all faces. Default matches the face's native style. Options include Light, Regular, Medium, Bold, or Black. The LCD font uses a single fixed weight. |
-| 24-hour clock | Applies to all clock faces. |
+| 24-hour clock | Applies to every clock face except Hand Clock. |
 | Show AM/PM | Digital face only. Appears when **24-hour clock** is off. Turn it off to show the time as 7:45 instead of 7:45 PM. |
 | Show seconds | Digital face only. |
 | Show date | Digital face only (enabled by default). |
 | Clock size | Scales the display size from 50% to 300%. |
-| Clock color | Digital face only. Flip and Roller styles utilize dedicated custom color controls for cards, digits, and backgrounds. |
-| Background color | Digital face only. Sets the solid color behind the clock (black by default). Setting a white background with a black clock color creates a high-contrast inverted face ideal for e-ink panels. |
+| Numbers | Hand Clock only. Shows numbers at 12, 3, 6 and 9 (default) or at every hour. |
+| Show seconds hand | Hand Clock only (enabled by default). The seconds hand ticks once a second. |
+| Clock color | Digital and Hand faces, each with its own color. On the Hand Clock it colors the hands, numbers and ticks. Flip and Roller styles utilize dedicated custom color controls for cards, digits, and backgrounds. |
+| Background color | Digital and Hand faces, each with its own color. Sets the solid color behind the clock (black by default). Setting a white background with a black clock color creates a high-contrast inverted face ideal for e-ink panels. |
 | Background photo | Displays a custom background image behind any clock face instead of a solid color. Accepts a path to an image on the device or an `http(s)://` image URL the device fetches itself. |
 | Refresh URL background | Minutes between fetches of a URL background. 0 by default, which only fetches when the setting is written. |
 

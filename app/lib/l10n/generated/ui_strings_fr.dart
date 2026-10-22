@@ -6033,10 +6033,16 @@ class UiStringsFr extends UiStrings {
   String get deviceCpuUsage => 'Utilisation du CPU';
 
   @override
+  String get deviceCpuClock => 'Fréquence du CPU';
+
+  @override
   String get deviceCpuTemp => 'Température du CPU';
 
   @override
   String get deviceBatteryLevel => 'Niveau de batterie';
+
+  @override
+  String get deviceBatteryTemp => 'Température de la batterie';
 
   @override
   String get deviceScreenBrightness => 'Luminosité de l\'écran';
@@ -10387,6 +10393,13 @@ class UiStringsFr extends UiStrings {
       'Forcer l\'écran dans une orientation. Utilisez ceci sur un appareil sans capteur de rotation, ou installé d\'une façon que le capteur interprète mal.';
 
   @override
+  String get settingScreenFullScreenTitle => 'Plein écran';
+
+  @override
+  String get settingScreenFullScreenDescription =>
+      'Masquer la barre d\'état et la barre de navigation. Désactivez cette option pour les garder visibles, ainsi que la barre des tâches sur les tablettes. Le mode kiosque les masque toujours.';
+
+  @override
   String get settingKeepScreenOnTitle => 'Garder l\'écran allumé';
 
   @override
@@ -11127,6 +11140,34 @@ class UiStringsFr extends UiStrings {
       'La couleur derrière les chiffres.';
 
   @override
+  String get settingScreensaverHandNumbersTitle => 'Chiffres';
+
+  @override
+  String get settingScreensaverHandNumbersDescription =>
+      'Les heures que le cadran affiche en chiffres.';
+
+  @override
+  String get settingScreensaverHandSecondsTitle => 'Afficher la trotteuse';
+
+  @override
+  String get settingScreensaverHandSecondsDescription =>
+      'Dessiner une trotteuse sur le cadran.';
+
+  @override
+  String get settingScreensaverHandColorTitle => 'Couleur de l\'horloge';
+
+  @override
+  String get settingScreensaverHandColorDescription =>
+      'La couleur des aiguilles, des chiffres et des graduations.';
+
+  @override
+  String get settingScreensaverHandBgColorTitle => 'Couleur d\'arrière-plan';
+
+  @override
+  String get settingScreensaverHandBgColorDescription =>
+      'La couleur derrière l\'horloge.';
+
+  @override
   String get settingScreensaverClockNightTitle => 'Mode nuit';
 
   @override
@@ -11193,6 +11234,15 @@ class UiStringsFr extends UiStrings {
 
   @override
   String get screensaverStyleRoller => 'Horloge à rouleaux';
+
+  @override
+  String get screensaverStyleHand => 'Horloge à aiguilles';
+
+  @override
+  String get screensaverHandNumbersQuarters => '12, 3, 6 et 9';
+
+  @override
+  String get screensaverHandNumbersAll => 'Toutes les heures';
 
   @override
   String get screensaverFontDefault => 'Par défaut';

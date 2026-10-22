@@ -551,15 +551,19 @@ class EspEntitySurface {
     final stats = await commands.execute('getStats', const {});
     final cpuTempPresent =
         stats.ok && stats.data is Map && (stats.data as Map)['temp'] != null;
-    // A kernel without cpuidle answers only the clock's position between
-    // its slowest and fastest speed. That is not load, so such a device
-    // lists CPU clock instead of a CPU usage that would read 100% on a
-    // chip a fifth busy.
-    final cpuClockOnly =
+    // CPU usage only where a load source is readable, and CPU clock only
+    // where cpufreq is. A device with neither used to get the clock position
+    // passed off as load (issue #824).
+    final cpuUsagePresent =
+        stats.ok && stats.data is Map && (stats.data as Map)['cpu'] != null;
+    final cpuClockPresent =
         stats.ok &&
         stats.data is Map &&
-        (stats.data as Map)['cpu'] == null &&
         (stats.data as Map)['cpuClock'] != null;
+    final batteryTempPresent =
+        stats.ok &&
+        stats.data is Map &&
+        (stats.data as Map)['batteryTemp'] != null;
     // A device without a battery gets no Battery sensor (issue #367): the
     // one gate every consumer reads through answers null for a mains-
     // powered box, and an entity that could only ever show a sentinel is
@@ -1192,20 +1196,21 @@ class EspEntitySurface {
         deviceClass: 'battery_charging',
         type: 'binary_sensor',
       ),
-      if (!cpuClockOnly)
+      if (cpuUsagePresent)
         diagnostic(
           'cpu',
           'CPU usage',
           icon: 'mdi:chip',
           unit: '%',
           stateClass: 1,
-        )
-      else
+        ),
+      if (cpuClockPresent)
         diagnostic(
           'cpu_clock',
           'CPU clock',
+          deviceClass: 'frequency',
           icon: 'mdi:speedometer',
-          unit: '%',
+          unit: 'MHz',
           stateClass: 1,
         ),
       if (cpuTempPresent)
@@ -1242,6 +1247,18 @@ class EspEntitySurface {
           type: 'text_sensor',
         ),
       ],
+      // A tenth of a degree, as BatteryManager reports it.
+      if (batteryTempPresent)
+        {
+          ...diagnostic(
+            'battery_temp',
+            'Battery temperature',
+            deviceClass: 'temperature',
+            unit: '°C',
+            stateClass: 1,
+          ),
+          'accuracyDecimals': 1,
+        },
       diagnostic(
         'ram_free',
         'RAM available',
@@ -3559,12 +3576,16 @@ class EspEntitySurface {
       await _send('charging', data['charging'] == true);
       final cpu = (data['cpu'] as num?)?.round();
       if (cpu != null) await _send('cpu', cpu);
-      final clock = (data['cpuClock'] as num?)?.round();
-      if (clock != null) await _send('cpu_clock', clock);
+      final cpuClock = (data['cpuClock'] as num?)?.round();
+      if (cpuClock != null) await _send('cpu_clock', cpuClock);
       final temp = data['temp'] as num?;
       if (temp != null) await _send('cpu_temp', temp.round());
       if (temp != null) {
         await _send('running_hot', temp > _settings.get(defs.hotThreshold));
+      }
+      final batteryTemp = data['batteryTemp'] as num?;
+      if (batteryTemp != null) {
+        await _send('battery_temp', (batteryTemp * 10).round() / 10);
       }
     }
     final details = await commands.execute('getDeviceDetails', const {});

@@ -59,6 +59,56 @@ class CameraOnvifServiceTest {
         assertTrue(response(service, "<trt:GetVideoSources/>").body.contains("<tt:Width>1920</tt:Width>"))
     }
 
+    @Test fun profileReportsTheEncoderProfileFromTheStream() {
+        var saved: String? = null
+        val s = CameraOnvifService(
+            1280, 720, 15, 800_000, false, null, "secret",
+            { Base64.getEncoder().encodeToString(it) }, { Base64.getDecoder().decode(it) }, "device-id", "1",
+            h264Profile = "Main", onH264Profile = { saved = it },
+        )
+        assertTrue(response(s, "<trt:GetProfiles/>").body.contains("<tt:H264Profile>Main</tt:H264Profile>"))
+        s.updateParameterSet(byteArrayOf(0x67, 0x64, 0x00, 0x28))
+        assertEquals("High", saved)
+        assertTrue(response(s, "<trt:GetVideoEncoderConfigurations/>").body.contains("<tt:H264Profile>High</tt:H264Profile>"))
+        saved = null
+        s.updateParameterSet(byteArrayOf(0x67, 0x64, 0x00, 0x1f))
+        s.updateParameterSet(byteArrayOf(0x68, 0x42, 0x00, 0x1f))
+        assertNull(saved)
+        assertEquals("Baseline", CameraOnvifService.h264ProfileOf(byteArrayOf(0x67, 0x42, 0xC0.toByte(), 0x1f)))
+        assertEquals("Main", CameraOnvifService.h264ProfileOf(byteArrayOf(0x67, 0x4D, 0x00, 0x1f)))
+        assertNull(CameraOnvifService.h264ProfileOf(byteArrayOf(0x67, 0x53)))
+        assertNull(CameraOnvifService.h264ProfileOf(byteArrayOf(0x67)))
+    }
+
+    @Test fun responsesNameTheOperationAndFault() {
+        val s = service()
+        val ok = response(s, "<trt:GetProfiles/>")
+        assertEquals("GetProfiles", ok.operation)
+        assertNull(ok.fault)
+        val udp = response(s, streamRequest().replace(">RTSP<", ">UDP<"))
+        assertEquals("GetStreamUri", udp.operation)
+        assertEquals("ter:InvalidStreamSetup: Use RTP-Unicast with RTSP transport", udp.fault)
+    }
+
+    @Test fun encoderOptionsListTheCurrentStreamSettings() {
+        val s = service()
+        s.updateParameterSet(byteArrayOf(0x67, 0x64, 0x00, 0x28))
+        for (request in listOf("<trt:GetVideoEncoderConfigurationOptions/>",
+            "<trt:GetVideoEncoderConfigurationOptions><trt:ConfigurationToken>video_encoder</trt:ConfigurationToken></trt:GetVideoEncoderConfigurationOptions>",
+            "<trt:GetVideoEncoderConfigurationOptions><trt:ProfileToken>camera</trt:ProfileToken></trt:GetVideoEncoderConfigurationOptions>")) {
+            val options = response(s, request)
+            assertEquals("200 OK", options.status)
+            assertTrue(options.body.contains("<tt:ResolutionsAvailable><tt:Width>1280</tt:Width><tt:Height>720</tt:Height></tt:ResolutionsAvailable>"))
+            assertTrue(options.body.contains("<tt:FrameRateRange><tt:Min>15</tt:Min><tt:Max>15</tt:Max></tt:FrameRateRange>"))
+            assertTrue(options.body.contains("<tt:H264ProfilesSupported>High</tt:H264ProfilesSupported>"))
+            CameraOnvifService.parse(options.body.toByteArray())
+        }
+        assertTrue(response(s, "<trt:GetVideoEncoderConfigurationOptions><trt:ConfigurationToken>other</trt:ConfigurationToken>" +
+            "</trt:GetVideoEncoderConfigurationOptions>").body.contains("ter:NoConfig"))
+        assertTrue(response(s, "<trt:GetVideoEncoderConfigurationOptions><trt:ProfileToken>other</trt:ProfileToken>" +
+            "</trt:GetVideoEncoderConfigurationOptions>").body.contains("ter:NoProfile"))
+    }
+
     @Test fun deviceServicesAndStreamUseTheSharedPort() {
         val s = service()
         val services = response(s, "<tds:GetServices><tds:IncludeCapability>true</tds:IncludeCapability></tds:GetServices>")
@@ -171,6 +221,34 @@ class CameraOnvifServiceTest {
                 assertEquals("HTTP/1.1 404 Not Found", socket.getInputStream().bufferedReader().readLine())
             }
         } finally { rtspOnly.close() }
+    }
+
+    @Test fun listenerLogsEachClientRequestOutcomeOnce() {
+        val notes = java.util.concurrent.LinkedBlockingQueue<String>()
+        val server = CameraRtspServer(0, null, "", { Base64.getEncoder().encodeToString(it) }, {}, {},
+            onDiagnostic = { event, message, _ -> notes.add("$event: $message") }, onvif = service())
+        try {
+            repeat(2) {
+                Socket("127.0.0.1", server.localPort).use { socket ->
+                    socket.soTimeout = 2000
+                    val bytes = request(streamRequest().replace(">RTSP<", ">UDP<"))
+                    socket.getOutputStream().write(("POST /onvif/media_service HTTP/1.1\r\nUser-Agent: NVR\r\n" +
+                        "Content-Length: ${bytes.size}\r\n\r\n").toByteArray() + bytes)
+                    socket.getInputStream().readBytes()
+                }
+            }
+            Socket("127.0.0.1", server.localPort).use { socket ->
+                socket.soTimeout = 2000
+                socket.getOutputStream().write("DESCRIBE rtsp://127.0.0.1/other RTSP/1.0\r\nCSeq: 2\r\n\r\n".toByteArray())
+                assertEquals("RTSP/1.0 404 Not Found", socket.getInputStream().bufferedReader().readLine())
+            }
+            assertEquals("onvif request: client=127.0.0.1, operation=GetStreamUri, status=500 Internal Server Error, " +
+                "fault=ter:InvalidStreamSetup: Use RTP-Unicast with RTSP transport, userAgent=NVR",
+                notes.poll(2, java.util.concurrent.TimeUnit.SECONDS))
+            assertEquals("rtsp request: client=127.0.0.1, method=DESCRIBE, path=/other, status=404 Not Found",
+                notes.poll(2, java.util.concurrent.TimeUnit.SECONDS))
+            assertNull(notes.poll(200, java.util.concurrent.TimeUnit.MILLISECONDS))
+        } finally { server.close() }
     }
 
     @Test fun discoveryMatchesCameraTypesAndScopesAndCorrelatesReplies() {

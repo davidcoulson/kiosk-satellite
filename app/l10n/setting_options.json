@@ -64,7 +64,12 @@
   "screensaver.clock_style": {
     "digital": "screensaverStyleDigital",
     "flip": "screensaverStyleFlip",
-    "roller": "screensaverStyleRoller"
+    "roller": "screensaverStyleRoller",
+    "hand": "screensaverStyleHand"
+  },
+  "screensaver.hand_numbers": {
+    "quarters": "screensaverHandNumbersQuarters",
+    "all": "screensaverHandNumbersAll"
   },
   "screensaver.clock_font_weight": {
     "default": "screensaverFontDefault",

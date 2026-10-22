@@ -145,6 +145,9 @@ class AppContainer {
     );
     analytics = AnalyticsManager(bus, commands, log, settings);
     personSensor = PersonSensorManager(bus, commands, log, settings);
+    // The Portal turns its own screen on for someone it sees, and only the
+    // person sensor's log tail can tell that wake from the power button.
+    screensaver.systemWakeSource = personSensor.wakeSource;
     // Before wakeWord: its init seeds the mic selector the engine reads at
     // start, and its SettingChanged subscription must run before wakeWord's
     // restart re-opens capture.
@@ -197,6 +200,11 @@ class AppContainer {
         level: voice.level,
         settings: settings,
       )
+      ..screensaverModes = PluginScreensaverModes(
+        read: () => screensaver.modeState,
+        hold: screensaver.setModeOverride,
+        release: screensaver.clearModeOverride,
+      )
       ..camera = PluginCamera(
         motion: motion,
         commands: commands,
@@ -216,7 +224,8 @@ class AppContainer {
     plugins.onActivity = (name) =>
         unawaited(UsageCounters.bump(settings, name));
     intercom = IntercomManager(bus, commands, log, settings);
-    alarms = AlarmManager(bus, commands, log, settings);
+    alarms = AlarmManager(bus, commands, log, settings)
+      ..screensaverModeOverride = () => screensaver.modeOverride.value;
     calendar = CalendarManager(bus, commands, log, settings);
     voiceRequests = VoiceRequestsManager(bus, commands, log, settings);
     // It follows what the managers above are doing, through the bus and

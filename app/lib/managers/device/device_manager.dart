@@ -532,7 +532,7 @@ class DeviceManager extends Manager {
       Command(
         name: 'getStats',
         description:
-            'Battery, CPU load and temperature only: the live header '
+            'Battery, CPU load, clock and temperature only: the live header '
             'numbers, without everything else getDeviceInfo gathers.',
         // Executed every 4 seconds for as long as an admin page is open.
         quiet: true,
@@ -615,7 +615,8 @@ class DeviceManager extends Manager {
   /// presence flag and range check come first; the plugin read is the
   /// fallback for hosts without the channel, screened the same way, since
   /// the plugin passes Android's "unsupported" sentinel through as a level.
-  Future<int?> _batteryLevel() async {
+  /// `temp` is the battery's temperature in °C, native only.
+  Future<({int? level, double? temp})> _batteryReading() async {
     // A panel whose board invents a battery (issue: 50% forever on a
     // mains-only kiosk) is told so by a switch, and the answer is no
     // battery -- the same answer a desktop gives, so every consumer
@@ -625,7 +626,7 @@ class DeviceManager extends Manager {
         _batteryLogged = true;
         log.info(name, 'no battery: this panel is configured as mains-only');
       }
-      return null;
+      return (level: null, temp: null);
     }
     int? level;
     final native = await DeviceDetails.battery();
@@ -649,8 +650,10 @@ class DeviceManager extends Manager {
             : 'no battery: the platform reports none present',
       );
     }
-    return level;
+    return (level: level, temp: native?.temp);
   }
+
+  Future<int?> _batteryLevel() async => (await _batteryReading()).level;
 
   /// The battery as the corner widget shows it: the charge percent (null
   /// for a device without a battery) and whether the device is on external
@@ -668,7 +671,7 @@ class DeviceManager extends Manager {
     // Through the same gate as the widget, and never a throw: a host
     // without a battery used to fail the whole read and take the CPU
     // numbers down with it.
-    final level = await _batteryLevel();
+    final battery = await _batteryReading();
     final charging = await _chargingNow();
     final cpu = await DeviceDetails.cpu();
     final ram = await DeviceDetails.ram();
@@ -680,13 +683,16 @@ class DeviceManager extends Manager {
       );
     }
     return {
-      'battery': level,
+      'battery': battery.level,
       'charging': charging,
+      // Percent busy, null where no load source is readable. Never the
+      // clock position, which is its own number below.
       'cpu': cpu['usage'],
-      // Only where the kernel has no cpuidle, in place of cpu: how far the
-      // clock sits between its minimum and maximum, which is not load.
+      // MHz, the average clock of the online cores.
       'cpuClock': cpu['clock'],
       'temp': cpu['temp'],
+      // °C, null for a device without a battery or a HAL with no sensor.
+      'batteryTemp': battery.temp,
       // Bytes. The kernel's MemAvailable, not availMem (see DeviceDetails.kt).
       'memFree': ram['free'],
       'memTotal': ram['total'],

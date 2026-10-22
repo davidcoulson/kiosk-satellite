@@ -10405,6 +10405,12 @@ abstract class UiStrings {
   /// Label or explanation on this Device settings page.
   ///
   /// In en, this message translates to:
+  /// **'CPU clock'**
+  String get deviceCpuClock;
+
+  /// Label or explanation on this Device settings page.
+  ///
+  /// In en, this message translates to:
   /// **'CPU temperature'**
   String get deviceCpuTemp;
 
@@ -10413,6 +10419,12 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Battery level'**
   String get deviceBatteryLevel;
+
+  /// Label or explanation on this Device settings page.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery temperature'**
+  String get deviceBatteryTemp;
 
   /// Label or explanation on this Device settings page.
   ///
@@ -17756,6 +17768,18 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
+  /// **'Full screen'**
+  String get settingScreenFullScreenTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the status and navigation bars. Turn off to keep them visible, along with the taskbar on tablets. Kiosk mode always hides them.'**
+  String get settingScreenFullScreenDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
   /// **'Keep screen on'**
   String get settingKeepScreenOnTitle;
 
@@ -19040,6 +19064,54 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
+  /// **'Numbers'**
+  String get settingScreensaverHandNumbersTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Which hours the dial shows as numbers.'**
+  String get settingScreensaverHandNumbersDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Show seconds hand'**
+  String get settingScreensaverHandSecondsTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw a seconds hand on the dial.'**
+  String get settingScreensaverHandSecondsDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock color'**
+  String get settingScreensaverHandColorTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'The color of the hands, numbers and ticks.'**
+  String get settingScreensaverHandColorDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Background color'**
+  String get settingScreensaverHandBgColorTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'The color behind the clock.'**
+  String get settingScreensaverHandBgColorDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
   /// **'Night mode'**
   String get settingScreensaverClockNightTitle;
 
@@ -19150,6 +19222,24 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Roller Clock'**
   String get screensaverStyleRoller;
+
+  /// Label, status or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand Clock'**
+  String get screensaverStyleHand;
+
+  /// Label, status or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'12, 3, 6 and 9'**
+  String get screensaverHandNumbersQuarters;
+
+  /// Label, status or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'All hours'**
+  String get screensaverHandNumbersAll;
 
   /// Label, status or guidance in this section.
   ///

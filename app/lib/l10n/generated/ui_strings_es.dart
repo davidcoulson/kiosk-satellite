@@ -6037,10 +6037,16 @@ class UiStringsEs extends UiStrings {
   String get deviceCpuUsage => 'Uso de CPU';
 
   @override
+  String get deviceCpuClock => 'Frecuencia de CPU';
+
+  @override
   String get deviceCpuTemp => 'Temperatura de CPU';
 
   @override
   String get deviceBatteryLevel => 'Nivel de batería';
+
+  @override
+  String get deviceBatteryTemp => 'Temperatura de la batería';
 
   @override
   String get deviceScreenBrightness => 'Brillo de pantalla';
@@ -10394,6 +10400,13 @@ class UiStringsEs extends UiStrings {
       'Fuerza la pantalla a una orientación. Úsalo en un dispositivo sin sensor de rotación o instalado de una forma que el sensor no detecta correctamente.';
 
   @override
+  String get settingScreenFullScreenTitle => 'Pantalla completa';
+
+  @override
+  String get settingScreenFullScreenDescription =>
+      'Oculta la barra de estado y la barra de navegación. Desactívalo para mantenerlas visibles, junto con la barra de tareas en las tabletas. El modo kiosko siempre las oculta.';
+
+  @override
   String get settingKeepScreenOnTitle => 'Mantener la pantalla encendida';
 
   @override
@@ -11128,6 +11141,34 @@ class UiStringsEs extends UiStrings {
       'Color detrás de los dígitos.';
 
   @override
+  String get settingScreensaverHandNumbersTitle => 'Números';
+
+  @override
+  String get settingScreensaverHandNumbersDescription =>
+      'Qué horas muestra la esfera como números.';
+
+  @override
+  String get settingScreensaverHandSecondsTitle => 'Mostrar segundero';
+
+  @override
+  String get settingScreensaverHandSecondsDescription =>
+      'Dibuja un segundero en la esfera.';
+
+  @override
+  String get settingScreensaverHandColorTitle => 'Color del reloj';
+
+  @override
+  String get settingScreensaverHandColorDescription =>
+      'Color de las agujas, los números y las marcas.';
+
+  @override
+  String get settingScreensaverHandBgColorTitle => 'Color de fondo';
+
+  @override
+  String get settingScreensaverHandBgColorDescription =>
+      'Color detrás del reloj.';
+
+  @override
   String get settingScreensaverClockNightTitle => 'Modo nocturno';
 
   @override
@@ -11194,6 +11235,15 @@ class UiStringsEs extends UiStrings {
 
   @override
   String get screensaverStyleRoller => 'Reloj de rodillos';
+
+  @override
+  String get screensaverStyleHand => 'Reloj de agujas';
+
+  @override
+  String get screensaverHandNumbersQuarters => '12, 3, 6 y 9';
+
+  @override
+  String get screensaverHandNumbersAll => 'Todas las horas';
 
   @override
   String get screensaverFontDefault => 'Predeterminado';

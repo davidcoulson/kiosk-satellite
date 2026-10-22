@@ -6006,10 +6006,16 @@ class UiStringsNl extends UiStrings {
   String get deviceCpuUsage => 'CPU-gebruik';
 
   @override
+  String get deviceCpuClock => 'CPU-kloksnelheid';
+
+  @override
   String get deviceCpuTemp => 'CPU-temperatuur';
 
   @override
   String get deviceBatteryLevel => 'Batterijniveau';
+
+  @override
+  String get deviceBatteryTemp => 'Batterijtemperatuur';
 
   @override
   String get deviceScreenBrightness => 'Schermhelderheid';
@@ -10319,6 +10325,13 @@ class UiStringsNl extends UiStrings {
       'Dwing het scherm in één stand. Gebruik dit op een apparaat zonder rotatiesensor of op een apparaat dat zo is gemonteerd dat de sensor de stand verkeerd bepaalt.';
 
   @override
+  String get settingScreenFullScreenTitle => 'Volledig scherm';
+
+  @override
+  String get settingScreenFullScreenDescription =>
+      'Verberg de statusbalk en de navigatiebalk. Schakel dit uit om ze zichtbaar te houden, samen met de taakbalk op tablets. De kioskmodus verbergt ze altijd.';
+
+  @override
   String get settingKeepScreenOnTitle => 'Scherm ingeschakeld houden';
 
   @override
@@ -11052,6 +11065,34 @@ class UiStringsNl extends UiStrings {
       'De kleur achter de cijfers.';
 
   @override
+  String get settingScreensaverHandNumbersTitle => 'Cijfers';
+
+  @override
+  String get settingScreensaverHandNumbersDescription =>
+      'Welke uren de wijzerplaat als cijfer toont.';
+
+  @override
+  String get settingScreensaverHandSecondsTitle => 'Secondewijzer tonen';
+
+  @override
+  String get settingScreensaverHandSecondsDescription =>
+      'Teken een secondewijzer op de wijzerplaat.';
+
+  @override
+  String get settingScreensaverHandColorTitle => 'Klokkleur';
+
+  @override
+  String get settingScreensaverHandColorDescription =>
+      'De kleur van de wijzers, cijfers en streepjes.';
+
+  @override
+  String get settingScreensaverHandBgColorTitle => 'Achtergrondkleur';
+
+  @override
+  String get settingScreensaverHandBgColorDescription =>
+      'De kleur achter de klok.';
+
+  @override
   String get settingScreensaverClockNightTitle => 'Nachtmodus';
 
   @override
@@ -11117,6 +11158,15 @@ class UiStringsNl extends UiStrings {
 
   @override
   String get screensaverStyleRoller => 'Rolklok';
+
+  @override
+  String get screensaverStyleHand => 'Wijzerklok';
+
+  @override
+  String get screensaverHandNumbersQuarters => '12, 3, 6 en 9';
+
+  @override
+  String get screensaverHandNumbersAll => 'Alle uren';
 
   @override
   String get screensaverFontDefault => 'Standaard';
