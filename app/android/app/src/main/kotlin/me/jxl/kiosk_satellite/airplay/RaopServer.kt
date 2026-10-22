@@ -235,7 +235,9 @@ internal class RaopServer(
             try {
                 while (!closed) {
                     val req = RtspRequest.read(input) ?: break
-                    socket.soTimeout = 0
+                    // Only the live session may sit quiet; a connection that is not
+                    // one cannot hold a slot of the cap forever.
+                    socket.soTimeout = if (synchronized(lock) { current === this }) 0 else IDLE_TIMEOUT_MS
                     val res = handle(req)
                     res.write(output, req.cseq)
                     if (req.method == "TEARDOWN") break
@@ -575,6 +577,7 @@ internal class RaopServer(
         private const val TAG = "AirPlay"
         private const val MAX_CONNECTIONS = 16
         private const val FIRST_REQUEST_TIMEOUT_MS = 15_000
+        private const val IDLE_TIMEOUT_MS = 60_000
 
         /** How long one status request waits for a change before asking again. */
         private const val STATUS_WAIT_MS = 30_000

@@ -181,6 +181,21 @@ void main() {
       );
     });
 
+    test('origins guard the write with an exact comparison', () {
+      final script = buildHaAutoLoginScript(
+        token: 'llat',
+        origins: ['https://ha.example'],
+      )!;
+      expect(
+        script,
+        contains('["https://ha.example"].indexOf(location.origin) < 0'),
+      );
+      expect(
+        buildHaAutoLoginScript(token: 'llat')!,
+        isNot(contains('throw 0')),
+      );
+    });
+
     test('no token, nothing injected', () {
       expect(buildHaAutoLoginScript(token: null), isNull);
       expect(buildHaAutoLoginScript(token: '   '), isNull);

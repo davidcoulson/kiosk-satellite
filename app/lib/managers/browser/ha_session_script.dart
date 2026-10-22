@@ -50,12 +50,24 @@ import 'dart:convert';
 /// Log out would. It is a marker stored in the page, so the replacing
 /// happens once per toggle: a person who then logs in by hand, say because
 /// the token stopped working, is not signed out again on every load.
-String? buildHaAutoLoginScript({required String? token, String? replace}) {
+String? buildHaAutoLoginScript({
+  required String? token,
+  String? replace,
+  Iterable<String>? origins,
+}) {
   final trimmed = token?.trim();
   if (trimmed == null || trimmed.isEmpty) return null;
   final encoded = jsonEncode(trimmed);
   final marker = replace == null ? 'null' : jsonEncode(replace);
+  // The WebView's own origin rules are matched as unanchored regular
+  // expressions on older Android WebViews, so the page checks its origin
+  // exactly before anything is written.
+  final guardOpen = origins == null
+      ? ''
+      : 'if (${jsonEncode(origins.toList())}.indexOf(location.origin) < 0) '
+            'throw 0;';
   return 'try {'
+      '$guardOpen'
       'var seed = true;'
       'var replace = $marker !== null && '
       'localStorage.getItem("ks-auto-login-replaced") !== $marker;'

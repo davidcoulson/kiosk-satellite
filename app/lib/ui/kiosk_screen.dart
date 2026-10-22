@@ -996,7 +996,11 @@ class _KioskScreenState extends State<KioskScreen>
   /// loopback proxy. A custom or external page the WebView navigates to gets
   /// none of it.
   Set<String> get _haOriginRules => {
-    for (final u in [c.settings.get(defs.haUrl), _initialUrl])
+    for (final u in [
+      c.settings.get(defs.haUrl),
+      // A custom start page is some other site, not Home Assistant.
+      if (c.settings.get(defs.startPage) != 'custom') _initialUrl,
+    ])
       if (Uri.tryParse(u.trim()) case final p? when p.hasAuthority) p.origin,
     ?c.proxy.loopbackOrigin,
   };
@@ -1193,6 +1197,7 @@ class _KioskScreenState extends State<KioskScreen>
         source: buildHaAutoLoginScript(
           token: c.settings.get(defs.haToken),
           replace: _autoLoginReplace,
+          origins: _haOriginRules,
         )!,
         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
         allowedOriginRules: _haOriginRules,
