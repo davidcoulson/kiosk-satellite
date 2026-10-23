@@ -176,6 +176,10 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// Whether the overlay up now turned hold mode on for its stay.
   bool _overlayHold = false;
 
+  /// Whether the start URL was on a custom page of another server at the
+  /// last change of either.
+  bool _startOnCustomPage = false;
+
   /// Drop the overlay, whoever put it up.
   void dismissOverlay() {
     overlayDismissible.value = false;
@@ -194,6 +198,22 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   ///   picked a dashboard.
   Future<void> _syncStartPage(SettingChanged e) async {
     final custom = _settings.get(defs.startPage) == 'custom';
+    // The start URL on a custom page of another server is not Home
+    // Assistant, but only while that page is in the catalog. When its entry
+    // goes, the server must not fall back into trust: the start URL returns
+    // to the base URL with it.
+    if (e.key == defs.haCustomPages.key || e.key == defs.startUrl.key) {
+      final was = _startOnCustomPage;
+      final start = Uri.tryParse(startUrl);
+      _startOnCustomPage = start != null && isCustomPageOrigin(start);
+      if (e.key == defs.haCustomPages.key && was && !_startOnCustomPage) {
+        final base = _settings.get(defs.haUrl).trim();
+        if (base.isNotEmpty && !custom) {
+          await _settings.set(defs.startUrl, base, source: 'start page');
+        }
+      }
+      if (e.key == defs.haCustomPages.key) return;
+    }
     if (e.key == defs.customStartUrl.key && custom) {
       final url = _settings.get(defs.customStartUrl).trim();
       if (url.isNotEmpty && url != startUrl) {
@@ -440,6 +460,8 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
     bus.on<SettingChanged>().listen((e) {
       if (e.key == defs.haUrl.key) unawaited(_migrateStartUrlOrigin(e));
     });
+    final start = Uri.tryParse(startUrl);
+    _startOnCustomPage = start != null && isCustomPageOrigin(start);
     // The start page choice and the start URL, kept in step (URL-1, URL-3).
     bus.on<SettingChanged>().listen((e) => unawaited(_syncStartPage(e)));
     bus.on<SettingChanged>().listen((e) {

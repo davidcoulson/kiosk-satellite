@@ -691,6 +691,8 @@ class _KioskScreenState extends State<KioskScreen>
       if (mounted &&
           (c.proxy.targetOrigin != _webViewProxyOrigin ||
               c.proxy.loopbackOrigin != _webViewLoopbackOrigin)) {
+        // The page on screen belongs to the old server: start over.
+        _rebuildFromStart = true;
         setState(() => _webViewEpoch++);
       }
       return;

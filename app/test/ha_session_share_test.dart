@@ -86,6 +86,30 @@ void main() {
       expect(browser.startIsHomeAssistant, isFalse);
     });
 
+    test(
+      'dropping an external custom page does not make its server HA',
+      () async {
+        await build();
+        await settings.set(
+          defs.haCustomPages,
+          jsonEncode([
+            {'name': 'Wall', 'path': 'https://wall.example/index.html'},
+          ]),
+        );
+        await settings.set(defs.startUrl, 'https://wall.example/index.html');
+        await Future<void>.delayed(Duration.zero);
+        expect(browser.startIsHomeAssistant, isFalse);
+        await settings.set(defs.haCustomPages, '[]');
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        // The start URL went back to the base URL with the entry.
+        expect(browser.startUrl, 'http://192.168.1.10:8123');
+        expect(
+          browser.isHomeAssistantOrigin(Uri.parse('https://wall.example/')),
+          isFalse,
+        );
+      },
+    );
+
     test('anywhere else is not', () async {
       await build();
       expect(
