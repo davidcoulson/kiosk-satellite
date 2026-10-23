@@ -111,8 +111,15 @@ void main() {
     'a custom start page is proxied from another origin than Home Assistant',
     () async {
       final haPort = proxy.port;
+      final oldPage = 'http://127.0.0.1:$haPort/lovelace/0';
       await settings.set(defs.startPage, 'custom');
       await proxy.sync();
+      // A page still on the old port maps back to the upstream, not to a
+      // dead address, when the WebView is rebuilt.
+      expect(
+        proxy.unmapUrl(oldPage),
+        '${origin('127.0.0.2', first)}/lovelace/0',
+      );
       // Another port is another web origin: the login Home Assistant keeps
       // under the first one is out of the custom site's reach.
       expect(proxy.running, isTrue);

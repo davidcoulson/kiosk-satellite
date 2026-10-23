@@ -6,6 +6,7 @@ import 'package:kiosk_satellite/core/event_bus.dart';
 import 'package:kiosk_satellite/core/logging.dart';
 import 'package:kiosk_satellite/managers/browser/browser_manager.dart';
 import 'package:kiosk_satellite/managers/browser/ha_session_script.dart';
+import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
 import 'package:kiosk_satellite/managers/settings/settings_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,6 +22,7 @@ void main() {
       '"http://127.0.0.1:18123"}';
 
   late BrowserManager browser;
+  late SettingsManager settings;
 
   Future<void> build() async {
     SharedPreferences.setMockInitialValues({
@@ -30,7 +32,7 @@ void main() {
     final bus = EventBus();
     final log = Logger();
     final commands = CommandRegistry(log);
-    final settings = SettingsManager(bus, commands, log);
+    settings = SettingsManager(bus, commands, log);
     await settings.init();
     browser = BrowserManager(bus, commands, log, settings);
     await browser.init();
@@ -75,6 +77,13 @@ void main() {
         browser.isHomeAssistantOrigin(Uri.parse('http://127.0.0.1:2326/x')),
         isFalse,
       );
+    });
+
+    test('a start page that is not Home Assistant gets no trust', () async {
+      await build();
+      expect(browser.startIsHomeAssistant, isTrue);
+      await settings.set(defs.startPage, 'custom');
+      expect(browser.startIsHomeAssistant, isFalse);
     });
 
     test('anywhere else is not', () async {

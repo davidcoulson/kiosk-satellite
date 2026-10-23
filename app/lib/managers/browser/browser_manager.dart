@@ -255,6 +255,15 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// null while it is off. Set by the container, which owns both managers.
   String? Function()? proxyLoopbackOrigin;
 
+  /// Whether the kiosk's start page is Home Assistant's own dashboard. Not
+  /// when it is the custom URL, nor when the default dashboard is a custom
+  /// page on another server (which sets the start URL to that server).
+  bool get startIsHomeAssistant {
+    if (_settings.get(defs.startPage) == 'custom') return false;
+    final start = Uri.tryParse(startUrl);
+    return start == null || !isCustomPageOrigin(start);
+  }
+
   /// Whether [url] is served by this Home Assistant — the dashboard's own
   /// origin, or the configured base URL's. The second is what the dashboard
   /// origin is not when the secure context proxy is on: the page runs on
@@ -275,7 +284,7 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
     // Judged from the configuration, never from the page on screen: after a
     // navigation to some other site, that site is the current URL, and
     // trusting it would copy the session onto it.
-    if (_settings.get(defs.startPage) != 'custom') {
+    if (startIsHomeAssistant) {
       final starts = [startUrl, ?proxyLoopbackOrigin?.call()].map(Uri.tryParse);
       for (final u in starts) {
         if (u != null &&

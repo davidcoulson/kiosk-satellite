@@ -48,7 +48,13 @@ class ProxyManager extends Manager {
   /// Whether the running server was bound for a custom start page.
   bool _boundCustom = false;
 
-  bool get _customStart => _settings.get(defs.startPage) == 'custom';
+  /// Whether the start page is Home Assistant. The container points this at
+  /// the browser, which also knows custom pages on other servers.
+  bool Function()? startIsHomeAssistant;
+
+  bool get _customStart =>
+      !(startIsHomeAssistant?.call() ??
+          _settings.get(defs.startPage) != 'custom');
 
   /// Headers that describe the connection hop, not the payload; forwarding
   /// them would corrupt the proxied connection's own negotiation.
@@ -87,14 +93,19 @@ class ProxyManager extends Manager {
   /// proxied URL back even right after the toggle turned the server off.
   String? _lastTargetOrigin;
   String? _lastLoopbackOrigin;
+  final _staleLoopbacks = <String>{};
 
   /// The inverse of [mapUrl]: a URL on the loopback origin translated back
   /// to the real Home Assistant origin. Pass-through for everything else.
   String unmapUrl(String url) {
-    final from = _lastLoopbackOrigin;
     final to = _lastTargetOrigin;
-    if (from == null || to == null || !url.startsWith(from)) return url;
-    return to + url.substring(from.length);
+    if (to == null) return url;
+    // Earlier ports too: a page still on one when the proxy moved to another
+    // maps back to the upstream, not to a dead address.
+    for (final from in [?_lastLoopbackOrigin, ..._staleLoopbacks]) {
+      if (url.startsWith(from)) return to + url.substring(from.length);
+    }
+    return url;
   }
 
   @override
@@ -252,6 +263,11 @@ class ProxyManager extends Manager {
         log.warn(name, 'server error: $e');
       },
     );
+    final previous = _lastLoopbackOrigin;
+    if (previous != null && previous != loopbackOrigin) {
+      _staleLoopbacks.add(previous);
+    }
+    _staleLoopbacks.remove(loopbackOrigin);
     _lastTargetOrigin = targetOrigin;
     _lastLoopbackOrigin = loopbackOrigin;
     log.info(

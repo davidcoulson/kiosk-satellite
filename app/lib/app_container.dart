@@ -88,6 +88,7 @@ class AppContainer {
     proxy = ProxyManager(bus, commands, log, settings);
     browser = BrowserManager(bus, commands, log, settings);
     browser.proxyLoopbackOrigin = () => proxy.loopbackOrigin;
+    proxy.startIsHomeAssistant = () => browser.startIsHomeAssistant;
     // Constructed before camera, which streams Home Assistant camera
     // entities through its WebRTC signaling (issue #124). Construction
     // order only; init order below is unchanged.
@@ -660,9 +661,7 @@ class AppContainer {
     // Switched off: the sockets open now close, and the page's reconnects
     // hear no.
     bus.on<SettingChanged>().listen((e) {
-      if (_jsApiBuilt &&
-          e.key == haCustomPagesSocket.key &&
-          e.value != true) {
+      if (_jsApiBuilt && e.key == haCustomPagesSocket.key && e.value != true) {
         jsApi.haSockets?.closeAll('setting off', notify: true);
       }
       if (e.key == haUrl.key || e.key == haToken.key) {

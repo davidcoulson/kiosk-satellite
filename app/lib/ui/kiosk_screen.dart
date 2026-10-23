@@ -419,6 +419,7 @@ class _KioskScreenState extends State<KioskScreen>
   /// The proxied origin the current WebView was created with (its media
   /// rewrite script names it), and the epoch that WebView belongs to.
   String? _webViewProxyOrigin;
+  String? _webViewLoopbackOrigin;
   int _webViewProxyEpoch = -1;
 
   /// Set when auto-login turns on: the seed replaces a login done by hand
@@ -683,9 +684,13 @@ class _KioskScreenState extends State<KioskScreen>
     // (or starts or stops it), and the media rewrite script of the WebView
     // on screen still names the old one. Rebuild when the origin it was
     // created with is no longer the proxied one.
-    if (e.key == defs.startUrl.key) {
+    if (e.key == defs.startUrl.key || e.key == defs.startPage.key) {
       await c.proxy.sync();
-      if (mounted && c.proxy.targetOrigin != _webViewProxyOrigin) {
+      // A different port is a different page origin, as is a different
+      // upstream: the WebView on screen is for the old one.
+      if (mounted &&
+          (c.proxy.targetOrigin != _webViewProxyOrigin ||
+              c.proxy.loopbackOrigin != _webViewLoopbackOrigin)) {
         setState(() => _webViewEpoch++);
       }
       return;
@@ -998,11 +1003,11 @@ class _KioskScreenState extends State<KioskScreen>
   Set<String> get _haOriginRules => {
     // The proxy maps the start URL, so its loopback address is Home Assistant
     // only while the start page is.
-    if (c.settings.get(defs.startPage) != 'custom') ?c.proxy.loopbackOrigin,
+    if (c.browser.startIsHomeAssistant) ?c.proxy.loopbackOrigin,
     for (final u in [
       c.settings.get(defs.haUrl),
       // A custom start page is some other site, not Home Assistant.
-      if (c.settings.get(defs.startPage) != 'custom') _initialUrl,
+      if (c.browser.startIsHomeAssistant) _initialUrl,
     ])
       if (Uri.tryParse(u.trim()) case final p? when p.hasAuthority) p.origin,
   };
@@ -1934,6 +1939,7 @@ class _KioskScreenState extends State<KioskScreen>
     if (_webViewProxyEpoch != _webViewEpoch) {
       _webViewProxyEpoch = _webViewEpoch;
       _webViewProxyOrigin = c.proxy.targetOrigin;
+      _webViewLoopbackOrigin = c.proxy.loopbackOrigin;
     }
     // A custom page skips the HTTP cache from its very first load (see
     // BrowserManager.prepareLoad), as everything does with Disable cache.
