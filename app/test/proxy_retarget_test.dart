@@ -106,4 +106,21 @@ void main() {
     expect(proxy.targetOrigin, origin('127.0.0.2', first));
     expect(await fetch('/'), 'first');
   });
+
+  test(
+    'a custom start page is proxied from another origin than Home Assistant',
+    () async {
+      final haPort = proxy.port;
+      await settings.set(defs.startPage, 'custom');
+      await proxy.sync();
+      // Another port is another web origin: the login Home Assistant keeps
+      // under the first one is out of the custom site's reach.
+      expect(proxy.running, isTrue);
+      expect(proxy.port, isNot(haPort));
+      expect(await fetch('/'), 'first');
+      await settings.set(defs.startPage, 'ha');
+      await proxy.sync();
+      expect(proxy.port, haPort);
+    },
+  );
 }

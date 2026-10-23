@@ -55,6 +55,28 @@ void main() {
       );
     });
 
+    test('the proxy address counts, the page on screen does not', () async {
+      SharedPreferences.setMockInitialValues({
+        'ks.browser.start_url': 'http://192.168.1.10:8123/lovelace/home',
+        'ks.ha.url': 'http://192.168.1.10:8123',
+      });
+      final bus = EventBus();
+      final log = Logger();
+      final settings = SettingsManager(bus, CommandRegistry(log), log);
+      await settings.init();
+      browser = BrowserManager(bus, CommandRegistry(log), log, settings);
+      browser.proxyLoopbackOrigin = () => 'http://127.0.0.1:2325';
+      expect(
+        browser.isHomeAssistantOrigin(Uri.parse('http://127.0.0.1:2325/x')),
+        isTrue,
+      );
+      // Another loopback port is another server.
+      expect(
+        browser.isHomeAssistantOrigin(Uri.parse('http://127.0.0.1:2326/x')),
+        isFalse,
+      );
+    });
+
     test('anywhere else is not', () async {
       await build();
       expect(

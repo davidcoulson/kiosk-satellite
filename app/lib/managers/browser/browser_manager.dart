@@ -251,6 +251,10 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
     return sameOrigin(_currentUrl) || sameOrigin(startUrl);
   }
 
+  /// The loopback origin the secure context proxy serves the dashboard on,
+  /// null while it is off. Set by the container, which owns both managers.
+  String? Function()? proxyLoopbackOrigin;
+
   /// Whether [url] is served by this Home Assistant — the dashboard's own
   /// origin, or the configured base URL's. The second is what the dashboard
   /// origin is not when the secure context proxy is on: the page runs on
@@ -268,8 +272,20 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
     // An explicit choice rather than comparing hosts, because a dashboard
     // loading from an old IP while the HA URL names a domain (issue #216) is
     // a real setup that a host comparison would quietly break.
-    if (_settings.get(defs.startPage) != 'custom' && isDashboardOrigin(url)) {
-      return true;
+    // Judged from the configuration, never from the page on screen: after a
+    // navigation to some other site, that site is the current URL, and
+    // trusting it would copy the session onto it.
+    if (_settings.get(defs.startPage) != 'custom') {
+      final starts = [startUrl, ?proxyLoopbackOrigin?.call()].map(Uri.tryParse);
+      for (final u in starts) {
+        if (u != null &&
+            u.hasScheme &&
+            u.scheme == url.scheme &&
+            u.host == url.host &&
+            u.port == url.port) {
+          return true;
+        }
+      }
     }
     final base = Uri.tryParse(_settings.get(defs.haUrl).trim());
     return base != null &&

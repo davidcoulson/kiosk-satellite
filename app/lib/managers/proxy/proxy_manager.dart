@@ -40,6 +40,16 @@ class ProxyManager extends Manager {
 
   static const _preferredPort = 2325;
 
+  /// A custom start page is some other site. It is proxied from its own port
+  /// so it never shares a web origin, and therefore localStorage, with the
+  /// login Home Assistant keeps under the preferred port.
+  static const _customPort = 2326;
+
+  /// Whether the running server was bound for a custom start page.
+  bool _boundCustom = false;
+
+  bool get _customStart => _settings.get(defs.startPage) == 'custom';
+
   /// Headers that describe the connection hop, not the payload; forwarding
   /// them would corrupt the proxied connection's own negotiation.
   static const _hopByHop = {
@@ -102,7 +112,9 @@ class ProxyManager extends Manager {
       ),
     );
     bus.on<SettingChanged>().listen((e) {
-      if (e.key == defs.secureProxy.key || e.key == defs.startUrl.key) {
+      if (e.key == defs.secureProxy.key ||
+          e.key == defs.startUrl.key ||
+          e.key == defs.startPage.key) {
         // Logged by the chain; nobody here to hand the error to.
         unawaited(sync().catchError((Object _) {}));
       }
@@ -152,6 +164,8 @@ class ProxyManager extends Manager {
     final run = _syncChain.then((_) async {
       final target = _mappableOrigin();
       final wanted = _settings.get(defs.secureProxy) && target != null;
+      // Another kind of site is another origin: restart on the other port.
+      if (_server != null && _boundCustom != _customStart) await _stop();
       if (wanted && _server != null && target != _target) {
         _retarget(target);
       }
@@ -217,10 +231,11 @@ class ProxyManager extends Manager {
 
   Future<void> _start() async {
     _client = _newClient();
+    _boundCustom = _customStart;
     try {
       _server = await HttpServer.bind(
         InternetAddress.loopbackIPv4,
-        _preferredPort,
+        _boundCustom ? _customPort : _preferredPort,
       );
     } on SocketException {
       // Port taken (another app, or a previous instance mid-teardown): any

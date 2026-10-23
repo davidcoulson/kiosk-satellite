@@ -87,6 +87,7 @@ class AppContainer {
     service = ServiceManager(bus, commands, log, settings);
     proxy = ProxyManager(bus, commands, log, settings);
     browser = BrowserManager(bus, commands, log, settings);
+    browser.proxyLoopbackOrigin = () => proxy.loopbackOrigin;
     // Constructed before camera, which streams Home Assistant camera
     // entities through its WebRTC signaling (issue #124). Construction
     // order only; init order below is unchanged.
