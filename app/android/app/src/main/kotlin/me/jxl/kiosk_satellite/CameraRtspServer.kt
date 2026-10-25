@@ -164,6 +164,7 @@ class CameraRtspServer(
     @Synchronized fun close() {
         running = false
         server.close()
+        onvif?.close()
         clients.forEach { it.close() }
         scheduler.shutdownNow()
         synchronized(formatReady) { formatReady.notifyAll() }

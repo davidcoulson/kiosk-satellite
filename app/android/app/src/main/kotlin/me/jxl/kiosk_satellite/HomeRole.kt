@@ -123,6 +123,7 @@ object HomeRole {
      *  those builds must not be gated. The package is visible through the
      *  manifest's HOME queries entry. */
     fun isSupported(context: Context): Pair<Boolean, String> {
+        if (Headless.active(context)) return false to "headless"
         val fireOs = try {
             context.packageManager.getPackageInfo("com.amazon.firelauncher", 0)
             true

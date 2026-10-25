@@ -81,6 +81,30 @@ class UiStringsFr extends UiStrings {
       'Le téléchargement s\'exécute sur la tablette ; l\'installation doit être confirmée sur l\'écran de la tablette.';
 
   @override
+  String get aboutSystem => 'Système';
+
+  @override
+  String get aboutSystemVersion => 'Version de la ROM';
+
+  @override
+  String get aboutSystemVerifying => 'Vérification…';
+
+  @override
+  String get aboutSystemInstalling => 'Installation…';
+
+  @override
+  String get aboutSystemInstallHelp =>
+      'Le Dot redémarre deux fois pour installer la mise à jour et reste hors ligne environ une minute et demie à chaque fois.';
+
+  @override
+  String get aboutSystemManual => 'Nouvelle image disponible';
+
+  @override
+  String aboutSystemManualHelp(String version) {
+    return 'La version $version de la nouvelle image de l\'Echo Dot s\'installe à la main, pas comme une mise à jour.';
+  }
+
+  @override
   String get alarmsTitle => 'Alarmes';
 
   @override
@@ -1934,6 +1958,9 @@ class UiStringsFr extends UiStrings {
   String get gestureOpenCalendar => 'Ouvrir le calendrier';
 
   @override
+  String get gestureOpenMusicLibrary => 'Ouvrir la bibliothèque musicale';
+
+  @override
   String get gestureService => 'Appeler un service';
 
   @override
@@ -2938,6 +2965,355 @@ class UiStringsFr extends UiStrings {
   String get logsUnknown => 'inconnu';
 
   @override
+  String get libraryTitle => 'Bibliothèque musicale';
+
+  @override
+  String get librarySource => 'Source';
+
+  @override
+  String get librarySourceMa => 'Music Assistant';
+
+  @override
+  String get librarySourceHa => 'Home Assistant';
+
+  @override
+  String get librarySourceSonos => 'Sonos';
+
+  @override
+  String get librarySourceMaHint => 'Bibliothèque, recherche et radio';
+
+  @override
+  String get librarySourceHaHint => 'Médias de chaque enceinte';
+
+  @override
+  String get librarySourceSonosHint => 'Favoris et playlists';
+
+  @override
+  String get libraryDiscover => 'Découvrir';
+
+  @override
+  String get librarySearch => 'Rechercher';
+
+  @override
+  String get libraryBrowse => 'Parcourir';
+
+  @override
+  String get libraryLibrary => 'Bibliothèque';
+
+  @override
+  String get libraryArtists => 'Artistes';
+
+  @override
+  String get libraryAlbums => 'Albums';
+
+  @override
+  String get libraryTracks => 'Titres';
+
+  @override
+  String get libraryPlaylists => 'Playlists';
+
+  @override
+  String get libraryRadio => 'Radio';
+
+  @override
+  String get libraryPodcasts => 'Podcasts';
+
+  @override
+  String get libraryAudiobooks => 'Livres audio';
+
+  @override
+  String get libraryFavorites => 'Favoris';
+
+  @override
+  String get librarySonosPlaylists => 'Playlists Sonos';
+
+  @override
+  String get libraryRecentlyPlayed => 'Écoutés récemment';
+
+  @override
+  String get libraryRecentlyAdded => 'Ajoutés récemment';
+
+  @override
+  String get librarySort => 'Trier';
+
+  @override
+  String get librarySortAToZ => 'De A à Z';
+
+  @override
+  String get librarySortZToA => 'De Z à A';
+
+  @override
+  String get librarySortMostPlayed => 'Les plus écoutés';
+
+  @override
+  String get libraryAlbumArtistsOnly => 'Artistes d\'album uniquement';
+
+  @override
+  String get libraryKindGenre => 'Genre';
+
+  @override
+  String get libraryBrowseByGenre => 'Parcourir par genre';
+
+  @override
+  String get settingLibraryTextScaleDescription =>
+      'Taille des titres, noms et libellés de la bibliothèque.';
+
+  @override
+  String get settingLibrarySquareArtworkTitle => 'Images carrées';
+
+  @override
+  String get settingLibrarySquareArtworkDescription =>
+      'Affiche les artistes en vignettes carrées, comme les albums et les playlists.';
+
+  @override
+  String get settingLibraryGridDensityTitle => 'Densité de la grille';
+
+  @override
+  String get settingLibraryGridDensityDescription =>
+      'Taille des vignettes de la bibliothèque. Compacte en affiche plus par ligne.';
+
+  @override
+  String get libraryDensityComfortable => 'Confortable';
+
+  @override
+  String get libraryDensityStandard => 'Standard';
+
+  @override
+  String get libraryDensityCompact => 'Compacte';
+
+  @override
+  String get libraryMoreResults => 'Autres résultats';
+
+  @override
+  String get libraryTopTracks => 'Titres populaires';
+
+  @override
+  String get libraryKindArtist => 'Artiste';
+
+  @override
+  String get libraryKindAlbum => 'Album';
+
+  @override
+  String get libraryKindTrack => 'Titre';
+
+  @override
+  String get libraryKindPlaylist => 'Playlist';
+
+  @override
+  String get libraryKindRadio => 'Radio';
+
+  @override
+  String get libraryKindPodcast => 'Podcast';
+
+  @override
+  String get libraryKindEpisode => 'Épisode';
+
+  @override
+  String get libraryKindAudiobook => 'Livre audio';
+
+  @override
+  String get libraryOneTrack => '1 titre';
+
+  @override
+  String libraryTrackCount(String count) {
+    return '$count titres';
+  }
+
+  @override
+  String libraryMinutes(String minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String libraryHoursMinutes(String hours, String minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String get librarySearchHint => 'Artistes, albums, titres';
+
+  @override
+  String get librarySearchClear => 'Effacer la recherche';
+
+  @override
+  String get librarySearchAll => 'Tout';
+
+  @override
+  String get librarySearchPrompt =>
+      'Recherchez des artistes, des albums, des titres et plus encore.';
+
+  @override
+  String get libraryEmpty => 'Rien ici pour l’instant.';
+
+  @override
+  String get libraryLoadFailed => 'Impossible de charger ce contenu.';
+
+  @override
+  String get libraryNoSource =>
+      'Configurez Music Assistant, Home Assistant ou une enceinte Sonos pour parcourir de la musique.';
+
+  @override
+  String get libraryHaPickSpeaker =>
+      'Choisissez une enceinte pour voir les médias qu’elle peut lire.';
+
+  @override
+  String get libraryChooseSpeaker => 'Choisir une enceinte';
+
+  @override
+  String get libraryPickSpeakerHint => 'Choisissez l’enceinte de lecture.';
+
+  @override
+  String get libraryPlay => 'Lire';
+
+  @override
+  String get libraryOpenNowPlaying => 'Ouvrir En cours de lecture';
+
+  @override
+  String get libraryNothingPlaying => 'Aucune lecture en cours';
+
+  @override
+  String get libraryMore => 'Plus d’options';
+
+  @override
+  String get libraryPlayNow => 'Lire maintenant';
+
+  @override
+  String get libraryPlayNext => 'Lire ensuite';
+
+  @override
+  String get libraryAddToQueue => 'Ajouter à la file d’attente';
+
+  @override
+  String get libraryStartRadio => 'Lancer la radio';
+
+  @override
+  String get libraryGoToArtist => 'Aller à l’artiste';
+
+  @override
+  String get libraryAddFavorite => 'Ajouter aux favoris';
+
+  @override
+  String get libraryRemoveFavorite => 'Retirer des favoris';
+
+  @override
+  String get libraryAddedFavorite => 'Ajouté aux favoris';
+
+  @override
+  String get libraryRemovedFavorite => 'Retiré des favoris';
+
+  @override
+  String get libraryFavoriteFailed => 'Impossible de modifier les favoris';
+
+  @override
+  String get libraryPlaysNext => 'Lu ensuite';
+
+  @override
+  String get libraryAddedToQueue => 'Ajouté à la file d’attente';
+
+  @override
+  String get libraryView => 'Afficher';
+
+  @override
+  String get libraryPlayFailed => 'Impossible de lancer la lecture';
+
+  @override
+  String get librarySpeakers => 'Enceintes';
+
+  @override
+  String get libraryPlayingOn => 'Lecture sur';
+
+  @override
+  String get libraryOtherSpeakers => 'Autres enceintes';
+
+  @override
+  String get libraryNoOtherSpeakers => 'Aucune autre enceinte.';
+
+  @override
+  String get libraryThisDevice => 'Cet appareil';
+
+  @override
+  String get libraryUnavailable => 'Indisponible';
+
+  @override
+  String get libraryGroup => 'Grouper';
+
+  @override
+  String get libraryGroupAll => 'Groupe';
+
+  @override
+  String libraryGroupWith(String speaker) {
+    return 'Grouper avec $speaker';
+  }
+
+  @override
+  String get libraryGroupHint =>
+      'Les enceintes groupées lisent la même musique de façon synchronisée.';
+
+  @override
+  String libraryGroupName(String speaker, String count) {
+    return '$speaker + $count';
+  }
+
+  @override
+  String get settingLibraryMenuDescription =>
+      'Ajoute une entrée Bibliothèque musicale au menu du kiosque.';
+
+  @override
+  String get settingKioskAllowMusicLibraryDescription =>
+      'Parcourir la musique et la lire sur une enceinte.';
+
+  @override
+  String get libraryPageHint =>
+      'Parcourir la musique et la lire sur une enceinte';
+
+  @override
+  String get settingLibrarySourceDescription =>
+      'D’où la bibliothèque liste la musique. Automatique commence par la source de l’enceinte suivie par En cours de lecture.';
+
+  @override
+  String get settingLibraryNowPlayingButtonTitle =>
+      'Afficher dans En cours de lecture';
+
+  @override
+  String get settingLibraryNowPlayingButtonDescription =>
+      'Ajoute un bouton Bibliothèque musicale à côté du bouton de fermeture.';
+
+  @override
+  String get libraryQueueTitle => 'File d’attente';
+
+  @override
+  String get libraryCloseQueue => 'Fermer la file d’attente';
+
+  @override
+  String get libraryClear => 'Vider';
+
+  @override
+  String get libraryClearQueueTitle => 'Vider la file d’attente ?';
+
+  @override
+  String get libraryClearQueueMessage =>
+      'La musique s’arrête et tous les titres quittent la file d’attente.';
+
+  @override
+  String get libraryRemoveFromQueue => 'Retirer de la file d’attente';
+
+  @override
+  String get libraryReorder => 'Faites glisser pour réorganiser';
+
+  @override
+  String get libraryQueueFailed => 'Impossible de modifier la file d’attente';
+
+  @override
+  String get libraryVoiceSection => 'Commande vocale';
+
+  @override
+  String get libraryVoiceManage => 'Gérer la musique avec Voice Satellite';
+
+  @override
+  String get libraryVoiceHint =>
+      'Nécessite le blueprint de musique de Kiosk Satellite et un agent de conversation LLM dans Home Assistant.';
+
+  @override
   String get offlineDashboard => 'Tableau de bord indisponible';
 
   @override
@@ -3352,6 +3728,11 @@ class UiStringsFr extends UiStrings {
 
   @override
   String get pluginInstalled => 'Installé';
+
+  @override
+  String pluginNeedsAppVersion(String version) {
+    return 'Nécessite Kiosk Satellite $version ou plus récent';
+  }
 
   @override
   String get pluginStars => 'Étoiles';
@@ -3886,6 +4267,11 @@ class UiStringsFr extends UiStrings {
   }
 
   @override
+  String pluginErrorAppVersion(String required, String current) {
+    return 'Le plugin nécessite Kiosk Satellite $required ou plus récent. Ce kiosque exécute $current.';
+  }
+
+  @override
   String pluginErrorInvalidField(String field) {
     return '$field invalide';
   }
@@ -4096,6 +4482,14 @@ class UiStringsFr extends UiStrings {
   @override
   String overviewPermissionMissing(String permission) {
     return 'Autorisation manquante : $permission';
+  }
+
+  @override
+  String get overviewSystemUpdate => 'Mise à jour du système disponible';
+
+  @override
+  String overviewSystemUpdateHelp(String version) {
+    return 'La version $version de l\'image de l\'Echo Dot est prête à être installée. Le Dot redémarre deux fois pour l\'installer.';
   }
 
   @override
@@ -5216,6 +5610,46 @@ class UiStringsFr extends UiStrings {
   @override
   String get cameraCaptureRejected =>
       'D\'autres tailles de caméra sont indisponibles dans la configuration de capture actuelle.';
+
+  @override
+  String get cameraMotionEventsHeading => 'Événements de mouvement';
+
+  @override
+  String get settingCameraOnvifEventsTitle =>
+      'Envoyer les événements de mouvement';
+
+  @override
+  String get settingCameraOnvifEventsDescription =>
+      'Prévient les clients ONVIF, comme les NVR, quand un mouvement est détecté.';
+
+  @override
+  String get settingCameraOnvifEventsSourceTitle => 'Source du mouvement';
+
+  @override
+  String get settingCameraOnvifEventsSourceDescription =>
+      'Le capteur qui envoie les événements de mouvement.';
+
+  @override
+  String get cameraOnvifEventsSourceCamera =>
+      'Capteur de mouvement de la caméra';
+
+  @override
+  String get cameraOnvifEventsSourcePerson => 'Capteur de personnes';
+
+  @override
+  String get cameraOnvifEventsSourceEntity => 'Capteur Home Assistant';
+
+  @override
+  String get cameraOnvifEventsMotionSensorOff =>
+      'Le capteur de mouvement de la caméra est désactivé. Activez-le dans Caméra > Capteur de mouvement.';
+
+  @override
+  String get cameraOnvifEventsAnalysisOff =>
+      'Analyse de mouvement pendant la diffusion est désactivée : la caméra ne peut donc pas détecter de mouvement tant qu\'un spectateur est connecté.';
+
+  @override
+  String get cameraOnvifEventsPersonSensorOff =>
+      'Le capteur de personnes est désactivé. Activez-le dans Caméra > Capteur de personnes.';
 
   @override
   String get cameraOverlaysHeading => 'Superpositions';
@@ -7165,6 +7599,62 @@ class UiStringsFr extends UiStrings {
 
   @override
   String get deviceThemeSystem => 'Système';
+
+  @override
+  String get settingUiToastsHiddenTitle =>
+      'Afficher les messages contextuels du système';
+
+  @override
+  String get settingUiToastsHiddenDescription =>
+      'Choisissez les messages contextuels affichés par-dessus le tableau de bord. Les messages dans Paramètres s\'affichent toujours.';
+
+  @override
+  String get deviceToastsAll => 'Tous';
+
+  @override
+  String get deviceToastsNone => 'Aucun';
+
+  @override
+  String get deviceToastBack => 'Indications du bouton Retour';
+
+  @override
+  String get deviceToastGestures => 'Actions des gestes';
+
+  @override
+  String get deviceToastHoldMode => 'Mode maintien';
+
+  @override
+  String get deviceToastLinks => 'Liens du tableau de bord';
+
+  @override
+  String get deviceToastDownloads => 'Téléchargements';
+
+  @override
+  String get deviceToastNetwork => 'État du réseau';
+
+  @override
+  String get deviceToastUpdates => 'Recherche de mises à jour';
+
+  @override
+  String get deviceToastVoice => 'Avis de Voice Satellite';
+
+  @override
+  String get deviceToastTimers => 'Minuteurs';
+
+  @override
+  String get deviceToastAlarms => 'Alarmes';
+
+  @override
+  String get deviceToastMusicLibrary => 'Bibliothèque musicale';
+
+  @override
+  String get deviceToastIntercom => 'Interphone';
+
+  @override
+  String get deviceToastAppLauncher => 'Lanceur d\'applications';
+
+  @override
+  String get deviceToastPlugins => 'Actions des plugins';
 
   @override
   String get settingAgentModeTitle => 'Agent mode';
@@ -10393,11 +10883,27 @@ class UiStringsFr extends UiStrings {
       'Forcer l\'écran dans une orientation. Utilisez ceci sur un appareil sans capteur de rotation, ou installé d\'une façon que le capteur interprète mal.';
 
   @override
-  String get settingScreenFullScreenTitle => 'Plein écran';
+  String get settingScreenHideStatusBarTitle => 'Masquer la barre d\'état';
 
   @override
-  String get settingScreenFullScreenDescription =>
-      'Masquer la barre d\'état et la barre de navigation. Désactivez cette option pour les garder visibles, ainsi que la barre des tâches sur les tablettes. Le mode kiosque les masque toujours.';
+  String get settingScreenHideStatusBarDescription =>
+      'Désactivez cette option pour garder l\'horloge et les icônes de notification en haut de l\'écran. Le mode kiosque la masque toujours.';
+
+  @override
+  String get settingScreenHideNavigationBarTitle =>
+      'Masquer la barre de navigation';
+
+  @override
+  String get settingScreenHideNavigationBarDescription =>
+      'Désactivez cette option pour garder les boutons de navigation à l\'écran, ainsi que la barre des tâches sur les tablettes. Le mode kiosque la masque toujours.';
+
+  @override
+  String get settingScreenShowOnLockScreenTitle =>
+      'Afficher par-dessus l\'écran de verrouillage';
+
+  @override
+  String get settingScreenShowOnLockScreenDescription =>
+      'Affiche le tableau de bord par-dessus un écran de verrouillage protégé par un code PIN, un schéma ou un mot de passe. Le reste de l\'appareil reste verrouillé.';
 
   @override
   String get settingKeepScreenOnTitle => 'Garder l\'écran allumé';
@@ -13479,6 +13985,20 @@ class UiStringsFr extends UiStrings {
       'L\'apparence de la superposition de l\'assistant vocal.';
 
   @override
+  String get voiceSkin1 => 'Habillage de l\'Assistant 1';
+
+  @override
+  String get voiceSkin1Help =>
+      'L\'apparence de la superposition quand l\'Assistant 1 répond.';
+
+  @override
+  String get voiceSkin2 => 'Habillage de l\'Assistant 2';
+
+  @override
+  String get voiceSkin2Help =>
+      'L\'apparence de la superposition quand l\'Assistant 2 répond.';
+
+  @override
   String get voiceTheme => 'Mode du thème';
 
   @override
@@ -14366,6 +14886,14 @@ class UiStringsFr extends UiStrings {
       'Interrompez une réponse en parlant. Désactivez si l\'assistant s\'interrompt tout seul.';
 
   @override
+  String get settingVoiceRealtimeTalkOverSensitivityTitle =>
+      'Sensibilité d\'interruption';
+
+  @override
+  String get settingVoiceRealtimeTalkOverSensitivityDescription =>
+      'Facilité avec laquelle la parole interrompt une réponse. Augmentez-la si l\'interruption ne fonctionne pas avec un micro peu sensible. Des réglages plus élevés peuvent amener l\'assistant à s\'interrompre tout seul.';
+
+  @override
   String get settingVoiceRealtimeToolsTitle => 'Outils';
 
   @override
@@ -14804,6 +15332,14 @@ class UiStringsFr extends UiStrings {
   @override
   String get settingVoiceWakeWordSensitivityDescription =>
       'La facilité avec laquelle le mot de réveil se déclenche.';
+
+  @override
+  String get settingVoiceWakeWordFineTuneTitle =>
+      'Réglage fin de la sensibilité';
+
+  @override
+  String get settingVoiceWakeWordFineTuneDescription =>
+      'Ajuste la sensibilité du mot de réveil par petits pas. Augmentez-la si vous devez souvent répéter le mot de réveil, baissez-la s\'il se déclenche par erreur.';
 
   @override
   String get settingVoiceNoiseGateTitle => 'Porte de bruit du mot de réveil';
@@ -15345,6 +15881,12 @@ class UiStringsFr extends UiStrings {
 
   @override
   String get setupQrFlashOn => 'Allumer la lampe torche';
+
+  @override
+  String get setupQrScreenLightOff => 'Éteindre l’éclairage de l’écran';
+
+  @override
+  String get setupQrScreenLightOn => 'Allumer l’éclairage de l’écran';
 
   @override
   String get setupPasswordFirst =>

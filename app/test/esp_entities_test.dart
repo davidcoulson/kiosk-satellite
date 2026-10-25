@@ -282,6 +282,7 @@ void main() {
       'bringToFront',
       'showAppLauncher',
       'showMusicAssistant',
+      'openMusicLibrary',
       'hideCameraView',
       'showCameraView',
       'haNavigate',
@@ -1347,6 +1348,22 @@ void main() {
     expect(executed.map((e) => e.$1).toList(), ['showMusicAssistant']);
   });
 
+  test('the Music Library button needs a source to browse', () async {
+    await settings.set(defs.haUrl, '');
+    await settings.set(defs.sendspinMaUrl, '');
+    var ids = [for (final d in await surface.build()) '${d['objectId']}'];
+    expect(ids, isNot(contains('show_music_library')));
+
+    await settings.set(defs.sendspinMaUrl, '192.168.1.10:8095');
+    await settings.set(defs.sendspinMaToken, 'token');
+    ids = [for (final d in await surface.build()) '${d['objectId']}'];
+    expect(ids, contains('show_music_library'));
+
+    executed.clear();
+    await surface.handleCommand('show_music_library', null);
+    expect(executed.map((e) => e.$1).toList(), ['openMusicLibrary']);
+  });
+
   test('the Restart device button follows the restart support ask', () async {
     // No owner, no Shizuku: no button, the app restart stays.
     var ids = [for (final d in await surface.build()) '${d['objectId']}'];
@@ -1366,6 +1383,90 @@ void main() {
     executed.clear();
     await surface.handleCommand('restart_device', null);
     expect(executed.map((e) => e.$1).toList(), ['rebootDevice']);
+  });
+
+  group('the LED Control Idle entities', () {
+    void lights() => commands.register(
+      Command(
+        name: 'ledStatus',
+        description: 'ledStatus',
+        handler: (_) async => CommandResult.ok({'scene': null}),
+      ),
+    );
+
+    test('are listed only with lights and LED Control on', () async {
+      var ids = [for (final d in await surface.build()) '${d['objectId']}'];
+      expect(ids, isNot(contains('led_idle')));
+      expect(ids, isNot(contains('led_idle_effect')));
+
+      lights();
+      final catalog = await surface.build();
+      ids = [for (final d in catalog) '${d['objectId']}'];
+      expect(ids, containsAll(['led_idle', 'led_idle_effect']));
+      final light = catalog.firstWhere((d) => d['objectId'] == 'led_idle');
+      expect(light['type'], 'light');
+      expect(light['name'], 'LED Control Idle');
+      expect(light['colorCapable'], true);
+      expect(light['category'], 1);
+      final effect = catalog.firstWhere(
+        (d) => d['objectId'] == 'led_idle_effect',
+      );
+      expect(effect['name'], 'LED Control Idle Effect');
+      expect(effect['options'], ['Solid', 'Breathing']);
+
+      await settings.set(defs.ledEnabled, false);
+      ids = [for (final d in await surface.build()) '${d['objectId']}'];
+      expect(ids, isNot(contains('led_idle')));
+      expect(ids, isNot(contains('led_idle_effect')));
+    });
+
+    test('the light drives the Idle group and reports it back', () async {
+      lights();
+      await surface.build();
+      await attach();
+      Object? led() => pushed.lastWhere((p) => p.$1 == 'led_idle').$2;
+      expect(led(), {
+        'on': false,
+        'brightness': 0.1,
+        'red': 1.0,
+        'green': 1.0,
+        'blue': 1.0,
+      });
+
+      await surface.handleCommand('led_idle', {
+        'on': true,
+        'brightness': 0.52,
+        'red': 1.0,
+        'green': 0.5,
+        'blue': 0.0,
+      });
+      expect(settings.get(defs.ledIdleEnabled), isTrue);
+      expect(settings.get(defs.ledIdleBrightness), 50);
+      expect(settings.get(defs.ledIdleLightColor), '255,128,0');
+      expect(led(), {
+        'on': true,
+        'brightness': 0.5,
+        'red': 1.0,
+        'green': 128 / 255,
+        'blue': 0.0,
+      });
+
+      // Dimmed all the way down, the lights still show at the lowest step.
+      await surface.handleCommand('led_idle', {'brightness': 0.0});
+      expect(settings.get(defs.ledIdleBrightness), 5);
+
+      await surface.handleCommand('led_idle', {'on': false});
+      expect(settings.get(defs.ledIdleEnabled), isFalse);
+    });
+
+    test('the effect select speaks in labels, stores the value', () async {
+      lights();
+      await surface.build();
+      await surface.handleCommand('led_idle_effect', 'Breathing');
+      expect(settings.get(defs.ledIdleStyle), 'breathe');
+      await surface.handleCommand('led_idle_effect', 'solid');
+      expect(settings.get(defs.ledIdleStyle), 'solid');
+    });
   });
 
   test('IPv6 leads with the routable address, without its scope id', () async {
@@ -1650,6 +1751,142 @@ void main() {
         pushed.lastWhere((p) => p.$1 == 'update').$2 as Map<String, Object?>;
     expect(state['inProgress'], true);
     expect(state['progress'], closeTo(42, 1e-9));
+  });
+
+  group('Firmware entity', () {
+    var systemStatus = <String, Object?>{};
+
+    setUp(() {
+      systemStatus = {
+        'supported': true,
+        'currentVersion': '2026.10.4',
+        'availableVersion': '2026.10.5',
+        'availableNotes': '# Version 2026.10.5\n\n- **A fix.** Details.',
+        'releaseUrl':
+            'https://github.com/jxlarrea/lineageos-echo-kiosk-satellite/releases/tag/biscuit-2026.10.5',
+        'state': 'idle',
+        'progress': null,
+        'title': 'LineageOS for the Echo Dot',
+      };
+      commands.register(
+        Command(
+          name: 'getSystemUpdateStatus',
+          description: 'stub',
+          handler: (_) async => CommandResult.ok(systemStatus),
+        ),
+      );
+      for (final name in ['installSystemUpdate', 'checkSystemUpdateNow']) {
+        commands.register(
+          Command(
+            name: name,
+            description: 'stub',
+            handler: (p) async {
+              executed.add((name, Map<String, Object?>.from(p)));
+              return const CommandResult.ok(null);
+            },
+          ),
+        );
+      }
+    });
+
+    Future<Map<String, Object?>> firmwareState() async {
+      await surface.build();
+      await attach();
+      pushed.clear();
+      bus.publish(const SystemUpdateStateChanged());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      return pushed.lastWhere((p) => p.$1 == 'firmware').$2
+          as Map<String, Object?>;
+    }
+
+    test('is listed only where the image updates itself', () async {
+      final supported = systemStatus;
+      systemStatus = {'supported': false};
+      var ids = (await surface.build()).map((e) => e['objectId']);
+      expect(ids, isNot(contains('firmware')));
+      systemStatus = supported;
+      final catalog = await surface.build();
+      final firmware = catalog.singleWhere((e) => e['objectId'] == 'firmware');
+      expect(firmware['type'], 'update');
+      expect(firmware['name'], 'Firmware');
+      expect(firmware['deviceClass'], 'firmware');
+      ids = catalog.map((e) => e['objectId']);
+      expect(ids, contains('update'));
+    });
+
+    test('install and check reach the system update commands', () async {
+      await surface.build();
+      await attach();
+      executed.clear();
+      await surface.handleCommand('firmware', 'install');
+      await surface.handleCommand('firmware', 'check');
+      expect(executed.map((e) => e.$1).toList(), [
+        'installSystemUpdate',
+        'checkSystemUpdateNow',
+      ]);
+    });
+
+    test('carries the versions, the notes and the release page', () async {
+      final state = await firmwareState();
+      expect(state['current'], '2026.10.4');
+      expect(state['latest'], '2026.10.5');
+      expect(state['title'], 'LineageOS for the Echo Dot');
+      expect(state['summary'], '# Version 2026.10.5\n\n- **A fix.** Details.');
+      expect(state['url'], systemStatus['releaseUrl']);
+      expect(state['inProgress'], false);
+      expect(state.containsKey('progress'), isFalse);
+    });
+
+    // A Dot on the CM14.1 image: its updater has nothing newer, the new
+    // image installs by hand.
+    test('a new image that installs by hand shows with its guide', () async {
+      const guide =
+          'https://github.com/jxlarrea/lineageos-echo-kiosk-satellite/blob/main/docs/echo-dot.md#moving-from-the-cm141-image';
+      systemStatus
+        ..['currentVersion'] = '2026.10.5'
+        ..['availableVersion'] = null
+        ..['availableNotes'] = null
+        ..['releaseUrl'] =
+            'https://github.com/jxlarrea/lineageos-biscuit-kiosk-satellite/releases/tag/2026.10.5'
+        ..['manualVersion'] = '2026.10.6'
+        ..['manualNotes'] = '- **LineageOS 18.1.** Details.'
+        ..['manualUrl'] = guide;
+      final state = await firmwareState();
+      expect(state['current'], '2026.10.5');
+      expect(state['latest'], '2026.10.6');
+      expect(state['url'], guide);
+      expect(
+        state['summary'],
+        'Version 2026.10.6 is a new image that installs by hand, not as an '
+        'update. Follow the [guide]($guide).\n\n'
+        '- **LineageOS 18.1.** Details.',
+      );
+    });
+
+    test('an update the updater can install comes first', () async {
+      systemStatus['manualVersion'] = '2026.10.6';
+      systemStatus['manualUrl'] = 'https://example.com/guide';
+      final state = await firmwareState();
+      expect(state['latest'], '2026.10.5');
+      expect(state['url'], systemStatus['releaseUrl']);
+    });
+
+    test('a download carries a percentage, the install none', () async {
+      systemStatus['state'] = 'downloading';
+      systemStatus['progress'] = 0.42;
+      var state = await firmwareState();
+      expect(state['inProgress'], true);
+      expect(state['progress'], closeTo(42, 1e-9));
+      systemStatus['state'] = 'installing';
+      systemStatus['progress'] = null;
+      bus.publish(const SystemUpdateStateChanged());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      state =
+          pushed.lastWhere((p) => p.$1 == 'firmware').$2
+              as Map<String, Object?>;
+      expect(state['inProgress'], true);
+      expect(state.containsKey('progress'), isFalse);
+    });
   });
 
   // Issue #819: Home Assistant shows the summary as the full release

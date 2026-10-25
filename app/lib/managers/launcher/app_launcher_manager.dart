@@ -135,6 +135,18 @@ class AppLauncherManager extends Manager with WidgetsBindingObserver {
   List<LauncherApp> get shown =>
       _settings.get(defs.kioskEnabled) && !_unlocked ? kioskApps : apps;
 
+  /// The apps a plugin may open (issue #1122): the launcher's apps, the
+  /// kiosk's apps while kiosk mode is on and none while the launcher is
+  /// off, the Apps action is not allowed or Lockdown Mode holds.
+  List<LauncherApp> get pluginApps {
+    if (!_settings.get(defs.launcherEnabled) ||
+        _settings.get(defs.lockdownEnabled)) {
+      return const [];
+    }
+    if (!_settings.get(defs.kioskEnabled)) return apps;
+    return _settings.get(defs.kioskAllowApps) ? kioskApps : const [];
+  }
+
   /// Opens the launcher. [unlocked] is the full menu's open, which shows
   /// every app even while kiosk mode is on.
   void open({bool unlocked = false}) {
@@ -233,6 +245,37 @@ class AppLauncherManager extends Manager with WidgetsBindingObserver {
           await commands.execute('stopScreensaver', const {});
           open();
           return const CommandResult.ok();
+        },
+      ),
+    );
+
+    commands.register(
+      Command(
+        name: 'pluginLauncherApps',
+        description:
+            'The launcher apps a plugin may open: [{package, label}]. '
+            'Only the kiosk mode apps while kiosk mode is on and none '
+            'while the launcher is off or Lockdown Mode holds.',
+        handler: (_) async =>
+            CommandResult.ok([for (final app in pluginApps) app.toJson()]),
+      ),
+    );
+
+    commands.register(
+      Command(
+        name: 'pluginLaunchApp',
+        description:
+            'Open a launcher app for a plugin. Fails for a package '
+            'pluginLauncherApps does not list.',
+        params: const {'package': 'Android package from pluginLauncherApps'},
+        handler: (p) async {
+          final package = '${p['package'] ?? ''}'.trim();
+          if (!pluginApps.any((app) => app.package == package)) {
+            return const CommandResult.fail(
+              'the app is not one the launcher offers',
+            );
+          }
+          return commands.execute('launchApp', {'package': package});
         },
       ),
     );

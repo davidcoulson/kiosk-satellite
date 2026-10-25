@@ -153,9 +153,12 @@ void main() {
         'openCalendar': {'view': 'week', 'date': '2026-10-22'},
         'loadDashboard': {'dashboard': 'lovelace'},
         'haNavigate': {'path': 'lovelace/home'},
+        'launchApp': {'package': 'com.example.music'},
       };
+      String target(String name) =>
+          name == 'launchApp' ? 'pluginLaunchApp' : name;
       for (final name in PluginHostApi.controlNames) {
-        register(name, (p) async {
+        register(target(name), (p) async {
           expect(
             p,
             name == 'screenOff' ? {'prompt': false} : arguments[name] ?? {},
@@ -166,7 +169,7 @@ void main() {
         expect(result['ok'], true, reason: name);
         expect(result.toString(), isNot(contains('secret')));
       }
-      expect(executed, PluginHostApi.controlNames);
+      expect(executed, PluginHostApi.controlNames.map(target));
       api.close(session);
       expect((await read('stopScreensaver'))['ok'], false);
     },
@@ -235,6 +238,13 @@ void main() {
         'haNavigate': [
           {'path': '../config'},
           {'path': 'https://evil.test'},
+        ],
+        'launchApp': [
+          {},
+          {'package': ''},
+          {'package': 'music'},
+          {'package': 'com.example/.Main'},
+          {'package': 'com.example', 'activity': 'Main'},
         ],
         'showLinkPage': [
           {'url': 'javascript:alert(1)'},
@@ -550,6 +560,42 @@ void main() {
     ]);
     configured = false;
     expect((await read('getDashboards'))['ok'], false);
+  });
+
+  test('launcher apps list and open only through the launcher', () async {
+    api.open({
+      ...session,
+      'capabilities': ['host.read', 'host.control'],
+    });
+    register(
+      'pluginLauncherApps',
+      (_) async => const CommandResult.ok([
+        {'package': 'com.example.music', 'label': 'Music', 'icon': 'x'},
+      ]),
+    );
+    expect((await read('getLauncherApps'))['data'], [
+      {'package': 'com.example.music', 'label': 'Music'},
+    ]);
+    register('installedApps', (_) async => const CommandResult.ok([]));
+    expect((await read('installedApps'))['ok'], false);
+    register('launchApp', (_) async => const CommandResult.ok());
+    register(
+      'pluginLaunchApp',
+      (p) async => p['package'] == 'com.example.music'
+          ? const CommandResult.ok()
+          : const CommandResult.fail('the app is not one the launcher offers'),
+    );
+    final opened = await read(
+      'launchApp',
+      params: {'package': 'com.example.music'},
+    );
+    expect(opened, {'ok': true});
+    final refused = await read(
+      'launchApp',
+      params: {'package': 'com.example.other'},
+    );
+    expect(refused['ok'], false);
+    expect(executed, isNot(contains('launchApp')));
   });
 
   test('haNavigate takes queries and reports arriving on the view', () async {
@@ -1585,6 +1631,41 @@ void main() {
       await settings.set(defs.voiceSkin, 'plugin:another');
       await settle();
       expect((sent.single['payload'] as Map)['selected'], false);
+    });
+
+    test('a skin picked for Assistant 2 draws only its turns', () async {
+      register(
+        'voiceStatus',
+        (_) async => const CommandResult.ok({'enabled': true, 'state': 'idle'}),
+      );
+      subscribe('voice.skin');
+      subscribe('voice.overlay');
+      await settings.set(defs.voiceSkin2, 'plugin:example');
+      await settle();
+      // Nothing shows: picked for either assistant reads as selected.
+      expect((sent.single['payload'] as Map)['selected'], true);
+      sent.clear();
+
+      view.value = const AssistView(phase: AssistPhase.listening);
+      await settle();
+      expect(sent.map((e) => e['event']), ['voice.skin', 'voice.overlay']);
+      expect((sent.first['payload'] as Map)['selected'], false);
+      expect(
+        ((await read('getVoiceState'))['data'] as Map)['skinSelected'],
+        false,
+      );
+      view.value = AssistView.hidden;
+      await settle();
+      sent.clear();
+
+      // Assistant 2's turn: selected before the overlay shows.
+      view.value = const AssistView(phase: AssistPhase.listening, assistant: 2);
+      await settle();
+      expect(sent.map((e) => e['event']), ['voice.overlay']);
+      expect(
+        ((await read('getVoiceState'))['data'] as Map)['skinSelected'],
+        true,
+      );
     });
 
     test('a skin follows the Appearance settings', () async {

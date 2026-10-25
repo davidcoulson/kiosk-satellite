@@ -353,12 +353,15 @@ function directoryRow(entry) {
   meta.append(...stats.children);
   text.append(meta);
   if (entry.description) text.append(element('div', entry.description, 'desc plugin-directory-description'));
+  if (entry.needsAppVersion) text.append(element('div', t('pluginNeedsAppVersion', { version: entry.needsAppVersion }), 'desc plugin-directory-needs'));
   let action;
   if (entry.updateAvailable) {
     action = element('button', pluginText('Update'), 'btn-ghost');
     action.onclick = (event) => { event.stopPropagation(); installListed(entry, true, action); };
   } else if (entry.installed) {
     action = element('span', pluginText('Installed'), 'plugin-directory-installed');
+  } else if (entry.needsAppVersion) {
+    action = element('span');
   } else {
     action = iconButton(pluginText('Install'), 'M12 5v14M5 12h14');
     action.onclick = (event) => { event.stopPropagation(); installListed(entry, false, action); };

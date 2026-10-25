@@ -649,7 +649,9 @@ class RemoteManager extends Manager {
     // Deliberately public (issue #75): the point of a health check is a
     // monitor polling it every minute, and a monitor cannot do a login
     // dance around a 7-day token. Read-only hardware facts; no settings,
-    // no secrets, no page content.
+    // no secrets, no page content. Any origin may read it (issue #1128),
+    // so a static page can list kiosks by name and version. A plain GET
+    // needs no preflight.
     if (path == 'api/health' && request.method == 'GET') return _health();
 
     // Fleet Management's public face, for a kiosk that has no token here
@@ -912,15 +914,18 @@ class RemoteManager extends Manager {
       commands.execute('isScreenOn', const {}),
       commands.execute('getBrightness', const {}),
       commands.execute('getNetworkLink', const {}),
+      commands.execute('fleetIdentity', const {}),
     ]);
     final device = results[0];
     final details = results[1];
     final screenOn = results[2];
     final brightness = results[3];
     final link = results[4];
+    final fleet = results[5];
     final info = (device.data as Map?)?.cast<String, Object?>() ?? const {};
     final det = (details.data as Map?)?.cast<String, Object?>() ?? const {};
-    return _json(200, {
+    final identity = (fleet.data as Map?)?.cast<String, Object?>() ?? const {};
+    final body = {
       'name': info['name'],
       'model': info['model'],
       'brand': det['brand'],
@@ -950,7 +955,19 @@ class RemoteManager extends Manager {
       // Seconds. `network` is null while offline; its clock starts at app
       // start at the earliest (see DeviceDetails.uptime).
       'uptime': info['uptime'],
-    });
+      // Fleet Management: whether this kiosk leads a fleet and the name of
+      // the leader it follows, null when it follows none (issue #1128).
+      'leader': identity['leader'],
+      'follows': identity['follows'],
+    };
+    return Response(
+      200,
+      body: jsonEncode(body),
+      headers: {
+        'content-type': 'application/json',
+        'access-control-allow-origin': '*',
+      },
+    );
   }
 
   /// What the device is doing, as the admin's dashboard draws it.
@@ -1503,7 +1520,7 @@ class RemoteManager extends Manager {
       FleetChanged() => {'fleet'},
       FleetSyncChanged() => {'fleetsync'},
       IntercomStateChanged() => {'intercom'},
-      UpdateStateChanged() => {'update'},
+      UpdateStateChanged() || SystemUpdateStateChanged() => {'update'},
       BluetoothLinksChanged() => {'bluetooth'},
       AudioDevicesChanged() => {'audio'},
       ActivityAttached() || AmbientDisplayChanged() => {'service'},

@@ -519,6 +519,31 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
   /// report it and system-value observer events are ignored.
   double? _overrideLevel;
 
+  /// The barcode scanner's screen light is up (issue #1148): the window
+  /// override holds full brightness on top of everything else, and
+  /// [_overrideLevel] only records what comes back when it goes.
+  bool _scanLight = false;
+
+  /// Light the screen at full brightness for the barcode scanner, or put
+  /// back what it covered. Only the window override, so the system
+  /// setting, the brightness entity and adaptive brightness stay where
+  /// they are, and writes made meanwhile land underneath it.
+  Future<void> holdScanLight(bool on) async {
+    if (_scanLight == on) return;
+    _scanLight = on;
+    try {
+      if (on) {
+        await ScreenBrightness().setApplicationScreenBrightness(1.0);
+      } else if (_overrideLevel case final level?) {
+        await ScreenBrightness().setApplicationScreenBrightness(level);
+      } else {
+        await ScreenBrightness().resetApplicationScreenBrightness();
+      }
+    } catch (e) {
+      log.warn(name, 'scan light ${on ? 'on' : 'off'} failed: $e');
+    }
+  }
+
   void _logBrightnessScale(Map<Object?, Object?>? range) {
     if (range == null) return;
     log.info(name, 'brightness scale ${range['min']}..${range['max']}');
@@ -977,16 +1002,23 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
     try {
       if (await _brightness.invokeMethod<bool>('set', {'level': clamped}) ==
           true) {
-        // Drop any app-window override so the system value shows through.
-        try {
-          await ScreenBrightness().resetApplicationScreenBrightness();
-        } catch (_) {}
+        // Drop any app-window override so the system value shows through,
+        // unless the scanner's light is holding it.
         _overrideLevel = null;
+        if (!_scanLight) {
+          try {
+            await ScreenBrightness().resetApplicationScreenBrightness();
+          } catch (_) {}
+        }
         return true;
       }
     } catch (_) {}
     // No grant: the window override still visibly dims the fullscreen
     // kiosk, it just cannot move the system slider with it.
+    if (_scanLight) {
+      _overrideLevel = clamped;
+      return true;
+    }
     try {
       await ScreenBrightness().setApplicationScreenBrightness(clamped);
       _overrideLevel = clamped;
@@ -999,6 +1031,10 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
 
   /// Restore OS-controlled brightness (undoes any app override).
   Future<void> resetBrightness() async {
+    if (_scanLight) {
+      _overrideLevel = null;
+      return;
+    }
     try {
       await ScreenBrightness().resetApplicationScreenBrightness();
       _overrideLevel = null;
@@ -1247,11 +1283,21 @@ class ScreenManager extends Manager with WidgetsBindingObserver {
           );
         }
       case 'secure':
-        log.warn(
-          name,
-          'the panel lit on a secured lock screen; the kiosk stays behind '
-          'it until the device is unlocked',
-        );
+        // Show over lock screen puts the kiosk on top of it instead
+        // (discussion #1105).
+        if (_settings.get(defs.screenShowOnLockScreen)) {
+          log.info(
+            name,
+            'the panel lit on a secured lock screen; showing over it',
+          );
+        } else {
+          log.warn(
+            name,
+            'the panel lit on a secured lock screen; the kiosk stays behind '
+            'it until the device is unlocked. Turn on Show over lock screen '
+            'to show it anyway',
+          );
+        }
       case 'no_overlay_grant':
         log.warn(
           name,

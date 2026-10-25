@@ -114,7 +114,7 @@ class CameraOnvifServiceTest {
         val services = response(s, "<tds:GetServices><tds:IncludeCapability>true</tds:IncludeCapability></tds:GetServices>")
         assertTrue(services.body.contains("http://192.168.1.5:8554/onvif/media_service"))
         assertTrue(services.body.contains("SnapshotUri=\"false\""))
-        assertFalse(services.body.contains("events/wsdl"))
+        assertFalse(services.body.contains("<tds:Namespace>${CameraOnvifService.EVENTS}</tds:Namespace>"))
         val info = response(s, "<tds:GetDeviceInformation/>")
         assertTrue(info.body.contains("test&amp;version"))
         val uri = response(s, streamRequest())
@@ -317,6 +317,127 @@ class CameraOnvifServiceTest {
         assertEquals(first.getAttribute("InstanceId"), last.getAttribute("InstanceId"))
         assertTrue(last.getAttribute("MessageNumber").toLong() > first.getAttribute("MessageNumber").toLong())
         assertTrue(response(service(), "<tds:GetScopes/>").body.contains("onvif://www.onvif.org/Profile/Streaming"))
+    }
+
+    private fun event(service: CameraOnvifService, path: String, operation: String, header: String = "") = service.respond(path, """
+        <s:Envelope xmlns:s="${CameraOnvifService.SOAP}" xmlns:tev="${CameraOnvifService.EVENTS}"
+          xmlns:wsnt="${CameraOnvifService.NOTIFICATION}">
+          <s:Header>$header</s:Header><s:Body>$operation</s:Body>
+        </s:Envelope>
+    """.trimIndent().toByteArray(), "192.168.1.5", 8554)
+
+    private fun subscribe(service: CameraOnvifService, termination: String = "PT60S"): String {
+        val created = event(service, "/onvif/event_service",
+            "<tev:CreatePullPointSubscription><tev:InitialTerminationTime>$termination</tev:InitialTerminationTime></tev:CreatePullPointSubscription>")
+        assertEquals("200 OK", created.status)
+        val address = CameraOnvifService.parse(created.body.toByteArray())
+            .getElementsByTagNameNS(CameraOnvifService.ADDRESSING, "Address").item(0).textContent
+        return java.net.URI(address).path
+    }
+
+    private fun pull(service: CameraOnvifService, path: String, timeout: String = "PT0S") = event(service, path,
+        "<tev:PullMessages><tev:Timeout>$timeout</tev:Timeout><tev:MessageLimit>10</tev:MessageLimit></tev:PullMessages>")
+
+    @Test fun eventServiceIsListedOnlyWhileMotionEventsAreOn() {
+        val s = service()
+        assertFalse(response(s, "<tds:GetServices/>").body.contains("event_service"))
+        assertEquals("ter:ActionNotSupported: Motion events are off",
+            event(s, "/onvif/event_service", "<tev:GetEventProperties/>").fault)
+        s.updateEvents(true, false)
+        assertTrue(response(s, "<tds:GetServices/>").body.contains("<tds:XAddr>http://192.168.1.5:8554/onvif/event_service</tds:XAddr>"))
+        val capabilities = response(s, "<tds:GetCapabilities/>").body
+        assertTrue(capabilities.indexOf("<tt:Device>") < capabilities.indexOf("<tt:Events>"))
+        assertTrue(capabilities.indexOf("<tt:Events>") < capabilities.indexOf("<tt:Media>"))
+        assertTrue(capabilities.contains("<tt:WSPullPointSupport>true</tt:WSPullPointSupport>"))
+        val only = response(s, "<tds:GetCapabilities><tds:Category>Events</tds:Category></tds:GetCapabilities>").body
+        assertTrue(only.contains("<tt:Events>") && !only.contains("<tt:Device>") && !only.contains("<tt:Media>"))
+        val properties = event(s, "/onvif/event_service", "<tev:GetEventProperties/>").body
+        CameraOnvifService.parse(properties.toByteArray())
+        assertTrue(properties.contains("<tns1:RuleEngine><CellMotionDetector><Motion wstop:topic=\"true\">"))
+        assertTrue(properties.contains("<tns1:VideoSource><MotionAlarm wstop:topic=\"true\">"))
+        assertTrue(properties.contains("<wsa:Action>${CameraOnvifService.EVENTS}/EventPortType/GetEventPropertiesResponse</wsa:Action>"))
+    }
+
+    @Test fun subscriptionsStartWithTheCurrentStateAndGetEveryChange() {
+        val s = service()
+        s.updateEvents(true, true)
+        val path = subscribe(s)
+        val first = pull(s, path).body
+        CameraOnvifService.parse(first.toByteArray())
+        assertTrue(first.contains("tns1:RuleEngine/CellMotionDetector/Motion"))
+        assertTrue(first.contains("tns1:VideoSource/MotionAlarm"))
+        assertEquals(2, Regex("PropertyOperation=\"Initialized\"").findAll(first).count())
+        assertTrue(first.contains("<tt:SimpleItem Name=\"IsMotion\" Value=\"true\"/>"))
+        assertTrue(first.contains("<tt:SimpleItem Name=\"State\" Value=\"true\"/>"))
+        assertFalse(pull(s, path).body.contains("NotificationMessage"))
+        s.updateEvents(true, true)
+        assertFalse(pull(s, path).body.contains("NotificationMessage"))
+        s.updateEvents(true, false)
+        val changed = pull(s, path).body
+        assertEquals(2, Regex("PropertyOperation=\"Changed\"").findAll(changed).count())
+        assertTrue(changed.contains("<tt:SimpleItem Name=\"IsMotion\" Value=\"false\"/>"))
+        assertEquals("200 OK", event(s, path, "<tev:SetSynchronizationPoint/>").status)
+        assertEquals(2, Regex("PropertyOperation=\"Initialized\"").findAll(pull(s, path).body).count())
+    }
+
+    @Test fun pullMessagesWaitsForMotionWithoutBlockingOtherRequests() {
+        val s = service()
+        s.updateEvents(true, false)
+        val path = subscribe(s)
+        pull(s, path)
+        var body = ""
+        val waiter = Thread { body = pull(s, path, "PT10S").body }
+        waiter.start()
+        Thread.sleep(200)
+        assertTrue(waiter.isAlive)
+        assertEquals("200 OK", response(s, "<trt:GetProfiles/>").status)
+        s.updateEvents(true, true)
+        waiter.join(2000)
+        assertFalse(waiter.isAlive)
+        assertTrue(body.contains("PropertyOperation=\"Changed\""))
+        val closing = Thread { body = pull(s, path, "PT10S").body }
+        closing.start()
+        Thread.sleep(200)
+        s.close()
+        closing.join(2000)
+        assertFalse(closing.isAlive)
+    }
+
+    @Test fun subscriptionsRenewUnsubscribeAndExpire() {
+        var now = 1_000_000L
+        val s = CameraOnvifService(
+            1280, 720, 15, 800_000, false, null, "secret",
+            { Base64.getEncoder().encodeToString(it) }, { Base64.getDecoder().decode(it) }, "device-id", "1",
+            clock = { now },
+        )
+        s.updateEvents(true, false)
+        val path = subscribe(s, "PT30S")
+        val renewed = event(s, path, "<wsnt:Renew><wsnt:TerminationTime>PT2M</wsnt:TerminationTime></wsnt:Renew>").body
+        assertTrue(renewed.contains("<wsnt:TerminationTime>${CameraOnvifService.utc(now + 120_000)}</wsnt:TerminationTime>"))
+        now += 119_000
+        assertEquals("200 OK", pull(s, path).status)
+        now += 200_000
+        assertEquals("ter:InvalidArgVal: Unknown or expired subscription", pull(s, path).fault)
+        val other = subscribe(s)
+        assertEquals("200 OK", event(s, other, "<wsnt:Unsubscribe/>").status)
+        assertNotNull(pull(s, other).fault)
+        val kept = subscribe(s)
+        s.updateEvents(false, false)
+        s.updateEvents(true, false)
+        assertNotNull(pull(s, kept).fault)
+        assertEquals(60_000L, CameraOnvifService.duration("PT1M"))
+        assertEquals(90_500L, CameraOnvifService.duration("PT1M30.5S"))
+        assertEquals(86_400_000L, CameraOnvifService.duration("P1D"))
+        assertNull(CameraOnvifService.duration("PT"))
+        assertEquals(0L, CameraOnvifService.instant("1970-01-01T00:00:00Z"))
+    }
+
+    @Test fun eventRequestsNeedAuthentication() {
+        val s = service(auth = true)
+        s.updateEvents(true, false)
+        assertEquals("400 Bad Request", event(s, "/onvif/event_service", "<tev:GetEventProperties/>").status)
+        assertEquals("200 OK", event(s, "/onvif/event_service", "<tev:GetEventProperties/>", token()).status)
+        assertEquals("404 Not Found", event(s, "/onvif/subscription/x", "<tev:PullMessages/>").status)
     }
 
     private fun streamRequest(profile: String = "camera") = "<trt:GetStreamUri><trt:StreamSetup><tt:Stream>RTP-Unicast</tt:Stream>" +

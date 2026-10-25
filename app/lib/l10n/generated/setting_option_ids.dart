@@ -347,6 +347,10 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "default": "voiceVadDefault",
     "voice-only": "voiceSkinVoiceOnly"
   },
+  "voice.skin_2": {
+    "default": "voiceVadDefault",
+    "voice-only": "voiceSkinVoiceOnly"
+  },
   "alarms.snooze_minutes": {
     "5": "alarmsOption5Minutes",
     "10": "alarmsOption10Minutes",
@@ -482,6 +486,26 @@ const settingOptionMessageIds = <String, Map<String, String>>{
   },
   "voice.amazon_locale": {
     "": "voiceOptionAppLanguage"
+  },
+  "camera.onvif.events_source": {
+    "camera": "cameraOnvifEventsSourceCamera",
+    "person": "cameraOnvifEventsSourcePerson",
+    "entity": "cameraOnvifEventsSourceEntity"
+  },
+  "library.idle_close_minutes": {
+    "0": "calendarIdleNever",
+    "1": "calendarIdle1Minute",
+    "2": "calendarIdle2Minutes",
+    "5": "alarmsOption5Minutes",
+    "10": "alarmsOption10Minutes"
+  },
+  "library.source": {
+    "": "screenAudioAutomatic"
+  },
+  "library.grid_density": {
+    "comfortable": "libraryDensityComfortable",
+    "standard": "libraryDensityStandard",
+    "compact": "libraryDensityCompact"
   }
 };
 const settingPlaceholderMessageIds = <String, String>{

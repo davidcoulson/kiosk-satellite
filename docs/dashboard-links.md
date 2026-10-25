@@ -35,6 +35,7 @@ A `ks://` link runs the same action a [gesture](gestures.md) can, with the same 
 | `ks://alarms` | Opens the full screen [alarm](alarms.md) list. |
 | `ks://calendar` | Opens the [calendar](calendar.md) on its default view. |
 | `ks://calendar/<view>` | Opens the calendar on `day`, `week`, `month` or `schedule`. |
+| `ks://music-library` | Opens the [Music Library](music-library.md). It does nothing until a source is set up. |
 | `ks://hold` | Toggles hold mode, which pins the current view. |
 | `ks://theater` | Toggles [theater mode](theater.md). |
 | `ks://theater/on`, `ks://theater/off` | Turns it on or off. |

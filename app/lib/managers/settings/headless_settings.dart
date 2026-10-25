@@ -47,6 +47,7 @@ class HeadlessSettings {
     // Device: the on-device interface and the WebView renderer.
     defs.uiTheme.key,
     defs.uiScale.key,
+    defs.uiToastsHidden.key,
     defs.disableImpeller.key,
     defs.legacyWebView.key,
     defs.remoteEnabled.key,
@@ -94,6 +95,7 @@ class HeadlessSettings {
               'Floating Player',
               'Now Playing',
               'Lyrics',
+              'Music Library',
             }.contains(def.subpage) ||
             def.section == 'Kiosk menu';
       case 'ESPHome':

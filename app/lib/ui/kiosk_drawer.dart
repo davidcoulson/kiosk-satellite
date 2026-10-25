@@ -175,6 +175,7 @@ class KioskDrawer extends StatelessWidget {
                                     if (!result.ok && context.mounted) {
                                       showToast(
                                         context,
+                                        source: 'plugins',
                                         title: l10n(
                                           context,
                                         ).drawerPluginActionErrorTitle,
@@ -319,6 +320,27 @@ class KioskDrawer extends StatelessWidget {
                                     onClose();
                                     c.commands.execute(
                                       'openCalendar',
+                                      const {},
+                                    );
+                                  },
+                                ),
+                              // The music library, the same way, once some
+                              // source is set up to browse.
+                              if (c.settings.get(defs.libraryMenu) &&
+                                  c.musicLibrary.available.isNotEmpty &&
+                                  (!restricted ||
+                                      c.settings.get(
+                                        defs.kioskAllowMusicLibrary,
+                                      )))
+                                _item(
+                                  divided: sep(),
+                                  context,
+                                  Icons.library_music_outlined,
+                                  l10n(context).libraryTitle,
+                                  () {
+                                    onClose();
+                                    c.commands.execute(
+                                      'openMusicLibrary',
                                       const {},
                                     );
                                   },
@@ -929,13 +951,21 @@ class KioskDrawer extends StatelessWidget {
   Future<void> _checkNow(BuildContext context) async {
     final strings = l10n(context);
     final overlay = Overlay.of(context, rootOverlay: true);
-    showToastIn(overlay, title: strings.drawerUpdateChecking, sticky: true);
+    // Tagged so a turned off Update checks never takes down another toast.
+    showToastIn(
+      overlay,
+      source: 'updates',
+      title: strings.drawerUpdateChecking,
+      sticky: true,
+      tag: 'update-check',
+    );
     final reachable = await c.update.check();
-    dismissToast();
+    dismissToast(tag: 'update-check');
     if (c.update.available.value != null) return;
     if (reachable) {
       showToastIn(
         overlay,
+        source: 'updates',
         title: strings.drawerUpdateCurrent,
         message: strings.drawerUpdateCurrentHelp,
         kind: ToastKind.success,
@@ -943,6 +973,7 @@ class KioskDrawer extends StatelessWidget {
     } else {
       showToastIn(
         overlay,
+        source: 'updates',
         title: strings.drawerUpdateCheckFailed,
         message: strings.drawerUpdateOffline,
         kind: ToastKind.error,

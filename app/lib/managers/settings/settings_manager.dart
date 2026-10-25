@@ -161,7 +161,7 @@ class SettingsManager extends Manager {
                 ...pluginScreensavers().keys,
                 if (isPluginScreensaver(get(def))) get(def) as String,
               },
-              if (def.key == voiceSkin.key) ...{
+              if (isVoiceSkinSetting(def.key)) ...{
                 ...pluginVoiceSkins().keys,
                 if (isPluginVoiceSkin(get(def))) get(def) as String,
               },
@@ -182,7 +182,7 @@ class SettingsManager extends Manager {
                       (isPluginScreensaver(value)
                           ? 'Unavailable plugin screensaver'
                           : null)
-                : def.key == voiceSkin.key
+                : isVoiceSkinSetting(def.key)
                 ? pluginVoiceSkins()[value] ??
                       (isPluginVoiceSkin(value)
                           ? 'Unavailable plugin skin'
@@ -660,6 +660,30 @@ class SettingsManager extends Manager {
         '${sendspinFullscreenLayout.key} ($horizontal)',
       );
     }
+    // Full screen (issue #1076) split into a switch per bar (issue #1102).
+    // A kiosk that showed both bars keeps showing them.
+    final fullScreenKey = '${_prefix}screen.full_screen';
+    final fullScreen = _prefs.get(fullScreenKey);
+    if (fullScreen is bool) {
+      for (final def in [screenHideStatusBar, screenHideNavigationBar]) {
+        if (_prefs.get(_prefix + def.key) == null) {
+          await _prefs.setBool(_prefix + def.key, fullScreen);
+        }
+      }
+      await _prefs.remove(fullScreenKey);
+      log.info(name, 'migrated screen.full_screen ($fullScreen)');
+    }
+    // Assistant 2 got its own skin (issue #1121). Its turns keep the skin
+    // they wore before.
+    const skin2Migration = 'voice.skin_2.migrated';
+    if (internal(skin2Migration).isEmpty) {
+      final skin = _prefs.get(_prefix + voiceSkin.key);
+      if (skin is String && _prefs.get(_prefix + voiceSkin2.key) == null) {
+        await _prefs.setString(_prefix + voiceSkin2.key, skin);
+        log.info(name, 'migrated ${voiceSkin2.key} ($skin)');
+      }
+      await setInternal(skin2Migration, '1');
+    }
   }
 
   T get<T>(SettingDef<T> def) {
@@ -941,6 +965,17 @@ class SettingsManager extends Manager {
       key = sendspinFullscreenLayout.key;
       value = sendspinLayoutFromSwitch(value);
     }
+    // A backup, a fleet leader or an API caller from before Full screen
+    // became a switch per bar still sends it; it sets both.
+    if (key == 'screen.full_screen' && value is bool) {
+      await setFromJson(
+        screenHideStatusBar.key,
+        value,
+        source: source,
+        batch: batch,
+      );
+      key = screenHideNavigationBar.key;
+    }
     final def = defByKey(key);
     if (def == null) return false;
     // A backup, a fleet leader or an API caller from before Wake to
@@ -963,7 +998,7 @@ class SettingsManager extends Manager {
                       isCameraStreamResolution(value)) ||
                   (def.key == screensaverMode.key &&
                       isPluginScreensaver(value)) ||
-                  (def.key == voiceSkin.key && isPluginVoiceSkin(value))):
+                  (isVoiceSkinSetting(def.key) && isPluginVoiceSkin(value))):
         await set(def, value, source: source);
       default:
         return false;
@@ -1043,11 +1078,11 @@ class SettingsManager extends Manager {
                 isPluginScreensaver(get(def)) &&
                 !pluginScreensavers().containsKey(get(def)))
               get(def) as String: 'Unavailable plugin screensaver',
-            if (def.key == voiceSkin.key) ...pluginVoiceSkins(),
+            if (isVoiceSkinSetting(def.key)) ...pluginVoiceSkins(),
             if (def.key == voiceAmazonLocale.key)
               for (final locale in PryonCatalog.locales)
                 locale: PryonCatalog.localeLabel(locale),
-            if (def.key == voiceSkin.key &&
+            if (isVoiceSkinSetting(def.key) &&
                 isPluginVoiceSkin(get(def)) &&
                 !pluginVoiceSkins().containsKey(get(def)))
               get(def) as String: 'Unavailable plugin skin',

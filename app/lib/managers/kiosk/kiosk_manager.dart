@@ -17,14 +17,20 @@ import '../settings/settings_manager.dart';
 import 'package:kiosk_satellite/core/lifecycle.dart';
 import '../wake_word/system_permissions.dart' show SystemPermissions;
 
-/// Whether the status and navigation bars stay hidden: the Full screen
-/// setting, or kiosk mode and lockdown, which always hide them (a visible
-/// navigation bar or taskbar is a way out of the kiosk). main.dart picks the
-/// system UI mode from it and the native side gets it as "fullScreen".
-bool hidesSystemBars(SettingsManager settings) =>
-    settings.get(defs.screenFullScreen) ||
-    settings.get(defs.kioskEnabled) ||
-    settings.get(defs.lockdownEnabled);
+/// Whether the status bar stays hidden: its Screen setting, or kiosk mode
+/// and lockdown, which always hide both bars (a visible navigation bar or
+/// taskbar is a way out of the kiosk, and the status bar opens the shade).
+/// main.dart picks the system UI mode from these and the native side gets
+/// them as "hideStatusBar" and "hideNavigationBar".
+bool hidesStatusBar(SettingsManager settings) =>
+    settings.get(defs.screenHideStatusBar) || _kioskHidesBars(settings);
+
+/// Whether the navigation bar stays hidden; see [hidesStatusBar].
+bool hidesNavigationBar(SettingsManager settings) =>
+    settings.get(defs.screenHideNavigationBar) || _kioskHidesBars(settings);
+
+bool _kioskHidesBars(SettingsManager settings) =>
+    settings.get(defs.kioskEnabled) || settings.get(defs.lockdownEnabled);
 
 /// Lockdown: keeping the device in the app and the app on the device.
 ///
@@ -762,7 +768,9 @@ class KioskManager extends Manager with WidgetsBindingObserver {
           !e.key.startsWith('home.') &&
           e.key != defs.browserCutoutMode.key &&
           e.key != defs.screenOrientation.key &&
-          e.key != defs.screenFullScreen.key) {
+          e.key != defs.screenHideStatusBar.key &&
+          e.key != defs.screenHideNavigationBar.key &&
+          e.key != defs.screenShowOnLockScreen.key) {
         return;
       }
       // Lockdown flips on: reclaim the foreground first, so an app opened
@@ -1048,7 +1056,9 @@ class KioskManager extends Manager with WidgetsBindingObserver {
       // including the force=false bundle on exit (the window keeps its shape).
       'cutout': _settings.get(defs.browserCutoutMode),
       'orientation': _settings.get(defs.screenOrientation),
-      'fullScreen': hidesSystemBars(_settings),
+      'hideStatusBar': hidesStatusBar(_settings),
+      'hideNavigationBar': hidesNavigationBar(_settings),
+      'showOnLockScreen': _settings.get(defs.screenShowOnLockScreen),
     });
   }
 

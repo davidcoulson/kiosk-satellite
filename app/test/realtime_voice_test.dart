@@ -466,6 +466,165 @@ void main() {
       }
     });
 
+    group('the device rides script calls', () {
+      late List<Map<String, Object?>> calls;
+      late Map<String, Object?> Function(Map<String, Object?> args) answer;
+
+      MockClient server() => MockClient((request) async {
+        final json = (jsonDecode(request.body) as Map).cast<String, Object?>();
+        final method = '${json['method']}';
+        if (method.startsWith('notifications/')) return http.Response('', 202);
+        final params = ((json['params'] ?? {}) as Map).cast<String, Object?>();
+        final result = switch (method) {
+          'tools/list' => {
+            'tools': [
+              for (final name in [
+                'script__probe',
+                'assist__script__probe',
+                'assist__HassTurnOn',
+                'HassTurnOn',
+              ])
+                {
+                  'name': name,
+                  'description': '',
+                  'inputSchema': {
+                    'type': 'object',
+                    'properties': {
+                      'room': {'type': 'string'},
+                      McpClient.scriptDeviceArgument: {'type': 'string'},
+                    },
+                    'required': ['room', McpClient.scriptDeviceArgument],
+                  },
+                },
+            ],
+          },
+          'tools/call' => answer(
+            (calls..add(params)).last['arguments']! as Map<String, Object?>,
+          ),
+          _ => <String, Object?>{},
+        };
+        return http.Response(
+          jsonEncode({'jsonrpc': '2.0', 'id': json['id'], 'result': result}),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+
+      Map<String, Object?> text(String text, {bool error = false}) => {
+        'content': [
+          {'type': 'text', 'text': text},
+        ],
+        'isError': error,
+      };
+
+      setUp(() {
+        calls = [];
+        answer = (_) => text('done');
+      });
+
+      test('as an argument the model never sees', () async {
+        final mcp = McpClient(
+          url: Uri.parse('http://ha/api/mcp'),
+          client: server(),
+          deviceId: () async => 'dev1',
+        );
+        final tools = {for (final t in await mcp.listTools()) t.name: t};
+        // A script that declares the field gets it from the kiosk.
+        final script = tools['script__probe']!.inputSchema;
+        expect((script['properties']! as Map).keys, ['room']);
+        expect(script['required'], ['room']);
+        // Any other tool is left as the server sent it.
+        expect(
+          (tools['HassTurnOn']!.inputSchema['properties']! as Map).keys,
+          contains(McpClient.scriptDeviceArgument),
+        );
+
+        // The kiosk's device wins over one the model made up.
+        await mcp.callTool('script__probe', {
+          'room': 'Kitchen',
+          McpClient.scriptDeviceArgument: 'made_up',
+        });
+        await mcp.callTool('HassTurnOn', {'name': 'Kitchen'});
+        expect(calls[0]['arguments'], {
+          'room': 'Kitchen',
+          McpClient.scriptDeviceArgument: 'dev1',
+        });
+        expect(calls[1]['arguments'], {'name': 'Kitchen'});
+      });
+
+      test('when the server puts the API name in front', () async {
+        final mcp = McpClient(
+          url: Uri.parse('http://ha/api/mcp'),
+          client: server(),
+          deviceId: () async => 'dev1',
+        );
+        final tools = {for (final t in await mcp.listTools()) t.name: t};
+        final script = tools['assist__script__probe']!.inputSchema;
+        expect((script['properties']! as Map).keys, ['room']);
+        expect(
+          (tools['assist__HassTurnOn']!.inputSchema['properties']! as Map).keys,
+          contains(McpClient.scriptDeviceArgument),
+        );
+
+        await mcp.callTool('assist__script__probe', {'room': 'Kitchen'});
+        await mcp.callTool('assist__HassTurnOn', {'name': 'Kitchen'});
+        expect(calls[0]['arguments'], {
+          'room': 'Kitchen',
+          McpClient.scriptDeviceArgument: 'dev1',
+        });
+        expect(calls[1]['arguments'], {'name': 'Kitchen'});
+      });
+
+      test('not on a server without a device', () async {
+        final mcp = McpClient(
+          url: Uri.parse('http://ha/api/mcp'),
+          client: server(),
+        );
+        final tools = await mcp.listTools();
+        expect(
+          (tools.first.inputSchema['properties']! as Map).keys,
+          contains(McpClient.scriptDeviceArgument),
+        );
+        await mcp.callTool('script__probe', {'room': 'Kitchen'});
+        expect(calls.single['arguments'], {'room': 'Kitchen'});
+      });
+
+      test(
+        'runs the script again without it only when it was refused',
+        () async {
+          answer = (args) => args.containsKey(McpClient.scriptDeviceArgument)
+              ? text(
+                  'Error calling tool: extra keys not allowed @ '
+                  "data['${McpClient.scriptDeviceArgument}']",
+                  error: true,
+                )
+              : text('done');
+          final mcp = McpClient(
+            url: Uri.parse('http://ha/api/mcp'),
+            client: server(),
+            deviceId: () async => 'dev1',
+          );
+          final result = await mcp.callTool('script__probe', {
+            'room': 'Kitchen',
+          });
+          expect(result.text, 'done');
+          expect(result.error, isFalse);
+          expect(calls.last['arguments'], {'room': 'Kitchen'});
+          expect(calls, hasLength(2));
+
+          // A script that failed on its own is never run twice.
+          calls.clear();
+          answer = (_) => text(
+            'Error calling tool: no device ${McpClient.scriptDeviceArgument}',
+            error: true,
+          );
+          final failed = await mcp.callTool('script__probe', {'room': 'Hall'});
+          expect(failed.error, isTrue);
+          expect(calls, hasLength(1));
+        },
+      );
+    });
+
     test('an HTTP error says so', () async {
       final mcp = McpClient(
         url: Uri.parse('http://ha/api/mcp'),
@@ -2104,6 +2263,112 @@ void main() {
           h.backend.emit(const RealtimeSpeechStarted());
           time.flushMicrotasks();
           expect(h.player.flushes, 1);
+          h.session.cancel();
+          time.flushMicrotasks();
+        });
+      });
+
+      /// The cleaned microphone under the speaking voice, chunk by chunk.
+      void underVoice(FakeAsync time, _Harness h, List<int> levels) {
+        for (final level in levels) {
+          time.elapse(const Duration(milliseconds: 80));
+          h.mic.speak(value: level);
+        }
+      }
+
+      /// Measured on an Android Things display (#1130): the canceller
+      /// leaves 3 under the voice and the user talking over it reads 110.
+      _Harness quietUserTalksOver(FakeAsync time, num sensitivity) {
+        final h = _Harness(
+          time,
+          options: RealtimeOptions(
+            talkOverLevel: RealtimeSession.talkOverLevel(sensitivity),
+          ),
+        );
+        h.backend.clientTurns = true;
+        h.wakeAndConnect();
+        h.answer('a1', seconds: 10);
+        time.elapse(RealtimeSession.settleAtLeast);
+        underVoice(time, h, List.filled(36, 3));
+        underVoice(time, h, [110, 110, 110]);
+        h.backend.emit(const RealtimeSpeechStarted());
+        time.flushMicrotasks();
+        underVoice(time, h, [110, 110]);
+        h.backend.emit(const RealtimeSpeechStopped());
+        time.flushMicrotasks();
+        return h;
+      }
+
+      test('a quiet microphone is too quiet at the default sensitivity', () {
+        fakeAsync((time) {
+          final h = quietUserTalksOver(time, 50);
+          expect(h.player.flushes, 0);
+          expect(h.backend.turns, [false]);
+          expect(
+            h.traces,
+            contains(
+              allOf(
+                startsWith('ignored speech too quiet to be the user: '),
+                contains('peak 110, 0 of 3 chunks at 1200'),
+              ),
+            ),
+          );
+          h.session.cancel();
+          time.flushMicrotasks();
+        });
+      });
+
+      test('a higher sensitivity hears a quiet microphone', () {
+        fakeAsync((time) {
+          final h = quietUserTalksOver(time, 90);
+          expect(h.player.flushes, 1);
+          expect(h.backend.interruptions.single.$1, 'a1');
+          expect(h.backend.turns, [true]);
+          expect(h.traces, contains(startsWith('talked over the answer: ')));
+          h.session.cancel();
+          time.flushMicrotasks();
+        });
+      });
+
+      test('the sensitivity keeps 1200 at 50 and spreads on a log scale', () {
+        expect(RealtimeSession.talkOverLevel(50), RealtimeSession.bargeInLevel);
+        expect(RealtimeSession.talkOverLevel(0), 4800);
+        expect(RealtimeSession.talkOverLevel(100), 40);
+        expect(RealtimeSession.talkOverLevel(90), lessThan(110));
+        expect(RealtimeSession.talkOverLevel(-5), 4800);
+        expect(RealtimeSession.talkOverLevel(120), 40);
+      });
+
+      test('echo leaking as loud as a quiet voice never stops the answer', () {
+        // What AEC3 leaves under the voice on a Galaxy Tab S8: 50 to 150,
+        // with bursts of a few hundred the provider takes for speech.
+        fakeAsync((time) {
+          final h = _Harness(time);
+          h.backend.clientTurns = true;
+          h.wakeAndConnect();
+          h.answer('a1', seconds: 10);
+          time.elapse(RealtimeSession.echoSettle);
+          underVoice(time, h, [
+            for (var i = 0; i < 6; i++) ...[60, 90, 140, 70, 120, 300],
+          ]);
+          underVoice(time, h, [350, 420, 380]);
+          h.backend.emit(const RealtimeSpeechStarted());
+          time.flushMicrotasks();
+          underVoice(time, h, [400, 260]);
+          h.backend.emit(const RealtimeSpeechStopped());
+          time.flushMicrotasks();
+          expect(h.player.flushes, 0);
+          expect(h.backend.interruptions, isEmpty);
+          expect(h.backend.turns, [false]);
+          expect(
+            h.traces,
+            contains(
+              allOf(
+                startsWith('ignored speech too quiet to be the user: '),
+                contains('peak 420'),
+              ),
+            ),
+          );
           h.session.cancel();
           time.flushMicrotasks();
         });

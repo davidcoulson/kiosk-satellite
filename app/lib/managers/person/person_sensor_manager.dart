@@ -328,6 +328,7 @@ class PersonSensorManager extends Manager {
         ..add(defs.screensaverDismissOnPerson.key)
         ..add(defs.screensaverDismissOnPersonScreenOffOnly.key)
         ..add(defs.screensaverPostponeOnPerson.key);
+      defs.deviceHiddenOptions[defs.cameraOnvifEventsSource.key] = {'person'};
     }
     await _guardSupport();
 

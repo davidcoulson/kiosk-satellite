@@ -29,15 +29,19 @@ import {
   syncScreenOffAdminNotice,
 } from './notices.js';
 import {
+  TOAST_SOURCES,
   WAKE_SOURCES,
+  decodeToastsHidden,
   decodeWakeSources,
   openImmichNamesPicker,
   openLauncherAppsPicker,
   openMediaBrowser,
+  openToastsPicker,
   openWakeSourcesPicker,
+  toastsShownText,
   wakeSourcesText,
 } from './pickers.js';
-import { loadSettings, refreshRealMacNote, syncSubpages, updateCelestialLocationRow, updateCelestialPermissionRows, updateClockNightAdminRows, updatePersonSensorRows, updateRtspRows } from './settings.js';
+import { loadSettings, refreshRealMacNote, syncSubpages, updateCelestialLocationRow, updateCelestialPermissionRows, updateClockNightAdminRows, updateOnvifEventsRows, updatePersonSensorRows, updateRtspRows } from './settings.js';
 import { dashboardField } from './dashboard_picker.js';
 import { updatePlayerRow } from './panels.js';
 import {
@@ -332,6 +336,9 @@ export function settingRow(s) {
     if (['screensaver.clock_night', 'screensaver.clock_night_turn_off_minutes',
       'screensaver.clock_night_turn_off_black'].includes(s.key)) updateClockNightAdminRows();
     if (s.key === 'camera.rtsp.enabled' || s.key === 'camera.rtsp.protocol') updateRtspRows();
+    // The ONVIF motion events notice answers for the source and its sensor.
+    if (['camera.rtsp.enabled', 'camera.rtsp.protocol', 'camera.rtsp.analysis', 'camera.onvif.events',
+      'camera.onvif.events_source', 'motion.sensor', 'person.sensor'].includes(s.key)) updateOnvifEventsRows();
     // The hints under the brightness sliders come and go with the
     // adaptive brightness switch (issue #343). After the gated sync, so
     // the curve rows the switch reveals are in place first.
@@ -488,6 +495,14 @@ export function settingRow(s) {
     };
     return row;
   }
+  // The Home Assistant sensor ONVIF motion events follow (issue #1098),
+  // mirroring the device's row.
+  if (s.key === 'camera.onvif.events_entity') {
+    const current = () => (state.settings || []).find((o) => o.key === s.key)?.value ?? s.value ?? '';
+    const field = entityRow(entitySpec({ deviceClass: 'occupancy' }), { allowClear: true });
+    row.updateSetting = () => { field.setValue(current()); return true; };
+    return row;
+  }
   // The Home Assistant Dashboard screensaver's view and Now Playing's
   // chosen view are picked in the dashboard picker, mirroring the
   // device's row: the field shows the stored view and opens the picker.
@@ -560,6 +575,24 @@ export function settingRow(s) {
       field.setText(wakeSourcesText(decodeWakeSources(current())));
     });
     bindUpdate(field.el, () => field.setText(wakeSourcesText(decodeWakeSources(current()))));
+    row.classList.add('dp-field-row');
+    row.appendChild(field.el);
+    return row;
+  }
+
+  // Show system toast notifications, mirroring the device's row: the
+  // toasts shown at rest in a dropdown-style box that opens a checkbox
+  // dialog. Stored as a JSON list of the ones turned off.
+  if (s.key === 'ui.toasts_hidden') {
+    const current = () => (state.settings || []).find((o) => o.key === s.key)?.value ?? s.value ?? '[]';
+    const field = choiceBox(toastsShownText(decodeToastsHidden(current())), async () => {
+      const hidden = await openToastsPicker(s.title, decodeToastsHidden(current()));
+      if (!hidden) return;
+      field.setText(toastsShownText(hidden));
+      await save(JSON.stringify(TOAST_SOURCES.filter((source) => hidden.has(source))));
+      field.setText(toastsShownText(decodeToastsHidden(current())));
+    });
+    bindUpdate(field.el, () => field.setText(toastsShownText(decodeToastsHidden(current()))));
     row.classList.add('dp-field-row');
     row.appendChild(field.el);
     return row;

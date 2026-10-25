@@ -173,6 +173,10 @@ class EspEntitySurface {
   bool get rebootButtonListed => _rebootListed;
   bool _rebootListed = false;
 
+  /// Whether the LED Control idle light and its effect are in this run's
+  /// catalog.
+  bool _ledIdleListed = false;
+
   /// Coalesces the burst of wake-word state changes one voice turn makes
   /// into a single read of the page's engine state.
   Timer? _vsNudge;
@@ -350,6 +354,12 @@ class EspEntitySurface {
           'mdi:phone-ring-outline',
           defs.intercomAnswerMode,
         ),
+        // Catalog-gated below with the LED Control Idle light.
+        'led_idle_effect': (
+          'LED Control Idle Effect',
+          'mdi:led-on',
+          defs.ledIdleStyle,
+        ),
         'vs_wake_word_engine': (
           'VS Wake word engine',
           'mdi:account-voice',
@@ -510,6 +520,9 @@ class EspEntitySurface {
     // picture of someone else's UI, and every fetch makes the device read
     // back and encode a frame for it.
     final agent = _settings.get(defs.agentMode);
+    final sys = await commands.execute('getSystemUpdateStatus', const {});
+    final systemUpdate =
+        sys.ok && sys.data is Map && (sys.data as Map)['supported'] == true;
     // The proximity switch is the one pessimistic entity: rare hardware,
     // so it exists only once the probe has said there is a sensor.
     final prox = await commands.execute('getProximitySupport', const {});
@@ -607,6 +620,11 @@ class EspEntitySurface {
         reboot.ok &&
         reboot.data is Map &&
         (reboot.data as Map)['supported'] == true;
+    // The LED Control idle entities exist where the LED Control page works:
+    // on a device with lights, which is the only place the LED manager
+    // registers ledStatus, and with Enable LED Control on.
+    final leds = await commands.execute('ledStatus', const {});
+    _ledIdleListed = leds.ok && _settings.get(defs.ledEnabled);
     await _refreshCameraViews();
     await _refreshDashboardViews();
 
@@ -695,6 +713,17 @@ class EspEntitySurface {
         'name': 'Screen',
         'icon': 'mdi:tablet',
       },
+      // The LED Control Idle group: its switch, brightness and color. A
+      // configuration entity, beside the effect select.
+      if (_ledIdleListed)
+        {
+          'type': 'light',
+          'objectId': 'led_idle',
+          'name': 'LED Control Idle',
+          'icon': 'mdi:led-on',
+          'colorCapable': true,
+          'category': 1,
+        },
       {
         'type': 'switch',
         'objectId': 'screensaver_active',
@@ -823,6 +852,13 @@ class EspEntitySurface {
           'Show Music Assistant',
           'mdi:music-box-multiple',
         ),
+      // Only with something to browse, as the kiosk menu entry.
+      if (_musicLibrarySource)
+        button(
+          'show_music_library',
+          'Show Music Library',
+          'mdi:playlist-music',
+        ),
       // The followed player, opt-in from the Media Player page (issue
       // #741): whichever player the surfaces follow, the local Sendspin
       // player, one elsewhere or another app's media session. Buttons
@@ -910,6 +946,14 @@ class EspEntitySurface {
         'name': 'Update',
         'deviceClass': 'firmware',
       },
+      // The system image's own releases, where its updater reports them.
+      if (systemUpdate)
+        {
+          'type': 'update',
+          'objectId': 'firmware',
+          'name': 'Firmware',
+          'deviceClass': 'firmware',
+        },
       // The display as a still camera, on every kiosk: what the remote
       // admin's preview shows, fed by the Take screenshot button and by a
       // fetch from Home Assistant. Not on an agent - see above.
@@ -1163,6 +1207,7 @@ class EspEntitySurface {
       for (final e in _settingSelects.entries)
         if ((e.key != 'camera_device' || (cameraPresent && bothFacings)) &&
             (e.key != 'intercom_answer_mode' || intercomOn) &&
+            (e.key != 'led_idle_effect' || _ledIdleListed) &&
             (!e.key.startsWith('vs_') || _voiceNative))
           {
             'type': 'select',
@@ -1573,6 +1618,16 @@ class EspEntitySurface {
   /// The entities that show, light or navigate something, which a device
   /// without a screen leaves out, and the settings entities whose setting
   /// it hides.
+  /// Whether the Music Library has a source to browse: Music Assistant,
+  /// Home Assistant or a known Sonos speaker, as its kiosk menu entry asks.
+  bool get _musicLibrarySource {
+    bool set(defs.SettingDef<String> d) => _settings.get(d).trim().isNotEmpty;
+    final sonos = _settings.get(defs.sendspinSonosHosts).trim();
+    return (set(defs.sendspinMaUrl) && set(defs.sendspinMaToken)) ||
+        (set(defs.haUrl) && set(defs.haToken)) ||
+        (sonos.isNotEmpty && sonos != '{}');
+  }
+
   static const _headlessDropped = {
     'screen',
     'screensaver_active',
@@ -1587,6 +1642,7 @@ class EspEntitySurface {
     'bring_to_front',
     'open_launcher',
     'show_music_assistant',
+    'show_music_library',
     'close_camera_view',
     'active_camera_view',
     'calendar_view',
@@ -1991,6 +2047,19 @@ class EspEntitySurface {
     },
     // Drops that page, whoever put it up; nothing up is not an error.
     {'name': 'close_url', 'supportsResponse': true, 'args': []},
+    // A shell command line through Shizuku, as adb shell would run it.
+    // Answers with exit_code, stdout and stderr; a command that ran and
+    // failed is still a success, and only one that could not run (no
+    // Shizuku, no grant) is an error. timeout is in seconds, 0 is 10 and
+    // 25 is the most, since Home Assistant stops waiting at 30.
+    {
+      'name': 'shizuku_command',
+      'supportsResponse': true,
+      'args': [
+        {'name': 'command', 'type': 'string'},
+        {'name': 'timeout', 'type': 'int'},
+      ],
+    },
     {
       'name': 'set_brightness',
       'supportsResponse': true,
@@ -2249,6 +2318,13 @@ class EspEntitySurface {
         final result = await commands.execute('hideOverlayPage', const {});
         if (!result.ok) throw StateError(result.error ?? 'refused');
         return const {};
+      case 'shizuku_command':
+        final result = await commands.execute('runShizukuCommand', {
+          'command': '${args['command'] ?? ''}',
+          'timeout': args['timeout'] ?? 0,
+        });
+        if (!result.ok) throw StateError(result.error ?? 'refused');
+        return fitCommandResponse((result.data as Map).cast<String, Object?>());
       default:
         log.warn('esphome', 'unknown action $name');
         return null;
@@ -2430,6 +2506,9 @@ class EspEntitySurface {
       }),
     );
     _subs.add(bus.on<UpdateStateChanged>().listen((_) => _sendUpdateState()));
+    _subs.add(
+      bus.on<SystemUpdateStateChanged>().listen((_) => _sendFirmwareState()),
+    );
     _subs.add(bus.on<NextAlarmChanged>().listen((_) => _sendNextAlarm()));
     _subs.add(bus.on<AlarmStateChanged>().listen((e) => _sendAlarm(e.status)));
     _subs.add(
@@ -2650,6 +2729,37 @@ class EspEntitySurface {
             'level': brightness.clamp(0.0, 1.0),
           });
         }
+      case 'led_idle':
+        final map = value is Map ? value : const {};
+        final on = map['on'];
+        if (on is bool) {
+          await _settings.set(defs.ledIdleEnabled, on, source: 'esphome');
+        }
+        final brightness = map['brightness'];
+        if (brightness is num) {
+          // The setting moves in 5% steps from 5%, so a light dimmed all
+          // the way down still shows.
+          final def = defs.ledIdleBrightness;
+          final step = def.step ?? 1;
+          await _settings.set(
+            def,
+            ((brightness * 100 / step).round() * step).clamp(
+              def.min ?? 0,
+              def.max ?? 100,
+            ),
+            source: 'esphome',
+          );
+        }
+        final rgb = [map['red'], map['green'], map['blue']];
+        if (rgb.every((c) => c is num)) {
+          await _settings.set(
+            defs.ledIdleLightColor,
+            rgb.map((c) => ((c as num) * 255).round().clamp(0, 255)).join(','),
+            source: 'esphome',
+          );
+        }
+        // A command that changed nothing gets its answer too.
+        await _sendLedIdle();
       case 'screensaver_active':
         await commands.execute(
           value == true ? 'startScreensaver' : 'stopScreensaver',
@@ -2736,6 +2846,8 @@ class EspEntitySurface {
         await commands.execute('showAppLauncher', const {});
       case 'show_music_assistant':
         await commands.execute('showMusicAssistant', const {});
+      case 'show_music_library':
+        await commands.execute('openMusicLibrary', const {});
       case 'camera_view':
         if ('$value' == 'Closed') {
           await commands.execute('hideCameraView', const {});
@@ -2790,6 +2902,15 @@ class EspEntitySurface {
           await commands.execute('installUpdate', const {});
         } else if ('$value' == 'check') {
           await commands.execute('checkUpdateNow', const {});
+        }
+      case 'firmware':
+        // The same two commands for the image. A check waits for GitHub
+        // and a change republishes the entity through
+        // SystemUpdateStateChanged.
+        if ('$value' == 'install') {
+          await commands.execute('installSystemUpdate', const {});
+        } else if ('$value' == 'check') {
+          await commands.execute('checkSystemUpdateNow', const {});
         }
       case 'clock_background':
         // Through the validator (issue #464): the 255 character cap and
@@ -2902,6 +3023,12 @@ class EspEntitySurface {
       unawaited(_followCustomPages());
       return;
     }
+    if (e.key == defs.ledIdleEnabled.key ||
+        e.key == defs.ledIdleBrightness.key ||
+        e.key == defs.ledIdleLightColor.key) {
+      unawaited(_sendLedIdle());
+      return;
+    }
     for (final entry in _settingSwitches.entries) {
       if (entry.value.$3.key == e.key) {
         _send(entry.key, e.value == true);
@@ -2993,9 +3120,11 @@ class EspEntitySurface {
           : null,
     );
     await _sendScreen();
+    await _sendLedIdle();
     await _sendPanelBrightness();
     await _sendVolume();
     await _sendUpdateState();
+    await _sendFirmwareState();
     await _sendNextAlarm();
     final alarm = await commands.execute('alarmsStatus', const {});
     if (alarm.ok && alarm.data is Map) {
@@ -3187,6 +3316,28 @@ class EspEntitySurface {
     });
   }
 
+  /// The Idle group's switch, brightness and "r,g,b" color as the LED
+  /// Control Idle light.
+  Future<void> _sendLedIdle() async {
+    if (!_ledIdleListed) return;
+    final color = _settings.get(defs.ledIdleLightColor).split(',');
+    final channels = [
+      for (final c in color) (int.tryParse(c.trim()) ?? 255).clamp(0, 255),
+    ];
+    await _send('led_idle', {
+      'on': _settings.get(defs.ledIdleEnabled),
+      'brightness': (_settings.get(defs.ledIdleBrightness) / 100).clamp(
+        0.0,
+        1.0,
+      ),
+      if (channels.length == 3) ...{
+        'red': channels[0] / 255,
+        'green': channels[1] / 255,
+        'blue': channels[2] / 255,
+      },
+    });
+  }
+
   Future<void> _sendVolume() async {
     final result = await commands.execute('getVolume', const {});
     final percent = (result.data as num?)?.toInt();
@@ -3212,6 +3363,48 @@ class EspEntitySurface {
       if (progress != null)
         'progress': progress.toDouble().clamp(0.0, 1.0) * 100,
       'inProgress': progress != null,
+    });
+  }
+
+  /// The system image on the Firmware entity, the twin of
+  /// [_sendUpdateState]. Progress covers the whole update, both slots of
+  /// the Echo Dot. A newer image that installs by hand shows as the latest
+  /// version, with its guide as the release page, while the image's own
+  /// updater has nothing newer to install.
+  Future<void> _sendFirmwareState() async {
+    final result = await commands.execute('getSystemUpdateStatus', const {});
+    final data = result.data;
+    if (!result.ok || data is! Map || data['supported'] != true) return;
+    final current = data['currentVersion'] as String?;
+    if (current == null || current.isEmpty) return;
+    final progress = data['progress'] as num?;
+    final busy = const {
+      'downloading',
+      'verifying',
+      'installing',
+    }.contains(data['state']);
+    final available = data['availableVersion'] as String?;
+    final manual = available == null && !busy
+        ? data['manualVersion'] as String?
+        : null;
+    final manualUrl = data['manualUrl'] as String? ?? '';
+    final notes = manual != null
+        ? 'Version $manual is a new image that installs by hand, not as an '
+              'update. Follow the [guide]($manualUrl).\n\n'
+              '${(data['manualNotes'] as String? ?? '').trim()}'
+        : (data['availableNotes'] as String? ?? '').trim();
+    await _send('firmware', {
+      'current': current,
+      'latest': available ?? manual ?? current,
+      'title': data['title'] is String ? data['title'] : 'Firmware',
+      'summary': _fitNotes(notes.trim()),
+      'url': manual != null
+          ? manualUrl
+          : data['releaseUrl'] is String
+          ? data['releaseUrl']
+          : '',
+      if (progress != null) 'progress': progress.toDouble() * 100,
+      'inProgress': busy,
     });
   }
 
@@ -3794,4 +3987,43 @@ class EspEntitySurface {
     _filterPublished[objectId] = (value, at);
     await _send(objectId, value);
   }
+}
+
+/// A command's answer cut to fit one ESPHome frame, which holds at most
+/// 64 KB: stdout and stderr can each be 32 KB and JSON escaping grows
+/// them further. stderr keeps its head and stdout gives up the rest, with
+/// truncated set whenever anything was cut.
+Map<String, Object?> fitCommandResponse(
+  Map<String, Object?> response, {
+  int limit = 48000,
+}) {
+  int size(Map<String, Object?> value) => utf8.encode(jsonEncode(value)).length;
+  var fitted = Map<String, Object?>.of(response);
+  final stderr = '${fitted['stderr'] ?? ''}';
+  if (stderr.length > 4096) {
+    fitted = {
+      ...fitted,
+      'stderr': stderr.substring(0, 4096),
+      'truncated': true,
+    };
+  }
+  final stdout = '${fitted['stdout'] ?? ''}';
+  if (size(fitted) <= limit) return fitted;
+  // The longest head of stdout that fits. Escaping makes the byte cost of
+  // a character anywhere from 1 to 6, so search rather than estimate.
+  Map<String, Object?> cut(int length) => {
+    ...fitted,
+    'stdout': stdout.substring(0, length),
+    'truncated': true,
+  };
+  var low = 0, high = stdout.length;
+  while (low < high) {
+    final mid = (low + high + 1) ~/ 2;
+    if (size(cut(mid)) <= limit) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return cut(low);
 }

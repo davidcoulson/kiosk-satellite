@@ -29,6 +29,7 @@ class MaPluginSocket {
     required this.log,
     this.idleClose = const Duration(seconds: 60),
     this.callTimeout = const Duration(seconds: 25),
+    this.maxResult = maxResultBytes,
   });
 
   /// The Music Assistant address and token from the Sendspin settings,
@@ -38,6 +39,12 @@ class MaPluginSocket {
   final Logger log;
   final Duration idleClose;
   final Duration callTimeout;
+
+  /// The largest answer handed back. Plugins get [maxResultBytes]. Zero
+  /// hands back any size without measuring it: the Music Library's own
+  /// connection, whose album and playlist listings run large and would
+  /// otherwise be encoded once more on the UI thread just to be counted.
+  final int maxResult;
 
   /// Delivers a subscription's events and status changes to its plugin
   /// session: `{type: event, event, objectId, data}`, `{type: too_large,
@@ -75,6 +82,8 @@ class MaPluginSocket {
     }
     return command == 'info' ||
         command == 'providers' ||
+        command == 'providers/manifests' ||
+        command == 'providers/icon' ||
         const [
           'players/',
           'player_queues/',
@@ -97,6 +106,12 @@ class MaPluginSocket {
   /// The server's opening frame on the current connection: server_id,
   /// server_version, schema_version, name and the rest.
   Map<String, Object?> get serverInfo => _session?.serverInfo ?? const {};
+
+  /// The preferences of the token's user, as sign-in last handed them
+  /// over: what Music Assistant's own pages saved, the Discover layout
+  /// among them. Read again on every connect. Never handed to plugins.
+  Map<String, Object?> get userPreferences => _preferences;
+  Map<String, Object?> _preferences = const {};
 
   /// The owner of each call in flight, so a session's end fails them at
   /// once.
@@ -141,7 +156,7 @@ class MaPluginSocket {
               (result) {
                 if (done.isCompleted) return;
                 done.complete(
-                  _bytes({'result': result}) > maxResultBytes
+                  maxResult > 0 && _bytes({'result': result}) > maxResult
                       ? _error('too_large', 'The result is larger than 512 KB')
                       : {'ok': true, 'result': result},
                 );
@@ -287,7 +302,16 @@ class MaPluginSocket {
       _socket = socket;
       _client = client;
       try {
-        await session.send('auth', {'token': key}, timeout: callTimeout);
+        final auth = await session.send('auth', {
+          'token': key,
+        }, timeout: callTimeout);
+        final user = auth is Map ? auth['user'] : null;
+        final preferences = user is Map ? user['preferences'] : null;
+        if (generation == _generation) {
+          _preferences = preferences is Map
+              ? preferences.cast<String, Object?>()
+              : const {};
+        }
       } on MusicAssistantError catch (e) {
         // A refusal carries Music Assistant's error code. A closed
         // connection does not.

@@ -219,6 +219,8 @@ const _voiceAlarmsDocsUrl =
     'https://kiosksatellite.com/docs/alarms/#setting-alarms-by-voice';
 const _voiceCalendarDocsUrl =
     'https://kiosksatellite.com/docs/calendar/#managing-the-calendar-by-voice';
+const _voiceMusicDocsUrl =
+    'https://kiosksatellite.com/docs/music-library/#playing-music-by-voice';
 
 // The Updates page closes with a link to the custom repository guide: the
 // folder layout, the releases file and the APK names live in the docs, not
@@ -3474,6 +3476,13 @@ class _CategoryContentState extends State<_CategoryContent> {
       screensaverBrightnessLevel.key: HintRow(
         screenAudioText(context, _adaptiveNote),
       ),
+    // Under the ONVIF motion events source (issue #1098): picking a sensor
+    // does not turn it on, so say where to. Mirrored on the remote
+    // (settings.js, updateOnvifEventsRows).
+    if (widget.category == 'Camera' && _onvifEventsNotice(container) != null)
+      cameraOnvifEventsSource.key: WarnRow(
+        cameraText(context, _onvifEventsNotice(container)!),
+      ),
     if (widget.category == 'Camera')
       cameraRtspResolution.key: HintRow(
         cameraResolutionNotice(
@@ -4171,6 +4180,7 @@ class _CategoryContentState extends State<_CategoryContent> {
           final native = [
             voiceWakeWordEngine,
             voiceWakeWordSensitivity,
+            voiceWakeWordFineTune,
             voiceNoiseGate,
             voiceStopWord,
           ];
@@ -4215,6 +4225,11 @@ class _CategoryContentState extends State<_CategoryContent> {
               voiceSkin.key: VoiceSkinRow(
                 container: container,
                 onChanged: changed,
+              ),
+              voiceSkin2.key: VoiceSkinRow(
+                container: container,
+                onChanged: changed,
+                def: voiceSkin2,
               ),
               voiceBackgroundOpacity.key: VoiceBackgroundRow(
                 container: container,
@@ -4333,6 +4348,36 @@ class _CategoryContentState extends State<_CategoryContent> {
             child: SettingsCard(
               children: [_SonosSpeakersCard(container: container)],
             ),
+          ),
+        ];
+      case 'Music Library' when widget.category == 'Sendspin':
+        // Voice music lives in Home Assistant (the blueprint), so this
+        // group only points at the guide. Last on the page, mirrored in
+        // updateMusicLibraryPage (panels.js).
+        return [
+          ...sectioned([
+            for (final def in _defsFor(widget.category))
+              if (def.subpage == subpage) def,
+          ]),
+          SectionHeading(l10n(context).libraryVoiceSection),
+          SettingsCard(
+            children: [
+              SearchLandingTarget(
+                id: 'x:library_voice',
+                child: SettingsRow(
+                  leading: const Icon(Icons.record_voice_over_outlined),
+                  title: Text(l10n(context).libraryVoiceManage),
+                  subtitle: Text(l10n(context).libraryVoiceHint),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    container.commands.execute('showLinkPage', {
+                      'url': _voiceMusicDocsUrl,
+                    });
+                  },
+                ),
+              ),
+            ],
           ),
         ];
       default:
@@ -6845,6 +6890,21 @@ class _MotionEntityRowState extends State<_MotionEntityRow> {
     );
   }
 }
+
+/// Why the picked ONVIF motion source sends nothing, or null when it can:
+/// its sensor is off, or the camera cannot watch while it streams.
+String? _onvifEventsNotice(AppContainer c) => switch (c.settings.get(
+  cameraOnvifEventsSource,
+)) {
+  'camera' when !c.settings.get(motionSensor) =>
+    'The camera motion sensor is off. Turn it on in Camera > Motion Sensor.',
+  'camera' when !c.settings.get(cameraRtspAnalysis) =>
+    'Motion analysis while streaming is off, so the camera cannot detect '
+        'motion while a viewer is connected.',
+  'person' when !c.settings.get(personSensorEnabled) =>
+    'The person sensor is off. Turn it on in Camera > Person Sensor.',
+  _ => null,
+};
 
 /// Under the face sensitivity slider: the rest of the tuning is the
 /// motion camera's, shared with it.
@@ -11481,6 +11541,21 @@ class SettingTile extends StatelessWidget {
         if (def.key == motionEntity.key) {
           return _MotionEntityRow(container: c, def: def, onChanged: onChanged);
         }
+        // The Home Assistant sensor ONVIF motion events follow (issue
+        // #1098), from the same occupancy, motion and presence sensors.
+        if (def.key == cameraOnvifEventsEntity.key) {
+          return PickRow(
+            title: def.localizedTitle(context),
+            description: def.localizedDescription(context),
+            spec: entitySpec(context, c.commands, deviceClass: 'occupancy'),
+            value: c.settings.get(cameraOnvifEventsEntity),
+            allowClear: true,
+            onPick: (id) async {
+              await c.settings.setFromJson(def.key, id ?? '');
+              onChanged();
+            },
+          );
+        }
         // The speakers the Now Playing pill offers, ticked off the players
         // of the source its menu reads from, never typed as JSON.
         if (def.key == sendspinSpeakerPillPlayers.key) {
@@ -11615,6 +11690,16 @@ class SettingTile extends StatelessWidget {
             ),
             trailing: const Icon(Icons.edit_outlined),
             onTap: () => _pickImmichNamed(context, immichNamed),
+          );
+        }
+        // Show system toast notifications: the toasts shown, ticked off in a
+        // dialog from a dropdown-style box rather than typed as JSON.
+        if (def.key == uiToastsHidden.key) {
+          return _ToastsHiddenRow(
+            container: c,
+            def: def,
+            value: value as String,
+            onChanged: onChanged,
           );
         }
         // Wake to screensaver: what wakes to the screensaver, ticked off in a
@@ -13047,6 +13132,110 @@ String _subpageDisplayTitle(
     if (profile != null) return fleetProfileName(context, profile);
   }
   return settingsPageText(context, category, subpage);
+}
+
+/// The labels of Show system toast notifications' sources.
+String _toastSourceLabel(BuildContext context, String source) =>
+    deviceText(context, switch (source) {
+      'back' => 'Back button hints',
+      'gestures' => 'Gesture actions',
+      'hold_mode' => 'Hold mode',
+      'links' => 'Dashboard links',
+      'downloads' => 'Downloads',
+      'network' => 'Network status',
+      'updates' => 'Update checks',
+      'voice' => 'Voice Satellite notices',
+      'timers' => 'Timers',
+      'alarms' => 'Alarms',
+      'music_library' => 'Music Library',
+      'intercom' => 'Intercom',
+      'app_launcher' => 'App Launcher',
+      _ => 'Plugin actions',
+    });
+
+/// Show system toast notifications as a settings row: the toasts shown at
+/// rest in a dropdown-style box, opening a dialog of checkboxes. The
+/// setting stores the ones turned off.
+class _ToastsHiddenRow extends StatelessWidget {
+  const _ToastsHiddenRow({
+    required this.container,
+    required this.def,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final AppContainer container;
+  final SettingDef<Object> def;
+  final String value;
+  final VoidCallback onChanged;
+
+  Future<void> _open(BuildContext context) async {
+    final hidden = decodeToastsHidden(value);
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(def.localizedTitle(context)),
+          content: SizedBox(
+            width: 420,
+            child: EdgeFade(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final source in toastSources)
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: !hidden.contains(source),
+                      title: Text(_toastSourceLabel(context, source)),
+                      onChanged: (on) => setState(() {
+                        if (on == true) {
+                          hidden.remove(source);
+                        } else {
+                          hidden.add(source);
+                        }
+                      }),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(deviceText(context, 'Cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(deviceText(context, 'Save')),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (saved != true) return;
+    await container.settings.setFromJson(def.key, encodeToastsHidden(hidden));
+    onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hidden = decodeToastsHidden(value);
+    final text = hidden.isEmpty
+        ? deviceText(context, 'All')
+        : hidden.length == toastSources.length
+        ? deviceText(context, 'None')
+        : [
+            for (final source in toastSources)
+              if (!hidden.contains(source)) _toastSourceLabel(context, source),
+          ].join(', ');
+    final field = ChoiceBox(text: text, onTap: () => _open(context));
+    return SettingsRow(
+      title: Text(def.localizedTitle(context)),
+      stack: true,
+      subtitle: Text(def.localizedDescription(context)),
+      trailing: tightPane(context) ? field : SizedBox(width: 300, child: field),
+    );
+  }
 }
 
 /// The labels of Wake to screensaver's sources.

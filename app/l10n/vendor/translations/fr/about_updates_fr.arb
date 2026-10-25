@@ -8,5 +8,12 @@
   "aboutDownloadProgress": "Téléchargement… {percent} %",
   "aboutDownloadFailed": "Échec de la mise à jour : {error}",
   "aboutAlreadyCurrent": "Déjà à jour",
-  "aboutInstallHelp": "Le téléchargement s'exécute sur la tablette ; l'installation doit être confirmée sur l'écran de la tablette."
+  "aboutInstallHelp": "Le téléchargement s'exécute sur la tablette ; l'installation doit être confirmée sur l'écran de la tablette.",
+  "aboutSystem": "Système",
+  "aboutSystemVersion": "Version de la ROM",
+  "aboutSystemVerifying": "Vérification…",
+  "aboutSystemInstalling": "Installation…",
+  "aboutSystemInstallHelp": "Le Dot redémarre deux fois pour installer la mise à jour et reste hors ligne environ une minute et demie à chaque fois.",
+  "aboutSystemManual": "Nouvelle image disponible",
+  "aboutSystemManualHelp": "La version {version} de la nouvelle image de l'Echo Dot s'installe à la main, pas comme une mise à jour."
 }

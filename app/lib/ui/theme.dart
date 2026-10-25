@@ -148,8 +148,8 @@ ColorScheme _darkScheme() =>
       outlineVariant: const Color(0xFF3C3E43),
     );
 
-/// [barsShown] is true while the Full screen setting has the system bars up
-/// (see applySystemBars in main.dart).
+/// [barsShown] is true while a Hide status bar or Hide navigation bar setting
+/// keeps a system bar up (see applySystemBars in main.dart).
 ThemeData buildTheme(Brightness brightness, {bool barsShown = false}) {
   final dark = brightness == Brightness.dark;
   final scheme = dark ? _darkScheme() : _lightScheme();

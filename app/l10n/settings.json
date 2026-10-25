@@ -35,6 +35,10 @@
     "title": "settingUiScaleTitle",
     "description": "settingUiScaleDescription"
   },
+  "ui.toasts_hidden": {
+    "title": "settingUiToastsHiddenTitle",
+    "description": "settingUiToastsHiddenDescription"
+  },
   "device.hostname": {
     "title": "settingDeviceHostnameTitle",
     "description": "settingDeviceHostnameDescription"
@@ -215,9 +219,17 @@
     "title": "settingScreenOrientationTitle",
     "description": "settingScreenOrientationDescription"
   },
-  "screen.full_screen": {
-    "title": "settingScreenFullScreenTitle",
-    "description": "settingScreenFullScreenDescription"
+  "screen.hide_status_bar": {
+    "title": "settingScreenHideStatusBarTitle",
+    "description": "settingScreenHideStatusBarDescription"
+  },
+  "screen.hide_navigation_bar": {
+    "title": "settingScreenHideNavigationBarTitle",
+    "description": "settingScreenHideNavigationBarDescription"
+  },
+  "screen.show_on_lock_screen": {
+    "title": "settingScreenShowOnLockScreenTitle",
+    "description": "settingScreenShowOnLockScreenDescription"
   },
   "screen.keep_on": {
     "title": "settingKeepScreenOnTitle",
@@ -930,6 +942,18 @@
   "camera.rtsp.password": {
     "title": "settingCameraRtspPasswordTitle",
     "description": "settingCameraRtspPasswordDescription"
+  },
+  "camera.onvif.events": {
+    "title": "settingCameraOnvifEventsTitle",
+    "description": "settingCameraOnvifEventsDescription"
+  },
+  "camera.onvif.events_source": {
+    "title": "settingCameraOnvifEventsSourceTitle",
+    "description": "settingCameraOnvifEventsSourceDescription"
+  },
+  "camera.onvif.events_entity": {
+    "title": "settingMotionEntityTitle",
+    "description": "settingMotionEntityDescription"
   },
   "camera.allow_h265": {
     "title": "settingCameraAllowH265Title",
@@ -1891,6 +1915,10 @@
     "title": "settingVoiceWakeWordSensitivityTitle",
     "description": "settingVoiceWakeWordSensitivityDescription"
   },
+  "voice.wake_word_fine_tune": {
+    "title": "settingVoiceWakeWordFineTuneTitle",
+    "description": "settingVoiceWakeWordFineTuneDescription"
+  },
   "voice.noise_gate": {
     "title": "settingVoiceNoiseGateTitle",
     "description": "settingVoiceNoiseGateDescription"
@@ -1912,8 +1940,12 @@
     "description": "settingVoiceWakeArbitrationOffsetDescription"
   },
   "voice.skin": {
-    "title": "voiceSkin",
-    "description": "voiceSkinHelp"
+    "title": "voiceSkin1",
+    "description": "voiceSkin1Help"
+  },
+  "voice.skin_2": {
+    "title": "voiceSkin2",
+    "description": "voiceSkin2Help"
   },
   "voice.theme": {
     "title": "settingVoiceThemeTitle",
@@ -2070,6 +2102,10 @@
   "voice.realtime_talk_over": {
     "title": "settingVoiceRealtimeTalkOverTitle",
     "description": "settingVoiceRealtimeTalkOverDescription"
+  },
+  "voice.realtime_talk_over_sensitivity": {
+    "title": "settingVoiceRealtimeTalkOverSensitivityTitle",
+    "description": "settingVoiceRealtimeTalkOverSensitivityDescription"
   },
   "voice.realtime_tools": {
     "title": "settingVoiceRealtimeToolsTitle",
@@ -2534,5 +2570,37 @@
   "voice.amazon_locale": {
     "title": "settingVoiceAmazonLocaleTitle",
     "description": "settingVoiceAmazonLocaleDescription"
+  },
+  "library.menu": {
+    "title": "settingCalendarMenuTitle",
+    "description": "settingLibraryMenuDescription"
+  },
+  "library.idle_close_minutes": {
+    "title": "settingCalendarIdleCloseMinutesTitle",
+    "description": "settingCalendarIdleCloseMinutesDescription"
+  },
+  "kiosk.allow_music_library": {
+    "title": "libraryTitle",
+    "description": "settingKioskAllowMusicLibraryDescription"
+  },
+  "library.source": {
+    "title": "librarySource",
+    "description": "settingLibrarySourceDescription"
+  },
+  "library.now_playing_button": {
+    "title": "settingLibraryNowPlayingButtonTitle",
+    "description": "settingLibraryNowPlayingButtonDescription"
+  },
+  "library.square_artwork": {
+    "title": "settingLibrarySquareArtworkTitle",
+    "description": "settingLibrarySquareArtworkDescription"
+  },
+  "library.grid_density": {
+    "title": "settingLibraryGridDensityTitle",
+    "description": "settingLibraryGridDensityDescription"
+  },
+  "library.text_scale": {
+    "title": "settingSendspinFullscreenTextScaleTitle",
+    "description": "settingLibraryTextScaleDescription"
   }
 }

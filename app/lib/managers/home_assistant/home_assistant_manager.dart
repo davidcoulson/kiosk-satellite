@@ -1915,7 +1915,7 @@ class HomeAssistantManager extends Manager {
         }
         channel.sink.add(
           jsonEncode({
-            'id': 4,
+            'id': 5,
             'type': 'frontend/get_translations',
             'language': language,
             'category': 'entity_component',
@@ -1960,8 +1960,8 @@ class HomeAssistantManager extends Manager {
             .where((p) => !_stateLabels.containsKey('$language/entity/$p'))
             .toList();
         for (final (id, category, integrations) in [
-          (5, 'entity_component', domains),
-          (6, 'entity', platforms),
+          (6, 'entity_component', domains),
+          (7, 'entity', platforms),
         ]) {
           if (integrations.isEmpty) continue;
           labelsAsked[id] = integrations;
@@ -1979,7 +1979,7 @@ class HomeAssistantManager extends Manager {
       }
 
       void labelsArrived(int id, Object? result) {
-        final category = id == 5 ? 'entity_component' : 'entity';
+        final category = id == 6 ? 'entity_component' : 'entity';
         final language = labelLanguage;
         final integrations = labelsAsked.remove(id) ?? const [];
         if (result != null && language != null) {
@@ -2044,7 +2044,7 @@ class HomeAssistantManager extends Manager {
                     // when the user never picked one.
                     channel.sink.add(
                       jsonEncode({
-                        'id': 7,
+                        'id': 3,
                         'type': 'frontend/get_user_data',
                         'key': 'language',
                       }),
@@ -2068,11 +2068,11 @@ class HomeAssistantManager extends Manager {
                   if (msg['id'] == 2 && onStateLabels != null) {
                     labelEntries = const {};
                     askLabels();
-                  } else if (msg['id'] == 5 || msg['id'] == 6) {
+                  } else if (msg['id'] == 6 || msg['id'] == 7) {
                     labelsArrived(msg['id'] as int, null);
-                  } else if (msg['id'] == 7) {
+                  } else if (msg['id'] == 3) {
                     channel.sink.add(
-                      jsonEncode({'id': 3, 'type': 'get_config'}),
+                      jsonEncode({'id': 4, 'type': 'get_config'}),
                     );
                   }
                   break;
@@ -2086,7 +2086,7 @@ class HomeAssistantManager extends Manager {
                       labelEntries = _translationKeys(msg['result']);
                       askLabels();
                     }
-                  case 3:
+                  case 4:
                     final config = msg['result'];
                     final language = config is Map
                         ? '${config['language'] ?? ''}'.trim()
@@ -2094,24 +2094,24 @@ class HomeAssistantManager extends Manager {
                     languageKnown(
                       _language = language.isEmpty ? 'en' : language,
                     );
-                  case 4:
+                  case 5:
                     onTranslations!(
                       _stateTranslations[domain!] = parseStateTranslations(
                         msg['result'],
                         domain,
                       ),
                     );
-                  case 5 || 6:
-                    labelsArrived(msg['id'] as int, msg['result']);
-                  case 7:
+                  case 3:
                     final language = userLanguage(msg['result']);
                     if (language != null) {
                       languageKnown(_language = language);
                     } else {
                       channel.sink.add(
-                        jsonEncode({'id': 3, 'type': 'get_config'}),
+                        jsonEncode({'id': 4, 'type': 'get_config'}),
                       );
                     }
+                  case 6 || 7:
+                    labelsArrived(msg['id'] as int, msg['result']);
                 }
               case 'pong':
                 subscription._pong();
@@ -3558,9 +3558,11 @@ class GlanceSubscription {
   final WebSocketChannel _channel;
   bool _closed = false;
   Timer? _heartbeat, _deadline, _connecting;
-  // Ids 1 to 6 are the subscribe, registry, config and translation
-  // commands.
-  int _pingId = 7;
+  // Ids 1 to 7 are the subscribe, registry, language and translation
+  // commands, numbered in the order they go out. Home Assistant rejects an
+  // id lower than one it already saw, so a ping that reused 7 got no pong
+  // and the row reconnected every 40 seconds (issue #1131).
+  int _pingId = 8;
 
   bool get isClosed => _closed;
 

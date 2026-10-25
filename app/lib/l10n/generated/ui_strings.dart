@@ -236,6 +236,48 @@ abstract class UiStrings {
   /// **'The download runs on the tablet; the installation must be confirmed on the tablet screen.'**
   String get aboutInstallHelp;
 
+  /// Title of the group about the Echo Dot's system image, shown above the App group.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get aboutSystem;
+
+  /// Row with the installed release of the Echo Dot's ROM, the system image. Clicking the number checks for updates. Keep ROM as is.
+  ///
+  /// In en, this message translates to:
+  /// **'ROM version'**
+  String get aboutSystemVersion;
+
+  /// Installation button label while the signature of the downloaded system update is checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying…'**
+  String get aboutSystemVerifying;
+
+  /// Installation button label while the system update installs. The device restarts twice meanwhile.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing…'**
+  String get aboutSystemInstalling;
+
+  /// Guidance below the release notes before a system update installs. The Dot is the Echo Dot smart speaker.
+  ///
+  /// In en, this message translates to:
+  /// **'The Dot restarts twice to install the update and is offline for about a minute and a half each time.'**
+  String get aboutSystemInstallHelp;
+
+  /// Row shown when a newer system image exists that the device cannot install as an update. It has to be installed by hand, following a guide. The Echo Dot smart speaker moves from its LineageOS 14.1 image to a LineageOS 18.1 one this way.
+  ///
+  /// In en, this message translates to:
+  /// **'New image available'**
+  String get aboutSystemManual;
+
+  /// Explanation below the row about a newer system image that has to be installed by hand. Next to it is a link to the guide. The Dot is the Echo Dot smart speaker.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} of the new Echo Dot image installs by hand, not as an update.'**
+  String aboutSystemManualHelp(String version);
+
   /// Name of the alarms feature: the kiosk menu entry, the alarm list eyebrow and section headings.
   ///
   /// In en, this message translates to:
@@ -3459,6 +3501,12 @@ abstract class UiStrings {
   /// **'Open the calendar'**
   String get gestureOpenCalendar;
 
+  /// Gesture action that opens the Music Library.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Music Library'**
+  String get gestureOpenMusicLibrary;
+
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:
@@ -5181,6 +5229,654 @@ abstract class UiStrings {
   /// **'unknown'**
   String get logsUnknown;
 
+  /// Name of the Music Library feature: the kiosk menu entry, the overlay's eyebrow and the Allowed Actions switch.
+  ///
+  /// In en, this message translates to:
+  /// **'Music Library'**
+  String get libraryTitle;
+
+  /// Label of the picker for where the library lists music from: Music Assistant, Home Assistant or Sonos.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get librarySource;
+
+  /// Source name.
+  ///
+  /// In en, this message translates to:
+  /// **'Music Assistant'**
+  String get librarySourceMa;
+
+  /// Source name.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant'**
+  String get librarySourceHa;
+
+  /// Source name.
+  ///
+  /// In en, this message translates to:
+  /// **'Sonos'**
+  String get librarySourceSonos;
+
+  /// What the Music Assistant source offers, under its name in the source picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Library, search and radio'**
+  String get librarySourceMaHint;
+
+  /// What the Home Assistant source offers: the media the picked speaker's integration lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Media from each speaker'**
+  String get librarySourceHaHint;
+
+  /// What the Sonos source offers: My Sonos favorites, Sonos playlists and the indexed music library.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites and playlists'**
+  String get librarySourceSonosHint;
+
+  /// Navigation entry and page title: recommendations and recently played music.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover'**
+  String get libraryDiscover;
+
+  /// Navigation entry: search the source.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get librarySearch;
+
+  /// Navigation entry and page title: the source's own folders.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse'**
+  String get libraryBrowse;
+
+  /// Navigation entry and sidebar heading over the library lists (artists, albums and so on).
+  ///
+  /// In en, this message translates to:
+  /// **'Library'**
+  String get libraryLibrary;
+
+  /// Library list and search filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Artists'**
+  String get libraryArtists;
+
+  /// Library list and search filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Albums'**
+  String get libraryAlbums;
+
+  /// Library list and search filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracks'**
+  String get libraryTracks;
+
+  /// Library list and search filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlists'**
+  String get libraryPlaylists;
+
+  /// Library list and search filter: radio stations.
+  ///
+  /// In en, this message translates to:
+  /// **'Radio'**
+  String get libraryRadio;
+
+  /// Library list and search filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Podcasts'**
+  String get libraryPodcasts;
+
+  /// Library list and search filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Audiobooks'**
+  String get libraryAudiobooks;
+
+  /// Sonos library list: My Sonos favorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites'**
+  String get libraryFavorites;
+
+  /// Sonos library list: playlists saved in the Sonos app.
+  ///
+  /// In en, this message translates to:
+  /// **'Sonos playlists'**
+  String get librarySonosPlaylists;
+
+  /// Discover shelf title.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently played'**
+  String get libraryRecentlyPlayed;
+
+  /// Discover shelf title.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently added'**
+  String get libraryRecentlyAdded;
+
+  /// Tooltip of the button that opens the sort menu of a library list such as Albums or Playlists.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get librarySort;
+
+  /// Sort menu option: alphabetical order by name.
+  ///
+  /// In en, this message translates to:
+  /// **'A to Z'**
+  String get librarySortAToZ;
+
+  /// Sort menu option: reverse alphabetical order by name.
+  ///
+  /// In en, this message translates to:
+  /// **'Z to A'**
+  String get librarySortZToA;
+
+  /// Sort menu option: the most played entries first.
+  ///
+  /// In en, this message translates to:
+  /// **'Most played'**
+  String get librarySortMostPlayed;
+
+  /// Checkable option in the Artists sort menu. Lists only artists credited on an album, leaving out artists who only appear on single tracks of compilations.
+  ///
+  /// In en, this message translates to:
+  /// **'Album artists only'**
+  String get libraryAlbumArtistsOnly;
+
+  /// Kind of entry shown in lists and on a genre's page, like Artist or Album.
+  ///
+  /// In en, this message translates to:
+  /// **'Genre'**
+  String get libraryKindGenre;
+
+  /// Discover section title: a grid of music genres to open.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse by genre'**
+  String get libraryBrowseByGenre;
+
+  /// Setting description under Text scale, a percentage slider.
+  ///
+  /// In en, this message translates to:
+  /// **'Size of the titles, names and labels in the library.'**
+  String get settingLibraryTextScaleDescription;
+
+  /// Setting label: show artists in square tiles instead of circles.
+  ///
+  /// In en, this message translates to:
+  /// **'Square artwork'**
+  String get settingLibrarySquareArtworkTitle;
+
+  /// Setting description.
+  ///
+  /// In en, this message translates to:
+  /// **'Show artists in square tiles, like albums and playlists.'**
+  String get settingLibrarySquareArtworkDescription;
+
+  /// Setting label: how large the tiles in the library's grids are.
+  ///
+  /// In en, this message translates to:
+  /// **'Grid density'**
+  String get settingLibraryGridDensityTitle;
+
+  /// Setting description. Compact is one of the options.
+  ///
+  /// In en, this message translates to:
+  /// **'Size of the tiles in the library. Compact fits more in a row.'**
+  String get settingLibraryGridDensityDescription;
+
+  /// Grid density option: larger tiles, fewer in a row.
+  ///
+  /// In en, this message translates to:
+  /// **'Comfortable'**
+  String get libraryDensityComfortable;
+
+  /// Grid density option: the default tile size.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get libraryDensityStandard;
+
+  /// Grid density option: smaller tiles, more in a row.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact'**
+  String get libraryDensityCompact;
+
+  /// Search results shelf for entries of other kinds.
+  ///
+  /// In en, this message translates to:
+  /// **'More results'**
+  String get libraryMoreResults;
+
+  /// Heading over an artist's most played tracks.
+  ///
+  /// In en, this message translates to:
+  /// **'Top tracks'**
+  String get libraryTopTracks;
+
+  /// What a search result or page is.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist'**
+  String get libraryKindArtist;
+
+  /// What a search result or page is.
+  ///
+  /// In en, this message translates to:
+  /// **'Album'**
+  String get libraryKindAlbum;
+
+  /// What a search result is.
+  ///
+  /// In en, this message translates to:
+  /// **'Track'**
+  String get libraryKindTrack;
+
+  /// What a search result or page is.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlist'**
+  String get libraryKindPlaylist;
+
+  /// What a search result is: a radio station.
+  ///
+  /// In en, this message translates to:
+  /// **'Radio'**
+  String get libraryKindRadio;
+
+  /// What a search result or page is.
+  ///
+  /// In en, this message translates to:
+  /// **'Podcast'**
+  String get libraryKindPodcast;
+
+  /// What a search result is: a podcast episode.
+  ///
+  /// In en, this message translates to:
+  /// **'Episode'**
+  String get libraryKindEpisode;
+
+  /// What a search result is.
+  ///
+  /// In en, this message translates to:
+  /// **'Audiobook'**
+  String get libraryKindAudiobook;
+
+  /// Album facts: an album with one track.
+  ///
+  /// In en, this message translates to:
+  /// **'1 track'**
+  String get libraryOneTrack;
+
+  /// Album facts: how many tracks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tracks'**
+  String libraryTrackCount(String count);
+
+  /// Album facts: total length under an hour.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String libraryMinutes(String minutes);
+
+  /// Album facts: total length of an hour or more.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String libraryHoursMinutes(String hours, String minutes);
+
+  /// Placeholder of the search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Artists, albums, tracks'**
+  String get librarySearchHint;
+
+  /// Tooltip of the button that empties the search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get librarySearchClear;
+
+  /// Search filter chip: every kind of result.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get librarySearchAll;
+
+  /// Shown before anything is typed in the search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for artists, albums, tracks and more.'**
+  String get librarySearchPrompt;
+
+  /// A list, folder or search with no entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet.'**
+  String get libraryEmpty;
+
+  /// A list or page failed to load. The error follows on the next line.
+  ///
+  /// In en, this message translates to:
+  /// **'This could not be loaded.'**
+  String get libraryLoadFailed;
+
+  /// No source is configured on this device.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up Music Assistant, Home Assistant or a Sonos speaker to browse music.'**
+  String get libraryNoSource;
+
+  /// Home Assistant source with no speaker picked: the media tree belongs to the speaker.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a speaker to see the media it can play.'**
+  String get libraryHaPickSpeaker;
+
+  /// Speaker pill label and button when no speaker of the source is picked.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a speaker'**
+  String get libraryChooseSpeaker;
+
+  /// Prompt over the Speakers sheet when a play needs a speaker first.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the speaker to play on.'**
+  String get libraryPickSpeakerHint;
+
+  /// Button: play the album, playlist or artist, replacing the queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get libraryPlay;
+
+  /// Player bar button.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Now Playing'**
+  String get libraryOpenNowPlaying;
+
+  /// Player bar with no track.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing playing'**
+  String get libraryNothingPlaying;
+
+  /// Tooltip of the menu button on a row or a page.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get libraryMore;
+
+  /// Menu action: play now, keeping the rest of the queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Play now'**
+  String get libraryPlayNow;
+
+  /// Menu action: play after the current track.
+  ///
+  /// In en, this message translates to:
+  /// **'Play next'**
+  String get libraryPlayNext;
+
+  /// Menu action: add to the end of the queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to queue'**
+  String get libraryAddToQueue;
+
+  /// Menu action and button: play and keep going with similar music.
+  ///
+  /// In en, this message translates to:
+  /// **'Start radio'**
+  String get libraryStartRadio;
+
+  /// Menu action.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to artist'**
+  String get libraryGoToArtist;
+
+  /// Menu action.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favorites'**
+  String get libraryAddFavorite;
+
+  /// Menu action.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favorites'**
+  String get libraryRemoveFavorite;
+
+  /// Toast after Add to favorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to favorites'**
+  String get libraryAddedFavorite;
+
+  /// Toast after Remove from favorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from favorites'**
+  String get libraryRemovedFavorite;
+
+  /// Toast when the favorite change failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites could not be changed'**
+  String get libraryFavoriteFailed;
+
+  /// Toast after Play next.
+  ///
+  /// In en, this message translates to:
+  /// **'Plays next'**
+  String get libraryPlaysNext;
+
+  /// Toast after Add to queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to queue'**
+  String get libraryAddedToQueue;
+
+  /// Toast action: open Now Playing with the queue.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get libraryView;
+
+  /// Toast when a play failed. The error follows.
+  ///
+  /// In en, this message translates to:
+  /// **'This could not be played'**
+  String get libraryPlayFailed;
+
+  /// Title of the Speakers sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Speakers'**
+  String get librarySpeakers;
+
+  /// Label over the name of the speaker the music plays on, in the Speakers sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Playing on'**
+  String get libraryPlayingOn;
+
+  /// Heading over the speakers that can be picked instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Other speakers'**
+  String get libraryOtherSpeakers;
+
+  /// The source has no other speakers to pick.
+  ///
+  /// In en, this message translates to:
+  /// **'No other speakers.'**
+  String get libraryNoOtherSpeakers;
+
+  /// Under the name of this device's own player in the Speakers sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'This device'**
+  String get libraryThisDevice;
+
+  /// Under the name of a speaker that is offline.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get libraryUnavailable;
+
+  /// Button that opens the list of speakers to group with the playing one.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get libraryGroup;
+
+  /// Label of the volume slider for the whole group.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get libraryGroupAll;
+
+  /// Title of the grouping dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Group with {speaker}'**
+  String libraryGroupWith(String speaker);
+
+  /// Text in the grouping dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Grouped speakers play the same music in sync.'**
+  String get libraryGroupHint;
+
+  /// A group's name: the leading speaker and how many others play with it.
+  ///
+  /// In en, this message translates to:
+  /// **'{speaker} + {count}'**
+  String libraryGroupName(String speaker, String count);
+
+  /// Setting description.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a Music Library entry to the kiosk menu.'**
+  String get settingLibraryMenuDescription;
+
+  /// Allowed Actions switch description.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse music and play it on a speaker.'**
+  String get settingKioskAllowMusicLibraryDescription;
+
+  /// Hint under the Music Library entry on the Media Player settings page.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse music and play it on a speaker'**
+  String get libraryPageHint;
+
+  /// Setting description. Automatic is the first choice of the Source setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Where the library lists music from. Automatic starts with the source of the speaker Now Playing follows.'**
+  String get settingLibrarySourceDescription;
+
+  /// Setting label: the Music Library button on the Now Playing view.
+  ///
+  /// In en, this message translates to:
+  /// **'Show on Now Playing'**
+  String get settingLibraryNowPlayingButtonTitle;
+
+  /// Setting description. The close button is the one on the Now Playing view.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a Music Library button next to the close button.'**
+  String get settingLibraryNowPlayingButtonDescription;
+
+  /// Title of the queue panel in the Music Library.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get libraryQueueTitle;
+
+  /// Tooltip of the button that closes the queue panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close queue'**
+  String get libraryCloseQueue;
+
+  /// Button that empties the queue, and the confirm button of its dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get libraryClear;
+
+  /// Title of the dialog that confirms emptying the queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the queue?'**
+  String get libraryClearQueueTitle;
+
+  /// Text of the dialog that confirms emptying the queue.
+  ///
+  /// In en, this message translates to:
+  /// **'The music stops and every track leaves the queue.'**
+  String get libraryClearQueueMessage;
+
+  /// Menu action on a queue row.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from queue'**
+  String get libraryRemoveFromQueue;
+
+  /// Accessibility label of the handle that moves a queue row.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get libraryReorder;
+
+  /// Toast when moving, removing or clearing failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The queue could not be changed'**
+  String get libraryQueueFailed;
+
+  /// Heading of the group about playing music by voice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Control'**
+  String get libraryVoiceSection;
+
+  /// Row that opens the guide to playing music by voice. Keep Voice Satellite unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage music using Voice Satellite'**
+  String get libraryVoiceManage;
+
+  /// Description under that row. Keep Kiosk Satellite and Home Assistant unchanged. A blueprint is a Home Assistant template for a script.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs the Kiosk Satellite music blueprint and an LLM conversation agent in Home Assistant.'**
+  String get libraryVoiceHint;
+
   /// Heading when the device has a network but the dashboard failed to load.
   ///
   /// In en, this message translates to:
@@ -5907,6 +6603,12 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Installed'**
   String get pluginInstalled;
+
+  /// Shown on a listed plugin whose newest release needs a newer Kiosk Satellite than this kiosk runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Kiosk Satellite {version} or newer'**
+  String pluginNeedsAppVersion(String version);
 
   /// Visible label, help or status in this section.
   ///
@@ -6781,6 +7483,12 @@ abstract class UiStrings {
   /// Explain the failure. Keep technical identifiers, file names and product names unchanged.
   ///
   /// In en, this message translates to:
+  /// **'Plugin needs Kiosk Satellite {required} or newer. This kiosk runs {current}.'**
+  String pluginErrorAppVersion(String required, String current);
+
+  /// Explain the failure. Keep technical identifiers, file names and product names unchanged.
+  ///
+  /// In en, this message translates to:
   /// **'Invalid {field}'**
   String pluginErrorInvalidField(String field);
 
@@ -7119,6 +7827,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Permission missing: {permission}'**
   String overviewPermissionMissing(String permission);
+
+  /// A newer release of the Echo Dot's system image can be installed.
+  ///
+  /// In en, this message translates to:
+  /// **'System update available'**
+  String get overviewSystemUpdate;
+
+  /// Translate the interface text. Keep external names, versions and technical details unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} of the Echo Dot image is ready to install. The Dot restarts twice to install it.'**
+  String overviewSystemUpdateHelp(String version);
 
   /// Translate the interface text. Keep external names, versions and technical details unchanged.
   ///
@@ -8991,6 +9711,72 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Other camera sizes are unavailable in the current capture setup.'**
   String get cameraCaptureRejected;
+
+  /// Section heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion Events'**
+  String get cameraMotionEventsHeading;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Send motion events'**
+  String get settingCameraOnvifEventsTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Let ONVIF clients such as NVRs know when motion is detected.'**
+  String get settingCameraOnvifEventsDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion source'**
+  String get settingCameraOnvifEventsSourceTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'The sensor that sends motion events.'**
+  String get settingCameraOnvifEventsSourceDescription;
+
+  /// Choice in the Motion source picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera motion sensor'**
+  String get cameraOnvifEventsSourceCamera;
+
+  /// Choice in the Motion source picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Person sensor'**
+  String get cameraOnvifEventsSourcePerson;
+
+  /// Choice in the Motion source picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant sensor'**
+  String get cameraOnvifEventsSourceEntity;
+
+  /// Warning below the Motion source picker. Camera > Motion Sensor is the settings page to open.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera motion sensor is off. Turn it on in Camera > Motion Sensor.'**
+  String get cameraOnvifEventsMotionSensorOff;
+
+  /// Warning below the Motion source picker. Motion analysis while streaming is the setting of that name on this page.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion analysis while streaming is off, so the camera cannot detect motion while a viewer is connected.'**
+  String get cameraOnvifEventsAnalysisOff;
+
+  /// Warning below the Motion source picker. Camera > Person Sensor is the settings page to open.
+  ///
+  /// In en, this message translates to:
+  /// **'The person sensor is off. Turn it on in Camera > Person Sensor.'**
+  String get cameraOnvifEventsPersonSensorOff;
 
   /// Section heading.
   ///
@@ -12298,6 +13084,114 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'System'**
   String get deviceThemeSystem;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Show system toast notifications'**
+  String get settingUiToastsHiddenTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the pop-up messages shown over the dashboard. Messages in Settings always show.'**
+  String get settingUiToastsHiddenDescription;
+
+  /// Value of Show system toast notifications when every toast shows.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get deviceToastsAll;
+
+  /// Value of Show system toast notifications when every toast is turned off.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get deviceToastsNone;
+
+  /// Toast source: the hint to press back again.
+  ///
+  /// In en, this message translates to:
+  /// **'Back button hints'**
+  String get deviceToastBack;
+
+  /// Toast source: the outcome of a gesture's Home Assistant action.
+  ///
+  /// In en, this message translates to:
+  /// **'Gesture actions'**
+  String get deviceToastGestures;
+
+  /// Toast source: Hold mode turning on or off.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold mode'**
+  String get deviceToastHoldMode;
+
+  /// Toast source: kiosk and app links on the dashboard that fail.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard links'**
+  String get deviceToastLinks;
+
+  /// Toast source: file downloads from the dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads'**
+  String get deviceToastDownloads;
+
+  /// Toast source: the pill that says the network is gone or back.
+  ///
+  /// In en, this message translates to:
+  /// **'Network status'**
+  String get deviceToastNetwork;
+
+  /// Toast source: checking for updates from the kiosk menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Update checks'**
+  String get deviceToastUpdates;
+
+  /// Toast source: Voice Satellite errors, warnings and notices.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Satellite notices'**
+  String get deviceToastVoice;
+
+  /// Toast source: voice timer pills.
+  ///
+  /// In en, this message translates to:
+  /// **'Timers'**
+  String get deviceToastTimers;
+
+  /// Toast source: the Alarms panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarms'**
+  String get deviceToastAlarms;
+
+  /// Toast source: the Music Library.
+  ///
+  /// In en, this message translates to:
+  /// **'Music Library'**
+  String get deviceToastMusicLibrary;
+
+  /// Toast source: Intercom calls.
+  ///
+  /// In en, this message translates to:
+  /// **'Intercom'**
+  String get deviceToastIntercom;
+
+  /// Toast source: apps opened from the App Launcher.
+  ///
+  /// In en, this message translates to:
+  /// **'App Launcher'**
+  String get deviceToastAppLauncher;
+
+  /// Toast source: plugin actions in the kiosk menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugin actions'**
+  String get deviceToastPlugins;
 
   /// Setting label.
   ///
@@ -17768,14 +18662,38 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
-  /// **'Full screen'**
-  String get settingScreenFullScreenTitle;
+  /// **'Hide status bar'**
+  String get settingScreenHideStatusBarTitle;
 
   /// Help below the setting.
   ///
   /// In en, this message translates to:
-  /// **'Hide the status and navigation bars. Turn off to keep them visible, along with the taskbar on tablets. Kiosk mode always hides them.'**
-  String get settingScreenFullScreenDescription;
+  /// **'Turn off to keep the clock and notification icons at the top of the screen. Kiosk mode always hides it.'**
+  String get settingScreenHideStatusBarDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide navigation bar'**
+  String get settingScreenHideNavigationBarTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off to keep the navigation buttons on screen, along with the taskbar on tablets. Kiosk mode always hides it.'**
+  String get settingScreenHideNavigationBarDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Show over lock screen'**
+  String get settingScreenShowOnLockScreenTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the dashboard on top of a PIN, pattern or password lock screen. The rest of the device stays locked.'**
+  String get settingScreenShowOnLockScreenDescription;
 
   /// Setting label.
   ///
@@ -23006,6 +23924,30 @@ abstract class UiStrings {
   /// Translate the visible label or help. Keep model names and technical identifiers unchanged.
   ///
   /// In en, this message translates to:
+  /// **'Assistant 1 skin'**
+  String get voiceSkin1;
+
+  /// Translate the visible label or help. Keep model names and technical identifiers unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The look of the overlay when Assistant 1 answers.'**
+  String get voiceSkin1Help;
+
+  /// Translate the visible label or help. Keep model names and technical identifiers unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant 2 skin'**
+  String get voiceSkin2;
+
+  /// Translate the visible label or help. Keep model names and technical identifiers unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The look of the overlay when Assistant 2 answers.'**
+  String get voiceSkin2Help;
+
+  /// Translate the visible label or help. Keep model names and technical identifiers unchanged.
+  ///
+  /// In en, this message translates to:
   /// **'Theme mode'**
   String get voiceTheme;
 
@@ -24554,6 +25496,18 @@ abstract class UiStrings {
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
   /// In en, this message translates to:
+  /// **'Talk over sensitivity'**
+  String get settingVoiceRealtimeTalkOverSensitivityTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'How easily speaking interrupts an answer. Raise it if interrupting does not work on a quiet microphone. Higher values can make it interrupt itself.'**
+  String get settingVoiceRealtimeTalkOverSensitivityDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
   /// **'Tools'**
   String get settingVoiceRealtimeToolsTitle;
 
@@ -25300,6 +26254,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'How easily the wake word triggers.'**
   String get settingVoiceWakeWordSensitivityDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Fine-tune sensitivity'**
+  String get settingVoiceWakeWordFineTuneTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjusts the wake word sensitivity in smaller steps. Raise it if you often have to repeat the wake word, lower it if it wakes by mistake.'**
+  String get settingVoiceWakeWordFineTuneDescription;
 
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
@@ -26194,6 +27160,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Turn on the flashlight'**
   String get setupQrFlashOn;
+
+  /// Button label when the screen light is on. The screen light turns the screen white around a smaller camera preview to light the code.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off the screen light'**
+  String get setupQrScreenLightOff;
+
+  /// Button label when the screen light is off. The screen light turns the screen white around a smaller camera preview to light the code.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on the screen light'**
+  String get setupQrScreenLightOn;
 
   /// Error heading when importing before setting an admin password.
   ///

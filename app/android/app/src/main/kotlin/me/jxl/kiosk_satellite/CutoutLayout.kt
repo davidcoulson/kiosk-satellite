@@ -44,8 +44,8 @@ import io.flutter.embedding.android.FlutterViewDelegate
  *
  * IME insets always pass through for Flutter's keyboard handling.
  *
- * With the Full screen setting off (issue #1076, SystemBars.hidden false)
- * the bars stay up, and the content view is padded by them instead. The
+ * With Hide status bar or Hide navigation bar off (issues #1076 and #1102)
+ * that bar stays up, and the content view is padded by it instead. The
  * window keeps its edge-to-edge layout, the bar strips show the black
  * window background and everything inside (Flutter, the dashboard page)
  * still sees zero bar insets, so no layout of the app's own has to change.
@@ -108,26 +108,32 @@ object CutoutLayout {
     }
 
     /**
-     * The room the visible status and navigation bars take while Full screen
-     * is off, empty while the bars are hidden. Only those two bars: the
-     * caption bar is a handle some ROMs float over a full-screen app (issue
-     * #961), not a bar to make room for. Before Android 11 the stable insets
-     * give the bar sizes without the keyboard, which the legacy system window
-     * insets fold in.
+     * The room the bars that stay up take, empty while both are hidden. Only
+     * a bar whose setting keeps it up counts, so a ROM that reports a hidden
+     * bar's inset (Lenovo's ZUI, discussion #102) cannot open a gap. Only the
+     * status and navigation bars: the caption bar is a handle some ROMs float
+     * over a full-screen app (issue #961), not a bar to make room for. Before
+     * Android 11 the stable insets give the bar sizes without the keyboard,
+     * which the legacy system window insets fold in. There the status bar is
+     * the top edge and the navigation bar any of the other three.
      */
     private fun barPadding(insets: WindowInsets): Rect {
-        if (SystemBars.hidden) return Rect()
+        if (!SystemBars.anyShown) return Rect()
+        val status = !SystemBars.hideStatus
+        val navigation = !SystemBars.hideNavigation
         if (Build.VERSION.SDK_INT >= 30) {
-            val bars = insets.getInsets(
-                WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+            var types = 0
+            if (status) types = types or WindowInsets.Type.statusBars()
+            if (navigation) types = types or WindowInsets.Type.navigationBars()
+            val bars = insets.getInsets(types)
             return Rect(bars.left, bars.top, bars.right, bars.bottom)
         }
         @Suppress("DEPRECATION")
         return Rect(
-            insets.stableInsetLeft,
-            insets.stableInsetTop,
-            insets.stableInsetRight,
-            insets.stableInsetBottom,
+            if (navigation) insets.stableInsetLeft else 0,
+            if (status) insets.stableInsetTop else 0,
+            if (navigation) insets.stableInsetRight else 0,
+            if (navigation) insets.stableInsetBottom else 0,
         )
     }
 
@@ -182,16 +188,16 @@ object CutoutLayout {
                 @Suppress("DEPRECATION")
                 legacy = legacy.consumeDisplayCutout()
             }
-            if (!SystemBars.hidden) legacy = withoutStableBars(legacy)
+            if (SystemBars.anyShown) legacy = withoutPadding(legacy, barPadding(insets))
             legacy
         }
 
     @Suppress("DEPRECATION")
-    private fun withoutStableBars(insets: WindowInsets): WindowInsets =
+    private fun withoutPadding(insets: WindowInsets, pad: Rect): WindowInsets =
         insets.replaceSystemWindowInsets(
-            maxOf(0, insets.systemWindowInsetLeft - insets.stableInsetLeft),
-            maxOf(0, insets.systemWindowInsetTop - insets.stableInsetTop),
-            maxOf(0, insets.systemWindowInsetRight - insets.stableInsetRight),
-            maxOf(0, insets.systemWindowInsetBottom - insets.stableInsetBottom),
+            maxOf(0, insets.systemWindowInsetLeft - pad.left),
+            maxOf(0, insets.systemWindowInsetTop - pad.top),
+            maxOf(0, insets.systemWindowInsetRight - pad.right),
+            maxOf(0, insets.systemWindowInsetBottom - pad.bottom),
         )
 }
