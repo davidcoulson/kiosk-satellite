@@ -40,3 +40,11 @@ Kiosk Satellite lists the Local Media folder with plain file reads, so granting 
 ## 6. Permissions on a remote-only frame
 
 Display over other apps and unrestricted battery can be granted through the Overview *Grant on device* buttons, or with adb (`appops set me.jxl.kiosk_satellite SYSTEM_ALERT_WINDOW allow`, `dumpsys deviceidle whitelist +me.jxl.kiosk_satellite`). `MANAGE_EXTERNAL_STORAGE` does not exist on Android 10.
+
+## 7. Screen off overnight
+
+The Home Assistant **Screen** light only powers the panel off when Kiosk Satellite is an active device admin, which a fresh install is not: `adb shell dpm set-active-admin me.jxl.kiosk_satellite/.KioskAdminReceiver`. The first off right after the grant was undone about a second later by a Kiosk Satellite wake (`ks:screenWake`); the second off held. An automation then switches the light off at 22:00 and on at 07:00. `appops set me.jxl.kiosk_satellite WRITE_SETTINGS allow` lets the brightness slider move the real backlight. Microphone, camera, location and Bluetooth grants are pointless here because the frames have none of that hardware.
+
+## 8. Trimming RAM
+
+Kiosk Satellite uses about 590 MB, mostly GL surfaces and the WebView (its photo cache is already capped at 32 MB). `pm disable-user` on `com.android.calendar`, `com.android.providers.calendar`, `com.android.gallery3d` and `com.android.bluetooth` frees only tens of MB.
