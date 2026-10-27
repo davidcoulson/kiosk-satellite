@@ -1301,6 +1301,26 @@ class _PluginSettingsState extends State<_PluginSettings> {
             if (mounted && !_busy) _saveValue(key, path);
           },
         );
+      case 'action':
+        return SettingsRow(
+          title: Text('${raw['title']}'),
+          subtitle: raw['description'] == null
+              ? null
+              : Text('${raw['description']}'),
+          stack: true,
+          trailing: SizedBox(
+            width: tightPane(context) ? null : 300,
+            child: PluginActionField(
+              container: widget.container,
+              title: '${raw['title']}',
+              value: value,
+              enabled: !_busy,
+              onPick: (action) async {
+                if (mounted && !_busy) await _saveValue(key, action);
+              },
+            ),
+          ),
+        );
       case 'cameraView':
         return PickRow(
           title: '${raw['title']}',
@@ -1338,7 +1358,8 @@ class _PluginSettingsState extends State<_PluginSettings> {
     }
     if (raw['type'] == 'entity') {
       final value = '${_values[raw['key']] ?? raw['default']}';
-      // A plugin may narrow the picker to one domain or a few.
+      // A plugin may narrow the picker to one domain or a few, and may
+      // list the entities Home Assistant hides.
       final domain = raw['domain'];
       return PickRow(
         title: '${raw['title']}',
@@ -1351,6 +1372,7 @@ class _PluginSettingsState extends State<_PluginSettings> {
             if (domain is List)
               for (final d in domain) '$d',
           ],
+          includeHidden: raw['includeHidden'] == true,
         ),
         value: value,
         allowClear: true,

@@ -93,8 +93,8 @@ class UiStringsEn extends UiStrings {
   String get aboutSystemInstalling => 'Installing…';
 
   @override
-  String get aboutSystemInstallHelp =>
-      'The Dot restarts twice to install the update and is offline for about a minute and a half each time.';
+  String get aboutSystemRestartHelp =>
+      'The device restarts twice to install the update and is offline for a few minutes.';
 
   @override
   String get aboutSystemManual => 'New image available';
@@ -4429,8 +4429,8 @@ class UiStringsEn extends UiStrings {
   String get overviewSystemUpdate => 'System update available';
 
   @override
-  String overviewSystemUpdateHelp(String version) {
-    return 'Version $version of the Echo Dot image is ready to install. The Dot restarts twice to install it.';
+  String overviewSystemImageUpdateHelp(String version) {
+    return 'Version $version of the system image is ready to install. The device restarts twice to install it.';
   }
 
   @override
@@ -4948,11 +4948,12 @@ class UiStringsEn extends UiStrings {
       'Time without a touch in the other app before the kiosk comes back.';
 
   @override
-  String get settingLauncherAutoReturnMediaTitle => 'Wait while media plays';
+  String get settingLauncherAutoReturnHoldTitle =>
+      'Wait during media and calls';
 
   @override
-  String get settingLauncherAutoReturnMediaDescription =>
-      'Do not come back while video or music is playing.';
+  String get settingLauncherAutoReturnHoldDescription =>
+      'Do not come back during video, music or calls.';
 
   @override
   String get launcherOverlayHeld =>

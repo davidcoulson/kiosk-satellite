@@ -89,7 +89,7 @@ class UiStringsZh extends UiStrings {
   String get aboutSystemInstalling => '正在安装…';
 
   @override
-  String get aboutSystemInstallHelp => 'Dot 会重启两次以安装更新，每次离线约一分半钟。';
+  String get aboutSystemRestartHelp => '设备会重启两次以安装更新，期间离线几分钟。';
 
   @override
   String get aboutSystemManual => '有新镜像可用';
@@ -4294,8 +4294,8 @@ class UiStringsZh extends UiStrings {
   String get overviewSystemUpdate => '有可用的系统更新';
 
   @override
-  String overviewSystemUpdateHelp(String version) {
-    return 'Echo Dot 镜像 $version 版已可安装。安装时 Dot 会重启两次。';
+  String overviewSystemImageUpdateHelp(String version) {
+    return '系统镜像 $version 版已可安装。安装时设备会重启两次。';
   }
 
   @override
@@ -4787,10 +4787,10 @@ class UiStringsZh extends UiStrings {
       '在其他应用中连续多久没有触屏操作后，自动返回 Kiosk。';
 
   @override
-  String get settingLauncherAutoReturnMediaTitle => '媒体播放时等待';
+  String get settingLauncherAutoReturnHoldTitle => '媒体播放或通话时等待';
 
   @override
-  String get settingLauncherAutoReturnMediaDescription => '正在播放视频或音乐时不自动返回。';
+  String get settingLauncherAutoReturnHoldDescription => '正在播放视频、音乐或通话时不自动返回。';
 
   @override
   String get launcherOverlayHeld => 'Kiosk Satellite 可以自动返回前台，并检测其他应用中的触屏操作。';
@@ -15243,7 +15243,7 @@ class UiStringsZhCn extends UiStringsZh {
   String get aboutSystemInstalling => '正在安装…';
 
   @override
-  String get aboutSystemInstallHelp => 'Dot 会重启两次以安装更新，每次离线约一分半钟。';
+  String get aboutSystemRestartHelp => '设备会重启两次以安装更新，期间离线几分钟。';
 
   @override
   String get aboutSystemManual => '有新镜像可用';
@@ -19448,8 +19448,8 @@ class UiStringsZhCn extends UiStringsZh {
   String get overviewSystemUpdate => '有可用的系统更新';
 
   @override
-  String overviewSystemUpdateHelp(String version) {
-    return 'Echo Dot 镜像 $version 版已可安装。安装时 Dot 会重启两次。';
+  String overviewSystemImageUpdateHelp(String version) {
+    return '系统镜像 $version 版已可安装。安装时设备会重启两次。';
   }
 
   @override
@@ -19941,10 +19941,10 @@ class UiStringsZhCn extends UiStringsZh {
       '在其他应用中连续多久没有触屏操作后，自动返回 Kiosk。';
 
   @override
-  String get settingLauncherAutoReturnMediaTitle => '媒体播放时等待';
+  String get settingLauncherAutoReturnHoldTitle => '媒体播放或通话时等待';
 
   @override
-  String get settingLauncherAutoReturnMediaDescription => '正在播放视频或音乐时不自动返回。';
+  String get settingLauncherAutoReturnHoldDescription => '正在播放视频、音乐或通话时不自动返回。';
 
   @override
   String get launcherOverlayHeld => 'Kiosk Satellite 可以自动返回前台，并检测其他应用中的触屏操作。';

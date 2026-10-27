@@ -205,9 +205,35 @@ class SettingsManager extends Manager {
   /// it validated, and the reset would stomp it after the fact.
   bool importing = false;
 
+  /// Whether this is the first start of a fresh install: nothing the app
+  /// keeps was stored when [init] began. An upgrade, a restored backup and
+  /// a data import all arrive with stored settings. Read before the
+  /// migrations below write theirs.
+  bool firstRun = false;
+
+  /// Settings the native side can write before Dart first starts (the
+  /// renderer guards), which a fresh install may already hold.
+  static final _nativeWritten = {disableImpeller.key, legacyWebView.key};
+
+  bool _storedNothing() {
+    final keys = _prefs.getKeys();
+    if (keys.any(
+      (k) =>
+          k.startsWith('${_prefix}internal.') ||
+          k.startsWith('${_prefix}secret.'),
+    )) {
+      return false;
+    }
+    return !allSettings.any(
+      (def) =>
+          !_nativeWritten.contains(def.key) && keys.contains(_prefix + def.key),
+    );
+  }
+
   @override
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
+    firstRun = _storedNothing();
     // Before the migrations: one of them reads a secret.
     await _openVault();
     await _migrate();

@@ -1784,6 +1784,8 @@
 /* A phone keeps the width for the names: no icon disc on the rows. */
 .dp.narrow .ep-row .ep-disc { display: none; }
 .ep-row:disabled { cursor: default; }
+.ep-title-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ep-hidden { flex: none; display: grid; color: var(--muted); }
 .ep-state { flex: none; max-width: 34%; font-size: 13px; color: var(--muted); text-align: right;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ep-chips { flex: none; display: flex; gap: 8px; overflow-x: auto; padding: 0 0 10px;

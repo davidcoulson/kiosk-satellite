@@ -93,8 +93,8 @@ class UiStringsEs extends UiStrings {
   String get aboutSystemInstalling => 'Instalando…';
 
   @override
-  String get aboutSystemInstallHelp =>
-      'El Dot se reinicia dos veces para instalar la actualización y queda sin conexión aproximadamente un minuto y medio cada vez.';
+  String get aboutSystemRestartHelp =>
+      'El dispositivo se reinicia dos veces para instalar la actualización y queda sin conexión unos minutos.';
 
   @override
   String get aboutSystemManual => 'Nueva imagen disponible';
@@ -4490,8 +4490,8 @@ class UiStringsEs extends UiStrings {
   String get overviewSystemUpdate => 'Actualización del sistema disponible';
 
   @override
-  String overviewSystemUpdateHelp(String version) {
-    return 'La versión $version de la imagen del Echo Dot está lista para instalarse. El Dot se reinicia dos veces para instalarla.';
+  String overviewSystemImageUpdateHelp(String version) {
+    return 'La versión $version de la imagen del sistema está lista para instalarse. El dispositivo se reinicia dos veces para instalarla.';
   }
 
   @override
@@ -5015,12 +5015,12 @@ class UiStringsEs extends UiStrings {
       'Tiempo sin tocar la otra aplicación antes de volver al kiosko.';
 
   @override
-  String get settingLauncherAutoReturnMediaTitle =>
-      'Esperar mientras se reproduce contenido';
+  String get settingLauncherAutoReturnHoldTitle =>
+      'Esperar durante contenido y llamadas';
 
   @override
-  String get settingLauncherAutoReturnMediaDescription =>
-      'No vuelve mientras se reproduce video o música.';
+  String get settingLauncherAutoReturnHoldDescription =>
+      'No vuelve durante video, música o llamadas.';
 
   @override
   String get launcherOverlayHeld =>

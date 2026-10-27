@@ -92,8 +92,8 @@ class UiStringsRu extends UiStrings {
   String get aboutSystemInstalling => 'Установка…';
 
   @override
-  String get aboutSystemInstallHelp =>
-      'Dot дважды перезагружается для установки обновления и каждый раз около полутора минут не в сети.';
+  String get aboutSystemRestartHelp =>
+      'Устройство дважды перезагружается для установки обновления и несколько минут не в сети.';
 
   @override
   String get aboutSystemManual => 'Доступен новый образ';
@@ -4453,8 +4453,8 @@ class UiStringsRu extends UiStrings {
   String get overviewSystemUpdate => 'Доступно обновление системы';
 
   @override
-  String overviewSystemUpdateHelp(String version) {
-    return 'Версия $version образа Echo Dot готова к установке. Для этого Dot дважды перезагрузится.';
+  String overviewSystemImageUpdateHelp(String version) {
+    return 'Версия $version образа системы готова к установке. Для этого устройство дважды перезагрузится.';
   }
 
   @override
@@ -4978,12 +4978,12 @@ class UiStringsRu extends UiStrings {
       'Время без касаний в другом приложении до возврата в киоск.';
 
   @override
-  String get settingLauncherAutoReturnMediaTitle =>
-      'Ждать во время воспроизведения';
+  String get settingLauncherAutoReturnHoldTitle =>
+      'Ждать во время воспроизведения и звонков';
 
   @override
-  String get settingLauncherAutoReturnMediaDescription =>
-      'Не возвращаться, пока играет видео или музыка.';
+  String get settingLauncherAutoReturnHoldDescription =>
+      'Не возвращаться во время видео, музыки или звонков.';
 
   @override
   String get launcherOverlayHeld =>

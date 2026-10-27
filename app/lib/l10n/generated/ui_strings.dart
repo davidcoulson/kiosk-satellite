@@ -260,11 +260,11 @@ abstract class UiStrings {
   /// **'Installing…'**
   String get aboutSystemInstalling;
 
-  /// Guidance below the release notes before a system update installs. The Dot is the Echo Dot smart speaker.
+  /// Guidance below the release notes before a system update installs. The device is an Echo Dot or Echo Show running the Kiosk Satellite image.
   ///
   /// In en, this message translates to:
-  /// **'The Dot restarts twice to install the update and is offline for about a minute and a half each time.'**
-  String get aboutSystemInstallHelp;
+  /// **'The device restarts twice to install the update and is offline for a few minutes.'**
+  String get aboutSystemRestartHelp;
 
   /// Row shown when a newer system image exists that the device cannot install as an update. It has to be installed by hand, following a guide. The Echo Dot smart speaker moves from its LineageOS 14.1 image to a LineageOS 18.1 one this way.
   ///
@@ -7837,8 +7837,8 @@ abstract class UiStrings {
   /// Translate the interface text. Keep external names, versions and technical details unchanged.
   ///
   /// In en, this message translates to:
-  /// **'Version {version} of the Echo Dot image is ready to install. The Dot restarts twice to install it.'**
-  String overviewSystemUpdateHelp(String version);
+  /// **'Version {version} of the system image is ready to install. The device restarts twice to install it.'**
+  String overviewSystemImageUpdateHelp(String version);
 
   /// Translate the interface text. Keep external names, versions and technical details unchanged.
   ///
@@ -8725,14 +8725,14 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
-  /// **'Wait while media plays'**
-  String get settingLauncherAutoReturnMediaTitle;
+  /// **'Wait during media and calls'**
+  String get settingLauncherAutoReturnHoldTitle;
 
   /// Help below this setting.
   ///
   /// In en, this message translates to:
-  /// **'Do not come back while video or music is playing.'**
-  String get settingLauncherAutoReturnMediaDescription;
+  /// **'Do not come back during video, music or calls.'**
+  String get settingLauncherAutoReturnHoldDescription;
 
   /// Label or guidance in this section.
   ///

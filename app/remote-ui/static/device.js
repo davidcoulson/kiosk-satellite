@@ -622,9 +622,10 @@ function releaseNotesModal(version, notesText, hintId, onOk) {
   shell.foot.append(cancel, ok);
 }
 
-/* ---- System updates of the Echo Dot image ----
-   BiscuitService downloads the release, checks its signature and installs
-   it through TWRP, rebooting the Dot twice. The About page's System card and
+/* ---- System updates of the Echo images ----
+   The image's updater (BiscuitService on the Dot, EchoService on the Shows)
+   downloads the release, checks its signature and installs it through TWRP,
+   rebooting the device twice. The About page's System card and
    the Overview's Needs attention row show it. The kiosk goes down with each
    reboot, so a running update is polled until it settles, whatever the
    connection does meanwhile. */
@@ -671,7 +672,7 @@ export function attachSystemUpdateInstall(btn, getStatus, onSettled) {
   btn.onclick = () => {
     const sys = getStatus();
     if (!sys?.availableVersion) return;
-    releaseNotesModal(sys.availableVersion, sys.availableNotes, 'aboutSystemInstallHelp', async () => {
+    releaseNotesModal(sys.availableVersion, sys.availableNotes, 'aboutSystemRestartHelp', async () => {
       btn.disabled = true;
       const res = await cmd('installSystemUpdate').catch(() => null);
       if (!res?.ok) {

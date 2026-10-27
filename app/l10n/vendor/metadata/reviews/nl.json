@@ -27962,5 +27962,29 @@
     "translation": "bef64d4b13179c93b8d5c0d42c26fe2906d014b9ef60f429b8d5cf9348010045",
     "author": "Xavier Larrea",
     "ownerAuthored": true
+  },
+  "settingLauncherAutoReturnHoldDescription": {
+    "source": "82826dd7e1fd17a0dd9e8c453d0d22879717fbe30b47a27531aadc91ffb2589a",
+    "translation": "a30f864023040143fdeb03ce6cd4c4f1e3bb64fd76a297a887b1df84b41b1a72",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "settingLauncherAutoReturnHoldTitle": {
+    "source": "8c28103b2b3f541493d854adc4746707ced2c2737824b0bde06e6401c0d9dd21",
+    "translation": "531863cdd97154bdc2f9a7725724103e22632f27b0dfdb76e54830596052d031",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "overviewSystemImageUpdateHelp": {
+    "source": "0d06f6d4bb26c1a1327282c3f6cf368312bb502829af813bf02af0ba6b2bd378",
+    "translation": "736585857e461135b7c73c2d97c737ec433acc209779a987511eb08de96502a8",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
+  },
+  "aboutSystemRestartHelp": {
+    "source": "67a44b13a43856b77c976ad1cf8320a30e6ce5738b56071c6ac454bc473f63ae",
+    "translation": "97d71c97dbe63ad9b47147129659757b9e8c027fdf5498b4ba4733cc41926616",
+    "author": "Xavier Larrea",
+    "ownerAuthored": true
   }
 }

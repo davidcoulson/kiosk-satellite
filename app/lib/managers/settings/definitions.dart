@@ -1535,8 +1535,8 @@ const launcherAutoReturnMedia = SettingDef<bool>(
   key: 'launcher.auto_return_media',
   type: SettingType.boolean,
   defaultValue: true,
-  title: 'Wait while media plays',
-  description: 'Do not come back while video or music is playing.',
+  title: 'Wait during media and calls',
+  description: 'Do not come back during video, music or calls.',
   category: 'Launcher',
   dependsOn: 'launcher.auto_return',
 );
@@ -6932,7 +6932,7 @@ const voiceWakeWordEngine = SettingDef<String>(
   description: 'Which engine listens. All models ship with the app.',
   category: 'Voice Satellite',
   subpage: 'Wake Word',
-  // pryon is Amazon's engine, only on the Echo Dot image (PryonCatalog
+  // pryon is Amazon's engine, only on the Echo images (PryonCatalog
   // hides it everywhere else).
   options: ['vswakeword', 'microwakeword', 'openwakeword', 'pryon'],
   optionLabels: {
@@ -6945,7 +6945,7 @@ const voiceWakeWordEngine = SettingDef<String>(
 );
 
 /// The locale of Amazon's wake word models, under the Amazon engine. Empty
-/// follows the app's language. The options are the locales the Echo Dot
+/// follows the app's language. The options are the locales the Echo
 /// image's service lists (PryonCatalog), so SettingsManager fills them in.
 const voiceAmazonLocale = SettingDef<String>(
   key: 'voice.amazon_locale',
@@ -9560,8 +9560,8 @@ const sendspinMaToken = SettingDef<String>(
 );
 
 /// The Music Assistant follower's side of [sendspinSonosInputs]: Music
-/// Assistant names a Sonos input as the player's active source, `tv` or
-/// `line_in`, with the input's name for a title. Off, the followed room
+/// Assistant names a Sonos or WiiM input as the player's active source,
+/// such as `tv`, `hdmi` or `line_in`, with the input's name for a title. Off, the followed room
 /// reads as idle while one plays, as it does on the Sonos source.
 const sendspinMaInputs = SettingDef<bool>(
   key: 'sendspin.ma_inputs',
@@ -12212,6 +12212,15 @@ const fleetDefaultCredentials = {
   // The intercom is one household: a fleet shares one key.
   'intercom.key',
 };
+
+/// What [fleetDefaultCredentials] used to be, oldest first, for a profile
+/// saved before profiles recorded their default: one still holding exactly
+/// one of these (besides the realtime keys an upgrade added) never had its
+/// credentials touched and gains the ones that joined the default since.
+const fleetFormerDefaultCredentials = <Set<String>>[
+  // Before the intercom (2026.9.50).
+  {'sendspin.ma_token', 'screensaver.immich_api_key'},
+];
 
 /// Excluded from every new profile: what scales the UI, drives the
 /// backlight or sets a volume, files and picks that only resolve on the

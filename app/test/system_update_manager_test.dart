@@ -21,6 +21,8 @@ void main() {
   late Map<String, Object?> rom;
   late List<String> calls;
   late List<Uri> fetched;
+  // What SystemUpdateBridge.kt read from the ROM's properties.
+  String? updater;
   var changes = 0;
 
   // The new image's releases: other devices', a draft and a beta around
@@ -60,11 +62,14 @@ void main() {
       'checkError': '',
       'checked': 0,
     };
+    updater = null;
     var checkingReads = 0;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
           calls.add(call.method);
           switch (call.method) {
+            case 'updater':
+              return updater;
             case 'status':
               if (rom['state'] == 'checking' && ++checkingReads >= 2) {
                 rom
@@ -90,7 +95,6 @@ void main() {
 
   tearDown(() {
     Headless.debugActive = false;
-    Headless.debugSystemUpdate = false;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null);
   });
@@ -101,9 +105,49 @@ void main() {
     expect(status.data, {'supported': false});
     final install = await commands.execute('installSystemUpdate', const {});
     expect(install.ok, isFalse);
-    expect(install.error, contains('Echo Dot image'));
-    expect(calls, isEmpty);
+    expect(install.error, contains('Echo Show image'));
+    expect(calls, ['updater']);
     await manager.dispose();
+  });
+
+  group('on the Echo Show images', () {
+    setUp(() => updater = 'echo');
+
+    for (final headless in [false, true]) {
+      test(
+        'EchoService is found ${headless ? 'without' : 'with'} a screen',
+        (() async {
+          Headless.debugActive = headless;
+          await manager.init();
+          expect(manager.supported, isTrue);
+          final status = await commands.execute(
+            'getSystemUpdateStatus',
+            const {},
+          );
+          final data = status.data! as Map;
+          expect(data['supported'], isTrue);
+          expect(data['currentVersion'], '2026.10.4');
+          expect(data['title'], 'LineageOS for the Echo Show');
+          expect(
+            data['repository'],
+            'https://github.com/jxlarrea/lineageos-echo-kiosk-satellite',
+          );
+          expect(data['manualVersion'], isNull);
+          await manager.dispose();
+        }),
+      );
+    }
+
+    test('check and install go through the same bridge', () async {
+      await manager.init();
+      await commands.execute('checkSystemUpdateNow', const {});
+      final install = await commands.execute('installSystemUpdate', const {});
+      expect(install.ok, isTrue);
+      expect(calls, containsAllInOrder(['updater', 'check', 'install']));
+      // EchoService reads its own device's releases.
+      expect(fetched, isEmpty);
+      await manager.dispose();
+    });
   });
 
   group('on the Echo Dot image', () {

@@ -26,6 +26,7 @@ import 'managers/airplay/airplay_manager.dart';
 import 'managers/dlna/dlna_manager.dart';
 import 'managers/dlna/headless_dlna_player.dart';
 import 'managers/files/files_manager.dart';
+import 'managers/gestures/gesture_mappings.dart' show pluginActionNames;
 import 'managers/gestures/gestures_manager.dart';
 import 'managers/agent/agent_tools_manager.dart';
 import 'managers/gestures/hardware_buttons.dart';
@@ -67,6 +68,7 @@ import 'managers/screensaver/screensaver_manager.dart';
 import 'managers/sendspin/sendspin_manager.dart';
 import 'managers/service/service_manager.dart';
 import 'managers/sound/sound_manager.dart';
+import 'managers/settings/echo_defaults.dart';
 import 'managers/settings/headless_settings.dart';
 import 'managers/settings/provisioning.dart';
 import 'managers/settings/definitions.dart' as defs;
@@ -225,7 +227,9 @@ class AppContainer {
         commands: commands,
         settings: settings,
         log: log,
-      );
+      )
+      ..runAction = gestures.runPluginSettingAction;
+    pluginActionNames = plugins.actionNames;
     // A snapshot binding the camera mid-scan would take it from the scanner.
     deviceCamera.scannerActive = () => motion.scannerHeld;
     settings.pluginScreensavers = () => plugins.screensaverOptions;
@@ -480,6 +484,9 @@ class AppContainer {
     // the other managers through the bus, so starting before them costs
     // nothing.
     leds,
+    // Before btProxy too: its first catalog lists the Firmware entity only
+    // once getSystemUpdateStatus says the image updates itself.
+    systemUpdate,
     btProxy,
     files,
     glance,
@@ -491,7 +498,6 @@ class AppContainer {
     voice,
     notifications,
     update,
-    systemUpdate,
     shizuku,
     plugins,
     remote,
@@ -662,6 +668,9 @@ class AppContainer {
 
   Future<void> init() async {
     await settings.init();
+    // An Echo image's first start: before the provisioning below, which
+    // may override it, and before any manager reads its settings.
+    await EchoDefaults(settings, log).apply();
     // Apply any adb/MDM intent provisioning before other managers read
     // their settings; the channel also handles pushes while running.
     await ProvisioningChannel(settings, log).init();

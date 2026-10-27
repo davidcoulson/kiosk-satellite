@@ -627,7 +627,7 @@ function paintHealth({ filter = true } = {}) {
     items.push({
       key: 'system-update',
       name: t('overviewSystemUpdate'),
-      desc: t('overviewSystemUpdateHelp', {version: health.sys.availableVersion}),
+      desc: t('overviewSystemImageUpdateHelp', {version: health.sys.availableVersion}),
       action: (btn) => {
         overviewLabel(btn, 'Install');
         attachSystemUpdateInstall(btn, () => health.sys, () => { refreshUpdateBadge(); refreshHealth(); });

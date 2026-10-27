@@ -166,6 +166,15 @@ A mapping is stored in `gestures.mappings` like every other gesture, so settings
 
 A device in agent mode shows the Gestures page with this one trigger and the actions an agent can run: opening an app, a deep link or Android settings, a plugin action, and the Home Assistant actions.
 
+### Actions in plugin settings
+
+A plugin can also ask for an action in its own settings, such as what a button on a navigation bar plugin opens. The setting opens the same action chooser as a gesture, with every action listed above. The plugin runs the action when you use its control.
+
+* Only you choose the action. The plugin cannot change it, so it decides when the action runs and never what it does.
+* Lockdown Mode stops these actions. Kiosk Mode's Disable Gestures does not, since they come from the plugin's own controls.
+
+Plugin authors can find the `action` setting type and `host.runAction` in the [plugin SDK documentation](https://github.com/jxlarrea/kiosk-satellite-plugins/blob/main/docs/creating-plugins.md#action-settings).
+
 ## Timing
 
 Tap gestures chain together as long as they land within roughly half a second of each other. If you pause too long, or tap outside the designated corner, the sequence restarts. A hold gesture fires while your finger is actively pressed down, triggering exactly at the configured duration. Corner sequences are more forgiving, allowing a slower rhythm of about a second and a half between taps.

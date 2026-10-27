@@ -94,8 +94,8 @@ class UiStringsDe extends UiStrings {
   String get aboutSystemInstalling => 'Wird installiert ...';
 
   @override
-  String get aboutSystemInstallHelp =>
-      'Der Dot startet zur Installation des Updates zweimal neu und ist dabei jedes Mal etwa anderthalb Minuten offline.';
+  String get aboutSystemRestartHelp =>
+      'Das Gerät startet zur Installation des Updates zweimal neu und ist dabei einige Minuten offline.';
 
   @override
   String get aboutSystemManual => 'Neues Image verfügbar';
@@ -4518,8 +4518,8 @@ class UiStringsDe extends UiStrings {
   String get overviewSystemUpdate => 'Systemupdate verfügbar';
 
   @override
-  String overviewSystemUpdateHelp(String version) {
-    return 'Version $version des Echo-Dot-Images ist bereit zur Installation. Der Dot startet dafür zweimal neu.';
+  String overviewSystemImageUpdateHelp(String version) {
+    return 'Version $version des System-Images ist bereit zur Installation. Das Gerät startet dafür zweimal neu.';
   }
 
   @override
@@ -5049,12 +5049,12 @@ class UiStringsDe extends UiStrings {
       'Zeit ohne Interaktion mit der anderen App, bevor zum Kiosk zurückgekehrt wird.';
 
   @override
-  String get settingLauncherAutoReturnMediaTitle =>
-      'Warten, während Medien laufen';
+  String get settingLauncherAutoReturnHoldTitle =>
+      'Bei Medien und Anrufen warten';
 
   @override
-  String get settingLauncherAutoReturnMediaDescription =>
-      'Nicht zurückkehren, solange Video oder Musik läuft.';
+  String get settingLauncherAutoReturnHoldDescription =>
+      'Nicht zurückkehren, solange Video, Musik oder ein Anruf läuft.';
 
   @override
   String get launcherOverlayHeld =>

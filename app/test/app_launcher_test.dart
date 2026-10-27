@@ -440,18 +440,21 @@ void main() {
     });
   });
 
-  group('auto-return waits for media (issue #1055)', () {
+  group('auto-return waits for media and calls (issues #1055, #1155)', () {
     const background = MethodChannel('kiosk_satellite/background');
     const sessions = MethodChannel('kiosk_satellite/media_sessions');
     late bool playing;
+    late bool calling;
     late int asked;
 
     setUp(() {
       playing = false;
+      calling = false;
       asked = 0;
       final messenger =
           TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
       messenger.setMockMethodCallHandler(background, (call) async {
+        if (call.method == 'inCall') return calling;
         return call.method == 'watchTouches' ? true : null;
       });
       messenger.setMockMethodCallHandler(sessions, (call) async {
@@ -548,6 +551,39 @@ void main() {
         async.flushMicrotasks();
         expect(executed, ['bringToFront']);
         expect(asked, 0);
+      });
+    });
+
+    test('holds the return during a call (issue #1155)', () async {
+      await armed();
+      fakeAsync((async) {
+        calling = true;
+        launch(async);
+        async.elapse(const Duration(minutes: 10));
+        async.flushMicrotasks();
+        expect(executed, isEmpty);
+        // A call needs no media session to hold.
+        expect(asked, 0);
+        calling = false;
+        async.elapse(const Duration(seconds: 5));
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 28));
+        async.flushMicrotasks();
+        expect(executed, isEmpty);
+        async.elapse(const Duration(seconds: 3));
+        async.flushMicrotasks();
+        expect(executed, ['bringToFront']);
+      });
+    });
+
+    test('ignores a call with the switch off', () async {
+      await armed(wait: false);
+      fakeAsync((async) {
+        calling = true;
+        launch(async);
+        async.elapse(const Duration(seconds: 31));
+        async.flushMicrotasks();
+        expect(executed, ['bringToFront']);
       });
     });
 

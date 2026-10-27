@@ -5138,7 +5138,7 @@ class _LauncherPermissionsTileState extends State<_LauncherPermissionsTile>
           ),
           onGrant: BackgroundListening.requestBatteryUnrestricted,
         ),
-        // Wait while media plays reads other apps' media sessions
+        // Wait during media and calls reads other apps' media sessions
         // (issue #1055), which Android shows to no one without this.
         if (widget.container.settings.get(launcherAutoReturnMedia))
           _row(

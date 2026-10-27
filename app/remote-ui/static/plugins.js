@@ -8,7 +8,7 @@ import { updatePluginCharts } from './plugin-charts.js';
 import { updatePluginReadings } from './plugin-readings.js';
 import { currentPath, showTab, subpageEntry } from './tabs.js';
 import { dashboardField } from './dashboard_picker.js';
-import { cameraViewSpec, fieldVisible, iconField, listSetting, numberControl } from './plugin_lists.js';
+import { actionField, cameraViewSpec, fieldVisible, iconField, listSetting, numberControl } from './plugin_lists.js';
 import { choiceControl, refreshPluginSetup, setupButtonRow } from './plugin_setup.js';
 import { hintRow, introRow, messageBox, modalShell, showToast, swatch } from './widgets.js';
 import { SUBPAGE_ICONS, subpageIcon } from './icons.js';
@@ -618,11 +618,12 @@ function settingRow(plugin, setting, value, save) {
     control.append(input, output); settingRow.append(control);
   } else if (setting.type === 'entity') {
     // The entity picker, narrowed to the plugin's domain when it
-    // declares one; Clear empties the setting.
+    // declares one and listing hidden entities when it asks; Clear
+    // empties the setting.
     let current = value ?? setting.default ?? '';
     const domains = Array.isArray(setting.domain) ? setting.domain.map(String)
       : (setting.domain ? [String(setting.domain)] : []);
-    const spec = entitySpec({ domains });
+    const spec = entitySpec({ domains, includeHidden: setting.includeHidden === true });
     const field = pickField({
       spec, value: current,
       onClick: async () => {
@@ -634,6 +635,10 @@ function settingRow(plugin, setting, value, save) {
         field.setValue(current);
       },
     });
+    settingRow.replaceChildren(info(setting.title, setting.description || ''), field.el);
+    settingRow.classList.add('dp-field-row');
+  } else if (setting.type === 'action') {
+    const field = actionField({ value: value ?? setting.default ?? {}, onPick: (action) => save(setting.key, action, field.el) });
     settingRow.replaceChildren(info(setting.title, setting.description || ''), field.el);
     settingRow.classList.add('dp-field-row');
   } else if (setting.type === 'icon' || setting.type === 'dashboard' || setting.type === 'cameraView') {

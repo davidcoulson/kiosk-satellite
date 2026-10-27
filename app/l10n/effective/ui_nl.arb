@@ -304,10 +304,10 @@
       ]
     }
   },
-  "aboutSystemInstallHelp": "De Dot start twee keer opnieuw op om de update te installeren en is elke keer ongeveer anderhalve minuut offline.",
-  "@aboutSystemInstallHelp": {
+  "aboutSystemRestartHelp": "Het apparaat start twee keer opnieuw op om de update te installeren en is een paar minuten offline.",
+  "@aboutSystemRestartHelp": {
     "context": "Remote administration > About > System",
-    "description": "Guidance below the release notes before a system update installs. The Dot is the Echo Dot smart speaker.",
+    "description": "Guidance below the release notes before a system update installs. The device is an Echo Dot or Echo Show running the Kiosk Satellite image.",
     "x-locations": {
       "remoteAdmin": [
         "About > System > install a version",
@@ -16858,8 +16858,8 @@
       ]
     }
   },
-  "overviewSystemUpdateHelp": "Versie {version} van de Echo Dot-image staat klaar om te installeren. De Dot start daarvoor twee keer opnieuw op.",
-  "@overviewSystemUpdateHelp": {
+  "overviewSystemImageUpdateHelp": "Versie {version} van de systeemimage staat klaar om te installeren. Het apparaat start daarvoor twee keer opnieuw op.",
+  "@overviewSystemImageUpdateHelp": {
     "context": "Remote admin > Overview > Needs attention",
     "description": "Translate the interface text. Keep external names, versions and technical details unchanged.",
     "x-locations": {
@@ -16871,7 +16871,7 @@
     "placeholders": {
       "version": {
         "type": "String",
-        "description": "Release of the Echo Dot's system image, such as 2026.10.4."
+        "description": "Release of the device's system image, such as 2026.10.4."
       }
     }
   },
@@ -18673,29 +18673,29 @@
       ]
     }
   },
-  "settingLauncherAutoReturnMediaTitle": "Wachten tijdens afspelen",
-  "@settingLauncherAutoReturnMediaTitle": {
+  "settingLauncherAutoReturnHoldTitle": "Wachten tijdens afspelen en gesprekken",
+  "@settingLauncherAutoReturnHoldTitle": {
     "context": "Settings > App Launcher",
     "description": "Setting label.",
     "x-locations": {
       "device": [
-        "Settings > App Launcher > Wait while media plays"
+        "Settings > App Launcher > Wait during media and calls"
       ],
       "remoteAdmin": [
-        "App Launcher > Wait while media plays"
+        "App Launcher > Wait during media and calls"
       ]
     }
   },
-  "settingLauncherAutoReturnMediaDescription": "Niet terugkeren zolang er video of muziek speelt.",
-  "@settingLauncherAutoReturnMediaDescription": {
+  "settingLauncherAutoReturnHoldDescription": "Niet terugkeren tijdens video, muziek of gesprekken.",
+  "@settingLauncherAutoReturnHoldDescription": {
     "context": "Settings > App Launcher",
     "description": "Help below this setting.",
     "x-locations": {
       "device": [
-        "Settings > App Launcher > Wait while media plays"
+        "Settings > App Launcher > Wait during media and calls"
       ],
       "remoteAdmin": [
-        "App Launcher > Wait while media plays"
+        "App Launcher > Wait during media and calls"
       ]
     }
   },

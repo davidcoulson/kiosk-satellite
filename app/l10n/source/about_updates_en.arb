@@ -148,10 +148,10 @@
       ]
     }
   },
-  "aboutSystemInstallHelp": "The Dot restarts twice to install the update and is offline for about a minute and a half each time.",
-  "@aboutSystemInstallHelp": {
+  "aboutSystemRestartHelp": "The device restarts twice to install the update and is offline for a few minutes.",
+  "@aboutSystemRestartHelp": {
     "context": "Remote administration > About > System",
-    "description": "Guidance below the release notes before a system update installs. The Dot is the Echo Dot smart speaker.",
+    "description": "Guidance below the release notes before a system update installs. The device is an Echo Dot or Echo Show running the Kiosk Satellite image.",
     "x-locations": {
       "remoteAdmin": [
         "About > System > install a version",

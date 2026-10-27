@@ -7,7 +7,6 @@ import 'package:http/http.dart' as http;
 
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
-import '../../core/headless.dart';
 import '../../core/manager.dart';
 import 'system_update_source.dart';
 import 'update_http_client.dart';
@@ -81,12 +80,17 @@ class SystemUpdateManager extends Manager {
   Timer? _timer;
 
   static Future<SystemUpdateSource?> _detectSource() async {
-    if (!Headless.systemUpdate) return null;
-    final android = await DeviceInfoPlugin().androidInfo;
-    return BiscuitSystemUpdateSource(
-      sdkInt: android.version.sdkInt,
-      device: android.device,
-    );
+    switch (await RomSystemUpdateSource.detect()) {
+      case 'biscuit':
+        final android = await DeviceInfoPlugin().androidInfo;
+        return BiscuitSystemUpdateSource(
+          sdkInt: android.version.sdkInt,
+          device: android.device,
+        );
+      case 'echo':
+        return EchoSystemUpdateSource();
+    }
+    return null;
   }
 
   @override
@@ -139,8 +143,8 @@ class SystemUpdateManager extends Manager {
           name: 'installSystemUpdate',
           description:
               'Download the newer system image release, check its signature '
-              'and install it. On the Echo Dot the device reboots into TWRP '
-              'twice and is offline for about a minute and a half each time',
+              'and install it. The device reboots into TWRP and back and is '
+              'offline meanwhile',
           handler: (_) async {
             if (!supported) return _unsupported();
             await refresh();
@@ -180,7 +184,7 @@ class SystemUpdateManager extends Manager {
   }
 
   CommandResult _unsupported() =>
-      CommandResult.fail('system updates need the Echo Dot image');
+      CommandResult.fail('system updates need the Echo Dot or Echo Show image');
 
   CommandResult _noAnswer() =>
       CommandResult.fail('the system updater did not answer');

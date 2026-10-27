@@ -93,8 +93,8 @@ class UiStringsNl extends UiStrings {
   String get aboutSystemInstalling => 'Installeren…';
 
   @override
-  String get aboutSystemInstallHelp =>
-      'De Dot start twee keer opnieuw op om de update te installeren en is elke keer ongeveer anderhalve minuut offline.';
+  String get aboutSystemRestartHelp =>
+      'Het apparaat start twee keer opnieuw op om de update te installeren en is een paar minuten offline.';
 
   @override
   String get aboutSystemManual => 'Nieuwe image beschikbaar';
@@ -4475,8 +4475,8 @@ class UiStringsNl extends UiStrings {
   String get overviewSystemUpdate => 'Systeemupdate beschikbaar';
 
   @override
-  String overviewSystemUpdateHelp(String version) {
-    return 'Versie $version van de Echo Dot-image staat klaar om te installeren. De Dot start daarvoor twee keer opnieuw op.';
+  String overviewSystemImageUpdateHelp(String version) {
+    return 'Versie $version van de systeemimage staat klaar om te installeren. Het apparaat start daarvoor twee keer opnieuw op.';
   }
 
   @override
@@ -5000,11 +5000,12 @@ class UiStringsNl extends UiStrings {
       'Tijd zonder aanraking in de andere app voordat de kiosk terugkeert.';
 
   @override
-  String get settingLauncherAutoReturnMediaTitle => 'Wachten tijdens afspelen';
+  String get settingLauncherAutoReturnHoldTitle =>
+      'Wachten tijdens afspelen en gesprekken';
 
   @override
-  String get settingLauncherAutoReturnMediaDescription =>
-      'Niet terugkeren zolang er video of muziek speelt.';
+  String get settingLauncherAutoReturnHoldDescription =>
+      'Niet terugkeren tijdens video, muziek of gesprekken.';
 
   @override
   String get launcherOverlayHeld =>

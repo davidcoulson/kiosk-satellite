@@ -139,40 +139,19 @@ abstract interface class SystemUpdateSource {
   void listen(VoidCallback onChanged);
 }
 
-/// BiscuitService, inside the Echo Dot image's system_server
-/// (BiscuitSystemUpdate.kt). It installs the newest release through TWRP,
-/// rebooting twice. Both Dot images have it (`ro.biscuit.ota`), each
-/// reading the releases of its own repository.
-class BiscuitSystemUpdateSource implements SystemUpdateSource {
-  BiscuitSystemUpdateSource({required this.sdkInt, required this.device});
-
+/// The updater of a Kiosk Satellite Edition ROM, reached through
+/// SystemUpdateBridge.kt. The Echo Dot image runs BiscuitService and the
+/// Echo Show images run EchoService. Both keep one contract and install the
+/// newest release through TWRP, so only what the remote admin and the
+/// Firmware entity call the image differs.
+abstract class RomSystemUpdateSource implements SystemUpdateSource {
   static const _channel = MethodChannel('kiosk_satellite/system_update');
 
-  static const _image = 'jxlarrea/lineageos-echo-kiosk-satellite';
+  static const image = 'jxlarrea/lineageos-echo-kiosk-satellite';
 
-  /// The CM14.1 image, which gets no more releases.
-  static const _cm14Image = 'jxlarrea/lineageos-biscuit-kiosk-satellite';
-
-  static const guide =
-      'https://github.com/$_image/blob/main/docs/echo-dot.md'
-      '#moving-from-the-cm141-image';
-
-  /// Android 7.1 on the CM14.1 image, Android 11 on the new one.
-  final int sdkInt;
-  final String device;
-
-  bool get _cm14 => sdkInt < 30;
-
-  @override
-  String get title => 'LineageOS for the Echo Dot';
-
-  @override
-  String get repository => 'https://github.com/${_cm14 ? _cm14Image : _image}';
-
-  @override
-  ImageSuccessor? get successor => _cm14
-      ? ImageSuccessor(repository: _image, device: device, guide: guide)
-      : null;
+  /// The ROM's updater, read from its property on any device: `biscuit`
+  /// (`ro.biscuit.ota`), `echo` (`ro.echo.ota`) or null.
+  static Future<String?> detect() => _channel.invokeMethod<String>('updater');
 
   @override
   Future<SystemUpdateStatus?> status() async {
@@ -197,4 +176,53 @@ class BiscuitSystemUpdateSource implements SystemUpdateSource {
       return null;
     });
   }
+}
+
+/// BiscuitService, inside the Echo Dot image's system_server. It installs
+/// the newest release through TWRP, rebooting twice. Both Dot images have
+/// it (`ro.biscuit.ota`), each reading the releases of its own repository.
+class BiscuitSystemUpdateSource extends RomSystemUpdateSource {
+  BiscuitSystemUpdateSource({required this.sdkInt, required this.device});
+
+  /// The CM14.1 image, which gets no more releases.
+  static const _cm14Image = 'jxlarrea/lineageos-biscuit-kiosk-satellite';
+
+  static const guide =
+      'https://github.com/${RomSystemUpdateSource.image}/blob/main/docs/'
+      'echo-dot.md#moving-from-the-cm141-image';
+
+  /// Android 7.1 on the CM14.1 image, Android 11 on the new one.
+  final int sdkInt;
+  final String device;
+
+  bool get _cm14 => sdkInt < 30;
+
+  @override
+  String get title => 'LineageOS for the Echo Dot';
+
+  @override
+  String get repository =>
+      'https://github.com/${_cm14 ? _cm14Image : RomSystemUpdateSource.image}';
+
+  @override
+  ImageSuccessor? get successor => _cm14
+      ? ImageSuccessor(
+          repository: RomSystemUpdateSource.image,
+          device: device,
+          guide: guide,
+        )
+      : null;
+}
+
+/// EchoService, the Echo Show images' updater (`ro.echo.ota`). It reads
+/// only the releases tagged with the Show's codename.
+class EchoSystemUpdateSource extends RomSystemUpdateSource {
+  @override
+  String get title => 'LineageOS for the Echo Show';
+
+  @override
+  String get repository => 'https://github.com/${RomSystemUpdateSource.image}';
+
+  @override
+  ImageSuccessor? get successor => null;
 }

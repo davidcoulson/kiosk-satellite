@@ -1435,6 +1435,7 @@ void main() {
       'enabled': true,
       'running': true,
       'connected': true,
+      'playing': true,
       'clientId': 'f00d',
       'playerName': 'Kitchen Tablet',
       'serverName': 'Music Assistant',

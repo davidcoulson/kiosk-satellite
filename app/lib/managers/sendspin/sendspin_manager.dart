@@ -904,6 +904,7 @@ class SendspinManager extends Manager {
       fullscreenActive.value = showing;
       bus.publish(SendspinNowPlayingChanged(active: showing, playing: playing));
     }
+    if (wasPlaying != playing) _playerChanged();
   }
 
   /// The kiosk menu's Now Playing entry: bring the view up now. A playing
@@ -2502,7 +2503,9 @@ class SendspinManager extends Manager {
 
   /// The local player as plugins see it, through `getSendspinPlayer` and
   /// the `sendspin.player` event. The Music Assistant fields are empty
-  /// until the player connects and the server names it.
+  /// until the player connects and the server names it. Playing is the
+  /// shown player's, the followed one while there is one, so it matches
+  /// what sendspinControl acts on.
   Map<String, Object?> get playerIdentity {
     final ma = _maConfigured ? _maIdentity : const <String, Object?>{};
     final connected = _running && _status['connected'] == true;
@@ -2510,6 +2513,7 @@ class SendspinManager extends Manager {
       'enabled': _settings.get(defs.sendspinEnabled),
       'running': _running,
       'connected': connected,
+      'playing': nowPlaying.value?['playing'] == true,
       'clientId': _settings.get(defs.sendspinClientId),
       'playerName': _settings.get(defs.sendspinLocalPlayerName),
       'serverName': connected ? '${_status['serverName'] ?? ''}' : '',

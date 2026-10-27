@@ -2265,7 +2265,8 @@ class HomeAssistantManager extends Manager {
   /// Every entity, once, for the entity picker: id, name, the state as
   /// Home Assistant formats it, icon (the entity's own, else the one Home
   /// Assistant would draw), device class, unit, domain with its title in
-  /// Home Assistant's language, and area. Hidden entities stay out. Null
+  /// Home Assistant's language, area, and whether Home Assistant hides it.
+  /// The pickers leave hidden entities out unless they ask for them. Null
   /// when Home Assistant cannot be reached.
   ///
   /// The page's own `hass` comes first: it already holds every state, the
@@ -2374,7 +2375,6 @@ class HomeAssistantManager extends Manager {
     var out = [];
     Object.keys(hass.states).forEach(function (id) {
       var s = hass.states[id], e = ents[id] || {};
-      if (e.hidden) return;
       var a = s.attributes || {};
       var areaId = e.area_id || (e.device_id && devs[e.device_id] && devs[e.device_id].area_id);
       var state = s.state;
@@ -2386,7 +2386,8 @@ class HomeAssistantManager extends Manager {
         icon: a.icon || e.icon || null,
         device_class: a.device_class || null,
         unit: a.unit_of_measurement || null,
-        area: areaId && areas[areaId] ? areas[areaId].name : null
+        area: areaId && areas[areaId] ? areas[areaId].name : null,
+        hidden: !!e.hidden
       });
     });
     return JSON.stringify({ language: hass.language || 'en', entities: out });
@@ -2448,8 +2449,7 @@ class HomeAssistantManager extends Manager {
     }
     return [
       for (final state in states)
-        if ('${state['entity_id'] ?? ''}'.isNotEmpty &&
-            registry['${state['entity_id']}']?['hidden_by'] == null)
+        if ('${state['entity_id'] ?? ''}'.isNotEmpty)
           (() {
             final id = '${state['entity_id']}';
             final a = (state['attributes'] as Map?) ?? const {};
@@ -2465,6 +2465,7 @@ class HomeAssistantManager extends Manager {
               'device_class': a['device_class'],
               'unit': unit,
               'area': areaId == null ? null : areas['$areaId'],
+              'hidden': reg?['hidden_by'] != null,
             });
           })(),
     ];

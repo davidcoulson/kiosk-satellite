@@ -26,7 +26,7 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'aboutSystemVersion' => strings.aboutSystemVersion,
       'aboutSystemVerifying' => strings.aboutSystemVerifying,
       'aboutSystemInstalling' => strings.aboutSystemInstalling,
-      'aboutSystemInstallHelp' => strings.aboutSystemInstallHelp,
+      'aboutSystemRestartHelp' => strings.aboutSystemRestartHelp,
       'aboutSystemManual' => strings.aboutSystemManual,
       'alarmsTitle' => strings.alarmsTitle,
       'alarmsSetAnAlarm' => strings.alarmsSetAnAlarm,
@@ -1354,10 +1354,10 @@ String messageById(UiStrings strings, String? id, String fallback) =>
         strings.settingLauncherAutoReturnSecondsTitle,
       'settingLauncherAutoReturnSecondsDescription' =>
         strings.settingLauncherAutoReturnSecondsDescription,
-      'settingLauncherAutoReturnMediaTitle' =>
-        strings.settingLauncherAutoReturnMediaTitle,
-      'settingLauncherAutoReturnMediaDescription' =>
-        strings.settingLauncherAutoReturnMediaDescription,
+      'settingLauncherAutoReturnHoldTitle' =>
+        strings.settingLauncherAutoReturnHoldTitle,
+      'settingLauncherAutoReturnHoldDescription' =>
+        strings.settingLauncherAutoReturnHoldDescription,
       'launcherOverlayHeld' => strings.launcherOverlayHeld,
       'launcherOverlayMissing' => strings.launcherOverlayMissing,
       'launcherOverlayRemote' => strings.launcherOverlayRemote,
