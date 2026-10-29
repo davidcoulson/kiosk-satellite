@@ -387,9 +387,12 @@ public:
         if (!ok || at != end) return false;
         fast = KIOSK_FP16 != 0;
 #if defined(__arm__) && !defined(__aarch64__)
-        // A 32-bit core without the half precision conversions (none
-        // newer than a Cortex-A8) takes the scalar path.
-        fast = fast && (getauxval(AT_HWCAP) & HWCAP_HALF) != 0;
+        // A 32-bit core without the half precision conversions takes the
+        // scalar path. HWCAP_HALF only means halfword loads (every ARMv6+
+        // core has it), so ask for VFPv4, the first level that guarantees
+        // the conversions on a core with NEON.
+        const unsigned long caps = getauxval(AT_HWCAP);
+        fast = fast && (caps & HWCAP_VFPv4) != 0 && (caps & HWCAP_NEON) != 0;
 #endif
         // The band matrix is a filterbank: almost every entry is zero, so
         // the energies and the gains per bin are summed over its nonzero
