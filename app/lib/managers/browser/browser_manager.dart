@@ -2177,7 +2177,7 @@ return n;
     // this watchdog's business: the loaded frontend with a dead connection,
     // and the launch screen that never got one. Anything else is somebody
     // else's page and nobody's to reload.
-    if (state != 'stale' && state != 'shell') {
+    if (state != 'stale' && state != 'shell' && state != 'broken') {
       _deadChecks = 0;
       return;
     }
@@ -2185,16 +2185,24 @@ return n;
     if (_deadChecks < _deadChecksBeforeRepair) return;
     log.warn(
       name,
-      'dashboard connection down for '
-      '${_deadChecks * healthCheckEvery.inSeconds}s; repairing',
+      state == 'broken'
+          ? 'dashboard connected but not rendered ($_brokenReason) for '
+                '${_deadChecks * healthCheckEvery.inSeconds}s; repairing'
+          : 'dashboard connection down for '
+                '${_deadChecks * healthCheckEvery.inSeconds}s; repairing',
     );
     // The nudge covers both the half-open socket and the suspended-reconnect
     // block; a frozen page gets longer, since its timers are throttled and
     // the frontend's re-subscribe runs on them.
-    if (await ensureHaConnected(
-      timeout:
-          healthRepairTimeout ?? Duration(seconds: renderingFrozen ? 20 : 10),
-    )) {
+    // A page that is connected but drew wrong has nothing to nudge: Home
+    // Assistant restarting mid load leaves the socket fine and the frontend
+    // half built, and only a reload fixes that.
+    if (state != 'broken' &&
+        await ensureHaConnected(
+          timeout:
+              healthRepairTimeout ??
+              Duration(seconds: renderingFrozen ? 20 : 10),
+        )) {
       log.info(name, 'dashboard connection recovered');
       _deadChecks = 0;
       return;
@@ -2420,6 +2428,8 @@ return n;
   /// One JS round trip classifying the current document. Error pages
   /// commit as chrome-error://, so location tells them apart from any real
   /// page; the HA element split mirrors [_haConnected].
+  String _brokenReason = '';
+
   Future<String> _probePageState() async {
     if (_controller == null && evalOverride == null) return 'none';
     try {
@@ -2434,6 +2444,30 @@ return n;
               var c = ha.hass && ha.hass.connection;
               if (c && c.connected && c.socket &&
                   c.socket.readyState === 1) {
+                // Positive evidence only, so a Home Assistant release that
+                // moves its elements reads as healthy, never as broken.
+                var main = ha.shadowRoot &&
+                    ha.shadowRoot.querySelector('home-assistant-main');
+                if (!main) return 'broken:no main';
+                if (!customElements.get('home-assistant-main')) {
+                  return 'broken:main not defined';
+                }
+                var rs = main.shadowRoot &&
+                    main.shadowRoot.querySelector('partial-panel-resolver');
+                rs = rs && (rs.shadowRoot || rs);
+                if (rs) {
+                  if (rs.querySelector('hass-error-screen')) {
+                    return 'broken:error screen';
+                  }
+                  if (rs.querySelector('hass-loading-screen')) {
+                    return 'broken:loading screen';
+                  }
+                  var p = rs.firstElementChild;
+                  if (p && p.localName.indexOf('-') > 0 &&
+                      !customElements.get(p.localName)) {
+                    return 'broken:' + p.localName + ' not defined';
+                  }
+                }
                 return 'connected';
               }
               return 'stale';
@@ -2445,7 +2479,12 @@ return n;
           } catch (e) { return 'other'; }
         })()
       ''').timeout(javaScriptTimeout);
-      return '$r'.replaceAll('"', '');
+      final state = '$r'.replaceAll('"', '');
+      if (state.startsWith('broken:')) {
+        _brokenReason = state.substring(7);
+        return 'broken';
+      }
+      return state;
     } on TimeoutException {
       return 'unresponsive';
     } catch (_) {

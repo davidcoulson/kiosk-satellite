@@ -554,7 +554,7 @@ void main() {
     ) async {
       await boot();
       await container.settings.set(remoteEnabled, true);
-      tester.view.physicalSize = const Size(500, 2400);
+      tester.view.physicalSize = const Size(500, 3200);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(

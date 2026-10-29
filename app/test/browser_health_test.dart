@@ -238,6 +238,31 @@ void main() {
     expect(browser.renavigations, 0);
   });
 
+  test('a connected page that did not render is reloaded after three checks, '
+      'without a nudge', () async {
+    await build();
+    final nudges = <String>[];
+    page('broken:error screen', nudges: nudges);
+    await browser.checkDashboardHealth();
+    await browser.checkDashboardHealth();
+    expect(browser.renavigations, 0);
+    await browser.checkDashboardHealth();
+    expect(nudges, isEmpty);
+    expect(browser.renavigations, 1);
+  });
+
+  test('a broken page recovering before the third check is not reloaded',
+      () async {
+    await build();
+    page('broken:loading screen');
+    await browser.checkDashboardHealth();
+    await browser.checkDashboardHealth();
+    page('connected');
+    await browser.checkDashboardHealth();
+    await browser.checkDashboardHealth();
+    expect(browser.renavigations, 0);
+  });
+
   test('a page that is not the dashboard is left alone', () async {
     await build();
     page('other');
