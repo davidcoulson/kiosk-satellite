@@ -2,7 +2,7 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
-## Unreleased
+## v2026.10.44 - 2026-10-29
 
 ### Changed
 - **The Echo images always record from the raw microphone.** On the Echo Dot, Echo Show 5 and Echo Show 8 images, **Capture mode** and **Capture format** are no longer shown in **Microphone settings** and stay on **Raw microphone** and **Automatic**. A device that was switched to **Voice communication** or **48 kHz stereo** goes back on its next start.
