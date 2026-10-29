@@ -4,6 +4,9 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ## Unreleased
 
+### Changed
+- **The Echo images always record from the raw microphone.** On the Echo Dot, Echo Show 5 and Echo Show 8 images, **Capture mode** is no longer shown in **Microphone settings** and stays on **Raw microphone**. A device that was switched to **Voice communication** goes back to the raw microphone on its next start.
+
 ### Added
 - **Fine-tune the stop word sensitivity.** A new **Fine-tune stop word sensitivity** slider under **Stop word interruption** in **Voice Satellite > Wake Word** adjusts the stop word sensitivity in smaller steps, from -10 to +10, and goes past Slightly and Very sensitive at its ends. Raise it if you often have to repeat "stop" and lower it if answers stop by mistake. It shows while **Stop word interruption** is on and works with every wake word engine. The default of 0 keeps the current behavior and **Fine-tune sensitivity** still only moves the wake words. The setting belongs to each device and fleets do not sync it.
 

@@ -6540,6 +6540,8 @@ const screensaverSchedule = SettingDef<String>(
 /// pick away. Capture still falls back to the other sources on its own
 /// when every format reads silence (#808). A new key rather than the old
 /// audio.mic_source, so a value stored before 2026.10.2 cannot come back.
+/// The Echo images hide it and keep it on the raw microphone
+/// (echo_image_settings.dart).
 const micCaptureMode = SettingDef<String>(
   key: 'audio.mic_capture_mode',
   type: SettingType.select,
