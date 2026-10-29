@@ -7,8 +7,9 @@ import 'package:kiosk_satellite/managers/settings/echo_image_settings.dart';
 import 'package:kiosk_satellite/managers/settings/settings_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// The Echo images keep Capture mode hidden and on the raw microphone on
-/// every start, whatever was stored before.
+/// The Echo images keep Capture mode and Capture format hidden and on the
+/// raw microphone and the automatic format on every start, whatever was
+/// stored before.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -38,26 +39,33 @@ void main() {
 
   for (final updater in ['biscuit', 'echo']) {
     group('the $updater image', () {
-      test('hides Capture mode and pins it', () async {
+      test('hides Capture mode and Capture format and pins them', () async {
         await boot({}, updater);
-        expect(defs.deviceHiddenKeys, contains(defs.micCaptureMode.key));
-        expect(defs.devicePinnedKeys, contains(defs.micCaptureMode.key));
+        for (final def in [defs.micCaptureMode, defs.micCaptureFormat]) {
+          expect(defs.deviceHiddenKeys, contains(def.key));
+          expect(defs.devicePinnedKeys, contains(def.key));
+        }
         expect(settings.get(defs.micCaptureMode), 'mic');
+        expect(settings.get(defs.micCaptureFormat), 'auto');
       });
 
-      test('a stored Voice communication goes back to the raw '
-          'microphone', () async {
+      test('stored values go back to the raw microphone and the automatic '
+          'format', () async {
         await boot({
           'ks.audio.mic_capture_mode': 'voice_communication',
+          'ks.audio.mic_capture_format': 'hardware',
         }, updater);
         expect(settings.get(defs.micCaptureMode), 'mic');
+        expect(settings.get(defs.micCaptureFormat), 'auto');
       });
 
       test('a later change is put back', () async {
         await boot({}, updater);
         await settings.set(defs.micCaptureMode, 'voice_communication');
+        await settings.set(defs.micCaptureFormat, 'hardware');
         await settle();
         expect(settings.get(defs.micCaptureMode), 'mic');
+        expect(settings.get(defs.micCaptureFormat), 'auto');
       });
     });
   }

@@ -11,11 +11,12 @@ import 'settings_manager.dart';
 /// hold at one value on every start, unlike EchoDefaults
 /// (echo_defaults.dart), which only sets a fresh install's first values.
 ///
-/// The images always record from the raw microphone, so Capture mode is
-/// hidden from both settings UIs and kept on Raw microphone. A Voice
-/// communication value stored before, imported or pushed by Fleet goes
-/// back to the raw microphone, at boot and on any later change, the same
-/// way HeadlessSettings (headless_settings.dart) pins its values.
+/// The images always record from the raw microphone in the automatic
+/// format, so Capture mode and Capture format are hidden
+/// from both settings UIs and kept on Raw microphone and Automatic. A
+/// value stored before, imported or pushed by Fleet goes back, at boot and
+/// on any later change, the same way HeadlessSettings
+/// (headless_settings.dart) pins its values.
 ///
 /// The image is told apart by its updater (SystemUpdateBridge.kt): `biscuit`
 /// is the Echo Dot image and `echo` an Echo Show image.
@@ -39,7 +40,8 @@ class EchoImageSettings {
   /// The values each updater pins.
   static Map<defs.SettingDef<Object>, Object> forUpdater(String? updater) =>
       switch (updater) {
-        'biscuit' || 'echo' => {defs.micCaptureMode: 'mic'},
+        'biscuit' ||
+        'echo' => {defs.micCaptureMode: 'mic', defs.micCaptureFormat: 'auto'},
         _ => const {},
       };
 

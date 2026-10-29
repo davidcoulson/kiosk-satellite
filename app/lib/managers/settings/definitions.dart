@@ -6657,7 +6657,8 @@ const micGainDb = SettingDef<num>(
 // mono) and steps down it on a refused open, two seconds of zeros or
 // errors, or a delivered frame rate that does not match the one opened;
 // this starts the ladder at the card's format. The app converts to 16 kHz
-// mono itself.
+// mono itself. The Echo images hide it and keep it on Automatic
+// (echo_image_settings.dart).
 const micCaptureFormat = SettingDef<String>(
   key: 'audio.mic_capture_format',
   type: SettingType.select,
