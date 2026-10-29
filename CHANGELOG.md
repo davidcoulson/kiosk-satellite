@@ -2,6 +2,11 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
+## Unreleased
+
+### Fixed
+- **The Now Playing volume slider lines up with the seek bar.** Opening the volume slider no longer moves the bar up or down a pixel. At some text and button scales the line under the volume slider was a pixel taller than the times under the seek bar, which shifted the whole block. The two lines are now built the same way, so the slider lands exactly where the seek bar was (#1212).
+
 ## v2026.10.44 - 2026-10-29
 
 ### Changed
