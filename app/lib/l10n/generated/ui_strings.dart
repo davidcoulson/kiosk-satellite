@@ -1448,6 +1448,12 @@ abstract class UiStrings {
   /// **'Ingress page'**
   String get dashboardPickerIngressPage;
 
+  /// Second line of one of Home Assistant's own pages in the dashboard list, such as Energy, History or Media, or of a page an integration adds.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant page'**
+  String get dashboardPickerBuiltInPage;
+
   /// Note under the Whole dashboard choice.
   ///
   /// In en, this message translates to:
@@ -1765,6 +1771,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Follow Android'**
   String get drawerThemeAndroid;
+
+  /// Search box hint in the picker of the drawer menu's items.
+  ///
+  /// In en, this message translates to:
+  /// **'Search menu items'**
+  String get drawerItemsSearch;
+
+  /// Note under the Settings item in the drawer menu items picker. It cannot be hidden while the remote admin is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Always shown while remote admin is off.'**
+  String get drawerItemsSettingsKept;
 
   /// Current version below the drawer actions. Tap to check for updates.
   ///
@@ -5439,6 +5457,18 @@ abstract class UiStrings {
   /// **'Size of the tiles in the library. Compact fits more in a row.'**
   String get settingLibraryGridDensityDescription;
 
+  /// Setting label: show the picker in the library that switches between Music Assistant, Home Assistant and Sonos.
+  ///
+  /// In en, this message translates to:
+  /// **'Show source selection'**
+  String get settingLibrarySourcePickerTitle;
+
+  /// Setting description. 'The source set above' is the Source setting earlier on the same page.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the source picker in the library. Turn off to keep the library on the source set above.'**
+  String get settingLibrarySourcePickerDescription;
+
   /// Grid density option: larger tiles, fewer in a row.
   ///
   /// In en, this message translates to:
@@ -5774,12 +5804,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'{speaker} + {count}'**
   String libraryGroupName(String speaker, String count);
-
-  /// Setting description.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a Music Library entry to the kiosk menu.'**
-  String get settingLibraryMenuDescription;
 
   /// Allowed Actions switch description.
   ///
@@ -8503,18 +8527,6 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
-  /// **'Show in the kiosk menu'**
-  String get settingAlarmsMenuTitle;
-
-  /// Setting description.
-  ///
-  /// In en, this message translates to:
-  /// **'Add an Alarms entry to the kiosk menu.'**
-  String get settingAlarmsMenuDescription;
-
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
   /// **'Alarm volume'**
   String get settingAlarmsVolumeTitle;
 
@@ -8823,18 +8835,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Adds the forecast to each day.'**
   String get settingCalendarWeatherEntityDescription;
-
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
-  /// **'Show in the kiosk menu'**
-  String get settingCalendarMenuTitle;
-
-  /// Setting description.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a Calendar entry to the kiosk menu.'**
-  String get settingCalendarMenuDescription;
 
   /// Setting label.
   ///
@@ -13193,6 +13193,24 @@ abstract class UiStrings {
   /// **'Plugin actions'**
   String get deviceToastPlugins;
 
+  /// Setting label. Also the label of the rows on other pages that open this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawer menu items'**
+  String get settingUiDrawerItemsTitle;
+
+  /// Help below this setting and below the rows on other pages that open it.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the items the drawer menu shows and their order.'**
+  String get settingUiDrawerItemsDescription;
+
+  /// Label of a row on a feature's page that opens Device > User Interface > Drawer menu items, where the feature's kiosk menu entry is turned on or off.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in the kiosk menu'**
+  String get settingShowInKioskMenuTitle;
+
   /// Setting label.
   ///
   /// In en, this message translates to:
@@ -14519,18 +14537,6 @@ abstract class UiStrings {
   /// **'Turns hold mode off by itself after the set time. Set to 0 to hold until turned off manually.'**
   String get settingHaHoldReleaseMinutesDescription;
 
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
-  /// **'Show in the kiosk menu'**
-  String get settingHaHoldMenuTitle;
-
-  /// Help below the setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Adds a menu entry that turns hold mode on and off.'**
-  String get settingHaHoldMenuDescription;
-
   /// Hold subpage summary or duration displayed beside the automatic release slider.
   ///
   /// In en, this message translates to:
@@ -15152,18 +15158,6 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
-  /// **'Show in the kiosk menu'**
-  String get settingHaKioskMenuTitle;
-
-  /// Help below the setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Add an HA Kiosk Mode entry to the kiosk menu that turns it on and off.'**
-  String get settingHaKioskMenuDescription;
-
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
   /// **'Enable dashboard carousel'**
   String get settingHaDashboardCarouselTitle;
 
@@ -15502,18 +15496,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Made when the intercom is enabled'**
   String get settingIntercomKeyPlaceholder;
-
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
-  /// **'Show in the kiosk menu'**
-  String get settingIntercomMenuTitle;
-
-  /// Help below this setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Add an Intercom entry to the kiosk menu.'**
-  String get settingIntercomMenuDescription;
 
   /// Label or guidance in this section.
   ///
@@ -16604,18 +16586,6 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
-  /// **'Show in the kiosk menu'**
-  String get settingLockdownMenuTitle;
-
-  /// Help below this setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a Lockdown Mode entry to the kiosk menu that locks the screen. Use the exit gesture, Remote Admin or Home Assistant to unlock it.'**
-  String get settingLockdownMenuDescription;
-
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
   /// **'Blackout screen'**
   String get settingLockdownBlackoutTitle;
 
@@ -16828,18 +16798,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Flinging the floating player away hides it without stopping the music.'**
   String get settingSendspinDismissKeepsPlayingDescription;
-
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
-  /// **'Show in the kiosk menu'**
-  String get settingSendspinPlayerShortcutTitle;
-
-  /// Help below this setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Add an entry in the kiosk menu that shows or hides the floating player. WARNING: If nothing is playing or there is no queue for this player, it won\'t show up.'**
-  String get settingSendspinPlayerShortcutDescription;
 
   /// Label or guidance in this section.
   ///
@@ -17078,18 +17036,6 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
-  /// **'Show in the kiosk menu'**
-  String get settingSendspinMaShortcutTitle;
-
-  /// Help below this setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a Music Assistant entry to the kiosk menu, opening the server\'s web interface over the dashboard. Needs the server address above.'**
-  String get settingSendspinMaShortcutDescription;
-
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
   /// **'Open directly to Now Playing'**
   String get settingSendspinMaOpenFullscreenTitle;
 
@@ -17297,6 +17243,18 @@ abstract class UiStrings {
   /// **'A double tap anywhere on the Now Playing view dismisses it. The close button won\'t be shown. Ignored while Now Playing is shown alongside a screensaver.'**
   String get settingSendspinFullscreenDoubleTapDescription;
 
+  /// Setting label: keep the X button that closes Now Playing even when Double tap to dismiss is on.
+  ///
+  /// In en, this message translates to:
+  /// **'Always show close button'**
+  String get settingSendspinFullscreenCloseButtonTitle;
+
+  /// Help below this setting. 'Double tap to dismiss' is the name of the setting just above it.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the close button while Double tap to dismiss is on.'**
+  String get settingSendspinFullscreenCloseButtonDescription;
+
   /// Setting label.
   ///
   /// In en, this message translates to:
@@ -17356,18 +17314,6 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'The view to show after Now Playing is dismissed.'**
   String get settingSendspinFullscreenReturnViewDescription;
-
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
-  /// **'Show in the kiosk menu'**
-  String get settingSendspinFullscreenShortcutTitle;
-
-  /// Help below this setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Add an entry in the kiosk menu that shows the Now Playing view. WARNING: If nothing is playing or there is no queue for this player, it won\'t show up.'**
-  String get settingSendspinFullscreenShortcutDescription;
 
   /// Setting label.
   ///
@@ -20504,18 +20450,6 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
-  /// **'Show in the kiosk menu'**
-  String get settingScreensaverMenuTitle;
-
-  /// Help below the setting.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a Start Screensaver entry to the kiosk menu.'**
-  String get settingScreensaverMenuDescription;
-
-  /// Setting label.
-  ///
-  /// In en, this message translates to:
   /// **'Follow Android animation settings'**
   String get settingScreensaverFollowAnimationScaleTitle;
 
@@ -20794,6 +20728,42 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Single taps interact with the dashboard instead of dismissing.'**
   String get settingScreensaverDashboardDoubleTapDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'HA kiosk mode override'**
+  String get settingScreensaverDashboardKioskTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what the screensaver hides, separate from HA kiosk mode.'**
+  String get settingScreensaverDashboardKioskDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the header'**
+  String get settingScreensaverDashboardHideHeaderTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the dashboard toolbar and view tabs on the screensaver.'**
+  String get settingScreensaverDashboardHideHeaderDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the sidebar'**
+  String get settingScreensaverDashboardHideSidebarTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the navigation sidebar on the screensaver.'**
+  String get settingScreensaverDashboardHideSidebarDescription;
 
   /// Label, status or guidance in this section.
   ///
@@ -26290,6 +26260,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Say \"stop\" to cut off an answer, a timer alert or an announcement.'**
   String get settingVoiceStopWordDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Fine-tune stop word sensitivity'**
+  String get settingVoiceStopWordFineTuneTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjusts the stop word sensitivity in smaller steps. Raise it if you often have to repeat \"stop\", lower it if answers stop by mistake.'**
+  String get settingVoiceStopWordFineTuneDescription;
 
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///

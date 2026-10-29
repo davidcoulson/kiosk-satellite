@@ -2700,6 +2700,30 @@
       ]
     }
   },
+  "dashboardPickerBuiltInPage": "Página de Home Assistant",
+  "@dashboardPickerBuiltInPage": {
+    "context": "Dashboard picker",
+    "description": "Second line of one of Home Assistant's own pages in the dashboard list, such as Energy, History or Media, or of a page an integration adds.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
   "dashboardPickerWholeHelp": "Este panel genera sus propias vistas, así que el kiosko lo abre completo.",
   "@dashboardPickerWholeHelp": {
     "context": "Dashboard picker",
@@ -3514,6 +3538,32 @@
     "x-locations": {
       "device": [
         "Swipe from the left edge > drawer menu"
+      ]
+    }
+  },
+  "drawerItemsSearch": "Buscar elementos del menú",
+  "@drawerItemsSearch": {
+    "context": "Settings:Device:User Interface",
+    "description": "Search box hint in the picker of the drawer menu's items.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface > Drawer menu items"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface > Drawer menu items"
+      ]
+    }
+  },
+  "drawerItemsSettingsKept": "Siempre visible mientras la administración remota está desactivada.",
+  "@drawerItemsSettingsKept": {
+    "context": "Settings:Device:User Interface",
+    "description": "Note under the Settings item in the drawer menu items picker. It cannot be hidden while the remote admin is off.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface > Drawer menu items"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface > Drawer menu items"
       ]
     }
   },
@@ -11769,6 +11819,32 @@
       ]
     }
   },
+  "settingLibrarySourcePickerTitle": "Mostrar selector de fuente",
+  "@settingLibrarySourcePickerTitle": {
+    "context": "Music Library",
+    "description": "Setting label: show the picker in the library that switches between Music Assistant, Home Assistant and Sonos.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Music Library"
+      ],
+      "remoteAdmin": [
+        "Media Player > Music Library"
+      ]
+    }
+  },
+  "settingLibrarySourcePickerDescription": "Muestra el selector de fuente en la biblioteca. Desactívalo para que la biblioteca se quede en la fuente elegida arriba.",
+  "@settingLibrarySourcePickerDescription": {
+    "context": "Music Library",
+    "description": "Setting description. 'The source set above' is the Source setting earlier on the same page.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Music Library"
+      ],
+      "remoteAdmin": [
+        "Media Player > Music Library"
+      ]
+    }
+  },
   "libraryDensityComfortable": "Amplia",
   "@libraryDensityComfortable": {
     "context": "Music Library",
@@ -12385,19 +12461,6 @@
         "type": "String",
         "description": "How many others."
       }
-    }
-  },
-  "settingLibraryMenuDescription": "Añade la opción Biblioteca musical al menú del kiosko.",
-  "@settingLibraryMenuDescription": {
-    "context": "Music Library",
-    "description": "Setting description.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Music Library"
-      ],
-      "remoteAdmin": [
-        "Media Player > Music Library"
-      ]
     }
   },
   "settingKioskAllowMusicLibraryDescription": "Explorar música y reproducirla en un altavoz.",
@@ -18195,32 +18258,6 @@
       ]
     }
   },
-  "settingAlarmsMenuTitle": "Mostrar en el menú del kiosko",
-  "@settingAlarmsMenuTitle": {
-    "context": "Settings > Alarms",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Alarms > Show in the kiosk menu"
-      ],
-      "remoteAdmin": [
-        "Alarms > Show in the kiosk menu"
-      ]
-    }
-  },
-  "settingAlarmsMenuDescription": "Añade la opción Alarmas al menú del kiosko.",
-  "@settingAlarmsMenuDescription": {
-    "context": "Settings > Alarms",
-    "description": "Setting description.",
-    "x-locations": {
-      "device": [
-        "Settings > Alarms > Show in the kiosk menu"
-      ],
-      "remoteAdmin": [
-        "Alarms > Show in the kiosk menu"
-      ]
-    }
-  },
   "settingAlarmsVolumeTitle": "Volumen de alarma",
   "@settingAlarmsVolumeTitle": {
     "context": "Settings > Alarms",
@@ -18891,32 +18928,6 @@
       ],
       "remoteAdmin": [
         "Calendar > Weather"
-      ]
-    }
-  },
-  "settingCalendarMenuTitle": "Mostrar en el menú del kiosko",
-  "@settingCalendarMenuTitle": {
-    "context": "Settings > Calendar > Kiosk",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Calendar > Show in the kiosk menu"
-      ],
-      "remoteAdmin": [
-        "Calendar > Show in the kiosk menu"
-      ]
-    }
-  },
-  "settingCalendarMenuDescription": "Añade la opción Calendario al menú del kiosko.",
-  "@settingCalendarMenuDescription": {
-    "context": "Settings > Calendar > Kiosk",
-    "description": "Setting description.",
-    "x-locations": {
-      "device": [
-        "Settings > Calendar > Show in the kiosk menu"
-      ],
-      "remoteAdmin": [
-        "Calendar > Show in the kiosk menu"
       ]
     }
   },
@@ -28484,6 +28495,53 @@
       ]
     }
   },
+  "settingUiDrawerItemsTitle": "Elementos del menú lateral",
+  "@settingUiDrawerItemsTitle": {
+    "context": "Settings:Device:User Interface",
+    "description": "Setting label. Also the label of the rows on other pages that open this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "settingUiDrawerItemsDescription": "Elige qué elementos muestra el menú lateral y en qué orden.",
+  "@settingUiDrawerItemsDescription": {
+    "context": "Settings:Device:User Interface",
+    "description": "Help below this setting and below the rows on other pages that open it.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "settingShowInKioskMenuTitle": "Mostrar en el menú del kiosko",
+  "@settingShowInKioskMenuTitle": {
+    "context": "Settings",
+    "description": "Label of a row on a feature's page that opens Device > User Interface > Drawer menu items, where the feature's kiosk menu entry is turned on or off.",
+    "x-locations": {
+      "device": [
+        "Settings > Alarms",
+        "Settings > Calendar",
+        "Settings > App Launcher",
+        "Settings > Media Player > Music Assistant",
+        "Settings > Media Player > Music Library"
+      ],
+      "remoteAdmin": [
+        "Alarms",
+        "Calendar",
+        "App Launcher",
+        "Media Player > Music Assistant",
+        "Media Player > Music Library"
+      ]
+    }
+  },
   "settingAgentModeTitle": "Agent mode",
   "@settingAgentModeTitle": {
     "context": "Settings:Device:User Interface",
@@ -31469,32 +31527,6 @@
       ]
     }
   },
-  "settingHaHoldMenuTitle": "Mostrar en el menú del kiosko",
-  "@settingHaHoldMenuTitle": {
-    "context": "Settings:Home Assistant Setup:Hold mode",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > Hold mode"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > Hold mode"
-      ]
-    }
-  },
-  "settingHaHoldMenuDescription": "Añade una opción al menú para activar y desactivar el modo de pausa.",
-  "@settingHaHoldMenuDescription": {
-    "context": "Settings:Home Assistant Setup:Hold mode",
-    "description": "Help below the setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > Hold mode"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > Hold mode"
-      ]
-    }
-  },
   "haHoldHint": "Mantiene la vista actual, finalización automática y opción de menú",
   "@haHoldHint": {
     "context": "Settings:Home Assistant Setup:Hold mode",
@@ -32902,32 +32934,6 @@
       ]
     }
   },
-  "settingHaKioskMenuTitle": "Mostrar en el menú del kiosko",
-  "@settingHaKioskMenuTitle": {
-    "context": "Settings:Home Assistant Setup:User Interface",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > User Interface"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > User Interface"
-      ]
-    }
-  },
-  "settingHaKioskMenuDescription": "Añade una opción al menú del kiosko para activar y desactivar el modo kiosko de HA.",
-  "@settingHaKioskMenuDescription": {
-    "context": "Settings:Home Assistant Setup:User Interface",
-    "description": "Help below the setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > User Interface"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > User Interface"
-      ]
-    }
-  },
   "settingHaDashboardCarouselTitle": "Activar el carrusel del panel de control",
   "@settingHaDashboardCarouselTitle": {
     "context": "Settings:Home Assistant Setup:User Interface",
@@ -33633,32 +33639,6 @@
   "@settingIntercomKeyPlaceholder": {
     "context": "Settings > Intercom",
     "description": "Placeholder for the key before the intercom is enabled.",
-    "x-locations": {
-      "device": [
-        "Settings > Intercom"
-      ],
-      "remoteAdmin": [
-        "Intercom"
-      ]
-    }
-  },
-  "settingIntercomMenuTitle": "Mostrar en el menú del kiosko",
-  "@settingIntercomMenuTitle": {
-    "context": "Settings > Intercom",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Intercom"
-      ],
-      "remoteAdmin": [
-        "Intercom"
-      ]
-    }
-  },
-  "settingIntercomMenuDescription": "Añade la opción Intercomunicador al menú del kiosko.",
-  "@settingIntercomMenuDescription": {
-    "context": "Settings > Intercom",
-    "description": "Help below this setting.",
     "x-locations": {
       "device": [
         "Settings > Intercom"
@@ -35983,26 +35963,6 @@
       ]
     }
   },
-  "settingLockdownMenuTitle": "Mostrar en el menú del kiosko",
-  "@settingLockdownMenuTitle": {
-    "context": "Lockdown Mode > Show in the kiosk menu",
-    "description": "Setting label.",
-    "x-locations": {
-      "remoteAdmin": [
-        "Lockdown Mode > Show in the kiosk menu"
-      ]
-    }
-  },
-  "settingLockdownMenuDescription": "Añade una opción de modo de bloqueo al menú del kiosko para bloquear la pantalla. Usa el gesto de salida, la administración remota o Home Assistant para desbloquearla.",
-  "@settingLockdownMenuDescription": {
-    "context": "Lockdown Mode > Show in the kiosk menu",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "remoteAdmin": [
-        "Lockdown Mode > Show in the kiosk menu"
-      ]
-    }
-  },
   "settingLockdownBlackoutTitle": "Pantalla en negro",
   "@settingLockdownBlackoutTitle": {
     "context": "Lockdown Mode > Blackout screen",
@@ -36434,32 +36394,6 @@
   },
   "settingSendspinDismissKeepsPlayingDescription": "Deslizar el reproductor flotante fuera de la pantalla lo oculta sin detener la música.",
   "@settingSendspinDismissKeepsPlayingDescription": {
-    "context": "Settings > Media Player > Floating Player",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Floating Player"
-      ],
-      "remoteAdmin": [
-        "Media Player > Floating Player"
-      ]
-    }
-  },
-  "settingSendspinPlayerShortcutTitle": "Mostrar en el menú del kiosko",
-  "@settingSendspinPlayerShortcutTitle": {
-    "context": "Settings > Media Player > Floating Player",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Floating Player"
-      ],
-      "remoteAdmin": [
-        "Media Player > Floating Player"
-      ]
-    }
-  },
-  "settingSendspinPlayerShortcutDescription": "Añade una entrada al menú del kiosko para mostrar u ocultar el reproductor flotante. ADVERTENCIA: No aparece si no hay nada en reproducción ni una cola para este reproductor.",
-  "@settingSendspinPlayerShortcutDescription": {
     "context": "Settings > Media Player > Floating Player",
     "description": "Help below this setting.",
     "x-locations": {
@@ -36996,32 +36930,6 @@
       ]
     }
   },
-  "settingSendspinMaShortcutTitle": "Mostrar en el menú del kiosko",
-  "@settingSendspinMaShortcutTitle": {
-    "context": "Settings > Media Player > Music Assistant",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Music Assistant"
-      ],
-      "remoteAdmin": [
-        "Media Player > Music Assistant"
-      ]
-    }
-  },
-  "settingSendspinMaShortcutDescription": "Añade una entrada de Music Assistant al menú del kiosko para abrir la interfaz web del servidor sobre el panel de control. Requiere la dirección del servidor indicada arriba.",
-  "@settingSendspinMaShortcutDescription": {
-    "context": "Settings > Media Player > Music Assistant",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Music Assistant"
-      ],
-      "remoteAdmin": [
-        "Media Player > Music Assistant"
-      ]
-    }
-  },
   "settingSendspinMaOpenFullscreenTitle": "Abrir directamente Reproduciendo Ahora",
   "@settingSendspinMaOpenFullscreenTitle": {
     "context": "Settings > Media Player > Music Assistant",
@@ -37493,6 +37401,32 @@
       ]
     }
   },
+  "settingSendspinFullscreenCloseButtonTitle": "Mostrar siempre el botón de cierre",
+  "@settingSendspinFullscreenCloseButtonTitle": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Setting label: keep the X button that closes Now Playing even when Double tap to dismiss is on.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "settingSendspinFullscreenCloseButtonDescription": "Muestra el botón de cierre aunque Tocar dos veces para cerrar esté activado.",
+  "@settingSendspinFullscreenCloseButtonDescription": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Help below this setting. 'Double tap to dismiss' is the name of the setting just above it.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
   "settingSendspinFullscreenOnPlayTitle": "Abrir Reproduciendo Ahora al empezar la música",
   "@settingSendspinFullscreenOnPlayTitle": {
     "context": "Settings > Media Player > Now Playing > User Interface",
@@ -37612,32 +37546,6 @@
   },
   "settingSendspinFullscreenReturnViewDescription": "La vista que se muestra al cerrar Reproduciendo Ahora.",
   "@settingSendspinFullscreenReturnViewDescription": {
-    "context": "Settings > Media Player > Now Playing > User Interface",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Now Playing > User Interface"
-      ],
-      "remoteAdmin": [
-        "Media Player > Now Playing > User Interface"
-      ]
-    }
-  },
-  "settingSendspinFullscreenShortcutTitle": "Mostrar en el menú del kiosko",
-  "@settingSendspinFullscreenShortcutTitle": {
-    "context": "Settings > Media Player > Now Playing > User Interface",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Now Playing > User Interface"
-      ],
-      "remoteAdmin": [
-        "Media Player > Now Playing > User Interface"
-      ]
-    }
-  },
-  "settingSendspinFullscreenShortcutDescription": "Añade una entrada al menú del kiosko para mostrar Reproduciendo Ahora. ADVERTENCIA: No aparece si no hay nada en reproducción ni una cola para este reproductor.",
-  "@settingSendspinFullscreenShortcutDescription": {
     "context": "Settings > Media Player > Now Playing > User Interface",
     "description": "Help below this setting.",
     "x-locations": {
@@ -44142,32 +44050,6 @@
       ]
     }
   },
-  "settingScreensaverMenuTitle": "Mostrar en el menú del kiosko",
-  "@settingScreensaverMenuTitle": {
-    "context": "Settings:Screensaver",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver"
-      ],
-      "remoteAdmin": [
-        "Screensaver"
-      ]
-    }
-  },
-  "settingScreensaverMenuDescription": "Añade la opción Iniciar protector de pantalla al menú del kiosko.",
-  "@settingScreensaverMenuDescription": {
-    "context": "Settings:Screensaver",
-    "description": "Help below the setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver"
-      ],
-      "remoteAdmin": [
-        "Screensaver"
-      ]
-    }
-  },
   "settingScreensaverFollowAnimationScaleTitle": "Seguir los ajustes de animación de Android",
   "@settingScreensaverFollowAnimationScaleTitle": {
     "context": "Settings:Screensaver",
@@ -44768,6 +44650,84 @@
   },
   "settingScreensaverDashboardDoubleTapDescription": "Un solo toque permite interactuar con el panel de control en lugar de cerrar el protector de pantalla.",
   "@settingScreensaverDashboardDoubleTapDescription": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardKioskTitle": "Anular el modo kiosko de HA",
+  "@settingScreensaverDashboardKioskTitle": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardKioskDescription": "Elige qué oculta el protector de pantalla, aparte del modo kiosko de HA.",
+  "@settingScreensaverDashboardKioskDescription": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardHideHeaderTitle": "Ocultar la cabecera",
+  "@settingScreensaverDashboardHideHeaderTitle": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardHideHeaderDescription": "Oculta la barra de herramientas del panel de control y las pestañas de las vistas en el protector de pantalla.",
+  "@settingScreensaverDashboardHideHeaderDescription": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardHideSidebarTitle": "Ocultar la barra lateral",
+  "@settingScreensaverDashboardHideSidebarTitle": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardHideSidebarDescription": "Oculta la barra lateral de navegación en el protector de pantalla.",
+  "@settingScreensaverDashboardHideSidebarDescription": {
     "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
     "description": "Help below the setting.",
     "x-locations": {
@@ -54911,6 +54871,16 @@
   },
   "settingVoiceStopWordDescription": "Di «stop» para cortar una respuesta, una alerta de temporizador o un anuncio.",
   "@settingVoiceStopWordDescription": {
+    "context": "Settings > Voice Satellite > Wake Word",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceStopWordFineTuneTitle": "Ajuste fino de la sensibilidad de la palabra de parada",
+  "@settingVoiceStopWordFineTuneTitle": {
+    "context": "Settings > Voice Satellite > Wake Word",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceStopWordFineTuneDescription": "Ajusta la sensibilidad de la palabra de parada en pasos más pequeños. Súbelo si a menudo tienes que repetir «stop» y bájalo si las respuestas se detienen por error.",
+  "@settingVoiceStopWordFineTuneDescription": {
     "context": "Settings > Voice Satellite > Wake Word",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },

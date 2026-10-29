@@ -2700,6 +2700,30 @@
       ]
     }
   },
+  "dashboardPickerBuiltInPage": "Сторінка Home Assistant",
+  "@dashboardPickerBuiltInPage": {
+    "context": "Dashboard picker",
+    "description": "Second line of one of Home Assistant's own pages in the dashboard list, such as Energy, History or Media, or of a page an integration adds.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
   "dashboardPickerWholeHelp": "Ця панель створює власні види, тому кіоск відкриває її повністю.",
   "@dashboardPickerWholeHelp": {
     "context": "Dashboard picker",
@@ -3514,6 +3538,32 @@
     "x-locations": {
       "device": [
         "Swipe from the left edge > drawer menu"
+      ]
+    }
+  },
+  "drawerItemsSearch": "Пошук пунктів меню",
+  "@drawerItemsSearch": {
+    "context": "Settings:Device:User Interface",
+    "description": "Search box hint in the picker of the drawer menu's items.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface > Drawer menu items"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface > Drawer menu items"
+      ]
+    }
+  },
+  "drawerItemsSettingsKept": "Завжди показується, поки віддалене адміністрування вимкнено.",
+  "@drawerItemsSettingsKept": {
+    "context": "Settings:Device:User Interface",
+    "description": "Note under the Settings item in the drawer menu items picker. It cannot be hidden while the remote admin is off.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface > Drawer menu items"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface > Drawer menu items"
       ]
     }
   },
@@ -11769,6 +11819,32 @@
       ]
     }
   },
+  "settingLibrarySourcePickerTitle": "Показувати вибір джерела",
+  "@settingLibrarySourcePickerTitle": {
+    "context": "Music Library",
+    "description": "Setting label: show the picker in the library that switches between Music Assistant, Home Assistant and Sonos.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Music Library"
+      ],
+      "remoteAdmin": [
+        "Media Player > Music Library"
+      ]
+    }
+  },
+  "settingLibrarySourcePickerDescription": "Показує вибір джерела в бібліотеці. Вимкніть, щоб бібліотека лишалася на джерелі, вибраному вище.",
+  "@settingLibrarySourcePickerDescription": {
+    "context": "Music Library",
+    "description": "Setting description. 'The source set above' is the Source setting earlier on the same page.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Music Library"
+      ],
+      "remoteAdmin": [
+        "Media Player > Music Library"
+      ]
+    }
+  },
   "libraryDensityComfortable": "Простора",
   "@libraryDensityComfortable": {
     "context": "Music Library",
@@ -12385,19 +12461,6 @@
         "type": "String",
         "description": "How many others."
       }
-    }
-  },
-  "settingLibraryMenuDescription": "Додати пункт «Музична бібліотека» до меню кіоска.",
-  "@settingLibraryMenuDescription": {
-    "context": "Music Library",
-    "description": "Setting description.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Music Library"
-      ],
-      "remoteAdmin": [
-        "Media Player > Music Library"
-      ]
     }
   },
   "settingKioskAllowMusicLibraryDescription": "Переглядати музику та відтворювати її на динаміку.",
@@ -18195,32 +18258,6 @@
       ]
     }
   },
-  "settingAlarmsMenuTitle": "Показувати в меню кіоска",
-  "@settingAlarmsMenuTitle": {
-    "context": "Settings > Alarms",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Alarms > Show in the kiosk menu"
-      ],
-      "remoteAdmin": [
-        "Alarms > Show in the kiosk menu"
-      ]
-    }
-  },
-  "settingAlarmsMenuDescription": "Додати пункт «Будильники» до меню кіоска.",
-  "@settingAlarmsMenuDescription": {
-    "context": "Settings > Alarms",
-    "description": "Setting description.",
-    "x-locations": {
-      "device": [
-        "Settings > Alarms > Show in the kiosk menu"
-      ],
-      "remoteAdmin": [
-        "Alarms > Show in the kiosk menu"
-      ]
-    }
-  },
   "settingAlarmsVolumeTitle": "Гучність будильника",
   "@settingAlarmsVolumeTitle": {
     "context": "Settings > Alarms",
@@ -18891,32 +18928,6 @@
       ],
       "remoteAdmin": [
         "Calendar > Weather"
-      ]
-    }
-  },
-  "settingCalendarMenuTitle": "Показувати в меню кіоска",
-  "@settingCalendarMenuTitle": {
-    "context": "Settings > Calendar > Kiosk",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Calendar > Show in the kiosk menu"
-      ],
-      "remoteAdmin": [
-        "Calendar > Show in the kiosk menu"
-      ]
-    }
-  },
-  "settingCalendarMenuDescription": "Додати пункт «Календар» до меню кіоска.",
-  "@settingCalendarMenuDescription": {
-    "context": "Settings > Calendar > Kiosk",
-    "description": "Setting description.",
-    "x-locations": {
-      "device": [
-        "Settings > Calendar > Show in the kiosk menu"
-      ],
-      "remoteAdmin": [
-        "Calendar > Show in the kiosk menu"
       ]
     }
   },
@@ -28484,6 +28495,53 @@
       ]
     }
   },
+  "settingUiDrawerItemsTitle": "Пункти бічного меню",
+  "@settingUiDrawerItemsTitle": {
+    "context": "Settings:Device:User Interface",
+    "description": "Setting label. Also the label of the rows on other pages that open this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "settingUiDrawerItemsDescription": "Виберіть, які пункти показує бічне меню і в якому порядку.",
+  "@settingUiDrawerItemsDescription": {
+    "context": "Settings:Device:User Interface",
+    "description": "Help below this setting and below the rows on other pages that open it.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "settingShowInKioskMenuTitle": "Показувати в меню кіоска",
+  "@settingShowInKioskMenuTitle": {
+    "context": "Settings",
+    "description": "Label of a row on a feature's page that opens Device > User Interface > Drawer menu items, where the feature's kiosk menu entry is turned on or off.",
+    "x-locations": {
+      "device": [
+        "Settings > Alarms",
+        "Settings > Calendar",
+        "Settings > App Launcher",
+        "Settings > Media Player > Music Assistant",
+        "Settings > Media Player > Music Library"
+      ],
+      "remoteAdmin": [
+        "Alarms",
+        "Calendar",
+        "App Launcher",
+        "Media Player > Music Assistant",
+        "Media Player > Music Library"
+      ]
+    }
+  },
   "settingAgentModeTitle": "Agent mode",
   "@settingAgentModeTitle": {
     "context": "Settings:Device:User Interface",
@@ -31469,32 +31527,6 @@
       ]
     }
   },
-  "settingHaHoldMenuTitle": "Показувати в меню кіоска",
-  "@settingHaHoldMenuTitle": {
-    "context": "Settings:Home Assistant Setup:Hold mode",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > Hold mode"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > Hold mode"
-      ]
-    }
-  },
-  "settingHaHoldMenuDescription": "Додає пункт меню, що вмикає та вимикає режим утримання.",
-  "@settingHaHoldMenuDescription": {
-    "context": "Settings:Home Assistant Setup:Hold mode",
-    "description": "Help below the setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > Hold mode"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > Hold mode"
-      ]
-    }
-  },
   "haHoldHint": "Закріпити поточний вигляд, автоматичне звільнення, пункт меню",
   "@haHoldHint": {
     "context": "Settings:Home Assistant Setup:Hold mode",
@@ -32902,32 +32934,6 @@
       ]
     }
   },
-  "settingHaKioskMenuTitle": "Показувати в меню кіоска",
-  "@settingHaKioskMenuTitle": {
-    "context": "Settings:Home Assistant Setup:User Interface",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > User Interface"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > User Interface"
-      ]
-    }
-  },
-  "settingHaKioskMenuDescription": "Додати до меню кіоска пункт HA Kiosk Mode, що вмикає та вимикає його.",
-  "@settingHaKioskMenuDescription": {
-    "context": "Settings:Home Assistant Setup:User Interface",
-    "description": "Help below the setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > User Interface"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > User Interface"
-      ]
-    }
-  },
   "settingHaDashboardCarouselTitle": "Увімкнути карусель панелі керування",
   "@settingHaDashboardCarouselTitle": {
     "context": "Settings:Home Assistant Setup:User Interface",
@@ -33633,32 +33639,6 @@
   "@settingIntercomKeyPlaceholder": {
     "context": "Settings > Intercom",
     "description": "Placeholder for the key before the intercom is enabled.",
-    "x-locations": {
-      "device": [
-        "Settings > Intercom"
-      ],
-      "remoteAdmin": [
-        "Intercom"
-      ]
-    }
-  },
-  "settingIntercomMenuTitle": "Показувати в меню кіоска",
-  "@settingIntercomMenuTitle": {
-    "context": "Settings > Intercom",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Intercom"
-      ],
-      "remoteAdmin": [
-        "Intercom"
-      ]
-    }
-  },
-  "settingIntercomMenuDescription": "Додати пункт «Інтерком» до меню кіоска.",
-  "@settingIntercomMenuDescription": {
-    "context": "Settings > Intercom",
-    "description": "Help below this setting.",
     "x-locations": {
       "device": [
         "Settings > Intercom"
@@ -35983,26 +35963,6 @@
       ]
     }
   },
-  "settingLockdownMenuTitle": "Показувати в меню кіоска",
-  "@settingLockdownMenuTitle": {
-    "context": "Lockdown Mode > Show in the kiosk menu",
-    "description": "Setting label.",
-    "x-locations": {
-      "remoteAdmin": [
-        "Lockdown Mode > Show in the kiosk menu"
-      ]
-    }
-  },
-  "settingLockdownMenuDescription": "Додати пункт режиму блокування до меню кіоска, який блокує екран. Використовуйте жест виходу, віддалене адміністрування або Home Assistant для розблокування.",
-  "@settingLockdownMenuDescription": {
-    "context": "Lockdown Mode > Show in the kiosk menu",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "remoteAdmin": [
-        "Lockdown Mode > Show in the kiosk menu"
-      ]
-    }
-  },
   "settingLockdownBlackoutTitle": "Затемнення екрана",
   "@settingLockdownBlackoutTitle": {
     "context": "Lockdown Mode > Blackout screen",
@@ -36434,32 +36394,6 @@
   },
   "settingSendspinDismissKeepsPlayingDescription": "Зсув плаваючого плеєра жестом ховає його, не зупиняючи музику.",
   "@settingSendspinDismissKeepsPlayingDescription": {
-    "context": "Settings > Media Player > Floating Player",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Floating Player"
-      ],
-      "remoteAdmin": [
-        "Media Player > Floating Player"
-      ]
-    }
-  },
-  "settingSendspinPlayerShortcutTitle": "Показувати в меню кіоска",
-  "@settingSendspinPlayerShortcutTitle": {
-    "context": "Settings > Media Player > Floating Player",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Floating Player"
-      ],
-      "remoteAdmin": [
-        "Media Player > Floating Player"
-      ]
-    }
-  },
-  "settingSendspinPlayerShortcutDescription": "Додати пункт до меню кіоска, який показує або ховає плаваючий плеєр. УВАГА: якщо нічого не відтворюється або в цього плеєра немає черги, він не з'явиться.",
-  "@settingSendspinPlayerShortcutDescription": {
     "context": "Settings > Media Player > Floating Player",
     "description": "Help below this setting.",
     "x-locations": {
@@ -36996,32 +36930,6 @@
       ]
     }
   },
-  "settingSendspinMaShortcutTitle": "Показувати в меню кіоска",
-  "@settingSendspinMaShortcutTitle": {
-    "context": "Settings > Media Player > Music Assistant",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Music Assistant"
-      ],
-      "remoteAdmin": [
-        "Media Player > Music Assistant"
-      ]
-    }
-  },
-  "settingSendspinMaShortcutDescription": "Додати пункт Music Assistant до меню кіоска, який відкриває вебінтерфейс сервера поверх панелі керування. Потребує адресу сервера вище.",
-  "@settingSendspinMaShortcutDescription": {
-    "context": "Settings > Media Player > Music Assistant",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Music Assistant"
-      ],
-      "remoteAdmin": [
-        "Media Player > Music Assistant"
-      ]
-    }
-  },
   "settingSendspinMaOpenFullscreenTitle": "Відкривати одразу «Зараз грає»",
   "@settingSendspinMaOpenFullscreenTitle": {
     "context": "Settings > Media Player > Music Assistant",
@@ -37493,6 +37401,32 @@
       ]
     }
   },
+  "settingSendspinFullscreenCloseButtonTitle": "Завжди показувати кнопку закриття",
+  "@settingSendspinFullscreenCloseButtonTitle": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Setting label: keep the X button that closes Now Playing even when Double tap to dismiss is on.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "settingSendspinFullscreenCloseButtonDescription": "Показує кнопку закриття, навіть коли «Подвійний дотик для закриття» увімкнено.",
+  "@settingSendspinFullscreenCloseButtonDescription": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Help below this setting. 'Double tap to dismiss' is the name of the setting just above it.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
   "settingSendspinFullscreenOnPlayTitle": "Відкривати «Зараз грає» при початку музики",
   "@settingSendspinFullscreenOnPlayTitle": {
     "context": "Settings > Media Player > Now Playing > User Interface",
@@ -37612,32 +37546,6 @@
   },
   "settingSendspinFullscreenReturnViewDescription": "Вигляд, який з'являється після закриття «Зараз грає».",
   "@settingSendspinFullscreenReturnViewDescription": {
-    "context": "Settings > Media Player > Now Playing > User Interface",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Now Playing > User Interface"
-      ],
-      "remoteAdmin": [
-        "Media Player > Now Playing > User Interface"
-      ]
-    }
-  },
-  "settingSendspinFullscreenShortcutTitle": "Показувати в меню кіоска",
-  "@settingSendspinFullscreenShortcutTitle": {
-    "context": "Settings > Media Player > Now Playing > User Interface",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Now Playing > User Interface"
-      ],
-      "remoteAdmin": [
-        "Media Player > Now Playing > User Interface"
-      ]
-    }
-  },
-  "settingSendspinFullscreenShortcutDescription": "Додати пункт до меню кіоска, який показує режим «Зараз грає». УВАГА: якщо нічого не відтворюється або в цього плеєра немає черги, він не з'явиться.",
-  "@settingSendspinFullscreenShortcutDescription": {
     "context": "Settings > Media Player > Now Playing > User Interface",
     "description": "Help below this setting.",
     "x-locations": {
@@ -44142,32 +44050,6 @@
       ]
     }
   },
-  "settingScreensaverMenuTitle": "Показувати в меню кіоска",
-  "@settingScreensaverMenuTitle": {
-    "context": "Settings:Screensaver",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver"
-      ],
-      "remoteAdmin": [
-        "Screensaver"
-      ]
-    }
-  },
-  "settingScreensaverMenuDescription": "Додати пункт \"Запустити заставку\" до меню кіоска.",
-  "@settingScreensaverMenuDescription": {
-    "context": "Settings:Screensaver",
-    "description": "Help below the setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver"
-      ],
-      "remoteAdmin": [
-        "Screensaver"
-      ]
-    }
-  },
   "settingScreensaverFollowAnimationScaleTitle": "Дотримуватися налаштувань анімації Android",
   "@settingScreensaverFollowAnimationScaleTitle": {
     "context": "Settings:Screensaver",
@@ -44768,6 +44650,84 @@
   },
   "settingScreensaverDashboardDoubleTapDescription": "Одинарні дотики взаємодіють із панеллю керування замість закриття заставки.",
   "@settingScreensaverDashboardDoubleTapDescription": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardKioskTitle": "Перевизначити режим кіоска HA",
+  "@settingScreensaverDashboardKioskTitle": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardKioskDescription": "Виберіть, що приховує заставка, окремо від режиму кіоска HA.",
+  "@settingScreensaverDashboardKioskDescription": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardHideHeaderTitle": "Приховати заголовок",
+  "@settingScreensaverDashboardHideHeaderTitle": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardHideHeaderDescription": "Приховувати панель інструментів панелі керування та вкладки видів на заставці.",
+  "@settingScreensaverDashboardHideHeaderDescription": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardHideSidebarTitle": "Приховати бічну панель",
+  "@settingScreensaverDashboardHideSidebarTitle": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardHideSidebarDescription": "Приховувати навігаційну бічну панель на заставці.",
+  "@settingScreensaverDashboardHideSidebarDescription": {
     "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
     "description": "Help below the setting.",
     "x-locations": {
@@ -54911,6 +54871,16 @@
   },
   "settingVoiceStopWordDescription": "Скажіть «stop», щоб перервати відповідь, сповіщення таймера або оголошення.",
   "@settingVoiceStopWordDescription": {
+    "context": "Settings > Voice Satellite > Wake Word",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceStopWordFineTuneTitle": "Точне налаштування чутливості стоп-слова",
+  "@settingVoiceStopWordFineTuneTitle": {
+    "context": "Settings > Voice Satellite > Wake Word",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceStopWordFineTuneDescription": "Змінює чутливість стоп-слова меншими кроками. Підвищте її, якщо часто доводиться повторювати «stop», і знизьте, якщо відповіді обриваються помилково.",
+  "@settingVoiceStopWordFineTuneDescription": {
     "context": "Settings > Voice Satellite > Wake Word",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },

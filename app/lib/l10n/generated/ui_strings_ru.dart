@@ -760,6 +760,9 @@ class UiStringsRu extends UiStrings {
   String get dashboardPickerIngressPage => 'Страница Ingress';
 
   @override
+  String get dashboardPickerBuiltInPage => 'Страница Home Assistant';
+
+  @override
   String get dashboardPickerWholeHelp =>
       'Эта панель создаёт виды сама, поэтому киоск открывает её целиком.';
 
@@ -934,6 +937,13 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get drawerThemeAndroid => 'Как в Android';
+
+  @override
+  String get drawerItemsSearch => 'Поиск пунктов меню';
+
+  @override
+  String get drawerItemsSettingsKept =>
+      'Всегда показывается, пока удалённое администрирование выключено.';
 
   @override
   String drawerVersion(String version) {
@@ -3058,6 +3068,13 @@ class UiStringsRu extends UiStrings {
       'Размер плиток в библиотеке. Компактная вмещает больше в ряд.';
 
   @override
+  String get settingLibrarySourcePickerTitle => 'Показывать выбор источника';
+
+  @override
+  String get settingLibrarySourcePickerDescription =>
+      'Показывает выбор источника в библиотеке. Отключите, чтобы библиотека оставалась на источнике, выбранном выше.';
+
+  @override
   String get libraryDensityComfortable => 'Просторная';
 
   @override
@@ -3238,10 +3255,6 @@ class UiStringsRu extends UiStrings {
   String libraryGroupName(String speaker, String count) {
     return '$speaker + $count';
   }
-
-  @override
-  String get settingLibraryMenuDescription =>
-      'Добавить пункт «Музыкальная библиотека» в меню киоска.';
 
   @override
   String get settingKioskAllowMusicLibraryDescription =>
@@ -4851,13 +4864,6 @@ class UiStringsRu extends UiStrings {
       'Звонящий будильник показывается на этой заставке в её стиле, а не на отдельном экране.';
 
   @override
-  String get settingAlarmsMenuTitle => 'Показывать в меню киоска';
-
-  @override
-  String get settingAlarmsMenuDescription =>
-      'Добавить пункт «Будильники» в меню киоска.';
-
-  @override
   String get settingAlarmsVolumeTitle => 'Громкость будильника';
 
   @override
@@ -5041,13 +5047,6 @@ class UiStringsRu extends UiStrings {
   @override
   String get settingCalendarWeatherEntityDescription =>
       'Добавляет прогноз к каждому дню.';
-
-  @override
-  String get settingCalendarMenuTitle => 'Показывать в меню киоска';
-
-  @override
-  String get settingCalendarMenuDescription =>
-      'Добавить пункт «Календарь» в меню киоска.';
 
   @override
   String get settingCalendarIdleCloseMinutesTitle =>
@@ -7585,6 +7584,16 @@ class UiStringsRu extends UiStrings {
   String get deviceToastPlugins => 'Действия плагинов';
 
   @override
+  String get settingUiDrawerItemsTitle => 'Пункты бокового меню';
+
+  @override
+  String get settingUiDrawerItemsDescription =>
+      'Выберите, какие пункты показывает боковое меню и в каком порядке.';
+
+  @override
+  String get settingShowInKioskMenuTitle => 'Показывать в меню киоска';
+
+  @override
   String get settingAgentModeTitle => 'Agent mode';
 
   @override
@@ -8368,13 +8377,6 @@ class UiStringsRu extends UiStrings {
       'Автоматически выключает режим удержания по прошествии заданного времени. 0: удерживать до выключения вручную.';
 
   @override
-  String get settingHaHoldMenuTitle => 'Показывать в меню киоска';
-
-  @override
-  String get settingHaHoldMenuDescription =>
-      'Добавляет пункт меню, включающий и выключающий режим удержания.';
-
-  @override
   String get haHoldHint => 'Закрепить текущий вид, автовыключение, пункт меню';
 
   @override
@@ -8745,13 +8747,6 @@ class UiStringsRu extends UiStrings {
       'Скрыть боковую панель навигации, пока режим киоска HA включён.';
 
   @override
-  String get settingHaKioskMenuTitle => 'Показывать в меню киоска';
-
-  @override
-  String get settingHaKioskMenuDescription =>
-      'Добавить в меню киоска пункт «Режим киоска HA», включающий и выключающий его.';
-
-  @override
   String get settingHaDashboardCarouselTitle => 'Включить карусель панели';
 
   @override
@@ -8944,13 +8939,6 @@ class UiStringsRu extends UiStrings {
   @override
   String get settingIntercomKeyPlaceholder =>
       'Создаётся при включении интеркома';
-
-  @override
-  String get settingIntercomMenuTitle => 'Показывать в меню киоска';
-
-  @override
-  String get settingIntercomMenuDescription =>
-      'Добавить пункт «Интерком» в меню киоска.';
 
   @override
   String get intercomNeedsAdmin =>
@@ -9577,13 +9565,6 @@ class UiStringsRu extends UiStrings {
       'Отключает взаимодействие с экраном до выключения из Home Assistant или жестом выхода.';
 
   @override
-  String get settingLockdownMenuTitle => 'Показывать в меню киоска';
-
-  @override
-  String get settingLockdownMenuDescription =>
-      'Добавить в меню киоска пункт «Режим блокировки», блокирующий экран. Разблокируйте жестом выхода, удалённым администрированием или Home Assistant.';
-
-  @override
   String get settingLockdownBlackoutTitle => 'Гасить экран';
 
   @override
@@ -9712,13 +9693,6 @@ class UiStringsRu extends UiStrings {
   @override
   String get settingSendspinDismissKeepsPlayingDescription =>
       'Если смахнуть плавающий плеер, он скроется, а музыка продолжит играть.';
-
-  @override
-  String get settingSendspinPlayerShortcutTitle => 'Показывать в меню киоска';
-
-  @override
-  String get settingSendspinPlayerShortcutDescription =>
-      'Добавить в меню киоска пункт, показывающий или скрывающий плавающий плеер. ВНИМАНИЕ: если ничего не воспроизводится или у плеера нет очереди, он не появится.';
 
   @override
   String get mediaFloatingPage => 'Плавающий плеер';
@@ -9862,13 +9836,6 @@ class UiStringsRu extends UiStrings {
       'Долгоживущий токен из Music Assistant (Настройки, затем Пользователи). Для текста песни достаточно чтения; пункт меню киоска открывает веб-интерфейс от имени владельца токена.';
 
   @override
-  String get settingSendspinMaShortcutTitle => 'Показывать в меню киоска';
-
-  @override
-  String get settingSendspinMaShortcutDescription =>
-      'Добавить пункт Music Assistant в меню киоска, открывающий веб-интерфейс сервера поверх панели. Нужен адрес сервера выше.';
-
-  @override
   String get settingSendspinMaOpenFullscreenTitle =>
       'Открывать сразу «Сейчас играет»';
 
@@ -9991,6 +9958,14 @@ class UiStringsRu extends UiStrings {
       'Двойное касание где угодно на виде «Сейчас играет» закрывает его. Кнопка закрытия не показывается. Игнорируется, пока «Сейчас играет» показан рядом с заставкой.';
 
   @override
+  String get settingSendspinFullscreenCloseButtonTitle =>
+      'Всегда показывать кнопку закрытия';
+
+  @override
+  String get settingSendspinFullscreenCloseButtonDescription =>
+      'Показывает кнопку закрытия, даже когда «Двойное касание для закрытия» включено.';
+
+  @override
   String get settingSendspinFullscreenOnPlayTitle =>
       'Открывать «Сейчас играет» при старте музыки';
 
@@ -10025,14 +10000,6 @@ class UiStringsRu extends UiStrings {
   @override
   String get settingSendspinFullscreenReturnViewDescription =>
       'Вид, который откроется после закрытия «Сейчас играет».';
-
-  @override
-  String get settingSendspinFullscreenShortcutTitle =>
-      'Показывать в меню киоска';
-
-  @override
-  String get settingSendspinFullscreenShortcutDescription =>
-      'Добавить в меню киоска пункт, показывающий вид «Сейчас играет». ВНИМАНИЕ: если ничего не воспроизводится или нет очереди, он не появится.';
 
   @override
   String get settingSendspinSpeakerPillTitle =>
@@ -11831,13 +11798,6 @@ class UiStringsRu extends UiStrings {
       'Сдвигать изображение каждую минуту для защиты OLED-панелей. Не для чёрной заставки, у которой пиксели уже выключены.';
 
   @override
-  String get settingScreensaverMenuTitle => 'Показывать в меню киоска';
-
-  @override
-  String get settingScreensaverMenuDescription =>
-      'Добавить пункт «Запустить заставку» в меню киоска.';
-
-  @override
   String get settingScreensaverFollowAnimationScaleTitle =>
       'Следовать настройкам анимации Android';
 
@@ -11998,6 +11958,29 @@ class UiStringsRu extends UiStrings {
   @override
   String get settingScreensaverDashboardDoubleTapDescription =>
       'Одиночные касания взаимодействуют с панелью вместо закрытия.';
+
+  @override
+  String get settingScreensaverDashboardKioskTitle =>
+      'Переопределить режим киоска HA';
+
+  @override
+  String get settingScreensaverDashboardKioskDescription =>
+      'Выберите, что скрывает заставка, отдельно от режима киоска HA.';
+
+  @override
+  String get settingScreensaverDashboardHideHeaderTitle => 'Скрыть заголовок';
+
+  @override
+  String get settingScreensaverDashboardHideHeaderDescription =>
+      'Скрыть панель инструментов и вкладки видов на заставке.';
+
+  @override
+  String get settingScreensaverDashboardHideSidebarTitle =>
+      'Скрыть боковую панель';
+
+  @override
+  String get settingScreensaverDashboardHideSidebarDescription =>
+      'Скрыть боковую панель навигации на заставке.';
 
   @override
   String get screensaverDashboardSection => 'Заставка «Панель Home Assistant»';
@@ -15159,6 +15142,14 @@ class UiStringsRu extends UiStrings {
   @override
   String get settingVoiceStopWordDescription =>
       'Скажите «стоп», чтобы оборвать ответ, оповещение таймера или объявление.';
+
+  @override
+  String get settingVoiceStopWordFineTuneTitle =>
+      'Точная настройка чувствительности стоп-слова';
+
+  @override
+  String get settingVoiceStopWordFineTuneDescription =>
+      'Меняет чувствительность стоп-слова более мелкими шагами. Повысьте, если «стоп» часто приходится повторять, и понизьте, если ответы обрываются по ошибке.';
 
   @override
   String get settingVoiceWakeArbitrationTitle =>

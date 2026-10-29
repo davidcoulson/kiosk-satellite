@@ -2700,6 +2700,30 @@
       ]
     }
   },
+  "dashboardPickerBuiltInPage": "Home Assistant 页面",
+  "@dashboardPickerBuiltInPage": {
+    "context": "Dashboard picker",
+    "description": "Second line of one of Home Assistant's own pages in the dashboard list, such as Energy, History or Media, or of a page an integration adds.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant > Dashboard",
+        "Settings > Home Assistant > Dashboard View Rotation",
+        "Settings > Screensaver > Home Assistant Dashboard",
+        "Settings > Sendspin > Now Playing",
+        "Settings > Gestures",
+        "Setup > Dashboard"
+      ],
+      "remoteAdmin": [
+        "Home Assistant > Dashboard",
+        "Home Assistant > Dashboard View Rotation",
+        "Screensaver > Home Assistant Dashboard",
+        "Sendspin > Now Playing",
+        "Gestures",
+        "Overview > Go to view",
+        "Setup > Dashboard"
+      ]
+    }
+  },
   "dashboardPickerWholeHelp": "此仪表盘会自动生成页面，因此 Kiosk 会打开整个仪表盘。",
   "@dashboardPickerWholeHelp": {
     "context": "Dashboard picker",
@@ -3514,6 +3538,32 @@
     "x-locations": {
       "device": [
         "Swipe from the left edge > drawer menu"
+      ]
+    }
+  },
+  "drawerItemsSearch": "搜索菜单项",
+  "@drawerItemsSearch": {
+    "context": "Settings:Device:User Interface",
+    "description": "Search box hint in the picker of the drawer menu's items.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface > Drawer menu items"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface > Drawer menu items"
+      ]
+    }
+  },
+  "drawerItemsSettingsKept": "远程管理关闭时始终显示。",
+  "@drawerItemsSettingsKept": {
+    "context": "Settings:Device:User Interface",
+    "description": "Note under the Settings item in the drawer menu items picker. It cannot be hidden while the remote admin is off.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface > Drawer menu items"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface > Drawer menu items"
       ]
     }
   },
@@ -11769,6 +11819,32 @@
       ]
     }
   },
+  "settingLibrarySourcePickerTitle": "显示来源选择",
+  "@settingLibrarySourcePickerTitle": {
+    "context": "Music Library",
+    "description": "Setting label: show the picker in the library that switches between Music Assistant, Home Assistant and Sonos.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Music Library"
+      ],
+      "remoteAdmin": [
+        "Media Player > Music Library"
+      ]
+    }
+  },
+  "settingLibrarySourcePickerDescription": "在音乐库中显示来源选择器。关闭后，音乐库将保持在上方设置的来源。",
+  "@settingLibrarySourcePickerDescription": {
+    "context": "Music Library",
+    "description": "Setting description. 'The source set above' is the Source setting earlier on the same page.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Music Library"
+      ],
+      "remoteAdmin": [
+        "Media Player > Music Library"
+      ]
+    }
+  },
   "libraryDensityComfortable": "宽松",
   "@libraryDensityComfortable": {
     "context": "Music Library",
@@ -12385,19 +12461,6 @@
         "type": "String",
         "description": "How many others."
       }
-    }
-  },
-  "settingLibraryMenuDescription": "在 Kiosk 菜单中添加“音乐库”入口。",
-  "@settingLibraryMenuDescription": {
-    "context": "Music Library",
-    "description": "Setting description.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Music Library"
-      ],
-      "remoteAdmin": [
-        "Media Player > Music Library"
-      ]
     }
   },
   "settingKioskAllowMusicLibraryDescription": "浏览音乐并在扬声器上播放。",
@@ -18195,32 +18258,6 @@
       ]
     }
   },
-  "settingAlarmsMenuTitle": "在 Kiosk 菜单中显示",
-  "@settingAlarmsMenuTitle": {
-    "context": "Settings > Alarms",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Alarms > Show in the kiosk menu"
-      ],
-      "remoteAdmin": [
-        "Alarms > Show in the kiosk menu"
-      ]
-    }
-  },
-  "settingAlarmsMenuDescription": "在 Kiosk 菜单中添加“闹钟”入口。",
-  "@settingAlarmsMenuDescription": {
-    "context": "Settings > Alarms",
-    "description": "Setting description.",
-    "x-locations": {
-      "device": [
-        "Settings > Alarms > Show in the kiosk menu"
-      ],
-      "remoteAdmin": [
-        "Alarms > Show in the kiosk menu"
-      ]
-    }
-  },
   "settingAlarmsVolumeTitle": "闹钟音量",
   "@settingAlarmsVolumeTitle": {
     "context": "Settings > Alarms",
@@ -18891,32 +18928,6 @@
       ],
       "remoteAdmin": [
         "Calendar > Weather"
-      ]
-    }
-  },
-  "settingCalendarMenuTitle": "在 Kiosk 菜单中显示",
-  "@settingCalendarMenuTitle": {
-    "context": "Settings > Calendar > Kiosk",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Calendar > Show in the kiosk menu"
-      ],
-      "remoteAdmin": [
-        "Calendar > Show in the kiosk menu"
-      ]
-    }
-  },
-  "settingCalendarMenuDescription": "在 Kiosk 菜单中添加“日历”入口。",
-  "@settingCalendarMenuDescription": {
-    "context": "Settings > Calendar > Kiosk",
-    "description": "Setting description.",
-    "x-locations": {
-      "device": [
-        "Settings > Calendar > Show in the kiosk menu"
-      ],
-      "remoteAdmin": [
-        "Calendar > Show in the kiosk menu"
       ]
     }
   },
@@ -28484,6 +28495,53 @@
       ]
     }
   },
+  "settingUiDrawerItemsTitle": "抽屉菜单项",
+  "@settingUiDrawerItemsTitle": {
+    "context": "Settings:Device:User Interface",
+    "description": "Setting label. Also the label of the rows on other pages that open this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "settingUiDrawerItemsDescription": "选择抽屉菜单显示的项目及其顺序。",
+  "@settingUiDrawerItemsDescription": {
+    "context": "Settings:Device:User Interface",
+    "description": "Help below this setting and below the rows on other pages that open it.",
+    "x-locations": {
+      "device": [
+        "Settings > Device > User Interface"
+      ],
+      "remoteAdmin": [
+        "Device > User Interface"
+      ]
+    }
+  },
+  "settingShowInKioskMenuTitle": "在 Kiosk 菜单中显示",
+  "@settingShowInKioskMenuTitle": {
+    "context": "Settings",
+    "description": "Label of a row on a feature's page that opens Device > User Interface > Drawer menu items, where the feature's kiosk menu entry is turned on or off.",
+    "x-locations": {
+      "device": [
+        "Settings > Alarms",
+        "Settings > Calendar",
+        "Settings > App Launcher",
+        "Settings > Media Player > Music Assistant",
+        "Settings > Media Player > Music Library"
+      ],
+      "remoteAdmin": [
+        "Alarms",
+        "Calendar",
+        "App Launcher",
+        "Media Player > Music Assistant",
+        "Media Player > Music Library"
+      ]
+    }
+  },
   "settingAgentModeTitle": "Agent mode",
   "@settingAgentModeTitle": {
     "context": "Settings:Device:User Interface",
@@ -31469,32 +31527,6 @@
       ]
     }
   },
-  "settingHaHoldMenuTitle": "在 Kiosk 菜单中显示",
-  "@settingHaHoldMenuTitle": {
-    "context": "Settings:Home Assistant Setup:Hold mode",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > Hold mode"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > Hold mode"
-      ]
-    }
-  },
-  "settingHaHoldMenuDescription": "添加用于开启和关闭页面保持模式的菜单项。",
-  "@settingHaHoldMenuDescription": {
-    "context": "Settings:Home Assistant Setup:Hold mode",
-    "description": "Help below the setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > Hold mode"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > Hold mode"
-      ]
-    }
-  },
   "haHoldHint": "保持当前页面、自动解除及菜单入口",
   "@haHoldHint": {
     "context": "Settings:Home Assistant Setup:Hold mode",
@@ -32902,32 +32934,6 @@
       ]
     }
   },
-  "settingHaKioskMenuTitle": "在 Kiosk 菜单中显示",
-  "@settingHaKioskMenuTitle": {
-    "context": "Settings:Home Assistant Setup:User Interface",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > User Interface"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > User Interface"
-      ]
-    }
-  },
-  "settingHaKioskMenuDescription": "在 Kiosk 菜单中添加可开启和关闭 HA Kiosk 模式的入口。",
-  "@settingHaKioskMenuDescription": {
-    "context": "Settings:Home Assistant Setup:User Interface",
-    "description": "Help below the setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Home Assistant Setup > User Interface"
-      ],
-      "remoteAdmin": [
-        "Home Assistant Setup > User Interface"
-      ]
-    }
-  },
   "settingHaDashboardCarouselTitle": "启用仪表盘滑动切换",
   "@settingHaDashboardCarouselTitle": {
     "context": "Settings:Home Assistant Setup:User Interface",
@@ -33633,32 +33639,6 @@
   "@settingIntercomKeyPlaceholder": {
     "context": "Settings > Intercom",
     "description": "Placeholder for the key before the intercom is enabled.",
-    "x-locations": {
-      "device": [
-        "Settings > Intercom"
-      ],
-      "remoteAdmin": [
-        "Intercom"
-      ]
-    }
-  },
-  "settingIntercomMenuTitle": "在 Kiosk 菜单中显示",
-  "@settingIntercomMenuTitle": {
-    "context": "Settings > Intercom",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Intercom"
-      ],
-      "remoteAdmin": [
-        "Intercom"
-      ]
-    }
-  },
-  "settingIntercomMenuDescription": "在 Kiosk 菜单中添加“对讲”入口。",
-  "@settingIntercomMenuDescription": {
-    "context": "Settings > Intercom",
-    "description": "Help below this setting.",
     "x-locations": {
       "device": [
         "Settings > Intercom"
@@ -35983,26 +35963,6 @@
       ]
     }
   },
-  "settingLockdownMenuTitle": "在 Kiosk 菜单中显示",
-  "@settingLockdownMenuTitle": {
-    "context": "Lockdown Mode > Show in the kiosk menu",
-    "description": "Setting label.",
-    "x-locations": {
-      "remoteAdmin": [
-        "Lockdown Mode > Show in the kiosk menu"
-      ]
-    }
-  },
-  "settingLockdownMenuDescription": "在 Kiosk 菜单中添加锁定屏幕的“锁定模式”入口。使用退出手势、远程管理或 Home Assistant 解锁。",
-  "@settingLockdownMenuDescription": {
-    "context": "Lockdown Mode > Show in the kiosk menu",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "remoteAdmin": [
-        "Lockdown Mode > Show in the kiosk menu"
-      ]
-    }
-  },
   "settingLockdownBlackoutTitle": "黑屏",
   "@settingLockdownBlackoutTitle": {
     "context": "Lockdown Mode > Blackout screen",
@@ -36434,32 +36394,6 @@
   },
   "settingSendspinDismissKeepsPlayingDescription": "快速滑动移走悬浮播放器时，只隐藏窗口，音乐继续播放。",
   "@settingSendspinDismissKeepsPlayingDescription": {
-    "context": "Settings > Media Player > Floating Player",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Floating Player"
-      ],
-      "remoteAdmin": [
-        "Media Player > Floating Player"
-      ]
-    }
-  },
-  "settingSendspinPlayerShortcutTitle": "在 Kiosk 菜单中显示",
-  "@settingSendspinPlayerShortcutTitle": {
-    "context": "Settings > Media Player > Floating Player",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Floating Player"
-      ],
-      "remoteAdmin": [
-        "Media Player > Floating Player"
-      ]
-    }
-  },
-  "settingSendspinPlayerShortcutDescription": "在 Kiosk 菜单中添加显示或隐藏悬浮播放器的入口。注意：此播放器没有正在播放的内容或播放队列时，不会显示。",
-  "@settingSendspinPlayerShortcutDescription": {
     "context": "Settings > Media Player > Floating Player",
     "description": "Help below this setting.",
     "x-locations": {
@@ -36996,32 +36930,6 @@
       ]
     }
   },
-  "settingSendspinMaShortcutTitle": "在 Kiosk 菜单中显示",
-  "@settingSendspinMaShortcutTitle": {
-    "context": "Settings > Media Player > Music Assistant",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Music Assistant"
-      ],
-      "remoteAdmin": [
-        "Media Player > Music Assistant"
-      ]
-    }
-  },
-  "settingSendspinMaShortcutDescription": "在 Kiosk 菜单中添加 Music Assistant 入口，在仪表盘上方打开服务器网页界面。需要填写上方服务器地址。",
-  "@settingSendspinMaShortcutDescription": {
-    "context": "Settings > Media Player > Music Assistant",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Music Assistant"
-      ],
-      "remoteAdmin": [
-        "Media Player > Music Assistant"
-      ]
-    }
-  },
   "settingSendspinMaOpenFullscreenTitle": "直接打开“正在播放”",
   "@settingSendspinMaOpenFullscreenTitle": {
     "context": "Settings > Media Player > Music Assistant",
@@ -37493,6 +37401,32 @@
       ]
     }
   },
+  "settingSendspinFullscreenCloseButtonTitle": "始终显示关闭按钮",
+  "@settingSendspinFullscreenCloseButtonTitle": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Setting label: keep the X button that closes Now Playing even when Double tap to dismiss is on.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
+  "settingSendspinFullscreenCloseButtonDescription": "开启“双击关闭”时仍显示关闭按钮。",
+  "@settingSendspinFullscreenCloseButtonDescription": {
+    "context": "Settings > Media Player > Now Playing > User Interface",
+    "description": "Help below this setting. 'Double tap to dismiss' is the name of the setting just above it.",
+    "x-locations": {
+      "device": [
+        "Settings > Media Player > Now Playing > User Interface"
+      ],
+      "remoteAdmin": [
+        "Media Player > Now Playing > User Interface"
+      ]
+    }
+  },
   "settingSendspinFullscreenOnPlayTitle": "音乐开始播放时打开“正在播放”",
   "@settingSendspinFullscreenOnPlayTitle": {
     "context": "Settings > Media Player > Now Playing > User Interface",
@@ -37612,32 +37546,6 @@
   },
   "settingSendspinFullscreenReturnViewDescription": "关闭“正在播放”后显示的页面。",
   "@settingSendspinFullscreenReturnViewDescription": {
-    "context": "Settings > Media Player > Now Playing > User Interface",
-    "description": "Help below this setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Now Playing > User Interface"
-      ],
-      "remoteAdmin": [
-        "Media Player > Now Playing > User Interface"
-      ]
-    }
-  },
-  "settingSendspinFullscreenShortcutTitle": "在 Kiosk 菜单中显示",
-  "@settingSendspinFullscreenShortcutTitle": {
-    "context": "Settings > Media Player > Now Playing > User Interface",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Media Player > Now Playing > User Interface"
-      ],
-      "remoteAdmin": [
-        "Media Player > Now Playing > User Interface"
-      ]
-    }
-  },
-  "settingSendspinFullscreenShortcutDescription": "在 Kiosk 菜单中添加显示“正在播放”页面的入口。注意：此播放器没有正在播放的内容或播放队列时，不会显示。",
-  "@settingSendspinFullscreenShortcutDescription": {
     "context": "Settings > Media Player > Now Playing > User Interface",
     "description": "Help below this setting.",
     "x-locations": {
@@ -44142,32 +44050,6 @@
       ]
     }
   },
-  "settingScreensaverMenuTitle": "在 Kiosk 菜单中显示",
-  "@settingScreensaverMenuTitle": {
-    "context": "Settings:Screensaver",
-    "description": "Setting label.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver"
-      ],
-      "remoteAdmin": [
-        "Screensaver"
-      ]
-    }
-  },
-  "settingScreensaverMenuDescription": "在 Kiosk 菜单中添加“启动屏保”入口。",
-  "@settingScreensaverMenuDescription": {
-    "context": "Settings:Screensaver",
-    "description": "Help below the setting.",
-    "x-locations": {
-      "device": [
-        "Settings > Screensaver"
-      ],
-      "remoteAdmin": [
-        "Screensaver"
-      ]
-    }
-  },
   "settingScreensaverFollowAnimationScaleTitle": "跟随 Android 动画设置",
   "@settingScreensaverFollowAnimationScaleTitle": {
     "context": "Settings:Screensaver",
@@ -44768,6 +44650,84 @@
   },
   "settingScreensaverDashboardDoubleTapDescription": "单击与仪表盘交互，而非关闭屏保。",
   "@settingScreensaverDashboardDoubleTapDescription": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardKioskTitle": "覆盖 HA Kiosk 模式",
+  "@settingScreensaverDashboardKioskTitle": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardKioskDescription": "单独选择屏保隐藏的内容，不受 HA Kiosk 模式影响。",
+  "@settingScreensaverDashboardKioskDescription": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardHideHeaderTitle": "隐藏顶栏",
+  "@settingScreensaverDashboardHideHeaderTitle": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardHideHeaderDescription": "在屏保上隐藏仪表盘工具栏和页面标签。",
+  "@settingScreensaverDashboardHideHeaderDescription": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardHideSidebarTitle": "隐藏侧边栏",
+  "@settingScreensaverDashboardHideSidebarTitle": {
+    "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Home Assistant Dashboard screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Home Assistant Dashboard screensaver"
+      ]
+    }
+  },
+  "settingScreensaverDashboardHideSidebarDescription": "在屏保上隐藏导航侧边栏。",
+  "@settingScreensaverDashboardHideSidebarDescription": {
     "context": "Settings:Screensaver:Home Assistant Dashboard screensaver",
     "description": "Help below the setting.",
     "x-locations": {
@@ -54911,6 +54871,16 @@
   },
   "settingVoiceStopWordDescription": "说出“stop”可打断回复、计时器提醒或播报。",
   "@settingVoiceStopWordDescription": {
+    "context": "Settings > Voice Satellite > Wake Word",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceStopWordFineTuneTitle": "停止词灵敏度微调",
+  "@settingVoiceStopWordFineTuneTitle": {
+    "context": "Settings > Voice Satellite > Wake Word",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceStopWordFineTuneDescription": "以更小的幅度调整停止词灵敏度。如果经常需要重复“stop”，请调高；如果回复经常被误打断，请调低。",
+  "@settingVoiceStopWordFineTuneDescription": {
     "context": "Settings > Voice Satellite > Wake Word",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },

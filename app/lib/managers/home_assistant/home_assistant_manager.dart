@@ -923,13 +923,32 @@ class HomeAssistantManager extends Manager {
         _returnHomeTimer = null;
         unawaited(_onScreensaverStart(nowPlaying: e.nowPlaying));
       } else {
+        // The touch that dismissed the screensaver gets its grace window
+        // now, once the dashboard is back in view. The stop lands a few
+        // awaits after the touch, so anything older than that was a
+        // control press that left the screensaver up.
+        final touched = _touchUnderScreensaverAt;
+        _touchUnderScreensaverAt = null;
+        if (touched != null &&
+            DateTime.now().difference(touched) < _dismissTouchWindow) {
+          _pauseRotationForTouch();
+        }
         _configureReturnHome();
       }
     });
     // Touch pauses rotation for the configured window so the current view
-    // can be used; each touch restarts that window.
+    // can be used; each touch restarts that window. Under the screensaver
+    // there is no view to keep usable (the ring is already frozen in
+    // place, see _rotationTick), so a touch there, a Now Playing control
+    // press, only leaves a timestamp for the dismissal above.
     bus.on<ActivityDetected>().listen((e) {
-      if (e.source == 'touch') _pauseRotationForTouch();
+      if (e.source == 'touch') {
+        if (_screensaverActive) {
+          _touchUnderScreensaverAt = DateTime.now();
+        } else {
+          _pauseRotationForTouch();
+        }
+      }
       _configureReturnHome();
     });
     // Any navigation counts as activity for the return-home clock: the
@@ -1019,6 +1038,15 @@ class HomeAssistantManager extends Manager {
   bool _theater = false;
   bool _cameraViewActive = false;
   bool _screensaverActive = false;
+
+  /// When the last touch under the screensaver arrived, so the one that
+  /// dismisses it can still earn the touch pause once the dashboard shows.
+  DateTime? _touchUnderScreensaverAt;
+
+  /// How long after a touch a screensaver stop still counts as dismissed
+  /// by it. The stop runs a handful of awaited commands first, well under
+  /// a second on a healthy device.
+  static const _dismissTouchWindow = Duration(seconds: 5);
 
   /// Dashboard paths a soft navigation cannot resolve (strategy dashboards,
   /// redirect aliases), learned once and then hard-loaded directly instead of
@@ -2965,10 +2993,10 @@ class HomeAssistantManager extends Manager {
 
   /// The navigable dashboards from the page's `hass.panels`: every Lovelace
   /// dashboard plus the auto "Overview" default (panel component `home`),
-  /// then the sidebar panels of apps, each with the url the sidebar
-  /// navigates to. An app has no views (its `lovelace/config` read answers
-  /// config_not_found), so the pickers offer it whole. Null when hass is
-  /// not up.
+  /// then the sidebar panels of apps and Home Assistant's own pages such as
+  /// Energy, each with the url the sidebar navigates to. Neither has views
+  /// (their `lovelace/config` read answers config_not_found), so the
+  /// pickers offer them whole. Null when hass is not up.
   Future<List<Map<String, Object?>>?> _dashboardsFromPage() async {
     const js = r'''
 (function () {
@@ -2981,6 +3009,7 @@ class HomeAssistantManager extends Manager {
     var hasHome = Object.keys(panels).some(function (k) {
       return panels[k].component_name === 'home';
     });
+    var NOT_PAGES = ['config', 'developer-tools', 'profile', 'my', 'notfound'];
     var out = [];
     Object.keys(panels).forEach(function (k) {
       var p = panels[k];
@@ -2999,7 +3028,21 @@ class HomeAssistantManager extends Manager {
         return;
       }
       var isDash = p.component_name === 'lovelace' || p.component_name === 'home';
-      if (!isDash) return;
+      if (!isDash) {
+        // Home Assistant's own pages (Energy, Activity, History, Media,
+        // To-do lists) and the pages integrations add are listed after the
+        // apps. Settings, Developer tools and other admin panels are not
+        // pages to show on a kiosk, and neither are the profile, the My
+        // link redirect or the not-found page.
+        if (p.require_admin || !p.title || NOT_PAGES.indexOf(p.component_name) >= 0) return;
+        out.push({
+          url_path: p.url_path,
+          title: (hass.localize && hass.localize('panel.' + p.title)) || p.title,
+          comp: 'builtin',
+          icon: p.icon || null,
+        });
+        return;
+      }
       if (p.url_path === 'lovelace' && p.title == null && hasHome) return;
       var title = p.title
         ? ((hass.localize && hass.localize('panel.' + p.title)) || p.title)
@@ -3013,12 +3056,14 @@ class HomeAssistantManager extends Manager {
     });
     // Default dashboard first, matching the sidebar: hass.defaultPanel when
     // set, otherwise the auto "Overview" (component `home`). Apps come
-    // after the dashboards. The rest keep their registration order.
+    // after the dashboards and Home Assistant's own pages after the apps.
+    // The rest keep their registration order.
     out.sort(function (a, b) {
       function rank(d) {
         if (hass.defaultPanel && d.url_path === hass.defaultPanel) return 0;
         if (d.comp === 'home') return 1;
         if (d.comp === 'app') return 3;
+        if (d.comp === 'builtin') return 4;
         return 2;
       }
       return rank(a) - rank(b);
@@ -3026,6 +3071,7 @@ class HomeAssistantManager extends Manager {
     return JSON.stringify(out.map(function (d) {
       var e = { url_path: d.url_path, title: d.title, icon: d.icon };
       if (d.comp === 'app') e.app = true;
+      if (d.comp === 'builtin') e.builtIn = true;
       return e;
     }));
   } catch (e) {
@@ -3045,6 +3091,7 @@ class HomeAssistantManager extends Manager {
             'title': d['title'],
             if (d['icon'] is String) 'icon': d['icon'],
             if (d['app'] == true) 'app': true,
+            if (d['builtIn'] == true) 'builtIn': true,
           },
       ];
     } catch (_) {

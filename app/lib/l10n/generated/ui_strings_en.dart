@@ -755,6 +755,9 @@ class UiStringsEn extends UiStrings {
   String get dashboardPickerIngressPage => 'Ingress page';
 
   @override
+  String get dashboardPickerBuiltInPage => 'Home Assistant page';
+
+  @override
   String get dashboardPickerWholeHelp =>
       'This dashboard builds its own views, so the kiosk opens it whole.';
 
@@ -927,6 +930,13 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get drawerThemeAndroid => 'Follow Android';
+
+  @override
+  String get drawerItemsSearch => 'Search menu items';
+
+  @override
+  String get drawerItemsSettingsKept =>
+      'Always shown while remote admin is off.';
 
   @override
   String drawerVersion(String version) {
@@ -3045,6 +3055,13 @@ class UiStringsEn extends UiStrings {
       'Size of the tiles in the library. Compact fits more in a row.';
 
   @override
+  String get settingLibrarySourcePickerTitle => 'Show source selection';
+
+  @override
+  String get settingLibrarySourcePickerDescription =>
+      'Show the source picker in the library. Turn off to keep the library on the source set above.';
+
+  @override
   String get libraryDensityComfortable => 'Comfortable';
 
   @override
@@ -3225,10 +3242,6 @@ class UiStringsEn extends UiStrings {
   String libraryGroupName(String speaker, String count) {
     return '$speaker + $count';
   }
-
-  @override
-  String get settingLibraryMenuDescription =>
-      'Add a Music Library entry to the kiosk menu.';
 
   @override
   String get settingKioskAllowMusicLibraryDescription =>
@@ -4824,13 +4837,6 @@ class UiStringsEn extends UiStrings {
       'A ringing alarm shows on this screensaver, in its style, instead of on its own screen.';
 
   @override
-  String get settingAlarmsMenuTitle => 'Show in the kiosk menu';
-
-  @override
-  String get settingAlarmsMenuDescription =>
-      'Add an Alarms entry to the kiosk menu.';
-
-  @override
   String get settingAlarmsVolumeTitle => 'Alarm volume';
 
   @override
@@ -5011,13 +5017,6 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingCalendarWeatherEntityDescription =>
       'Adds the forecast to each day.';
-
-  @override
-  String get settingCalendarMenuTitle => 'Show in the kiosk menu';
-
-  @override
-  String get settingCalendarMenuDescription =>
-      'Add a Calendar entry to the kiosk menu.';
 
   @override
   String get settingCalendarIdleCloseMinutesTitle => 'Close when idle';
@@ -7539,6 +7538,16 @@ class UiStringsEn extends UiStrings {
   String get deviceToastPlugins => 'Plugin actions';
 
   @override
+  String get settingUiDrawerItemsTitle => 'Drawer menu items';
+
+  @override
+  String get settingUiDrawerItemsDescription =>
+      'Choose the items the drawer menu shows and their order.';
+
+  @override
+  String get settingShowInKioskMenuTitle => 'Show in the kiosk menu';
+
+  @override
   String get settingAgentModeTitle => 'Agent mode';
 
   @override
@@ -8312,13 +8321,6 @@ class UiStringsEn extends UiStrings {
       'Turns hold mode off by itself after the set time. Set to 0 to hold until turned off manually.';
 
   @override
-  String get settingHaHoldMenuTitle => 'Show in the kiosk menu';
-
-  @override
-  String get settingHaHoldMenuDescription =>
-      'Adds a menu entry that turns hold mode on and off.';
-
-  @override
   String get haHoldHint =>
       'Pin the current view, automatic release, menu entry';
 
@@ -8690,13 +8692,6 @@ class UiStringsEn extends UiStrings {
       'Hide the navigation sidebar while HA kiosk mode is on.';
 
   @override
-  String get settingHaKioskMenuTitle => 'Show in the kiosk menu';
-
-  @override
-  String get settingHaKioskMenuDescription =>
-      'Add an HA Kiosk Mode entry to the kiosk menu that turns it on and off.';
-
-  @override
   String get settingHaDashboardCarouselTitle => 'Enable dashboard carousel';
 
   @override
@@ -8889,13 +8884,6 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingIntercomKeyPlaceholder =>
       'Made when the intercom is enabled';
-
-  @override
-  String get settingIntercomMenuTitle => 'Show in the kiosk menu';
-
-  @override
-  String get settingIntercomMenuDescription =>
-      'Add an Intercom entry to the kiosk menu.';
 
   @override
   String get intercomNeedsAdmin => 'The intercom needs the remote admin';
@@ -9511,13 +9499,6 @@ class UiStringsEn extends UiStrings {
       'Disables screen interactions until turned off either from Home Assistant or with the exit gesture.';
 
   @override
-  String get settingLockdownMenuTitle => 'Show in the kiosk menu';
-
-  @override
-  String get settingLockdownMenuDescription =>
-      'Add a Lockdown Mode entry to the kiosk menu that locks the screen. Use the exit gesture, Remote Admin or Home Assistant to unlock it.';
-
-  @override
   String get settingLockdownBlackoutTitle => 'Blackout screen';
 
   @override
@@ -9645,13 +9626,6 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingSendspinDismissKeepsPlayingDescription =>
       'Flinging the floating player away hides it without stopping the music.';
-
-  @override
-  String get settingSendspinPlayerShortcutTitle => 'Show in the kiosk menu';
-
-  @override
-  String get settingSendspinPlayerShortcutDescription =>
-      'Add an entry in the kiosk menu that shows or hides the floating player. WARNING: If nothing is playing or there is no queue for this player, it won\'t show up.';
 
   @override
   String get mediaFloatingPage => 'Floating Player';
@@ -9793,13 +9767,6 @@ class UiStringsEn extends UiStrings {
       'A long-lived token from Music Assistant (Settings, then Users). Read access is enough for lyrics; the kiosk menu shortcut opens the web interface as whoever the token belongs to.';
 
   @override
-  String get settingSendspinMaShortcutTitle => 'Show in the kiosk menu';
-
-  @override
-  String get settingSendspinMaShortcutDescription =>
-      'Add a Music Assistant entry to the kiosk menu, opening the server\'s web interface over the dashboard. Needs the server address above.';
-
-  @override
   String get settingSendspinMaOpenFullscreenTitle =>
       'Open directly to Now Playing';
 
@@ -9920,6 +9887,14 @@ class UiStringsEn extends UiStrings {
       'A double tap anywhere on the Now Playing view dismisses it. The close button won\'t be shown. Ignored while Now Playing is shown alongside a screensaver.';
 
   @override
+  String get settingSendspinFullscreenCloseButtonTitle =>
+      'Always show close button';
+
+  @override
+  String get settingSendspinFullscreenCloseButtonDescription =>
+      'Show the close button while Double tap to dismiss is on.';
+
+  @override
   String get settingSendspinFullscreenOnPlayTitle =>
       'Launch Now Playing when music starts playing';
 
@@ -9954,13 +9929,6 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingSendspinFullscreenReturnViewDescription =>
       'The view to show after Now Playing is dismissed.';
-
-  @override
-  String get settingSendspinFullscreenShortcutTitle => 'Show in the kiosk menu';
-
-  @override
-  String get settingSendspinFullscreenShortcutDescription =>
-      'Add an entry in the kiosk menu that shows the Now Playing view. WARNING: If nothing is playing or there is no queue for this player, it won\'t show up.';
 
   @override
   String get settingSendspinSpeakerPillTitle => 'Show speaker selection pill';
@@ -11739,13 +11707,6 @@ class UiStringsEn extends UiStrings {
       'Nudge the image every minute to protect OLED panels. Not for the black screensaver, whose pixels are already off.';
 
   @override
-  String get settingScreensaverMenuTitle => 'Show in the kiosk menu';
-
-  @override
-  String get settingScreensaverMenuDescription =>
-      'Add a Start Screensaver entry to the kiosk menu.';
-
-  @override
   String get settingScreensaverFollowAnimationScaleTitle =>
       'Follow Android animation settings';
 
@@ -11906,6 +11867,27 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingScreensaverDashboardDoubleTapDescription =>
       'Single taps interact with the dashboard instead of dismissing.';
+
+  @override
+  String get settingScreensaverDashboardKioskTitle => 'HA kiosk mode override';
+
+  @override
+  String get settingScreensaverDashboardKioskDescription =>
+      'Choose what the screensaver hides, separate from HA kiosk mode.';
+
+  @override
+  String get settingScreensaverDashboardHideHeaderTitle => 'Hide the header';
+
+  @override
+  String get settingScreensaverDashboardHideHeaderDescription =>
+      'Hide the dashboard toolbar and view tabs on the screensaver.';
+
+  @override
+  String get settingScreensaverDashboardHideSidebarTitle => 'Hide the sidebar';
+
+  @override
+  String get settingScreensaverDashboardHideSidebarDescription =>
+      'Hide the navigation sidebar on the screensaver.';
 
   @override
   String get screensaverDashboardSection =>
@@ -15064,6 +15046,14 @@ class UiStringsEn extends UiStrings {
   @override
   String get settingVoiceStopWordDescription =>
       'Say \"stop\" to cut off an answer, a timer alert or an announcement.';
+
+  @override
+  String get settingVoiceStopWordFineTuneTitle =>
+      'Fine-tune stop word sensitivity';
+
+  @override
+  String get settingVoiceStopWordFineTuneDescription =>
+      'Adjusts the stop word sensitivity in smaller steps. Raise it if you often have to repeat \"stop\", lower it if answers stop by mistake.';
 
   @override
   String get settingVoiceWakeArbitrationTitle => 'Enable wake word arbitration';

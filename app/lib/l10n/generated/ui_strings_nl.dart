@@ -756,6 +756,9 @@ class UiStringsNl extends UiStrings {
   String get dashboardPickerIngressPage => 'Ingress-pagina';
 
   @override
+  String get dashboardPickerBuiltInPage => 'Home Assistant-pagina';
+
+  @override
   String get dashboardPickerWholeHelp =>
       'Dit dashboard maakt zijn eigen weergaven, dus de kiosk opent het in zijn geheel.';
 
@@ -928,6 +931,13 @@ class UiStringsNl extends UiStrings {
 
   @override
   String get drawerThemeAndroid => 'Android volgen';
+
+  @override
+  String get drawerItemsSearch => 'Menu-items zoeken';
+
+  @override
+  String get drawerItemsSettingsKept =>
+      'Altijd zichtbaar zolang beheer op afstand uit staat.';
 
   @override
   String drawerVersion(String version) {
@@ -3064,6 +3074,13 @@ class UiStringsNl extends UiStrings {
       'Grootte van de tegels in de bibliotheek. Compact toont meer per rij.';
 
   @override
+  String get settingLibrarySourcePickerTitle => 'Bronkeuze tonen';
+
+  @override
+  String get settingLibrarySourcePickerDescription =>
+      'Toont de bronkeuze in de bibliotheek. Zet uit om de bibliotheek op de hierboven gekozen bron te houden.';
+
+  @override
   String get libraryDensityComfortable => 'Ruim';
 
   @override
@@ -3245,10 +3262,6 @@ class UiStringsNl extends UiStrings {
   String libraryGroupName(String speaker, String count) {
     return '$speaker + $count';
   }
-
-  @override
-  String get settingLibraryMenuDescription =>
-      'Voeg de optie Muziekbibliotheek toe aan het kioskmenu.';
 
   @override
   String get settingKioskAllowMusicLibraryDescription =>
@@ -4874,13 +4887,6 @@ class UiStringsNl extends UiStrings {
       'Als een alarm afgaat, wordt het in de stijl van deze schermbeveiliging getoond in plaats van op een apart scherm.';
 
   @override
-  String get settingAlarmsMenuTitle => 'Toon in het kioskmenu';
-
-  @override
-  String get settingAlarmsMenuDescription =>
-      'Voeg de optie Alarmen toe aan het kioskmenu.';
-
-  @override
   String get settingAlarmsVolumeTitle => 'Alarmvolume';
 
   @override
@@ -5063,13 +5069,6 @@ class UiStringsNl extends UiStrings {
   @override
   String get settingCalendarWeatherEntityDescription =>
       'Voegt de weersverwachting aan elke dag toe.';
-
-  @override
-  String get settingCalendarMenuTitle => 'Toon in het kioskmenu';
-
-  @override
-  String get settingCalendarMenuDescription =>
-      'Voeg de optie Agenda toe aan het kioskmenu.';
 
   @override
   String get settingCalendarIdleCloseMinutesTitle => 'Sluiten bij inactiviteit';
@@ -7623,6 +7622,16 @@ class UiStringsNl extends UiStrings {
   String get deviceToastPlugins => 'Plug-inacties';
 
   @override
+  String get settingUiDrawerItemsTitle => 'Items in het zijmenu';
+
+  @override
+  String get settingUiDrawerItemsDescription =>
+      'Kies welke items het zijmenu toont en in welke volgorde.';
+
+  @override
+  String get settingShowInKioskMenuTitle => 'Toon in het kioskmenu';
+
+  @override
   String get settingAgentModeTitle => 'Agent mode';
 
   @override
@@ -8406,13 +8415,6 @@ class UiStringsNl extends UiStrings {
       'Schakelt de wachtstand automatisch uit na de ingestelde tijd. Stel 0 in om de wachtstand handmatig uit te schakelen.';
 
   @override
-  String get settingHaHoldMenuTitle => 'Toon in het kioskmenu';
-
-  @override
-  String get settingHaHoldMenuDescription =>
-      'Voegt een menuoptie toe waarmee je de wachtstand in- en uitschakelt.';
-
-  @override
   String get haHoldHint =>
       'Huidige weergave vasthouden, automatisch uitschakelen en menuoptie';
 
@@ -8788,13 +8790,6 @@ class UiStringsNl extends UiStrings {
       'Verberg de navigatiezijbalk zolang de HA-kioskmodus actief is.';
 
   @override
-  String get settingHaKioskMenuTitle => 'Toon in het kioskmenu';
-
-  @override
-  String get settingHaKioskMenuDescription =>
-      'Voeg een menuoptie toe waarmee je de HA-kioskmodus in- en uitschakelt.';
-
-  @override
   String get settingHaDashboardCarouselTitle =>
       'Dashboardcarrousel inschakelen';
 
@@ -8990,13 +8985,6 @@ class UiStringsNl extends UiStrings {
   @override
   String get settingIntercomKeyPlaceholder =>
       'Gemaakt wanneer de intercom is ingeschakeld';
-
-  @override
-  String get settingIntercomMenuTitle => 'Toon in het kioskmenu';
-
-  @override
-  String get settingIntercomMenuDescription =>
-      'Voeg een intercomoptie toe aan het kioskmenu.';
 
   @override
   String get intercomNeedsAdmin => 'De intercom vereist beheer op afstand';
@@ -9617,13 +9605,6 @@ class UiStringsNl extends UiStrings {
       'Blokkeer interacties met het scherm totdat de modus via Home Assistant of met het afsluitgebaar wordt uitgeschakeld.';
 
   @override
-  String get settingLockdownMenuTitle => 'Toon in het kioskmenu';
-
-  @override
-  String get settingLockdownMenuDescription =>
-      'Voeg een optie voor de vergrendelingsmodus toe aan het kioskmenu. Ontgrendel het scherm met het afsluitgebaar, via beheer op afstand of via Home Assistant.';
-
-  @override
   String get settingLockdownBlackoutTitle => 'Scherm zwart maken';
 
   @override
@@ -9754,13 +9735,6 @@ class UiStringsNl extends UiStrings {
   @override
   String get settingSendspinDismissKeepsPlayingDescription =>
       'Veeg de zwevende speler van het scherm om deze te verbergen zonder de muziek te stoppen.';
-
-  @override
-  String get settingSendspinPlayerShortcutTitle => 'Toon in het kioskmenu';
-
-  @override
-  String get settingSendspinPlayerShortcutDescription =>
-      'Voeg een menuoptie toe waarmee je de zwevende speler toont of verbergt. WAARSCHUWING: als er niets wordt afgespeeld en de wachtrij leeg is, verschijnt de speler niet.';
 
   @override
   String get mediaFloatingPage => 'Zwevende speler';
@@ -9903,13 +9877,6 @@ class UiStringsNl extends UiStrings {
       'Een langdurig token uit Music Assistant (Instellingen > Gebruikers). Leestoegang is voldoende voor songteksten. De snelkoppeling in het kioskmenu opent de webinterface onder het account waaraan het token is gekoppeld.';
 
   @override
-  String get settingSendspinMaShortcutTitle => 'Toon in het kioskmenu';
-
-  @override
-  String get settingSendspinMaShortcutDescription =>
-      'Voeg Music Assistant toe aan het kioskmenu en open de webinterface van de server als venster over het dashboard. Hiervoor is het bovenstaande serveradres vereist.';
-
-  @override
   String get settingSendspinMaOpenFullscreenTitle =>
       'Direct openen in Speelt nu';
 
@@ -10031,6 +9998,14 @@ class UiStringsNl extends UiStrings {
       'Dubbeltik op een willekeurige plek in Speelt nu om de weergave te sluiten. De sluitknop wordt dan niet getoond. Wordt genegeerd als Speelt nu naast een schermbeveiliging staat.';
 
   @override
+  String get settingSendspinFullscreenCloseButtonTitle =>
+      'Sluitknop altijd tonen';
+
+  @override
+  String get settingSendspinFullscreenCloseButtonDescription =>
+      'Toont de sluitknop ook als Dubbele tik om af te sluiten aan staat.';
+
+  @override
   String get settingSendspinFullscreenOnPlayTitle =>
       'Speelt nu openen wanneer muziek begint';
 
@@ -10065,13 +10040,6 @@ class UiStringsNl extends UiStrings {
   @override
   String get settingSendspinFullscreenReturnViewDescription =>
       'De weergave die verschijnt nadat Speelt nu is gesloten.';
-
-  @override
-  String get settingSendspinFullscreenShortcutTitle => 'Toon in het kioskmenu';
-
-  @override
-  String get settingSendspinFullscreenShortcutDescription =>
-      'Voeg een menuoptie toe waarmee Speelt nu wordt geopend. WAARSCHUWING: als er niets wordt afgespeeld en de wachtrij leeg is, verschijnt de weergave niet.';
 
   @override
   String get settingSendspinSpeakerPillTitle => 'Luidsprekerkeuze tonen';
@@ -11878,13 +11846,6 @@ class UiStringsNl extends UiStrings {
       'Verschuif de afbeelding elke minuut een klein stukje om OLED-schermen te beschermen. Dit geldt niet voor de zwarte schermbeveiliging, waarbij de pixels al uit staan.';
 
   @override
-  String get settingScreensaverMenuTitle => 'Toon in het kioskmenu';
-
-  @override
-  String get settingScreensaverMenuDescription =>
-      'Voeg de optie \'Schermbeveiliging starten\' toe aan het kioskmenu.';
-
-  @override
   String get settingScreensaverFollowAnimationScaleTitle =>
       'Android-animatie-instellingen volgen';
 
@@ -12048,6 +12009,28 @@ class UiStringsNl extends UiStrings {
   @override
   String get settingScreensaverDashboardDoubleTapDescription =>
       'Enkele tikken werken met het dashboard en sluiten de schermbeveiliging niet af.';
+
+  @override
+  String get settingScreensaverDashboardKioskTitle =>
+      'HA kioskmodus overschrijven';
+
+  @override
+  String get settingScreensaverDashboardKioskDescription =>
+      'Kies wat de schermbeveiliging verbergt, los van de HA-kioskmodus.';
+
+  @override
+  String get settingScreensaverDashboardHideHeaderTitle => 'Kopbalk verbergen';
+
+  @override
+  String get settingScreensaverDashboardHideHeaderDescription =>
+      'Verberg de dashboardwerkbalk en tabbladen met weergaven op de schermbeveiliging.';
+
+  @override
+  String get settingScreensaverDashboardHideSidebarTitle => 'Zijbalk verbergen';
+
+  @override
+  String get settingScreensaverDashboardHideSidebarDescription =>
+      'Verberg de navigatiezijbalk op de schermbeveiliging.';
 
   @override
   String get screensaverDashboardSection =>
@@ -15242,6 +15225,14 @@ class UiStringsNl extends UiStrings {
   @override
   String get settingVoiceStopWordDescription =>
       'Zeg \'stop\' om een antwoord, timerwaarschuwing of aankondiging af te breken.';
+
+  @override
+  String get settingVoiceStopWordFineTuneTitle =>
+      'Gevoeligheid van stopwoord fijnafstellen';
+
+  @override
+  String get settingVoiceStopWordFineTuneDescription =>
+      'Past de gevoeligheid van het stopwoord in kleinere stappen aan. Verhoog dit als je \'stop\' vaak moet herhalen en verlaag het als antwoorden per ongeluk stoppen.';
 
   @override
   String get settingVoiceWakeArbitrationTitle =>
