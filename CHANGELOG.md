@@ -4,8 +4,25 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ## Unreleased
 
+### Added
+- **Fine-tune the wake word and stop word from Home Assistant.** With **Expose kiosk entities** on, the kiosk adds **VS Wake word fine-tune** and **VS Stop word fine-tune** sliders from -10 to +10, next to **VS Wake word sensitivity**. They change **Fine-tune sensitivity** and **Fine-tune stop word sensitivity** on that kiosk, so an automation can lower them while the TV plays and raise them again when it stops (#1224).
+
 ### Fixed
+- **The fleet docs list the Gemini API key credential.** The Credentials table in [Fleet Management](https://github.com/jxlarrea/kiosk-satellite/blob/main/docs/fleet.md) now has the **Gemini API key** switch next to the OpenAI and xAI ones. It is off by default and a follower validates the key on its own once it arrives (#1221).
+
+## v2026.10.45 - 2026-10-30
+
+### Added
+- **Open the next alarm from a dashboard button or a gesture.** A new `ks://alarms/next` dashboard link and a new **Open the next alarm** gesture action open the alarm that rings next on its details page, so you can change it or turn it off in one tap. They open the alarm list when no alarm is set. A new **Open the alarm list** gesture action opens the list itself, and plugin action settings can pick both.
+- **Plugins can open any kiosk link.** A plugin can now run a `ks://` link the way a dashboard button does, such as `ks://alarms` to open the alarm list, so every screen with a link is reachable from a plugin, including ones added later. Lockdown Mode refuses it, and so do the links that open Android Settings or call a kiosk. Plugins can also open and close the alarm list directly, the same way they open and close the calendar (#1213).
+
+### Fixed
+- **Immich albums from Home Assistant play in the Home Assistant Media screensaver.** An album picked from Home Assistant's Immich integration left the screen black because that integration marks its photos as not playable, so the screensaver found nothing to show. Photos now count whether or not they are marked playable. A single Immich photo can also be picked in the media browser on the device and in the remote admin, and it shows on its own instead of playing its whole album (#1214).
 - **The Now Playing volume slider lines up with the seek bar.** Opening the volume slider no longer moves the bar up or down a pixel. At some text and button scales the line under the volume slider was a pixel taller than the times under the seek bar, which shifted the whole block. The two lines are now built the same way, so the slider lands exactly where the seek bar was (#1212).
+- **The update helper starts after a reboot.** The helper's port sat in the range Android hands out to outgoing connections, so after a reboot another connection could already hold it and the start command failed until the app was restarted. The helper now uses a port outside that range. A helper started by an older version keeps working until the next reboot. When the helper cannot start, the start command now prints the reason instead of pointing to an empty log (#1219).
+- **A camera service that never answers no longer restarts the app every two minutes.** Kiosk Satellite asked Android for the device's camera list on the main thread. On a Fire tablet whose camera service never answered, the app froze there until the main thread watchdog restarted it, over and over. The list is now read in the background and counts as no camera if it takes longer than 10 seconds.
+- **A broken battery broadcast no longer crashes the app.** On a Lenovo tablet that sends battery updates Android cannot read, the app crashed on every battery change. Kiosk Satellite now watches for charger changes without reading those updates, and the **Charging** entity still changes as soon as the cable does.
+- **Fewer main thread watchdog restarts.** Reading the Bluetooth links, starting the RTSP video encoder and walking the network interfaces for fleet discovery now happen off the main thread. On some tablets one of these calls blocked for a minute, and the main thread watchdog restarted the app.
 
 ## v2026.10.44 - 2026-10-29
 

@@ -2051,6 +2051,12 @@ class UiStringsEs extends UiStrings {
   String get gestureVoiceMute => 'Silenciar o reactivar Voice Satellite';
 
   @override
+  String get gestureOpenAlarmList => 'Abrir la lista de alarmas';
+
+  @override
+  String get gestureOpenNextAlarm => 'Abrir la próxima alarma';
+
+  @override
   String gestureDescribeCornerTaps(String count, String corner) {
     return '$count toques en la esquina $corner';
   }

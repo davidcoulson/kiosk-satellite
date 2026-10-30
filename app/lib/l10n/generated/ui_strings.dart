@@ -3669,6 +3669,18 @@ abstract class UiStrings {
   /// **'Mute or unmute Voice Satellite'**
   String get gestureVoiceMute;
 
+  /// Gesture action that opens the full screen alarm list.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the alarm list'**
+  String get gestureOpenAlarmList;
+
+  /// Gesture action that opens the alarm that rings next on its details page.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the next alarm'**
+  String get gestureOpenNextAlarm;
+
   /// Label or guidance in this section.
   ///
   /// In en, this message translates to:

@@ -2042,6 +2042,12 @@ class UiStringsNl extends UiStrings {
       'Voice Satellite dempen of het dempen opheffen';
 
   @override
+  String get gestureOpenAlarmList => 'Alarmlijst openen';
+
+  @override
+  String get gestureOpenNextAlarm => 'Volgende alarm openen';
+
+  @override
   String gestureDescribeCornerTaps(String count, String corner) {
     return '$count tikken in de hoek $corner';
   }

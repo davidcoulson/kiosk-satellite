@@ -206,6 +206,8 @@ With **Expose kiosk entities** on under **Settings > ESPHome**, the kiosk adds i
 | VS Mute timers | switch | Mute timer alerts |
 | VS Wake word engine | select | Wake word engine |
 | VS Wake word sensitivity | select | Wake word sensitivity |
+| VS Wake word fine-tune | number | Fine-tune sensitivity |
+| VS Stop word fine-tune | number | Fine-tune stop word sensitivity |
 | VS Answer linger | number | Keep the answer on screen |
 | VS Announcement linger | number | Announcement time |
 

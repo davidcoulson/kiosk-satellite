@@ -61,6 +61,8 @@
 ///  - intercom_decline: decline the call ringing here
 ///  - alarm_stop:       stop the ringing, snoozed or sunrise alarm (#872)
 ///  - alarm_snooze:     snooze the ringing alarm
+///  - alarms:           open the alarm list
+///  - alarm_next:       open the alarm that rings next, or the list
 ///  - calendar:         open the calendar, on view? (day, week, month,
 ///                      schedule) when a ks:// link names one
 ///  - music_library:    open the Music Library
@@ -370,6 +372,8 @@ String describeGestureAction(Map<String, Object?> action) {
       return 'Open Android Settings';
     case 'alarms':
       return 'Open the alarm list';
+    case 'alarm_next':
+      return 'Open the next alarm';
     case 'calendar':
       return 'Open the calendar';
     case 'music_library':

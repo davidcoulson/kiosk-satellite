@@ -50,6 +50,7 @@ A profile consists of:
 | Immich API key | On | Kiosk keeps its own. | Token syncs across fleet. |
 | OpenAI API key | Off | Kiosk keeps its own. | Key syncs across fleet, and each follower validates it on its own. |
 | xAI API key | Off | Kiosk keeps its own. | Key syncs across fleet, and each follower validates it on its own. |
+| Gemini API key | Off | Kiosk keeps its own. | Key syncs across fleet, and each follower validates it on its own. |
 | MCP server token | Off | Kiosk keeps its own. | Token syncs across fleet. |
 | Plugin secrets | Off | Kiosk keeps its own secret plugin settings. | Secret plugin settings sync with their plugins. |
 | Include the dashboard | Off | Kiosk keeps its local start page and dashboard. | Start page and dashboard sync. |
