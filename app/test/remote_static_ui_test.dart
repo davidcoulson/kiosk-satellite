@@ -114,6 +114,20 @@ void main() {
     },
   );
 
+  test('a client without gzip gets the module inflated', () async {
+    final packed = await get('/static/main.js');
+    expect(packed.headers.value('content-encoding'), 'gzip');
+    final source = await body(packed);
+    final request = await client.getUrl(
+      Uri.parse('http://127.0.0.1:$port/static/main.js'),
+    );
+    request.headers.set('accept-encoding', 'identity');
+    final plain = await request.close();
+    expect(plain.statusCode, 200);
+    expect(plain.headers.value('content-encoding'), isNull);
+    expect(await body(plain), source);
+  });
+
   test(
     'missing assets preserve the fallback and expose no partial bundle',
     () async {

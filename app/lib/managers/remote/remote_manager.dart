@@ -127,15 +127,18 @@ class RemoteManager extends Manager {
   Uint8List? _indexGzip;
   Future<void>? _adminBundle;
 
-  /// The SPA's stylesheet and ES modules, keyed by file name under
-  /// `assets/remote-ui/static/`, discovered from the asset manifest so a
-  /// new module only needs to exist to be served.
+  /// The SPA's static files that gzip does not shrink (fonts, images),
+  /// keyed by file name under `assets/remote-ui/static/`, discovered from
+  /// the asset manifest so a new module only needs to exist to be served.
+  /// Everything else lives only in [_staticGzip].
   final _staticFiles = <String, Uint8List>{};
 
   /// Gzip of each static file that shrinks by it, made once with the
   /// bundle. The panel compresses a megabyte of source one time per app
   /// life instead of on every cold load, and a client that sends
-  /// `Accept-Encoding: gzip` gets about a third of the bytes.
+  /// `Accept-Encoding: gzip` gets about a third of the bytes. Only the
+  /// gzip is kept: the raw string catalog alone is 3 MB, and every browser
+  /// takes gzip, so the rare client that does not gets it inflated.
   final _staticGzip = <String, Uint8List>{};
 
   /// The newest device-camera frame, for the admin's snapshot preview.
@@ -1600,7 +1603,9 @@ class RemoteManager extends Manager {
         r"""((?:from\s*|import\s*(?:\(\s*)?)['"]\./[A-Za-z0-9._-]+\.js)(['"])""",
       );
       for (final entry in files.entries.toList()) {
-        if (!entry.key.endsWith('.js')) continue;
+        if (!entry.key.endsWith('.js') || !_hasRelativeImport(entry.value)) {
+          continue;
+        }
         files[entry.key] = utf8.encode(
           utf8
               .decode(entry.value)
@@ -1614,10 +1619,14 @@ class RemoteManager extends Manager {
         () => _gzipAll({...files, _indexKey: utf8.encode(page)}),
       );
       // Publish only the complete bundle so a failed load exposes no partial files.
-      _staticFiles.addAll(files);
       _indexHtml = page;
       _indexGzip = gzipped.remove(_indexKey);
       _staticGzip.addAll(gzipped);
+      for (final entry in files.entries) {
+        if (!gzipped.containsKey(entry.key)) {
+          _staticFiles[entry.key] = entry.value;
+        }
+      }
       log.debug(
         name,
         'remote-ui bundle loaded (${files.length} files, '
@@ -1634,6 +1643,20 @@ class RemoteManager extends Manager {
 
   /// Gzips every file, keeping only the results that pay for the header:
   /// fonts and images are already compressed and would only grow.
+  /// Whether [bytes] hold a `'./` or `"./`, the start of a relative import
+  /// specifier. A byte scan, so the 3 MB string catalog, which has none,
+  /// is neither decoded nor re-encoded on the UI isolate.
+  static bool _hasRelativeImport(Uint8List bytes) {
+    for (var i = 2; i < bytes.length; i++) {
+      if (bytes[i] == 0x2F /* / */ &&
+          bytes[i - 1] == 0x2E /* . */ &&
+          (bytes[i - 2] == 0x27 /* ' */ || bytes[i - 2] == 0x22 /* " */ )) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   static Map<String, Uint8List> _gzipAll(Map<String, Uint8List> files) {
     final codec = GZipCodec(level: 9);
     final out = <String, Uint8List>{};
@@ -1665,17 +1688,18 @@ class RemoteManager extends Manager {
   }
 
   /// One response body for [request]: the gzip when it exists and the
-  /// client takes it, the raw bytes otherwise. Both carry `Vary` so a
-  /// shared cache keeps the two apart.
+  /// client takes it, [identity] otherwise. Both carry `Vary` so a shared
+  /// cache keeps the two apart. [identity] is a function because for most
+  /// static files it inflates the gzip, which only the odd client needs.
   static Response _encoded(
     Request request,
-    Object identity,
+    Object Function() identity,
     Uint8List? gzipped,
     Map<String, String> headers,
   ) {
     final packed = gzipped != null && _acceptsGzip(request);
     return Response.ok(
-      packed ? gzipped : identity,
+      packed ? gzipped : identity(),
       headers: {
         ...headers,
         'vary': 'accept-encoding',
@@ -1684,20 +1708,25 @@ class RemoteManager extends Manager {
     );
   }
 
-  Response _index(Request request) =>
-      _encoded(request, _indexHtml ?? _placeholderHtml, _indexGzip, const {
-        'content-type': 'text/html; charset=utf-8',
-        // The page pins its static files by content hash (?v=), so it must
-        // never be cached itself: a stale page would pin stale modules.
-        'cache-control': 'no-store',
-      });
+  Response _index(Request request) => _encoded(
+    request,
+    () => _indexHtml ?? _placeholderHtml,
+    _indexGzip,
+    const {
+      'content-type': 'text/html; charset=utf-8',
+      // The page pins its static files by content hash (?v=), so it must
+      // never be cached itself: a stale page would pin stale modules.
+      'cache-control': 'no-store',
+    },
+  );
 
   /// Static files are public like the page itself (the login gate lives in
   /// the page, not around it) and content-addressed via the ?v= hash, so
   /// far-future caching is safe: any change serves under a new URL.
   Response _staticFile(Request request, String name) {
     final bytes = _staticFiles[name];
-    if (bytes == null) return Response.notFound('not found');
+    final gzipped = _staticGzip[name];
+    if (bytes == null && gzipped == null) return Response.notFound('not found');
     const types = {
       'js': 'text/javascript; charset=utf-8',
       'css': 'text/css; charset=utf-8',
@@ -1706,7 +1735,7 @@ class RemoteManager extends Manager {
       'woff2': 'font/woff2',
     };
     final ext = name.split('.').last;
-    return _encoded(request, bytes, _staticGzip[name], {
+    return _encoded(request, () => bytes ?? gzip.decode(gzipped!), gzipped, {
       'content-type': types[ext] ?? 'application/octet-stream',
       'cache-control': 'public, max-age=31536000, immutable',
     });
