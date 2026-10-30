@@ -2732,6 +2732,38 @@ void main() {
       await tester.pump(const Duration(seconds: 4));
     });
 
+    // The volume slider takes the seek bar's place without moving it
+    // (issue #1212): its level line once kept an empty placeholder, which
+    // rounds a pixel apart from the times at some sizes.
+    for (final layout in ['vertical', 'horizontal']) {
+      testWidgets('the volume slider lands on the seek bar layout=$layout', (
+        tester,
+      ) async {
+        for (final (text, buttons) in [(100, 100), (125, 150), (115, 50)]) {
+          await pump(
+            tester,
+            size: const Size(1024, 600),
+            settings: {
+              'ks.audio.media_volume': 40,
+              'ks.sendspin.fullscreen_layout': layout,
+              'ks.sendspin.fullscreen_text_scale': text,
+              'ks.sendspin.fullscreen_button_scale': buttons,
+            },
+          );
+          final seek = tester.getRect(find.byType(Slider));
+          await tester.tap(find.byIcon(Icons.volume_up_outlined));
+          await tester.pump();
+          expect(
+            tester.getRect(find.byType(Slider).first).center.dy,
+            seek.center.dy,
+            reason: 'text=$text buttons=$buttons',
+          );
+          await tester.pumpWidget(const SizedBox());
+          await tester.pump(const Duration(seconds: 5));
+        }
+      });
+    }
+
     testWidgets('double tap to dismiss takes the close button away', (
       tester,
     ) async {

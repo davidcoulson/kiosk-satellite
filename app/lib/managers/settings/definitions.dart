@@ -6620,6 +6620,8 @@ const screensaverSchedule = SettingDef<String>(
 /// pick away. Capture still falls back to the other sources on its own
 /// when every format reads silence (#808). A new key rather than the old
 /// audio.mic_source, so a value stored before 2026.10.2 cannot come back.
+/// The Echo images hide it and keep it on the raw microphone
+/// (echo_image_settings.dart).
 const micCaptureMode = SettingDef<String>(
   key: 'audio.mic_capture_mode',
   type: SettingType.select,
@@ -6735,7 +6737,8 @@ const micGainDb = SettingDef<num>(
 // mono) and steps down it on a refused open, two seconds of zeros or
 // errors, or a delivered frame rate that does not match the one opened;
 // this starts the ladder at the card's format. The app converts to 16 kHz
-// mono itself.
+// mono itself. The Echo images hide it and keep it on Automatic
+// (echo_image_settings.dart).
 const micCaptureFormat = SettingDef<String>(
   key: 'audio.mic_capture_format',
   type: SettingType.select,

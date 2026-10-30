@@ -70,6 +70,7 @@ import 'managers/sendspin/sendspin_manager.dart';
 import 'managers/service/service_manager.dart';
 import 'managers/sound/sound_manager.dart';
 import 'managers/settings/echo_defaults.dart';
+import 'managers/settings/echo_image_settings.dart';
 import 'managers/settings/headless_settings.dart';
 import 'managers/settings/provisioning.dart';
 import 'managers/settings/definitions.dart' as defs;
@@ -687,6 +688,8 @@ class AppContainer {
     // A device without a screen hides and pins the display settings before
     // any manager reads them.
     if (Headless.active) await HeadlessSettings(settings, bus, log).init();
+    // The Echo images pin their own few settings on every start.
+    await EchoImageSettings(settings, bus, log).init();
     await device.init();
     // Agent mode never shows a page, so it builds no JS bridge (and so no
     // page Home Assistant sockets either).

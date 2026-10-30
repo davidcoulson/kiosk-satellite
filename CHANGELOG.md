@@ -4,6 +4,14 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ## Unreleased
 
+### Fixed
+- **The Now Playing volume slider lines up with the seek bar.** Opening the volume slider no longer moves the bar up or down a pixel. At some text and button scales the line under the volume slider was a pixel taller than the times under the seek bar, which shifted the whole block. The two lines are now built the same way, so the slider lands exactly where the seek bar was (#1212).
+
+## v2026.10.44 - 2026-10-29
+
+### Changed
+- **The Echo images always record from the raw microphone.** On the Echo Dot, Echo Show 5 and Echo Show 8 images, **Capture mode** and **Capture format** are no longer shown in **Microphone settings** and stay on **Raw microphone** and **Automatic**. A device that was switched to **Voice communication** or **48 kHz stereo** goes back on its next start.
+
 ### Added
 - **Fine-tune the stop word sensitivity.** A new **Fine-tune stop word sensitivity** slider under **Stop word interruption** in **Voice Satellite > Wake Word** adjusts the stop word sensitivity in smaller steps, from -10 to +10, and goes past Slightly and Very sensitive at its ends. Raise it if you often have to repeat "stop" and lower it if answers stop by mistake. It shows while **Stop word interruption** is on and works with every wake word engine. The default of 0 keeps the current behavior and **Fine-tune sensitivity** still only moves the wake words. The setting belongs to each device and fleets do not sync it.
 
