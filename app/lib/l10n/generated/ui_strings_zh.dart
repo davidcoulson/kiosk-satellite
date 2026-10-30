@@ -1938,6 +1938,12 @@ class UiStringsZh extends UiStrings {
   String get gestureVoiceMute => '将 Voice Satellite 静音或取消静音';
 
   @override
+  String get gestureOpenAlarmList => '打开闹钟列表';
+
+  @override
+  String get gestureOpenNextAlarm => '打开下一个闹钟';
+
+  @override
   String gestureDescribeCornerTaps(String count, String corner) {
     return '点击$corner角 $count 次';
   }
@@ -16768,6 +16774,12 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get gestureVoiceMute => '将 Voice Satellite 静音或取消静音';
+
+  @override
+  String get gestureOpenAlarmList => '打开闹钟列表';
+
+  @override
+  String get gestureOpenNextAlarm => '打开下一个闹钟';
 
   @override
   String gestureDescribeCornerTaps(String count, String corner) {

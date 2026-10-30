@@ -2009,6 +2009,12 @@ class UiStringsFr extends UiStrings {
   String get gestureVoiceMute => 'Couper ou rétablir le son de Voice Satellite';
 
   @override
+  String get gestureOpenAlarmList => 'Ouvrir la liste des alarmes';
+
+  @override
+  String get gestureOpenNextAlarm => 'Ouvrir la prochaine alarme';
+
+  @override
   String gestureDescribeCornerTaps(String count, String corner) {
     return '$count appuis dans le coin $corner';
   }

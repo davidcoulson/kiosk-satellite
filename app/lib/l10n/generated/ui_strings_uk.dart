@@ -1997,6 +1997,12 @@ class UiStringsUk extends UiStrings {
   String get gestureVoiceMute => 'Вимкнути або ввімкнути звук Voice Satellite';
 
   @override
+  String get gestureOpenAlarmList => 'Відкрити список будильників';
+
+  @override
+  String get gestureOpenNextAlarm => 'Відкрити наступний будильник';
+
+  @override
   String gestureDescribeCornerTaps(String count, String corner) {
     return '$count дотиків у кут $corner';
   }

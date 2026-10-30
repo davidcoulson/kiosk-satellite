@@ -1992,6 +1992,12 @@ class UiStringsEn extends UiStrings {
   String get gestureVoiceMute => 'Mute or unmute Voice Satellite';
 
   @override
+  String get gestureOpenAlarmList => 'Open the alarm list';
+
+  @override
+  String get gestureOpenNextAlarm => 'Open the next alarm';
+
+  @override
   String gestureDescribeCornerTaps(String count, String corner) {
     return '$count taps in the $corner corner';
   }

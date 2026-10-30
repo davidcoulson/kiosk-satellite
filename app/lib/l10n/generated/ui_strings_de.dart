@@ -2018,6 +2018,12 @@ class UiStringsDe extends UiStrings {
       'Voice Satellite stummschalten oder Stummschaltung aufheben';
 
   @override
+  String get gestureOpenAlarmList => 'Weckerliste öffnen';
+
+  @override
+  String get gestureOpenNextAlarm => 'Nächsten Wecker öffnen';
+
+  @override
   String gestureDescribeCornerTaps(String count, String corner) {
     return '$count-mal auf die Ecke $corner tippen';
   }

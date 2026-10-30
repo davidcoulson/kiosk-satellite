@@ -7758,6 +7758,32 @@
       ]
     }
   },
+  "gestureOpenAlarmList": "打开闹钟列表",
+  "@gestureOpenAlarmList": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Gesture action that opens the full screen alarm list.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureOpenNextAlarm": "打开下一个闹钟",
+  "@gestureOpenNextAlarm": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Gesture action that opens the alarm that rings next on its details page.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
   "gestureDescribeCornerTaps": "点击{corner}角 {count} 次",
   "@gestureDescribeCornerTaps": {
     "context": "Settings > Gestures > Configured gestures",

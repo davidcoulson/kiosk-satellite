@@ -2,7 +2,7 @@
 
 Kiosk Satellite has alarms of its own. They live on the kiosk and ring without Home Assistant, a network or the dashboard. You get a list with a switch per alarm, a scroll wheel to pick the time, one page for the details and a full screen with Snooze and Stop when an alarm rings.
 
-Open the list from **Alarms** in the kiosk menu, from **Manage alarms** under **Settings, Alarms**, from the **Next alarm** screensaver widget, from the **Alarms** page of the remote admin or from a dashboard button pointed at `ks://alarms` (see [Dashboard Links](dashboard-links.md)).
+Open the list from **Alarms** in the kiosk menu, from **Manage alarms** under **Settings, Alarms**, from the **Next alarm** screensaver widget, from the **Alarms** page of the remote admin or from a dashboard button pointed at `ks://alarms` (see [Dashboard Links](dashboard-links.md)). Point it at `ks://alarms/next` to open the alarm that rings next instead. The **Open the alarm list** and **Open the next alarm** [gesture actions](gestures.md) do the same.
 
 ## Setting an alarm
 

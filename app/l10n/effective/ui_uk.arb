@@ -7758,6 +7758,32 @@
       ]
     }
   },
+  "gestureOpenAlarmList": "Відкрити список будильників",
+  "@gestureOpenAlarmList": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Gesture action that opens the full screen alarm list.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
+  "gestureOpenNextAlarm": "Відкрити наступний будильник",
+  "@gestureOpenNextAlarm": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Gesture action that opens the alarm that rings next on its details page.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
   "gestureDescribeCornerTaps": "{count} дотиків у кут {corner}",
   "@gestureDescribeCornerTaps": {
     "context": "Settings > Gestures > Configured gestures",

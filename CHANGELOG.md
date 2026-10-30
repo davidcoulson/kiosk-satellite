@@ -4,6 +4,10 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ## Unreleased
 
+### Added
+- **Open the next alarm from a dashboard button or a gesture.** A new `ks://alarms/next` dashboard link and a new **Open the next alarm** gesture action open the alarm that rings next on its details page, so you can change it or turn it off in one tap. They open the alarm list when no alarm is set. A new **Open the alarm list** gesture action opens the list itself, and plugin action settings can pick both.
+- **Plugins can open any kiosk link.** A plugin can now run a `ks://` link the way a dashboard button does, such as `ks://alarms` to open the alarm list, so every screen with a link is reachable from a plugin, including ones added later. Lockdown Mode refuses it, and so do the links that open Android Settings or call a kiosk. Plugins can also open and close the alarm list directly, the same way they open and close the calendar (#1213).
+
 ### Fixed
 - **Immich albums from Home Assistant play in the Home Assistant Media screensaver.** An album picked from Home Assistant's Immich integration left the screen black because that integration marks its photos as not playable, so the screensaver found nothing to show. Photos now count whether or not they are marked playable. A single Immich photo can also be picked in the media browser on the device and in the remote admin, and it shows on its own instead of playing its whole album (#1214).
 - **The Now Playing volume slider lines up with the seek bar.** Opening the volume slider no longer moves the bar up or down a pixel. At some text and button scales the line under the volume slider was a pixel taller than the times under the seek bar, which shifted the whole block. The two lines are now built the same way, so the slider lands exactly where the seek bar was (#1212).

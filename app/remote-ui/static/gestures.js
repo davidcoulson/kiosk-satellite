@@ -77,6 +77,8 @@ export const GESTURE_ACTION_GROUPS = [
     ['intercom_decline', 'Decline intercom call', 'callOff'],
     ['alarm_stop', 'Stop the alarm', 'alarmOff'],
     ['alarm_snooze', 'Snooze the alarm', 'snooze'],
+    ['alarms', 'Open the alarm list', 'alarm'],
+    ['alarm_next', 'Open the next alarm', 'alarmOn'],
     ['calendar', 'Open the calendar', 'calendar'],
     ['voice_wake', 'Start a voice command', 'mic'],
     ['voice_stop', 'Stop the voice assistant', 'stop'],
@@ -182,6 +184,8 @@ export function describeGestureAction(a) {
     case 'intercom_decline': return gestureText('Decline intercom call');
     case 'alarm_stop': return gestureText('Stop the alarm');
     case 'alarm_snooze': return gestureText('Snooze the alarm');
+    case 'alarms': return gestureText('Open the alarm list');
+    case 'alarm_next': return gestureText('Open the next alarm');
     case 'calendar': return gestureText('Open the calendar');
     case 'music_library': return gestureText('Open Music Library');
     case 'voice_wake': return gestureText('Start a voice command');
@@ -548,6 +552,7 @@ export async function pickGestureAction(current) {
     case 'media_play_pause': case 'intercom_open': case 'intercom_hangup':
     case 'intercom_answer': case 'intercom_decline':
     case 'alarm_stop': case 'alarm_snooze': case 'calendar': case 'refresh':
+    case 'alarms': case 'alarm_next':
     case 'music_library':
     case 'voice_wake': case 'voice_stop': case 'voice_mute':
       return { type };
