@@ -2,7 +2,7 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
-## Unreleased
+## v2026.10.45 - 2026-10-30
 
 ### Added
 - **Open the next alarm from a dashboard button or a gesture.** A new `ks://alarms/next` dashboard link and a new **Open the next alarm** gesture action open the alarm that rings next on its details page, so you can change it or turn it off in one tap. They open the alarm list when no alarm is set. A new **Open the alarm list** gesture action opens the list itself, and plugin action settings can pick both.
