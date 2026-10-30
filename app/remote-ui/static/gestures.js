@@ -49,7 +49,7 @@ const DISPLAY_ACTIONS = new Set([
   'navigate', 'refresh', 'url', 'camera_view', 'sendspin_player', 'now_playing',
   'music_assistant', 'app_launcher', 'intercom_open', 'screensaver', 'screensaver_stop',
   'hold_mode', 'ha_kiosk', 'launch_app', 'open_uri', 'android_settings', 'calendar',
-  'music_library',
+  'music_library', 'alarms', 'alarm_next',
 ]);
 // The buttons that reach the app. The Echo Dot's LineageOS build keeps the
 // microphone and volume buttons for itself (they mute and change the volume
