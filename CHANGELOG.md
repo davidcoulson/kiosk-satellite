@@ -6,6 +6,9 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ### Fixed
 - **The Now Playing volume slider lines up with the seek bar.** Opening the volume slider no longer moves the bar up or down a pixel. At some text and button scales the line under the volume slider was a pixel taller than the times under the seek bar, which shifted the whole block. The two lines are now built the same way, so the slider lands exactly where the seek bar was (#1212).
+- **A camera service that never answers no longer restarts the app every two minutes.** Kiosk Satellite asked Android for the device's camera list on the main thread. On a Fire tablet whose camera service never answered, the app froze there until the main thread watchdog restarted it, over and over. The list is now read in the background and counts as no camera if it takes longer than 10 seconds.
+- **A broken battery broadcast no longer crashes the app.** On a Lenovo tablet that sends battery updates Android cannot read, the app crashed on every battery change. Kiosk Satellite now watches for charger changes without reading those updates, and the **Charging** entity still changes as soon as the cable does.
+- **Fewer main thread watchdog restarts.** Reading the Bluetooth links, starting the RTSP video encoder and walking the network interfaces for fleet discovery now happen off the main thread. On some tablets one of these calls blocked for a minute, and the main thread watchdog restarted the app.
 
 ## v2026.10.44 - 2026-10-29
 
