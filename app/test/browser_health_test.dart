@@ -48,6 +48,7 @@ void main() {
     browser.healthRepairTimeout = const Duration(milliseconds: 400);
     browser.javaScriptTimeout = const Duration(milliseconds: 20);
     browser.rendererRecoveryGrace = const Duration(milliseconds: 20);
+    browser.brokenPageGrace = Duration.zero;
   }
 
   tearDown(() async {
@@ -249,6 +250,16 @@ void main() {
     await browser.checkDashboardHealth();
     expect(nudges, isEmpty);
     expect(browser.renavigations, 1);
+  });
+
+  test('an unrendered page inside its load grace is left alone', () async {
+    await build();
+    browser.brokenPageGrace = const Duration(minutes: 5);
+    page('broken:no main');
+    for (var i = 0; i < 5; i++) {
+      await browser.checkDashboardHealth();
+    }
+    expect(browser.renavigations, 0);
   });
 
   test('a broken page recovering before the third check is not reloaded',

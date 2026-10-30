@@ -1528,6 +1528,7 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// Called by the UI layer from the WebView's onLoadStop.
   void onPageLoaded(String url) {
     _lastLoadHadHttpError = _httpErrorThisLoad;
+    _pageLoadedAt = DateTime.now();
     // The error page Chromium commits for a failed load reaches here too,
     // announced by the onReceivedError that always precedes it — so a load
     // that arrives without one is the real page, and the offline notice
@@ -2181,6 +2182,15 @@ return n;
       _deadChecks = 0;
       return;
     }
+    // A page still starting up (Home Assistant migrating its database shows
+    // the launch screen over a live socket) or throttled while hidden looks
+    // unrendered without being broken.
+    if (state == 'broken' &&
+        (renderingFrozen ||
+            DateTime.now().difference(_pageLoadedAt) < brokenPageGrace)) {
+      _deadChecks = 0;
+      return;
+    }
     _deadChecks++;
     if (_deadChecks < _deadChecksBeforeRepair) return;
     log.warn(
@@ -2429,6 +2439,12 @@ return n;
   /// commit as chrome-error://, so location tells them apart from any real
   /// page; the HA element split mirrors [_haConnected].
   String _brokenReason = '';
+  DateTime _pageLoadedAt = DateTime.now();
+
+  /// How long after a load finishes a connected-but-unrendered page is given
+  /// before it counts as broken.
+  @visibleForTesting
+  Duration brokenPageGrace = const Duration(minutes: 5);
 
   Future<String> _probePageState() async {
     if (_controller == null && evalOverride == null) return 'none';
