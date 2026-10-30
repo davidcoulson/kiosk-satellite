@@ -2,6 +2,11 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
+## Unreleased
+
+### Fixed
+- **The fleet docs list the Gemini API key credential.** The Credentials table in [Fleet Management](https://github.com/jxlarrea/kiosk-satellite/blob/main/docs/fleet.md) now has the **Gemini API key** switch next to the OpenAI and xAI ones. It is off by default and a follower validates the key on its own once it arrives (#1221).
+
 ## v2026.10.45 - 2026-10-30
 
 ### Added
