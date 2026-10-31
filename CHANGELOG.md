@@ -6,8 +6,14 @@ All notable changes to Kiosk Satellite are documented here. Full release notes f
 
 ### Added
 - **Fine-tune the wake word and stop word from Home Assistant.** With **Expose kiosk entities** on, the kiosk adds **VS Wake word fine-tune** and **VS Stop word fine-tune** sliders from -10 to +10, next to **VS Wake word sensitivity**. They change **Fine-tune sensitivity** and **Fine-tune stop word sensitivity** on that kiosk, so an automation can lower them while the TV plays and raise them again when it stops (#1224).
+- **Stop an announcement from Home Assistant.** A new `announce_stop` ESPHome action stops the announcement playing on the kiosk, and one still fetching its audio never starts. It answers whether one was playing and never fails when nothing was, so a dismiss automation can always call it (#1239).
+
+### Changed
+- **Echo cancellation runs on a neural network.** The kiosk's echo canceller is now GTCRN, a small echo cancelling network from [LocalVQE](https://github.com/localai-org/LocalVQE), in place of WebRTC's AEC3. In tests on 13 devices twice as many wake words and stop words were detected while the kiosk played music or an answer. Speech with nothing playing is detected as before. It runs on the Echo Dot and Echo Show images too. The trained echo canceller from the previous release is gone, because on devices it was not trained on it could cut the first command after the wake word. AEC3 stays as the fallback on older 32-bit devices that cannot run GTCRN. The app log names the one in use.
 
 ### Fixed
+- **A new announcement replaces the one playing.** A second `announce` while one was still playing failed with "in a call", so a long or repeated clip like an alarm loop could not be cut short. The new announcement now takes over right away. Intercom calls still refuse it (#1239).
+- **Notifications show over plugin overlays.** A plugin overlay drawn on top covered notifications, intercom call cards and announcements. It now sits under them, as the plugin docs describe.
 - **The fleet docs list the Gemini API key credential.** The Credentials table in [Fleet Management](https://github.com/jxlarrea/kiosk-satellite/blob/main/docs/fleet.md) now has the **Gemini API key** switch next to the OpenAI and xAI ones. It is off by default and a follower validates the key on its own once it arrives (#1221).
 
 ## v2026.10.45 - 2026-10-30

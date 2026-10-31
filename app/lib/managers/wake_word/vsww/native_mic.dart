@@ -23,10 +23,10 @@ class NativeMic {
   /// 'voice_communication' (the call path).
   static String captureMode = 'mic';
 
-  /// The kiosk's echo canceller over the capture, fed what the kiosk plays.
+  /// WebRTC's echo canceller over the capture, fed what the kiosk plays.
   static bool softwareEchoCancellation = true;
 
-  /// The noise suppressor over the capture.
+  /// WebRTC's noise suppressor over the capture.
   static bool noiseSuppression = false;
 
   /// 1-based channel of a multichannel microphone to capture; 0 lets the
@@ -42,6 +42,11 @@ class NativeMic {
   /// stalled), so they reach the app log and not only logcat. Set by
   /// AudioRoutingManager with the other capture settings.
   static void Function(String warning)? onWarning;
+
+  /// Where the capture's informational lines go (which echo canceller runs
+  /// and each stretch it worked), for the app log. Set by
+  /// AudioRoutingManager next to [onWarning].
+  static void Function(String message)? onInfo;
 
   static const _levels = MethodChannel('kiosk_satellite/mic_levels');
 
@@ -73,11 +78,14 @@ class NativeMic {
         'format': captureFormat,
       })
       // Besides PCM the platform sends the capture's warnings (a format
-      // that failed, a read that stalled), so they reach the app log.
+      // that failed, a read that stalled) and its informational lines
+      // (which echo canceller runs), so they reach the app log.
       .where((e) {
         if (e is! Map) return true;
         final warning = e['warning'];
         if (warning is String) onWarning?.call(warning);
+        final info = e['info'];
+        if (info is String) onInfo?.call(info);
         return false;
       })
       .map((e) => e as Uint8List);

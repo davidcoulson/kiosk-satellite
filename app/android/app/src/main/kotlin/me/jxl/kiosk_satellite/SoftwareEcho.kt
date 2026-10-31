@@ -1,16 +1,18 @@
 package me.jxl.kiosk_satellite
 
-import android.content.res.AssetManager
+import android.content.Context
 import android.util.Log
+import java.io.File
 
 /**
- * Echo cancellation in software: the kiosk's own canceller
- * (cpp/echo_canceller.cpp, a linear filter and a trained mask) with
- * everything the kiosk plays ([EchoReference]) as the reference.
- * MicRecorder turns it on with the capture when the setting asks for it,
- * and hands every chunk to [process] on its thread before any consumer
- * sees it, so the wake word, Assist, realtime conversations, the intercom
- * and the RTSP stream all hear the cleaned microphone.
+ * Echo cancellation in software: LocalVQE's neural canceller (GTCRN-AEC) when
+ * the CPU and the model allow it, WebRTC's AEC3 otherwise, and the opt-in
+ * custom filter for duplex voice, with everything the kiosk plays
+ * ([EchoReference]) as the
+ * reference. MicRecorder turns it on with the capture when the setting
+ * asks for it, and hands every chunk to [process] on its thread before any
+ * consumer sees it, so the wake word, Assist, realtime conversations, the
+ * intercom and the RTSP stream all hear the cleaned microphone.
  *
  * It only works while something plays and for a short tail after: with
  * nothing in the reference there is no echo to take out, and the idle
@@ -20,22 +22,15 @@ import android.util.Log
 object SoftwareEcho {
     private const val TAG = "SoftwareEcho"
     private const val RATE = EchoReference.RATE
-    private const val CHANNELS = EchoReference.CHANNELS
-
-    /** The mask's weights, in the app's assets. */
-    private const val MODEL_ASSET = "echo_mask.bin"
 
     /** A frame, 10 ms of 16 kHz PCM16. */
     private const val FRAME = RATE / 100
     private const val FRAME_BYTES = FRAME * 2
 
-    /** The same frame of the stereo reference. */
-    private const val REFERENCE_BYTES = FRAME * CHANNELS * 2
-
     /** How long after the last sound the room can still echo it. */
     private const val TAIL_MS = 1500L
 
-    /** Each source's recent history in frames, longer than any capture chunk. */
+    /** Each source's recent history, longer than any capture chunk. */
     private const val HISTORY = RATE * 400 / 1000
 
     private val loaded: Boolean = try {
@@ -46,8 +41,85 @@ object SoftwareEcho {
         false
     }
 
-    /** Where the mask's weights come from. Set by MicRecorder before the first capture. */
-    @Volatile var assets: AssetManager? = null
+    /** LocalVQE's model, an asset copied to app storage on first use (the library loads from a path). */
+    private const val VQE_MODEL = "localvqe-pi-aec-v1-49k-f32.gguf"
+
+    private var appContext: Context? = null
+
+    /** Also receives the canceller's log lines, for the app log (MicRecorder sets it with a capture). */
+    @Volatile var onLog: ((String) -> Unit)? = null
+
+    private fun report(message: String) {
+        Log.i(TAG, message)
+        onLog?.invoke(message)
+    }
+
+    /** Why LocalVQE is not the canceller, when it is not. */
+    private var vqeWhyNot = ""
+
+    /** The application context, for copying the model out of the APK. */
+    fun attach(context: Context) {
+        appContext = context.applicationContext
+    }
+
+    /** Null when LocalVQE can run here, else why not. */
+    private val vqeUnavailable: String? = when {
+        !loaded -> "native library missing"
+        else -> try {
+            if (nativeVqeSupported()) null else "this CPU has no VFPv4"
+        } catch (e: UnsatisfiedLinkError) {
+            "this build has no LocalVQE"
+        }
+    }
+
+    /** The LocalVQE canceller, 0 while AEC3 runs instead. */
+    private var vqe = 0L
+
+    /**
+     * How many 10 ms frames LocalVQE's output trails its input: every capture
+     * frame comes back this much later, cleaned or not, while it is on.
+     */
+    private var vqeDelay = 0
+
+    /** The last frames' levels before the canceller and in the reference, for the gate after the delay. */
+    private var heardRing = IntArray(1)
+    private var playedRing = IntArray(1)
+    private var ringAt = 0
+
+    private fun vqeModelFile(): File? {
+        val context = appContext ?: return null
+        val file = File(context.filesDir, "localvqe/$VQE_MODEL")
+        if (file.isFile && file.length() > 0) return file
+        return try {
+            file.parentFile?.mkdirs()
+            val tmp = File(file.path + ".tmp")
+            context.assets.open("localvqe/$VQE_MODEL").use { input -> tmp.outputStream().use { input.copyTo(it) } }
+            if (!tmp.renameTo(file)) null else file
+        } catch (e: Exception) {
+            Log.w(TAG, "LocalVQE model unavailable: ${e.message}")
+            null
+        }
+    }
+
+    /** A LocalVQE canceller, or 0 when this device or build cannot run it. */
+    private fun createVqe(): Long {
+        vqeUnavailable?.let { vqeWhyNot = it; return 0L }
+        if (customDuplex || customRealtime) { vqeWhyNot = "the echo prototype build uses AEC3"; return 0L }
+        val file = vqeModelFile() ?: run { vqeWhyNot = "the model could not be copied out of the APK"; return 0L }
+        var created = nativeVqeCreate(file.path)
+        if (created == 0L) {
+            // a damaged copy fails the library's checksum: copy it again once
+            file.delete()
+            val again = vqeModelFile() ?: run { vqeWhyNot = "the model could not be copied out of the APK"; return 0L }
+            created = nativeVqeCreate(again.path)
+        }
+        if (created == 0L) vqeWhyNot = "LocalVQE did not load the model"
+        return created
+    }
+
+    private val customDuplex = loaded && nativePrototypeAvailable(false)
+    private val customRealtime = loaded && nativePrototypeAvailable(true)
+    private var usesPrototype = false
 
     private val lock = Object()
     private var handle = 0L
@@ -55,10 +127,10 @@ object SoftwareEcho {
     private var workingSinceNs = 0L
 
     /**
-     * The noise suppressor over every capture chunk, after the canceller:
-     * a microphone's hiss is there whether or not anything plays, and it
-     * carried straight into intercom calls on an Echo Show 8. Its own
-     * instance, so it runs while the canceller rests.
+     * WebRTC's noise suppressor over every capture chunk, after the
+     * canceller: a microphone's hiss is there whether or not anything
+     * plays, and it carried straight into intercom calls on an Echo Show
+     * 8. Its own module, so it runs while the canceller's rests.
      */
     private var nsHandle = 0L
 
@@ -71,7 +143,7 @@ object SoftwareEcho {
             if (on == noiseSuppression) return
             if (on) {
                 if (!loaded) return
-                val created = nativeNsCreate()
+                val created = nativeNsCreate(RATE)
                 if (created == 0L) return
                 nsHandle = created
                 noiseSuppression = true
@@ -92,17 +164,17 @@ object SoftwareEcho {
     private const val SLACK = RATE * 10 / 1000
 
     /**
-     * A source's recent stereo frames, placed in time: [end] is one past
-     * the last one the speaker had presented at [endNs]. A capture chunk
-     * reads the frames the speaker was playing while it was being
-     * captured, by the capture's own clock (MicRecorder's CaptureClock).
-     * Placing each chunk by the clock rather than by when this code
-     * happens to run keeps the reference the same distance from the
-     * microphone every time a sound starts, so the canceller keeps what it
-     * learned instead of relearning the delay at the start of every answer.
+     * A source's recent samples, placed in time: [end] is one past the last
+     * one the speaker had presented at [endNs]. A capture chunk reads the
+     * samples the speaker was playing while it was being captured, by the
+     * capture's own clock (MicRecorder's CaptureClock). Placing each chunk
+     * by the clock rather than by when this code happens to run keeps the
+     * reference the same distance from the microphone every time a sound
+     * starts, so the canceller keeps what it learned instead of relearning
+     * the delay for a second and a half at the start of every answer.
      */
     private class Stream {
-        val samples = ShortArray(HISTORY * CHANNELS)
+        val samples = ShortArray(HISTORY)
         var length = 0
         var end = 0L
         var endNs = 0L
@@ -115,16 +187,32 @@ object SoftwareEcho {
 
     /**
      * Each player owns its processing request. Stopping one cannot disable
-     * another. The canceller runs the same way in every mode, so a call or
-     * a realtime conversation starting keeps it and what it learned from
-     * the ring and every sound before.
+     * another. AEC3 runs with one configuration in every mode, so a call
+     * starting or ending keeps the canceller and what it learned from the
+     * ring and every sound before it: rebuilt at each call, it started
+     * every call empty and let the first far sentence through while it
+     * learned. Only an experimental build that swaps in the custom filter
+     * for a mode rebuilds.
      */
     internal fun setMode(owner: Any, mode: ResidualEchoGate.Mode?) {
-        synchronized(lock) { residualGate.set(owner, mode) }
+        synchronized(lock) {
+            residualGate.set(owner, mode)
+            val prototype = (customDuplex && residualGate.intercomOnly) ||
+                (customRealtime && residualGate.realtime)
+            if (enabled && vqe == 0L && prototype != usesPrototype) {
+                val next = nativeCreate(RATE, RATE, false, residualGate.intercomOnly, residualGate.realtime)
+                if (next != 0L) {
+                    stopWorking()
+                    nativeDestroy(handle)
+                    handle = next
+                    usesPrototype = prototype
+                }
+            }
+        }
     }
 
-    private val mix = ShortArray(FRAME * CHANNELS)
-    private val mixBytes = ByteArray(REFERENCE_BYTES)
+    private val mix = ShortArray(FRAME)
+    private val mixBytes = ByteArray(FRAME_BYTES)
 
     /** Whether the capture runs through the canceller. */
     @Volatile var enabled = false
@@ -136,24 +224,34 @@ object SoftwareEcho {
             if (on == enabled) return
             if (on) {
                 if (!loaded) return
-                val assets = assets
-                if (assets == null) {
-                    Log.w(TAG, "no assets to load the mask from")
+                vqe = createVqe()
+                if (vqe != 0L) {
+                    vqeDelay = nativeVqeLatencyFrames()
+                    heardRing = IntArray(vqeDelay + 1)
+                    playedRing = IntArray(vqeDelay + 1)
+                    ringAt = 0
+                    enabled = true
+                    report("echo cancellation: GTCRN (LocalVQE), capture ${vqeDelay * 10} ms late")
                     return
                 }
-                val created = nativeCreate(assets, MODEL_ASSET)
+                val created = nativeCreate(RATE, RATE, false, residualGate.intercomOnly, residualGate.realtime)
                 if (created == 0L) return
                 handle = created
+                usesPrototype = (customDuplex && residualGate.intercomOnly) || (customRealtime && residualGate.realtime)
                 enabled = true
-                Log.i(TAG, "on")
+                report("echo cancellation: AEC3 (GTCRN unavailable: $vqeWhyNot)")
             } else {
                 enabled = false
                 stopWorking()
+                if (vqe != 0L) nativeVqeDestroy(vqe)
+                vqe = 0L
+                vqeDelay = 0
                 nativeDestroy(handle)
                 handle = 0L
+                usesPrototype = false
                 streams.clear()
                 residualGate.reset()
-                Log.i(TAG, "off")
+                Log.i(TAG, "echo cancellation off")
             }
         }
     }
@@ -187,7 +285,7 @@ object SoftwareEcho {
     private fun cancel(chunk: ByteArray, heardNs: Long): Boolean {
         if (!enabled) return false
         run {
-            val h = handle
+            val h = if (vqe != 0L) vqe else handle
             if (h == 0L) return false
             val sources = EchoReference.sources()
             var fresh = false
@@ -203,6 +301,7 @@ object SoftwareEcho {
             streams.keys.retainAll(sources.toSet())
             if (!EchoReference.playedWithin(TAIL_MS) && !fresh) {
                 stopWorking()
+                if (vqe != 0L) idleThroughVqe(chunk)
                 return false
             }
             if (!working) {
@@ -213,7 +312,7 @@ object SoftwareEcho {
             val need = frames * FRAME
             if (levels.size < frames) levels = DoubleArray(frames)
             for (stream in streams.values) {
-                // The frame the speaker was presenting as the chunk's last
+                // The sample the speaker was presenting as the chunk's last
                 // frame was heard, and the chunk's worth before it.
                 val heard = stream.end - (stream.endNs - heardNs) * RATE / 1_000_000_000L
                 val start = heard - need
@@ -224,17 +323,26 @@ object SoftwareEcho {
             var at = 0
             for (f in 0 until frames) {
                 mixFrame(f)
-                for (i in mix.indices) {
+                for (i in 0 until FRAME) {
                     val v = mix[i].toInt()
                     mixBytes[i * 2] = v.toByte()
                     mixBytes[i * 2 + 1] = (v shr 8).toByte()
                 }
-                val heard = meanAbs(chunk, at)
-                val played = meanAbsMix()
-                nativeRender(h, mixBytes, 0)
-                nativeCapture(h, chunk, at)
+                var heard = meanAbs(chunk, at)
+                var played = meanAbs(mixBytes, 0)
+                if (vqe != 0L) {
+                    nativeVqeRender(h, mixBytes, 0)
+                    nativeVqeCapture(h, chunk, at, true)
+                    // the frame that came back is vqeDelay frames old: gate it on its own levels
+                    val back = remember(heard, played)
+                    heard = heardRing[back]
+                    played = playedRing[back]
+                } else {
+                    nativeRender(h, mixBytes, 0)
+                    nativeCapture(h, chunk, at)
+                }
                 levels[f] = MicLevels.meanSquare(chunk, at)
-                if (residualGate.suppress(heard, played, meanAbs(chunk, at))) {
+                if (residualGate.suppress(heard, played, meanAbs(chunk, at), subtractionOnly = usesPrototype)) {
                     java.util.Arrays.fill(chunk, at, at + FRAME_BYTES, 0)
                 }
                 at += FRAME_BYTES
@@ -242,6 +350,27 @@ object SoftwareEcho {
             for (stream in streams.values) stream.cursor += need
         }
         return true
+    }
+
+    /**
+     * Records this frame's levels and returns the ring slot of the frame
+     * [vqeDelay] frames back, the one LocalVQE hands out now.
+     */
+    private fun remember(heard: Int, played: Int): Int {
+        heardRing[ringAt] = heard
+        playedRing[ringAt] = played
+        ringAt = (ringAt + 1) % heardRing.size
+        return ringAt   // the oldest slot: vqeDelay frames before the one just written
+    }
+
+    /** Nothing plays: the frames still pass LocalVQE's delay, as they are. */
+    private fun idleThroughVqe(chunk: ByteArray) {
+        var at = 0
+        while (at + FRAME_BYTES <= chunk.size) {
+            remember(meanAbs(chunk, at), 0)
+            nativeVqeCapture(vqe, chunk, at, false)
+            at += FRAME_BYTES
+        }
     }
 
     /** Mean |sample| of the frame at [at]. */
@@ -254,13 +383,6 @@ object SoftwareEcho {
         return sum / FRAME
     }
 
-    /** Mean |sample| of the reference frame in [mix], both channels together. */
-    private fun meanAbsMix(): Int {
-        var sum = 0L
-        for (v in mix) sum += kotlin.math.abs(v.toInt())
-        return (sum / mix.size).toInt()
-    }
-
     /** Frame [f] of this chunk from every source, read at its cursor and summed into [mix]. */
     private fun mixFrame(f: Int) {
         java.util.Arrays.fill(mix, 0)
@@ -270,59 +392,62 @@ object SoftwareEcho {
             for (i in 0 until FRAME) {
                 val at = from + i - first
                 if (at < 0 || at >= stream.length) continue
-                val sample = at.toInt() * CHANNELS
-                for (c in 0 until CHANNELS) {
-                    val k = i * CHANNELS + c
-                    mix[k] = (mix[k] + stream.samples[sample + c]).coerceIn(-32768, 32767).toShort()
-                }
+                mix[i] = (mix[i] + stream.samples[at.toInt()]).coerceIn(-32768, 32767).toShort()
             }
         }
     }
 
-    /** Add [samples], interleaved stereo frames, to the end of [stream]'s history. */
     private fun append(stream: Stream, samples: ShortArray) {
         val buffer = stream.samples
-        val frames = samples.size / CHANNELS
-        val capacity = buffer.size / CHANNELS
-        if (frames >= capacity) {
-            System.arraycopy(samples, (frames - capacity) * CHANNELS, buffer, 0, buffer.size)
-            stream.length = capacity
+        if (samples.size >= buffer.size) {
+            System.arraycopy(samples, samples.size - buffer.size, buffer, 0, buffer.size)
+            stream.length = buffer.size
         } else {
-            val drop = maxOf(0, stream.length + frames - capacity)
+            val drop = maxOf(0, stream.length + samples.size - buffer.size)
             if (drop > 0) {
-                System.arraycopy(buffer, drop * CHANNELS, buffer, 0, (stream.length - drop) * CHANNELS)
+                System.arraycopy(buffer, drop, buffer, 0, stream.length - drop)
                 stream.length -= drop
             }
-            System.arraycopy(samples, 0, buffer, stream.length * CHANNELS, frames * CHANNELS)
-            stream.length += frames
+            System.arraycopy(samples, 0, buffer, stream.length, samples.size)
+            stream.length += samples.size
         }
-        stream.end += frames
+        stream.end += samples.size
     }
 
     /**
-     * Back to idle, and a line for the log: how long it worked, how much
-     * came off the microphone over that time and whether the mask was
-     * working or standing aside for a microphone path that cancels its
-     * own echo.
+     * Back to idle, and a line for the log: how long it worked and the echo
+     * delay it found (the time from a sound playing to its echo in the
+     * microphone, 110 to 130 ms on a Galaxy Tab S8).
      */
     private fun stopWorking() {
         if (!working) return
         working = false
         residualGate.reset()
-        val h = handle
-        if (h == 0L) return
-        val stats = nativeStats(h)
+        val delayMs = when {
+            vqe != 0L -> nativeVqeDelayMs(vqe)
+            handle != 0L -> nativeStats(handle)[1]
+            else -> return
+        }
         val seconds = (System.nanoTime() - workingSinceNs) / 1_000_000_000.0
-        Log.i(TAG, "cancelled for %.1f s, removed %.1f dB, mask %s".format(
-            seconds, stats[0], if (stats[1] > 0) "on" else "standing aside",
+        report("%s cancelled for %.1f s, echo delay %s".format(
+            if (vqe != 0L) "GTCRN" else "AEC3",
+            seconds, if (delayMs.isNaN()) "not found" else "${delayMs.toInt()} ms",
         ))
     }
 
-    @JvmStatic private external fun nativeCreate(assets: AssetManager, modelAsset: String): Long
+    @JvmStatic private external fun nativeCreate(captureRate: Int, renderRate: Int, noiseSuppression: Boolean, intercom: Boolean, realtime: Boolean): Long
+    @JvmStatic private external fun nativePrototypeAvailable(realtime: Boolean): Boolean
     @JvmStatic private external fun nativeRender(handle: Long, pcm: ByteArray, offset: Int)
     @JvmStatic private external fun nativeCapture(handle: Long, pcm: ByteArray, offset: Int)
     @JvmStatic private external fun nativeStats(handle: Long): DoubleArray
     @JvmStatic private external fun nativeDestroy(handle: Long)
-    @JvmStatic private external fun nativeNsCreate(): Long
+    @JvmStatic private external fun nativeNsCreate(rate: Int): Long
     @JvmStatic private external fun nativeNsProcess(handle: Long, pcm: ByteArray, offset: Int)
+    @JvmStatic private external fun nativeVqeSupported(): Boolean
+    @JvmStatic private external fun nativeVqeCreate(modelPath: String): Long
+    @JvmStatic private external fun nativeVqeLatencyFrames(): Int
+    @JvmStatic private external fun nativeVqeRender(handle: Long, pcm: ByteArray, offset: Int)
+    @JvmStatic private external fun nativeVqeCapture(handle: Long, pcm: ByteArray, offset: Int, work: Boolean)
+    @JvmStatic private external fun nativeVqeDelayMs(handle: Long): Double
+    @JvmStatic private external fun nativeVqeDestroy(handle: Long)
 }
