@@ -46,7 +46,7 @@ object SoftwareEcho {
 
     private var appContext: Context? = null
 
-    /** Also receives the canceller's log lines, for the app log (MicRecorder sets it with a capture). */
+    /** Also receives the canceller's log lines, for the app log (AudioRoutingBridge sets it). */
     @Volatile var onLog: ((String) -> Unit)? = null
 
     private fun report(message: String) {
@@ -60,6 +60,8 @@ object SoftwareEcho {
     /** The application context, for copying the model out of the APK. */
     fun attach(context: Context) {
         appContext = context.applicationContext
+        // 2026.11.1 kept its AEC3 verdict in this file; the setting holds it now.
+        File(context.filesDir, "localvqe/aec3-here").delete()
     }
 
     /** Null when LocalVQE can run here, else why not. */
@@ -99,6 +101,166 @@ object SoftwareEcho {
             Log.w(TAG, "LocalVQE model unavailable: ${e.message}")
             null
         }
+    }
+
+    /**
+     * Whether GTCRN keeps up with this device's echo. A microphone that
+     * comes through a vendor's own adaptive canceller carries an echo that
+     * moves as that canceller adapts, and no reference-based canceller can
+     * follow it: on an Echo Show 8 whose capture ran through Amazon's ASR
+     * pipeline GTCRN took 3 to 5 dB off an answer, where it takes 33 dB or
+     * more off the raw microphone once it has had 3 s to learn the room.
+     * AEC3 copes a little better there. With Echo cancellation method on
+     * Automatic, three bad 3 s stretches of playback in a row settle on AEC3
+     * for the device and ten good ones on GTCRN. The verdict goes to the
+     * setting (AudioRoutingManager), which shows it and keeps it.
+     *
+     * Someone talking over an answer must not look like leftover echo: a
+     * voice passes through the canceller, so on its frames little comes
+     * off. Each stretch is judged by its best quarter of frames instead of
+     * its median. On recordings of GTCRN working on the raw microphone of an
+     * Echo Show 8, that stayed 19 dB or more with a loud talker over 90% of
+     * the playback, while the median fell to 11 dB once a talker covered
+     * three quarters of it, which is how a device that worked switched to
+     * AEC3 in its first conversation. The first 3 s of each new GTCRN, while
+     * it learns the room, do not count.
+     */
+    private object EchoCheck {
+        const val WINDOW = 300                 // frames of playback, 3 s
+        const val MIN_REMOVED_DB = 12.0        // off the best quarter of a stretch
+        const val MAX_ROOM_RATIO = 6.0
+        const val STRIKES = 3
+        const val GOOD = 10                    // stretches in a row, 30 s of playback
+        private const val ROOM_FRAMES = 1000   // the last 10 s of idle microphone
+        private val room = IntArray(ROOM_FRAMES)
+        private var roomCount = 0
+        private var roomAt = 0
+        private val heard = IntArray(WINDOW)
+        private val left = IntArray(WINDOW)
+        private val removed = DoubleArray(WINDOW)
+        private var count = 0
+        private var learning = 0
+        private var strikes = 0
+        private var goods = 0
+
+        /** The last measured stretch, for the log: echo left, dB under the microphone, times the room. */
+        var lastLeft = -1
+        var lastRemovedDb = 0.0
+        var lastRoomRatio = 0.0
+
+        /** A new GTCRN: its first stretch learns the room and is not judged. */
+        fun started() {
+            count = 0
+            learning = WINDOW
+        }
+
+        /** How far Automatic's test got, for the log. */
+        fun progress() = "testing: $goods of $GOOD good and $strikes of $STRIKES bad stretches in a row"
+
+        /** Automatic picked again: judge this device from the start. */
+        fun reset() {
+            strikes = 0
+            goods = 0
+            lastLeft = -1
+            started()
+        }
+
+        /** A frame with nothing playing: the room's own level. */
+        fun idle(level: Int) {
+            room[roomAt] = level
+            roomAt = (roomAt + 1) % ROOM_FRAMES
+            if (roomCount < ROOM_FRAMES) roomCount++
+        }
+
+        private fun roomLevel(): Int? {
+            if (roomCount < 200) return null
+            val sorted = room.copyOf(roomCount).also { it.sort() }
+            return sorted[roomCount / 5]
+        }
+
+        /**
+         * A frame the speaker played: [AEC3] once [STRIKES] stretches in a
+         * row say GTCRN cannot cope, [GTCRN] once [GOOD] in a row say it
+         * does, else null. The stretches run on across playback periods:
+         * realtime answers are often shorter than one.
+         */
+        fun playing(heardLevel: Int, leftLevel: Int): String? {
+            if (learning > 0) {
+                learning--
+                return null
+            }
+            heard[count] = heardLevel
+            left[count] = leftLevel
+            removed[count] = 20 * kotlin.math.log10(maxOf(heardLevel, 1) / maxOf(leftLevel, 1).toDouble())
+            if (++count < WINDOW) return null
+            count = 0
+            val medHeard = heard.copyOf().also { it.sort() }[WINDOW / 2]
+            val sortedLeft = left.copyOf().also { it.sort() }
+            if (medHeard < 50) return null     // too quiet to judge
+            // Unknown until the microphone has had 2 s with nothing playing,
+            // which music playing from the start never gives it.
+            val roomNow = roomLevel()
+            lastLeft = sortedLeft[WINDOW / 2]
+            lastRemovedDb = 20 * kotlin.math.log10(medHeard / maxOf(lastLeft, 1).toDouble())
+            lastRoomRatio = roomNow?.let { lastLeft / maxOf(it, 10).toDouble() } ?: Double.NaN
+            val best = removed.copyOf().also { it.sort() }[WINDOW * 3 / 4]
+            val bestRatio = roomNow?.let { sortedLeft[WINDOW / 4] / maxOf(it, 10).toDouble() }
+            // A stretch GTCRN cleans well counts whatever the room. One it
+            // does not waits for the room: on a quiet device little comes
+            // off because there was little echo to begin with.
+            val good = best >= MIN_REMOVED_DB || (bestRatio != null && bestRatio <= MAX_ROOM_RATIO)
+            if (!good && bestRatio == null) return null
+            val bad = !good
+            strikes = if (bad) strikes + 1 else 0
+            goods = if (bad) 0 else goods + 1
+            return when {
+                strikes >= STRIKES -> AEC3
+                goods >= GOOD -> GTCRN
+                else -> null
+            }
+        }
+    }
+
+    /** Echo cancellation method values (definitions.dart), with Automatic's verdicts. */
+    private const val AUTO = "auto"
+    private const val GTCRN = "gtcrn"
+    private const val AEC3 = "aec3"
+    private const val DETECTED = "auto:"
+
+    /** The method this capture runs, from the setting. */
+    private var method = AUTO
+
+    /** Automatic still judging the device: GTCRN runs and EchoCheck watches it. */
+    private var checking = false
+
+    /** Receives Automatic's verdict, [GTCRN] or [AEC3], for the setting (AudioRoutingBridge sets it). */
+    @Volatile var onDetected: ((String) -> Unit)? = null
+
+    private fun detected(verdict: String) {
+        checking = false
+        onDetected?.invoke(verdict)
+    }
+
+    /** GTCRN has shown it cannot keep up: AEC3 takes over once this sound ends. */
+    private var aec3Pending = false
+
+    /** Automatic settled on AEC3: swap GTCRN for it (under [lock]). */
+    private fun switchToAec3() {
+        aec3Pending = false
+        val created = nativeCreate(RATE, RATE, false, residualGate.intercomOnly, residualGate.realtime)
+        if (created == 0L) return
+        nativeVqeDestroy(vqe)
+        vqe = 0L
+        vqeDelay = 0
+        handle = created
+        usesPrototype = false
+        report(
+            "echo cancellation: AEC3 (detected: GTCRN left too much echo: %d, %.0f dB under the microphone, %.0fx the room)".format(
+                EchoCheck.lastLeft, EchoCheck.lastRemovedDb, EchoCheck.lastRoomRatio,
+            ),
+        )
+        ran(AEC3, "detected")
+        detected(AEC3)
     }
 
     /** A LocalVQE canceller, or 0 when this device or build cannot run it. */
@@ -218,20 +380,62 @@ object SoftwareEcho {
     @Volatile var enabled = false
         private set
 
-    /** On or off with the capture's settings. */
-    fun setEnabled(on: Boolean) {
+    /**
+     * The canceller this process last ran, "gtcrn" or "aec3", empty until
+     * one has, and why: "picked" in Microphone settings, "detected" by
+     * Automatic, "testing" while Automatic still judges GTCRN, or
+     * "unavailable" when GTCRN cannot run here. Kept after the capture
+     * stops, for usage analytics: it is what this kiosk cancels with when
+     * it listens, whatever the setting says.
+     */
+    @Volatile var lastEngine = ""
+        private set
+    @Volatile var lastWhy = ""
+        private set
+
+    private fun ran(engine: String, why: String) {
+        lastEngine = engine
+        lastWhy = why
+    }
+
+    /** [lastEngine], [lastWhy] and whether a capture runs through it now. */
+    fun state(): Map<String, Any> = mapOf("engine" to lastEngine, "why" to lastWhy, "running" to enabled)
+
+    /**
+     * On or off with the capture's settings, with the Echo cancellation
+     * method: [AUTO], [GTCRN], [AEC3], or Automatic's verdict ("auto:gtcrn",
+     * "auto:aec3").
+     */
+    fun setEnabled(on: Boolean, method: String = AUTO) {
         synchronized(lock) {
             if (on == enabled) return
             if (on) {
                 if (!loaded) return
-                vqe = createVqe()
+                // Automatic picked again after a verdict or another method
+                // judges this device from the start.
+                if (method == AUTO && this.method != AUTO) {
+                    EchoCheck.reset()
+                    report("echo cancellation: Automatic test starts over")
+                }
+                this.method = method
+                val pick = method.removePrefix(DETECTED)
+                val why = when {
+                    method.startsWith(DETECTED) -> "detected"
+                    method == AUTO -> "automatic"
+                    else -> "picked in Microphone settings"
+                }
+                vqe = if (pick == AEC3) 0L else createVqe()
                 if (vqe != 0L) {
                     vqeDelay = nativeVqeLatencyFrames()
                     heardRing = IntArray(vqeDelay + 1)
                     playedRing = IntArray(vqeDelay + 1)
                     ringAt = 0
                     enabled = true
-                    report("echo cancellation: GTCRN (LocalVQE), capture ${vqeDelay * 10} ms late")
+                    checking = method == AUTO
+                    ran(GTCRN, if (checking) "testing" else if (method.startsWith(DETECTED)) "detected" else "picked")
+                    EchoCheck.started()
+                    val testing = if (checking) ", ${EchoCheck.progress()}" else ""
+                    report("echo cancellation: GTCRN (LocalVQE, $why$testing), capture ${vqeDelay * 10} ms late")
                     return
                 }
                 val created = nativeCreate(RATE, RATE, false, residualGate.intercomOnly, residualGate.realtime)
@@ -239,10 +443,19 @@ object SoftwareEcho {
                 handle = created
                 usesPrototype = (customDuplex && residualGate.intercomOnly) || (customRealtime && residualGate.realtime)
                 enabled = true
-                report("echo cancellation: AEC3 (GTCRN unavailable: $vqeWhyNot)")
+                checking = false
+                ran(AEC3, if (pick != AEC3) "unavailable" else if (method.startsWith(DETECTED)) "detected" else "picked")
+                if (pick == AEC3) {
+                    report("echo cancellation: AEC3 ($why)")
+                } else {
+                    report("echo cancellation: AEC3 (GTCRN unavailable: $vqeWhyNot)")
+                    // A CPU that cannot run GTCRN never will: Automatic settles here.
+                    if (method == AUTO && vqeUnavailable != null) detected(AEC3)
+                }
             } else {
                 enabled = false
                 stopWorking()
+                val wasVqe = vqe != 0L
                 if (vqe != 0L) nativeVqeDestroy(vqe)
                 vqe = 0L
                 vqeDelay = 0
@@ -251,7 +464,7 @@ object SoftwareEcho {
                 usesPrototype = false
                 streams.clear()
                 residualGate.reset()
-                Log.i(TAG, "echo cancellation off")
+                report("echo cancellation: ${if (wasVqe) "GTCRN" else "AEC3"} off")
             }
         }
     }
@@ -301,6 +514,11 @@ object SoftwareEcho {
             streams.keys.retainAll(sources.toSet())
             if (!EchoReference.playedWithin(TAIL_MS) && !fresh) {
                 stopWorking()
+                // AEC3 takes over between sounds, so it starts at the beginning
+                // of the next one: created in the middle of an answer on an
+                // Echo Show 8 it found a delay of 0 to 16 ms against the real 96
+                // and let the answer through.
+                if (aec3Pending && vqe != 0L) switchToAec3()
                 if (vqe != 0L) idleThroughVqe(chunk)
                 return false
             }
@@ -321,6 +539,7 @@ object SoftwareEcho {
                 }
             }
             var at = 0
+            var switchTo = false
             for (f in 0 until frames) {
                 mixFrame(f)
                 for (i in 0 until FRAME) {
@@ -337,6 +556,16 @@ object SoftwareEcho {
                     val back = remember(heard, played)
                     heard = heardRing[back]
                     played = playedRing[back]
+                    if (played >= 100 && checking) {
+                        when (EchoCheck.playing(heard, meanAbs(chunk, at))) {
+                            AEC3 -> switchTo = true
+                            GTCRN -> {
+                                report("echo cancellation: GTCRN (detected: %.0f dB under the microphone)".format(EchoCheck.lastRemovedDb))
+                                ran(GTCRN, "detected")
+                                detected(GTCRN)
+                            }
+                        }
+                    }
                 } else {
                     nativeRender(h, mixBytes, 0)
                     nativeCapture(h, chunk, at)
@@ -348,6 +577,7 @@ object SoftwareEcho {
                 at += FRAME_BYTES
             }
             for (stream in streams.values) stream.cursor += need
+            if (switchTo) aec3Pending = true
         }
         return true
     }
@@ -367,7 +597,9 @@ object SoftwareEcho {
     private fun idleThroughVqe(chunk: ByteArray) {
         var at = 0
         while (at + FRAME_BYTES <= chunk.size) {
-            remember(meanAbs(chunk, at), 0)
+            val level = meanAbs(chunk, at)
+            remember(level, 0)
+            EchoCheck.idle(level)
             nativeVqeCapture(vqe, chunk, at, false)
             at += FRAME_BYTES
         }
@@ -429,9 +661,16 @@ object SoftwareEcho {
             else -> return
         }
         val seconds = (System.nanoTime() - workingSinceNs) / 1_000_000_000.0
-        report("%s cancelled for %.1f s, echo delay %s".format(
+        val measured = if (vqe != 0L && EchoCheck.lastLeft >= 0) {
+            ", echo left %d (%.0f dB under the microphone%s)".format(
+                EchoCheck.lastLeft, EchoCheck.lastRemovedDb,
+                if (EchoCheck.lastRoomRatio.isNaN()) "" else ", %.1fx the room".format(EchoCheck.lastRoomRatio),
+            )
+        } else ""
+        report("%s cancelled for %.1f s, echo delay %s%s%s".format(
             if (vqe != 0L) "GTCRN" else "AEC3",
-            seconds, if (delayMs.isNaN()) "not found" else "${delayMs.toInt()} ms",
+            seconds, if (delayMs.isNaN()) "not found" else "${delayMs.toInt()} ms", measured,
+            if (checking) ", ${EchoCheck.progress()}" else "",
         ))
     }
 

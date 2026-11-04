@@ -9,6 +9,11 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "github": "deviceUpdateGithub",
     "custom": "deviceUpdateCustom"
   },
+  "android_update.policy": {
+    "ask": "deviceAndroidUpdateAsk",
+    "automatic": "deviceAndroidUpdateAutomatic",
+    "windowed": "deviceAndroidUpdateWindowed"
+  },
   "ha.haptics_strength": {
     "light": "haVibrationLight",
     "medium": "haVibrationMedium",
@@ -39,6 +44,11 @@ const settingOptionMessageIds = <String, Map<String, String>>{
   "audio.mic_capture_format": {
     "auto": "screenAudioAutomaticDefault",
     "hardware": "screenAudioStereo"
+  },
+  "audio.echo_cancellation_method": {
+    "auto": "screenAudioAutomaticDefault",
+    "auto:gtcrn": "screenAudioEchoMethodGtcrnDetected",
+    "auto:aec3": "screenAudioEchoMethodAec3Detected"
   },
   "screensaver.mode": {
     "dim": "screensaverModeDim",
@@ -80,6 +90,10 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "bold": "screensaverFontBold",
     "black": "screensaverFontBlack"
   },
+  "screensaver.media_video_length": {
+    "full": "screensaverMediaVideoLengthFull",
+    "interval": "screensaverMediaVideoLengthInterval"
+  },
   "screensaver.media_transition": {
     "none": "screensaverMediaTransitionNone",
     "fade": "screensaverMediaTransitionFade",
@@ -92,6 +106,10 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "off": "screensaverMediaFillOff",
     "smart": "screensaverMediaFillSmart",
     "always": "screensaverMediaFillAlways"
+  },
+  "screensaver.gallery_video_length": {
+    "full": "screensaverMediaVideoLengthFull",
+    "interval": "screensaverMediaVideoLengthInterval"
   },
   "screensaver.gallery_transition": {
     "none": "screensaverMediaTransitionNone",
@@ -106,6 +124,10 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "smart": "screensaverMediaFillSmart",
     "always": "screensaverMediaFillAlways"
   },
+  "screensaver.local_video_length": {
+    "full": "screensaverMediaVideoLengthFull",
+    "interval": "screensaverMediaVideoLengthInterval"
+  },
   "screensaver.local_transition": {
     "none": "screensaverMediaTransitionNone",
     "fade": "screensaverMediaTransitionFade",
@@ -118,6 +140,10 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "off": "screensaverMediaFillOff",
     "smart": "screensaverMediaFillSmart",
     "always": "screensaverMediaFillAlways"
+  },
+  "screensaver.immich_video_length": {
+    "full": "screensaverMediaVideoLengthFull",
+    "interval": "screensaverMediaVideoLengthInterval"
   },
   "screensaver.immich_transition": {
     "none": "screensaverMediaTransitionNone",

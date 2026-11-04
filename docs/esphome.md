@@ -107,6 +107,7 @@ Every item in this list corresponds directly to a kiosk setting. They are fully 
 | **Screensaver screen off after** | number | Minutes the screensaver runs before the display powers off, the same value as **Turn screen off after** on the Screensaver page. `0` keeps the screen on. A write under a running screensaver restarts the countdown at the new value. An active [schedule](screensavers.md#schedule) entry with its own screen off time takes precedence. |
 | **Clock background** | text | The Clock screensaver's background photo: a path to an image on the device or an image URL the device fetches. Every write reloads the image, an unchanged value included. |
 | **Kiosk mode**, **Lockdown mode**, **HA kiosk mode**, **Keep screen on**, **Remote management**, **Screensaver brightness**, **Screensaver**, **Hold mode** | switch | Standard toggle switches. |
+| **Dashboard rotation** | switch | Turns dashboard view rotation on or off, the same as **Enable dashboard view rotation** on the device. Unlike **Hold mode**, the screensaver and screen off still run while it is off. The Dashboard view select then keeps the view it picks, so an automation can turn rotation off, show a Now Playing view and turn it back on when playback stops. Rotation starts again from the first view. |
 | **Adaptive brightness** | switch | Follows the device's light sensor or the Home Assistant entity picked in its settings. |
 | **Camera enabled**, **Screensaver motion detection**, **Screensaver face detection** | switch | Requires physical camera hardware. The Camera enabled switch can be safely toggled throughout the day; the camera entities will remain listed. |
 | **RTSP Streaming** | switch | Enables or disables the RTSP server using the saved stream settings. Requires physical camera hardware. Camera enabled and Android camera permission must also be on. Changes sync with the local and remote settings pages without reconnecting ESPHome. |
@@ -244,6 +245,8 @@ The action returns the card's specific ID (e.g., `{"id": 7}`). Using `response_v
   data:
     id: "{{ card.id }}"
 ```
+
+Every card that leaves the screen fires an `esphome.kiosk_satellite_notification` [event](events.md#notifications) with its `id` and whether it was tapped, expired, dismissed or pushed off by a newer card. An automation can use it to show a card again that someone tapped away too soon.
 
 When using the [remote API](remote-api.md), these two commands correspond to `showNotification` (which returns the same `id`) and `dismissNotification` (which takes the ID, or clears the screen if given `0` or nothing).
 
