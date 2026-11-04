@@ -24,6 +24,7 @@ import 'managers/wake_word/pryon/pryon_catalog.dart';
 import 'ui/key_nav.dart';
 import 'ui/agent_screen.dart';
 import 'ui/kiosk_screen.dart';
+import 'ui/resized_image.dart';
 import 'ui/ui_scale.dart';
 import 'ui/setup_screen.dart';
 import 'ui/theme.dart';
@@ -39,6 +40,10 @@ Future<void> main() async {
   // that WebView plus one screensaver slide at a time (slides evict
   // themselves as they leave); 32MB is generous for all of it.
   PaintingBinding.instance.imageCache.maximumSizeBytes = 32 << 20;
+
+  // Before any image decodes: whether resized images must be scaled on the
+  // CPU instead of by Impeller's OpenGL ES blit.
+  await GpuResize.init();
 
   // Date strings (clock screensaver, photo metadata) follow the device's
   // locale (issue #108).
