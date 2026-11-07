@@ -5365,8 +5365,8 @@ class UiStringsRu extends UiStrings {
   String get settingCalendarWeekStartTitle => 'Неделя начинается с';
 
   @override
-  String get settingCalendarWeekStartDescription =>
-      'Как в языке устройства, если не задано иное.';
+  String get settingCalendarWeekStartAppLanguageDescription =>
+      'Как в языке приложения, если не задано иное.';
 
   @override
   String get settingCalendarWeatherEntityTitle => 'Погода';
@@ -14427,8 +14427,8 @@ class UiStringsRu extends UiStrings {
       'Говорить сразу после слова пробуждения';
 
   @override
-  String get settingVoiceSeamlessWakeDescription =>
-      'Пропускать звук пробуждения и ловить сказанное сразу после слова пробуждения.';
+  String get settingVoiceSeamlessWakeAssistDescription =>
+      'Пропускать звук пробуждения и ловить сказанное сразу после слова пробуждения. Только для конвейеров Assist, не для разговоров в реальном времени.';
 
   @override
   String get settingVoiceFollowupDelayTitle => 'Задержка уточнения';

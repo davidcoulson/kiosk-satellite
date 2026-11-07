@@ -5403,8 +5403,8 @@ class UiStringsFr extends UiStrings {
   String get settingCalendarWeekStartTitle => 'La semaine commence le';
 
   @override
-  String get settingCalendarWeekStartDescription =>
-      'Suit la langue de l\'appareil, sauf choix contraire.';
+  String get settingCalendarWeekStartAppLanguageDescription =>
+      'Suit la langue de l\'application, sauf choix contraire.';
 
   @override
   String get settingCalendarWeatherEntityTitle => 'Météo';
@@ -14606,8 +14606,8 @@ class UiStringsFr extends UiStrings {
       'Parler juste après le mot de réveil';
 
   @override
-  String get settingVoiceSeamlessWakeDescription =>
-      'Ignore le son de réveil et garde ce que vous dites juste après le mot de réveil.';
+  String get settingVoiceSeamlessWakeAssistDescription =>
+      'Ignore le son de réveil et garde ce que vous dites juste après le mot de réveil. Uniquement pour les pipelines Assist, pas pour les conversations en temps réel.';
 
   @override
   String get settingVoiceFollowupDelayTitle => 'Délai avant le suivi';

@@ -20075,8 +20075,8 @@
       ]
     }
   },
-  "settingCalendarWeekStartDescription": "Volgt de taal van het apparaat, tenzij ingesteld.",
-  "@settingCalendarWeekStartDescription": {
+  "settingCalendarWeekStartAppLanguageDescription": "Volgt de taal van de app, tenzij ingesteld.",
+  "@settingCalendarWeekStartAppLanguageDescription": {
     "context": "Settings > Calendar > Display",
     "description": "Setting description.",
     "x-locations": {
@@ -53842,8 +53842,8 @@
     "context": "Settings > Voice Satellite > Assistant",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
-  "settingVoiceSeamlessWakeDescription": "Sla het wekgeluid over en neem op wat je direct na het wekwoord zegt.",
-  "@settingVoiceSeamlessWakeDescription": {
+  "settingVoiceSeamlessWakeAssistDescription": "Sla het wekgeluid over en neem op wat je direct na het wekwoord zegt. Alleen voor Assist-pijplijnen, niet voor realtime gesprekken.",
+  "@settingVoiceSeamlessWakeAssistDescription": {
     "context": "Settings > Voice Satellite > Assistant",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },

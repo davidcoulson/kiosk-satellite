@@ -5437,8 +5437,8 @@ class UiStringsDe extends UiStrings {
   String get settingCalendarWeekStartTitle => 'Woche beginnt am';
 
   @override
-  String get settingCalendarWeekStartDescription =>
-      'Folgt der Gerätesprache, sofern nicht festgelegt.';
+  String get settingCalendarWeekStartAppLanguageDescription =>
+      'Folgt der App-Sprache, sofern nicht festgelegt.';
 
   @override
   String get settingCalendarWeatherEntityTitle => 'Wetter';
@@ -14639,8 +14639,8 @@ class UiStringsDe extends UiStrings {
       'Direkt nach dem Aktivierungswort sprechen';
 
   @override
-  String get settingVoiceSeamlessWakeDescription =>
-      'Überspringt den Aktivierungston und behält, was du direkt nach dem Aktivierungswort sagst.';
+  String get settingVoiceSeamlessWakeAssistDescription =>
+      'Überspringt den Aktivierungston und behält, was du direkt nach dem Aktivierungswort sagst. Nur für Assist-Pipelines, nicht für Echtzeit-Gespräche.';
 
   @override
   String get settingVoiceFollowupDelayTitle => 'Verzögerung vor Folgefragen';

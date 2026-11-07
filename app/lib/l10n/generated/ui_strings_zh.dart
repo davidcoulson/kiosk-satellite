@@ -5158,7 +5158,7 @@ class UiStringsZh extends UiStrings {
   String get settingCalendarWeekStartTitle => '每周开始于';
 
   @override
-  String get settingCalendarWeekStartDescription => '跟随设备语言，除非另行设置。';
+  String get settingCalendarWeekStartAppLanguageDescription => '跟随应用语言，除非另行设置。';
 
   @override
   String get settingCalendarWeatherEntityTitle => '天气';
@@ -13618,7 +13618,8 @@ class UiStringsZh extends UiStrings {
   String get settingVoiceSeamlessWakeTitle => '唤醒词后直接讲话';
 
   @override
-  String get settingVoiceSeamlessWakeDescription => '跳过唤醒提示音，并保留唤醒词后紧接着说的内容。';
+  String get settingVoiceSeamlessWakeAssistDescription =>
+      '跳过唤醒提示音，并保留唤醒词后紧接着说的内容。仅适用于 Assist 管线，不适用于实时语音对话。';
 
   @override
   String get settingVoiceFollowupDelayTitle => '追问延迟';
@@ -20764,7 +20765,7 @@ class UiStringsZhCn extends UiStringsZh {
   String get settingCalendarWeekStartTitle => '每周开始于';
 
   @override
-  String get settingCalendarWeekStartDescription => '跟随设备语言，除非另行设置。';
+  String get settingCalendarWeekStartAppLanguageDescription => '跟随应用语言，除非另行设置。';
 
   @override
   String get settingCalendarWeatherEntityTitle => '天气';
@@ -29224,7 +29225,8 @@ class UiStringsZhCn extends UiStringsZh {
   String get settingVoiceSeamlessWakeTitle => '唤醒词后直接讲话';
 
   @override
-  String get settingVoiceSeamlessWakeDescription => '跳过唤醒提示音，并保留唤醒词后紧接着说的内容。';
+  String get settingVoiceSeamlessWakeAssistDescription =>
+      '跳过唤醒提示音，并保留唤醒词后紧接着说的内容。仅适用于 Assist 管线，不适用于实时语音对话。';
 
   @override
   String get settingVoiceFollowupDelayTitle => '追问延迟';

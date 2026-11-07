@@ -20075,8 +20075,8 @@
       ]
     }
   },
-  "settingCalendarWeekStartDescription": "Folgt der Gerätesprache, sofern nicht festgelegt.",
-  "@settingCalendarWeekStartDescription": {
+  "settingCalendarWeekStartAppLanguageDescription": "Folgt der App-Sprache, sofern nicht festgelegt.",
+  "@settingCalendarWeekStartAppLanguageDescription": {
     "context": "Settings > Calendar > Display",
     "description": "Setting description.",
     "x-locations": {
@@ -53842,8 +53842,8 @@
     "context": "Settings > Voice Satellite > Assistant",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
-  "settingVoiceSeamlessWakeDescription": "Überspringt den Aktivierungston und behält, was du direkt nach dem Aktivierungswort sagst.",
-  "@settingVoiceSeamlessWakeDescription": {
+  "settingVoiceSeamlessWakeAssistDescription": "Überspringt den Aktivierungston und behält, was du direkt nach dem Aktivierungswort sagst. Nur für Assist-Pipelines, nicht für Echtzeit-Gespräche.",
+  "@settingVoiceSeamlessWakeAssistDescription": {
     "context": "Settings > Voice Satellite > Assistant",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },

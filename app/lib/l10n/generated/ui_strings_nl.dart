@@ -5387,8 +5387,8 @@ class UiStringsNl extends UiStrings {
   String get settingCalendarWeekStartTitle => 'Week begint op';
 
   @override
-  String get settingCalendarWeekStartDescription =>
-      'Volgt de taal van het apparaat, tenzij ingesteld.';
+  String get settingCalendarWeekStartAppLanguageDescription =>
+      'Volgt de taal van de app, tenzij ingesteld.';
 
   @override
   String get settingCalendarWeatherEntityTitle => 'Weer';
@@ -14495,8 +14495,8 @@ class UiStringsNl extends UiStrings {
   String get settingVoiceSeamlessWakeTitle => 'Praat direct na het wekwoord';
 
   @override
-  String get settingVoiceSeamlessWakeDescription =>
-      'Sla het wekgeluid over en neem op wat je direct na het wekwoord zegt.';
+  String get settingVoiceSeamlessWakeAssistDescription =>
+      'Sla het wekgeluid over en neem op wat je direct na het wekwoord zegt. Alleen voor Assist-pijplijnen, niet voor realtime gesprekken.';
 
   @override
   String get settingVoiceFollowupDelayTitle => 'Follow-upvertraging';

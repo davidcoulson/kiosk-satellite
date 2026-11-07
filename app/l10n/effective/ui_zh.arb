@@ -20075,8 +20075,8 @@
       ]
     }
   },
-  "settingCalendarWeekStartDescription": "跟随设备语言，除非另行设置。",
-  "@settingCalendarWeekStartDescription": {
+  "settingCalendarWeekStartAppLanguageDescription": "跟随应用语言，除非另行设置。",
+  "@settingCalendarWeekStartAppLanguageDescription": {
     "context": "Settings > Calendar > Display",
     "description": "Setting description.",
     "x-locations": {
@@ -53842,8 +53842,8 @@
     "context": "Settings > Voice Satellite > Assistant",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
-  "settingVoiceSeamlessWakeDescription": "跳过唤醒提示音，并保留唤醒词后紧接着说的内容。",
-  "@settingVoiceSeamlessWakeDescription": {
+  "settingVoiceSeamlessWakeAssistDescription": "跳过唤醒提示音，并保留唤醒词后紧接着说的内容。仅适用于 Assist 管线，不适用于实时语音对话。",
+  "@settingVoiceSeamlessWakeAssistDescription": {
     "context": "Settings > Voice Satellite > Assistant",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },

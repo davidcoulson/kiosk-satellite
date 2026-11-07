@@ -5335,8 +5335,8 @@ class UiStringsEn extends UiStrings {
   String get settingCalendarWeekStartTitle => 'Week starts on';
 
   @override
-  String get settingCalendarWeekStartDescription =>
-      'Follows the device language unless set.';
+  String get settingCalendarWeekStartAppLanguageDescription =>
+      'Follows the app language unless set.';
 
   @override
   String get settingCalendarWeatherEntityTitle => 'Weather';
@@ -14337,8 +14337,8 @@ class UiStringsEn extends UiStrings {
   String get settingVoiceSeamlessWakeTitle => 'Talk right after the wake word';
 
   @override
-  String get settingVoiceSeamlessWakeDescription =>
-      'Skip the wake sound and keep what you say right after the wake word.';
+  String get settingVoiceSeamlessWakeAssistDescription =>
+      'Skip the wake sound and keep what you say right after the wake word. Only for Assist pipelines, not realtime conversations.';
 
   @override
   String get settingVoiceFollowupDelayTitle => 'Follow-up delay';

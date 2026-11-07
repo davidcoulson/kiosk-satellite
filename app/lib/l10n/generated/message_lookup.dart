@@ -1459,8 +1459,8 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'settingCalendarDefaultViewDescription' =>
         strings.settingCalendarDefaultViewDescription,
       'settingCalendarWeekStartTitle' => strings.settingCalendarWeekStartTitle,
-      'settingCalendarWeekStartDescription' =>
-        strings.settingCalendarWeekStartDescription,
+      'settingCalendarWeekStartAppLanguageDescription' =>
+        strings.settingCalendarWeekStartAppLanguageDescription,
       'settingCalendarWeatherEntityTitle' =>
         strings.settingCalendarWeatherEntityTitle,
       'settingCalendarWeatherEntityDescription' =>
@@ -4917,8 +4917,8 @@ String messageById(UiStrings strings, String? id, String fallback) =>
       'voiceThisKiosk' => strings.voiceThisKiosk,
       'voiceSelectFailed' => strings.voiceSelectFailed,
       'settingVoiceSeamlessWakeTitle' => strings.settingVoiceSeamlessWakeTitle,
-      'settingVoiceSeamlessWakeDescription' =>
-        strings.settingVoiceSeamlessWakeDescription,
+      'settingVoiceSeamlessWakeAssistDescription' =>
+        strings.settingVoiceSeamlessWakeAssistDescription,
       'settingVoiceFollowupDelayTitle' =>
         strings.settingVoiceFollowupDelayTitle,
       'settingVoiceFollowupDelayDescription' =>

@@ -2,6 +2,30 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
+## Unreleased
+
+### Changed
+- **Talk right after the wake word only applies to Assist pipelines.** With it on, a realtime conversation skipped the wake sound and sent what was said right after the wake word, which could carry the end of the wake word along ("So, what time is it?"). Realtime conversations now always start after the wake sound when Play chimes is on.
+
+### Fixed
+- **The calendar editing settings follow the app language.** Settings > Calendar > Allow adding and editing events and Allow deleting events showed their labels and hints in English in every language, on the kiosk and in remote administration.
+- **No reply to the echo of a realtime answer.** Right after an answer stopped playing, its echo could still reach the microphone. An OpenAI conversation could take that for the user and reply, often with something nobody asked for. Speech that starts in that moment now has to be as loud as talking over an answer. xAI and Gemini conversations already worked this way. The app log now shows where each stretch of speech starts and stops against the end of the last answer, and when the provider heard no words.
+
+## v2026.11.11 - 2026-11-07
+
+### Added
+- **24-hour clock for the calendar and alarms.** Settings > Calendar > 24-hour clock picks 24-hour times or AM/PM for the calendar and the Up next widget. Settings > Alarms > 24-hour clock does the same for the alarm list, the time wheel, the ringing screen, the next alarm widget, the remote administration's alarms page and `{time}` and `{hour}` in the spoken phrase. Both used to follow Android's clock setting, which is where they start. With them off, times use AM/PM in every language, including the ones that write 24-hour times by default. With the alarms on AM/PM, the time picker in remote administration takes the hour from 1 to 12 with an AM or PM choice, as the kiosk's wheel does.
+
+### Changed
+- **Dates and numbers follow the app language.** The clock screensavers, Weather Mood, calendar, alarms, photo details, wake word activations, Celestial, the camera stream date and time and the remote administration's file and chart dates used the Android language. They now use the language set under Device > User Interface > Language. If the Android language is the same language, its region is kept, so English on a British device still shows day first dates and starts the week on Monday in the calendar and alarms. The calendar's Week starts on hint now says it follows the app language.
+- **Talk right after the wake word says it only covers Assist pipelines (#1336).** The hint now says that the setting has no effect on realtime conversations, where speech right after the wake word can still be cut off while the connection opens.
+
+### Fixed
+- **The alarm details fit a tablet in portrait.** The time now sits above the details on a screen narrower than 900 points, so Repeat reads on one line with all seven days beside it. Before, Repeat wrapped one letter per line and the last day was cut off.
+- **The alarm time wheel keeps its hour when the clock changes.** If the clock switched between 12 and 24 hours while the wheel was open, the hour wheel jumped to a different hour, such as 10 instead of 23.
+- **A rare crash when the Sendspin player stops or restarts.** Stopping the player closed its server socket twice. If a file had been opened on the same number in between, it was closed too and the app crashed. This could happen when an alarm with music stopped, when the player was turned off and when its settings changed.
+- **The Weather Mood condition icon shows when rain starts.** If the weather changed to rain or heavy rain with the screensaver up, the conditions chip could show an empty circle or the previous rain icon until the temperature next changed.
+
 ## v2026.11.10 - 2026-11-06
 
 ### Added

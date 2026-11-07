@@ -38,7 +38,12 @@ function locale() {
   return langs.find((l) => l.split('-')[0].toLowerCase() === lang) || lang;
 }
 
-const clockFormat = () => new Intl.DateTimeFormat(locale(), { hour: 'numeric', minute: '2-digit' });
+// Settings > Alarms > 24-hour clock picks the clock, as on the device.
+function clockFormat() {
+  const h24 = byKey('alarms.clock_24h')?.value;
+  const cycle = h24 === undefined ? {} : { hourCycle: h24 ? 'h23' : 'h12' };
+  return new Intl.DateTimeFormat(locale(), { hour: 'numeric', minute: '2-digit', ...cycle });
+}
 
 // "HH:mm", the alarm's wall time, as the viewer's locale writes it.
 export function alarmTimeText(hhmm) {
@@ -286,7 +291,11 @@ function openEditor(existing) {
   const form = document.createElement('div');
   form.className = 'modal-form';
 
-  const time = timeBox({ title: t('alarmsTime'), value: draft.time, full: true, onPick: (v) => { draft.time = v; } });
+  // On the alarms' own clock, as the device's wheel.
+  const time = timeBox({
+    title: t('alarmsTime'), value: draft.time, full: true, format: alarmTimeText,
+    h12: byKey('alarms.clock_24h')?.value === false, onPick: (v) => { draft.time = v; },
+  });
 
   // Seven discs in the locale's week order, filled while the day is on.
   const discs = document.createElement('div');
