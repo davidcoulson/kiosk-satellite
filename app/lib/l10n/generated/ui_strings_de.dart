@@ -264,8 +264,8 @@ class UiStringsDe extends UiStrings {
   String get alarmsPhrase => 'Satz';
 
   @override
-  String alarmsPhraseHint(String label, String time, String day) {
-    return '$label, $time und $day werden durch Bezeichnung, Uhrzeit und Tag des Weckers ersetzt.';
+  String alarmsPhraseVariables(String variables) {
+    return 'Verfügbare Variablen: $variables';
   }
 
   @override
@@ -542,6 +542,9 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get calendarWidgetWeek => 'Nächste 7 Tage';
+
+  @override
+  String get calendarWidgetAllDay => 'Ganztägige Termine anzeigen';
 
   @override
   String get calendarWidgetDots => 'Farbige Punkte';
@@ -2823,6 +2826,11 @@ class UiStringsDe extends UiStrings {
   String get intercomCalling => 'Anruf läuft...';
 
   @override
+  String intercomAnswersWithCameraIn(String seconds) {
+    return 'Kamera an in $seconds Sek.';
+  }
+
+  @override
   String intercomAnswersIn(String seconds) {
     return 'Antwort in $seconds Sek.';
   }
@@ -2929,6 +2937,37 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get intercomEndCall => 'Anruf beenden';
+
+  @override
+  String get intercomVoiceCall => 'Sprachanruf';
+
+  @override
+  String get intercomVideoCall => 'Videoanruf';
+
+  @override
+  String get intercomVoiceOnly => 'Nur Sprache';
+
+  @override
+  String get intercomVideoAnswer => 'Video';
+
+  @override
+  String get intercomSwitchCamera => 'Kamera wechseln';
+
+  @override
+  String get intercomCameraButton => 'Kamera';
+
+  @override
+  String get intercomCameraOff => 'Kamera aus';
+
+  @override
+  String get intercomYourCameraOff => 'Deine Kamera ist aus';
+
+  @override
+  String get intercomVideoReconnecting => 'Video wird neu verbunden…';
+
+  @override
+  String get intercomCameraOffNotice =>
+      'Die Kamera ist aus. Dieser Kiosk kann Video anzeigen, aber nicht senden.';
 
   @override
   String get intercomCallFailed => 'Anruf konnte nicht gestartet werden';
@@ -4801,6 +4840,16 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get overviewSystemUpdate => 'Systemupdate verfügbar';
+
+  @override
+  String overviewPluginUpdate(String name) {
+    return 'Update für $name verfügbar';
+  }
+
+  @override
+  String overviewPluginUpdateHelp(String version) {
+    return 'Version $version ist bereit zur Prüfung und Installation.';
+  }
 
   @override
   String overviewSystemImageUpdateHelp(String version) {
@@ -9586,6 +9635,40 @@ class UiStringsDe extends UiStrings {
   String get intercomTalkSection => 'Gespräch';
 
   @override
+  String get settingIntercomVideoTitle => 'Videoanrufe';
+
+  @override
+  String get settingIntercomVideoDescription =>
+      'Sendet und zeigt Video in Anrufen.';
+
+  @override
+  String get settingIntercomVideoQualityTitle => 'Videoqualität';
+
+  @override
+  String get settingIntercomVideoQualityDescription =>
+      'Höhere Qualität braucht mehr CPU.';
+
+  @override
+  String get intercomOptionVideoLow => 'Niedrig';
+
+  @override
+  String get intercomOptionVideoMedium => 'Mittel';
+
+  @override
+  String get intercomOptionVideoHigh => 'Hoch';
+
+  @override
+  String get intercomVideoSection => 'Video';
+
+  @override
+  String get settingIntercomAutoAnswerCameraTitle =>
+      'Mit eingeschalteter Kamera annehmen';
+
+  @override
+  String get settingIntercomAutoAnswerCameraDescription =>
+      'Automatisch angenommene Videoanrufe starten mit eingeschalteter Kamera.';
+
+  @override
   String get settingKioskAllowDrawerTitle =>
       'Menü mit Schnellaktionen erlauben';
 
@@ -14240,6 +14323,14 @@ class UiStringsDe extends UiStrings {
   }
 
   @override
+  String get settingScreensaverWidgetsEnabledTitle =>
+      'Bildschirmschoner-Widgets aktivieren';
+
+  @override
+  String get settingScreensaverWidgetsEnabledDescription =>
+      'Kleine Elemente, die in den Ecken des Bildschirmschoners eingeblendet werden.';
+
+  @override
   String get settingScreensaverWidgetsTitle => 'Widgets';
 
   @override
@@ -14284,6 +14375,9 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get screensaverOverlayWidgetsEmpty => 'Noch keine Widgets vorhanden';
+
+  @override
+  String get screensaverOverlayShow => 'Dieses Widget anzeigen';
 
   @override
   String get screensaverOverlayRemove => 'Widget entfernen';

@@ -263,8 +263,8 @@ class UiStringsUk extends UiStrings {
   String get alarmsPhrase => 'Фраза';
 
   @override
-  String alarmsPhraseHint(String label, String time, String day) {
-    return '$label, $time і $day замінюються на мітку, час і день будильника.';
+  String alarmsPhraseVariables(String variables) {
+    return 'Доступні змінні: $variables';
   }
 
   @override
@@ -539,6 +539,9 @@ class UiStringsUk extends UiStrings {
 
   @override
   String get calendarWidgetWeek => 'Наступні 7 днів';
+
+  @override
+  String get calendarWidgetAllDay => 'Показувати події на весь день';
 
   @override
   String get calendarWidgetDots => 'Кольорові крапки';
@@ -2800,6 +2803,11 @@ class UiStringsUk extends UiStrings {
   String get intercomCalling => 'Виклик…';
 
   @override
+  String intercomAnswersWithCameraIn(String seconds) {
+    return 'Камера ввімкнеться через $seconds с';
+  }
+
+  @override
   String intercomAnswersIn(String seconds) {
     return 'Відповідь через $seconds с';
   }
@@ -2906,6 +2914,37 @@ class UiStringsUk extends UiStrings {
 
   @override
   String get intercomEndCall => 'Завершити виклик';
+
+  @override
+  String get intercomVoiceCall => 'Голосовий виклик';
+
+  @override
+  String get intercomVideoCall => 'Відеовиклик';
+
+  @override
+  String get intercomVoiceOnly => 'Лише голос';
+
+  @override
+  String get intercomVideoAnswer => 'Відео';
+
+  @override
+  String get intercomSwitchCamera => 'Перемкнути камеру';
+
+  @override
+  String get intercomCameraButton => 'Камера';
+
+  @override
+  String get intercomCameraOff => 'Камеру вимкнено';
+
+  @override
+  String get intercomYourCameraOff => 'Вашу камеру вимкнено';
+
+  @override
+  String get intercomVideoReconnecting => 'Відновлення відео…';
+
+  @override
+  String get intercomCameraOffNotice =>
+      'Камеру вимкнено. Цей кіоск може показувати відео, але не надсилати його.';
 
   @override
   String get intercomCallFailed => 'Не вдалося здійснити виклик';
@@ -4739,6 +4778,16 @@ class UiStringsUk extends UiStrings {
 
   @override
   String get overviewSystemUpdate => 'Доступне оновлення системи';
+
+  @override
+  String overviewPluginUpdate(String name) {
+    return 'Доступне оновлення $name';
+  }
+
+  @override
+  String overviewPluginUpdateHelp(String version) {
+    return 'Версія $version готова до перегляду та встановлення.';
+  }
 
   @override
   String overviewSystemImageUpdateHelp(String version) {
@@ -9469,6 +9518,40 @@ class UiStringsUk extends UiStrings {
   String get intercomTalkSection => 'Розмова';
 
   @override
+  String get settingIntercomVideoTitle => 'Відеовиклики';
+
+  @override
+  String get settingIntercomVideoDescription =>
+      'Надсилає та показує відео під час викликів.';
+
+  @override
+  String get settingIntercomVideoQualityTitle => 'Якість відео';
+
+  @override
+  String get settingIntercomVideoQualityDescription =>
+      'Вища якість використовує більше ресурсів процесора.';
+
+  @override
+  String get intercomOptionVideoLow => 'Низька';
+
+  @override
+  String get intercomOptionVideoMedium => 'Середня';
+
+  @override
+  String get intercomOptionVideoHigh => 'Висока';
+
+  @override
+  String get intercomVideoSection => 'Відео';
+
+  @override
+  String get settingIntercomAutoAnswerCameraTitle =>
+      'Відповідати з увімкненою камерою';
+
+  @override
+  String get settingIntercomAutoAnswerCameraDescription =>
+      'Відеовиклики з автоматичною відповіддю відкриваються з увімкненою камерою.';
+
+  @override
   String get settingKioskAllowDrawerTitle => 'Дозволити меню зі швидкими діями';
 
   @override
@@ -14089,6 +14172,14 @@ class UiStringsUk extends UiStrings {
   }
 
   @override
+  String get settingScreensaverWidgetsEnabledTitle =>
+      'Увімкнути віджети заставки';
+
+  @override
+  String get settingScreensaverWidgetsEnabledDescription =>
+      'Невеликі накладення в кутах заставки.';
+
+  @override
   String get settingScreensaverWidgetsTitle => 'Віджети';
 
   @override
@@ -14135,6 +14226,9 @@ class UiStringsUk extends UiStrings {
 
   @override
   String get screensaverOverlayWidgetsEmpty => 'Віджетів ще немає';
+
+  @override
+  String get screensaverOverlayShow => 'Показувати цей віджет';
 
   @override
   String get screensaverOverlayRemove => 'Видалити віджет';

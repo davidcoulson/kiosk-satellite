@@ -1063,6 +1063,7 @@ void main() {
         'screensaver_brightness',
         'screensaver',
         'screensaver_schedule',
+        'screensaver_widgets',
         'hold_mode',
         'dashboard_rotation',
         'camera_enabled',
@@ -1347,6 +1348,13 @@ void main() {
       lines,
       contains('settings: set screensaver.enabled = false [esphome]'),
     );
+  });
+
+  test('the widgets switch turns screensaver widgets on and off', () async {
+    await surface.handleCommand('screensaver_widgets', false);
+    expect(settings.get(defs.screensaverWidgetsEnabled), isFalse);
+    await surface.handleCommand('screensaver_widgets', true);
+    expect(settings.get(defs.screensaverWidgetsEnabled), isTrue);
   });
 
   test('the schedule switch turns scheduled screensavers on and off', () async {

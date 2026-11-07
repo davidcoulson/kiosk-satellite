@@ -263,8 +263,8 @@ class UiStringsEn extends UiStrings {
   String get alarmsPhrase => 'Phrase';
 
   @override
-  String alarmsPhraseHint(String label, String time, String day) {
-    return '$label, $time and $day become the alarm\'s label, time and day.';
+  String alarmsPhraseVariables(String variables) {
+    return 'Available variables: $variables';
   }
 
   @override
@@ -537,6 +537,9 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get calendarWidgetWeek => 'Next 7 days';
+
+  @override
+  String get calendarWidgetAllDay => 'Show all-day events';
 
   @override
   String get calendarWidgetDots => 'Colored dots';
@@ -2792,6 +2795,11 @@ class UiStringsEn extends UiStrings {
   String get intercomCalling => 'Calling…';
 
   @override
+  String intercomAnswersWithCameraIn(String seconds) {
+    return 'Camera on in $seconds s';
+  }
+
+  @override
   String intercomAnswersIn(String seconds) {
     return 'Answers in $seconds s';
   }
@@ -2896,6 +2904,37 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get intercomEndCall => 'End call';
+
+  @override
+  String get intercomVoiceCall => 'Voice call';
+
+  @override
+  String get intercomVideoCall => 'Video call';
+
+  @override
+  String get intercomVoiceOnly => 'Voice only';
+
+  @override
+  String get intercomVideoAnswer => 'Video';
+
+  @override
+  String get intercomSwitchCamera => 'Switch camera';
+
+  @override
+  String get intercomCameraButton => 'Camera';
+
+  @override
+  String get intercomCameraOff => 'Camera off';
+
+  @override
+  String get intercomYourCameraOff => 'Your camera is off';
+
+  @override
+  String get intercomVideoReconnecting => 'Video reconnecting…';
+
+  @override
+  String get intercomCameraOffNotice =>
+      'The camera is off. This kiosk can show video but not send it.';
 
   @override
   String get intercomCallFailed => 'Could not call';
@@ -4711,6 +4750,16 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get overviewSystemUpdate => 'System update available';
+
+  @override
+  String overviewPluginUpdate(String name) {
+    return '$name update available';
+  }
+
+  @override
+  String overviewPluginUpdateHelp(String version) {
+    return 'Version $version is ready to review and install.';
+  }
 
   @override
   String overviewSystemImageUpdateHelp(String version) {
@@ -9386,6 +9435,38 @@ class UiStringsEn extends UiStrings {
   String get intercomTalkSection => 'Talk';
 
   @override
+  String get settingIntercomVideoTitle => 'Video calls';
+
+  @override
+  String get settingIntercomVideoDescription => 'Send and show video in calls.';
+
+  @override
+  String get settingIntercomVideoQualityTitle => 'Video quality';
+
+  @override
+  String get settingIntercomVideoQualityDescription =>
+      'Higher quality uses more CPU.';
+
+  @override
+  String get intercomOptionVideoLow => 'Low';
+
+  @override
+  String get intercomOptionVideoMedium => 'Medium';
+
+  @override
+  String get intercomOptionVideoHigh => 'High';
+
+  @override
+  String get intercomVideoSection => 'Video';
+
+  @override
+  String get settingIntercomAutoAnswerCameraTitle => 'Answer with camera on';
+
+  @override
+  String get settingIntercomAutoAnswerCameraDescription =>
+      'Video calls answered automatically open with the camera on.';
+
+  @override
   String get settingKioskAllowDrawerTitle => 'Allow menu with quick actions';
 
   @override
@@ -13948,6 +14029,14 @@ class UiStringsEn extends UiStrings {
   }
 
   @override
+  String get settingScreensaverWidgetsEnabledTitle =>
+      'Enable screensaver widgets';
+
+  @override
+  String get settingScreensaverWidgetsEnabledDescription =>
+      'Small overlays in the corners of the screensaver.';
+
+  @override
   String get settingScreensaverWidgetsTitle => 'Widgets';
 
   @override
@@ -13991,6 +14080,9 @@ class UiStringsEn extends UiStrings {
 
   @override
   String get screensaverOverlayWidgetsEmpty => 'No widgets yet';
+
+  @override
+  String get screensaverOverlayShow => 'Show this widget';
 
   @override
   String get screensaverOverlayRemove => 'Remove widget';

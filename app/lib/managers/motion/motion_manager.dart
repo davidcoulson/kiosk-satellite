@@ -91,15 +91,24 @@ class MotionManager extends Manager {
   final _rtspAudio = RtspAudio();
   bool _rtspDemand = false;
   bool _streamRtsp = false;
+
+  /// What an intercom call asked of the camera, null with no call sending.
+  Map<String, Object>? _intercomVideo;
+  Map<String, Object>? _streamIntercom;
   bool _disposed = false;
   Future<void> _rtspConfiguration = Future.value();
   Map<String, Object>? _lastRtspConfig;
   String? _rtspTlsError;
   StreamSubscription<TlsIdentityChanged>? _tlsSubscription;
 
+  /// A call sending video takes the stream's place: RTSP stops for as long
+  /// as it lasts, so viewers cannot set the call's quality or watch and
+  /// listen during it. The setting itself never changes, so a crash in the
+  /// middle of a call cannot leave streaming off.
   bool get _rtspEnabled =>
       _settings.get(defs.cameraEnabled) &&
-      _settings.get(defs.cameraRtspEnabled);
+      _settings.get(defs.cameraRtspEnabled) &&
+      _intercomVideo == null;
 
   void _configureRtsp({bool force = false}) {
     final (width, height) = cameraStreamResolution(
@@ -557,6 +566,11 @@ class MotionManager extends Manager {
     // A voice interaction: idle the camera's analysis for its span. The
     // detection comes first (the page suspends wake detection a bridge
     // round trip later), the page's resume ends it.
+    bus.on<IntercomCameraDemand>().listen((e) {
+      _intercomVideo = e.config;
+      _configureRtsp();
+      _sync();
+    });
     bus.on<WakeWordDetected>().listen((_) => _setVoiceTurn(true));
     bus.on<WakeWordStateChanged>().listen((e) => _setVoiceTurn(!e.active));
     // The native side is scoped to the Activity, and a new Activity
@@ -802,6 +816,7 @@ class MotionManager extends Manager {
   bool get _shouldRun =>
       !_scannerHeld &&
       ((_rtspDemand && _rtspEnabled) ||
+          (_intercomVideo != null && _settings.get(defs.cameraEnabled)) ||
           _plugin != null ||
           _sensorEnabled ||
           _wantPalms ||
@@ -822,6 +837,7 @@ class MotionManager extends Manager {
     if (_previewHolding &&
         _camera != null &&
         _streamRtsp == _rtspDemand &&
+        mapEquals(_streamIntercom, _intercomVideo) &&
         _streamPlugin == _plugin) {
       return;
     }
@@ -833,6 +849,7 @@ class MotionManager extends Manager {
             _streamPalms != _wantPalms ||
             _streamPreview != _wantPreview ||
             _streamRtsp != _rtspDemand ||
+            !mapEquals(_streamIntercom, _intercomVideo) ||
             _streamPlugin != _plugin)) {
       log.info(
         name,
@@ -863,7 +880,10 @@ class MotionManager extends Manager {
       // A plugin that asked for a lens gets it for as long as it holds
       // the camera, and every leg rides along on that lens meanwhile.
       final plugin = _plugin;
-      final String camera = plugin?.facing ?? _settings.get(defs.cameraDevice);
+      final String camera =
+          plugin?.facing ??
+          _intercomVideo?['facing'] as String? ??
+          _settings.get(defs.cameraDevice);
       final (snapW, snapH) = snapshotResolution(
         _settings.get(defs.cameraSnapshotResolution),
       );
@@ -883,6 +903,7 @@ class MotionManager extends Manager {
       _streamPalms = palms;
       _streamPreview = preview;
       _streamRtsp = _rtspDemand;
+      _streamIntercom = _intercomVideo;
       _streamPlugin = plugin;
       _boundBlind = !_screenOn;
       log.info(
@@ -911,6 +932,7 @@ class MotionManager extends Manager {
             paused: _voiceTurn,
             preview: preview,
             rtsp: _streamRtsp,
+            intercom: _streamIntercom,
             plugin: plugin == null
                 ? null
                 : (width: plugin.width, height: plugin.height),
@@ -994,6 +1016,9 @@ class MotionManager extends Manager {
                 return;
               }
               log.warn(name, 'camera error: $e');
+              if (_intercomVideo != null) {
+                bus.publish(const IntercomCameraLost());
+              }
               // The plugin hears it and decides whether to open again;
               // the other legs rebind on the backoff.
               _losePlugin('camera_failed');

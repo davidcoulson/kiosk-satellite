@@ -1205,6 +1205,7 @@ void main() {
     late SettingsManager settings;
     late ValueNotifier<String?> view;
     late ValueNotifier<bool> night;
+    late bool shared;
     late bool nowPlaying;
 
     setUp(() async {
@@ -1215,6 +1216,7 @@ void main() {
       view = ValueNotifier(null);
       night = ValueNotifier(false);
       nowPlaying = false;
+      shared = false;
       api = PluginHostApi(
         commands,
         bus,
@@ -1223,6 +1225,7 @@ void main() {
           view: view,
           night: night,
           nowPlaying: () => nowPlaying,
+          nowPlayingShared: () => shared,
           settings: settings,
         ),
       );
@@ -1238,6 +1241,8 @@ void main() {
     const day = {
       'view': 'clock',
       'night': false,
+      'nowPlaying': false,
+      'nowPlayingShared': false,
       'textColor': null,
       'backgroundColor': null,
       'cardColor': null,
@@ -1267,6 +1272,8 @@ void main() {
       expect((await read('getScreensaverAppearance'))['data'], {
         'view': 'clock',
         'night': true,
+        'nowPlaying': false,
+        'nowPlayingShared': false,
         'textColor': 0xFF0A141E,
         'backgroundColor': 0xFF000000,
         'cardColor': null,
@@ -1285,6 +1292,13 @@ void main() {
         ((await read('getScreensaverAppearance'))['data'] as Map)['night'],
         false,
       );
+
+      // Beside a shared player the face stays in sight, Night mode and all.
+      shared = true;
+      final beside = (await read('getScreensaverAppearance'))['data'] as Map;
+      expect(beside['nowPlayingShared'], true);
+      expect(beside['night'], true);
+      expect(beside['textColor'], 0xFF0A141E);
     });
 
     test('tells subscribers when the look changes, once', () async {
@@ -1319,6 +1333,7 @@ void main() {
       await settle();
       expect(sent.single['payload'], {
         ...day,
+        'nowPlaying': true,
         'time': (sent.single['payload'] as Map)['time'],
       });
       sent.clear();
@@ -1347,6 +1362,7 @@ void main() {
           view: ValueNotifier(null),
           night: ValueNotifier(false),
           nowPlaying: () => false,
+          nowPlayingShared: () => false,
           settings: settings,
           setTint: (id, color) {
             if (!showing) return false;

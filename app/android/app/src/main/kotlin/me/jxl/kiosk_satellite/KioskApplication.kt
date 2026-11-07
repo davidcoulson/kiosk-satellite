@@ -72,6 +72,7 @@ class KioskApplication : Application(), CameraXConfig.Provider {
     private lateinit var plugins: me.jxl.kiosk_satellite.plugins.PluginBridge
     private lateinit var fleet: FleetBridge
     private lateinit var intercomAudio: IntercomAudio
+    private lateinit var intercomVideo: IntercomVideo
     private lateinit var realtimeAudio: RealtimeAudio
     private lateinit var mediaSessions: MediaSessionBridge
     private lateinit var airPlay: AirPlayBridge
@@ -125,9 +126,11 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         if (headless) Headless.useSoftwareRenderer()
         val engine = FlutterEngine(
             this,
+            null,
+            SurfaceTeardownJni(),
             if (headless) Headless.engineArgs else RendererGuard.engineArgs(this),
+            true,
         )
-        MainThreadEgl.watch(engine)
         // Plugins before the entrypoint: Dart main() starts the admin server and
         // reads shared_preferences immediately, so shared_preferences,
         // path_provider et al. must already be registered when it runs.
@@ -168,6 +171,7 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         TlsBridge(applicationContext, messenger)
         fleet = FleetBridge(applicationContext, messenger)
         intercomAudio = IntercomAudio(applicationContext, messenger)
+        intercomVideo = IntercomVideo(messenger, engine.renderer)
         realtimeAudio = RealtimeAudio(applicationContext, messenger)
         mediaSessions = MediaSessionBridge(applicationContext, messenger)
         airPlay = AirPlayBridge(applicationContext, messenger)

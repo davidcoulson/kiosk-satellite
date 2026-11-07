@@ -2,6 +2,67 @@
 
 All notable changes to Kiosk Satellite are documented here. Full release notes for each version are available on the [releases page](https://github.com/jxlarrea/kiosk-satellite/releases).
 
+## v2026.11.10 - 2026-11-06
+
+### Added
+- **Plugins can tell when Now Playing is on screen (#1335).** `getScreensaverAppearance` and the `screensaver.appearance` event now include `nowPlaying`, which is true while the player is on screen, including a paused player and a shared layout. `nowPlayingShared` is true while the screensaver stays in sight beside the player. A plugin drawn over the screensaver can now get out of the way of the player. Music playing with no player on screen leaves both false.
+
+### Fixed
+- **Plugins follow Night mode beside a shared player.** `getScreensaverAppearance` and `screensaver.appearance` reported `night` as false under any Now Playing player, even when the Clock screensaver showed its Night mode colors in a shared layout. `night` is now false only when the player fills the screen.
+- **A followed Music Assistant group keeps this device online (#1334).** Selecting a Music Assistant group with this device in it took the device's Sendspin player offline, which left the group with a member that could not play. The Sendspin player now stays online and plays with the group while the floating player and Now Playing follow the group. Selecting any other player still takes it offline.
+- **This device's own Music Assistant player is found on every server (#1334).** A player with a hash id and a different name in Music Assistant was not recognized as this device, so the speaker group menu had nothing to read and the device's own player was offered as a player to follow.
+
+## v2026.11.9 - 2026-11-06
+
+### Added
+- **Plugin update notices (#1324).** Plugin updates are now checked a minute after the app starts and every 12 hours. A plugin with a newer release shows its new version in Plugin Manager and gets a row under **Needs attention** on the remote admin Overview. **Update** opens the usual review. Plugin updates never install automatically.
+
+### Changed
+- **Video calls show more of the picture.** The call buttons now fade out with the kiosk's name 3 seconds after a call connects. Tap the screen to bring them back. They stay on screen while a call rings and while **Hold to talk** is held.
+- **Video calls use a black background.** The area around the picture is now black in every theme.
+- **Crash reports can show a thread leak.** A small number of installs run out of threads and crash in a loop, and the reports could not show why. A report now samples up to 2,048 threads instead of 256 and includes the leading letters of any thread name shared by 8 or more threads. Other names stay grouped as other, and no address or URL in a thread name is sent.
+
+### Fixed
+- **Plugin overlays no longer vanish after a restart with the screen off (#1328).** If a plugin restarted while the screen was off, its overlay could stay at one pixel and disappear with no error until the plugin was restarted again. The same could happen on a lit screen if the restart fell between two frames. Native plugin screensavers had the same problem and could keep showing the view from the stopped plugin. A new plugin session now always builds a new view.
+- **Search no longer leaves a plugin's settings page marked as open.** If you searched in the remote admin from a plugin's page, the plugin was still told its page was open while the results covered it.
+- **Going home keeps a popup hash in the start URL (#1327).** Since 2026.11.8, **Return to home dashboard view** and the screensaver closed a popup named by the start URL, such as a Bubble Card popup, and never opened it. Both now land on the view with its hash, as the **Dashboard** menu entry does. **Last view** in Now Playing and the return from the Home Assistant Dashboard screensaver bring back a popup that was open. A start URL with no hash works as before.
+- **Streamed answers no longer start over after a pause (#1323).** If a conversation agent spoke a short sentence and then ran a tool for more than 8 seconds, the sentence played twice before the answer. The sentence now plays once, right away and in full, and the answer follows when it is ready.
+- **Video calls no longer crash on Android 9 and older.** If the other kiosk's camera turned off or the call ended before the first frame of video arrived, the app crashed. The same could happen with the self view.
+- **A crash on the microphone thread with software echo cancellation.** The app could crash when a sound stopped playing at the exact moment the microphone read the list of active players.
+- **A rare graphics driver crash on OpenGL ES devices (#921).** When a drawing surface was replaced while a dashboard was on screen, a buffer could be created with no graphics context and crash the app on a later frame. Seen on a Meta Portal Go and a Xiaomi Pad 5. The context is now released as soon as the old surface is gone.
+- **Updates no longer leave a Meta Portal without its sensors and mic.** On Android 10 with Kiosk Satellite as the home app, an update could leave the app running with no working light sensor or microphone and with the Kiosk Satellite Service stopped until the next restart. The device's other launcher now shows during a silent update and Kiosk Satellite reopens when the install finishes. If the problem still happens, for example after an install over adb, the app restarts once.
+
+## v2026.11.8 - 2026-11-05
+
+### Added
+- **More variables for spoken alarm phrases (#1309).** A phrase can now use `{name}`, `{hour}`, `{minute}`, `{date}`, `{dayofmonth}`, `{month}` and `{year}`, so a phrase can avoid a time or date that a text to speech engine reads badly. `{name}` is the Home Assistant user the kiosk's token belongs to. `{day}` is still the day of the week, so existing phrases say the same thing. The hint under the Phrase box lists every variable.
+- **Hide all-day events on the Up next widget (#1312).** The widget has a new **Show all-day events** switch, on by default. Turn it off to list only events with a start time, so holidays and other all-day entries do not take up the widget's slots.
+- **Answer video calls automatically with the camera on.** The new **Answer with camera on** switch, off by default, appears under **Answer mode** when **Answer automatically** is picked. A call from a kiosk with its camera on then opens with the camera on, and the countdown says so. Voice calls stay voice only, pressing **Voice only** during the countdown keeps the camera off and Fleet Management never syncs the switch.
+- **Switch camera in a video call.** On a device with a front and a back camera, **Switch camera** now appears under the kiosk's name and call time after a tap on the screen. The next call starts on the camera picked in settings.
+
+### Changed
+- **The README mentions video calls.** The Intercom entry now covers voice and video calls.
+- **Dashboard filtering narrows auto-entities by fixed attributes (#1314).** An include that tests `device_class`, `unit_of_measurement` or `state_class` now limits the entities a view watches, the same way `domain` does. A battery list with `domain: sensor` and `device_class: battery` no longer watches every sensor, and a view with only one of these attributes no longer runs unfiltered. A helper that gets one of these attributes later is picked up on its own.
+
+### Fixed
+- **Proximity detection works on the Lenovo Smart Clock (#1315).** Its sensor reports raw counts that rise as something comes closer, so **Dismiss on proximity** and **Postpone screensaver on proximity** never saw an approach. A clear rise over the resting reading now counts as one, as on the NSPanel Pro.
+- **The Bluetooth proxy recovers from a late scan registration (#1310).** On Android 8.0 to 9, one scan registration that answered after Android's 2 second limit left the proxy relaying nothing until Bluetooth was toggled or the device rebooted. The app also restarted the adapter only once per run. The adapter now restarts if a scan goes silent after a registration failure. On Android 12L and older, a restart that brought advertisements back can repeat after 30 minutes. If registration gets slow on Android 8.0 to 9, scan sessions rotate every 30 minutes instead of every 2 minutes until it speeds up. Devices that register on time keep the 2 minute rotation.
+- **auto-entities filters match the same entities as the card.** With **Filter dashboard updates** on, some auto-entities cards stopped updating because the filter matched rules more narrowly than the card does. An `integration` rule made in the visual editor saves a config entry, which the filter did not recognize. A `label` rule now also matches labels on an entity's device and label names. Every rule now accepts the same globs and regular expressions as the card. A rule value the filter cannot resolve, such as a comparison, leaves the view unfiltered.
+- **A dashboard with a hash in its URL recovers after an outage (#1311).** A reload of a URL with a hash, such as a Bubble Card popup address, did nothing, so the dashboard stayed on Home Assistant's "Unable to connect" screen until the app restarted. The kiosk's outage repair, the Retry button, pull to refresh with cache clearing, **Clear web cache** and a page's own `location.reload()` now all reload the page. A load of the same hash URL from the loadUrl command or an automation is now a reload too, as it already was for a URL with no hash.
+- **Going home closes a popup (#1311).** A dashboard view with a hash in the page's URL no longer counts as the same view when the requested path has no hash. Going home, rotation and the ESPHome view select now close an open popup, such as a Bubble Card popup, without reloading the page.
+
+## v2026.11.7 - 2026-11-05
+
+### Added
+- **Video calls on the intercom.** Intercom calls can now carry video. Press the new video button on the roster to call with your camera on. **Video calls** under **Settings, Intercom** is on by default, and sending also needs **Enable camera**. The person at the other kiosk sees you while the call rings and can answer with **Voice only** or **Video**. A **Camera** button turns the camera on or off during any call. The picture from the other kiosk fills the screen with the controls over it, and the kiosk's name and the call's length hide after 3 seconds until you tap the screen or press a button. Answer automatically, hardware buttons, Home Assistant and the remote admin never turn the camera on. Turn a kiosk during a call and its picture restarts at the new shape. RTSP and ONVIF streaming stop while the camera sends in a call and start again afterward. Video goes straight between the kiosks over the intercom's own key and encryption. A decoder that cannot start is released, so a failed start holds no memory.
+- **Turn screensaver widgets off.** Each widget in the list on the **Widgets** page now has a switch beside its delete button, and **Enable screensaver widgets**, on by default, hides them all at once without changing the list. A new **Screensaver widgets** ESPHome switch does the same from Home Assistant. A widget that is off also frees its corner for the photo metadata overlay. See [Widgets](https://github.com/jxlarrea/kiosk-satellite/blob/main/docs/screensavers.md#widgets).
+
+### Changed
+- **Calling from the roster uses buttons.** Each kiosk on the Call a kiosk screen now has a call button instead of the whole row being the target, so a stray tap no longer starts a call.
+
+### Fixed
+- **Sendspin corrects a drifting clock.** The Sendspin player corrected timing by one audio frame per chunk, about 225 parts per million on FLAC and 830 on PCM. A device whose clock ran further from the server's than that reached the 5 ms limit every few seconds and skipped with a short gap. The correction now grows with the error, up to 16 frames per chunk spread through the chunk, so a drifting device plays without skips and stays in step with its group. Devices with an accurate clock are unchanged (#1300).
+
 ## v2026.11.6 - 2026-11-04
 
 ### Added

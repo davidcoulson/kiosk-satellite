@@ -764,6 +764,10 @@ const settingMessageIds = <String, Map<String, String>>{
     "title": "settingScreensaverCameraMuteTitle",
     "description": "settingScreensaverCameraMuteDescription",
   },
+  "screensaver.widgets_enabled": {
+    "title": "settingScreensaverWidgetsEnabledTitle",
+    "description": "settingScreensaverWidgetsEnabledDescription",
+  },
   "screensaver.widgets": {
     "title": "settingScreensaverWidgetsTitle",
     "description": "settingScreensaverWidgetsDescription",
@@ -1323,6 +1327,10 @@ const settingMessageIds = <String, Map<String, String>>{
   "intercom.answer_mode": {
     "title": "settingIntercomAnswerModeTitle",
     "description": "settingIntercomAnswerModeDescription",
+  },
+  "intercom.auto_answer_camera": {
+    "title": "settingIntercomAutoAnswerCameraTitle",
+    "description": "settingIntercomAutoAnswerCameraDescription",
   },
   "intercom.ring_seconds": {
     "title": "settingIntercomRingSecondsTitle",
@@ -2683,5 +2691,13 @@ const settingMessageIds = <String, Map<String, String>>{
   "library.text_scale": {
     "title": "settingSendspinFullscreenTextScaleTitle",
     "description": "settingLibraryTextScaleDescription",
+  },
+  "intercom.video": {
+    "title": "settingIntercomVideoTitle",
+    "description": "settingIntercomVideoDescription",
+  },
+  "intercom.video_quality": {
+    "title": "settingIntercomVideoQualityTitle",
+    "description": "settingIntercomVideoQualityDescription",
   },
 };

@@ -235,6 +235,7 @@ class AppContainer {
         view: screensaver.activeView,
         night: screensaver.clockNight,
         nowPlaying: () => screensaver.nowPlayingShown,
+        nowPlayingShared: () => screensaver.nowPlayingShared,
         settings: settings,
         setTint: screensaver.setPluginTint,
         clearTint: screensaver.clearPluginTint,
@@ -296,6 +297,12 @@ class AppContainer {
       () => browser.setCovered(
         'now playing',
         covered: screensaver.nowPlayingCovers.value,
+      ),
+    );
+    intercom.videoOnScreen.addListener(
+      () => browser.setCovered(
+        'intercom video',
+        covered: intercom.videoOnScreen.value,
       ),
     );
     voiceRequests = VoiceRequestsManager(bus, commands, log, settings);

@@ -258,8 +258,8 @@ class UiStringsZh extends UiStrings {
   String get alarmsPhrase => '播报内容';
 
   @override
-  String alarmsPhraseHint(String label, String time, String day) {
-    return '$label、$time 和 $day 会替换为闹钟的标签、时间和日期。';
+  String alarmsPhraseVariables(String variables) {
+    return '可用变量：$variables';
   }
 
   @override
@@ -529,6 +529,9 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get calendarWidgetWeek => '未来 7 天';
+
+  @override
+  String get calendarWidgetAllDay => '显示全天日程';
 
   @override
   String get calendarWidgetDots => '彩色圆点';
@@ -2727,6 +2730,11 @@ class UiStringsZh extends UiStrings {
   String get intercomCalling => '正在呼叫…';
 
   @override
+  String intercomAnswersWithCameraIn(String seconds) {
+    return '$seconds 秒后打开摄像头';
+  }
+
+  @override
   String intercomAnswersIn(String seconds) {
     return '将在 $seconds 秒后接听';
   }
@@ -2830,6 +2838,36 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get intercomEndCall => '结束通话';
+
+  @override
+  String get intercomVoiceCall => '语音通话';
+
+  @override
+  String get intercomVideoCall => '视频通话';
+
+  @override
+  String get intercomVoiceOnly => '仅语音';
+
+  @override
+  String get intercomVideoAnswer => '视频';
+
+  @override
+  String get intercomSwitchCamera => '切换摄像头';
+
+  @override
+  String get intercomCameraButton => '摄像头';
+
+  @override
+  String get intercomCameraOff => '摄像头已关闭';
+
+  @override
+  String get intercomYourCameraOff => '你的摄像头已关闭';
+
+  @override
+  String get intercomVideoReconnecting => '正在重新连接视频…';
+
+  @override
+  String get intercomCameraOffNotice => '摄像头已关闭。此 Kiosk 设备可以显示视频，但无法发送。';
 
   @override
   String get intercomCallFailed => '无法呼叫';
@@ -4568,6 +4606,16 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get overviewSystemUpdate => '有可用的系统更新';
+
+  @override
+  String overviewPluginUpdate(String name) {
+    return '$name 有可用更新';
+  }
+
+  @override
+  String overviewPluginUpdateHelp(String version) {
+    return '$version 版已可查看并安装。';
+  }
 
   @override
   String overviewSystemImageUpdateHelp(String version) {
@@ -8990,6 +9038,36 @@ class UiStringsZh extends UiStrings {
   String get intercomTalkSection => '讲话';
 
   @override
+  String get settingIntercomVideoTitle => '视频通话';
+
+  @override
+  String get settingIntercomVideoDescription => '在通话中发送并显示视频。';
+
+  @override
+  String get settingIntercomVideoQualityTitle => '视频质量';
+
+  @override
+  String get settingIntercomVideoQualityDescription => '质量越高，CPU 占用越多。';
+
+  @override
+  String get intercomOptionVideoLow => '低';
+
+  @override
+  String get intercomOptionVideoMedium => '中';
+
+  @override
+  String get intercomOptionVideoHigh => '高';
+
+  @override
+  String get intercomVideoSection => '视频';
+
+  @override
+  String get settingIntercomAutoAnswerCameraTitle => '接听时打开摄像头';
+
+  @override
+  String get settingIntercomAutoAnswerCameraDescription => '自动接听的视频通话会打开摄像头。';
+
+  @override
   String get settingKioskAllowDrawerTitle => '允许带快捷操作的菜单';
 
   @override
@@ -13264,6 +13342,12 @@ class UiStringsZh extends UiStrings {
   }
 
   @override
+  String get settingScreensaverWidgetsEnabledTitle => '启用屏保小组件';
+
+  @override
+  String get settingScreensaverWidgetsEnabledDescription => '屏保角落中的小型叠加内容。';
+
+  @override
   String get settingScreensaverWidgetsTitle => '小组件';
 
   @override
@@ -13305,6 +13389,9 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get screensaverOverlayWidgetsEmpty => '暂无小组件';
+
+  @override
+  String get screensaverOverlayShow => '显示此小组件';
 
   @override
   String get screensaverOverlayRemove => '移除小组件';
@@ -15777,8 +15864,8 @@ class UiStringsZhCn extends UiStringsZh {
   String get alarmsPhrase => '播报内容';
 
   @override
-  String alarmsPhraseHint(String label, String time, String day) {
-    return '$label、$time 和 $day 会替换为闹钟的标签、时间和日期。';
+  String alarmsPhraseVariables(String variables) {
+    return '可用变量：$variables';
   }
 
   @override
@@ -16048,6 +16135,9 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get calendarWidgetWeek => '未来 7 天';
+
+  @override
+  String get calendarWidgetAllDay => '显示全天日程';
 
   @override
   String get calendarWidgetDots => '彩色圆点';
@@ -18246,6 +18336,11 @@ class UiStringsZhCn extends UiStringsZh {
   String get intercomCalling => '正在呼叫…';
 
   @override
+  String intercomAnswersWithCameraIn(String seconds) {
+    return '$seconds 秒后打开摄像头';
+  }
+
+  @override
   String intercomAnswersIn(String seconds) {
     return '将在 $seconds 秒后接听';
   }
@@ -18349,6 +18444,36 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get intercomEndCall => '结束通话';
+
+  @override
+  String get intercomVoiceCall => '语音通话';
+
+  @override
+  String get intercomVideoCall => '视频通话';
+
+  @override
+  String get intercomVoiceOnly => '仅语音';
+
+  @override
+  String get intercomVideoAnswer => '视频';
+
+  @override
+  String get intercomSwitchCamera => '切换摄像头';
+
+  @override
+  String get intercomCameraButton => '摄像头';
+
+  @override
+  String get intercomCameraOff => '摄像头已关闭';
+
+  @override
+  String get intercomYourCameraOff => '你的摄像头已关闭';
+
+  @override
+  String get intercomVideoReconnecting => '正在重新连接视频…';
+
+  @override
+  String get intercomCameraOffNotice => '摄像头已关闭。此 Kiosk 设备可以显示视频，但无法发送。';
 
   @override
   String get intercomCallFailed => '无法呼叫';
@@ -20087,6 +20212,16 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get overviewSystemUpdate => '有可用的系统更新';
+
+  @override
+  String overviewPluginUpdate(String name) {
+    return '$name 有可用更新';
+  }
+
+  @override
+  String overviewPluginUpdateHelp(String version) {
+    return '$version 版已可查看并安装。';
+  }
 
   @override
   String overviewSystemImageUpdateHelp(String version) {
@@ -24509,6 +24644,36 @@ class UiStringsZhCn extends UiStringsZh {
   String get intercomTalkSection => '讲话';
 
   @override
+  String get settingIntercomVideoTitle => '视频通话';
+
+  @override
+  String get settingIntercomVideoDescription => '在通话中发送并显示视频。';
+
+  @override
+  String get settingIntercomVideoQualityTitle => '视频质量';
+
+  @override
+  String get settingIntercomVideoQualityDescription => '质量越高，CPU 占用越多。';
+
+  @override
+  String get intercomOptionVideoLow => '低';
+
+  @override
+  String get intercomOptionVideoMedium => '中';
+
+  @override
+  String get intercomOptionVideoHigh => '高';
+
+  @override
+  String get intercomVideoSection => '视频';
+
+  @override
+  String get settingIntercomAutoAnswerCameraTitle => '接听时打开摄像头';
+
+  @override
+  String get settingIntercomAutoAnswerCameraDescription => '自动接听的视频通话会打开摄像头。';
+
+  @override
   String get settingKioskAllowDrawerTitle => '允许带快捷操作的菜单';
 
   @override
@@ -28783,6 +28948,12 @@ class UiStringsZhCn extends UiStringsZh {
   }
 
   @override
+  String get settingScreensaverWidgetsEnabledTitle => '启用屏保小组件';
+
+  @override
+  String get settingScreensaverWidgetsEnabledDescription => '屏保角落中的小型叠加内容。';
+
+  @override
   String get settingScreensaverWidgetsTitle => '小组件';
 
   @override
@@ -28824,6 +28995,9 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get screensaverOverlayWidgetsEmpty => '暂无小组件';
+
+  @override
+  String get screensaverOverlayShow => '显示此小组件';
 
   @override
   String get screensaverOverlayRemove => '移除小组件';
