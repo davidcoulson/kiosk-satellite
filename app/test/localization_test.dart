@@ -90,7 +90,18 @@ void main() {
   test('every visible setting has messages', () {
     // These two show a {token} in their text, which a settings message
     // cannot carry, so LocalizedSetting picks their messages by key.
-    const byKey = {'voice.timer_named_phrase', 'alarms.phrase'};
+    // Fork-only settings have no catalog entry.
+    const byKey = {
+      'voice.timer_named_phrase',
+      'alarms.phrase',
+      'browser.webview_debugging',
+      'ha.preload_views',
+      'ui.hidden_pages',
+      'ui.collapsed_groups',
+      'proximity.sensor',
+      'proximity.sensor_off_delay',
+      'device.no_battery',
+    };
     for (final setting in allSettings.where(
       (s) => !s.hidden && !byKey.contains(s.key),
     )) {
