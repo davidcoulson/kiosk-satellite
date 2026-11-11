@@ -56,6 +56,8 @@ internal object BluetoothProxyRuntime {
          *  a Visit link on the device page; 0 while that server is off.
          *  The Dart manager decides when there is a page to link to. */
         val webserverPort: Int = 0,
+        /** The filter's known devices near the panel; see AdvertisementFilter.onNear. */
+        val onKnownNear: (String) -> Unit = {},
         /** Where entity commands from Home Assistant land (objectId, value). */
         val onEntityCommand: (String, Any?) -> Unit = { _, _ -> },
         /** Where action calls land (action name, arguments by name, and
@@ -110,6 +112,7 @@ internal object BluetoothProxyRuntime {
         } else {
             null
         }
+        filter?.onNear = config.onKnownNear
         // Keys from Home Assistant, only when the filter names an entity;
         // restored from the last list here, before the scanner hears
         // anything, so a reboot filters with the keys it had.

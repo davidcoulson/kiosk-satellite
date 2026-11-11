@@ -1,5 +1,6 @@
 package me.jxl.kiosk_satellite.btproxy
 
+import java.security.MessageDigest
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 import org.json.JSONArray
@@ -137,7 +138,50 @@ internal class AdvertisementFilter private constructor(
     private val rssiMacAllowlist: Int,
     private val rssiIrk: Int,
     private val rssiServiceUuid: Int,
+    /** A known (IRK) device heard at or above this is "near"; 0 = not tracked. */
+    private val nearRssi: Int = 0,
 ) {
+    /**
+     * Told the ids of the known devices near this panel, sorted and space
+     * separated, each time that set changes ("" when the last one leaves).
+     * An id is the first four bytes of the SHA-256 of the identity key: enough
+     * to tell the household's devices apart, useless for resolving addresses.
+     */
+    @Volatile var onNear: ((String) -> Unit)? = null
+    internal var clock: () -> Long = { System.nanoTime() / 1_000_000 }
+    private val near = HashMap<String, Long>() // id -> when last heard close, ms
+    private var nearSwept = 0L
+
+    private fun noteNear(id: String, rssi: Int) {
+        if (nearRssi == 0) return
+        val entered = synchronized(near) {
+            val known = near.containsKey(id)
+            // In at the limit, kept down to a little under it: a body turning
+            // between phone and panel costs that much and is not leaving.
+            if (rssi >= nearRssi || (known && rssi >= nearRssi - NEAR_SLACK_DB)) near[id] = clock()
+            !known && near.containsKey(id)
+        }
+        if (entered) publishNear()
+    }
+
+    /** Drops whoever has not been heard close for [NEAR_HOLD_MS]. Driven by
+     *  the advertisements themselves, any device's, so it needs no timer. */
+    private fun sweepNear() {
+        if (nearRssi == 0) return
+        val left = synchronized(near) {
+            val now = clock()
+            if (near.isEmpty() || now - nearSwept < 1000) return
+            nearSwept = now
+            near.values.removeAll { now - it > NEAR_HOLD_MS }
+        }
+        if (left) publishNear()
+    }
+
+    private fun publishNear() {
+        val ids = synchronized(near) { near.keys.sorted().joinToString(" ") }
+        onNear?.invoke(ids)
+    }
+
     /** Counters, so the effect is measurable per panel rather than guessed. */
     @Volatile var forwarded: Long = 0L; private set
     @Volatile var dropped: Long = 0L; private set
@@ -216,9 +260,17 @@ internal class AdvertisementFilter private constructor(
          * never goes stale and the memo only needs a bound. Least recently
          * seen goes first.
          */
-        val resolved = object : LinkedHashMap<Long, Boolean>(64, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, Boolean>?) =
+        val resolved = object : LinkedHashMap<Long, Int>(64, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, Int>?) =
                 size > RESOLVED_CACHE_SIZE
+        }
+
+        /** What [onNear] calls each key; see there. */
+        val ids: List<String> by lazy {
+            keys.map { key ->
+                MessageDigest.getInstance("SHA-256").digest(key).take(4)
+                    .joinToString("") { "%02x".format(it) }
+            }
         }
     }
 
@@ -280,6 +332,7 @@ internal class AdvertisementFilter private constructor(
      * data, already length-checked by the caller.
      */
     fun allows(address: Long, addressType: Int, rssi: Int, payload: ByteArray): Boolean {
+        sweepNear()
         val verdict = decide(address, addressType, rssi, payload)
         if (verdict) forwarded++ else dropped++
         return verdict
@@ -307,8 +360,10 @@ internal class AdvertisementFilter private constructor(
         if (category == Category.DEFAULT && keys.keys.isNotEmpty() &&
             isResolvable(address, addressType)
         ) {
-            if (irkMatches(keys, address)) {
+            val who = irkIndex(keys, address)
+            if (who >= 0) {
                 category = Category.IRK
+                noteNear(keys.ids[who], rssi)
             } else {
                 // Probably somebody else's phone or watch -- but not dropped
                 // yet. The payload rules below exist for devices whose
@@ -549,38 +604,41 @@ internal class AdvertisementFilter private constructor(
      * Locked because a Cipher is not safe to share between threads and
      * nothing here promises which thread a scan result arrives on.
      */
-    private fun irkMatches(keys: IrkSet, address: Long): Boolean = synchronized(keys.resolved) {
+    private fun irkIndex(keys: IrkSet, address: Long): Int = synchronized(keys.resolved) {
         keys.resolved[address]?.let { return it }
         val matched = resolves(keys, address)
         keys.resolved[address] = matched
         matched
     }
 
-    private fun resolves(keys: IrkSet, address: Long): Boolean {
-        val ciphers = keys.ciphers ?: return false
+    private fun resolves(keys: IrkSet, address: Long): Int {
+        val ciphers = keys.ciphers ?: return -1
         val plaintext = ByteArray(16)
         plaintext[13] = ((address shr 40) and 0xFF).toByte()
         plaintext[14] = ((address shr 32) and 0xFF).toByte()
         plaintext[15] = ((address shr 24) and 0xFF).toByte()
-        for (cipher in ciphers) {
+        for ((index, cipher) in ciphers.withIndex()) {
             val out = try {
                 cipher.doFinal(plaintext)
             } catch (_: Throwable) {
-                return false
+                return -1
             }
             if ((out[15].toInt() and 0xFF) == (address and 0xFF).toInt() &&
                 (out[14].toInt() and 0xFF) == ((address shr 8) and 0xFF).toInt() &&
                 (out[13].toInt() and 0xFF) == ((address shr 16) and 0xFF).toInt()
             ) {
-                return true
+                return index
             }
         }
-        return false
+        return -1
     }
 
     companion object {
         /** Distinct private addresses remembered; a busy room holds a few dozen. */
         private const val RESOLVED_CACHE_SIZE = 512
+
+        private const val NEAR_SLACK_DB = 8
+        private const val NEAR_HOLD_MS = 10_000L
 
         /** 0000xxxx-0000-1000-8000-00805F9B34FB, the suffix a SIG short
          *  carries when it is advertised in its long form. */
@@ -716,6 +774,7 @@ internal class AdvertisementFilter private constructor(
                 rssiMacAllowlist = root.optInt("rssiMacAllowlist", 0),
                 rssiIrk = root.optInt("rssiIrk", 0),
                 rssiServiceUuid = root.optInt("rssiServiceUuid", 0),
+                nearRssi = root.optInt("nearRssi", 0),
             )
             return if (filter.active) filter else null
         }

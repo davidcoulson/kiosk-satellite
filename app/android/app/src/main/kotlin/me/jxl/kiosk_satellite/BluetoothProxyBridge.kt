@@ -102,6 +102,10 @@ class BluetoothProxyBridge(private val context: Context, messenger: BinaryMessen
                                 },
                                 // Session reader threads land here; the Dart
                                 // side of the channel only exists on main.
+                                // Scan callback threads land here.
+                                onKnownNear = { ids ->
+                                    mainHandler.post { channel.invokeMethod("knownNear", ids) }
+                                },
                                 onEntityCommand = { objectId, value ->
                                     mainHandler.post {
                                         channel.invokeMethod("entityCommand",

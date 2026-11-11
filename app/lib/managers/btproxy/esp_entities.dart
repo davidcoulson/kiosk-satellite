@@ -1407,6 +1407,16 @@ class EspEntitySurface {
       // be compared on one dashboard. Listed only when a filter is
       // configured: with none, every one of them would sit at zero
       // forever and say nothing.
+      // The filter's "nearRssi": ids of the household (IRK) devices within
+      // arm's reach of this panel, pushed as the set changes rather than
+      // polled, for automations that must react while someone stands here.
+      if (_advertisementFilterConfigured)
+        diagnostic(
+          'btproxy_known_near',
+          'Known devices near',
+          icon: 'mdi:account-arrow-left',
+          type: 'text_sensor',
+        ),
       if (_advertisementFilterConfigured) ...[
         // These four start disabled in a new Home Assistant device: they are
         // for tuning a filter, and every reading is a recorder row.
@@ -3134,6 +3144,14 @@ class EspEntitySurface {
     }
   }
 
+  String _knownNear = '';
+
+  /// From the native filter, each time the set of near known devices changes.
+  Future<void> knownNear(String ids) async {
+    _knownNear = ids;
+    await _send('btproxy_known_near', ids);
+  }
+
   Future<void> _send(String objectId, Object? value) async {
     if (_isExcluded(objectId)) return;
     try {
@@ -3915,6 +3933,10 @@ class EspEntitySurface {
           : null;
       if (count is num) await _send('btproxy_nearby', count.toInt());
       await _sendFilterRates();
+      // Also the first state after a start, when nobody has come or gone.
+      if (_advertisementFilterConfigured) {
+        await _send('btproxy_known_near', _knownNear);
+      }
     }
     await _sendVoiceSatellite();
     // Every completed poll IS a sighting.

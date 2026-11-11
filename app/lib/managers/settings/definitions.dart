@@ -11439,7 +11439,8 @@ const btproxyPort = SettingDef<String>(
 ///   "rssiThreshold": -70,
 ///   "rssiMacAllowlist": 0,
 ///   "rssiIrk": 0,
-///   "rssiServiceUuid": -90
+///   "rssiServiceUuid": -90,
+///   "nearRssi": -55
 /// }
 /// ```
 ///

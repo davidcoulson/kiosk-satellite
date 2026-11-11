@@ -327,6 +327,9 @@ class BtProxyManager extends Manager {
         final args = call.arguments as Map;
         await _entities.handleCommand('${args['objectId']}', args['value']);
       }
+      if (call.method == 'knownNear') {
+        await _entities.knownNear('${call.arguments ?? ''}');
+      }
       if (call.method == 'voice' && call.arguments is Map) {
         final args = (call.arguments as Map).cast<String, Object?>();
         onVoice?.call('${args['kind']}', args);

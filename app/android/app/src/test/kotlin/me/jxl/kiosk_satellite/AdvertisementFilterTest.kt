@@ -31,6 +31,28 @@ class AdvertisementFilterTest {
     }
 
     @Test
+    fun `a known device is near from the limit, held a little under it, and gone after silence`() {
+        val f = filter("""{"irks":["$specIrk"],"nearRssi":-55}""")
+        var now = 0L
+        f.clock = { now }
+        val said = mutableListOf<String>()
+        f.onNear = { said.add(it) }
+        f.allows(specRpa, 1, -60, ByteArray(0)) // not close enough to enter
+        assertTrue(said.isEmpty())
+        f.allows(specRpa, 1, -50, ByteArray(0))
+        assertEquals(1, said.size)
+        assertEquals(8, said[0].length)
+        now = 9_000
+        f.allows(specRpa, 1, -60, ByteArray(0)) // inside the slack: still here
+        now = 18_000
+        f.allows(0x112233445566L, 0, -90, ByteArray(0)) // anyone's advert sweeps
+        assertEquals(1, said.size)
+        now = 20_000
+        f.allows(0x112233445566L, 0, -90, ByteArray(0))
+        assertEquals(listOf(said[0], ""), said)
+    }
+
+    @Test
     fun `an RPA resolving to no listed IRK is dropped as somebody else's`() {
         val f = filter("""{"irks":["$specIrk"]}""")
         // Same prand, one bit different in the hash: a real resolution has to
