@@ -2476,9 +2476,27 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(catalogs, 1);
       expect((states.last.value as Map)['brightness'], 0.75);
-      await plugins.setEnabled(false);
+      // An unreachable light stays listed with no state, and ESPHome has no
+      // missing-state frame for lights, so losing and regaining it re-lists.
+      final reachable = light['state'];
+      light.remove('state');
+      await plugins.refresh();
       await Future<void>.delayed(Duration.zero);
       expect(catalogs, 2);
+      expect(states.last.value, isNull);
+      expect(
+        ((await commands.execute('getPluginEntities', const {})).data as List)
+            .single,
+        containsPair('objectId', 'plugin_hello_world__panel'),
+      );
+      light['state'] = reachable;
+      await plugins.refresh();
+      await Future<void>.delayed(Duration.zero);
+      expect(catalogs, 3);
+      expect((states.last.value as Map)['brightness'], 0.75);
+      await plugins.setEnabled(false);
+      await Future<void>.delayed(Duration.zero);
+      expect(catalogs, 4);
       expect(
         (await commands.execute('getPluginEntities', const {})).data,
         isEmpty,

@@ -1846,7 +1846,13 @@ class PluginManager extends Manager implements FleetPluginHost {
             },
     ];
     List<Map<String, Object?>> catalog(List<Map<String, Object?>> entries) => [
-      for (final entry in entries) {...entry}..remove('state'),
+      for (final entry in entries)
+        {
+          ...entry,
+          // ESPHome lights have no missing-state frame, so a light losing its
+          // state re-lists the catalog for Home Assistant to drop the old one.
+          if (entry['type'] == 'light') 'stateless': entry['state'] == null,
+        }..remove('state'),
     ];
     final previousEntities = _entities;
     _entities = nextEntities;

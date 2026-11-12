@@ -636,11 +636,12 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
             override fun removeSwitch(key: String) = removeEntity("switch", key)
             override fun publishSelect(key: String, name: String, options: Array<String>, state: String?) = publishEntity("select", key, name, mapOf("options" to options.toList()), state)
             override fun removeSelect(key: String) = removeEntity("select", key)
-            override fun publishLight(key: String, name: String, effects: Array<String>, state: Map<String, Any>) {
+            override fun publishLight(key: String, name: String, effects: Array<String>, state: Map<String, Any>?) {
                 require("entities" in manifest.capabilities)
                 require(key.matches(Regex("[a-z][a-z0-9_]{0,39}")) && name.length in 1..80)
                 require(effects.size <= 24 && effects.all { it.length in 1..80 } && effects.toSet().size == effects.size)
-                val normalized = PluginLightState.validate(state, effects.toList())
+                // A null state keeps the light listed with no state: Home Assistant shows it unknown.
+                val normalized = state?.let { PluginLightState.validate(it, effects.toList()) }
                 val light = mapOf("key" to key, "name" to name, "effects" to effects.toList(), "state" to normalized)
                 worker.execute { if (alive.get()) {
                     if (lights.size < 4 || lights.containsKey(key)) {

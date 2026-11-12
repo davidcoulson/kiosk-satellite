@@ -184,7 +184,12 @@ public interface PluginHost {
      * field, as for setSettingChoices.
      */
     default void setSettingChoicesEnabled(String key, boolean enabled) { throw new UnsupportedOperationException("Turning choices off is unavailable"); }
-    /** SDK 1. Register or update an RGB light. Commands arrive as light.<key>. */
+    /**
+     * SDK 1. Register or update an RGB light. Commands arrive as light.<key>.
+     * A null state keeps the light listed with no state, which Home Assistant
+     * shows as unknown, for a light that is there but cannot be reached right
+     * now. Hosts before this change throw on a null state.
+     */
     default void publishLight(String key, String name, String[] effects, Map<String, Object> state) { throw new UnsupportedOperationException("SDK 1 required"); }
     default void removeLight(String key) { throw new UnsupportedOperationException("SDK 1 required"); }
     /** SDK 1, entities. Numeric state or null for unknown. Metadata: unit, deviceClass, stateClass, accuracyDecimals. */
