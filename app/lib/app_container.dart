@@ -483,6 +483,9 @@ class AppContainer {
     glance,
     sound,
     voiceTimers,
+    // Without voiceTimers nothing would show or ring a shared timer, so an
+    // agent must not accept one and report it delivered.
+    sharedTimers,
     voice,
     notifications,
     intercom,

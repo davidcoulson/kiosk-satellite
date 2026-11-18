@@ -2901,13 +2901,25 @@ Future<bool> _webResourceAllowed(
 /// Android asks about the HTML5 Geolocation API here, not through
 /// onPermissionRequest, and an unanswered request is refused (issue #1383).
 /// Allowed with Enable geolocation access on and the Location grant held,
-/// for the page and for the frames it hands the feature to with
-/// allow="geolocation". Never retained: Chromium would keep the origin's
+/// to the configured origins only: a frame handed the feature with
+/// allow="geolocation" gets it only if it is one of them. Never retained: Chromium would keep the origin's
 /// grant after the setting is turned off.
 Future<GeolocationPermissionShowPromptResponse> _webGeolocationResponse(
   AppContainer c,
   String origin,
 ) async {
+  // The same gate as _webPermissionResponse: only an origin the kiosk
+  // trusts gets the panel's location, not a page opened in the overlay.
+  final trusted = c.jsApi.isTrustedOrigin;
+  final uri = Uri.tryParse(origin);
+  if (trusted != null && (uri == null || !trusted(uri))) {
+    c.log.warn('kiosk', 'refused geolocation to $origin');
+    return GeolocationPermissionShowPromptResponse(
+      origin: origin,
+      allow: false,
+      retain: false,
+    );
+  }
   final allow =
       c.settings.get(defs.webGeolocation) &&
       await ensureOsPermission(Permission.location);

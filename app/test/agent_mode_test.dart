@@ -57,6 +57,7 @@ void main() {
       c.dlna,
       c.intercom,
       c.alarms,
+      c.sharedTimers,
     ]) {
       expect(c.managersForTest, isNot(contains(skipped)));
     }
