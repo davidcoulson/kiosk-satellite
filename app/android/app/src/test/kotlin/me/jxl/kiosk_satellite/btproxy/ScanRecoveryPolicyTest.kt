@@ -26,6 +26,13 @@ class ScanRecoveryPolicyTest {
     }
 
     @Test
+    fun rootRestartsTheAdapterAfter12L() {
+        val policy = ScanRecoveryPolicy(34, rootRestart = true)
+        assertFalse(policy.shouldRestartAfterFailures(2, 0))
+        assertTrue(policy.shouldRestartAfterFailures(3, 0))
+    }
+
+    @Test
     fun restartThatWorkedCanRepeatAfterTheCooldown() {
         for (sdk in listOf(27, 30)) {
             val policy = ScanRecoveryPolicy(sdk)

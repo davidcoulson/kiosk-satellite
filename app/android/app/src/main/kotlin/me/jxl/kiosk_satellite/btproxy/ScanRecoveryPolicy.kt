@@ -18,7 +18,11 @@ package me.jxl.kiosk_satellite.btproxy
  * Stopping the scan removes only the first match, so an entry always stays
  * behind. Only an adapter restart clears the map. Android 10 fixed the call.
  */
-internal class ScanRecoveryPolicy(private val sdkInt: Int) {
+internal class ScanRecoveryPolicy(
+    private val sdkInt: Int,
+    /** A su binary exists, so the engine can restart the adapter past 12L. */
+    private val rootRestart: Boolean = false,
+) {
     private companion object {
         /** Android 8.0 to 9, the releases with the unregisterClient bug. */
         val STALE_SCANNER_SDKS = 26..28
@@ -103,7 +107,7 @@ internal class ScanRecoveryPolicy(private val sdkInt: Int) {
         !registrationSlow || nowMs - lastStartAt >= SLOW_ROTATION_MS
 
     private fun restartAllowed(nowMs: Long): Boolean {
-        if (sdkInt > MAX_ADAPTER_RESTART_SDK) return false
+        if (sdkInt > MAX_ADAPTER_RESTART_SDK && !rootRestart) return false
         val last = lastRestartAt ?: return true
         val elapsed = nowMs - last
         // A restart that brought nothing back will not help on a loop,

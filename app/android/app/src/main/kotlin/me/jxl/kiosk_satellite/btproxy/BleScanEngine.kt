@@ -131,6 +131,7 @@ internal class BleScanEngine(
          */
         const val ROTATION_MS = 120_000L
         const val ADAPTER_OFF_MS = 4_000L
+        val SU_PATHS = listOf("/system/xbin/su", "/system/bin/su", "/sbin/su")
         const val ADAPTER_RESTART_RESUME_MS = 15_000L
         val FAILURE_BACKOFF_MS = longArrayOf(5_000, 15_000, 60_000, 300_000)
 
@@ -230,7 +231,8 @@ internal class BleScanEngine(
     private var screenOffFilters = screenOffScan
     // Adapter restarts and rotation pace after registration trouble. Used
     // on the handler thread, except for the awaitingResults peek.
-    private val recovery = ScanRecoveryPolicy(Build.VERSION.SDK_INT)
+    private val suPath = SU_PATHS.firstOrNull { java.io.File(it).exists() }
+    private val recovery = ScanRecoveryPolicy(Build.VERSION.SDK_INT, rootRestart = suPath != null)
 
     val isScanning: Boolean get() = scanning
 
@@ -660,6 +662,23 @@ internal class BleScanEngine(
     @SuppressLint("MissingPermission")
     private fun restartAdapter(now: Long) {
         recovery.recordAdapterRestart(now)
+        // 13+ ignores disable() from an app. A process killed mid-scan
+        // (adb install, crash) leaves its scanner registered on some stacks,
+        // and at 32 every registration fails; only an adapter restart frees
+        // them, so a rooted panel does it as root.
+        val su = suPath
+        if (Build.VERSION.SDK_INT > 32 && su != null) {
+            Thread({
+                val ok = runCatching {
+                    ProcessBuilder(su, "-c",
+                        "cmd bluetooth_manager disable && sleep 4 && cmd bluetooth_manager enable")
+                        .redirectErrorStream(true).start()
+                        .apply { inputStream.readBytes() }.waitFor() == 0
+                }.getOrDefault(false)
+                handler.post { note(if (ok) "adapter restarted as root" else "root adapter restart failed") }
+            }, "bt-root-restart").apply { isDaemon = true; start() }
+            return
+        }
         @Suppress("DEPRECATION")
         runCatching { adapter?.disable() }
         handler.postDelayed({
