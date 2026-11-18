@@ -390,12 +390,11 @@ internal class BleScanEngine(
             // signal, and it is not rare: on a panel here half the relayed
             // devices reported it. Comparing it numerically lets exactly
             // the devices whose distance cannot be established sail past a
-            // floor that exists to establish distance, so an unknown
-            // reading is dropped with the weak ones whenever a floor is
-            // set. With no floor, nothing is dropped and 127 relays as
-            // before.
-            if (minAdvertiseRssi != 0 &&
-                (result.rssi == RSSI_UNAVAILABLE || result.rssi < minAdvertiseRssi)
+            // floor that exists to establish distance. It is dropped even
+            // with no floor: relayed, Home Assistant takes it as +127 dBm,
+            // and Bermuda turns that into a 0 m distance to this panel.
+            if (result.rssi == RSSI_UNAVAILABLE ||
+                (minAdvertiseRssi != 0 && result.rssi < minAdvertiseRssi)
             ) {
                 return
             }
