@@ -110,7 +110,7 @@ export function updatePluginReadings(container, readings, title = pluginText('Re
     const value = formatted.value;
     // From the formatter, not the reading: a rescaled figure carries the
     // unit it was rescaled into, and the two must not drift apart.
-    const unit = reading.type === 'sensor' && reading.state != null ? formatted.unit : '';
+    const unit = (reading.type === 'sensor' || reading.type === 'number') && reading.state != null ? formatted.unit : '';
     row.classList.toggle('multiline', value.includes('\n'));
     const label = row.querySelector('dt');
     if (label.textContent !== reading.name) label.textContent = reading.name;

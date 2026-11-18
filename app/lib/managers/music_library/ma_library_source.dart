@@ -43,6 +43,7 @@ class MaLibrarySource extends LibrarySource {
     'artists': LibraryKind.artist,
     'albums': LibraryKind.album,
     'tracks': LibraryKind.track,
+    'genres': LibraryKind.genre,
     'playlists': LibraryKind.playlist,
     'radios': LibraryKind.radio,
     'podcasts': LibraryKind.podcast,
@@ -77,6 +78,33 @@ class MaLibrarySource extends LibrarySource {
   List<LibraryCategory> get categories => [
     for (final e in _lists.entries) LibraryCategory(e.key, e.value),
   ];
+
+  /// Genres only where the library has music under one: a server from
+  /// before genres has no such list.
+  @override
+  Future<List<LibraryCategory>> availableCategories() async {
+    final genres = await (_hasGenres ??= _probeGenres());
+    return [
+      for (final c in categories)
+        if (genres || c.kind != LibraryKind.genre) c,
+    ];
+  }
+
+  Future<bool>? _hasGenres;
+
+  Future<bool> _probeGenres() async {
+    try {
+      final one = await _list('music/genres/library_items', {
+        'hide_empty': true,
+        'limit': 1,
+      });
+      return one.isNotEmpty;
+    } on Object {
+      // Asked again on the next open, once the server answers.
+      _hasGenres = null;
+      return false;
+    }
+  }
 
   /// This device's own player is a Music Assistant player too.
   @override
@@ -356,6 +384,8 @@ class MaLibrarySource extends LibrarySource {
       },
       if (favorites) 'favorite': true,
       if (albumArtists && category.key == 'artists') 'album_artists_only': true,
+      // The genres with music under them, as Browse by genre lists them.
+      if (category.key == 'genres') 'hide_empty': true,
     });
     return LibraryPage(items: _items(rows), more: rows.length >= pageSize);
   }
@@ -431,6 +461,64 @@ class MaLibrarySource extends LibrarySource {
     };
   }
 
+  /// An artist's albums. Music Assistant lists only the saved albums of an
+  /// artist in the library, so the albums of each provider the artist is
+  /// mapped to follow them, the ones not saved yet.
+  Future<List<LibraryItem>> _artistAlbums(LibraryItem item) async {
+    final saved = _items(
+      await _call('music/artists/artist_albums', _ref(item)),
+    );
+    final raw = item.raw as Map? ?? const {};
+    if ('${raw['provider'] ?? ''}' != 'library') return saved;
+    var mappings = raw['provider_mappings'];
+    if (mappings is! List) {
+      try {
+        final full = await _call('music/artists/get', _ref(item));
+        mappings = full is Map ? full['provider_mappings'] : null;
+      } on LibraryError {
+        mappings = null;
+      }
+    }
+    final sources = <String, String>{};
+    for (final m in (mappings as List? ?? const []).whereType<Map>()) {
+      final instance = '${m['provider_instance'] ?? ''}';
+      final id = '${m['item_id'] ?? ''}';
+      if (instance.isEmpty || instance == 'library' || id.isEmpty) continue;
+      if (m['available'] == false) continue;
+      sources.putIfAbsent(instance, () => id);
+    }
+    if (sources.isEmpty) return saved;
+    final listed = await Future.wait([
+      for (final MapEntry(key: instance, value: id) in sources.entries)
+        _call('music/artists/artist_albums', {
+          'item_id': id,
+          'provider_instance_id_or_domain': instance,
+        }).then(_items, onError: (Object _) => const <LibraryItem>[]),
+    ]);
+    final seen = <String>{};
+    for (final album in saved) {
+      final raw = album.raw as Map? ?? const {};
+      seen.add(_albumKey(raw));
+      for (final m
+          in (raw['provider_mappings'] as List? ?? const []).whereType<Map>()) {
+        seen.add('${m['provider_instance'] ?? ''}/${m['item_id'] ?? ''}');
+      }
+    }
+    final more = <LibraryItem>[];
+    for (final album in listed.expand((albums) => albums)) {
+      final raw = album.raw as Map? ?? const {};
+      final ref = '${raw['provider'] ?? ''}/${raw['item_id'] ?? ''}';
+      if (seen.contains(ref) || !seen.add(_albumKey(raw))) continue;
+      seen.add(ref);
+      more.add(album);
+    }
+    return [...saved, ...more];
+  }
+
+  /// An album's name and version, the same release across providers.
+  static String _albumKey(Map raw) =>
+      '${raw['name'] ?? ''}\u0000${raw['version'] ?? ''}'.toLowerCase();
+
   @override
   Future<LibraryDetail> open(LibraryItem item) async {
     final raw = item.raw as Map? ?? const {};
@@ -461,9 +549,9 @@ class MaLibrarySource extends LibrarySource {
       case LibraryKind.artist:
         final results = await Future.wait([
           _call('music/artists/artist_tracks', _ref(item)),
-          _call('music/artists/artist_albums', _ref(item)),
+          _artistAlbums(item),
         ]);
-        final albums = _items(results[1]);
+        final albums = results[1] as List<LibraryItem>;
         return LibraryDetail(
           item: item,
           tracks: _items(results[0]).take(10).toList(),

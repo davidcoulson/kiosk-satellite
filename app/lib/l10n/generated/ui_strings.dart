@@ -446,6 +446,12 @@ abstract class UiStrings {
   /// **'Alarm at {time}'**
   String alarmsAt(String time);
 
+  /// Button under the screensaver clock shortly before an alarm. Skips that one ring. {time} is a clock time.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip {time} alarm'**
+  String alarmsSkipAlarm(String time);
+
   /// Screensaver corner widget that shows the next alarm.
   ///
   /// In en, this message translates to:
@@ -3957,6 +3963,12 @@ abstract class UiStrings {
   /// **'Open the alarm list'**
   String get gestureOpenAlarmList;
 
+  /// Gesture action that opens the full screen timers view.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the timers'**
+  String get gestureOpenTimers;
+
   /// Gesture action that opens the alarm that rings next on its details page.
   ///
   /// In en, this message translates to:
@@ -5697,6 +5709,12 @@ abstract class UiStrings {
   /// **'Tracks'**
   String get libraryTracks;
 
+  /// Library list of a Music Assistant library's genres, under Tracks.
+  ///
+  /// In en, this message translates to:
+  /// **'Genres'**
+  String get libraryGenres;
+
   /// Library list and search filter.
   ///
   /// In en, this message translates to:
@@ -6852,6 +6870,18 @@ abstract class UiStrings {
   /// Visible label, help or status in this section.
   ///
   /// In en, this message translates to:
+  /// **'Dashboard link'**
+  String get pluginDashboardLink;
+
+  /// Visible label, help or status in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Point a dashboard button\'s tap action at this link.'**
+  String get pluginDashboardLinkHint;
+
+  /// Visible label, help or status in this section.
+  ///
+  /// In en, this message translates to:
   /// **'Plugin'**
   String get pluginPlugin;
 
@@ -7035,6 +7065,12 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Drag to reorder'**
   String get pluginDragToReorder;
+
+  /// Button in the row editor of a plugin list setting that turns the open row into a new row holding a copy of it. Save then adds the copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get pluginDuplicate;
 
   /// Button that keeps the changes to a nested row and returns to the row that holds it, in the row editor of a plugin list setting.
   ///
@@ -7329,6 +7365,12 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Not listed in Community Plugins'**
   String get pluginNotListedChip;
+
+  /// Heading in the update review above the notes the plugin's author wrote for the new version. Shown in capitals.
+  ///
+  /// In en, this message translates to:
+  /// **'Release notes'**
+  String get pluginReleaseNotes;
 
   /// Visible label, help or status in this section.
   ///
@@ -9154,6 +9196,18 @@ abstract class UiStrings {
   /// **'How long the screen takes to brighten before a sunrise alarm.'**
   String get settingAlarmsSunriseMinutesDescription;
 
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip button'**
+  String get settingAlarmsSkipMinutesTitle;
+
+  /// Setting description.
+  ///
+  /// In en, this message translates to:
+  /// **'How long before an alarm the Clock and Weather Mood screensavers show a button to skip it.'**
+  String get settingAlarmsSkipMinutesDescription;
+
   /// Setting option: a length in minutes.
   ///
   /// In en, this message translates to:
@@ -9189,6 +9243,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'30 minutes'**
   String get alarmsOption30Minutes;
+
+  /// Setting option: a length in minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'60 minutes'**
+  String get alarmsOption60Minutes;
+
+  /// Setting option: the Skip button never shows.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get alarmsOptionOff;
 
   /// Settings category name.
   ///
@@ -9439,8 +9505,8 @@ abstract class UiStrings {
   /// Setting description.
   ///
   /// In en, this message translates to:
-  /// **'Returns to the dashboard after no touch for this long.'**
-  String get settingCalendarIdleCloseMinutesDescription;
+  /// **'Returns to the dashboard after no touch for this long. In the Compass layout, Return to center applies instead.'**
+  String get settingIdleCloseCompassDescription;
 
   /// Setting label.
   ///
@@ -10663,8 +10729,8 @@ abstract class UiStrings {
   /// Help below this setting.
   ///
   /// In en, this message translates to:
-  /// **'Close an opened camera view on its own; 0 keeps it up. The camera screensaver is unaffected.'**
-  String get settingCameraAutoDismissSecondsDescription;
+  /// **'Closes an opened camera view after this long. 0 keeps it open. The camera screensaver is unaffected. In the Compass layout, Return to center applies instead.'**
+  String get settingCameraAutoDismissCompassDescription;
 
   /// Label or guidance in this section.
   ///
@@ -10929,6 +10995,30 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Could not load cameras.'**
   String get cameraStreamsLoadFailed;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete unused cameras'**
+  String get cameraStreamsDeleteUnused;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete unused cameras?'**
+  String get cameraStreamsDeleteUnusedConfirm;
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} camera is not in any view.'**
+  String cameraStreamsOneUnusedCamera(String count);
+
+  /// Label or guidance in this section.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} cameras are not in any view.'**
+  String cameraStreamsManyUnusedCameras(String count);
 
   /// Label or guidance in this section.
   ///
@@ -14156,6 +14246,18 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
+  /// **'Use the device MAC address for Bluetooth'**
+  String get settingBtproxyDeviceMacTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets integrations like Bermuda link this proxy to its device. Changes the proxy\'s address in Home Assistant.'**
+  String get settingBtproxyDeviceMacDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
   /// **'Allow device connections'**
   String get settingBtproxyConnectionsTitle;
 
@@ -15041,6 +15143,42 @@ abstract class UiStrings {
   /// **'A mapped key runs its action whatever app is in front, and does nothing else.'**
   String get gestureRemoteKeysHelp;
 
+  /// Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Ground Control'**
+  String get settingGroundControlEnabledTitle;
+
+  /// Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to Kiosk Satellite Ground Control, which runs Voice Match on a capable machine.'**
+  String get settingGroundControlEnabledDescription;
+
+  /// Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get settingGroundControlAddressTitle;
+
+  /// Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to find Ground Control on the network. Enter one for Ground Control on another network.'**
+  String get settingGroundControlAddressDescription;
+
+  /// Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for Ground Control on the network.'**
+  String get groundControlLooking;
+
+  /// Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground Control app'**
+  String get groundControlApp;
+
   /// Name of the settings page and of the dashboard picker entry that lists a person's own HTML pages hosted in Home Assistant.
   ///
   /// In en, this message translates to:
@@ -15424,6 +15562,12 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Returns to \"{path}\" after the timeout.'**
   String haReturnPath(String path);
+
+  /// Return-to-home subpage destination while Compass navigation is on. Compass is the name of a navigation style and stays as is.
+  ///
+  /// In en, this message translates to:
+  /// **'With Compass navigation, each dashboard view in the layout returns to the view picked for it after the timeout.'**
+  String get haReturnCompass;
 
   /// Setting label.
   ///
@@ -16064,8 +16208,20 @@ abstract class UiStrings {
   /// Help below this setting.
   ///
   /// In en, this message translates to:
-  /// **'Plays at the notification volume.'**
-  String get settingIntercomRingSoundDescription;
+  /// **'Plays at the ring volume.'**
+  String get settingIntercomRingSoundVolumeDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ring volume'**
+  String get settingIntercomRingVolumeTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'How loud a call rings, apart from the media volume.'**
+  String get settingIntercomRingVolumeDescription;
 
   /// Setting label.
   ///
@@ -16544,8 +16700,8 @@ abstract class UiStrings {
   /// Help below this setting.
   ///
   /// In en, this message translates to:
-  /// **'An edge swipe opens the menu without the exit gesture or PIN, limited to the actions selected below.'**
-  String get settingKioskAllowDrawerDescription;
+  /// **'Shows the menu without the exit gesture or PIN, limited to the actions selected below. In Classic navigation an edge swipe opens it. In Compass it is the Quick Controls view.'**
+  String get settingKioskAllowQuickControlsDescription;
 
   /// Setting label.
   ///
@@ -17302,6 +17458,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Disables screen interactions until turned off either from Home Assistant or with the exit gesture.'**
   String get settingLockdownEnabledDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock automatically after'**
+  String get settingLockdownAutoUnlockMinutesTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Turns Lockdown Mode off after this long when it is started from the kiosk menu. Set to 0 to stay locked.'**
+  String get settingLockdownAutoUnlockMinutesDescription;
 
   /// Setting label.
   ///
@@ -18935,6 +19103,378 @@ abstract class UiStrings {
   /// **'Effects'**
   String get settingsLedEffects;
 
+  /// Heading above a group of Settings menu entries. The product name, keep it as is.
+  ///
+  /// In en, this message translates to:
+  /// **'Kiosk Satellite'**
+  String get settingsGroupKioskSatellite;
+
+  /// Settings menu entry for how the kiosk is moved around.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation'**
+  String get settingsMenuNavigation;
+
+  /// Summary under the Navigation entry. Classic and Compass are the two navigation styles.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic or Compass'**
+  String get settingsMenuNavigationSummary;
+
+  /// Heading of the group that picks the navigation style.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation style'**
+  String get navigationStyleSection;
+
+  /// Heading of the group that places views around the center. Compass is the name of the navigation style.
+  ///
+  /// In en, this message translates to:
+  /// **'Compass layout'**
+  String get navigationLayoutSection;
+
+  /// Heading of the Compass settings group.
+  ///
+  /// In en, this message translates to:
+  /// **'Compass options'**
+  String get navigationOptionsSection;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation style'**
+  String get settingNavStyleTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic keeps the drawer menu, pull to refresh and the dashboard carousel. Compass swipes between views laid out in a cross.'**
+  String get settingNavStyleDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Compass layout'**
+  String get settingNavCompassLayoutTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to two views on each side. Add several Home Assistant dashboard views and one of each other kind.'**
+  String get settingNavCompassLayoutViewsDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe animation'**
+  String get settingNavCompassAnimationTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out to show the views around, or slide straight across.'**
+  String get settingNavCompassAnimationDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Show position while swiping'**
+  String get settingNavCompassPositionTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'A small map of where you are.'**
+  String get settingNavCompassPositionDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to center'**
+  String get settingNavCompassReturnMinutesTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to the center view after no touch for this long. Set to 0 to stay on the view.'**
+  String get settingNavCompassReturnMinutesDescription;
+
+  /// Setting label. Opens the Drawer menu items picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu items'**
+  String get settingNavCompassMenuItemsTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'What the Quick Controls view shows. Shared with the drawer menu.'**
+  String get settingNavQuickControlsItemsDescription;
+
+  /// Navigation style option: the drawer menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get navigationClassic;
+
+  /// Navigation style option and feature name: views laid out in a cross you swipe between.
+  ///
+  /// In en, this message translates to:
+  /// **'Compass'**
+  String get navigationCompass;
+
+  /// Swipe animation option.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom'**
+  String get navigationZoom;
+
+  /// Swipe animation option.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide'**
+  String get navigationSlide;
+
+  /// Description on the Classic choice card.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant view with drawer menu.'**
+  String get compassClassicViewHint;
+
+  /// Description on the Compass choice card.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe between views laid out in a cross.'**
+  String get compassCompassHint;
+
+  /// Hint above the layout map.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to two views on each side. Add several Home Assistant dashboard views and one of each other kind. Tap a view to change it, the center one too.'**
+  String get compassLayoutViewsHint;
+
+  /// Note under the Compass options.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull to refresh, the dashboard carousel and the edge swipe that opens the drawer menu are off while Compass is on.'**
+  String get compassOffNote;
+
+  /// Line under a setting that Compass navigation switches off, such as pull to refresh or the dashboard carousel.
+  ///
+  /// In en, this message translates to:
+  /// **'Off while Compass navigation is on.'**
+  String get settingOffUnderCompass;
+
+  /// Name of the view that replaces the drawer menu, at the far end of the left side.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Controls'**
+  String get compassQuickControlsView;
+
+  /// The dashboard the kiosk starts on, as a view in the layout. The product name, keep it as is.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant'**
+  String get compassHomeDashboard;
+
+  /// View name.
+  ///
+  /// In en, this message translates to:
+  /// **'App Launcher'**
+  String get compassAppLauncher;
+
+  /// Label on the view in the middle of the layout.
+  ///
+  /// In en, this message translates to:
+  /// **'Center'**
+  String get compassCenter;
+
+  /// Empty place on the layout map that adds a view.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get compassAddTile;
+
+  /// Row that adds a view to a side.
+  ///
+  /// In en, this message translates to:
+  /// **'Add view'**
+  String get compassAddView;
+
+  /// Button that moves a view closer to the center.
+  ///
+  /// In en, this message translates to:
+  /// **'Move in'**
+  String get compassMoveIn;
+
+  /// Button that moves a view away from the center.
+  ///
+  /// In en, this message translates to:
+  /// **'Move out'**
+  String get compassMoveOut;
+
+  /// Button that swaps a view for another.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get compassReplace;
+
+  /// Button that takes a view out of the layout.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get compassRemove;
+
+  /// Button that picks another center view.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get compassChange;
+
+  /// Side of the layout, above the center.
+  ///
+  /// In en, this message translates to:
+  /// **'Up'**
+  String get compassSideUp;
+
+  /// Side of the layout, right of the center.
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get compassSideRight;
+
+  /// Side of the layout, below the center.
+  ///
+  /// In en, this message translates to:
+  /// **'Down'**
+  String get compassSideDown;
+
+  /// Side of the layout, left of the center.
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get compassSideLeft;
+
+  /// Where the selected view sits.
+  ///
+  /// In en, this message translates to:
+  /// **'{side}, first view'**
+  String compassFirstView(String side);
+
+  /// Where the selected view sits.
+  ///
+  /// In en, this message translates to:
+  /// **'{side}, second view'**
+  String compassSecondView(String side);
+
+  /// Dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a view above'**
+  String get compassAddAbove;
+
+  /// Dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a view below'**
+  String get compassAddBelow;
+
+  /// Dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a view on the left'**
+  String get compassAddLeft;
+
+  /// Dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a view on the right'**
+  String get compassAddRight;
+
+  /// Dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the center view'**
+  String get compassChangeCenter;
+
+  /// Dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace {name}'**
+  String compassReplaceTitle(String name);
+
+  /// View kind in the add dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant dashboard'**
+  String get compassKindDashboard;
+
+  /// Hint under the dashboard choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Any view, Custom Pages and app pages'**
+  String get compassKindDashboardHint;
+
+  /// Hint under a view kind the layout already holds.
+  ///
+  /// In en, this message translates to:
+  /// **'Already placed'**
+  String get compassKindTaken;
+
+  /// Hint under a view kind with nothing to show yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set up on this kiosk'**
+  String get compassKindUnavailable;
+
+  /// Badge in the Quick Controls view header while kiosk mode is on.
+  ///
+  /// In en, this message translates to:
+  /// **'Kiosk locked'**
+  String get compassKioskLocked;
+
+  /// Heading over the switches and one-tap actions in the Quick Controls view.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick controls'**
+  String get compassQuickControls;
+
+  /// Heading over the pages the Quick Controls view opens, such as Calendar or Camera View.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get compassOpen;
+
+  /// State under a switch in the Quick Controls view that is on.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get compassStateOn;
+
+  /// State under a switch in the Quick Controls view that is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get compassStateOff;
+
+  /// Name of the Hold Mode switch in the Quick Controls view. Use the same term as the drawer menu's Turn On Hold Mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold Mode'**
+  String get compassHoldMode;
+
+  /// Kiosk Satellite Ground Control, the companion app that runs Voice Match on a capable machine. A product name: keep Ground Control unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground Control'**
+  String get settingsMenuGroundControl;
+
+  /// Summary under the Ground Control entry. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Match on a capable machine'**
+  String get settingsMenuGroundControlSummary;
+
   /// Setting label.
   ///
   /// In en, this message translates to:
@@ -19130,6 +19670,192 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
+  /// **'Enable adaptive volume'**
+  String get settingAdaptiveVolumeTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Lower the volume as the room gets quieter, using the microphone.'**
+  String get settingAdaptiveVolumeDescription;
+
+  /// Setting label. The switch that makes the Assistant volume follow the room noise. Also the label of its line on the volume curve.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant'**
+  String get settingAdaptiveVolumeAssistantTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice responses and chimes.'**
+  String get settingAdaptiveVolumeAssistantDescription;
+
+  /// Setting label. The switch that makes the Media volume follow the room noise. Also the label of its line on the volume curve.
+  ///
+  /// In en, this message translates to:
+  /// **'Media'**
+  String get settingAdaptiveVolumeMediaTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Music and video. Set when playback starts.'**
+  String get settingAdaptiveVolumeMediaDescription;
+
+  /// Setting label. The switch that makes the Intercom volume follow the room noise. Also the label of its line on the volume curve.
+  ///
+  /// In en, this message translates to:
+  /// **'Intercom'**
+  String get settingAdaptiveVolumeIntercomTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Calls. Set when a call starts.'**
+  String get settingAdaptiveVolumeIntercomDescription;
+
+  /// Setting label and the heading above the curve editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume curve'**
+  String get settingAdaptiveVolumeCurveTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'The volume at each room noise level, as a percentage of that volume\'s slider under Screen & Audio.'**
+  String get settingAdaptiveVolumeCurveSliderDescription;
+
+  /// Name of the settings page.
+  ///
+  /// In en, this message translates to:
+  /// **'Adaptive volume'**
+  String get screenAudioAdaptiveVolume;
+
+  /// Hint under the row that opens the Adaptive volume page.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the room noise with the microphone'**
+  String get screenAudioAdaptiveVolumeHint;
+
+  /// Heading above the switches that pick which volumes follow the room noise.
+  ///
+  /// In en, this message translates to:
+  /// **'Volumes'**
+  String get screenAudioAdaptiveVolumes;
+
+  /// Label of the live room noise reading.
+  ///
+  /// In en, this message translates to:
+  /// **'Room noise'**
+  String get screenAudioRoomNoise;
+
+  /// Help below the live room noise reading.
+  ///
+  /// In en, this message translates to:
+  /// **'What the microphone reads while this device is silent.'**
+  String get screenAudioRoomNoiseNote;
+
+  /// Note under the live room noise reading.
+  ///
+  /// In en, this message translates to:
+  /// **'The reading holds while this device plays. Changes in the room during playback are not used.'**
+  String get screenAudioRoomNoiseHolds;
+
+  /// Note under the room noise reading while there is none: what a reading needs.
+  ///
+  /// In en, this message translates to:
+  /// **'If there is no reading, turn on adaptive volume or wake word detection and check that the microphone is not muted.'**
+  String get screenAudioRoomNoiseNoReading;
+
+  /// A room noise level. dBFS is a unit and stays as it is.
+  ///
+  /// In en, this message translates to:
+  /// **'{level} dBFS'**
+  String screenAudioDbfs(String level);
+
+  /// Hint under the volume curve editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag a point, or tap it to type exact values. The percentages apply to the Assistant, Media and Intercom volume sliders under Screen & Audio: 100% plays at the slider\'s level and 50% plays like the slider set to half.'**
+  String get screenAudioVolumeCurveSliderHint;
+
+  /// Field label in the dialog that edits one point of the volume curve.
+  ///
+  /// In en, this message translates to:
+  /// **'Room noise (dBFS)'**
+  String get screenAudioVolumeCurveNoise;
+
+  /// Field label in the dialog that edits one point of the volume curve.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant (%)'**
+  String get screenAudioVolumeCurveAssistant;
+
+  /// Field label in the dialog that edits one point of the volume curve.
+  ///
+  /// In en, this message translates to:
+  /// **'Media (%)'**
+  String get screenAudioVolumeCurveMedia;
+
+  /// Field label in the dialog that edits one point of the volume curve.
+  ///
+  /// In en, this message translates to:
+  /// **'Intercom (%)'**
+  String get screenAudioVolumeCurveIntercom;
+
+  /// Error under the room noise field when the value is out of range.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a room noise level between {low} and {high} dBFS'**
+  String screenAudioVolumeCurveNoiseRange(String low, String high);
+
+  /// Error under a volume field when the value is out of range.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a volume from {low}% to {high}%'**
+  String screenAudioVolumeCurveLevelRange(String low, String high);
+
+  /// Heading above the rows that play a test announcement at the volume the room noise picks.
+  ///
+  /// In en, this message translates to:
+  /// **'Test volume'**
+  String get screenAudioVolumeTest;
+
+  /// Label of the row whose button plays a test announcement at the Assistant volume.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Assistant volume'**
+  String get screenAudioVolumeTestAssistant;
+
+  /// Help below the Test Assistant volume row.
+  ///
+  /// In en, this message translates to:
+  /// **'Plays a Voice Satellite announcement at the Assistant volume. Needs Voice Satellite set up in Home Assistant.'**
+  String get screenAudioVolumeTestAssistantHint;
+
+  /// Label of the row whose button plays a test announcement at the Media volume.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Media volume'**
+  String get screenAudioVolumeTestMedia;
+
+  /// Help below the Test Media volume row. Announcements is the name of a settings page under ESPHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Plays an ESPHome announcement at the Media volume. Needs Announcements turned on under ESPHome.'**
+  String get screenAudioVolumeTestMediaHint;
+
+  /// The sentence Home Assistant speaks aloud when a volume test button is pressed.
+  ///
+  /// In en, this message translates to:
+  /// **'This is how loud an announcement plays right now.'**
+  String get screenAudioVolumeTestMessage;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
   /// **'Microphone'**
   String get settingAudioMicDeviceTitle;
 
@@ -19168,6 +19894,102 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'{name} (not connected)'**
   String screenAudioDisconnected(String name);
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable equalizer'**
+  String get settingEqualizerEnabledTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Shapes the sound of music, the assistant, chimes and the intercom. Video and dashboard sounds are not equalized.'**
+  String get settingEqualizerEnabledDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'100 Hz'**
+  String get settingEqualizerBand1Title;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Bass. Small speakers distort early with a boost here.'**
+  String get settingEqualizerBand1Description;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'300 Hz'**
+  String get settingEqualizerBand2Title;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Low mids. A cut takes out a boxy or boomy sound.'**
+  String get settingEqualizerBand2Description;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'1 kHz'**
+  String get settingEqualizerBand3Title;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Mids, where most of a voice sits.'**
+  String get settingEqualizerBand3Description;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'3 kHz'**
+  String get settingEqualizerBand4Title;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'High mids. A boost makes speech clearer.'**
+  String get settingEqualizerBand4Description;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'10 kHz'**
+  String get settingEqualizerBand5Title;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Treble.'**
+  String get settingEqualizerBand5Description;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic preamp'**
+  String get settingEqualizerPreampTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Lowers the level by the largest boost so the speaker does not distort and echo cancellation keeps working.'**
+  String get settingEqualizerPreampDescription;
+
+  /// Heading, choice, status or guidance shown in this group.
+  ///
+  /// In en, this message translates to:
+  /// **'Equalizer'**
+  String get screenAudioEqualizer;
+
+  /// Heading, choice, status or guidance shown in this group.
+  ///
+  /// In en, this message translates to:
+  /// **'Bass, mids, treble, preamp'**
+  String get screenAudioEqualizerHint;
 
   /// Setting label.
   ///
@@ -21182,6 +22004,18 @@ abstract class UiStrings {
   /// Setting label.
   ///
   /// In en, this message translates to:
+  /// **'Fade in and out'**
+  String get settingScreensaverFadeTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'The screensaver fades in over the dashboard and fades out when dismissed. Not for the Home Assistant Media, Website or Camera Streams screensavers.'**
+  String get settingScreensaverFadeDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
   /// **'Screensaver mode'**
   String get settingScreensaverModeTitle;
 
@@ -21262,6 +22096,18 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Lift the screensaver dimming while a notification is on screen.'**
   String get settingScreensaverNotificationBrightnessDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Brighten for touch interactions'**
+  String get settingScreensaverTouchBrightnessSecondsTitle;
+
+  /// Help below the setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Lift the screensaver dimming for this long after a touch that does not dismiss it. Set to 0 to turn it off.'**
+  String get settingScreensaverTouchBrightnessSecondsDescription;
 
   /// Setting label.
   ///
@@ -24062,6 +24908,12 @@ abstract class UiStrings {
   /// Weather Mood clock or weather information bar control.
   ///
   /// In en, this message translates to:
+  /// **'Show today\'s high and low when the weather entity has a daily forecast.'**
+  String get screensaverWeatherBarHighLowDescription;
+
+  /// Weather Mood clock or weather information bar control.
+  ///
+  /// In en, this message translates to:
   /// **'Show humidity when the weather entity reports it.'**
   String get screensaverWeatherBarHumidityDescription;
 
@@ -25082,12 +25934,6 @@ abstract class UiStrings {
   /// Chime selection, playback or help shown on the device and in Remote Admin.
   ///
   /// In en, this message translates to:
-  /// **'Wake, done, error, timer and announcement sounds'**
-  String get voiceChimesHint;
-
-  /// Chime selection, playback or help shown on the device and in Remote Admin.
-  ///
-  /// In en, this message translates to:
   /// **'Preview on kiosk'**
   String get voiceChimesPreview;
 
@@ -25210,6 +26056,12 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'A share of the assistant volume.'**
   String get voiceChimeVolumeDescription;
+
+  /// Summary under Chimes: the sounds the page holds.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake, done, error and announcement sounds'**
+  String get voiceChimesSoundsHint;
 
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
@@ -25520,12 +26372,6 @@ abstract class UiStrings {
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
   /// In en, this message translates to:
-  /// **'Pills, alerts, spoken reminders'**
-  String get voiceTimersHint;
-
-  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
-  ///
-  /// In en, this message translates to:
   /// **'Follow-up'**
   String get voiceSectionFollowUp;
 
@@ -25564,6 +26410,12 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'When a timer ends'**
   String get voiceSectionTimerEnds;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared timers'**
+  String get voiceSectionSharedTimers;
 
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
@@ -26618,14 +27470,14 @@ abstract class UiStrings {
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
   /// In en, this message translates to:
-  /// **'Show timer pills'**
-  String get settingVoiceTimerPillsTitle;
+  /// **'Show timers as pills'**
+  String get settingVoiceTimerPillsViewTitle;
 
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
   /// In en, this message translates to:
-  /// **'Running timers float over the screen. Drag them anywhere.'**
-  String get settingVoiceTimerPillsDescription;
+  /// **'Timers float over the screen instead of opening the full screen view.'**
+  String get settingVoiceTimerPillsViewDescription;
 
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
@@ -26722,6 +27574,348 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'{name} is replaced with the timer name.'**
   String settingVoiceTimerNamedPhraseDescription(String name);
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Share timers'**
+  String get settingVoiceTimersShareTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Timers started on this kiosk also run on the kiosks you pick.'**
+  String get settingVoiceTimersShareDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with'**
+  String get settingVoiceTimersShareWithTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The kiosks that show and ring the timers of this one.'**
+  String get settingVoiceTimersShareWithDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Show shared timers'**
+  String get settingVoiceTimersReceiveTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Timers shared by other kiosks show and ring here.'**
+  String get settingVoiceTimersReceiveDescription;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Timers'**
+  String get settingKioskAllowTimersTitle;
+
+  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the timers view from the kiosk menu.'**
+  String get settingKioskAllowTimersDescription;
+
+  /// Summary under Timers in the settings menu: what the page holds.
+  ///
+  /// In en, this message translates to:
+  /// **'Full screen view, pills, shared timers'**
+  String get settingsMenuTimersSummary;
+
+  /// What stays per kiosk when the Timers category syncs. Share with and Timer sound are setting names.
+  ///
+  /// In en, this message translates to:
+  /// **'the kiosks picked in Share with, the timer sound'**
+  String get fleetTheKiosksPickedInShareWithTheTimerSound;
+
+  /// Description of Text to speech engine on the Timers page. Keep Home Assistant unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The Home Assistant text to speech entity that speaks timers.'**
+  String get settingTimersTtsEngineDescription;
+
+  /// Description of Language on the Timers page.
+  ///
+  /// In en, this message translates to:
+  /// **'The language timers are spoken in.'**
+  String get settingTimersTtsLanguageDescription;
+
+  /// Description of Voice on the Timers page.
+  ///
+  /// In en, this message translates to:
+  /// **'The voice that speaks timers.'**
+  String get settingTimersTtsVoiceDescription;
+
+  /// Slider from 30 seconds to 5 minutes: how long before a timer ends the full screen timers view opens again.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Timers view when near completion'**
+  String get settingTimersShowBeforeEndTitle;
+
+  /// Description of that slider.
+  ///
+  /// In en, this message translates to:
+  /// **'How long before a timer ends the Timers view opens.'**
+  String get settingTimersShowBeforeEndDescription;
+
+  /// Switch: whether starting a timer opens the full screen timers view.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Timers view when a timer starts'**
+  String get settingTimersShowOnStartTitle;
+
+  /// Description of that switch.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the Timers view each time a timer is started.'**
+  String get settingTimersShowOnStartDescription;
+
+  /// Switch: the screensaver does not start while the timers view is open with a running timer. The screensaver is held back, not stopped for good.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause screensaver while a timer runs'**
+  String get settingTimersPauseScreensaverTitle;
+
+  /// Description of that switch.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the screensaver from starting while the Timers view shows a running timer.'**
+  String get settingTimersPauseScreensaverDescription;
+
+  /// Setting label: how long a finished timer rings before its sound stops. Its options are lengths of time or Never.
+  ///
+  /// In en, this message translates to:
+  /// **'Silence after'**
+  String get settingTimersSilenceAfterTitle;
+
+  /// Description of that setting: only the sound stops, the alert stays.
+  ///
+  /// In en, this message translates to:
+  /// **'The finished timer stays on screen until it is dismissed.'**
+  String get settingTimersSilenceAfterDescription;
+
+  /// Setting label: how long a finished timer stays before it is dismissed by itself. Its options are lengths of time or Never.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss after'**
+  String get settingTimersDismissAfterTitle;
+
+  /// Description of that setting. Dismiss is the button on a ringing timer: use the same word as that button.
+  ///
+  /// In en, this message translates to:
+  /// **'Clears a finished timer as if Dismiss was tapped.'**
+  String get settingTimersDismissAfterDescription;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground Control Voice Match'**
+  String get voiceMatchGroundControlPage;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Chosen people ignores the TV, guests and everyone else.'**
+  String get settingVoiceMatchPolicyDescriptionChosen;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Chosen people'**
+  String get voiceMatchOptionPeople;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get settingVoiceMatchPeopleTitle;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Who this kiosk answers. With nobody chosen, it answers anyone enrolled.'**
+  String get settingVoiceMatchPeopleDescription;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone enrolled'**
+  String get voiceMatchPeopleNone;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Search people'**
+  String get voiceMatchPeopleSearch;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is enrolled in Ground Control yet.'**
+  String get voiceMatchPeopleEmpty;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'No longer in Ground Control'**
+  String get voiceMatchPeopleGone;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice not chosen'**
+  String get settingVoiceMatchRejectedTitleChosen;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Who is talking, other voices, enrollment'**
+  String get voiceMatchHint;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Voice Match'**
+  String get settingVoiceMatchEnabledTitle;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer'**
+  String get settingVoiceMatchPolicyTitle;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'What happens when someone else says the wake word.'**
+  String get settingVoiceMatchRejectedDescription;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaker sensor'**
+  String get settingVoiceMatchSpeakerSensorTitle;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds a Speaker sensor to this kiosk in Home Assistant, for automations and agent instructions.'**
+  String get settingVoiceMatchSpeakerSensorDescription;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone'**
+  String get voiceMatchOptionAnyone;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay quiet'**
+  String get voiceMatchOptionQuiet;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Play the error chime'**
+  String get voiceMatchOptionChime;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting'**
+  String get voiceMatchConnecting;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching'**
+  String get voiceMatchSearching;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Not reachable'**
+  String get voiceMatchNotReachable;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in refused'**
+  String get voiceMatchSignInRefused;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is enrolled yet.'**
+  String get voiceMatchNobodyEnrolled;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant refused this kiosk\'s token.'**
+  String get voiceMatchTokenRefused;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Show who is talking'**
+  String get settingVoiceMatchShowSpeakerTitle;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The speaker\'s name before the command on the voice overlay, in their color. On a device with a light ring, the listening arc takes the color.'**
+  String get settingVoiceMatchShowSpeakerDescription;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow enrollment here'**
+  String get settingVoiceMatchAllowEnrollTitle;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'People, enrollment, sessions and settings.'**
+  String get voiceMatchAppHint;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get voiceMatchOpen;
+
+  /// Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize who is talking and stop listening when someone else takes over. Needs Ground Control.'**
+  String get settingVoiceMatchEnabledDescriptionGroundControl;
+
+  /// Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets the Ground Control app record a person\'s voice with this kiosk\'s microphone. The kiosk shows the text to read, or the light ring shows the progress.'**
+  String get settingVoiceMatchAllowEnrollDescriptionGroundControl;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave other voices out'**
+  String get settingVoiceMatchLeaveOutTitle;
+
+  /// Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant and the realtime assistant hear only the person who said the wake word, and the command ends when they stop, even with the TV on.'**
+  String get settingVoiceMatchLeaveOutDescription;
 
   /// Translate the visible label or help. Keep model names and technical identifiers unchanged.
   ///
@@ -27311,12 +28505,6 @@ abstract class UiStrings {
   /// **'The language of Amazon\'s wake word models. The wake word selects offer the wake words it has.'**
   String get settingVoiceAmazonLocaleDescription;
 
-  /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
-  ///
-  /// In en, this message translates to:
-  /// **'Kiosk Satellite\'s language'**
-  String get voiceOptionAppLanguage;
-
   /// Setting label.
   ///
   /// In en, this message translates to:
@@ -27352,6 +28540,48 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Accept untrusted or self-signed certificates. Use only on your own network, since it disables certificate verification.'**
   String get settingIgnoreSslErrorsDescription;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom user agent'**
+  String get settingBrowserUserAgentTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to websites in place of the default user agent. Leave empty to use the default.'**
+  String get settingBrowserUserAgentDescription;
+
+  /// Heading of the group with the switch that lets web pages read the device location through the browser's Geolocation API. HTML5 Geolocation is the name of that browser feature.
+  ///
+  /// In en, this message translates to:
+  /// **'HTML5 Geolocation'**
+  String get webGeolocationSection;
+
+  /// Setting label.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable geolocation access'**
+  String get settingWebGeolocationTitle;
+
+  /// Help below this setting.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets pages read the device location, such as a weather radar or a map. Only pages loaded over HTTPS can ask for it.'**
+  String get settingWebGeolocationDescription;
+
+  /// Line under the Location permission row while the permission is granted and Enable geolocation access is on. Pages are the web pages the kiosk shows.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages can read the device location.'**
+  String get webGeolocationPermissionHeld;
+
+  /// Line under the Location permission row while the permission is missing and Enable geolocation access is on. Pages are the web pages the kiosk shows.
+  ///
+  /// In en, this message translates to:
+  /// **'Without this pages cannot read the device location.'**
+  String get webGeolocationPermissionMissing;
 
   /// Setting label.
   ///
@@ -28475,6 +29705,192 @@ abstract class UiStrings {
   /// **'Pick an MP3, OGG, WAV, FLAC, M4A or AAC file.'**
   String get intercomSoundFormats;
 
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Enrolling {name}'**
+  String voiceMatchEnrollTitle(String name);
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting ready…'**
+  String get voiceMatchEnrollStarting;
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Read this aloud'**
+  String get voiceMatchEnrollReading;
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged. Seconds of speech recorded out of the seconds needed.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} of {target} s'**
+  String voiceMatchEnrollSeconds(String seconds, String target);
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Another voice is talking. That part is left out.'**
+  String get voiceMatchEnrollOtherVoice;
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get voiceMatchEnrollSaving;
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get voiceMatchEnrollStop;
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Walk slowly around the room'**
+  String get voiceMatchEnrollTipWalk;
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn away from the kiosk now and then'**
+  String get voiceMatchEnrollTipTurn;
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk the way you give commands'**
+  String get voiceMatchEnrollTipTalk;
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is enrolled'**
+  String voiceMatchEnrollDone(String name);
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} s of speech added.'**
+  String voiceMatchEnrollDoneDetail(String seconds);
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was saved'**
+  String get voiceMatchEnrollFailed;
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Too little speech to save. Read for at least 10 seconds.'**
+  String get voiceMatchEnrollTooShort;
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection to Voice Match was lost.'**
+  String get voiceMatchEnrollLost;
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The microphone is not available.'**
+  String get voiceMatchEnrollNoMic;
+
+  /// Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped before anything was recorded.'**
+  String get voiceMatchEnrollStopped;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on the kitchen lights.'**
+  String get voiceMatchEnrollPassage1;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a timer for ten minutes.'**
+  String get voiceMatchEnrollPassage2;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'What is the weather like tomorrow?'**
+  String get voiceMatchEnrollPassage3;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'Add milk and eggs to the shopping list.'**
+  String get voiceMatchEnrollPassage4;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'Play some quiet music in the living room.'**
+  String get voiceMatchEnrollPassage5;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'The morning was cold, so we stayed inside and made pancakes.'**
+  String get voiceMatchEnrollPassage6;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'Later we walked to the park and watched the dogs chase each other across the grass.'**
+  String get voiceMatchEnrollPassage7;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'In the evening the wind picked up and we lit a fire.'**
+  String get voiceMatchEnrollPassage8;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off all the lights downstairs.'**
+  String get voiceMatchEnrollPassage9;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'What time is it in Tokyo?'**
+  String get voiceMatchEnrollPassage10;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me to call the dentist on Monday.'**
+  String get voiceMatchEnrollPassage11;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'How long will it take to drive to the airport?'**
+  String get voiceMatchEnrollPassage12;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause the music.'**
+  String get voiceMatchEnrollPassage13;
+
+  /// One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.
+  ///
+  /// In en, this message translates to:
+  /// **'Good night.'**
+  String get voiceMatchEnrollPassage14;
+
   /// Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.
   ///
   /// In en, this message translates to:
@@ -28666,6 +30082,144 @@ abstract class UiStrings {
   /// In en, this message translates to:
   /// **'Tap to dismiss the timer alert.'**
   String get voiceTimerDismissHint;
+
+  /// Name of the full screen timers view: its heading, its kiosk menu entry and its Compass view.
+  ///
+  /// In en, this message translates to:
+  /// **'Timers'**
+  String get voiceTimersViewTitle;
+
+  /// Shown in the timers view when no timer runs.
+  ///
+  /// In en, this message translates to:
+  /// **'No timers'**
+  String get voiceTimersEmpty;
+
+  /// Button that pauses a running timer.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get voiceTimerPause;
+
+  /// Button that resumes a paused timer.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get voiceTimerResume;
+
+  /// Button that stops a ringing timer.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get voiceTimerDismiss;
+
+  /// Label beside the name of a timer that finished and rings.
+  ///
+  /// In en, this message translates to:
+  /// **'Time\'s up'**
+  String get voiceTimerTimesUp;
+
+  /// Label beside the name of a paused timer.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get voiceTimerPaused;
+
+  /// Value of the Share with row when no kiosk is picked.
+  ///
+  /// In en, this message translates to:
+  /// **'No kiosks picked'**
+  String get voiceTimersShareNone;
+
+  /// Shown in the Share with picker when no other kiosk is on the network list.
+  ///
+  /// In en, this message translates to:
+  /// **'No other kiosks found. Turn on the remote admin and Find other kiosks on each one.'**
+  String get voiceTimersShareEmpty;
+
+  /// Beside a picked kiosk that is not on the network right now.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get voiceTimersShareOffline;
+
+  /// Heading of the group about setting timers by voice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice timers'**
+  String get timersVoiceSection;
+
+  /// Row that opens the guide about timers by voice. Keep Voice Satellite unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage timers using Voice Satellite'**
+  String get timersVoiceManage;
+
+  /// Description under that row. A blueprint is a Home Assistant template for a script.
+  ///
+  /// In en, this message translates to:
+  /// **'Works without a blueprint or an LLM conversation agent.'**
+  String get timersVoiceHint;
+
+  /// Hint in the search box of the kiosk picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Search kiosks'**
+  String get voiceTimersShareSearch;
+
+  /// Button that opens the wheels for a new timer, and the title over them.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a timer'**
+  String get voiceTimerSetATimer;
+
+  /// Title over the wheels that change the time a running timer has left.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit timer'**
+  String get voiceTimerEditTimer;
+
+  /// Label of the optional name of a new timer.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get voiceTimerName;
+
+  /// Caption over the hours wheel of a timer's length.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours'**
+  String get voiceTimerHours;
+
+  /// Caption over the minutes wheel of a timer's length.
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes'**
+  String get voiceTimerMinutes;
+
+  /// Caption over the seconds wheel of a timer's length.
+  ///
+  /// In en, this message translates to:
+  /// **'Seconds'**
+  String get voiceTimerSeconds;
+
+  /// Shown when Home Assistant did not take a timer set by hand.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the timer.'**
+  String get voiceTimerStartFailed;
+
+  /// Row that opens the timers view from the settings page.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage timers'**
+  String get timersManage;
+
+  /// Shown in place of the Set a timer button while the kiosk cannot start timers. Keep Voice Satellite unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on Voice Satellite on this kiosk to set timers here.'**
+  String get voiceTimerStartUnavailable;
 }
 
 class _UiStringsDelegate extends LocalizationsDelegate<UiStrings> {

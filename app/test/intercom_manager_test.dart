@@ -1055,6 +1055,53 @@ void main() {
       },
     );
 
+    test(
+      'the ring plays at the ring volume, not the notification volume',
+      () async {
+        await build();
+        await settings.set(defs.notificationsVolume, 0.2);
+        await settings.set(defs.intercomRingVolume, 0.45);
+        Future<void> incoming(String call) =>
+            commands.execute('intercomIncoming', {
+              'call': call,
+              'kind': 'call',
+              'from': {'id': 'kitchen', 'name': 'Kitchen', 'port': 2324},
+              'address': '192.168.1.70',
+              'token': tokenFor(call),
+            });
+        // The built-in ring through the native sink.
+        await incoming('v1');
+        await settle(20);
+        final ring = audioArgs.firstWhere((a) => a.$1 == 'ring').$2 as Map;
+        expect(ring['volume'], 0.45);
+        await commands.execute('intercomDecline', const {});
+        await settle(250);
+        // A picked sound through the chime player.
+        await pickRingSound();
+        await incoming('v2');
+        await settle(20);
+        expect(ringSounds().first['volume'], 0.45);
+      },
+    );
+
+    test(
+      'an update rings at the notification volume it rang at before',
+      () async {
+        await build(prefs: {'ks.notifications.volume': 0.3});
+        expect(settings.get(defs.intercomRingVolume), 0.3);
+        // Written once: the two volumes go their own ways from here.
+        await settings.set(defs.notificationsVolume, 0.9);
+        expect(settings.get(defs.intercomRingVolume), 0.3);
+        await build(
+          prefs: {
+            'ks.notifications.volume': 0.3,
+            'ks.intercom.ring_volume': 0.8,
+          },
+        );
+        expect(settings.get(defs.intercomRingVolume), 0.8);
+      },
+    );
+
     test('a broadcast plays only the start of a picked ring sound', () async {
       await build();
       await pickRingSound();
@@ -2142,9 +2189,11 @@ void main() {
         };
         answers['GET /a.mp3'] = (_) => http.Response.bytes([9], 200);
         final interactions = <bool>[];
-        bus.on<VoiceInteractionChanged>().listen(
-          (e) => interactions.add(e.active),
-        );
+        final reasons = <String>{};
+        bus.on<VoiceInteractionChanged>().listen((e) {
+          interactions.add(e.active);
+          reasons.add(e.reason);
+        });
         expect(
           await surface.handleService('announce', {
             'message': 'Dinner is ready',
@@ -2166,6 +2215,9 @@ void main() {
         expect(audioCalls, contains('stop'));
         expect(intercom.state, 'idle');
         expect(interactions, [true, false]);
+        // A reason of its own, which the screensaver stays up under
+        // (issue #1441).
+        expect(reasons, {VoiceInteractionChanged.announcementReason});
       },
     );
 
@@ -2289,6 +2341,43 @@ void main() {
         await commands.execute('intercomDismiss', const {});
       }
     });
+
+    test(
+      'the media share of adaptive volume lowers the media fader only',
+      () async {
+        await build(
+          prefs: {
+            'ks.ha.url': 'http://ha.local:8123',
+            'ks.ha.token': 'tkn',
+            'ks.audio.media_volume': 80,
+          },
+        );
+        answers['GET /a.mp3'] = (_) => http.Response.bytes([9], 200);
+        bus.publish(
+          const AdaptiveVolumeChanged(
+            noise: -55,
+            assistant: 1,
+            media: 0.5,
+            intercom: 1,
+          ),
+        );
+        await settle(0);
+        // The fader under the room's share, then the action's own volume,
+        // which the room leaves alone.
+        for (final (volume, gain) in [(0.0, 0.16), (0.6, 0.36)]) {
+          final r = await commands.execute('announce', {
+            'url': 'http://sounds.local/a.mp3',
+            'volume': volume,
+            'chime': false,
+          });
+          expect(r.ok, isTrue, reason: r.error);
+          final start = audioArgs.lastWhere((a) => a.$1 == 'start').$2 as Map;
+          expect((start['volume'] as num).toDouble(), closeTo(gain, 1e-9));
+          await commands.execute('intercomHangup', const {});
+          await commands.execute('intercomDismiss', const {});
+        }
+      },
+    );
 
     test(
       'a voice Home Assistant cannot speak falls back to the engine',

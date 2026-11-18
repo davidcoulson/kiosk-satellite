@@ -52,15 +52,20 @@ export const SUBPAGE_ICONS = {
     + ' 2.6 0 4.6-1.6 4.6-3.7 0-1.8-1.1-3.3-2.5-3.3z"/>'),
   'Assistant': svg('<path d="M4 5h11v8H8l-4 3z"/><path d="M9 16v1h7l4 3V9h-5"/>'),
   'Realtime': svg('<path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/>'),
+  'Ground Control Voice Match': svg('<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M18 5a5 5 0 0 1 0 7M21 3a9 9 0 0 1 0 11"/>'),
   'Conversation': svg('<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>'),
-  'Timers': svg('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9.5 2h5M12 2v3"/>'),
   // Screen & Audio.
   'Microphone settings': svg('<rect x="9" y="3" width="6" height="11" rx="3"/>'
     + '<path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3M9 21h6"/>'),
+  'Equalizer': svg('<rect x="4" y="10" width="4" height="10" rx="1"/>'
+    + '<rect x="10" y="4" width="4" height="16" rx="1"/>'
+    + '<rect x="16" y="13" width="4" height="7" rx="1"/>'),
   'Adaptive brightness': svg('<circle cx="12" cy="12" r="5"/>'
     + '<path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2'
     + 'M4.9 19.1l1.4-1.4m11.4-11.4 1.4-1.4"/>'
     + '<path d="m10.2 14.5 1.8-5 1.8 5m-3-1.6h2.4" stroke-width="1.6"/>'),
+  'Adaptive volume': svg('<path d="M4 9v6h4l5 4V5L8 9H4z"/>'
+    + '<path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>'),
   // Screensaver.
   'Weather Mood screensaver': svg('<path d="M7 18a5 5 0 1 1 1-10 6 6 0 0 1 11 3 3.5 3.5 0 0 1-1 7Z"/>'),
   'Celestial screensaver': svg('<path d="m10 3 1.6 4.4L16 9l-4.4 1.6L10 15l-1.6-4.4L4 9l4.4-1.6Z"/><path d="m18 14 .8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8Z"/>'),

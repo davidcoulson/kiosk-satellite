@@ -186,6 +186,7 @@ const pluginTextMessageIds = <String, String>{
   "This camera view is gone. Choose another.": "pluginCameraViewGone",
   "Drag to reorder": "pluginDragToReorder",
   "Done": "pluginDone",
+  "Duplicate": "pluginDuplicate",
   "Required": "pluginRequired",
   "Invalid list setting": "pluginErrorListSetting",
   "Invalid setting condition": "pluginErrorSettingCondition",
@@ -228,5 +229,8 @@ const pluginTextMessageIds = <String, String>{
   "Most downloads": "pluginSortMostDownloads",
   "Plugins per page": "pluginPluginsPerPage",
   "Listed in Community Plugins": "pluginListedChip",
-  "Not listed in Community Plugins": "pluginNotListedChip"
+  "Not listed in Community Plugins": "pluginNotListedChip",
+  "Release notes": "pluginReleaseNotes",
+  "Dashboard link": "pluginDashboardLink",
+  "Point a dashboard button's tap action at this link.": "pluginDashboardLinkHint"
 };

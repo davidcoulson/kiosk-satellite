@@ -13,8 +13,8 @@
       ]
     }
   },
-  "settingKioskAllowDrawerDescription": "An edge swipe opens the menu without the exit gesture or PIN, limited to the actions selected below.",
-  "@settingKioskAllowDrawerDescription": {
+  "settingKioskAllowQuickControlsDescription": "Shows the menu without the exit gesture or PIN, limited to the actions selected below. In Classic navigation an edge swipe opens it. In Compass it is the Quick Controls view.",
+  "@settingKioskAllowQuickControlsDescription": {
     "context": "Settings > Kiosk Mode > Allowed Actions",
     "description": "Help below this setting.",
     "x-locations": {

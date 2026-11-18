@@ -1,7 +1,7 @@
 import { cameraText, cameraError, screenAudioText, screensaverText, t } from './localization.js';
 import { watchUpdates } from './live.js';
 import { hintRow } from './widgets.js';
-import { api, state } from './core.js';
+import { api, cmd, state } from './core.js';
 import { readOnlyRow } from './device.js';
 
 /* No-camera notice: mirror of the device's page when the hardware has no
@@ -466,6 +466,138 @@ export async function updateClockNightRows() {
   if (input) { input.checked = false; input.disabled = true; }
   row.insertAdjacentElement('afterend',
     hintRow(screenAudioText(NO_LIGHT_SENSOR_NOTE), { className: 'clock-night-note' }));
+}
+
+/* The adaptive volume rows (issue #1450), mirroring the device: under the
+   switch, the room's noise level as adaptive volume follows it, live off
+   the adaptivevolume messages, and the rule that makes it trustworthy:
+   the room is only measured while the kiosk is silent. With no reading a
+   second note says what one needs. The curve editor marks
+   the same level. Idempotent, so the save path re-runs it when the switch
+   flips. */
+const ROOM_NOISE_NOTE = 'What the microphone reads while this device is silent.';
+const ROOM_NOISE_HOLDS_NOTE = 'The reading holds while this device plays. Changes in the room '
+  + 'during playback are not used.';
+const ROOM_NOISE_NO_READING_NOTE = 'If there is no reading, turn on adaptive volume or wake word '
+  + 'detection and check that the microphone is not muted.';
+
+const hasRoomNoise = () => typeof state.adaptiveVolume?.noise === 'number';
+const roomNoiseText = () => (hasRoomNoise()
+  ? t('screenAudioDbfs', { level: String(Math.round(state.adaptiveVolume.noise)) })
+  : screenAudioText('No reading yet'));
+
+export async function updateAdaptiveVolumeRows() {
+  await probeAdaptiveVolume();
+  for (const stale of document.querySelectorAll('.adaptive-volume-note')) stale.remove();
+  // The curve editor may have been built before the probe answered.
+  document.dispatchEvent(new CustomEvent('ks-adaptivevolume'));
+  const row = document.querySelector('[data-key="audio.adaptive_volume"]');
+  if (!row) return;
+  const reading = readOnlyRow(screenAudioText('Room noise'), screenAudioText(ROOM_NOISE_NOTE),
+    roomNoiseText());
+  reading.classList.add('adaptive-volume-note');
+  reading.lastElementChild.classList.add('room-noise-value');
+  const holds = hintRow(screenAudioText(ROOM_NOISE_HOLDS_NOTE), { className: 'adaptive-volume-note' });
+  const needsWake = hintRow(screenAudioText(ROOM_NOISE_NO_READING_NOTE),
+    { className: 'adaptive-volume-note room-noise-needs-wake' });
+  needsWake.style.display = hasRoomNoise() ? 'none' : '';
+  row.after(reading, holds, needsWake);
+  await updateVolumeTestRows();
+}
+
+/* The Test volume group under the curve, mirroring the device
+   (settings_screen.dart, _VolumeTestRows): one button plays a Voice
+   Satellite announcement at the Assistant volume, the other an ESPHome
+   announcement at the Media volume, each at the level the room picks now.
+   A button waits for its feature to be set up. Idempotent: the save path
+   re-runs it when the switch, Voice Satellite or announcements change. */
+const ASSISTANT_TEST_HINT = 'Plays a Voice Satellite announcement at the Assistant volume. '
+  + 'Needs Voice Satellite set up in Home Assistant.';
+const MEDIA_TEST_HINT = 'Plays an ESPHome announcement at the Media volume. Needs '
+  + 'Announcements turned on under ESPHome.';
+const VOLUME_TEST_MESSAGE = 'This is how loud an announcement plays right now.';
+
+export async function updateVolumeTestRows() {
+  for (const stale of document.querySelectorAll('.volume-test-group')) stale.remove();
+  const curveCard = document.querySelector('[data-key="audio.adaptive_volume_curve"]')
+    ?.closest('.card');
+  if (!curveCard) return;
+  const heading = document.createElement('h2');
+  heading.className = 'card-title volume-test-group';
+  heading.textContent = screenAudioText('Test volume');
+  const card = document.createElement('div');
+  card.className = 'card volume-test-group';
+  const byKey = Object.fromEntries((state.settings || []).map((s) => [s.key, s]));
+  const mediaReady = byKey['esphome.enabled']?.value === true
+    && byKey['announcements.enabled']?.value === true;
+  const assistant = testRow('Test Assistant volume', ASSISTANT_TEST_HINT, false,
+    () => cmd('voiceTestAnnouncement', { message: screenAudioText(VOLUME_TEST_MESSAGE) }));
+  const media = testRow('Test Media volume', MEDIA_TEST_HINT, mediaReady,
+    () => cmd('announce', { message: screenAudioText(VOLUME_TEST_MESSAGE), audio_only: true }));
+  card.append(assistant.row, media.row);
+  curveCard.after(heading, card);
+  // The satellite entity is the device's to know: the button stays off
+  // until it answers.
+  try {
+    const voice = (await cmd('voiceStatus'))?.data;
+    assistant.setReady(voice?.enabled === true && !!voice?.satelliteEntity);
+  } catch (_) {}
+}
+
+function testRow(title, hint, ready, run) {
+  const row = readOnlyRow(screenAudioText(title), screenAudioText(hint), '');
+  const button = document.createElement('button');
+  button.className = 'btn-ghost';
+  button.textContent = screenAudioText('Test');
+  button.style.cssText = 'flex-shrink:0;';
+  button.disabled = !ready;
+  button.addEventListener('click', async () => {
+    button.disabled = true;
+    button.textContent = screenAudioText('Playing');
+    let ok = false;
+    try { ok = (await run())?.ok === true; } catch (_) {}
+    if (ok) {
+      button.textContent = screenAudioText('Test');
+      button.disabled = false;
+      return;
+    }
+    button.textContent = screenAudioText('Failed');
+    setTimeout(() => { button.textContent = screenAudioText('Test'); button.disabled = false; }, 2000);
+  });
+  row.appendChild(button);
+  return { row, setReady: (value) => { button.disabled = !value; } };
+}
+
+/* Adaptive volume's state, asked about once per page load; the
+   adaptivevolume messages keep it current after that. */
+let adaptiveVolumeProbe;
+function probeAdaptiveVolume() {
+  adaptiveVolumeProbe ??= (async () => {
+    try {
+      const res = await (await api('/api/commands/getAdaptiveVolume',
+        { method: 'POST', body: '{}' })).json();
+      const data = res.data && typeof res.data === 'object' ? res.data : null;
+      // A message that beat the answer is the newer of the two.
+      if (data && state.adaptiveVolume === undefined) showAdaptiveVolume(data, false);
+    } catch (_) {}
+  })();
+  return adaptiveVolumeProbe;
+}
+
+/* The room's level and each volume's share of its slider, from the
+   WebSocket: the Room noise row and the curve's marker repaint off it. */
+export function showAdaptiveVolume(msg, notify = true) {
+  state.adaptiveVolume = {
+    noise: typeof msg.noise === 'number' ? msg.noise : null,
+    assistant: msg.assistant,
+    media: msg.media,
+    intercom: msg.intercom,
+  };
+  for (const el of document.querySelectorAll('.room-noise-value')) el.textContent = roomNoiseText();
+  for (const el of document.querySelectorAll('.room-noise-needs-wake')) {
+    el.style.display = hasRoomNoise() ? 'none' : '';
+  }
+  if (notify) document.dispatchEvent(new CustomEvent('ks-adaptivevolume'));
 }
 
 /* The light level adaptive brightness follows, asked about once per page

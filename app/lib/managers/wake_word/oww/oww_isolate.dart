@@ -275,7 +275,8 @@ class _OwwWorker {
       sw?.stop();
       if (probability == null) continue;
       final trigger = k.gate.update(probability, _absSamples ~/ 16);
-      if (!k.isStop && _nearMisses) {
+      // The stop word too, which only scores while armed.
+      if (_nearMisses) {
         final miss = k.nearMiss.update(
           score: probability,
           threshold: k.gate.cutoff,
@@ -286,6 +287,7 @@ class _OwwWorker {
             'type': WakeMsg.nearMiss,
             'id': k.id,
             'wakeWord': k.wakeWord,
+            if (k.isStop) 'stop': true,
             ...miss,
           });
         }
@@ -314,7 +316,16 @@ class _OwwWorker {
           'info',
           'stop word detected (${trigger.name}, score ${probability.toStringAsFixed(3)})',
         );
-        _main.send({'type': WakeMsg.detection, 'id': k.id, 'stop': true});
+        _main.send({
+          'type': WakeMsg.detection,
+          'id': k.id,
+          'wakeWord': k.wakeWord,
+          'stop': true,
+          // For the diagnostics log, as with a wake word.
+          'score': probability,
+          'threshold': k.gate.cutoff,
+          'trigger': trigger.name,
+        });
         return;
       }
 
@@ -386,7 +397,9 @@ class _OwwWorker {
     if (_stopped || _stopArmed == active) return;
     _stopArmed = active;
     for (final k in _kws) {
-      if (k.isStop) k.gate.reset();
+      if (!k.isStop) continue;
+      k.gate.reset();
+      k.nearMiss.reset();
     }
     _log('info', active ? 'stop word armed' : 'stop word disarmed');
   }
@@ -402,17 +415,19 @@ class _OwwWorker {
       if (playback == null) continue;
       final from = k.gate.cutoff;
       k.gate.cutoff = active ? playback : k.cutoff;
-      moves.add('"${k.id}" cutoff ${from.toStringAsFixed(3)} -> '
-          '${k.gate.cutoff.toStringAsFixed(3)}');
+      moves.add(
+        '"${k.id}" cutoff ${from.toStringAsFixed(3)} -> '
+        '${k.gate.cutoff.toStringAsFixed(3)}',
+      );
     }
     if (moves.isEmpty) return;
     _log(
       'info',
       active
           ? 'kiosk playing audio, wake word sensitivity raised '
-              '(${moves.join(', ')})'
+                '(${moves.join(', ')})'
           : 'kiosk playback ended, wake word sensitivity restored '
-              '(${moves.join(', ')})',
+                '(${moves.join(', ')})',
     );
   }
 

@@ -967,7 +967,7 @@ void main() {
             'categories': [],
             'credentials': ['ha.token', 'bogus'],
           })!.describe(),
-          'Categories: 0 of 19. Credentials: 1 of 9. Excluded: 43.',
+          'Categories: 0 of 21. Credentials: 1 of 9. Excluded: 48.',
         );
         expect(
           withCreds['browser.start_url'],
@@ -2486,11 +2486,29 @@ void main() {
       expect(former.containsAll(previous), isTrue);
       previous = former;
     }
-    // The per-chime volumes joined last (issue #998): the newest former
-    // list is the current one without them.
+    // Adaptive volume joined last (issue #1450): the newest former list
+    // is the current one without its volume switches and its curve (the
+    // main switch travels, like adaptive brightness's), the one before
+    // lacks the
+    // intercom's ring volume and the one before that the per-chime
+    // volumes too (issue #998).
+    final formers = defs.fleetFormerDefaultExcluded;
     expect(
-      defs.fleetFormerDefaultExcluded.last,
+      formers.last,
       defs.fleetDefaultExcluded.difference({
+        'audio.adaptive_volume_assistant',
+        'audio.adaptive_volume_media',
+        'audio.adaptive_volume_intercom',
+        'audio.adaptive_volume_curve',
+      }),
+    );
+    expect(
+      formers[formers.length - 2],
+      formers.last.difference({'intercom.ring_volume'}),
+    );
+    expect(
+      formers[formers.length - 3],
+      formers[formers.length - 2].difference({
         'voice_chimes.wake_volume',
         'voice_chimes.done_volume',
         'voice_chimes.error_volume',

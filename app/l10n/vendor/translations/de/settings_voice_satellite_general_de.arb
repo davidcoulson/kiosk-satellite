@@ -37,7 +37,6 @@
   "voiceTimers": "Timer",
   "voiceAssistantHint": "Pipelines, Folgefragen",
   "voiceConversationHint": "Was der Assistent auf dem Bildschirm zeigt und wie lange",
-  "voiceTimersHint": "Anzeigen, Alarme, gesprochene Hinweise",
   "voiceSectionFollowUp": "Folgefrage",
   "voiceSectionLinger": "Wie lange es bleibt",
   "voiceSectionOnScreen": "Auf dem Bildschirm",
@@ -71,5 +70,6 @@
   "settingVoiceEnabledTitle": "Voice Satellite aktivieren",
   "settingVoiceEnabledDescription": "Macht diesen Kiosk über seinen ESPHome-Server zu einem Sprachassistenten für Home Assistant.",
   "settingVoiceMuteTitle": "Mikrofon stummschalten",
-  "settingVoiceMuteDescription": "Nicht mehr auf das Aktivierungswort hören."
+  "settingVoiceMuteDescription": "Nicht mehr auf das Aktivierungswort hören.",
+  "voiceSectionSharedTimers": "Geteilte Timer"
 }

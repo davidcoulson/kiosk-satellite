@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform;
+import 'dart:io' show File, Platform;
 import 'dart:math' show Random;
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
@@ -16,6 +17,7 @@ import '../settings/settings_manager.dart';
 import 'ble_identity.dart';
 import 'esp_entities.dart';
 import 'node_name.dart';
+import 'oui_cache.dart';
 
 /// Runs the native Bluetooth proxy (an ESPHome-compatible API server plus
 /// BLE scanner, see android btproxy/) and owns its policy: the enable
@@ -181,14 +183,17 @@ class BtProxyManager extends Manager {
     onCatalogChanged: _scheduleRestart,
   );
 
-  // The OUI vendor cache: prefix "AA:BB:CC" to vendor name, '' for a
-  // registry miss. Persisted so each prefix is looked up once per install,
-  // ever; a home's radio horizon holds a few dozen prefixes at most.
-  Map<String, String>? _ouiCacheOrNull;
+  /// The settings key older builds kept the OUI vendor cache under.
+  static const _legacyOuiKey = 'btproxy_oui_cache';
 
-  /// Nearby-device commands also work while the proxy is off. Load their
-  /// saved vendor cache on first use, independently of server startup.
-  Map<String, String> get _ouiCache => _ouiCacheOrNull ??= _loadOuiCache();
+  // The OUI vendor cache, in a file of its own (see OuiCache). Loaded on
+  // first use: the Nearby devices commands also work while the proxy is
+  // off. A while after init it loads anyway, so the copy older builds left
+  // in the settings store leaves it on every device, whether or not the
+  // list is ever opened, without adding to the start.
+  Future<OuiCache>? _ouiCacheLoad;
+  Timer? _ouiMigration;
+  Future<OuiCache> _ouiCache() => _ouiCacheLoad ??= _loadOuiCache();
   final List<String> _ouiQueue = [];
   Timer? _ouiTimer;
 
@@ -289,6 +294,10 @@ class BtProxyManager extends Manager {
 
   @override
   Future<void> init() async {
+    _ouiMigration = Timer(
+      const Duration(minutes: 1),
+      () => unawaited(_ouiCache()),
+    );
     // Keep scanning with the screen off needs Android 13's data type
     // filters. Below that the switch could do nothing, so neither UI shows
     // it. Settled before any page renders.
@@ -396,6 +405,11 @@ class BtProxyManager extends Manager {
       'voice.runtime',
       'voice.enabled',
       'voice.wake_word_engine',
+      // The Speaker sensor exists only while Voice Match and its Speaker
+      // sensor switch are on.
+      'ground_control.enabled',
+      'voice_match.enabled',
+      'voice_match.speaker_sensor',
     };
     // The remote admin server's settings, which decide the web page port
     // reported to Home Assistant (the device page's Visit link).
@@ -606,20 +620,20 @@ class BtProxyManager extends Manager {
       return const [];
     }
     final lookupEnabled = _settings.get(defs.btproxyMacLookup);
+    final ouiCache = await _ouiCache();
     final devices = <NearbyDevice>[];
     for (final entry in raw) {
       if (entry is! Map) continue;
       final address = '${entry['address'] ?? ''}';
       String? ouiVendor;
       if (hasRealOui(address)) {
-        ouiVendor = _ouiCache[ouiOf(address)];
-        if (ouiVendor != null && ouiVendor.isEmpty) ouiVendor = null;
+        ouiVendor = ouiCache.name(ouiOf(address));
       }
       final device = classify(entry, ouiVendor: ouiVendor);
       if (lookupEnabled &&
           device.vendor == null &&
           hasRealOui(address) &&
-          !_ouiCache.containsKey(ouiOf(address))) {
+          !ouiCache.knows(ouiOf(address))) {
         _queueOuiLookup(ouiOf(address));
       }
       devices.add(device);
@@ -627,14 +641,28 @@ class BtProxyManager extends Manager {
     return devices;
   }
 
-  Map<String, String> _loadOuiCache() {
+  Future<OuiCache> _loadOuiCache() async {
+    File? file;
     try {
-      final stored = _settings.internal('btproxy_oui_cache');
-      if (stored.isEmpty) return {};
-      return Map<String, String>.from(jsonDecode(stored) as Map);
-    } catch (_) {
-      return {};
+      final dir = await getApplicationSupportDirectory();
+      file = File('${dir.path}/btproxy_oui_cache.json');
+    } catch (_) {}
+    final cache = OuiCache(file);
+    final legacy = _settings.internal(_legacyOuiKey);
+    try {
+      await cache.load(legacy: legacy);
+      if (legacy.isNotEmpty) {
+        await _settings.setInternal(_legacyOuiKey, '');
+        log.info(
+          name,
+          'OUI cache moved out of the settings store: '
+          '${cache.nameCount} names kept, ${legacy.length} characters freed',
+        );
+      }
+    } catch (e) {
+      log.warn(name, 'OUI cache load failed: $e');
     }
+    return cache;
   }
 
   void _queueOuiLookup(String oui) {
@@ -662,16 +690,16 @@ class BtProxyManager extends Manager {
       final response = await http
           .get(Uri.parse('https://api.macvendors.com/$oui'))
           .timeout(const Duration(seconds: 10));
+      final cache = await _ouiCache();
       if (response.statusCode == 200) {
-        _ouiCache[oui] = response.body.trim();
+        await cache.putName(oui, response.body.trim());
       } else if (response.statusCode == 404) {
-        // A registry miss is an answer too: cache it so the prefix is
-        // never asked about again.
-        _ouiCache[oui] = '';
-      } else {
-        return; // rate limited or server trouble: drop, retry on a later pass
+        // A registry miss is an answer too: remembered for the session so
+        // the prefix is not asked about again. Never saved, see OuiCache.
+        cache.putMiss(oui);
       }
-      await _settings.setInternal('btproxy_oui_cache', jsonEncode(_ouiCache));
+      // Anything else is a rate limit or server trouble: drop, retry on a
+      // later pass.
     } catch (e) {
       log.warn(name, 'OUI lookup failed for $oui: $e');
     }
@@ -682,6 +710,8 @@ class BtProxyManager extends Manager {
     _restartDebounce?.cancel();
     _ouiTimer?.cancel();
     _ouiTimer = null;
+    _ouiMigration?.cancel();
+    _ouiMigration = null;
     await _settingsSub?.cancel();
     _settingsSub = null;
     await _shizukuSub?.cancel();
@@ -820,6 +850,7 @@ class BtProxyManager extends Manager {
         'connections': _settings.get(defs.btproxyConnections),
         'scanDuty': _settings.get(defs.btproxyScanDuty),
         'screenOffScan': _settings.get(defs.btproxyScreenOffScan),
+        'deviceMacForBluetooth': _settings.get(defs.btproxyDeviceMac),
         'minConnectRssi':
             int.tryParse(_settings.get(defs.btproxyMinConnectRssi)) ?? 0,
         'minAdvertiseRssi':

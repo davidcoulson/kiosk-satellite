@@ -10,6 +10,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'color_scheme_script.dart';
 import 'content_insets_script.dart';
 import 'no_cache_script.dart';
+import 'page_fullscreen_script.dart';
 import 'url_filter.dart';
 import 'dashboard_camera_script.dart';
 import 'dashboard_state.dart';
@@ -21,6 +22,7 @@ import '../../core/events.dart';
 import '../../core/manager.dart';
 import '../analytics/usage_counters.dart';
 import '../device/device_details.dart';
+import '../../core/serial_shared.dart';
 import '../device/screen_capture.dart';
 import '../device/webview_freeze.dart';
 import '../device/webview_recovery.dart';
@@ -83,6 +85,34 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// always has one; the frame watchdog treats its prolonged absence as
   /// the wedged-renderer signal.
   bool get hasWebView => _controller != null;
+
+  /// Whether the kiosk has a use for the dashboard page. False while
+  /// Compass runs a layout with no dashboard view and nothing else shows
+  /// the page or runs in it (dashboardPageNeeded in app_container.dart):
+  /// the kiosk screen then builds no WebView at all, and the page costs
+  /// nothing.
+  final pageNeeded = ValueNotifier<bool>(true);
+
+  /// The WebView left on purpose, [pageNeeded] gone false. Nothing reaches
+  /// the page anymore, so every call into it returns early.
+  void detach() {
+    // Also with no controller yet: a WebView built a moment ago, before
+    // the page was dropped again, attaches or loads late, and those
+    // calls are turned away below.
+    final had = _controller != null || _currentUrl.isNotEmpty;
+    _controller = null;
+    _webViewGeneration++;
+    _freezeDelay?.cancel();
+    _freezeKeepAlive?.cancel();
+    _freezeKeepAlive = null;
+    _frozen = false;
+    _wantedFrozen = false;
+    pageFullscreen.value = false;
+    _currentUrl = '';
+    if (!had) return;
+    bus.publish(const UrlChanged(url: ''));
+    log.info(name, 'no dashboard view in use: the dashboard page is closed');
+  }
 
   /// Whether this device has no WebView provider at all. A ROM without
   /// Android System WebView (a repurposed smart display, a stripped
@@ -392,6 +422,7 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
         log.info(name, 'screensaver takes over from the overlay page');
         dismissOverlay();
       }
+      if (e.active) exitPageFullscreen('the screensaver started');
       _scheduleFreezeSync();
     });
     // The native voice overlay draws over the dashboard, which shows
@@ -409,6 +440,7 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
       // Dim, the page IS the display, so it is neither frozen nor stripped
       // of its camera streams. So is Dim's own beside a shared player.
       final covers = e.view != null && e.view != 'dashboard' && e.view != 'dim';
+      _saverShowsPage = e.view == 'dashboard';
       _screensaverHasOverlay = covers;
       _dashboardCovered = covers && !_screensaverIsOwnOrigin(e.view);
       _scheduleFreezeSync();
@@ -522,6 +554,32 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
             _screensaverActive = false;
             _freezeDelay?.cancel();
             await _syncFreeze();
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'awaitDashboardFrame',
+          description:
+              'Wait until the page has produced two frames (the screensaver '
+              'runs this after the thaw, before it fades out over the page)',
+          handler: (_) async {
+            const body =
+                'await new Promise(r => requestAnimationFrame('
+                '() => requestAnimationFrame(r)));';
+            final override = evalOverride;
+            if (override != null) {
+              await override(body);
+            } else {
+              final controller = _controller;
+              if (controller == null) {
+                return const CommandResult.fail('no webview');
+              }
+              await controller
+                  .callAsyncJavaScript(functionBody: body)
+                  .timeout(javaScriptTimeout);
+            }
             return const CommandResult.ok();
           },
         ),
@@ -792,15 +850,42 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
         Command(
           name: 'getLocalStorage',
           description:
-              "The page's localStorage as a JSON string (current origin).",
+              "The page's localStorage as a JSON string (current origin), "
+              'read from storage when no page is loaded.',
           handler: (_) async {
             final controller = _controller;
             if (controller == null) {
-              return const CommandResult.fail('no page loaded');
+              if (pageNeeded.value) {
+                return const CommandResult.fail('no page loaded');
+              }
+              // No page at all: the storage is still there, read through a
+              // page of its own. An import waiting for a page goes in
+              // first, so it is part of what is read.
+              final pending = _settings.internal('pending_local_storage');
+              final stored = await _runOnPageOrigin(
+                _storageJs(pending.isEmpty ? null : pending),
+              );
+              if (stored is! String) {
+                return const CommandResult.fail('localStorage unavailable');
+              }
+              if (pending.isNotEmpty) {
+                await _settings.setInternal('pending_local_storage', '');
+              }
+              return CommandResult.ok(stored);
             }
-            final result = await controller.evaluateJavascript(
-              source: 'JSON.stringify(localStorage)',
-            );
+            Object? result;
+            try {
+              result = await controller
+                  .evaluateJavascript(source: 'JSON.stringify(localStorage)')
+                  .timeout(javaScriptTimeout);
+            } catch (_) {
+              // Between two documents, a reload in flight, the page does
+              // not answer at all.
+            }
+            // The storage is the same with or without the page answering.
+            if (result is! String) {
+              result = await _runOnPageOrigin(_storageJs(null));
+            }
             if (result is! String) {
               return const CommandResult.fail('localStorage unavailable');
             }
@@ -812,8 +897,9 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
         Command(
           name: 'setLocalStorage',
           description:
-              'Write entries into the page\'s localStorage (applied on the '
-              'next page load if none is up yet), then reload.',
+              'Write entries into the page\'s localStorage, then reload. '
+              'Applied on the next page load while one is coming, and '
+              'straight into storage when no page is loaded.',
           params: const {'data': 'JSON object string of key/value pairs'},
           handler: (p) async {
             final data = p['data'];
@@ -821,7 +907,20 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
               return const CommandResult.fail('data must be a JSON string');
             }
             await _settings.setInternal('pending_local_storage', data);
-            if (_currentUrl.isNotEmpty) await _applyPendingLocalStorage();
+            if (_currentUrl.isNotEmpty) {
+              await _applyPendingLocalStorage();
+            } else if (!pageNeeded.value) {
+              // No page to wait for: straight into the page's storage,
+              // where a page finds it whenever one loads.
+              final stored = await _runOnPageOrigin(_storageJs(data));
+              if (stored is String) {
+                await _settings.setInternal('pending_local_storage', '');
+                log.info(
+                  name,
+                  "imported localStorage written to the page's storage",
+                );
+              }
+            }
             return const CommandResult.ok();
           },
         ),
@@ -831,6 +930,10 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
           name: 'reload',
           description: 'Reload the current page',
           handler: (_) async {
+            if (!pageNeeded.value) {
+              log.info(name, 'not reloading: no dashboard view in use');
+              return const CommandResult.fail('no dashboard page');
+            }
             // A custom page reloads its edited files too, not the copies
             // Home Assistant's service worker kept.
             if (isCustomPage(_currentUrl)) await _dropCustomPageCopies();
@@ -948,7 +1051,7 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
             'quality': 'JPEG quality 1-100, default 80',
             'width': 'scale the capture to this width, default 1280',
           },
-          handler: (p) async {
+          handler: (p) {
             // Generous defaults: captures are one-shot (the dashboard has no
             // auto-refresh), so quality can win over bandwidth.
             final quality = ((p['quality'] as num?)?.toInt() ?? 80).clamp(
@@ -956,85 +1059,108 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
               100,
             );
             final width = (p['width'] as num?)?.toInt() ?? 1280;
-            // A capture can race the panel: asked the instant a dismiss
-            // wakes the screen (the admin overview refreshes its preview on
-            // dismiss), the logical state already says on but the first
-            // composited frame is still a few hundred ms out, so both
-            // capture paths come up empty. Brief retries cover that
-            // transition; a panel that is (still) off short-circuits to the
-            // placeholder on the first check, paying nothing.
-            InAppWebViewController? controller;
-            const attempts = 4;
-            for (var attempt = 1; attempt <= attempts; attempt++) {
-              // A truly dark panel composites no frames, so there is
-              // nothing real to copy: PixelCopy fails or hands back a
-              // half-drawn page depending on the Android version. A
-              // generated "Screen off" card is the honest picture of the
-              // display.
-              final on = await commands.execute('isScreenOn', const {});
-              if (on.ok && on.data == false) {
-                return CommandResult.ok(
-                  base64Encode(await screenOffPlaceholder(width: width)),
-                );
-              }
-              // A panel that JUST woke reports on while the overlay
-              // teardown and the WebView's first redraw are still in
-              // flight, and PixelCopy happily returns that as an all-black
-              // frame. Black is also a legitimate capture (the Black
-              // screensaver), so no pixel-guessing: a fresh wake simply
-              // gets its transition waited out. A panel that has been on
-              // for a while pays nothing.
-              final onAt = _screenOnAt;
-              if (onAt != null) {
-                final settle =
-                    const Duration(milliseconds: 1500) -
-                    DateTime.now().difference(onAt);
-                if (settle > Duration.zero) {
-                  await Future<void>.delayed(settle);
-                }
-              }
-              // The window, via a GPU blit on a background thread (see
-              // ScreenCapture.kt). The WebView's own capture below draws
-              // the view into a bitmap on the UI thread — with the admin's
-              // auto-refresh ticked that was a visible stutter every few
-              // seconds — and it can only ever show the page, never the
-              // screensaver or menu actually on screen.
-              final native = await ScreenCapture.capture(
-                width: width,
-                quality: quality,
-              );
-              if (native != null) {
-                return CommandResult.ok(base64Encode(native));
-              }
-              // No Activity window (app backgrounded, or Android < 8): the
-              // WebView outlives the Activity, so its page capture still
-              // works.
-              controller = _controller;
-              if (controller != null) {
-                final view =
-                    WidgetsBinding.instance.platformDispatcher.implicitView;
-                final bytes = await controller.takeScreenshot(
-                  screenshotConfiguration: ScreenshotConfiguration(
-                    compressFormat: CompressFormat.JPEG,
-                    quality: quality,
-                    snapshotWidth: webViewSnapshotWidth(
+            // One capture at a time, shared by everyone waiting for the
+            // same size. Every capture in flight holds a full bitmap of the
+            // screen, and callers can ask far faster than a capture
+            // finishes: a Home Assistant live view of the Device camera
+            // entity while the camera is off asked about 180 times a
+            // second, each request also owed a 1920 pixel screenshot, and
+            // the native heap passed 2 GB within 3 seconds. On a 32-bit
+            // device that ended in an OutOfMemoryError.
+            return _screenshots
+                .run((width, quality), () async {
+                  // A capture can race the panel: asked the instant a dismiss
+                  // wakes the screen (the admin overview refreshes its preview on
+                  // dismiss), the logical state already says on but the first
+                  // composited frame is still a few hundred ms out, so both
+                  // capture paths come up empty. Brief retries cover that
+                  // transition; a panel that is (still) off short-circuits to the
+                  // placeholder on the first check, paying nothing.
+                  InAppWebViewController? controller;
+                  const attempts = 4;
+                  for (var attempt = 1; attempt <= attempts; attempt++) {
+                    // A truly dark panel composites no frames, so there is
+                    // nothing real to copy: PixelCopy fails or hands back a
+                    // half-drawn page depending on the Android version. A
+                    // generated "Screen off" card is the honest picture of the
+                    // display.
+                    final on = await commands.execute('isScreenOn', const {});
+                    if (on.ok && on.data == false) {
+                      return CommandResult.ok(
+                        base64Encode(await screenOffPlaceholder(width: width)),
+                      );
+                    }
+                    // A panel that JUST woke reports on while the overlay
+                    // teardown and the WebView's first redraw are still in
+                    // flight, and PixelCopy happily returns that as an all-black
+                    // frame. Black is also a legitimate capture (the Black
+                    // screensaver), so no pixel-guessing: a fresh wake simply
+                    // gets its transition waited out. A panel that has been on
+                    // for a while pays nothing.
+                    final onAt = _screenOnAt;
+                    if (onAt != null) {
+                      final settle =
+                          const Duration(milliseconds: 1500) -
+                          DateTime.now().difference(onAt);
+                      if (settle > Duration.zero) {
+                        await Future<void>.delayed(settle);
+                      }
+                    }
+                    // The window, via a GPU blit on a background thread (see
+                    // ScreenCapture.kt). The WebView's own capture below draws
+                    // the view into a bitmap on the UI thread — with the admin's
+                    // auto-refresh ticked that was a visible stutter every few
+                    // seconds — and it can only ever show the page, never the
+                    // screensaver or menu actually on screen.
+                    final native = await ScreenCapture.capture(
                       width: width,
-                      physicalWidth: view?.physicalSize.width ?? 0,
-                      devicePixelRatio: view?.devicePixelRatio ?? 0,
-                    ),
-                  ),
+                      quality: quality,
+                    );
+                    if (native != null) {
+                      return CommandResult.ok(base64Encode(native));
+                    }
+                    // No Activity window (app backgrounded, or Android < 8): the
+                    // WebView outlives the Activity, so its page capture still
+                    // works.
+                    controller = _controller;
+                    if (controller != null) {
+                      final view = WidgetsBinding
+                          .instance
+                          .platformDispatcher
+                          .implicitView;
+                      final bytes = await controller.takeScreenshot(
+                        screenshotConfiguration: ScreenshotConfiguration(
+                          compressFormat: CompressFormat.JPEG,
+                          quality: quality,
+                          snapshotWidth: webViewSnapshotWidth(
+                            width: width,
+                            physicalWidth: view?.physicalSize.width ?? 0,
+                            devicePixelRatio: view?.devicePixelRatio ?? 0,
+                          ),
+                        ),
+                      );
+                      if (bytes != null) {
+                        return CommandResult.ok(base64Encode(bytes));
+                      }
+                    }
+                    if (attempt < attempts) {
+                      await Future<void>.delayed(
+                        const Duration(milliseconds: 400),
+                      );
+                    }
+                  }
+                  return CommandResult.fail(
+                    controller == null
+                        ? 'no webview attached'
+                        : 'screenshot failed',
+                  );
+                })
+                .timeout(
+                  // A capture that never answers must not hold every later
+                  // one behind it.
+                  const Duration(seconds: 20),
+                  onTimeout: () => CommandResult.fail('screenshot timed out'),
                 );
-                if (bytes != null) {
-                  return CommandResult.ok(base64Encode(bytes));
-                }
-              }
-              if (attempt < attempts) {
-                await Future<void>.delayed(const Duration(milliseconds: 400));
-              }
-            }
-            return CommandResult.fail(
-              controller == null ? 'no webview attached' : 'screenshot failed',
-            );
           },
         ),
       );
@@ -1053,6 +1179,8 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   }
 
   void attach(InAppWebViewController controller, {bool freshLoads = false}) {
+    // A WebView whose widget left before it was created.
+    if (!pageNeeded.value) return;
     _freshLoads = freshLoads;
     // The WebView took its own cache mode at creation; the service worker's
     // follows it here (no view matches yet, so only that part applies).
@@ -1064,6 +1192,7 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
     _rendererDeadChecks = 0;
     _webViewGeneration++;
     _controller = controller;
+    pageFullscreen.value = false;
     // A rebuilt WebView is a fresh, visible native view. Its URL is not up
     // yet (the freeze matches by URL, so this sync usually finds nothing);
     // onPageLoaded retries once the page — and its URL — exist.
@@ -1274,6 +1403,9 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// capturing (a too-early PixelCopy returns an all-black frame).
   DateTime? _screenOnAt;
 
+  /// The screenshot command's captures, one at a time.
+  final _screenshots = SerialShared<CommandResult>();
+
   /// Whether the panel is lit, for the freeze gate in [_wantFrozen].
   bool _screenIsOn = true;
   final _coveredBy = <String>{};
@@ -1309,7 +1441,7 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
       ((_screensaverActive &&
               _dashboardCovered &&
               _settings.get(defs.freezeOnScreensaver)) ||
-          _coveredBy.isNotEmpty);
+          _coveredBy.any(_covers));
 
   /// An opaque full-screen surface reporting that it covers the dashboard
   /// (or stopped covering it). Freezing waits _scheduleFreezeSync's beat so
@@ -1317,12 +1449,137 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// blanking the dashboard while it still shows is a visible black flash);
   /// thawing applies immediately, on the same synchronous edge that starts
   /// the reveal, so the page is compositing again within a frame.
+  /// The Home Assistant Dashboard screensaver is up: it shows the page,
+  /// and the full-screen pages step aside under it (kiosk_screen.dart).
+  bool _saverShowsPage = false;
+
+  /// The pages the kiosk screen takes offstage under the Home Assistant
+  /// Dashboard screensaver. Their covers do not hold while it shows.
+  static const _pagesUnderDashboardSaver = {
+    'calendar',
+    'music library',
+    'compass menu',
+  };
+
+  bool _covers(String reason) =>
+      !_saverShowsPage || !_pagesUnderDashboardSaver.contains(reason);
+
+  /// The origin the dashboard page runs on, the secure context proxy's
+  /// while that is on: its localStorage is the page's.
+  String? get _pageOrigin {
+    if (startUrl.isEmpty) return null;
+    final uri = Uri.tryParse(urlMapper?.call(startUrl) ?? startUrl);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
+    return uri.origin;
+  }
+
+  /// Script that writes the JSON object [write] into localStorage, when
+  /// given, and evaluates to all of localStorage as JSON.
+  static String _storageJs(String? write) => write == null
+      ? 'JSON.stringify(localStorage)'
+      : '''
+(function () {
+  try {
+    var entries = JSON.parse(${jsonEncode(write)});
+    Object.keys(entries).forEach(function (k) {
+      localStorage.setItem(k, entries[k]);
+    });
+  } catch (e) {}
+  return JSON.stringify(localStorage);
+})()''';
+
+  /// Stands in for the page of its own in tests: (origin, script) to the
+  /// script's result.
+  @visibleForTesting
+  Future<Object?> Function(String origin, String js)? pageOriginOverride;
+
+  /// Runs [js] in an empty page of its own on the dashboard page's origin
+  /// and returns what it evaluates to, or null when it could not run. The
+  /// page's localStorage stays in the WebView's storage while no page is
+  /// loaded (a Compass layout without a dashboard view), and this is how
+  /// it is read and written then. The page lives for the one script.
+  Future<Object?> _runOnPageOrigin(String js) async {
+    final origin = _pageOrigin;
+    if (origin == null) return null;
+    final override = pageOriginOverride;
+    if (override != null) return override(origin, js);
+    final loaded = Completer<InAppWebViewController>();
+    final headless = HeadlessInAppWebView(
+      initialData: InAppWebViewInitialData(
+        data: '<!doctype html><title></title>',
+        baseUrl: WebUri('$origin/'),
+      ),
+      initialSettings: InAppWebViewSettings(
+        javaScriptEnabled: true,
+        domStorageEnabled: true,
+      ),
+      onLoadStop: (controller, _) {
+        if (!loaded.isCompleted) loaded.complete(controller);
+      },
+    );
+    try {
+      await headless.run();
+      final controller = await loaded.future.timeout(
+        const Duration(seconds: 10),
+      );
+      return await controller
+          .evaluateJavascript(source: js)
+          .timeout(javaScriptTimeout);
+    } catch (e) {
+      log.warn(name, "the page's storage could not be reached: $e");
+      return null;
+    } finally {
+      await headless.dispose();
+    }
+  }
+
   void setCovered(String reason, {required bool covered}) {
     final changed = covered
         ? _coveredBy.add(reason)
         : _coveredBy.remove(reason);
     if (!changed) return;
+    if (covered) exitPageFullscreen('$reason covers the dashboard');
     _scheduleFreezeSync();
+  }
+
+  /// Whether an element of the dashboard is in fullscreen. The WebView
+  /// draws it in a view of its own above the FlutterView, so nothing Kiosk
+  /// Satellite shows can be seen while it holds (issue #1461). Whole-page
+  /// requests never get here (page_fullscreen_script.dart), so this is a
+  /// video, a camera or a card that asked for it.
+  final pageFullscreen = ValueNotifier<bool>(false);
+
+  /// The dashboard's onEnterFullscreen and onExitFullscreen.
+  void onPageFullscreen(
+    InAppWebViewController controller, {
+    required bool fullscreen,
+  }) {
+    if (!isAttached(controller)) return;
+    if (pageFullscreen.value == fullscreen) return;
+    pageFullscreen.value = fullscreen;
+    log.info(
+      name,
+      fullscreen
+          ? 'an element of the dashboard went fullscreen'
+          : 'the dashboard left fullscreen',
+    );
+    // Something of the kiosk's was already up: it stays visible.
+    if (fullscreen && (_screensaverActive || _coveredBy.isNotEmpty)) {
+      exitPageFullscreen(
+        _screensaverActive
+            ? 'the screensaver is up'
+            : '${_coveredBy.join(', ')} covers the dashboard',
+      );
+    }
+  }
+
+  /// Takes the dashboard out of fullscreen so the kiosk can show something
+  /// over it. Returns whether it was in fullscreen.
+  bool exitPageFullscreen(String reason) {
+    if (!pageFullscreen.value) return false;
+    log.info(name, 'leaving fullscreen: $reason');
+    unawaited(runJs(exitPageFullscreenJs));
+    return true;
   }
 
   /// Every freeze edge from the bus lands here: freezing waits a beat so the
@@ -1383,6 +1640,10 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// few times; revealing a visible view is a no-op, so a healthy resume
   /// costs nothing.
   Future<void> _reassertFreeze() async {
+    // No dashboard page: matching on 'http' below would hide every other
+    // WebView instead, the camera view and the website screensaver among
+    // them.
+    if (!pageNeeded.value) return;
     for (final delay in const [0, 1, 2]) {
       if (delay > 0) await Future<void>.delayed(Duration(seconds: delay));
       final want = _wantFrozen;
@@ -1459,6 +1720,16 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
         _freezeKeepAliveEvery,
         (_) => pingHaConnection(),
       );
+      // The freeze is several native calls long. An overlay that closed in
+      // the middle of it (Compass swiping off the Calendar a second after
+      // it opened) found the books still saying "not frozen" and had
+      // nothing to undo, which left the dashboard hidden with nothing over
+      // it. Thaw now if nothing wants the freeze anymore.
+      if (!_wantFrozen) {
+        log.info(name, 'freeze undone: its cover left while it ran');
+        await _syncFreeze();
+        return;
+      }
       log.info(
         name,
         'rendering paused under '
@@ -1544,6 +1815,8 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   /// which fires on SPA navigations (pushState) that never reach
   /// onLoadStop. Deduped: a pushState with an unchanged URL says nothing.
   void onUrlChanged(String url) {
+    // Late news from a page already closed (see [detach]).
+    if (!pageNeeded.value) return;
     if (url == _currentUrl) return;
     _currentUrl = url;
     bus.publish(UrlChanged(url: url));
@@ -1551,6 +1824,8 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
 
   /// Called by the UI layer from the WebView's onLoadStop.
   void onPageLoaded(String url) {
+    // Late news from a page already closed (see [detach]).
+    if (!pageNeeded.value) return;
     _lastLoadHadHttpError = _httpErrorThisLoad;
     _pageLoadedAt = DateTime.now();
     // The error page Chromium commits for a failed load reaches here too,
@@ -1756,6 +2031,10 @@ class BrowserManager extends Manager with WidgetsBindingObserver {
   }
 
   Future<void> loadUrl(String url) async {
+    if (!pageNeeded.value) {
+      log.info(name, 'not loading $url: no dashboard view in use');
+      return;
+    }
     // An explicit navigation targets the main WebView; an overlay page
     // sitting above it would make the navigation invisible.
     dismissOverlay();

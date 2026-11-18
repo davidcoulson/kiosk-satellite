@@ -11,6 +11,7 @@ import '../managers/plugins/plugin_manager.dart';
 import '../l10n/messages.dart';
 import 'theme.dart';
 import 'ui_scale.dart' show UiScaleExempt, UiScaleScope;
+import 'compass/compass_touch_claims.dart';
 
 /// Plugin overlays and floating windows stay below the kiosk drawer and
 /// ambient overlays. Windows sit over the native overlays.
@@ -91,9 +92,10 @@ Map<String, Object?> pluginOverlayTheme(ThemeData theme) {
   };
 }
 
-/// Native plugin overlays, bottom to top. The kiosk has two of these
-/// layers: one in the kiosk plane under the menu and the screensaver, and
-/// one in the voice overlay's slot for overlays that asked to be on top.
+/// Native plugin overlays, bottom to top. The kiosk has three of these
+/// layers: one in the kiosk plane under the menu and the screensaver, one
+/// over every page and view that hides under the screensaver and the menu,
+/// and one in the voice overlay's slot for overlays that asked to be on top.
 ///
 /// An overlay that leaves with an exit transition stays in its place until
 /// the transition ends, with its view alive, so a hidden, replaced or
@@ -102,11 +104,17 @@ class PluginNativeOverlays extends StatefulWidget {
   const PluginNativeOverlays({
     super.key,
     required this.plugins,
-    this.onTop = false,
+    this.layer = PluginOverlayLayer.dashboard,
     this.hybrid = false,
+    this.onControlTouch,
   });
   final PluginManager plugins;
-  final bool onTop;
+  final PluginOverlayLayer layer;
+
+  /// Hears a touch on an overlay's view, or outside one that only closes
+  /// it, on its way down: the layer over the screensaver marks it, so the
+  /// touch reaches the plugin and does not wake the screensaver.
+  final VoidCallback? onControlTouch;
 
   /// Places each overlay's view in the Android view tree (hybrid
   /// composition) instead of drawing it into a texture. On Android 10 and
@@ -148,7 +156,7 @@ class _PluginNativeOverlaysState extends State<PluginNativeOverlays> {
   void _sync() {
     final live = {
       for (final o in widget.plugins.overlays.value)
-        if (o.onTop == widget.onTop) o.id: o,
+        if (o.layer == widget.layer) o.id: o,
     };
     // A re-created Activity re-keys every view, so nothing can stay to
     // play its exit.
@@ -199,15 +207,24 @@ class _PluginNativeOverlaysState extends State<PluginNativeOverlays> {
               _OutsideTouch(
                 key: ValueKey('outside:${overlay.id}@$_epoch'),
                 passThrough: overlay.passOutsideTouch,
-                onTouch: () => unawaited(widget.plugins.closeOverlay(overlay)),
+                onTouch: () {
+                  // A touch passed through is for what is under it.
+                  if (!overlay.passOutsideTouch) widget.onControlTouch?.call();
+                  unawaited(widget.plugins.closeOverlay(overlay));
+                },
               ),
-            _NativeOverlay(
+            // A touch on the overlay is the plugin's, never a Compass
+            // swipe. One that misses it (not touchable) is left alone.
+            CompassClaimTouches(
               key: ValueKey('${overlay.id}@$_epoch'),
-              overlay: overlay,
-              theme: theme,
-              leaving: _leaving.contains(overlay.id),
-              hybrid: widget.hybrid,
-              onLeft: () => _left(overlay.id),
+              child: _NativeOverlay(
+                overlay: overlay,
+                theme: theme,
+                leaving: _leaving.contains(overlay.id),
+                hybrid: widget.hybrid,
+                onLeft: () => _left(overlay.id),
+                onTouch: widget.onControlTouch,
+              ),
             ),
           ],
         ],
@@ -229,27 +246,35 @@ class _OutsideTouch extends StatelessWidget {
   final VoidCallback onTouch;
 
   @override
-  Widget build(BuildContext context) => Listener(
-    behavior: passThrough
-        ? HitTestBehavior.translucent
-        : HitTestBehavior.opaque,
-    onPointerDown: (_) => onTouch(),
-    child: const SizedBox.expand(),
-  );
+  Widget build(BuildContext context) {
+    final closer = Listener(
+      behavior: passThrough
+          ? HitTestBehavior.translucent
+          : HitTestBehavior.opaque,
+      onPointerDown: (_) => onTouch(),
+      child: const SizedBox.expand(),
+    );
+    // A touch that only closes is not a Compass swipe either. One passed
+    // through belongs to what is under it, which can be one.
+    return passThrough ? closer : CompassClaimTouches(child: closer);
+  }
 }
 
 class _NativeOverlay extends StatefulWidget {
   const _NativeOverlay({
-    super.key,
     required this.overlay,
     required this.theme,
     required this.leaving,
     required this.hybrid,
     required this.onLeft,
+    this.onTouch,
   });
   final PluginNativeOverlay overlay;
   final Map<String, Object?> theme;
   final bool hybrid;
+
+  /// A touch on the view, on its way down.
+  final VoidCallback? onTouch;
 
   /// Playing its exit transition. It no longer takes touches.
   final bool leaving;
@@ -440,26 +465,29 @@ class _NativeOverlayState extends State<_NativeOverlay>
                   // leaving one takes none.
                   child: IgnorePointer(
                     ignoring: !_ready || !overlay.touchable || widget.leaving,
-                    child: _view(
-                      // The density is fixed when the view is built, so a
-                      // new Scale UI factor builds it again.
-                      key: ValueKey(scale),
-                      params: {
-                        'id': overlay.pluginId,
-                        'session': overlay.session,
-                        'key': overlay.key,
-                        'generation': overlay.generation,
-                        'width': overlay.width,
-                        'height': overlay.height,
-                        'insets': [
-                          overlay.insets.left.round(),
-                          overlay.insets.top.round(),
-                          overlay.insets.right.round(),
-                          overlay.insets.bottom.round(),
-                        ],
-                        'scale': scale,
-                        'theme': widget.theme,
-                      },
+                    child: Listener(
+                      onPointerDown: (_) => widget.onTouch?.call(),
+                      child: _view(
+                        // The density is fixed when the view is built, so a
+                        // new Scale UI factor builds it again.
+                        key: ValueKey(scale),
+                        params: {
+                          'id': overlay.pluginId,
+                          'session': overlay.session,
+                          'key': overlay.key,
+                          'generation': overlay.generation,
+                          'width': overlay.width,
+                          'height': overlay.height,
+                          'insets': [
+                            overlay.insets.left.round(),
+                            overlay.insets.top.round(),
+                            overlay.insets.right.round(),
+                            overlay.insets.bottom.round(),
+                          ],
+                          'scale': scale,
+                          'theme': widget.theme,
+                        },
+                      ),
                     ),
                   ),
                 ),

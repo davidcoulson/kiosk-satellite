@@ -13,6 +13,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'alarm_ring_overlay.dart';
 import 'alarms_overlay.dart';
+import 'timers_overlay.dart';
 import 'calendar_overlay.dart';
 import 'music_library_overlay.dart';
 import '../core/permissions.dart';
@@ -22,8 +23,9 @@ import '../l10n/messages.dart';
 import '../l10n/gesture_messages.dart';
 import 'screensaver_view.dart';
 import '../core/events.dart';
-import '../managers/browser/carousel_script.dart';
 import '../managers/browser/preload_views_script.dart';
+import '../managers/browser/carousel_script.dart';
+import '../managers/screensaver/screensaver_manager.dart';
 import '../managers/browser/color_scheme_script.dart';
 import '../managers/browser/disable_suspend_script.dart';
 import '../managers/browser/dashboard_camera_script.dart';
@@ -33,6 +35,7 @@ import '../managers/browser/haptics_script.dart';
 import '../managers/device/haptics.dart';
 import '../managers/device/tap_sound.dart';
 import '../managers/browser/no_cache_script.dart';
+import '../managers/browser/page_fullscreen_script.dart';
 import '../managers/browser/pull_to_refresh_script.dart';
 import '../managers/browser/dashboards_watch_script.dart';
 import '../managers/browser/socket_watch_script.dart';
@@ -46,10 +49,12 @@ import '../managers/kiosk/kiosk_link.dart';
 import '../managers/wake_word/background_listening.dart';
 import '../managers/proxy/media_rewrite_script.dart';
 import '../managers/sendspin/music_assistant_api.dart';
+import '../managers/home_assistant/custom_pages.dart' show viewPathUrl;
 import '../managers/home_assistant/kiosk_mode.dart';
 import '../managers/gestures/gesture_mappings.dart';
 import '../managers/browser/browser_manager.dart';
 import '../managers/plugins/plugin_camera.dart';
+import '../managers/plugins/plugin_manager.dart' show PluginOverlayLayer;
 import 'package:mobile_scanner/mobile_scanner.dart' show CameraFacing;
 import '../managers/settings/definitions.dart' as defs;
 import 'app_launcher_overlay.dart';
@@ -58,6 +63,7 @@ import 'lockdown_shield.dart';
 import 'theater_overlay.dart';
 import 'notification_overlay.dart';
 import 'plugin_overlay.dart';
+import 'navigation_view.dart';
 import 'offline_notice.dart';
 import 'dlna_media_overlay.dart';
 import 'camera_view_overlay.dart';
@@ -72,9 +78,14 @@ import 'sendspin_player_overlay.dart';
 import 'assist/assist_overlay.dart';
 import 'toast.dart';
 import 'settings_screen.dart';
+import 'voice_match_enroll_overlay.dart';
 import 'voice_timer_overlay.dart';
 import 'web_console_panel.dart';
 import 'webview_server_trust.dart';
+import 'compass/compass_controller.dart';
+import '../managers/navigation/compass_layout.dart';
+import 'compass/compass_stage.dart';
+import '../managers/browser/compass_page_script.dart';
 
 /// Watches the navigator for the kiosk screen (issue #377): a dialog
 /// pushed over it — the exit confirm, the PIN prompt, a picker — must flip
@@ -138,6 +149,9 @@ class _KioskScreenState extends State<KioskScreen>
     c.calendar.visible,
     c.screensaver.nowPlayingCovers,
     c.sendspin.fullscreenActive,
+    _compass.menuVisible,
+    _compass.planeCovered,
+    c.screensaver.dashboardShowing,
   ]);
 
   /// The kiosk plane leaves the frame under something that hides the whole
@@ -148,6 +162,10 @@ class _KioskScreenState extends State<KioskScreen>
   /// through an image view, which on an Echo Show costs a bitmap and a
   /// garbage collection every few frames.
   bool get _planeHidden {
+    // The Home Assistant Dashboard screensaver shows the page itself.
+    if (c.screensaver.dashboardShowing.value) return false;
+    // A Compass swipe's stage covers everything while it moves.
+    if (_compass.planeCovered.value) return true;
     if (!c.browser.renderingFrozenState.value) return false;
     final view = c.screensaver.activeView.value;
     return view == 'weather_mood' ||
@@ -156,6 +174,7 @@ class _KioskScreenState extends State<KioskScreen>
         c.voice.covers.value ||
         c.musicLibrary.visible.value ||
         c.calendar.visible.value ||
+        _compass.menuVisible.value ||
         _nowPlayingCovers;
   }
 
@@ -164,15 +183,36 @@ class _KioskScreenState extends State<KioskScreen>
     c.voice.covers,
     c.screensaver.nowPlayingCovers,
     c.sendspin.fullscreenActive,
+    c.screensaver.dashboardShowing,
   ]);
 
   /// The calendar and the music library are drawn under a voice turn whose
   /// backdrop hides the screen, and the library under Now Playing, which
   /// it stays open beneath. Impeller keeps no raster cache, so each frame
   /// would draw them again for nothing.
-  bool _pagesHidden() => c.voice.covers.value || _nowPlayingCovers;
+  bool _pagesHidden() =>
+      c.voice.covers.value || _nowPlayingCovers || _underDashboardSaver();
+
+  /// The Home Assistant Dashboard screensaver is a clear layer over the
+  /// page: the full-screen pages over the page step aside while it shows,
+  /// or it would show them instead, such as the Compass center.
+  bool _underDashboardSaver() => c.screensaver.dashboardShowing.value;
 
   bool _consoleOpen = false;
+
+  /// Compass navigation (Settings > Navigation): the views in a cross,
+  /// the swipe between them and the Menu view that takes the drawer's
+  /// place. Idle while Classic is picked.
+  late final CompassController _compass = CompassController(c)..start();
+
+  /// The page or view on screen, which plugins hear as navigation.view,
+  /// and whether the plugin overlays of the views layer show.
+  late final NavigationViewTracker _navView = NavigationViewTracker(
+    c,
+    _compass,
+    _drawer,
+  )..start();
+
   StreamSubscription<SettingChanged>? _settingsSub;
   StreamSubscription<KioskExitGesture>? _gestureSub;
   StreamSubscription<GestureActionCompleted>? _gestureResultSub;
@@ -250,11 +290,26 @@ class _KioskScreenState extends State<KioskScreen>
     final last = _lastBackAt;
     _lastBackAt = now;
     if (last != null && now.difference(last) < _backEcho) return;
+    // An element of the dashboard in fullscreen covers everything here,
+    // so back first takes it out, as Back does in a browser. Anything else
+    // would act on what cannot be seen (issue #1461).
+    if (c.browser.exitPageFullscreen('back')) return;
+    // The views layer draws over every page and view, so one of its
+    // overlays closes before the page under it.
+    final overViews = _navView.viewsLayerHidden.value || c.kiosk.lockdownActive
+        ? null
+        : c.plugins.backOverlayIn(PluginOverlayLayer.views);
+    if (overViews != null) {
+      unawaited(c.plugins.closeOverlay(overViews));
+      return;
+    }
     if (_drawer.value == 0 &&
         !c.screensaver.isActive &&
+        !_compass.menuVisible.value &&
         !c.launcher.visible.value &&
         !c.intercom.rosterVisible.value &&
         !c.alarms.visible.value &&
+        !c.voiceTimers.visible.value &&
         !c.calendar.visible.value &&
         !c.musicLibrary.visible.value &&
         c.camera.activeViewId.value == null &&
@@ -280,9 +335,11 @@ class _KioskScreenState extends State<KioskScreen>
           c.launcher.visible.value ||
           c.intercom.rosterVisible.value ||
           c.alarms.visible.value ||
+          c.voiceTimers.visible.value ||
           c.calendar.visible.value ||
           c.musicLibrary.visible.value,
       overlayUp: c.browser.overlayUrl.value != null,
+      overlayOnTop: _compass.enabled,
       cameraViewUp: c.camera.activeViewId.value != null,
       cameraFocused: c.camera.focusedCameraId.value != null,
       screensaverActive: c.screensaver.isActive,
@@ -295,6 +352,10 @@ class _KioskScreenState extends State<KioskScreen>
       'back: ${action.name} (armed=$armed, drawer=${_drawer.value > 0})',
     );
     switch (action) {
+      // Now Playing as the Compass center: stopping it would only open it
+      // again, so back opens the Menu as it does on any other center.
+      case BackAction.stopScreensaver when c.screensaver.nowPlayingIsCenter:
+        unawaited(_compass.goMenu());
       case BackAction.stopScreensaver:
         unawaited(c.commands.execute('stopScreensaver', const {}));
       case BackAction.closeDrawer:
@@ -310,9 +371,13 @@ class _KioskScreenState extends State<KioskScreen>
             (c.musicLibrary.backHandler?.call() ?? false)) {
           break;
         }
+        // The page is a Compass view on a side: back goes to the center
+        // without the page closing first.
+        if (_compass.closeToCenter(_compass.currentView.kind)) break;
         c.launcher.visible.value = false;
         c.intercom.rosterVisible.value = false;
         c.alarms.visible.value = false;
+        c.voiceTimers.visible.value = false;
         c.calendar.visible.value = false;
         c.musicLibrary.visible.value = false;
       case BackAction.dismissOverlay:
@@ -321,7 +386,21 @@ class _KioskScreenState extends State<KioskScreen>
       case BackAction.unfocusCamera:
         c.camera.focusCamera(null);
       case BackAction.hideCameraView:
+        if (_compass.closeToCenter('camera')) break;
         c.camera.hideView();
+      case BackAction.openDrawer when _compass.enabled:
+        // Compass has no drawer. Back walks home to the center, and from
+        // the center opens the Menu, the way it opens the drawer.
+        unawaited(
+          _compass.current.value.isCenter
+              ? _compass.goMenu()
+              : _compass.goCenter(),
+        );
+      // Away from the center, back goes home there, whatever a locked
+      // kiosk's menu rules say.
+      case BackAction.back
+          when _compass.enabled && !_compass.current.value.isCenter:
+        unawaited(_compass.goCenter());
       case BackAction.openDrawer:
         // Mirrors the edge swipe: opening while locked earns only the
         // restricted quick menu, never the full one.
@@ -396,6 +475,7 @@ class _KioskScreenState extends State<KioskScreen>
   /// through to the page (discussion #1069), and a pull there must not
   /// reload it.
   bool get _ptrEnabled =>
+      !_compass.enabled &&
       c.settings.get(defs.pullToRefresh) &&
       !(c.kiosk.locked && c.settings.get(defs.kioskDisablePullRefresh)) &&
       !c.screensaver.isActive;
@@ -404,7 +484,23 @@ class _KioskScreenState extends State<KioskScreen>
   /// the screensaver is up for the same reason as [_ptrEnabled]. A swipe
   /// must not take the screensaver's view away.
   bool get _carouselEnabled =>
-      c.settings.get(defs.haDashboardCarousel) && !c.screensaver.isActive;
+      !_compass.enabled &&
+      c.settings.get(defs.haDashboardCarousel) &&
+      !c.screensaver.isActive;
+
+  /// Compass's page probe, live while Compass is picked and the
+  /// screensaver is down.
+  bool get _compassPageEnabled => _compass.enabled && !c.screensaver.isActive;
+
+  /// Push the navigation style onto the live page and the native state
+  /// that depends on it: pull to refresh and the carousel stand down
+  /// while Compass is on.
+  Future<void> _syncNavigation() async {
+    await _syncPullToRefresh();
+    await _syncCarousel();
+    await c.browser.runJs('window.__ksCompassEnabled = $_compassPageEnabled;');
+    if (mounted) setState(() {});
+  }
 
   /// Push the current effective carousel state onto the live page. The
   /// sync call makes the script act on it now: build the preview strip, or
@@ -583,6 +679,7 @@ class _KioskScreenState extends State<KioskScreen>
     }
     if (e.key == defs.allowMixedContent.key ||
         e.key == defs.ignoreSslErrors.key ||
+        e.key == defs.browserUserAgent.key ||
         e.key == defs.disableCache.key ||
         e.key == defs.pinchToZoom.key ||
         e.key == defs.wsFilter.key ||
@@ -670,6 +767,7 @@ class _KioskScreenState extends State<KioskScreen>
         c.launcher.visible.value = false;
         c.intercom.rosterVisible.value = false;
         c.alarms.visible.value = false;
+        c.voiceTimers.visible.value = false;
         c.calendar.visible.value = false;
         c.musicLibrary.visible.value = false;
       }
@@ -697,6 +795,7 @@ class _KioskScreenState extends State<KioskScreen>
         e.key == defs.intercomEnabled.key ||
         e.key == defs.kioskAllowIntercom.key ||
         e.key == defs.kioskAllowAlarms.key ||
+        e.key == defs.kioskAllowTimers.key ||
         e.key == defs.kioskAllowCalendar.key ||
         e.key == defs.kioskAllowMusicLibrary.key ||
         e.key == defs.remoteEnabled.key ||
@@ -739,6 +838,10 @@ class _KioskScreenState extends State<KioskScreen>
       await _syncPullToRefresh();
       return;
     }
+    if (e.key == defs.navStyle.key) {
+      await _syncNavigation();
+      return;
+    }
     // Wake word detection is negotiated with the Voice Satellite card at page
     // load (it asks whether we can run its engine natively, and we answer with
     // our own enabled setting). Reload so that handoff is re-evaluated:
@@ -773,6 +876,11 @@ class _KioskScreenState extends State<KioskScreen>
         await ensureOsPermission(permission);
         await c.browser.runJs('location.reload();');
       }
+    }
+    // Turned off, a page already watching the position keeps its grant
+    // until it loads again.
+    if (e.key == defs.webGeolocation.key && e.value == false) {
+      await c.browser.runJs('location.reload();');
     }
   }
 
@@ -830,6 +938,7 @@ class _KioskScreenState extends State<KioskScreen>
     _missingSub = c.bus.on<WebViewMissing>().listen((_) {
       if (mounted) setState(() {});
     });
+    c.browser.pageNeeded.addListener(_onPageNeeded);
     _settingsSub = c.bus.on<SettingChanged>().listen(_onSettingChanged);
     _gestureSub = c.bus.on<KioskExitGesture>().listen(_onExitGesture);
     // A plugin's barcode scan opens over whatever is showing.
@@ -883,6 +992,9 @@ class _KioskScreenState extends State<KioskScreen>
       _syncNavCapture();
       unawaited(_syncPullToRefresh());
       unawaited(_syncCarousel());
+      unawaited(
+        c.browser.runJs('window.__ksCompassEnabled = $_compassPageEnabled;'),
+      );
     });
     _backSub = c.bus.on<KioskBackPressed>().listen((_) {
       if (!mounted || _settingsOpen) return;
@@ -899,6 +1011,7 @@ class _KioskScreenState extends State<KioskScreen>
       c.launcher.visible.value = false;
       c.intercom.rosterVisible.value = false;
       c.alarms.visible.value = false;
+      c.voiceTimers.visible.value = false;
       c.calendar.visible.value = false;
       c.musicLibrary.visible.value = false;
       if (c.browser.overlayUrl.value != null) c.browser.dismissOverlay();
@@ -918,6 +1031,7 @@ class _KioskScreenState extends State<KioskScreen>
     c.launcher.visible.addListener(_onOverlayChanged);
     c.intercom.rosterVisible.addListener(_onOverlayChanged);
     c.alarms.visible.addListener(_onOverlayChanged);
+    c.voiceTimers.visible.addListener(_onOverlayChanged);
     c.calendar.visible.addListener(_onOverlayChanged);
     c.musicLibrary.visible.addListener(_onOverlayChanged);
     c.plugins.windows.addListener(_onOverlayChanged);
@@ -1151,6 +1265,14 @@ class _KioskScreenState extends State<KioskScreen>
       source: visibilityMaskScript,
       injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
     ),
+    // The kiosk already fills the screen: a request to put the whole page
+    // in fullscreen is skipped, since the WebView would draw it above every
+    // Kiosk Satellite surface (issue #1461).
+    UserScript(
+      source: pageFullscreenScript,
+      injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+      forMainFrameOnly: false,
+    ),
     UserScript(
       source:
           dashboardCameraScript +
@@ -1222,6 +1344,15 @@ class _KioskScreenState extends State<KioskScreen>
     ),
     UserScript(
       source: dashboardCarouselScript,
+      injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+    ),
+    // Compass's page probe: the same always-injected, flag-gated contract.
+    UserScript(
+      source: 'window.__ksCompassEnabled = $_compassPageEnabled;',
+      injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+    ),
+    UserScript(
+      source: compassPageScript,
       injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
     ),
     // View preloading: same contract again. The flag is read once per
@@ -1418,6 +1549,7 @@ class _KioskScreenState extends State<KioskScreen>
         c.launcher.visible.value ||
         c.intercom.rosterVisible.value ||
         c.alarms.visible.value ||
+        c.voiceTimers.visible.value ||
         c.calendar.visible.value ||
         c.musicLibrary.visible.value ||
         c.camera.activeViewId.value != null ||
@@ -1532,6 +1664,7 @@ class _KioskScreenState extends State<KioskScreen>
           c.launcher.visible.value ||
           c.intercom.rosterVisible.value ||
           c.alarms.visible.value ||
+          c.voiceTimers.visible.value ||
           c.calendar.visible.value ||
           c.musicLibrary.visible.value ||
           c.browser.overlayUrl.value != null ||
@@ -1605,8 +1738,29 @@ class _KioskScreenState extends State<KioskScreen>
       final ok = await _askPin();
       if (!ok || !mounted) return;
     }
+    // Compass has no drawer: the gesture earns the full Menu view, or
+    // Settings itself when the layout holds no Menu.
+    if (_compass.enabled) {
+      if (_compass.layout.holds(CompassView.menu)) {
+        await _compass.goMenu(unlocked: true);
+      } else {
+        await _openSettings();
+      }
+      return;
+    }
     setState(() => _drawerRestricted = false);
     _drawer.fling(velocity: 1);
+  }
+
+  /// The locked Menu view's Settings tile: the PIN, when one is set, then
+  /// the full Menu. Under lockdown the shield takes every touch, so this
+  /// is never reached there.
+  Future<void> _unlockMenu() async {
+    if (c.kiosk.pinRequired) {
+      final ok = await _askPin();
+      if (!ok || !mounted) return;
+    }
+    await _compass.goMenu(unlocked: true);
   }
 
   Future<bool> _askPin() async {
@@ -1670,13 +1824,16 @@ class _KioskScreenState extends State<KioskScreen>
     HardwareKeyboard.instance.removeHandler(_onKey);
     FocusManager.instance.removeEarlyKeyEventHandler(_onEarlyKey);
     _drawerFocus.dispose();
+    _navView.dispose();
     _drawer.dispose();
+    _compass.dispose();
     _settingsSub?.cancel();
     _gestureSub?.cancel();
     _gestureResultSub?.cancel();
     _consoleReqSub?.cancel();
     _rebuildSub?.cancel();
     _missingSub?.cancel();
+    c.browser.pageNeeded.removeListener(_onPageNeeded);
     _backSub?.cancel();
     _homeSub?.cancel();
     _wakeSub?.cancel();
@@ -1691,6 +1848,7 @@ class _KioskScreenState extends State<KioskScreen>
     c.launcher.visible.removeListener(_onOverlayChanged);
     c.intercom.rosterVisible.removeListener(_onOverlayChanged);
     c.alarms.visible.removeListener(_onOverlayChanged);
+    c.voiceTimers.visible.removeListener(_onOverlayChanged);
     c.calendar.visible.removeListener(_onOverlayChanged);
     c.musicLibrary.visible.removeListener(_onOverlayChanged);
     c.plugins.windows.removeListener(_onOverlayChanged);
@@ -1703,6 +1861,18 @@ class _KioskScreenState extends State<KioskScreen>
   void _onOverlayChanged() {
     if (mounted) setState(() {});
     _syncNavCapture();
+    // A ringing alarm or a page opened from Home Assistant has to be seen,
+    // and an element of the dashboard in fullscreen is drawn above them all.
+    if (c.browser.overlayUrl.value != null ||
+        c.launcher.visible.value ||
+        c.intercom.rosterVisible.value ||
+        c.alarms.visible.value ||
+        c.voiceTimers.visible.value ||
+        c.calendar.visible.value ||
+        c.musicLibrary.visible.value ||
+        c.plugins.windows.value.isNotEmpty) {
+      c.browser.exitPageFullscreen('a kiosk page opened');
+    }
   }
 
   @override
@@ -1739,7 +1909,11 @@ class _KioskScreenState extends State<KioskScreen>
         // panel's side: the dashboard lays itself out in the room left
         // instead of under the panel. The plane's overdraw keeps its new
         // edge a pixel under the panel.
-        if (_activityAttached && !c.browser.webViewMissing)
+        // No use for the page (a Compass layout without a dashboard view):
+        // no WebView at all.
+        if (_activityAttached &&
+            !c.browser.webViewMissing &&
+            c.browser.pageNeeded.value)
           ValueListenableBuilder<EdgeInsets>(
             valueListenable: c.screensaver.pageReserve,
             child: UiScaleExempt(child: _webView()),
@@ -1765,7 +1939,9 @@ class _KioskScreenState extends State<KioskScreen>
         // dashboard (and the Voice Satellite session with it) never
         // unloads. A wake detection hides this instantly, revealing the
         // live dashboard underneath (see initState).
-        _OverlayHost(container: c),
+        // In Classic it sits on the dashboard and slides with the drawer.
+        // Under Compass it floats over the views instead (below).
+        if (!_compass.enabled) _OverlayHost(container: c),
         PluginOverlay(
           plugins: c.plugins,
           hybrid: c.settings.get(defs.hybridPluginOverlays),
@@ -1798,236 +1974,340 @@ class _KioskScreenState extends State<KioskScreen>
     );
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Listener(
-        onPointerDown: (_) =>
-            c.bus.publish(const ActivityDetected(source: 'touch')),
-        child: AnimatedBuilder(
-          animation: _drawer,
-          builder: (context, _) {
-            final dx = _drawerWidth * _drawer.value;
-            final open = _drawer.value > 0;
-            return PopScope(
-              // Back is never left to the default pop. Over the bare kiosk
-              // the first press opens the menu instead (discussion #312:
-              // the OS back gesture owns the left edge on gesture
-              // navigation devices, so the menu swipe arrives as a back
-              // press), and everything else back does — close a layer,
-              // step the page's history, leave the app — runs through the
-              // one ladder in _handleBack, which knows kiosk mode and the
-              // home role must never background the app (issue #219): a
-              // home screen never finishes on back, and letting the pop
-              // through either fell to the task below (a Meta Portal's
-              // still-running launcher) or had the system tear down and
-              // relaunch the home Activity on every press. This is the
-              // predictive-back path; devices that still deliver Back as
-              // a KeyEvent are caught in KioskLock before it ever reaches
-              // here, and land in the same ladder via KioskBackPressed.
-              canPop: false,
-              onPopInvokedWithResult: (didPop, _) {
-                if (didPop) return;
-                _handleBack();
-              },
-              child: Stack(
-                fit: StackFit.expand,
-                // No clip: the default hard-edge clip is floored to whole
-                // logical pixels when the engine applies it to the WebView's
-                // platform view, which on fractional-ratio displays (Echo
-                // Show, 1.21875) shaved the last physical pixel off the right
-                // and bottom edges. Nothing here needs clipping - every child
-                // either fills the screen or slides fully off it.
-                clipBehavior: Clip.none,
-                children: [
-                  // The kiosk plane, pushed right in step with the drawer.
-                  // It keeps its full size — it slides, it is never squeezed
-                  // (resizing the platform view would reflow the page).
-                  Positioned(
-                    left: dx,
-                    top: 0,
-                    width: size.width + overdraw,
-                    height: size.height + overdraw,
-                    child: ListenableBuilder(
-                      listenable: _planeCover,
-                      child: kioskPlane,
-                      // Its tickers stop with it: the floating player's
-                      // marquee asked for every frame under the page that
-                      // hid it.
-                      builder: (context, child) {
-                        final hidden = _planeHidden;
-                        return Offstage(
-                          offstage: hidden,
-                          child: TickerMode(enabled: !hidden, child: child!),
-                        );
-                      },
-                    ),
-                  ),
-                  // The drawer plane, sliding in from the same seam. While
-                  // fully closed its entries sit just offscreen, still
-                  // built: without the exclusion a directional focus search
-                  // (issue #377) would happily land on them. Status, not
-                  // value, so the pane is focusable the instant an open
-                  // begins — _focusDrawer runs before the first tick moves
-                  // the value off zero.
-                  Positioned(
-                    left: dx - _drawerWidth,
-                    top: 0,
-                    bottom: 0,
-                    width: _drawerWidth,
-                    child: ExcludeFocus(
-                      excluding: _drawer.status == AnimationStatus.dismissed,
-                      child: drawerPane,
-                    ),
-                  ),
-                  // While open, the visible slice of the kiosk closes the
-                  // drawer on tap or drag — no scrim: dimming the content
-                  // would put the drawer visually "above" it again.
-                  if (open)
+      body: CompassGestureLayer(
+        controller: _compass,
+        child: Listener(
+          onPointerDown: (_) =>
+              c.bus.publish(const ActivityDetected(source: 'touch')),
+          child: AnimatedBuilder(
+            animation: _drawer,
+            builder: (context, _) {
+              final dx = _drawerWidth * _drawer.value;
+              final open = _drawer.value > 0;
+              return PopScope(
+                // Back is never left to the default pop. Over the bare kiosk
+                // the first press opens the menu instead (discussion #312:
+                // the OS back gesture owns the left edge on gesture
+                // navigation devices, so the menu swipe arrives as a back
+                // press), and everything else back does — close a layer,
+                // step the page's history, leave the app — runs through the
+                // one ladder in _handleBack, which knows kiosk mode and the
+                // home role must never background the app (issue #219): a
+                // home screen never finishes on back, and letting the pop
+                // through either fell to the task below (a Meta Portal's
+                // still-running launcher) or had the system tear down and
+                // relaunch the home Activity on every press. This is the
+                // predictive-back path; devices that still deliver Back as
+                // a KeyEvent are caught in KioskLock before it ever reaches
+                // here, and land in the same ladder via KioskBackPressed.
+                canPop: false,
+                onPopInvokedWithResult: (didPop, _) {
+                  if (didPop) return;
+                  _handleBack();
+                },
+                child: Stack(
+                  fit: StackFit.expand,
+                  // No clip: the default hard-edge clip is floored to whole
+                  // logical pixels when the engine applies it to the WebView's
+                  // platform view, which on fractional-ratio displays (Echo
+                  // Show, 1.21875) shaved the last physical pixel off the right
+                  // and bottom edges. Nothing here needs clipping - every child
+                  // either fills the screen or slides fully off it.
+                  clipBehavior: Clip.none,
+                  children: [
+                    // The kiosk plane, pushed right in step with the drawer.
+                    // It keeps its full size — it slides, it is never squeezed
+                    // (resizing the platform view would reflow the page).
                     Positioned(
                       left: dx,
                       top: 0,
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: _closeDrawer,
-                        onHorizontalDragUpdate: _drawerDragUpdate,
-                        onHorizontalDragEnd: _drawerDragEnd,
+                      width: size.width + overdraw,
+                      height: size.height + overdraw,
+                      child: ListenableBuilder(
+                        listenable: _planeCover,
+                        child: kioskPlane,
+                        // Its tickers stop with it: the floating player's
+                        // marquee asked for every frame under the page that
+                        // hid it.
+                        builder: (context, child) {
+                          final hidden = _planeHidden;
+                          return Offstage(
+                            offstage: hidden,
+                            child: TickerMode(enabled: !hidden, child: child!),
+                          );
+                        },
                       ),
                     ),
-                  // Closed: the edge strip that swipes it open — unless
-                  // kiosk mode holds the door; then only the exit gesture
-                  // (and its PIN) opens the menu, or, when the owner opted
-                  // into quick actions, the same swipe opens the restricted
-                  // one (which mode is decided as the drag starts).
-                  if (!open && (!c.kiosk.locked || _quickMenuAvailable))
+                    // The drawer plane, sliding in from the same seam. While
+                    // fully closed its entries sit just offscreen, still
+                    // built: without the exclusion a directional focus search
+                    // (issue #377) would happily land on them. Status, not
+                    // value, so the pane is focusable the instant an open
+                    // begins — _focusDrawer runs before the first tick moves
+                    // the value off zero.
                     Positioned(
-                      left: 0,
+                      left: dx - _drawerWidth,
                       top: 0,
                       bottom: 0,
-                      width: 48,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.translucent,
-                        onHorizontalDragStart: (_) {
-                          if (_drawerRestricted != c.kiosk.locked) {
-                            setState(() => _drawerRestricted = c.kiosk.locked);
-                          }
-                        },
-                        onHorizontalDragUpdate: _drawerDragUpdate,
-                        onHorizontalDragEnd: _drawerDragEnd,
+                      width: _drawerWidth,
+                      child: ExcludeFocus(
+                        excluding: _drawer.status == AnimationStatus.dismissed,
+                        child: drawerPane,
                       ),
                     ),
-                  // Over both planes (the drawer included — an outage is
-                  // just as true with the menu open), and under every
-                  // full-screen overlay below, which owns the display while
-                  // it is up.
-                  NetworkToast(container: c),
-                  // Media pushed over DLNA covers both planes like the
-                  // screensaver does; the screensaver stays away while it
-                  // plays (playback reports activity).
-                  DlnaMediaOverlay(container: c),
-                  // Below the screensaver: an abandoned launcher gives way
-                  // to it (the manager also closes on screensaver start).
-                  AppLauncherOverlay(container: c),
-                  // The intercom's Call a kiosk screen, the launcher's
-                  // twin: full screen, below the screensaver, closed by
-                  // the manager when a call starts.
-                  IntercomRosterOverlay(container: c),
-                  // The alarm list, the launcher's twin again: full
-                  // screen, below the screensaver.
-                  AlarmsOverlay(container: c),
-                  // The family calendar, the launcher's twin as well:
-                  // full screen, below the screensaver.
-                  _HiddenUnder(
-                    listenable: _pagesCover,
-                    hidden: _pagesHidden,
-                    child: CalendarOverlay(container: c),
-                  ),
-                  // The music library, the same kind of page: full
-                  // screen, below the screensaver, so Now Playing opened
-                  // from its player bar comes up over it.
-                  _HiddenUnder(
-                    listenable: _pagesCover,
-                    hidden: _pagesHidden,
-                    child: MusicLibraryOverlay(container: c),
-                  ),
-                  // The screensaver covers both planes — it owns the whole
-                  // display, drawer open or not.
-                  // Paused under the native voice overlay, which
-                  // draws over it instead of dismissing it.
-                  PausedUnder(
-                    paused: c.screensaver.renderPaused,
-                    child: ScreensaverOverlay(container: c),
-                  ),
-                  CameraViewOverlay(container: c),
-                  // The camera preview a face wake leaves behind
-                  // (discussion #371): over the screensaver, whose fade
-                  // out it appears through, and answering no touch.
-                  FacePreviewOverlay(motion: c.motion, settings: c.settings),
-                  // The black timeout cover while a voice turn shows: the
-                  // turn draws over it (issue #746). Outside a turn it
-                  // sits above everything below.
-                  ScreensaverBlankOverlay(container: c, underVoice: true),
-                  // A turn a plugin skin draws: double tap dismisses it.
-                  AssistPluginSkinTouch(container: c),
-                  // Plugin overlays that asked to be on top, in the voice
-                  // overlay's slot: over the screensaver, the menu and the
-                  // camera views, under a notification or call card, the
-                  // voice overlay itself and the lockdown shield. During a
-                  // turn they are over the black cover too, so a plugin
-                  // skin draws the turn there. The rest live in the kiosk
-                  // plane.
-                  PluginNativeOverlays(
-                    plugins: c.plugins,
-                    onTop: true,
-                    hybrid: c.settings.get(defs.hybridPluginOverlays),
-                  ),
-                  // Above every overlay a notification could arrive
-                  // behind (the screensaver, a camera wall, a plugin drawn
-                  // on top) because a message from the house is worth
-                  // covering them for, and below the lockdown shield,
-                  // which is the one thing whose whole job is that nothing
-                  // here answers a touch.
-                  NotificationOverlay(notifications: c.notifications),
-                  // The intercom's call card: over the screensaver and a
-                  // camera wall like a notification, since a call coming
-                  // in wakes the screen for exactly this, and under the
-                  // lockdown shield, whose kiosk answers as Do not disturb.
-                  IntercomCallOverlay(container: c),
-                  // An announcement from Home Assistant: its own card, with
-                  // the spoken text, in the same slot.
-                  AnnouncementOverlay(container: c),
-                  // Native Voice Satellite: the assist overlay, in the same
-                  // slot, over the screensaver and the camera views.
-                  AssistOverlay(container: c),
-                  // The timer pills stay over the voice overlay, as Voice
-                  // Satellite stacks them over its own.
-                  VoiceTimerOverlay(container: c),
-                  ScreensaverBlankOverlay(container: c),
-                  // Theater mode's wash and touch gate: over every plane
-                  // and overlay so the whole display dims and the first
-                  // touch in the dark presses nothing, and under the
-                  // lockdown shield, which still owns every touch (IX-8).
-                  TheaterOverlay(theater: c.theater),
-                  // Lockdown Mode's touch shield: topmost, above every
-                  // overlay, so nothing on screen is tappable while it
-                  // holds. Transparent by default — the dashboard stays
-                  // glanceable, it just stops answering — or solid black
-                  // with the blackout toggle. The exit gesture still works:
-                  // its taps are counted natively before Flutter sees them.
-                  if (c.kiosk.lockdownActive)
-                    LockdownShield(
-                      blackout: c.settings.get(defs.lockdownBlackout),
+                    // While open, the visible slice of the kiosk closes the
+                    // drawer on tap or drag — no scrim: dimming the content
+                    // would put the drawer visually "above" it again.
+                    if (open)
+                      Positioned(
+                        left: dx,
+                        top: 0,
+                        bottom: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _closeDrawer,
+                          onHorizontalDragUpdate: _drawerDragUpdate,
+                          onHorizontalDragEnd: _drawerDragEnd,
+                        ),
+                      ),
+                    // Closed: the edge strip that swipes it open — unless
+                    // kiosk mode holds the door; then only the exit gesture
+                    // (and its PIN) opens the menu, or, when the owner opted
+                    // into quick actions, the same swipe opens the restricted
+                    // one (which mode is decided as the drag starts).
+                    if (!open &&
+                        !_compass.enabled &&
+                        (!c.kiosk.locked || _quickMenuAvailable))
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: 48,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onHorizontalDragStart: (_) {
+                            if (_drawerRestricted != c.kiosk.locked) {
+                              setState(
+                                () => _drawerRestricted = c.kiosk.locked,
+                              );
+                            }
+                          },
+                          onHorizontalDragUpdate: _drawerDragUpdate,
+                          onHorizontalDragEnd: _drawerDragEnd,
+                        ),
+                      ),
+                    // Over both planes (the drawer included — an outage is
+                    // just as true with the menu open), and under every
+                    // full-screen overlay below, which owns the display while
+                    // it is up.
+                    NetworkToast(container: c),
+                    // Media pushed over DLNA covers both planes like the
+                    // screensaver does; the screensaver stays away while it
+                    // plays (playback reports activity).
+                    DlnaMediaOverlay(container: c),
+                    // Compass's Menu view, in the drawer's place: under every
+                    // page it opens, so they come up over it.
+                    _HiddenUnder(
+                      listenable: c.screensaver.dashboardShowing,
+                      hidden: _underDashboardSaver,
+                      child: _CompassMenu(
+                        compass: _compass,
+                        onSettings: _openSettings,
+                        onUnlock: _unlockMenu,
+                      ),
                     ),
-                  // An alarm on its own view: over everything, the lockdown
-                  // shield included, since Stop has to answer. Its sunrise
-                  // covers the screensaver and the dark panel too.
-                  AlarmRingOverlay(container: c),
-                  // A fleet invitation: above the shield, since answering
-                  // it is an admin act the shield must not swallow.
-                  FleetInviteOverlay(container: c),
-                ],
-              ),
-            );
-          },
+                    // Below the screensaver: an abandoned launcher gives way
+                    // to it (the manager also closes on screensaver start).
+                    _HiddenUnder(
+                      listenable: c.screensaver.dashboardShowing,
+                      hidden: _underDashboardSaver,
+                      child: AppLauncherOverlay(container: c),
+                    ),
+                    // The intercom's Call a kiosk screen, the launcher's
+                    // twin: full screen, below the screensaver, closed by
+                    // the manager when a call starts.
+                    _HiddenUnder(
+                      listenable: c.screensaver.dashboardShowing,
+                      hidden: _underDashboardSaver,
+                      child: IntercomRosterOverlay(container: c),
+                    ),
+                    // The alarm list, the launcher's twin again: full
+                    // screen, below the screensaver.
+                    _HiddenUnder(
+                      listenable: c.screensaver.dashboardShowing,
+                      hidden: _underDashboardSaver,
+                      child: AlarmsOverlay(container: c),
+                    ),
+                    // The timers view, the alarm list's twin: full screen,
+                    // below the screensaver. A timer near its end or
+                    // finished dismisses the screensaver and holds it
+                    // instead of showing over it (VoiceTimerManager).
+                    _HiddenUnder(
+                      listenable: c.screensaver.dashboardShowing,
+                      hidden: _underDashboardSaver,
+                      child: TimersOverlay(container: c),
+                    ),
+                    // The family calendar, the launcher's twin as well:
+                    // full screen, below the screensaver.
+                    _HiddenUnder(
+                      listenable: _pagesCover,
+                      hidden: _pagesHidden,
+                      child: CalendarOverlay(container: c),
+                    ),
+                    // The music library, the same kind of page: full
+                    // screen, below the screensaver, so Now Playing opened
+                    // from its player bar comes up over it.
+                    _HiddenUnder(
+                      listenable: _pagesCover,
+                      hidden: _pagesHidden,
+                      child: MusicLibraryOverlay(container: c),
+                    ),
+                    // Under Compass, a page opened by a link, open_url or
+                    // Show Music Assistant belongs to no place of the
+                    // layout: it floats over whatever view is up, the pages
+                    // above included, until it is closed.
+                    if (_compass.enabled) _OverlayHost(container: c),
+                    // The screensaver covers both planes — it owns the whole
+                    // display, drawer open or not.
+                    // Paused under the native voice overlay, which
+                    // draws over it instead of dismissing it.
+                    ScreensaverFade(
+                      screensaver: c.screensaver,
+                      child: PausedUnder(
+                        paused: c.screensaver.renderPaused,
+                        child: ScreensaverOverlay(container: c),
+                      ),
+                    ),
+                    CameraViewOverlay(container: c),
+                    // Plugin overlays of the views layer: over every page
+                    // and view above, camera views included, so a plugin's
+                    // bar stays up wherever the kiosk goes. Hidden under the
+                    // screensaver, the menu and a Compass swipe in motion
+                    // (NavigationViewTracker.layerHidden). A touch on one
+                    // over Now Playing, a screensaver session, is the
+                    // plugin's and does not close it.
+                    ValueListenableBuilder<bool>(
+                      valueListenable: _navView.viewsLayerHidden,
+                      builder: (context, hidden, child) => Offstage(
+                        offstage: hidden,
+                        child: TickerMode(enabled: !hidden, child: child!),
+                      ),
+                      child: PluginNativeOverlays(
+                        plugins: c.plugins,
+                        layer: PluginOverlayLayer.views,
+                        hybrid: c.settings.get(defs.hybridPluginOverlays),
+                        onControlTouch: c.screensaver.markControlTouch,
+                      ),
+                    ),
+                    // A Compass swipe in motion, over every view it moves
+                    // between (the camera view included). Only drawn while
+                    // a swipe is under way.
+                    CompassStageView(controller: _compass),
+                    // The camera preview a face wake leaves behind
+                    // (discussion #371): over the screensaver, whose fade
+                    // out it appears through, and answering no touch.
+                    FacePreviewOverlay(motion: c.motion, settings: c.settings),
+                    // The black timeout cover while a voice turn shows: the
+                    // turn draws over it (issue #746). Outside a turn it
+                    // sits above everything below.
+                    ScreensaverBlankOverlay(container: c, underVoice: true),
+                    // A turn a plugin skin draws: double tap dismisses it.
+                    _OverScreensaver(
+                      container: c,
+                      child: AssistPluginSkinTouch(container: c),
+                    ),
+                    // Plugin overlays that asked to be on top, in the voice
+                    // overlay's slot: over the screensaver, the menu and the
+                    // camera views, under a notification or call card, the
+                    // voice overlay itself and the lockdown shield. During a
+                    // turn they are over the black cover too, so a plugin
+                    // skin draws the turn there. The dashboard layer lives in
+                    // the kiosk plane and the views layer over the camera
+                    // views.
+                    // A Compass swipe in motion hides them: its snapshots
+                    // already show them, moving with each view.
+                    ValueListenableBuilder<bool>(
+                      valueListenable: _compass.overlaysHidden,
+                      builder: (context, hidden, child) => Offstage(
+                        offstage: hidden,
+                        child: TickerMode(enabled: !hidden, child: child!),
+                      ),
+                      child: PluginNativeOverlays(
+                        plugins: c.plugins,
+                        layer: PluginOverlayLayer.top,
+                        hybrid: c.settings.get(defs.hybridPluginOverlays),
+                        onControlTouch: c.screensaver.markControlTouch,
+                      ),
+                    ),
+                    // Above every overlay a notification could arrive
+                    // behind (the screensaver, a camera wall, a plugin drawn
+                    // on top) because a message from the house is worth
+                    // covering them for, and below the lockdown shield,
+                    // which is the one thing whose whole job is that nothing
+                    // here answers a touch.
+                    _OverScreensaver(
+                      container: c,
+                      child: NotificationOverlay(
+                        notifications: c.notifications,
+                      ),
+                    ),
+                    // The intercom's call card: over the screensaver and a
+                    // camera wall like a notification, since a call coming
+                    // in wakes the screen for exactly this, and under the
+                    // lockdown shield, whose kiosk answers as Do not disturb.
+                    _OverScreensaver(
+                      container: c,
+                      child: IntercomCallOverlay(container: c),
+                    ),
+                    // An announcement from Home Assistant: its own card, with
+                    // the spoken text, in the same slot.
+                    _OverScreensaver(
+                      container: c,
+                      child: AnnouncementOverlay(container: c),
+                    ),
+                    // Native Voice Satellite: the assist overlay, in the same
+                    // slot, over the screensaver and the camera views.
+                    AssistOverlay(container: c),
+                    // A Voice Match enrollment: the reading view while it
+                    // records, then its result card.
+                    VoiceMatchEnrollOverlay(container: c),
+                    // The timer pills stay over the voice overlay, as Voice
+                    // Satellite stacks them over its own.
+                    TimerPillsSetting(
+                      container: c,
+                      builder: (context, pills) => pills
+                          ? VoiceTimerOverlay(container: c)
+                          : const SizedBox.shrink(),
+                    ),
+                    ScreensaverBlankOverlay(container: c),
+                    // Theater mode's wash and touch gate: over every plane
+                    // and overlay so the whole display dims and the first
+                    // touch in the dark presses nothing, and under the
+                    // lockdown shield, which still owns every touch (IX-8).
+                    TheaterOverlay(theater: c.theater),
+                    // Lockdown Mode's touch shield: topmost, above every
+                    // overlay, so nothing on screen is tappable while it
+                    // holds. Transparent by default — the dashboard stays
+                    // glanceable, it just stops answering — or solid black
+                    // with the blackout toggle. The exit gesture still works:
+                    // its taps are counted natively before Flutter sees them.
+                    if (c.kiosk.lockdownActive)
+                      LockdownShield(
+                        blackout: c.settings.get(defs.lockdownBlackout),
+                      ),
+                    // An alarm on its own view: over everything, the lockdown
+                    // shield included, since Stop has to answer. Its sunrise
+                    // covers the screensaver and the dark panel too.
+                    AlarmRingOverlay(container: c),
+                    // A fleet invitation: above the shield, since answering
+                    // it is an admin act the shield must not swallow.
+                    FleetInviteOverlay(container: c),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -2040,7 +2320,36 @@ class _KioskScreenState extends State<KioskScreen>
     final fromStart =
         _rebuildFromStart || _webViewEpoch == 0 || c.browser.currentUrl.isEmpty;
     _rebuildFromStart = false;
+    // The page back for a Compass dashboard view on screen opens on it:
+    // Compass could not move a page that was not there yet.
+    final view = _compass.currentView;
+    final onView =
+        _pageReturning &&
+        _compass.enabled &&
+        view.isDashboard &&
+        view.path.isNotEmpty &&
+        c.homeAssistant.baseUrl.isNotEmpty;
+    _pageReturning = false;
+    if (onView) return viewPathUrl(c.homeAssistant.baseUrl, view.path);
     return fromStart ? _initialUrl : c.browser.currentUrl;
+  }
+
+  /// The page is being built again after [_onPageNeeded] closed it.
+  bool _pageReturning = false;
+
+  /// The dashboard page closed, or wanted again: then it opens on the
+  /// start page (BrowserManager.pageNeeded).
+  void _onPageNeeded() {
+    if (!mounted) return;
+    if (c.browser.pageNeeded.value) {
+      _rebuildFromStart = true;
+      _pageReturning = true;
+      _webViewEpoch++;
+    } else {
+      c.jsApi.detach();
+      c.browser.detach();
+    }
+    setState(() {});
   }
 
   Widget _webView() {
@@ -2090,6 +2399,8 @@ class _KioskScreenState extends State<KioskScreen>
       // moment the dashboard appears (issue #302), and those devices draw
       // through the texture instead.
       useHybridComposition: !c.settings.get(defs.legacyWebView),
+      // Empty keeps the WebView's own user agent.
+      userAgent: c.settings.get(defs.browserUserAgent),
       // The plugin maps false to LAYER_TYPE_NONE, which keeps the Activity's
       // hardware acceleration without caching the live page in another GPU
       // texture. A forced hardware layer adds work to every scrolling frame.
@@ -2116,7 +2427,10 @@ class _KioskScreenState extends State<KioskScreen>
       allowsInlineMediaPlayback: true,
       iframeAllow: 'camera; microphone',
       transparentBackground: true,
-      geolocationEnabled: c.settings.get(defs.webGeolocation),
+      // Always on: the setting is read at each request instead (see
+      // _webGeolocationResponse), since this flag is fixed when the view
+      // is created.
+      geolocationEnabled: true,
       javaScriptCanOpenWindowsAutomatically: c.settings.get(defs.webPopups),
       // Android: let HTTPS pages pull in HTTP subresources.
       mixedContentMode: c.settings.get(defs.allowMixedContent)
@@ -2202,6 +2516,8 @@ class _KioskScreenState extends State<KioskScreen>
         c.log.warn('kiosk', 'refused $url in the dashboard');
         return NavigationActionPolicy.CANCEL;
       }
+      // Read before the link's own action shadows the navigation's.
+      final tapped = action.hasGesture == true;
       if (url.scheme == 'ks') {
         // Cancel whatever it names: a link that is ours by scheme must never
         // reach Chromium, which would put its error page over the dashboard.
@@ -2219,7 +2535,30 @@ class _KioskScreenState extends State<KioskScreen>
           }
           return NavigationActionPolicy.CANCEL;
         }
-        final result = await c.gestures.runGestureAction(action);
+        // A video call turns this kiosk's camera on, which only a tap at
+        // the kiosk may do (issue #1350). A page script or a Home Assistant
+        // push that moves the page to the link carries no gesture and is
+        // refused, with no toast since nobody tapped. Gestures never run
+        // it, so it goes to the command straight away.
+        final video = action['type'] == 'intercom_video_call';
+        if (video && !tapped) {
+          c.log.warn('kiosk', 'video call link without a tap: $url');
+          return NavigationActionPolicy.CANCEL;
+        }
+        // A plugin action runs the way its kiosk menu entry does (issue
+        // #1385): the plugin's own screen is the sign it ran, so only a
+        // failure gets a toast, not the gesture's Ran toast as well.
+        final result = video
+            ? await c.commands.execute('intercomVideoCall', {
+                'id': action['kioskId'],
+              })
+            : action['type'] == 'plugin_action'
+            ? await c.commands.execute('runPluginCommand', {
+                'id': action['pluginId'],
+                'command': action['command'],
+                if (action['args'] != null) 'args': action['args'],
+              })
+            : await c.gestures.runGestureAction(action);
         if (!result.ok && mounted) {
           showToast(
             context,
@@ -2319,6 +2658,13 @@ class _KioskScreenState extends State<KioskScreen>
       );
       // The carousel reports its drag edges so the native scrollbars
       // stay asleep during the strip animation (see carousel_script).
+      // Compass's page probe: what the touch that just went down lands on.
+      controller.addJavaScriptHandler(
+        handlerName: 'ksCompassTouch',
+        callback: (args) {
+          _compass.pageTouched(args.isEmpty ? null : args.first);
+        },
+      );
       controller.addJavaScriptHandler(
         handlerName: 'ksCarouselDrag',
         callback: (args) {
@@ -2376,6 +2722,7 @@ class _KioskScreenState extends State<KioskScreen>
         'window.__ksCarouselOverCards = '
         '${c.settings.get(defs.haCarouselOverCards)};',
       );
+      c.browser.runJs('window.__ksCompassEnabled = $_compassPageEnabled;');
       c.browser.runJs(
         'window.__ksHapticsEnabled = '
         '${c.settings.get(defs.haHaptics)};'
@@ -2465,6 +2812,10 @@ class _KioskScreenState extends State<KioskScreen>
       if (c.browser.isAttached(controller)) c.browser.onRendererResponsive();
       return null;
     },
+    onEnterFullscreen: (controller) =>
+        c.browser.onPageFullscreen(controller, fullscreen: true),
+    onExitFullscreen: (controller) =>
+        c.browser.onPageFullscreen(controller, fullscreen: false),
     onConsoleMessage: (controller, message) {
       c.browser.onConsoleMessage(switch (message.messageLevel) {
         ConsoleMessageLevel.ERROR => 'error',
@@ -2476,6 +2827,8 @@ class _KioskScreenState extends State<KioskScreen>
     },
     onPermissionRequest: (controller, request) =>
         _webPermissionResponse(c, request),
+    onGeolocationPermissionsShowPrompt: (controller, origin) =>
+        _webGeolocationResponse(c, origin),
   );
 }
 
@@ -2543,6 +2896,30 @@ Future<bool> _webResourceAllowed(
   // Anything else the page asks for (e.g. protected media id) follows the
   // camera/mic decision conservatively: deny unless explicitly handled.
   return false;
+}
+
+/// Android asks about the HTML5 Geolocation API here, not through
+/// onPermissionRequest, and an unanswered request is refused (issue #1383).
+/// Allowed with Enable geolocation access on and the Location grant held,
+/// for the page and for the frames it hands the feature to with
+/// allow="geolocation". Never retained: Chromium would keep the origin's
+/// grant after the setting is turned off.
+Future<GeolocationPermissionShowPromptResponse> _webGeolocationResponse(
+  AppContainer c,
+  String origin,
+) async {
+  final allow =
+      c.settings.get(defs.webGeolocation) &&
+      await ensureOsPermission(Permission.location);
+  c.log.info(
+    'kiosk',
+    'geolocation ${allow ? 'allowed' : 'refused'} for $origin',
+  );
+  return GeolocationPermissionShowPromptResponse(
+    origin: origin,
+    allow: allow,
+    retain: false,
+  );
 }
 
 class _OverlayHost extends StatefulWidget {
@@ -3097,6 +3474,8 @@ class _OverlayWebViewState extends State<_OverlayWebView> {
           hardwareAcceleration: false,
           transparentBackground: false,
           supportZoom: false,
+          // Empty keeps the WebView's own user agent.
+          userAgent: widget.container.settings.get(defs.browserUserAgent),
           // A call or camera page opened here gets the dashboard's media
           // policy (issue #700): autoplay with sound and mic/camera access
           // follow the same Web Content settings.
@@ -3193,6 +3572,8 @@ class _OverlayWebViewState extends State<_OverlayWebView> {
         },
         onPermissionRequest: (controller, request) =>
             _webPermissionResponse(widget.container, request),
+        onGeolocationPermissionsShowPrompt: (controller, origin) =>
+            _webGeolocationResponse(widget.container, origin),
         onRenderProcessGone: (controller, detail) =>
             widget.onRenderGone?.call(),
       ),
@@ -3278,6 +3659,24 @@ class _WebViewMissingNotice extends StatelessWidget {
       ),
     );
   }
+}
+
+/// An overlay drawn over the screensaver. A touch that lands on it is
+/// meant for it, so it is marked as a control touch on its way down,
+/// ahead of the kiosk screen's own report of the same touch, and does not
+/// wake the screensaver. A touch on nothing passes through as before.
+class _OverScreensaver extends StatelessWidget {
+  const _OverScreensaver({required this.container, required this.child});
+
+  final AppContainer container;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    behavior: HitTestBehavior.deferToChild,
+    onPointerDown: (_) => container.screensaver.markControlTouch(),
+    child: child,
+  );
 }
 
 /// A full screen page of the kiosk Stack, left out of the frame and its
@@ -3394,4 +3793,230 @@ class _PausedUnderState extends State<PausedUnder> {
       ],
     );
   }
+}
+
+/// Fades the screensaver in over the dashboard and out again (Settings >
+/// Screensaver > Fade in and out), for the views the screensaver manager
+/// says can fade.
+///
+/// The fade in is an opacity on the live screensaver, over a dashboard
+/// that still draws: the browser pauses it a second after the session
+/// starts. The fade out cannot keep the screensaver alive, since the
+/// session is over by the time its view drops, so it fades the last frame
+/// instead, held at full opacity until the dashboard under it has drawn
+/// again.
+class ScreensaverFade extends StatefulWidget {
+  const ScreensaverFade({
+    super.key,
+    required this.screensaver,
+    required this.child,
+  });
+
+  final ScreensaverManager screensaver;
+  final Widget child;
+
+  @override
+  State<ScreensaverFade> createState() => _ScreensaverFadeState();
+}
+
+class _ScreensaverFadeState extends State<ScreensaverFade>
+    with SingleTickerProviderStateMixin {
+  final _boundary = GlobalKey();
+  late final AnimationController _fade = AnimationController(
+    vsync: this,
+    duration: ScreensaverManager.fadeDuration,
+    value: 1,
+    // Android's animation scales set to zero, as kiosk setup guides
+    // often leave them, would cut the fade to a twentieth. The manager
+    // decides if the fade follows them (ScreensaverManager.fadesView).
+    animationBehavior: AnimationBehavior.preserve,
+  );
+
+  /// The picture that fades out: the screensaver's last frame over the
+  /// dashboard, or the dashboard over a screensaver Flutter cannot fade.
+  ui.Image? _last;
+  String? _view;
+
+  ScreensaverManager get _screensaver => widget.screensaver;
+
+  @override
+  void initState() {
+    super.initState();
+    _view = _screensaver.activeView.value;
+    _screensaver.activeView.addListener(_viewChanged);
+    // The last frame goes once it has faded out.
+    _fade.addStatusListener((status) {
+      if (status == AnimationStatus.dismissed) _dropLast();
+    });
+  }
+
+  @override
+  void dispose() {
+    _screensaver.activeView.removeListener(_viewChanged);
+    _fade.dispose();
+    _last?.dispose();
+    super.dispose();
+  }
+
+  void _viewChanged() {
+    final view = _screensaver.activeView.value;
+    final was = _view;
+    _view = view;
+    if (!mounted) return;
+    if (was == null && view != null) {
+      // A screensaver comes up, over a fade out still running or not.
+      _dropLast();
+      final shot = _screensaver.fadeInShot;
+      _screensaver.fadeInShot = null;
+      if (shot != null) {
+        // A view Flutter cannot fade: it comes up under a picture of the
+        // dashboard, which fades out once the view has drawn. Android
+        // shows a view of its own a frame or two after it reports in.
+        final drawn = _screensaver.fadeInAfter ?? Future<void>.value();
+        _fadeOver(
+          shot,
+          drawn.then(
+            (_) => Future<void>.delayed(const Duration(milliseconds: 100)),
+          ),
+          onFade: _screensaver.fadeInUnderway,
+        );
+      } else if (_screensaver.opacityFades(view)) {
+        _fade.forward(from: 0);
+      } else {
+        _fade.value = 1;
+      }
+    } else if (was != null && view == null) {
+      final drawn = _screensaver.fadeOutAfter;
+      _screensaver.fadeOutAfter = null;
+      final shot = _screensaver.fadeOutShot;
+      _screensaver.fadeOutShot = null;
+      if (drawn == null) {
+        shot?.dispose();
+        _dropLast();
+        return;
+      }
+      // A dismissal inside the fade in fades out from where that got to.
+      final from = shot == null && _last == null ? _fade.value : 1.0;
+      final last =
+          shot ?? (_screensaver.opacityFades(was) ? _lastFrame() : null);
+      if (last == null) {
+        // No frame to fade: the screensaver cuts.
+        _dropLast();
+        return;
+      }
+      _fadeOver(last, drawn, from: from);
+    }
+  }
+
+  /// The frame on screen right now, taken before the view leaves the tree.
+  ui.Image? _lastFrame() {
+    final boundary =
+        _boundary.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    try {
+      return boundary?.toImageSync(
+        pixelRatio: MediaQuery.devicePixelRatioOf(context),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Holds [picture] over everything below until [ready] completes, then
+  /// fades it out.
+  void _fadeOver(
+    ui.Image picture,
+    Future<void> ready, {
+    VoidCallback? onFade,
+    double from = 1,
+  }) {
+    setState(() {
+      _last?.dispose();
+      _last = picture;
+    });
+    // At zero the picture goes at once (the status listener drops it).
+    _fade.value = from;
+    unawaited(
+      ready.whenComplete(() {
+        if (!mounted || !identical(_last, picture)) return;
+        onFade?.call();
+        _fade.reverse();
+      }),
+    );
+  }
+
+  void _dropLast() {
+    if (_last == null) return;
+    setState(() {
+      _last?.dispose();
+      _last = null;
+    });
+    // The picture's fade leaves the opacity at zero, and the live view
+    // under it takes that opacity back now.
+    _fade.value = 1;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final last = _last;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        FadeTransition(
+          // Nothing shows here while the last frame fades out.
+          opacity: last == null ? _fade : kAlwaysCompleteAnimation,
+          child: RepaintBoundary(
+            key: _boundary,
+            child: Stack(fit: StackFit.expand, children: [widget.child]),
+          ),
+        ),
+        if (last != null)
+          IgnorePointer(
+            child: FadeTransition(
+              opacity: _fade,
+              child: RawImage(image: last, fit: BoxFit.fill),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Compass's Menu view: the drawer's items as full-screen tiles, up while
+/// the Menu is the view on screen. A small tab on the right edge says the
+/// way back is to the right.
+class _CompassMenu extends StatelessWidget {
+  const _CompassMenu({
+    required this.compass,
+    required this.onSettings,
+    required this.onUnlock,
+  });
+
+  final CompassController compass;
+  final VoidCallback onSettings;
+  final VoidCallback onUnlock;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([compass.menuVisible, compass.menuUnlocked]),
+    builder: (context, _) {
+      if (!compass.menuVisible.value) return const SizedBox.shrink();
+      final c = compass.c;
+      // Redrawn on every setting change while it shows: its switches (HA
+      // Kiosk Mode, Hold Mode) show their state, and that state can change
+      // from the view itself, Home Assistant or the remote admin.
+      return Positioned.fill(
+        child: StreamBuilder<SettingChanged>(
+          stream: c.bus.on<SettingChanged>(),
+          builder: (context, _) => KioskDrawer(
+            container: c,
+            tiles: true,
+            restricted: c.kiosk.locked && !compass.menuUnlocked.value,
+            onClose: () {},
+            onSettings: onSettings,
+            onUnlock: onUnlock,
+          ),
+        ),
+      );
+    },
+  );
 }

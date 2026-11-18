@@ -42,11 +42,19 @@ void main() {
   };
 
   String crash = '';
+  // What the native brightness bridge answers; null is a device that does
+  // not answer.
+  Map<String, Object?>? brightnessRange;
   setUpAll(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('kiosk_satellite/background'),
           (call) async => call.method == 'getLastCrash' ? crash : null,
+        );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('kiosk_satellite/brightness'),
+          (call) async => call.method == 'range' ? brightnessRange : null,
         );
   });
 
@@ -385,6 +393,34 @@ void main() {
     },
   );
 
+  test('basic carries the brightness range the device reports', () async {
+    // A Redmi Pad 2: the constant says 4095, Android converts on 255 and
+    // nothing has written the setting but this app yet.
+    brightnessRange = {
+      'min': 10,
+      'max': 255,
+      'reportedMax': 4095,
+      'frameworkMax': 255,
+      'seenMax': null,
+    };
+    await build({});
+    await pump();
+    final basic = bodyOf(sent.single)['basic'] as Map;
+    expect(basic['brightness_min'], 10);
+    expect(basic['brightness_max'], 255);
+    expect(basic['brightness_reported_max'], 4095);
+    expect(basic['brightness_framework_max'], 255);
+    expect(basic.containsKey('brightness_seen_max'), isFalse);
+  });
+
+  test('basic leaves the brightness range out when the device does not '
+      'answer', () async {
+    await build({});
+    await pump();
+    final basic = bodyOf(sent.single)['basic'] as Map;
+    expect(basic.keys.where((k) => '$k'.startsWith('brightness_')), isEmpty);
+  });
+
   test('the calendar reports counts and picks, never its calendars', () async {
     await build({
       'ks.voice.runtime': 'dashboard',
@@ -456,7 +492,49 @@ void main() {
     expect(u['vs_second_assistant'], isTrue);
     expect(u['vs_custom_chimes'], 1);
     expect(u['vs_reactive_bar'], isTrue);
-    expect(u['vs_timer_pills'], isTrue);
+    // The full screen timers view is the default.
+    expect(u['vs_timer_pills'], isFalse);
+    // Timers: the switches of Settings > Timers, with nothing shared yet.
+    expect(u['timers_show_on_start'], isTrue);
+    expect(u['timers_show_before_end'], 60);
+    expect(u['timers_pause_screensaver'], isFalse);
+    expect(u['timers_receive'], isTrue);
+    expect(u['timers_shared_received'], '0');
+    expect(u['timers_share'], isFalse);
+    expect(u.containsKey('timers_share_kiosks'), isFalse);
+    expect(u['timers_started'], '0');
+    expect(u['timers_by_hand'], '0');
+    // Shared with two kiosks: the count goes out, their names and ids stay.
+    await settings.set(defs.voiceTimersShare, true);
+    await settings.set(
+      defs.voiceTimersShareWith,
+      '[{"id":"aaaa1111","name":"Bedroom tablet"},'
+      '{"id":"bbbb2222","name":"Office tablet"}]',
+    );
+    await settings.set(defs.voiceTimerSpeak, true);
+    await settings.set(defs.timersTtsEngine, 'tts.piper');
+    for (var i = 0; i < 3; i++) {
+      await UsageCounters.bump(settings, 'timers_started');
+    }
+    await UsageCounters.bump(settings, 'timers_by_hand');
+    await UsageCounters.bump(settings, 'timers_shared_received', by: 7);
+    u = await usage();
+    expect(u['timers_share'], isTrue);
+    expect(u['timers_share_kiosks'], 2);
+    expect(u['timers_tts'], 'picked');
+    expect(u['timers_started'], '1-5');
+    expect(u['timers_by_hand'], '1-5');
+    expect(u['timers_shared_received'], '6-20');
+    expect(jsonEncode(u), isNot(contains('Bedroom')));
+    expect(jsonEncode(u), isNot(contains('aaaa1111')));
+    expect(jsonEncode(u), isNot(contains('piper')));
+    // The pills take the view's three rows away, in settings and here.
+    await settings.set(defs.voiceTimerPills, true);
+    u = await usage();
+    expect(u.containsKey('timers_show_on_start'), isFalse);
+    expect(u.containsKey('timers_pause_screensaver'), isFalse);
+    await settings.set(defs.voiceTimerPills, false);
+    u = await usage();
     expect(jsonEncode(u), isNot(contains('kitchen')));
     expect(jsonEncode(u), isNot(contains('Second brain')));
     expect(jsonEncode(u), isNot(contains('ding')));
@@ -892,6 +970,7 @@ void main() {
     expect(u['alarms_snooze_minutes'], '5');
     expect(u['alarms_silence_after_minutes'], '10');
     expect(u['alarms_sunrise_minutes'], '30');
+    expect(u['alarms_skip_minutes'], '10');
     final text = jsonEncode(u);
     expect(text, isNot(contains('Work')));
     expect(text, isNot(contains('Dentist')));
@@ -1335,5 +1414,8 @@ java.lang.IllegalStateException: WebView gone
     expect(sent, isEmpty);
   });
 
-  tearDown(() => crash = '');
+  tearDown(() {
+    crash = '';
+    brightnessRange = null;
+  });
 }

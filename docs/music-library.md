@@ -10,13 +10,16 @@ The source picker sits at the top of the sidebar on a tablet, at the top of the 
 
 | Source | What it lists | Needs |
 | --- | --- | --- |
-| Music Assistant | Discover, Search, the library's artists, albums, tracks, playlists, radio stations, podcasts and audiobooks, and Browse, which walks each music provider such as Spotify or a music folder. | The server address and token under **Media Player > Music Assistant**. |
+| Music Assistant | Discover, Search, the library's artists, albums, tracks, genres, playlists, radio stations, podcasts and audiobooks, and Browse, which walks each music provider such as Spotify or a music folder. | The server address and token under **Media Player > Music Assistant**. |
 | Home Assistant | The media the picked speaker's integration offers, such as a Sonos speaker's favorites, a Spotify account, Radio Browser and My media. Search shows when the speaker's integration supports it. | A Home Assistant speaker picked as the speaker. The list changes with the speaker. |
 | Sonos | My Sonos favorites, Sonos playlists and the music library the speakers index from a shared folder. Lists with nothing in them stay hidden. | A Sonos speaker found or added under **Media Player > Sonos**. |
+| A plugin's player | What the plugin offers: Discover, Search and Browse, each when the plugin has it. It plays only on that plugin's own player, so Speakers lists that one player. See [Plugin players](sendspin.md#plugin-players). | A running plugin that offers a library. |
 
 Discover shows the rows Music Assistant's own Discover page shows, in the same order. To hide, show or reorder them, edit the Discover page in Music Assistant and the library follows. Music Assistant saves that layout for each of its users, so the library uses the layout of the user the token belongs to. When Music Assistant recommends nothing, Discover shows what was played recently, your playlists, recently added tracks and radio stations instead. A row that mixes kinds, such as Recently played, says under each entry whether it is a track, an album, an artist or a playlist.
 
 **Browse by genre** comes last on Discover, as on Music Assistant's page, with the eight genres that have the most music in your library. Each genre gets an icon picked from its name. Tap one to open the rows Music Assistant shows for that genre, such as its artists and albums.
+
+**Genres**, under **Tracks** in the library's lists, shows every genre that has music in your library. It sorts like the other lists and shows only when the library has genres with music in them.
 
 Browse shows each music provider with its logo, as Music Assistant does.
 
@@ -42,6 +45,8 @@ When a play needs a speaker of the source first, such as Home Assistant before a
 - Tap a track in an album or playlist to play the album or playlist from that track.
 - Tap a radio station, a podcast episode or a track in a list to play it.
 - Tap the menu button on a row, or long press a card, for **Play now**, **Play next**, **Add to queue**, **Start radio**, **Go to artist** and **Add to favorites**. Start radio and favorites are Music Assistant only. Start radio keeps playing similar music after the track, album, artist or playlist ends.
+
+On Music Assistant, an artist page lists the artist's albums from every music service the artist is on, such as Spotify. If the artist is in your library, the albums you saved come first and the rest of the discography follows them.
 
 Play next and Add to queue show a message, and its **View** button opens the [queue](#the-queue). A play shows a spinner over the cover you tapped, and the player bar shows it with **Loading…** until the speaker starts it.
 
@@ -91,6 +96,7 @@ Then ask the kiosk:
 | "Turn the music up" or "Set the music volume to 30" | Steps the volume by 10, or sets it. |
 | "What's next in the queue?" or "Clear the queue" | Reads the playing track and the next ones, or empties the queue. |
 | "Which speakers can you play on?" | Lists the speakers of the library's source. |
+| "Play my playlist" | With [Voice Match](voice-match.md#personal-commands), plays the playlist set for the person talking in Ground Control. |
 
 The kiosk searches the source of the speaker it plays on, so where the music comes from follows the speaker:
 
@@ -122,7 +128,7 @@ Under **Settings > Media Player > Music Library**:
 | --- | --- |
 | Source | The source the library opens on. **Automatic** starts with the source of the speaker Now Playing follows, else the first one set up. Picking a source in the library changes it too. |
 | Show on Now Playing | Adds the library button next to the close button on the Now Playing view. On by default. |
-| Close when idle | Returns to the dashboard after no touch for this long. Two minutes by default. The screensaver waits while the library is open. |
+| Close when idle | Returns to the dashboard after no touch for this long. Two minutes by default. The screensaver waits while the library is open. In the [Compass](navigation.md) layout, Return to center applies instead and the screensaver starts over the library. |
 | Show in the kiosk menu | Opens [Device > User Interface > Drawer menu items](drawer-menu.md), where the Music Library entry is turned on or off. On by default. |
 
 The **User Interface** group below them sets how the library looks:

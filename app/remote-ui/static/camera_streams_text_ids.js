@@ -54,7 +54,7 @@ export const cameraStreamsTextMessageIds = {
   "Pinch to zoom a single camera": "settingCameraPinchZoomTitle",
   "Zoom into the picture with two fingers when only one camera is on screen. Drag to move around, double-tap to reset.": "settingCameraPinchZoomDescription",
   "Auto-dismiss after": "settingCameraAutoDismissSecondsTitle",
-  "Close an opened camera view on its own; 0 keeps it up. The camera screensaver is unaffected.": "settingCameraAutoDismissSecondsDescription",
+  "Closes an opened camera view after this long. 0 keeps it open. The camera screensaver is unaffected. In the Compass layout, Return to center applies instead.": "settingCameraAutoDismissCompassDescription",
   "Import cameras from Home Assistant": "cameraStreamsImportHa",
   "Add every camera of the connected Home Assistant, playing over WebRTC, HLS or MJPEG. Importing again merges new cameras.": "cameraStreamsImportHaHelp",
   "Import failed": "cameraStreamsImportFailed",
@@ -146,5 +146,7 @@ export const cameraStreamsTextMessageIds = {
   "view not found": "cameraStreamsViewNotFound",
   "the default view cannot be deleted; empty it instead": "cameraStreamsDefaultViewDelete",
   "view has no cameras": "cameraStreamsViewEmpty",
-  "Home Assistant is not configured or unreachable": "cameraStreamsHaUnavailable"
+  "Home Assistant is not configured or unreachable": "cameraStreamsHaUnavailable",
+  "Delete unused cameras": "cameraStreamsDeleteUnused",
+  "Delete unused cameras?": "cameraStreamsDeleteUnusedConfirm"
 };

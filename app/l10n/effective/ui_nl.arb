@@ -720,6 +720,23 @@
       }
     }
   },
+  "alarmsSkipAlarm": "Alarm om {time} overslaan",
+  "@alarmsSkipAlarm": {
+    "context": "Clock and Weather Mood screensavers",
+    "description": "Button under the screensaver clock shortly before an alarm. Skips that one ring. {time} is a clock time.",
+    "x-locations": {
+      "device": [
+        "Clock screensaver before an alarm",
+        "Weather Mood screensaver before an alarm"
+      ]
+    },
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "description": "A clock time like 6:30 AM."
+      }
+    }
+  },
   "alarmsNextWidget": "Volgend alarm",
   "@alarmsNextWidget": {
     "context": "Screensaver widgets",
@@ -8478,6 +8495,19 @@
       ]
     }
   },
+  "gestureOpenTimers": "Timers openen",
+  "@gestureOpenTimers": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Gesture action that opens the full screen timers view.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
   "gestureOpenNextAlarm": "Volgende alarm openen",
   "@gestureOpenNextAlarm": {
     "context": "Settings > Gestures > Add gesture > Choose an action",
@@ -12302,6 +12332,16 @@
       ]
     }
   },
+  "libraryGenres": "Genres",
+  "@libraryGenres": {
+    "context": "Music Library",
+    "description": "Library list of a Music Assistant library's genres, under Tracks.",
+    "x-locations": {
+      "device": [
+        "Kiosk menu > Music Library"
+      ]
+    }
+  },
   "libraryPlaylists": "Afspeellijsten",
   "@libraryPlaylists": {
     "context": "Music Library",
@@ -14576,6 +14616,32 @@
       ]
     }
   },
+  "pluginDashboardLink": "Dashboardlink",
+  "@pluginDashboardLink": {
+    "context": "Settings > Plugin Manager > a plugin > Actions",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > a plugin > Actions"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager > a plugin > Actions"
+      ]
+    }
+  },
+  "pluginDashboardLinkHint": "Gebruik deze link als tikactie van een dashboardknop.",
+  "@pluginDashboardLinkHint": {
+    "context": "Settings > Plugin Manager > a plugin > Actions",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > a plugin > Actions"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager > a plugin > Actions"
+      ]
+    }
+  },
   "pluginPlugin": "Plug-in",
   "@pluginPlugin": {
     "context": "Settings > Plugin Manager",
@@ -14997,6 +15063,19 @@
   "@pluginDragToReorder": {
     "context": "Settings > Plugin Manager",
     "description": "Label of the handle that drags a row of a plugin's list setting to a new position.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginDuplicate": "Dupliceren",
+  "@pluginDuplicate": {
+    "context": "Settings > Plugin Manager",
+    "description": "Button in the row editor of a plugin list setting that turns the open row into a new row holding a copy of it. Save then adds the copy.",
     "x-locations": {
       "device": [
         "Settings > Plugin Manager"
@@ -15661,6 +15740,19 @@
       ],
       "remoteAdmin": [
         "Plugin Manager > Add plugin"
+      ]
+    }
+  },
+  "pluginReleaseNotes": "Releaseopmerkingen",
+  "@pluginReleaseNotes": {
+    "context": "Settings > Plugin Manager > a plugin's check for updates button",
+    "description": "Heading in the update review above the notes the plugin's author wrote for the new version. Shown in capitals.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > a plugin's check for updates button"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager > a plugin's check for updates button"
       ]
     }
   },
@@ -19571,6 +19663,32 @@
       ]
     }
   },
+  "settingAlarmsSkipMinutesTitle": "Knop Overslaan",
+  "@settingAlarmsSkipMinutesTitle": {
+    "context": "Settings > Alarms",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Alarms > Skip button"
+      ],
+      "remoteAdmin": [
+        "Alarms > Skip button"
+      ]
+    }
+  },
+  "settingAlarmsSkipMinutesDescription": "Hoelang vóór een alarm de schermbeveiligingen Klok en Weerscène een knop tonen om het over te slaan.",
+  "@settingAlarmsSkipMinutesDescription": {
+    "context": "Settings > Alarms",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > Alarms > Skip button"
+      ],
+      "remoteAdmin": [
+        "Alarms > Skip button"
+      ]
+    }
+  },
   "alarmsOption5Minutes": "5 minuten",
   "@alarmsOption5Minutes": {
     "context": "Settings > Alarms",
@@ -19646,6 +19764,32 @@
       ],
       "remoteAdmin": [
         "Alarms"
+      ]
+    }
+  },
+  "alarmsOption60Minutes": "60 minuten",
+  "@alarmsOption60Minutes": {
+    "context": "Settings > Alarms",
+    "description": "Setting option: a length in minutes.",
+    "x-locations": {
+      "device": [
+        "Settings > Alarms"
+      ],
+      "remoteAdmin": [
+        "Alarms"
+      ]
+    }
+  },
+  "alarmsOptionOff": "Uit",
+  "@alarmsOptionOff": {
+    "context": "Settings > Alarms",
+    "description": "Setting option: the Skip button never shows.",
+    "x-locations": {
+      "device": [
+        "Settings > Alarms > Skip button"
+      ],
+      "remoteAdmin": [
+        "Alarms > Skip button"
       ]
     }
   },
@@ -20179,8 +20323,8 @@
       ]
     }
   },
-  "settingCalendarIdleCloseMinutesDescription": "Keert na zo lang zonder aanraking terug naar het dashboard.",
-  "@settingCalendarIdleCloseMinutesDescription": {
+  "settingIdleCloseCompassDescription": "Keert na zo lang zonder aanraking terug naar het dashboard. In de Compass-indeling geldt Terug naar het midden.",
+  "@settingIdleCloseCompassDescription": {
     "context": "Settings > Calendar > Kiosk",
     "description": "Setting description.",
     "x-locations": {
@@ -22970,8 +23114,8 @@
       ]
     }
   },
-  "settingCameraAutoDismissSecondsDescription": "Sluit een geopende cameraweergave automatisch. Bij 0 blijft deze geopend. Dit heeft geen invloed op de cameraschermbeveiliging.",
-  "@settingCameraAutoDismissSecondsDescription": {
+  "settingCameraAutoDismissCompassDescription": "Sluit een geopende cameraweergave na zo lang. Bij 0 blijft deze geopend. Dit heeft geen invloed op de cameraschermbeveiliging. In de Compass-indeling geldt Terug naar het midden.",
+  "@settingCameraAutoDismissCompassDescription": {
     "context": "Settings > Camera Streams > Playback",
     "description": "Help below this setting.",
     "x-locations": {
@@ -23563,6 +23707,70 @@
       "remoteAdmin": [
         "Camera Streams > Cameras"
       ]
+    }
+  },
+  "cameraStreamsDeleteUnused": "Ongebruikte camera's verwijderen",
+  "@cameraStreamsDeleteUnused": {
+    "context": "Settings > Camera Streams > Cameras",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Camera Streams > Cameras"
+      ],
+      "remoteAdmin": [
+        "Camera Streams > Cameras"
+      ]
+    }
+  },
+  "cameraStreamsDeleteUnusedConfirm": "Ongebruikte camera's verwijderen?",
+  "@cameraStreamsDeleteUnusedConfirm": {
+    "context": "Settings > Camera Streams > Cameras",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Camera Streams > Cameras"
+      ],
+      "remoteAdmin": [
+        "Camera Streams > Cameras"
+      ]
+    }
+  },
+  "cameraStreamsOneUnusedCamera": "{count} camera staat in geen enkele weergave.",
+  "@cameraStreamsOneUnusedCamera": {
+    "context": "Settings > Camera Streams > Cameras",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Camera Streams > Cameras"
+      ],
+      "remoteAdmin": [
+        "Camera Streams > Cameras"
+      ]
+    },
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "description": "Value supplied by the app. Keep names, IDs and technical details unchanged."
+      }
+    }
+  },
+  "cameraStreamsManyUnusedCameras": "{count} camera's staan in geen enkele weergave.",
+  "@cameraStreamsManyUnusedCameras": {
+    "context": "Settings > Camera Streams > Cameras",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Camera Streams > Cameras"
+      ],
+      "remoteAdmin": [
+        "Camera Streams > Cameras"
+      ]
+    },
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "description": "Value supplied by the app. Keep names, IDs and technical details unchanged."
+      }
     }
   },
   "cameraStreamsViews": "Weergaven",
@@ -30543,6 +30751,32 @@
       ]
     }
   },
+  "settingBtproxyDeviceMacTitle": "MAC-adres van het apparaat gebruiken voor Bluetooth",
+  "@settingBtproxyDeviceMacTitle": {
+    "context": "Settings > ESPHome > Bluetooth Proxy",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > ESPHome > Bluetooth Proxy"
+      ],
+      "remoteAdmin": [
+        "ESPHome > Bluetooth Proxy"
+      ]
+    }
+  },
+  "settingBtproxyDeviceMacDescription": "Hiermee kunnen integraties zoals Bermuda deze proxy aan het apparaat koppelen. Wijzigt het adres van de proxy in Home Assistant.",
+  "@settingBtproxyDeviceMacDescription": {
+    "context": "Settings > ESPHome > Bluetooth Proxy",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > ESPHome > Bluetooth Proxy"
+      ],
+      "remoteAdmin": [
+        "ESPHome > Bluetooth Proxy"
+      ]
+    }
+  },
   "settingBtproxyConnectionsTitle": "Apparaatverbindingen toestaan",
   "@settingBtproxyConnectionsTitle": {
     "context": "Settings > ESPHome > Bluetooth Proxy",
@@ -32551,6 +32785,84 @@
       ]
     }
   },
+  "settingGroundControlEnabledTitle": "Ground Control inschakelen",
+  "@settingGroundControlEnabledTitle": {
+    "context": "Settings > Ground Control",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Ground Control > Enable Ground Control"
+      ],
+      "remoteAdmin": [
+        "Ground Control > Enable Ground Control"
+      ]
+    }
+  },
+  "settingGroundControlEnabledDescription": "Verbind met Kiosk Satellite Ground Control, dat Voice Match op een krachtige computer draait.",
+  "@settingGroundControlEnabledDescription": {
+    "context": "Settings > Ground Control",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Ground Control > Enable Ground Control"
+      ],
+      "remoteAdmin": [
+        "Ground Control > Enable Ground Control"
+      ]
+    }
+  },
+  "settingGroundControlAddressTitle": "Adres",
+  "@settingGroundControlAddressTitle": {
+    "context": "Settings > Ground Control",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Ground Control > Address"
+      ],
+      "remoteAdmin": [
+        "Ground Control > Address"
+      ]
+    }
+  },
+  "settingGroundControlAddressDescription": "Laat leeg om Ground Control op het netwerk te vinden. Vul er een in voor Ground Control op een ander netwerk.",
+  "@settingGroundControlAddressDescription": {
+    "context": "Settings > Ground Control",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Ground Control > Address"
+      ],
+      "remoteAdmin": [
+        "Ground Control > Address"
+      ]
+    }
+  },
+  "groundControlLooking": "Ground Control zoeken op het netwerk.",
+  "@groundControlLooking": {
+    "context": "Settings > Ground Control",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Ground Control > Ground Control status row"
+      ],
+      "remoteAdmin": [
+        "Ground Control > Ground Control status row"
+      ]
+    }
+  },
+  "groundControlApp": "Ground Control app",
+  "@groundControlApp": {
+    "context": "Settings > Ground Control",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Ground Control > Ground Control app row"
+      ],
+      "remoteAdmin": [
+        "Ground Control > Ground Control app row"
+      ]
+    }
+  },
   "haCustomPages": "Eigen pagina's",
   "@haCustomPages": {
     "context": "Settings:Home Assistant:Custom Pages",
@@ -33457,6 +33769,19 @@
         "type": "String",
         "description": "Unchanged dashboard view path."
       }
+    }
+  },
+  "haReturnCompass": "Met Compass-navigatie keert elke dashboardweergave in de indeling na de time-out terug naar de weergave die ervoor is gekozen.",
+  "@haReturnCompass": {
+    "context": "Settings:Home Assistant Setup:Return to home dashboard view",
+    "description": "Return-to-home subpage destination while Compass navigation is on. Compass is the name of a navigation style and stays as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup > Return to home dashboard view"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup > Return to home dashboard view"
+      ]
     }
   },
   "settingHaRotationEnabledTitle": "Dashboardrotatie inschakelen",
@@ -34818,8 +35143,34 @@
       ]
     }
   },
-  "settingIntercomRingSoundDescription": "Speelt af bij het meldingsvolume.",
-  "@settingIntercomRingSoundDescription": {
+  "settingIntercomRingSoundVolumeDescription": "Speelt af bij het beltoonvolume.",
+  "@settingIntercomRingSoundVolumeDescription": {
+    "context": "Settings > Intercom > Answer",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Answer"
+      ],
+      "remoteAdmin": [
+        "Intercom > Answer"
+      ]
+    }
+  },
+  "settingIntercomRingVolumeTitle": "Beltoonvolume",
+  "@settingIntercomRingVolumeTitle": {
+    "context": "Settings > Intercom > Answer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Answer"
+      ],
+      "remoteAdmin": [
+        "Intercom > Answer"
+      ]
+    }
+  },
+  "settingIntercomRingVolumeDescription": "Het volume waarmee een oproep overgaat, los van het mediavolume.",
+  "@settingIntercomRingVolumeDescription": {
     "context": "Settings > Intercom > Answer",
     "description": "Help below this setting.",
     "x-locations": {
@@ -35840,8 +36191,8 @@
       ]
     }
   },
-  "settingKioskAllowDrawerDescription": "Een veegbeweging vanaf de rand opent het menu zonder afsluitgebaar of pincode. Alleen de hieronder geselecteerde acties zijn beschikbaar.",
-  "@settingKioskAllowDrawerDescription": {
+  "settingKioskAllowQuickControlsDescription": "Toont het menu zonder afsluitgebaar of pincode. Alleen de hieronder geselecteerde acties zijn beschikbaar. In klassieke navigatie opent een veegbeweging vanaf de rand het menu. In Compass is het de weergave Snelle bediening.",
+  "@settingKioskAllowQuickControlsDescription": {
     "context": "Settings > Kiosk Mode > Allowed Actions",
     "description": "Help below this setting.",
     "x-locations": {
@@ -37468,6 +37819,26 @@
     "x-locations": {
       "remoteAdmin": [
         "Lockdown Mode > Enable Lockdown Mode"
+      ]
+    }
+  },
+  "settingLockdownAutoUnlockMinutesTitle": "Automatisch ontgrendelen na",
+  "@settingLockdownAutoUnlockMinutesTitle": {
+    "context": "Lockdown Mode > Unlock automatically after",
+    "description": "Setting label.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Lockdown Mode > Unlock automatically after"
+      ]
+    }
+  },
+  "settingLockdownAutoUnlockMinutesDescription": "Schakelt de vergrendelingsmodus uit na deze tijd als die vanuit het kioskmenu is gestart. Zet op 0 om vergrendeld te blijven.",
+  "@settingLockdownAutoUnlockMinutesDescription": {
+    "context": "Lockdown Mode > Unlock automatically after",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Lockdown Mode > Unlock automatically after"
       ]
     }
   },
@@ -40988,6 +41359,819 @@
       ]
     }
   },
+  "settingsGroupKioskSatellite": "Kiosk Satellite",
+  "@settingsGroupKioskSatellite": {
+    "context": "Settings:Menu",
+    "description": "Heading above a group of Settings menu entries. The product name, keep it as is.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuNavigation": "Navigatie",
+  "@settingsMenuNavigation": {
+    "context": "Settings:Menu",
+    "description": "Settings menu entry for how the kiosk is moved around.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuNavigationSummary": "Klassiek of Compass",
+  "@settingsMenuNavigationSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary under the Navigation entry. Classic and Compass are the two navigation styles.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "navigationStyleSection": "Navigatiestijl",
+  "@navigationStyleSection": {
+    "context": "Settings:Navigation",
+    "description": "Heading of the group that picks the navigation style.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "navigationLayoutSection": "Compass-indeling",
+  "@navigationLayoutSection": {
+    "context": "Settings:Navigation",
+    "description": "Heading of the group that places views around the center. Compass is the name of the navigation style.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "navigationOptionsSection": "Compass-opties",
+  "@navigationOptionsSection": {
+    "context": "Settings:Navigation",
+    "description": "Heading of the Compass settings group.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavStyleTitle": "Navigatiestijl",
+  "@settingNavStyleTitle": {
+    "context": "Settings:Navigation",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavStyleDescription": "Klassiek behoudt het zijmenu, trekken om te vernieuwen en de dashboardcarrousel. Met Compass veeg je tussen weergaven die in een kruis liggen.",
+  "@settingNavStyleDescription": {
+    "context": "Settings:Navigation",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassLayoutTitle": "Compass-indeling",
+  "@settingNavCompassLayoutTitle": {
+    "context": "Settings:Navigation",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassLayoutViewsDescription": "Maximaal twee weergaven per kant. Voeg meerdere weergaven van Home Assistant-dashboards toe en één van elke andere soort.",
+  "@settingNavCompassLayoutViewsDescription": {
+    "context": "Settings:Navigation",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassAnimationTitle": "Veeganimatie",
+  "@settingNavCompassAnimationTitle": {
+    "context": "Settings:Navigation",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassAnimationDescription": "Uitzoomen om de omliggende weergaven te tonen, of recht doorschuiven.",
+  "@settingNavCompassAnimationDescription": {
+    "context": "Settings:Navigation",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassPositionTitle": "Positie tonen tijdens het vegen",
+  "@settingNavCompassPositionTitle": {
+    "context": "Settings:Navigation",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassPositionDescription": "Een kleine kaart van waar je bent.",
+  "@settingNavCompassPositionDescription": {
+    "context": "Settings:Navigation",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassReturnMinutesTitle": "Terug naar het midden",
+  "@settingNavCompassReturnMinutesTitle": {
+    "context": "Settings:Navigation",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassReturnMinutesDescription": "Ga terug naar de middelste weergave na zo lang zonder aanraking. Zet op 0 om op de weergave te blijven.",
+  "@settingNavCompassReturnMinutesDescription": {
+    "context": "Settings:Navigation",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassMenuItemsTitle": "Menu-items",
+  "@settingNavCompassMenuItemsTitle": {
+    "context": "Settings:Navigation",
+    "description": "Setting label. Opens the Drawer menu items picker.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavQuickControlsItemsDescription": "Wat de weergave Snelle bediening toont. Gedeeld met het zijmenu.",
+  "@settingNavQuickControlsItemsDescription": {
+    "context": "Settings:Navigation",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "navigationClassic": "Klassiek",
+  "@navigationClassic": {
+    "context": "Settings:Navigation",
+    "description": "Navigation style option: the drawer menu.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "navigationCompass": "Compass",
+  "@navigationCompass": {
+    "context": "Settings:Navigation",
+    "description": "Navigation style option and feature name: views laid out in a cross you swipe between.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "navigationZoom": "Zoom",
+  "@navigationZoom": {
+    "context": "Settings:Navigation",
+    "description": "Swipe animation option.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "navigationSlide": "Schuiven",
+  "@navigationSlide": {
+    "context": "Settings:Navigation",
+    "description": "Swipe animation option.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassClassicViewHint": "Home Assistant-weergave met zijmenu.",
+  "@compassClassicViewHint": {
+    "context": "Settings:Navigation",
+    "description": "Description on the Classic choice card.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassCompassHint": "Veeg tussen weergaven die in een kruis liggen.",
+  "@compassCompassHint": {
+    "context": "Settings:Navigation",
+    "description": "Description on the Compass choice card.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassLayoutViewsHint": "Maximaal twee weergaven per kant. Voeg meerdere weergaven van Home Assistant-dashboards toe en één van elke andere soort. Tik op een weergave om die te wijzigen, ook de middelste.",
+  "@compassLayoutViewsHint": {
+    "context": "Settings:Navigation",
+    "description": "Hint above the layout map.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassOffNote": "Trekken om te vernieuwen, de dashboardcarrousel en het vegen vanaf de rand dat het zijmenu opent staan uit zolang Compass aan staat.",
+  "@compassOffNote": {
+    "context": "Settings:Navigation",
+    "description": "Note under the Compass options.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingOffUnderCompass": "Uit zolang Compass-navigatie aan staat.",
+  "@settingOffUnderCompass": {
+    "context": "Settings",
+    "description": "Line under a setting that Compass navigation switches off, such as pull to refresh or the dashboard carousel.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > Enable pull to refresh",
+        "Settings > Home Assistant > User Interface > Enable dashboard carousel"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > Enable pull to refresh",
+        "Home Assistant > User Interface > Enable dashboard carousel"
+      ]
+    }
+  },
+  "compassQuickControlsView": "Snelle bediening",
+  "@compassQuickControlsView": {
+    "context": "Device:Compass",
+    "description": "Name of the view that replaces the drawer menu, at the far end of the left side.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation",
+        "Compass navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassHomeDashboard": "Home Assistant",
+  "@compassHomeDashboard": {
+    "context": "Settings:Navigation",
+    "description": "The dashboard the kiosk starts on, as a view in the layout. The product name, keep it as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation",
+        "Compass navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassAppLauncher": "Appstarter",
+  "@compassAppLauncher": {
+    "context": "Settings:Navigation",
+    "description": "View name.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation",
+        "Compass navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassCenter": "Midden",
+  "@compassCenter": {
+    "context": "Settings:Navigation",
+    "description": "Label on the view in the middle of the layout.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassAddTile": "Toevoegen",
+  "@compassAddTile": {
+    "context": "Settings:Navigation",
+    "description": "Empty place on the layout map that adds a view.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassAddView": "Weergave toevoegen",
+  "@compassAddView": {
+    "context": "Settings:Navigation",
+    "description": "Row that adds a view to a side.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassMoveIn": "Naar binnen",
+  "@compassMoveIn": {
+    "context": "Settings:Navigation",
+    "description": "Button that moves a view closer to the center.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassMoveOut": "Naar buiten",
+  "@compassMoveOut": {
+    "context": "Settings:Navigation",
+    "description": "Button that moves a view away from the center.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassReplace": "Vervangen",
+  "@compassReplace": {
+    "context": "Settings:Navigation",
+    "description": "Button that swaps a view for another.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassRemove": "Verwijderen",
+  "@compassRemove": {
+    "context": "Settings:Navigation",
+    "description": "Button that takes a view out of the layout.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassChange": "Wijzigen",
+  "@compassChange": {
+    "context": "Settings:Navigation",
+    "description": "Button that picks another center view.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassSideUp": "Boven",
+  "@compassSideUp": {
+    "context": "Settings:Navigation",
+    "description": "Side of the layout, above the center.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassSideRight": "Rechts",
+  "@compassSideRight": {
+    "context": "Settings:Navigation",
+    "description": "Side of the layout, right of the center.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassSideDown": "Onder",
+  "@compassSideDown": {
+    "context": "Settings:Navigation",
+    "description": "Side of the layout, below the center.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassSideLeft": "Links",
+  "@compassSideLeft": {
+    "context": "Settings:Navigation",
+    "description": "Side of the layout, left of the center.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassFirstView": "{side}, eerste weergave",
+  "@compassFirstView": {
+    "context": "Settings:Navigation",
+    "description": "Where the selected view sits.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    },
+    "placeholders": {
+      "side": {
+        "type": "String",
+        "example": "Right"
+      }
+    }
+  },
+  "compassSecondView": "{side}, tweede weergave",
+  "@compassSecondView": {
+    "context": "Settings:Navigation",
+    "description": "Where the selected view sits.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    },
+    "placeholders": {
+      "side": {
+        "type": "String",
+        "example": "Right"
+      }
+    }
+  },
+  "compassAddAbove": "Weergave boven toevoegen",
+  "@compassAddAbove": {
+    "context": "Settings:Navigation",
+    "description": "Dialog title.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassAddBelow": "Weergave onder toevoegen",
+  "@compassAddBelow": {
+    "context": "Settings:Navigation",
+    "description": "Dialog title.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassAddLeft": "Weergave links toevoegen",
+  "@compassAddLeft": {
+    "context": "Settings:Navigation",
+    "description": "Dialog title.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassAddRight": "Weergave rechts toevoegen",
+  "@compassAddRight": {
+    "context": "Settings:Navigation",
+    "description": "Dialog title.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassChangeCenter": "Middelste weergave wijzigen",
+  "@compassChangeCenter": {
+    "context": "Settings:Navigation",
+    "description": "Dialog title.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassReplaceTitle": "{name} vervangen",
+  "@compassReplaceTitle": {
+    "context": "Settings:Navigation",
+    "description": "Dialog title.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    },
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Calendar"
+      }
+    }
+  },
+  "compassKindDashboard": "Home Assistant-dashboard",
+  "@compassKindDashboard": {
+    "context": "Settings:Navigation",
+    "description": "View kind in the add dialog.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassKindDashboardHint": "Elke weergave, eigen pagina's en app-pagina's",
+  "@compassKindDashboardHint": {
+    "context": "Settings:Navigation",
+    "description": "Hint under the dashboard choice.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassKindTaken": "Al geplaatst",
+  "@compassKindTaken": {
+    "context": "Settings:Navigation",
+    "description": "Hint under a view kind the layout already holds.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassKindUnavailable": "Niet ingesteld op deze kiosk",
+  "@compassKindUnavailable": {
+    "context": "Settings:Navigation",
+    "description": "Hint under a view kind with nothing to show yet.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassKioskLocked": "Kiosk vergrendeld",
+  "@compassKioskLocked": {
+    "context": "Device:Compass",
+    "description": "Badge in the Quick Controls view header while kiosk mode is on.",
+    "x-locations": {
+      "device": [
+        "Compass navigation"
+      ]
+    }
+  },
+  "compassQuickControls": "Snelle bediening",
+  "@compassQuickControls": {
+    "context": "Device:Compass",
+    "description": "Heading over the switches and one-tap actions in the Quick Controls view.",
+    "x-locations": {
+      "device": [
+        "Compass navigation > Menu"
+      ]
+    }
+  },
+  "compassOpen": "Openen",
+  "@compassOpen": {
+    "context": "Device:Compass",
+    "description": "Heading over the pages the Quick Controls view opens, such as Calendar or Camera View.",
+    "x-locations": {
+      "device": [
+        "Compass navigation > Menu"
+      ]
+    }
+  },
+  "compassStateOn": "Aan",
+  "@compassStateOn": {
+    "context": "Device:Compass",
+    "description": "State under a switch in the Quick Controls view that is on.",
+    "x-locations": {
+      "device": [
+        "Compass navigation > Menu"
+      ]
+    }
+  },
+  "compassStateOff": "Uit",
+  "@compassStateOff": {
+    "context": "Device:Compass",
+    "description": "State under a switch in the Quick Controls view that is off.",
+    "x-locations": {
+      "device": [
+        "Compass navigation > Menu"
+      ]
+    }
+  },
+  "compassHoldMode": "Wachtstand",
+  "@compassHoldMode": {
+    "context": "Device:Compass",
+    "description": "Name of the Hold Mode switch in the Quick Controls view. Use the same term as the drawer menu's Turn On Hold Mode.",
+    "x-locations": {
+      "device": [
+        "Compass navigation > Menu"
+      ]
+    }
+  },
+  "settingsMenuGroundControl": "Ground Control",
+  "@settingsMenuGroundControl": {
+    "context": "Settings:Menu",
+    "description": "Kiosk Satellite Ground Control, the companion app that runs Voice Match on a capable machine. A product name: keep Ground Control unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > menu",
+        "Settings > Ground Control"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu",
+        "Ground Control"
+      ]
+    }
+  },
+  "settingsMenuGroundControlSummary": "Voice Match op een krachtige computer",
+  "@settingsMenuGroundControlSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary under the Ground Control entry. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
   "settingAdaptiveBrightnessTitle": "Adaptieve helderheid",
   "@settingAdaptiveBrightnessTitle": {
     "context": "Settings:Screen & Audio:Adaptive brightness",
@@ -41442,6 +42626,435 @@
       }
     }
   },
+  "settingAdaptiveVolumeTitle": "Adaptief volume inschakelen",
+  "@settingAdaptiveVolumeTitle": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeDescription": "Verlaag het volume als de kamer stiller wordt, met behulp van de microfoon.",
+  "@settingAdaptiveVolumeDescription": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeAssistantTitle": "Assistent",
+  "@settingAdaptiveVolumeAssistantTitle": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Setting label. The switch that makes the Assistant volume follow the room noise. Also the label of its line on the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeAssistantDescription": "Spraakreacties en geluidssignalen.",
+  "@settingAdaptiveVolumeAssistantDescription": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeMediaTitle": "Media",
+  "@settingAdaptiveVolumeMediaTitle": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Setting label. The switch that makes the Media volume follow the room noise. Also the label of its line on the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeMediaDescription": "Muziek en video. Wordt ingesteld wanneer het afspelen begint.",
+  "@settingAdaptiveVolumeMediaDescription": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeIntercomTitle": "Intercom",
+  "@settingAdaptiveVolumeIntercomTitle": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Setting label. The switch that makes the Intercom volume follow the room noise. Also the label of its line on the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeIntercomDescription": "Gesprekken. Wordt ingesteld wanneer een gesprek begint.",
+  "@settingAdaptiveVolumeIntercomDescription": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeCurveTitle": "Volumecurve",
+  "@settingAdaptiveVolumeCurveTitle": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Setting label and the heading above the curve editor.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeCurveSliderDescription": "Het volume bij elk geluidsniveau in de kamer, als percentage van de schuifregelaar van dat volume onder Scherm & audio.",
+  "@settingAdaptiveVolumeCurveSliderDescription": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioAdaptiveVolume": "Adaptief volume",
+  "@screenAudioAdaptiveVolume": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Name of the settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioAdaptiveVolumeHint": "Volg het kamergeluid met de microfoon",
+  "@screenAudioAdaptiveVolumeHint": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Hint under the row that opens the Adaptive volume page.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioAdaptiveVolumes": "Volumes",
+  "@screenAudioAdaptiveVolumes": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Heading above the switches that pick which volumes follow the room noise.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioRoomNoise": "Kamergeluid",
+  "@screenAudioRoomNoise": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Label of the live room noise reading.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioRoomNoiseNote": "Wat de microfoon meet terwijl dit apparaat stil is.",
+  "@screenAudioRoomNoiseNote": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the live room noise reading.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioRoomNoiseHolds": "De meting blijft staan terwijl dit apparaat geluid afspeelt. Veranderingen in de kamer tijdens het afspelen worden niet gebruikt.",
+  "@screenAudioRoomNoiseHolds": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Note under the live room noise reading.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioRoomNoiseNoReading": "Als er geen meting is, schakel dan adaptief volume of wekwoorddetectie in en controleer of de microfoon niet gedempt is.",
+  "@screenAudioRoomNoiseNoReading": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Note under the room noise reading while there is none: what a reading needs.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioDbfs": "{level} dBFS",
+  "@screenAudioDbfs": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "A room noise level. dBFS is a unit and stays as it is.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    },
+    "placeholders": {
+      "level": {
+        "type": "String",
+        "description": "Noise level in decibels relative to full scale, a negative number."
+      }
+    }
+  },
+  "screenAudioVolumeCurveSliderHint": "Versleep een punt of tik erop om exacte waarden in te voeren. De percentages gelden voor de schuifregelaars Assistentvolume, Mediavolume en Intercomvolume onder Scherm & audio: bij 100% klinkt het op het niveau van de schuifregelaar en bij 50% alsof de schuifregelaar op de helft staat.",
+  "@screenAudioVolumeCurveSliderHint": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Hint under the volume curve editor.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeCurveNoise": "Kamergeluid (dBFS)",
+  "@screenAudioVolumeCurveNoise": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Field label in the dialog that edits one point of the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeCurveAssistant": "Assistent (%)",
+  "@screenAudioVolumeCurveAssistant": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Field label in the dialog that edits one point of the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeCurveMedia": "Media (%)",
+  "@screenAudioVolumeCurveMedia": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Field label in the dialog that edits one point of the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeCurveIntercom": "Intercom (%)",
+  "@screenAudioVolumeCurveIntercom": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Field label in the dialog that edits one point of the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeCurveNoiseRange": "Voer een geluidsniveau in tussen {low} en {high} dBFS",
+  "@screenAudioVolumeCurveNoiseRange": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Error under the room noise field when the value is out of range.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    },
+    "placeholders": {
+      "low": {
+        "type": "String",
+        "description": "Lowest noise level allowed, in dBFS."
+      },
+      "high": {
+        "type": "String",
+        "description": "Highest noise level allowed, in dBFS."
+      }
+    }
+  },
+  "screenAudioVolumeCurveLevelRange": "Voer een volume tussen {low}% en {high}% in",
+  "@screenAudioVolumeCurveLevelRange": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Error under a volume field when the value is out of range.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    },
+    "placeholders": {
+      "low": {
+        "type": "String",
+        "description": "Lowest volume allowed, in percent."
+      },
+      "high": {
+        "type": "String",
+        "description": "Highest volume allowed, in percent."
+      }
+    }
+  },
+  "screenAudioVolumeTest": "Volume testen",
+  "@screenAudioVolumeTest": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Heading above the rows that play a test announcement at the volume the room noise picks.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeTestAssistant": "Assistentvolume testen",
+  "@screenAudioVolumeTestAssistant": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Label of the row whose button plays a test announcement at the Assistant volume.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeTestAssistantHint": "Speelt een Voice Satellite-aankondiging af op het assistentvolume. Voice Satellite moet in Home Assistant zijn ingesteld.",
+  "@screenAudioVolumeTestAssistantHint": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the Test Assistant volume row.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeTestMedia": "Mediavolume testen",
+  "@screenAudioVolumeTestMedia": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Label of the row whose button plays a test announcement at the Media volume.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeTestMediaHint": "Speelt een ESPHome-aankondiging af op het mediavolume. Aankondigingen moeten onder ESPHome zijn ingeschakeld.",
+  "@screenAudioVolumeTestMediaHint": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the Test Media volume row. Announcements is the name of a settings page under ESPHome.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeTestMessage": "Zo luid klinkt een aankondiging nu.",
+  "@screenAudioVolumeTestMessage": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "The sentence Home Assistant speaks aloud when a volume test button is pressed.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
   "settingAudioMicDeviceTitle": "Microfoon",
   "@settingAudioMicDeviceTitle": {
     "context": "Settings:Screen & Audio:Audio Devices",
@@ -41537,6 +43150,214 @@
         "type": "String",
         "description": "Device name supplied by the hardware. Keep unchanged."
       }
+    }
+  },
+  "settingEqualizerEnabledTitle": "Equalizer inschakelen",
+  "@settingEqualizerEnabledTitle": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerEnabledDescription": "Vormt de klank van muziek, de assistent, geluiden en de intercom. Geluid van video en dashboards wordt niet aangepast.",
+  "@settingEqualizerEnabledDescription": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand1Title": "100 Hz",
+  "@settingEqualizerBand1Title": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand1Description": "Bas. Kleine luidsprekers vervormen al snel als je hier versterkt.",
+  "@settingEqualizerBand1Description": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand2Title": "300 Hz",
+  "@settingEqualizerBand2Title": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand2Description": "Laagmidden. Verzwakken haalt een doffe of dreunende klank weg.",
+  "@settingEqualizerBand2Description": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand3Title": "1 kHz",
+  "@settingEqualizerBand3Title": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand3Description": "Midden, waar het grootste deel van een stem zit.",
+  "@settingEqualizerBand3Description": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand4Title": "3 kHz",
+  "@settingEqualizerBand4Title": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand4Description": "Hoogmidden. Versterken maakt spraak duidelijker.",
+  "@settingEqualizerBand4Description": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand5Title": "10 kHz",
+  "@settingEqualizerBand5Title": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand5Description": "Hoge tonen.",
+  "@settingEqualizerBand5Description": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerPreampTitle": "Automatische voorversterker",
+  "@settingEqualizerPreampTitle": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerPreampDescription": "Verlaagt het niveau met de grootste versterking, zodat de luidspreker niet vervormt en de echo-onderdrukking blijft werken.",
+  "@settingEqualizerPreampDescription": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "screenAudioEqualizer": "Equalizer",
+  "@screenAudioEqualizer": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "screenAudioEqualizerHint": "Bas, midden, hoog, voorversterker",
+  "@screenAudioEqualizerHint": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
     }
   },
   "settingMicCaptureModeTitle": "Opnamemodus",
@@ -45584,6 +47405,32 @@
       ]
     }
   },
+  "settingScreensaverFadeTitle": "In- en uitfaden",
+  "@settingScreensaverFadeTitle": {
+    "context": "Settings:Screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "settingScreensaverFadeDescription": "De schermbeveiliging fadet in over het dashboard en fadet uit bij het sluiten. Geldt niet voor de schermbeveiligingen Home Assistant-media, Website en Camerastreams.",
+  "@settingScreensaverFadeDescription": {
+    "context": "Settings:Screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
   "settingScreensaverModeTitle": "Schermbeveiligingsmodus",
   "@settingScreensaverModeTitle": {
     "context": "Settings:Screensaver",
@@ -45755,6 +47602,32 @@
   },
   "settingScreensaverNotificationBrightnessDescription": "Verhoog de helderheid van de schermbeveiliging zolang er een melding op het scherm staat.",
   "@settingScreensaverNotificationBrightnessDescription": {
+    "context": "Settings:Screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "settingScreensaverTouchBrightnessSecondsTitle": "Oplichten bij aanraken",
+  "@settingScreensaverTouchBrightnessSecondsTitle": {
+    "context": "Settings:Screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "settingScreensaverTouchBrightnessSecondsDescription": "Verhoog de helderheid van de schermbeveiliging zo lang na een aanraking die haar niet sluit. Stel 0 in om dit uit te zetten.",
+  "@settingScreensaverTouchBrightnessSecondsDescription": {
     "context": "Settings:Screensaver",
     "description": "Help below the setting.",
     "x-locations": {
@@ -52032,6 +53905,19 @@
       ]
     }
   },
+  "screensaverWeatherBarHighLowDescription": "Toon de hoogste en laagste temperatuur van vandaag wanneer de weerentiteit een dagelijkse voorspelling heeft.",
+  "@screensaverWeatherBarHighLowDescription": {
+    "context": "Settings:Screensaver:Weather Mood screensaver",
+    "description": "Weather Mood clock or weather information bar control.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Weather Mood screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Weather Mood screensaver"
+      ]
+    }
+  },
   "screensaverWeatherBarHumidityDescription": "Toon vochtigheid wanneer de weerentiteit het meldt.",
   "@screensaverWeatherBarHumidityDescription": {
     "context": "Settings:Screensaver:Weather Mood screensaver",
@@ -53910,19 +55796,6 @@
       ]
     }
   },
-  "voiceChimesHint": "Wek-, gereed-, fout-, timer- en aankondigingsgeluiden",
-  "@voiceChimesHint": {
-    "context": "Settings > Voice Satellite > Chimes",
-    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
-    "x-locations": {
-      "device": [
-        "Settings > Voice Satellite > Chimes"
-      ],
-      "remoteAdmin": [
-        "Voice Satellite > Chimes"
-      ]
-    }
-  },
   "voiceChimesPreview": "Voorbeeld op kiosk",
   "@voiceChimesPreview": {
     "context": "Settings > Voice Satellite > Chimes",
@@ -54177,6 +56050,19 @@
       ],
       "remoteAdmin": [
         "Voice Satellite > Chimes"
+      ]
+    }
+  },
+  "voiceChimesSoundsHint": "Wek-, gereed-, fout- en aankondigingsgeluiden",
+  "@voiceChimesSoundsHint": {
+    "context": "Settings > Voice Satellite",
+    "description": "Summary under Chimes: the sounds the page holds.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite"
       ]
     }
   },
@@ -54691,11 +56577,6 @@
     "context": "Settings > Voice Satellite",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
-  "voiceTimersHint": "Labels, waarschuwingen en gesproken herinneringen",
-  "@voiceTimersHint": {
-    "context": "Settings > Voice Satellite",
-    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
-  },
   "voiceSectionFollowUp": "Vervolgvraag",
   "@voiceSectionFollowUp": {
     "context": "Settings > Voice Satellite",
@@ -54728,6 +56609,11 @@
   },
   "voiceSectionTimerEnds": "Wanneer een timer eindigt",
   "@voiceSectionTimerEnds": {
+    "context": "Settings > Voice Satellite",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "voiceSectionSharedTimers": "Gedeelde timers",
+  "@voiceSectionSharedTimers": {
     "context": "Settings > Voice Satellite",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
@@ -55925,13 +57811,13 @@
       "remoteAdmin": []
     }
   },
-  "settingVoiceTimerPillsTitle": "Timerlabels tonen",
-  "@settingVoiceTimerPillsTitle": {
+  "settingVoiceTimerPillsViewTitle": "Timers als labels tonen",
+  "@settingVoiceTimerPillsViewTitle": {
     "context": "Settings > Voice Satellite > Timers",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
-  "settingVoiceTimerPillsDescription": "Actieve timers verschijnen als labels op het scherm. Sleep ze naar de gewenste plek.",
-  "@settingVoiceTimerPillsDescription": {
+  "settingVoiceTimerPillsViewDescription": "Timers verschijnen als labels op het scherm in plaats van de schermvullende weergave te openen.",
+  "@settingVoiceTimerPillsViewDescription": {
     "context": "Settings > Voice Satellite > Timers",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
@@ -56018,6 +57904,683 @@
       "name": {
         "type": "String"
       }
+    }
+  },
+  "settingVoiceTimersShareTitle": "Timers delen",
+  "@settingVoiceTimersShareTitle": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersShareDescription": "Timers die op deze kiosk worden gestart, lopen ook op de kiosken die je kiest.",
+  "@settingVoiceTimersShareDescription": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersShareWithTitle": "Delen met",
+  "@settingVoiceTimersShareWithTitle": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersShareWithDescription": "De kiosken die de timers van deze kiosk tonen en laten afgaan.",
+  "@settingVoiceTimersShareWithDescription": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersReceiveTitle": "Gedeelde timers tonen",
+  "@settingVoiceTimersReceiveTitle": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersReceiveDescription": "Timers die andere kiosken delen, worden hier getoond en gaan hier af.",
+  "@settingVoiceTimersReceiveDescription": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingKioskAllowTimersTitle": "Timers",
+  "@settingKioskAllowTimersTitle": {
+    "context": "Settings > Kiosk Mode > Allowed Actions",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingKioskAllowTimersDescription": "De timerweergave openen vanuit het kioskmenu.",
+  "@settingKioskAllowTimersDescription": {
+    "context": "Settings > Kiosk Mode > Allowed Actions",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingsMenuTimersSummary": "Schermvullende weergave, labels, gedeelde timers",
+  "@settingsMenuTimersSummary": {
+    "context": "Settings",
+    "description": "Summary under Timers in the settings menu: what the page holds.",
+    "x-locations": {
+      "device": [
+        "Settings"
+      ],
+      "remoteAdmin": [
+        "Sidebar"
+      ]
+    }
+  },
+  "fleetTheKiosksPickedInShareWithTheTimerSound": "de kiosken gekozen in Delen met, het timergeluid",
+  "@fleetTheKiosksPickedInShareWithTheTimerSound": {
+    "context": "Fleet Management > Sync",
+    "description": "What stays per kiosk when the Timers category syncs. Share with and Timer sound are setting names.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management"
+      ],
+      "remoteAdmin": [
+        "Fleet Management"
+      ]
+    }
+  },
+  "settingTimersTtsEngineDescription": "De tekst-naar-spraakentiteit van Home Assistant die timers uitspreekt.",
+  "@settingTimersTtsEngineDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of Text to speech engine on the Timers page. Keep Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersTtsLanguageDescription": "De taal waarin timers worden uitgesproken.",
+  "@settingTimersTtsLanguageDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of Language on the Timers page.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersTtsVoiceDescription": "De stem waarmee timers worden uitgesproken.",
+  "@settingTimersTtsVoiceDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of Voice on the Timers page.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersShowBeforeEndTitle": "Timerweergave tonen vlak voor het einde",
+  "@settingTimersShowBeforeEndTitle": {
+    "context": "Settings > Timers",
+    "description": "Slider from 30 seconds to 5 minutes: how long before a timer ends the full screen timers view opens again.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersShowBeforeEndDescription": "Hoe lang voor het einde van een timer de timerweergave opent.",
+  "@settingTimersShowBeforeEndDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that slider.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersShowOnStartTitle": "Timerweergave tonen wanneer een timer start",
+  "@settingTimersShowOnStartTitle": {
+    "context": "Settings > Timers",
+    "description": "Switch: whether starting a timer opens the full screen timers view.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersShowOnStartDescription": "Opent de timerweergave telkens wanneer een timer wordt gestart.",
+  "@settingTimersShowOnStartDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that switch.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersPauseScreensaverTitle": "Schermbeveiliging pauzeren terwijl een timer loopt",
+  "@settingTimersPauseScreensaverTitle": {
+    "context": "Settings > Timers",
+    "description": "Switch: the screensaver does not start while the timers view is open with a running timer. The screensaver is held back, not stopped for good.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersPauseScreensaverDescription": "Voorkomt dat de schermbeveiliging start terwijl de timerweergave een lopende timer toont.",
+  "@settingTimersPauseScreensaverDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that switch.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersSilenceAfterTitle": "Dempen na",
+  "@settingTimersSilenceAfterTitle": {
+    "context": "Settings > Timers",
+    "description": "Setting label: how long a finished timer rings before its sound stops. Its options are lengths of time or Never.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > When a timer ends"
+      ],
+      "remoteAdmin": [
+        "Timers > When a timer ends"
+      ]
+    }
+  },
+  "settingTimersSilenceAfterDescription": "De afgelopen timer blijft op het scherm tot hij wordt gesloten.",
+  "@settingTimersSilenceAfterDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that setting: only the sound stops, the alert stays.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > When a timer ends"
+      ],
+      "remoteAdmin": [
+        "Timers > When a timer ends"
+      ]
+    }
+  },
+  "settingTimersDismissAfterTitle": "Sluiten na",
+  "@settingTimersDismissAfterTitle": {
+    "context": "Settings > Timers",
+    "description": "Setting label: how long a finished timer stays before it is dismissed by itself. Its options are lengths of time or Never.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > When a timer ends"
+      ],
+      "remoteAdmin": [
+        "Timers > When a timer ends"
+      ]
+    }
+  },
+  "settingTimersDismissAfterDescription": "Sluit een afgelopen timer alsof op Sluiten is getikt.",
+  "@settingTimersDismissAfterDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that setting. Dismiss is the button on a ringing timer: use the same word as that button.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > When a timer ends"
+      ],
+      "remoteAdmin": [
+        "Timers > When a timer ends"
+      ]
+    }
+  },
+  "voiceMatchGroundControlPage": "Ground Control Voice Match",
+  "@voiceMatchGroundControlPage": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match"
+      ]
+    }
+  },
+  "settingVoiceMatchPolicyDescriptionChosen": "Met Gekozen personen worden de tv, gasten en alle anderen genegeerd.",
+  "@settingVoiceMatchPolicyDescriptionChosen": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > Answer"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > Answer"
+      ]
+    }
+  },
+  "voiceMatchOptionPeople": "Gekozen personen",
+  "@voiceMatchOptionPeople": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > Answer"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > Answer"
+      ]
+    }
+  },
+  "settingVoiceMatchPeopleTitle": "Personen",
+  "@settingVoiceMatchPeopleTitle": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > People"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > People"
+      ]
+    }
+  },
+  "settingVoiceMatchPeopleDescription": "Wie deze kiosk antwoordt. Als niemand gekozen is, antwoordt hij iedereen die is ingeschreven.",
+  "@settingVoiceMatchPeopleDescription": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > People"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > People"
+      ]
+    }
+  },
+  "voiceMatchPeopleNone": "Iedereen die is ingeschreven",
+  "@voiceMatchPeopleNone": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > People"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > People"
+      ]
+    }
+  },
+  "voiceMatchPeopleSearch": "Personen zoeken",
+  "@voiceMatchPeopleSearch": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > People"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > People"
+      ]
+    }
+  },
+  "voiceMatchPeopleEmpty": "Er is nog niemand ingeschreven in Ground Control.",
+  "@voiceMatchPeopleEmpty": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > People"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > People"
+      ]
+    }
+  },
+  "voiceMatchPeopleGone": "Niet meer in Ground Control",
+  "@voiceMatchPeopleGone": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > People"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > People"
+      ]
+    }
+  },
+  "settingVoiceMatchRejectedTitleChosen": "Stem niet gekozen",
+  "@settingVoiceMatchRejectedTitleChosen": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > Voice not chosen"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > Voice not chosen"
+      ]
+    }
+  },
+  "voiceMatchHint": "Wie er praat, andere stemmen, inschrijven",
+  "@voiceMatchHint": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match"
+      ]
+    }
+  },
+  "settingVoiceMatchEnabledTitle": "Voice Match inschakelen",
+  "@settingVoiceMatchEnabledTitle": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Enable Voice Match"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Enable Voice Match"
+      ]
+    }
+  },
+  "settingVoiceMatchPolicyTitle": "Antwoorden op",
+  "@settingVoiceMatchPolicyTitle": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Answer"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Answer"
+      ]
+    }
+  },
+  "settingVoiceMatchRejectedDescription": "Wat er gebeurt als iemand anders het wekwoord zegt.",
+  "@settingVoiceMatchRejectedDescription": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice not enrolled"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice not enrolled"
+      ]
+    }
+  },
+  "settingVoiceMatchSpeakerSensorTitle": "Sprekersensor",
+  "@settingVoiceMatchSpeakerSensorTitle": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Speaker sensor"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Speaker sensor"
+      ]
+    }
+  },
+  "settingVoiceMatchSpeakerSensorDescription": "Voegt aan deze kiosk een Speaker-sensor toe in Home Assistant, voor automatiseringen en agentinstructies.",
+  "@settingVoiceMatchSpeakerSensorDescription": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Speaker sensor"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Speaker sensor"
+      ]
+    }
+  },
+  "voiceMatchOptionAnyone": "Iedereen",
+  "@voiceMatchOptionAnyone": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Answer"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Answer"
+      ]
+    }
+  },
+  "voiceMatchOptionQuiet": "Stil blijven",
+  "@voiceMatchOptionQuiet": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice not enrolled"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice not enrolled"
+      ]
+    }
+  },
+  "voiceMatchOptionChime": "Foutgeluid afspelen",
+  "@voiceMatchOptionChime": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice not enrolled"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice not enrolled"
+      ]
+    }
+  },
+  "voiceMatchConnecting": "Verbinden",
+  "@voiceMatchConnecting": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match status row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match status row"
+      ]
+    }
+  },
+  "voiceMatchSearching": "Zoeken",
+  "@voiceMatchSearching": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match status row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match status row"
+      ]
+    }
+  },
+  "voiceMatchNotReachable": "Niet bereikbaar",
+  "@voiceMatchNotReachable": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match status row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match status row"
+      ]
+    }
+  },
+  "voiceMatchSignInRefused": "Aanmelding geweigerd",
+  "@voiceMatchSignInRefused": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match status row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match status row"
+      ]
+    }
+  },
+  "voiceMatchNobodyEnrolled": "Nog niemand is ingeschreven.",
+  "@voiceMatchNobodyEnrolled": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match status row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match status row"
+      ]
+    }
+  },
+  "voiceMatchTokenRefused": "Home Assistant heeft het token van deze kiosk geweigerd.",
+  "@voiceMatchTokenRefused": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match status row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match status row"
+      ]
+    }
+  },
+  "settingVoiceMatchShowSpeakerTitle": "Tonen wie er praat",
+  "@settingVoiceMatchShowSpeakerTitle": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Show who is talking"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Show who is talking"
+      ]
+    }
+  },
+  "settingVoiceMatchShowSpeakerDescription": "De naam van de spreker voor het commando op de spraakoverlay, in hun kleur. Op een apparaat met een lichtring krijgt de luisterboog die kleur.",
+  "@settingVoiceMatchShowSpeakerDescription": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Show who is talking"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Show who is talking"
+      ]
+    }
+  },
+  "settingVoiceMatchAllowEnrollTitle": "Inschrijven hier toestaan",
+  "@settingVoiceMatchAllowEnrollTitle": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Allow enrollment here"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Allow enrollment here"
+      ]
+    }
+  },
+  "voiceMatchAppHint": "Personen, inschrijven, sessies en instellingen.",
+  "@voiceMatchAppHint": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match app row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match app row"
+      ]
+    }
+  },
+  "voiceMatchOpen": "Openen",
+  "@voiceMatchOpen": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match app row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match app row"
+      ]
+    }
+  },
+  "settingVoiceMatchEnabledDescriptionGroundControl": "Herken wie er praat en stop met luisteren als iemand anders het overneemt. Vereist Ground Control.",
+  "@settingVoiceMatchEnabledDescriptionGroundControl": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Enable Voice Match"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Enable Voice Match"
+      ]
+    }
+  },
+  "settingVoiceMatchAllowEnrollDescriptionGroundControl": "Laat de Ground Control app iemands stem opnemen met de microfoon van deze kiosk. De kiosk toont de tekst om voor te lezen of de lichtring toont de voortgang.",
+  "@settingVoiceMatchAllowEnrollDescriptionGroundControl": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Allow enrollment here"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Allow enrollment here"
+      ]
+    }
+  },
+  "settingVoiceMatchLeaveOutTitle": "Andere stemmen weglaten",
+  "@settingVoiceMatchLeaveOutTitle": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Leave other voices out"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Leave other voices out"
+      ]
+    }
+  },
+  "settingVoiceMatchLeaveOutDescription": "Home Assistant en de realtime assistent horen alleen de persoon die het activatiewoord zei, en het commando stopt als die stopt met praten, ook met de tv aan.",
+  "@settingVoiceMatchLeaveOutDescription": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Leave other voices out"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Leave other voices out"
+      ]
     }
   },
   "voiceWakePage": "Wekwoorden",
@@ -56948,19 +59511,6 @@
       ]
     }
   },
-  "voiceOptionAppLanguage": "Taal van Kiosk Satellite",
-  "@voiceOptionAppLanguage": {
-    "context": "Settings > Voice Satellite > Wake Word",
-    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.",
-    "x-locations": {
-      "device": [
-        "Settings > Voice Satellite > Wake Word"
-      ],
-      "remoteAdmin": [
-        "Voice Satellite > Wake Word"
-      ]
-    }
-  },
   "settingDisableCacheTitle": "Cache uitschakelen",
   "@settingDisableCacheTitle": {
     "context": "Settings > Web Browsing > Disable cache",
@@ -57036,6 +59586,97 @@
       ],
       "remoteAdmin": [
         "Web Browsing > Ignore SSL errors"
+      ]
+    }
+  },
+  "settingBrowserUserAgentTitle": "Aangepaste useragent",
+  "@settingBrowserUserAgentTitle": {
+    "context": "Settings > Web Browsing > Custom user agent",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > Custom user agent"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > Custom user agent"
+      ]
+    }
+  },
+  "settingBrowserUserAgentDescription": "Wordt naar websites gestuurd in plaats van de standaard useragent. Laat leeg om de standaard te gebruiken.",
+  "@settingBrowserUserAgentDescription": {
+    "context": "Settings > Web Browsing > Custom user agent",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > Custom user agent"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > Custom user agent"
+      ]
+    }
+  },
+  "webGeolocationSection": "HTML5-geolocatie",
+  "@webGeolocationSection": {
+    "context": "Settings > Web Browsing > HTML5 Geolocation",
+    "description": "Heading of the group with the switch that lets web pages read the device location through the browser's Geolocation API. HTML5 Geolocation is the name of that browser feature.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing"
+      ],
+      "remoteAdmin": [
+        "Web Browsing"
+      ]
+    }
+  },
+  "settingWebGeolocationTitle": "Toegang tot geolocatie inschakelen",
+  "@settingWebGeolocationTitle": {
+    "context": "Settings > Web Browsing > HTML5 Geolocation > Enable geolocation access",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > HTML5 Geolocation > Enable geolocation access"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > HTML5 Geolocation > Enable geolocation access"
+      ]
+    }
+  },
+  "settingWebGeolocationDescription": "Laat pagina's de locatie van het apparaat lezen, bijvoorbeeld voor een weerradar of een kaart. Alleen pagina's die via HTTPS zijn geladen, kunnen erom vragen.",
+  "@settingWebGeolocationDescription": {
+    "context": "Settings > Web Browsing > HTML5 Geolocation > Enable geolocation access",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > HTML5 Geolocation > Enable geolocation access"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > HTML5 Geolocation > Enable geolocation access"
+      ]
+    }
+  },
+  "webGeolocationPermissionHeld": "Pagina's kunnen de locatie van het apparaat lezen.",
+  "@webGeolocationPermissionHeld": {
+    "context": "Settings > Web Browsing > Required system permissions",
+    "description": "Line under the Location permission row while the permission is granted and Enable geolocation access is on. Pages are the web pages the kiosk shows.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > Required system permissions"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > Required system permissions"
+      ]
+    }
+  },
+  "webGeolocationPermissionMissing": "Zonder deze toestemming kunnen pagina's de locatie van het apparaat niet lezen.",
+  "@webGeolocationPermissionMissing": {
+    "context": "Settings > Web Browsing > Required system permissions",
+    "description": "Line under the Location permission row while the permission is missing and Enable geolocation access is on. Pages are the web pages the kiosk shows.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > Required system permissions"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > Required system permissions"
       ]
     }
   },
@@ -58985,6 +61626,343 @@
       ]
     }
   },
+  "voiceMatchEnrollTitle": "{name} inschrijven",
+  "@voiceMatchEnrollTitle": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    },
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "voiceMatchEnrollStarting": "Voorbereiden…",
+  "@voiceMatchEnrollStarting": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollReading": "Lees dit hardop voor",
+  "@voiceMatchEnrollReading": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollSeconds": "{seconds} van {target} s",
+  "@voiceMatchEnrollSeconds": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged. Seconds of speech recorded out of the seconds needed.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    },
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "voiceMatchEnrollOtherVoice": "Er praat een andere stem. Dat deel wordt weggelaten.",
+  "@voiceMatchEnrollOtherVoice": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollSaving": "Opslaan…",
+  "@voiceMatchEnrollSaving": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollStop": "Stoppen",
+  "@voiceMatchEnrollStop": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollTipWalk": "Loop langzaam door de kamer",
+  "@voiceMatchEnrollTipWalk": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollTipTurn": "Draai je af en toe van de kiosk weg",
+  "@voiceMatchEnrollTipTurn": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollTipTalk": "Praat zoals je commando's geeft",
+  "@voiceMatchEnrollTipTalk": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollDone": "{name} is ingeschreven",
+  "@voiceMatchEnrollDone": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    },
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "voiceMatchEnrollDoneDetail": "{seconds} s spraak toegevoegd.",
+  "@voiceMatchEnrollDoneDetail": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    },
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "voiceMatchEnrollFailed": "Er is niets opgeslagen",
+  "@voiceMatchEnrollFailed": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollTooShort": "Te weinig spraak om op te slaan. Lees minstens 10 seconden.",
+  "@voiceMatchEnrollTooShort": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollLost": "De verbinding met Voice Match is verbroken.",
+  "@voiceMatchEnrollLost": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollNoMic": "De microfoon is niet beschikbaar.",
+  "@voiceMatchEnrollNoMic": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollStopped": "Gestopt voordat er iets is opgenomen.",
+  "@voiceMatchEnrollStopped": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage1": "Doe de lampen in de keuken aan.",
+  "@voiceMatchEnrollPassage1": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage2": "Zet een timer voor tien minuten.",
+  "@voiceMatchEnrollPassage2": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage3": "Wat voor weer wordt het morgen?",
+  "@voiceMatchEnrollPassage3": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage4": "Zet melk en eieren op de boodschappenlijst.",
+  "@voiceMatchEnrollPassage4": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage5": "Speel rustige muziek in de woonkamer.",
+  "@voiceMatchEnrollPassage5": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage6": "De ochtend was koud, dus bleven we binnen en bakten we pannenkoeken.",
+  "@voiceMatchEnrollPassage6": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage7": "Later liepen we naar het park en keken we hoe de honden elkaar over het gras achterna zaten.",
+  "@voiceMatchEnrollPassage7": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage8": "'s Avonds stak de wind op en maakten we een vuur.",
+  "@voiceMatchEnrollPassage8": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage9": "Doe beneden alle lampen uit.",
+  "@voiceMatchEnrollPassage9": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage10": "Hoe laat is het in Tokio?",
+  "@voiceMatchEnrollPassage10": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage11": "Herinner me eraan om maandag de tandarts te bellen.",
+  "@voiceMatchEnrollPassage11": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage12": "Hoe lang duurt het om naar het vliegveld te rijden?",
+  "@voiceMatchEnrollPassage12": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage13": "Pauzeer de muziek.",
+  "@voiceMatchEnrollPassage13": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage14": "Welterusten.",
+  "@voiceMatchEnrollPassage14": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
   "voiceNoticeError": "Voice Satellite-fout",
   "@voiceNoticeError": {
     "context": "Voice Satellite notices on the kiosk screen",
@@ -59217,6 +62195,284 @@
     "x-locations": {
       "device": [
         "Floating timer overlay"
+      ]
+    }
+  },
+  "voiceTimersViewTitle": "Timers",
+  "@voiceTimersViewTitle": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Name of the full screen timers view: its heading, its kiosk menu entry and its Compass view.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimersEmpty": "Geen timers",
+  "@voiceTimersEmpty": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Shown in the timers view when no timer runs.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimerPause": "Pauze",
+  "@voiceTimerPause": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Button that pauses a running timer.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimerResume": "Hervatten",
+  "@voiceTimerResume": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Button that resumes a paused timer.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimerDismiss": "Sluiten",
+  "@voiceTimerDismiss": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Button that stops a ringing timer.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimerTimesUp": "Tijd is om",
+  "@voiceTimerTimesUp": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Label beside the name of a timer that finished and rings.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimerPaused": "Gepauzeerd",
+  "@voiceTimerPaused": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Label beside the name of a paused timer.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimersShareNone": "Geen kiosken gekozen",
+  "@voiceTimersShareNone": {
+    "context": "Settings > Voice Satellite > Timers > Share with",
+    "description": "Value of the Share with row when no kiosk is picked.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Timers > Share with"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Timers > Share with"
+      ]
+    }
+  },
+  "voiceTimersShareEmpty": "Geen andere kiosken gevonden. Schakel op elke kiosk Beheer op afstand en Andere kiosken zoeken in.",
+  "@voiceTimersShareEmpty": {
+    "context": "Settings > Voice Satellite > Timers > Share with",
+    "description": "Shown in the Share with picker when no other kiosk is on the network list.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Timers > Share with"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Timers > Share with"
+      ]
+    }
+  },
+  "voiceTimersShareOffline": "Offline",
+  "@voiceTimersShareOffline": {
+    "context": "Settings > Voice Satellite > Timers > Share with",
+    "description": "Beside a picked kiosk that is not on the network right now.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Timers > Share with"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Timers > Share with"
+      ]
+    }
+  },
+  "timersVoiceSection": "Spraaktimers",
+  "@timersVoiceSection": {
+    "context": "Settings > Timers",
+    "description": "Heading of the group about setting timers by voice.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "timersVoiceManage": "Timers beheren met Voice Satellite",
+  "@timersVoiceManage": {
+    "context": "Settings > Timers",
+    "description": "Row that opens the guide about timers by voice. Keep Voice Satellite unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "timersVoiceHint": "Werkt zonder blauwdruk of LLM-gespreksagent.",
+  "@timersVoiceHint": {
+    "context": "Settings > Timers",
+    "description": "Description under that row. A blueprint is a Home Assistant template for a script.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimersShareSearch": "Kiosken zoeken",
+  "@voiceTimersShareSearch": {
+    "context": "Settings > Timers > Share with",
+    "description": "Hint in the search box of the kiosk picker.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > Share with"
+      ],
+      "remoteAdmin": [
+        "Timers > Share with"
+      ]
+    }
+  },
+  "voiceTimerSetATimer": "Timer instellen",
+  "@voiceTimerSetATimer": {
+    "context": "Timers view",
+    "description": "Button that opens the wheels for a new timer, and the title over them.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerEditTimer": "Timer bewerken",
+  "@voiceTimerEditTimer": {
+    "context": "Timers view",
+    "description": "Title over the wheels that change the time a running timer has left.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerName": "Naam",
+  "@voiceTimerName": {
+    "context": "Timers view",
+    "description": "Label of the optional name of a new timer.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerHours": "Uren",
+  "@voiceTimerHours": {
+    "context": "Timers view",
+    "description": "Caption over the hours wheel of a timer's length.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerMinutes": "Minuten",
+  "@voiceTimerMinutes": {
+    "context": "Timers view",
+    "description": "Caption over the minutes wheel of a timer's length.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerSeconds": "Seconden",
+  "@voiceTimerSeconds": {
+    "context": "Timers view",
+    "description": "Caption over the seconds wheel of a timer's length.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerStartFailed": "De timer kon niet worden gestart.",
+  "@voiceTimerStartFailed": {
+    "context": "Timers view",
+    "description": "Shown when Home Assistant did not take a timer set by hand.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "timersManage": "Timers beheren",
+  "@timersManage": {
+    "context": "Settings > Timers",
+    "description": "Row that opens the timers view from the settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerStartUnavailable": "Schakel Voice Satellite op deze kiosk in om hier timers in te stellen.",
+  "@voiceTimerStartUnavailable": {
+    "context": "Timers",
+    "description": "Shown in place of the Set a timer button while the kiosk cannot start timers. Keep Voice Satellite unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
       ]
     }
   }

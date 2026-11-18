@@ -649,6 +649,89 @@ void main() {
     },
   );
 
+  test(
+    'number commands check the value, wait for confirmation and clear with their session',
+    () async {
+      await native('hostSession', {
+        'id': 'hello-world',
+        'session': 'numbers',
+        'capabilities': ['entities'],
+      });
+      final states = <PluginEntityStateChanged>[];
+      final stateSub = bus.on<PluginEntityStateChanged>().listen(states.add);
+      Future<void> publish(double? value) async {
+        final entries = [
+          {
+            'type': 'number',
+            'key': 'volume',
+            'name': 'Volume',
+            'min': 0.0,
+            'max': 1.0,
+            'step': 0.05,
+            'unit': '',
+            'mode': 2,
+            'accuracyDecimals': 2,
+            'state': value,
+          },
+        ];
+        installed[0]['entities'] = entries;
+        await native('entities', {
+          'id': 'hello-world',
+          'session': 'numbers',
+          'entities': entries,
+        });
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      await publish(0.3);
+      const id = 'plugin_hello_world____number_volume';
+      final entity =
+          ((await commands.execute('getPluginEntities', {})).data as List)
+              .single;
+      expect(entity['icon'], 'mdi:ray-vertex');
+      expect(entity['mode'], 2);
+      for (final invalid in [null, '0.5', true, double.nan]) {
+        expect(
+          (await commands.execute('pluginEntityCommand', {
+            'objectId': id,
+            'value': invalid,
+          })).ok,
+          false,
+        );
+      }
+      expect(calls.where((c) => c.method == 'entityCommand'), isEmpty);
+      expect(
+        (await commands.execute('pluginEntityCommand', {
+          'objectId': id,
+          'value': 0.7,
+        })).ok,
+        true,
+      );
+      expect(calls.lastWhere((c) => c.method == 'entityCommand').arguments, {
+        'id': 'hello-world',
+        'key': 'volume',
+        'type': 'number',
+        'value': 0.7,
+      });
+      expect(
+        ((await commands.execute('getPluginEntities', {})).data as List)
+            .single['state'],
+        0.3,
+      );
+      await publish(0.7);
+      expect(states.last.value, 0.7);
+      await native('hostSessionClosed', {
+        'id': 'hello-world',
+        'session': 'numbers',
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect((await commands.execute('getPluginEntities', {})).data, isEmpty);
+      expect(states.last.objectId, id);
+      expect(states.last.value, isNull);
+      await stateSub.cancel();
+    },
+  );
+
   setUp(() async {
     originalPicker = FilePicker.platform;
     picker = _ZipPicker();
@@ -1177,7 +1260,7 @@ void main() {
     int offsetX = 0,
     int offsetY = 0,
     bool closeOnBack = true,
-    bool onTop = false,
+    String layer = 'dashboard',
     bool touchable = true,
     bool closeOnOutsideTouch = false,
     bool passOutsideTouch = false,
@@ -1194,7 +1277,7 @@ void main() {
     'offsetX': offsetX,
     'offsetY': offsetY,
     'closeOnBack': closeOnBack,
-    'onTop': onTop,
+    'layer': layer,
     'touchable': touchable,
     'closeOnOutsideTouch': closeOnOutsideTouch,
     'passOutsideTouch': passOutsideTouch,
@@ -1951,6 +2034,125 @@ void main() {
   );
 
   testWidgets(
+    'touches on an overlay over the screensaver are reported as control touches',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      messenger.setMockMethodCallHandler(SystemChannels.platform_views, (
+        call,
+      ) async {
+        final args = call.arguments;
+        return switch (call.method) {
+          'create' => 0,
+          'resize' => {
+            'width': (args as Map)['width'],
+            'height': args['height'],
+          },
+          _ => null,
+        };
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(
+          SystemChannels.platform_views,
+          null,
+        ),
+      );
+      // The kiosk screen's own report of every touch comes after the
+      // overlay's, as it does over the screensaver.
+      final reports = <String>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Listener(
+            onPointerDown: (_) => reports.add('touch'),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // The screensaver under it.
+                Listener(
+                  behavior: HitTestBehavior.opaque,
+                  child: const SizedBox.expand(),
+                ),
+                PluginNativeOverlays(
+                  plugins: plugins,
+                  layer: PluginOverlayLayer.top,
+                  onControlTouch: () => reports.add('control'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await overlaySession('first');
+      await overlays('first', [
+        overlay('card', 1, width: 200, height: 120, layer: 'top'),
+      ]);
+      await tester.pump();
+      final card = tester.getRect(find.byType(AndroidView));
+      await tester.tapAt(card.center);
+      await tester.pump();
+      expect(reports, ['control', 'touch']);
+      // A touch beside it is the screensaver's.
+      reports.clear();
+      await tester.tapAt(const Offset(700, 500));
+      await tester.pump();
+      expect(reports, ['touch']);
+
+      // A visual-only overlay lets the touch through.
+      await overlays('first', [
+        overlay(
+          'card',
+          2,
+          width: 200,
+          height: 120,
+          layer: 'top',
+          touchable: false,
+        ),
+      ]);
+      await tester.pump();
+      reports.clear();
+      await tester.tapAt(card.center);
+      await tester.pump();
+      expect(reports, ['touch']);
+
+      // A touch outside that only closes the overlay is the overlay's.
+      await overlays('first', [
+        overlay(
+          'card',
+          3,
+          width: 200,
+          height: 120,
+          layer: 'top',
+          closeOnOutsideTouch: true,
+        ),
+      ]);
+      await tester.pump();
+      reports.clear();
+      await tester.tapAt(const Offset(700, 500));
+      await tester.pump();
+      expect(reports, ['control', 'touch']);
+      // Passed through, it is for what is under it.
+      await overlays('first', [
+        overlay(
+          'card',
+          4,
+          width: 200,
+          height: 120,
+          layer: 'top',
+          closeOnOutsideTouch: true,
+          passOutsideTouch: true,
+        ),
+      ]);
+      await tester.pump();
+      reports.clear();
+      await tester.tapAt(const Offset(700, 500));
+      await tester.pump();
+      expect(reports, ['touch']);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'hybrid overlays sit in the view tree and are painted while measured',
     (tester) async {
       tester.view.physicalSize = const Size(800, 600);
@@ -2131,7 +2333,10 @@ void main() {
           fit: StackFit.expand,
           children: [
             PluginOverlay(plugins: plugins),
-            PluginNativeOverlays(plugins: plugins, onTop: true),
+            PluginNativeOverlays(
+              plugins: plugins,
+              layer: PluginOverlayLayer.top,
+            ),
           ],
         ),
       ),
@@ -2144,7 +2349,7 @@ void main() {
         'saver',
         3,
         anchor: 'bottom-right',
-        onTop: true,
+        layer: 'top',
         touchable: false,
       ),
     ]);
@@ -2217,6 +2422,62 @@ void main() {
         .ignoring;
     expect(ignoring(0), isFalse);
     expect(ignoring(2), isTrue);
+  });
+  testWidgets('each layer draws only its own overlays', (tester) async {
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    messenger.setMockMethodCallHandler(SystemChannels.platform_views, (
+      call,
+    ) async {
+      final args = call.arguments;
+      return switch (call.method) {
+        'create' => 0,
+        'resize' => {'width': (args as Map)['width'], 'height': args['height']},
+        _ => null,
+      };
+    });
+    addTearDown(
+      () => messenger.setMockMethodCallHandler(
+        SystemChannels.platform_views,
+        null,
+      ),
+    );
+    Finder keyed(String key) => find.byKey(ValueKey(key), skipOffstage: false);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Stack(
+          fit: StackFit.expand,
+          children: [
+            for (final layer in PluginOverlayLayer.values)
+              KeyedSubtree(
+                key: ValueKey(layer.name),
+                child: PluginNativeOverlays(plugins: plugins, layer: layer),
+              ),
+          ],
+        ),
+      ),
+    );
+    await overlaySession('first');
+    await overlays('first', [
+      overlay('bar', 1, width: 100, height: 40),
+      overlay('nav', 2, width: 100, height: 40, layer: 'views'),
+      overlay('glow', 3, width: 100, height: 40, layer: 'top'),
+    ]);
+    await tester.pump();
+    int count(String layer) => find
+        .descendant(of: keyed(layer), matching: find.byType(AndroidView))
+        .evaluate()
+        .length;
+    expect(count('dashboard'), 1);
+    expect(count('views'), 1);
+    expect(count('top'), 1);
+    expect(plugins.overlays.value.map((o) => o.layer), [
+      PluginOverlayLayer.dashboard,
+      PluginOverlayLayer.views,
+      PluginOverlayLayer.top,
+    ]);
+    expect(plugins.backOverlayIn(PluginOverlayLayer.views)?.key, 'nav');
   });
   testWidgets('native overlays follow the Scale UI factor', (tester) async {
     tester.view.physicalSize = const Size(800, 600);
@@ -3411,6 +3672,8 @@ void main() {
     await tester.tap(find.text('Home'));
     await tester.pumpAndSettle();
     expect(find.text('Delete'), findsOneWidget);
+    // Duplicate waits for the plugin to offer it.
+    expect(find.text('Duplicate'), findsNothing);
     await tester.enterText(find.widgetWithText(TextFormField, 'Home'), 'House');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
@@ -3468,6 +3731,135 @@ void main() {
     await plugins.refresh();
     await tester.pumpAndSettle();
     expect(find.text('Collapse after'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('Duplicate adds a copy of a row when the list offers it', (
+    tester,
+  ) async {
+    // A phone's footer holds Delete, Duplicate, Cancel and Save.
+    tester.view.physicalSize = const Size(360, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    installed[0]['settings'] = [
+      {
+        'key': 'items',
+        'title': 'Items',
+        'type': 'list',
+        'addTitle': 'Add item',
+        'maxItems': 3,
+        'duplicate': true,
+        'default': [],
+        'fields': [
+          {
+            'key': 'label',
+            'title': 'Label',
+            'type': 'string',
+            'required': true,
+          },
+          {'key': 'tap', 'title': 'Tap action', 'type': 'action'},
+          {
+            'key': 'stops',
+            'title': 'Stops',
+            'type': 'list',
+            'addTitle': 'Add stop',
+            'maxItems': 2,
+            'duplicate': true,
+            'fields': [
+              {'key': 'name', 'title': 'Name', 'type': 'string'},
+            ],
+          },
+        ],
+      },
+    ];
+    final home = {
+      'label': 'Home',
+      'tap': {'type': 'refresh'},
+      'stops': [
+        {'name': 'Main St'},
+      ],
+    };
+    installed[0]['values'] = {
+      'items': [home],
+    };
+    await plugins.refresh();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: PluginDetailPanel(plugins: plugins, id: 'hello-world'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    List<Object?> savedItems() =>
+        ((calls.lastWhere((c) => c.method == 'configure').arguments
+                    as Map)['values']
+                as Map)['items']
+            as List;
+    Future<void> open(String label) async {
+      await tester.tap(find.text(label).first);
+      await tester.pumpAndSettle();
+    }
+
+    // Cancel after Duplicate adds nothing.
+    await open('Home');
+    await tester.tap(find.text('Duplicate'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(calls.where((c) => c.method == 'configure'), isEmpty);
+
+    // The copy takes what the editor shows, action included, and lands
+    // after the others while the row it came from stays as saved.
+    await open('Home');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Home'), 'Away');
+    await tester.tap(find.text('Duplicate'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add item'), findsWidgets);
+    expect(find.text('Delete'), findsNothing);
+    expect(find.text('Duplicate'), findsNothing);
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(savedItems(), [
+      home,
+      {...home, 'label': 'Away'},
+    ]);
+
+    // A nested row copies inside the editor, and Duplicate leaves once
+    // the nested list is full.
+    await open('Away');
+    await tester.tap(find.text('Main St'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Duplicate'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add stop'), findsWidgets);
+    await tester.enterText(find.byType(TextFormField).first, 'Oak Ave');
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Main St'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete'), findsOneWidget);
+    expect(find.text('Duplicate'), findsNothing);
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect((savedItems().last as Map)['stops'], [
+      {'name': 'Main St'},
+      {'name': 'Oak Ave'},
+    ]);
+
+    // A full list has no room for a copy.
+    await open('Home');
+    await tester.tap(find.text('Duplicate'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(savedItems(), hasLength(3));
+    await open('Away');
+    expect(find.text('Delete'), findsOneWidget);
+    expect(find.text('Duplicate'), findsNothing);
     expect(tester.takeException(), isNull);
   });
   testWidgets('SDK 1 controls retain edits during runtime status updates', (

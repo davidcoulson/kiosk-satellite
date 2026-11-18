@@ -1,12 +1,12 @@
 {
   "@@locale": "en",
-  "settingVoiceTimerPillsTitle": "Show timer pills",
-  "@settingVoiceTimerPillsTitle": {
+  "settingVoiceTimerPillsViewTitle": "Show timers as pills",
+  "@settingVoiceTimerPillsViewTitle": {
     "context": "Settings > Voice Satellite > Timers",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
-  "settingVoiceTimerPillsDescription": "Running timers float over the screen. Drag them anywhere.",
-  "@settingVoiceTimerPillsDescription": {
+  "settingVoiceTimerPillsViewDescription": "Timers float over the screen instead of opening the full screen view.",
+  "@settingVoiceTimerPillsViewDescription": {
     "context": "Settings > Voice Satellite > Timers",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
@@ -93,6 +93,241 @@
       "name": {
         "type": "String"
       }
+    }
+  },
+  "settingVoiceTimersShareTitle": "Share timers",
+  "@settingVoiceTimersShareTitle": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersShareDescription": "Timers started on this kiosk also run on the kiosks you pick.",
+  "@settingVoiceTimersShareDescription": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersShareWithTitle": "Share with",
+  "@settingVoiceTimersShareWithTitle": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersShareWithDescription": "The kiosks that show and ring the timers of this one.",
+  "@settingVoiceTimersShareWithDescription": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersReceiveTitle": "Show shared timers",
+  "@settingVoiceTimersReceiveTitle": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersReceiveDescription": "Timers shared by other kiosks show and ring here.",
+  "@settingVoiceTimersReceiveDescription": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingKioskAllowTimersTitle": "Timers",
+  "@settingKioskAllowTimersTitle": {
+    "context": "Settings > Kiosk Mode > Allowed Actions",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingKioskAllowTimersDescription": "Open the timers view from the kiosk menu.",
+  "@settingKioskAllowTimersDescription": {
+    "context": "Settings > Kiosk Mode > Allowed Actions",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingsMenuTimersSummary": "Full screen view, pills, shared timers",
+  "@settingsMenuTimersSummary": {
+    "context": "Settings",
+    "description": "Summary under Timers in the settings menu: what the page holds.",
+    "x-locations": {
+      "device": [
+        "Settings"
+      ],
+      "remoteAdmin": [
+        "Sidebar"
+      ]
+    }
+  },
+  "fleetTheKiosksPickedInShareWithTheTimerSound": "the kiosks picked in Share with, the timer sound",
+  "@fleetTheKiosksPickedInShareWithTheTimerSound": {
+    "context": "Fleet Management > Sync",
+    "description": "What stays per kiosk when the Timers category syncs. Share with and Timer sound are setting names.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management"
+      ],
+      "remoteAdmin": [
+        "Fleet Management"
+      ]
+    }
+  },
+  "settingTimersTtsEngineDescription": "The Home Assistant text to speech entity that speaks timers.",
+  "@settingTimersTtsEngineDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of Text to speech engine on the Timers page. Keep Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersTtsLanguageDescription": "The language timers are spoken in.",
+  "@settingTimersTtsLanguageDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of Language on the Timers page.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersTtsVoiceDescription": "The voice that speaks timers.",
+  "@settingTimersTtsVoiceDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of Voice on the Timers page.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersShowBeforeEndTitle": "Show Timers view when near completion",
+  "@settingTimersShowBeforeEndTitle": {
+    "context": "Settings > Timers",
+    "description": "Slider from 30 seconds to 5 minutes: how long before a timer ends the full screen timers view opens again.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersShowBeforeEndDescription": "How long before a timer ends the Timers view opens.",
+  "@settingTimersShowBeforeEndDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that slider.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersShowOnStartTitle": "Show Timers view when a timer starts",
+  "@settingTimersShowOnStartTitle": {
+    "context": "Settings > Timers",
+    "description": "Switch: whether starting a timer opens the full screen timers view.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersShowOnStartDescription": "Open the Timers view each time a timer is started.",
+  "@settingTimersShowOnStartDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that switch.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersPauseScreensaverTitle": "Pause screensaver while a timer runs",
+  "@settingTimersPauseScreensaverTitle": {
+    "context": "Settings > Timers",
+    "description": "Switch: the screensaver does not start while the timers view is open with a running timer. The screensaver is held back, not stopped for good.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersPauseScreensaverDescription": "Keep the screensaver from starting while the Timers view shows a running timer.",
+  "@settingTimersPauseScreensaverDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that switch.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersSilenceAfterTitle": "Silence after",
+  "@settingTimersSilenceAfterTitle": {
+    "context": "Settings > Timers",
+    "description": "Setting label: how long a finished timer rings before its sound stops. Its options are lengths of time or Never.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > When a timer ends"
+      ],
+      "remoteAdmin": [
+        "Timers > When a timer ends"
+      ]
+    }
+  },
+  "settingTimersSilenceAfterDescription": "The finished timer stays on screen until it is dismissed.",
+  "@settingTimersSilenceAfterDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that setting: only the sound stops, the alert stays.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > When a timer ends"
+      ],
+      "remoteAdmin": [
+        "Timers > When a timer ends"
+      ]
+    }
+  },
+  "settingTimersDismissAfterTitle": "Dismiss after",
+  "@settingTimersDismissAfterTitle": {
+    "context": "Settings > Timers",
+    "description": "Setting label: how long a finished timer stays before it is dismissed by itself. Its options are lengths of time or Never.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > When a timer ends"
+      ],
+      "remoteAdmin": [
+        "Timers > When a timer ends"
+      ]
+    }
+  },
+  "settingTimersDismissAfterDescription": "Clears a finished timer as if Dismiss was tapped.",
+  "@settingTimersDismissAfterDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that setting. Dismiss is the button on a ringing timer: use the same word as that button.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > When a timer ends"
+      ],
+      "remoteAdmin": [
+        "Timers > When a timer ends"
+      ]
     }
   }
 }

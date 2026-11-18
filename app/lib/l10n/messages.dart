@@ -83,6 +83,11 @@ extension LocalizedSetting on SettingDef<Object> {
     ).alarmsPhraseVariables(alarmPhraseVariables),
     _ => messageById(l10n(context), descriptionMessageId, description),
   };
+
+  /// The line a row shows while another setting switches it off
+  /// ([SettingDef.offWhen]).
+  String localizedOffNote(BuildContext context) =>
+      messageById(l10n(context), offNote, '');
 }
 
 /// Translate menu presentation while keeping category and route keys stable.
@@ -432,7 +437,11 @@ String settingsPageText(
   String english,
 ) => switch (category) {
   'About' => supportText(context, english),
+  // Its groups are named in the settings rail's own catalog.
+  'Navigation' => navigationText(context, english),
   'Voice Satellite' => voiceText(context, english),
+  // Its rows came from the Voice Match page and kept that catalog.
+  'Ground Control' => voiceText(context, english),
   'ESPHome' => esphomeText(context, english),
   'Device' => deviceText(context, english),
   'Home Assistant' => haText(context, english),
@@ -465,6 +474,18 @@ String settingsPageText(
       l10n(context).calendarVoiceHint,
     _ => english,
   },
+  // Its groups came from Voice Satellite and kept its catalog.
+  'Timers' => switch (english) {
+    'Voice timers' => l10n(context).timersVoiceSection,
+    'Text to Speech' => l10n(context).alarmsTtsSection,
+    'Manage timers' => l10n(context).timersManage,
+    'Set a timer' => l10n(context).voiceTimerSetATimer,
+    'Manage timers using Voice Satellite' => l10n(context).timersVoiceManage,
+    'Works without a blueprint or an LLM conversation agent.' => l10n(
+      context,
+    ).timersVoiceHint,
+    _ => voiceText(context, english),
+  },
   'Alarms' => switch (english) {
     'Defaults' => l10n(context).alarmsDefaultsSection,
     'Text to Speech' => l10n(context).alarmsTtsSection,
@@ -489,6 +510,13 @@ String settingsPageText(
     ).settingBrowserUrlFilterNoticeDescription,
     "Links or pages that match a Block rule don't load. Add an Allow only rule to load only the pages it matches." =>
       l10n(context).urlFilterIntroSub,
+    'HTML5 Geolocation' => l10n(context).webGeolocationSection,
+    'Pages can read the device location.' => l10n(
+      context,
+    ).webGeolocationPermissionHeld,
+    'Without this pages cannot read the device location.' => l10n(
+      context,
+    ).webGeolocationPermissionMissing,
     _ => english,
   },
   'Intercom' => switch (english) {

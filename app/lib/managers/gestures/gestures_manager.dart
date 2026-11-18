@@ -395,11 +395,18 @@ class GesturesManager extends Manager {
   /// Android Settings is left out because it is a way out of the kiosk, and
   /// launchApp holds plugins to the App Launcher's apps for the same
   /// reason. Calling a kiosk is left out because a kiosk can answer on its
-  /// own, which opens its microphone.
+  /// own, which opens its microphone, and a video call also turns this
+  /// kiosk's camera on. A plugin action is left out so one plugin cannot
+  /// run another's actions (issue #1385).
   Future<CommandResult> runPluginKioskLink(String url) async {
     final action = kioskLinkAction(url);
     if (action == null) return const CommandResult.fail('unknown kiosk link');
-    if (const {'android_settings', 'intercom_call'}.contains(action['type'])) {
+    if (const {
+      'android_settings',
+      'intercom_call',
+      'intercom_video_call',
+      'plugin_action',
+    }.contains(action['type'])) {
       return const CommandResult.fail('plugins cannot open this link');
     }
     if (_settings.get(defs.lockdownEnabled)) {
@@ -469,6 +476,12 @@ class GesturesManager extends Manager {
         // carries the intercom's gates, and a kiosk that is off or on
         // Do not disturb ends the call with the reason on the card.
         return _run('intercomCall', {'id': a['kioskId'] ?? ''});
+      case 'intercom_video_call':
+        // Only the dashboard WebView runs ks://intercom/<id>/video, and
+        // only for a tap (issue #1350). A gesture, a plugin or a mapping
+        // written over the remote admin never turns the camera on.
+        log.warn(name, 'a video call runs only from a dashboard tap');
+        return const CommandResult.fail('needs a tap on the kiosk');
       case 'intercom_open':
         // Open only: the sheet closes on its own. The command carries the
         // intercom's gates (off, or no remote admin), so a mapping left
@@ -558,6 +571,8 @@ class GesturesManager extends Manager {
         // The alarm that rings next on its details page, or the list when
         // none is set.
         return _run('openAlarms', const {'alarm': 'next'});
+      case 'timers':
+        return _run('openTimers', const {});
       case 'calendar':
         // Opened by a ks://calendar link, on its view when the link names
         // one. Like the alarm list, not behind the kiosk menu's switches.

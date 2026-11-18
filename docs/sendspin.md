@@ -23,7 +23,7 @@ A core rule applies to all media sources: both the floating player card and the 
 | Setting | Default | Notes |
 | --- | --- | --- |
 | Player source | This device | Selects what the floating player and Now Playing view display and control: a player on this device, or an external player from Home Assistant, Music Assistant, or a Sonos household. Selecting an external source takes the local Sendspin player offline, unless the source is a Music Assistant group with this device in it. |
-| Player | Sendspin Player | With "This device" as the source: **Sendspin Player**, the native Sendspin player, **AirPlay**, an iPhone, iPad or Mac playing to the device (see [AirPlay](#airplay)), or **Local Media Session**, whichever other app plays on the device (see [Local Media Session](#local-media-session)). For external sources, this dropdown populates with players available from that specific provider. |
+| Player | Sendspin Player | With "This device" as the source: **Sendspin Player**, the native Sendspin player, **AirPlay**, an iPhone, iPad or Mac playing to the device (see [AirPlay](#airplay)), **Local Media Session**, whichever other app plays on the device (see [Local Media Session](#local-media-session)), or a player a plugin offers (see [Plugin players](#plugin-players)). For external sources, this dropdown populates with players available from that specific provider. |
 | Duck volume during voice interactions | 10% | Lowers the selected player to this percentage of its current volume during voice interactions and intercom calls, then restores its previous volume. Applies to every source with volume control. Capped at 10% so the microphone still hears you over the music. |
 | Volume buttons control the player | Off | Routes the device's hardware volume buttons to the followed player, either only while the Now Playing view is on screen or whenever the player is playing. With "This device" as the source and the Sendspin player picked, the buttons control the Music Assistant group while this device plays in one and **Adjust the group volume** is on, so each room keeps its balance. Playing alone, the buttons keep changing the device's own volume. Not shown for the Local Media Session or the AirPlay receiver. The mute button mutes the player or the group. While the Now Playing view is up, a press shows its volume slider for a moment. Lockdown and "Disable volume buttons" under Kiosk still leave the buttons dead. |
 | Volume button step | 5% | How far one press of a volume button moves the followed player, from 1% to 10%. Shown only while the buttons are routed to the player. A sensitive amplifier or a bedroom at night wants a smaller step. |
@@ -175,6 +175,7 @@ Capabilities vary slightly by player source:
 | Sonos (Direct UPnP) | Supported | Supported | Supported |
 | Local Media Session | Supported | Supported | Not supported |
 | AirPlay | Supported | Supported | Supported, from the sender's Up Next |
+| Plugin player | Supported, the buttons the plugin offers | Supported | Supported when the plugin keeps a queue |
 
 Unsupported controls are hidden automatically. For example, if a Home Assistant player does not report position seeking, the progress bar thumb is removed.
 
@@ -202,6 +203,16 @@ What the remote control takes depends on the sender. A Mac's Music app takes all
 
 The receiver speaks AirPlay 1, the original protocol, so it does not join AirPlay 2 multi-room groups.
 
+## Plugin players
+
+A [plugin](plugins.md) can offer players of its own, such as a receiver for another protocol or a player for an online catalog. With **Player source** on "This device", the **Player** dropdown lists them after Local Media Session, named after the plugin and the player, such as **Hello World: Internet Archive**. The Sendspin player and the AirPlay receiver go offline while one is picked, the same as with AirPlay.
+
+A plugin player plays through the same audio output as the Sendspin player. The echo canceller removes it from the microphone, so the wake word works over the music. The volume slider and the volume buttons set the device's media volume, and the music ducks during voice interactions.
+
+The floating player and Now Playing view show what it plays with the buttons the plugin offers, so a receiver that only shows what plays has none. A plugin that keeps a queue shows it in the queue panel, where songs can be reordered and removed. A plugin can also add a source to the [Music Library](music-library.md).
+
+While the plugin is off, stopped or still starting, the pick stays and the player shows as unavailable. It plays again once the plugin runs.
+
 ## The Music Assistant Shortcut
 
 When a server address is configured, a **Music Assistant** entry appears in the kiosk drawer menu. Clicking this opens Music Assistant's web interface directly over the dashboard inside an overlay. Users can browse libraries, search, manage queues, and trigger playback without unloading the underlying dashboard or interrupting Voice Satellite background listening.
@@ -224,7 +235,7 @@ The Large card format adds touch-friendly previous, play/pause, and next control
 
 Card behavior:
 * **Paused State**: Remains on screen with a play button until the configured pause timeout expires.
-* **Dismissal**: On the standalone Now Playing view with media controls enabled, tap the close button or enable **Double tap to dismiss** and double tap the background. Turn on **Always show close button** to offer both. The physical back button also dismisses the view. When shown alongside a screensaver, tap the screensaver panel instead.
+* **Dismissal**: On the standalone Now Playing view with media controls enabled, tap the close button or enable **Double tap to dismiss** and double tap the background. Turn on **Always show close button** to offer both. The physical back button also dismisses the view. When shown alongside a screensaver, use the screensaver panel instead. It takes the same tap or double tap that closes that screensaver without Now Playing.
 * **Voice Interactions**: The card hides automatically during active voice interactions and reappears when the interaction ends.
 * **Track Transitions**: Retains the previous track artwork briefly during stream buffering to eliminate visual flickering.
 
@@ -255,6 +266,10 @@ When the views share the display, tap the screensaver panel to dismiss them. Sli
 **After dismissing** in **Now Playing > User Interface** decides which dashboard view you see after Now Playing goes away. With **Return to home dashboard view** on, the kiosk normally goes home as soon as the screensaver starts, so dismissing Now Playing shows the home view. **Last view** returns to the view the kiosk showed when the screensaver started, such as a music view where someone just started a playlist. **Chosen view** always opens one view, which helps when playback starts from another kiosk, the Music Assistant app or a voice command. Both apply whenever the session ends on Now Playing, even if it started as another screensaver. They also apply when Now Playing opened because music started and then closes because the music stopped. A session that ends on a regular screensaver keeps the usual return to the home view.
 
 When **Launch Now Playing when music starts playing** is enabled, the view opens immediately upon track start rather than waiting for the idle timeout. Pausing playback returns the display to the standard screensaver once the pause timeout expires.
+
+Opening Now Playing yourself works like opening any other view. This covers the floating player, the kiosk menu, a [Compass](navigation.md) swipe, a gesture and the Show Now Playing command. The view opens while the dashboard plays media or holds off the screensaver and while Hold Mode is on. Hold Mode then keeps it on screen. A voice turn, a ringing timer or alarm and an intercom call still come first.
+
+As the center view of a [Compass](navigation.md) layout, Now Playing has no close button and a tap, a double tap or a key press does not close it, since the center would only open it again. Motion, face, person and proximity detection do not close it either, so **Dismiss "Now Playing" on motion** has no effect there. Back opens Quick Controls.
 
 ### Media Controls
 

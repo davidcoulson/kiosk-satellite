@@ -280,6 +280,22 @@ class RemoteManager extends Manager {
       }),
     );
 
+    // The room's noise level as adaptive volume follows it and each
+    // volume's share of its slider (issue #1450), for the Room noise row
+    // and the curve's marker.
+    _subscriptions.add(
+      bus.on<AdaptiveVolumeChanged>().listen((e) {
+        if (_wsClients.isEmpty) return;
+        _broadcast({
+          'type': 'adaptivevolume',
+          'noise': e.noise,
+          'assistant': e.assistant,
+          'media': e.media,
+          'intercom': e.intercom,
+        });
+      }),
+    );
+
     // What the Home Assistant motion entity reads (issue #973), for its
     // row on the Motion Sensor page.
     _subscriptions.add(
@@ -693,6 +709,27 @@ class RemoteManager extends Manager {
     }
 
     if (path.startsWith('api/intercom/')) return _intercomRoutes(request);
+
+    // Shared timers between kiosks, before the password like the intercom's
+    // knock: a kiosk has no session on the kiosks it shares with. The
+    // receiving kiosk's Show shared timers switch is the gate.
+    if ((path == 'api/timers/shared' || path == 'api/timers/shared/action') &&
+        request.method == 'POST') {
+      final received = DateTime.now().millisecondsSinceEpoch;
+      final body = await _body(request);
+      if (body == null) return _json(400, {'error': 'invalid JSON'});
+      final r = await commands.execute(
+        path.endsWith('/action') ? 'sharedTimersAction' : 'sharedTimersReceive',
+        {...body, 'address': _clientIp(request), 'received': received},
+      );
+      if (!r.ok) return _json(400, {'error': r.error});
+      final data = (r.data as Map?)?.cast<String, Object?>() ?? const {};
+      final code = data['code'];
+      return _json(code is int ? code : 200, {
+        for (final e in data.entries)
+          if (e.key != 'code') e.key: e.value,
+      });
+    }
 
     if (!path.startsWith('api/')) return Response.notFound('not found');
 

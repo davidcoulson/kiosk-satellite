@@ -22,6 +22,8 @@ import 'library_model.dart';
 import 'ma_library_source.dart';
 import 'music_pick.dart';
 import 'music_requests.dart';
+import 'plugin_library_source.dart';
+import '../plugins/plugin_players.dart';
 import 'sonos_library_source.dart';
 
 /// A saved pick playing for an owner.
@@ -139,6 +141,18 @@ class MusicLibraryManager extends Manager {
   /// The overlay is up.
   final visible = ValueNotifier<bool>(false);
 
+  /// True while Compass shows this as the view in hand. Compass then
+  /// decides when it goes (Return to center), so its own idle close stands
+  /// down, and the screensaver starts over it as over a dashboard.
+  final compassView = ValueNotifier<bool>(false);
+
+  /// The content each library page last showed, by its page key. The
+  /// library screen is built fresh on every open, so without these a
+  /// reopened library showed a spinner where its shelves had been until
+  /// Music Assistant answered again. It draws these at once and swaps in
+  /// the fresh copy when it lands.
+  final shownPages = <String, Object>{};
+
   /// Bumped when an open arrives while it is already up.
   final reopened = ValueNotifier<int>(0);
 
@@ -194,12 +208,27 @@ class MusicLibraryManager extends Manager {
       ..add(
         // The library holds the screensaver, so one starting now was asked
         // for. Now Playing comes up over the library and goes back to it;
-        // anything else replaces it.
+        // anything else replaces it. A Compass view stays under the
+        // screensaver, as a dashboard does.
         bus.on<ScreensaverStateChanged>().listen((e) {
-          if (e.active && !e.nowPlaying) visible.value = false;
+          if (e.active && !e.nowPlaying && !compassView.value) {
+            visible.value = false;
+          }
         }),
       );
     visible.addListener(_onVisible);
+    compassView.addListener(_syncHold);
+    PluginPlayers.published.addListener(_onPluginPlayers);
+  }
+
+  /// A plugin started or stopped offering a library: a source that went
+  /// away closes, and one may now be there for an empty library.
+  void _onPluginPlayers() {
+    final have = available;
+    for (final key in _sources.keys.toList()) {
+      if (PluginPlayers.isPick(key) && !have.contains(key)) _drop(key);
+    }
+    if (source.value == null && have.isNotEmpty) _pickSource();
   }
 
   @override
@@ -208,6 +237,8 @@ class MusicLibraryManager extends Manager {
       await sub.cancel();
     }
     visible.removeListener(_onVisible);
+    compassView.removeListener(_syncHold);
+    PluginPlayers.published.removeListener(_onPluginPlayers);
     _nowPlaying?.removeListener(_onNowPlaying);
     _startTimeout?.cancel();
     starting.dispose();
@@ -220,6 +251,7 @@ class MusicLibraryManager extends Manager {
     _http.close(force: true);
     await _ha.close();
     visible.dispose();
+    compassView.dispose();
     reopened.dispose();
     source.dispose();
     pick.dispose();
@@ -230,11 +262,17 @@ class MusicLibraryManager extends Manager {
   /// is up, and the library's own idle timer closes it.
   void _onVisible() {
     if (visible.value) _pickSource();
+    _syncHold();
+  }
+
+  bool _held = false;
+
+  void _syncHold() {
+    final held = visible.value && !compassView.value;
+    if (held == _held) return;
+    _held = held;
     unawaited(
-      commands.execute('holdScreensaver', {
-        'holder': 'library',
-        'held': visible.value,
-      }),
+      commands.execute('holdScreensaver', {'holder': 'library', 'held': held}),
     );
   }
 
@@ -252,6 +290,8 @@ class MusicLibraryManager extends Manager {
   /// device's own player counts for Music Assistant while Sendspin is on.
   bool pickIn(String key) {
     final p = pick.value;
+    // A plugin's library plays on that plugin's own player alone.
+    if (PluginPlayers.isPick(key)) return p == key;
     if (p.isEmpty) {
       return key == 'ma' &&
           _settings.get(defs.sendspinEnabled) &&
@@ -287,6 +327,9 @@ class MusicLibraryManager extends Manager {
     if (maConfigured) 'ma',
     if (haConfigured) 'ha',
     if (_sonosHosts.isNotEmpty) 'sonos',
+    // The libraries running plugins offer, keyed by their player's pick.
+    for (final player in PluginPlayers.published.value.values)
+      if (player.library) player.pick,
   ];
 
   void _drop(String key) {
@@ -307,7 +350,9 @@ class MusicLibraryManager extends Manager {
       return;
     }
     final saved = _settings.get(defs.librarySource);
-    final followed = pick.value.contains(':')
+    final followed = PluginPlayers.isPick(pick.value)
+        ? pick.value
+        : pick.value.contains(':')
         ? pick.value.substring(0, pick.value.indexOf(':'))
         : '';
     final key = have.contains(saved)
@@ -326,6 +371,7 @@ class MusicLibraryManager extends Manager {
   LibrarySource _build(String key) =>
       sourceFactory?.call(key) ??
       switch (key) {
+        _ when PluginPlayers.isPick(key) => PluginLibrarySource(key),
         'ha' => HaLibrarySource(
           request: (command) =>
               _ha.request(command, timeout: const Duration(seconds: 20)),
@@ -404,6 +450,14 @@ class MusicLibraryManager extends Manager {
   /// The speakers of [key]'s source, this device's own player first
   /// where it is one of them.
   Future<(List<LibrarySpeaker>, String?)> speakers(String key) async {
+    // A plugin's library has one speaker: the plugin's own player.
+    if (PluginPlayers.isPick(key)) {
+      final player = PluginPlayers.published.value[key];
+      return (
+        [if (player != null) LibrarySpeaker(pick: key, name: player.name)],
+        null,
+      );
+    }
     final listed = await commands.execute('mediaPlayers', {
       'source': key,
       if (key == 'sonos') 'rooms': false,
@@ -444,7 +498,9 @@ class MusicLibraryManager extends Manager {
   /// Follow [speaker]: the player Now Playing, the floating player and
   /// every play from here land on.
   Future<bool> follow(LibrarySpeaker speaker) async {
-    final key = speaker.pick.contains(':')
+    // A plugin player is one of this device's own.
+    final key =
+        speaker.pick.contains(':') && !PluginPlayers.isPick(speaker.pick)
         ? speaker.pick.substring(0, speaker.pick.indexOf(':'))
         : 'device';
     final result = await commands.execute('mediaPlayerSet', {
@@ -476,7 +532,9 @@ class MusicLibraryManager extends Manager {
       unawaited(
         UsageCounters.bump(
           _settings,
-          changes ? 'library_plays_${src.key}' : 'library_queue_adds',
+          changes
+              ? 'library_plays_${PluginPlayers.isPick(src.key) ? 'plugin' : src.key}'
+              : 'library_queue_adds',
         ),
       );
       log.info(name, 'play ${item.kind.name} ${mode.name} on ${pick.value}');
@@ -508,6 +566,13 @@ class MusicLibraryManager extends Manager {
   }
 
   LibrarySource? _pickerHa;
+
+  /// The lists the music picker offers out of [all]. Genres stay in the
+  /// library: a genre opens on shelves, which the picker does not draw.
+  static List<LibraryCategory> pickerCategories(List<LibraryCategory> all) => [
+    for (final c in all)
+      if (c.kind != LibraryKind.genre) c,
+  ];
 
   /// The list a random pick draws from in [src], null where it has none.
   static LibraryCategory? randomCategory(LibrarySource src, RandomPick r) {
@@ -1000,9 +1065,16 @@ class MusicLibraryManager extends Manager {
             final (speakers, note) = await this.speakers(key);
             final src = pickerSource(key, '${p['speaker'] ?? ''}');
             if (src == null) return const CommandResult.fail('no_source');
-            final cats = await src.availableCategories();
+            final cats = pickerCategories(await src.availableCategories());
             return CommandResult.ok({
               'sources': have,
+              // The names of the sources plugin players offer, which the
+              // picker cannot translate.
+              'names': {
+                for (final k in have)
+                  if (PluginPlayers.published.value[k] case final player?)
+                    k: player.name,
+              },
               'source': key,
               'followed': pick.value,
               'categories': [
@@ -1014,7 +1086,9 @@ class MusicLibraryManager extends Manager {
                     r.name,
               ],
               'search': src.hasSearch,
-              'browse': key == 'ha',
+              // A tree of its own to walk: a Home Assistant speaker's or a
+              // plugin's.
+              'browse': key == 'ha' || PluginPlayers.isPick(key),
               'speakers': [
                 for (final s in speakers)
                   {

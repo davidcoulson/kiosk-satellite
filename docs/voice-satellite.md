@@ -69,7 +69,8 @@ When Home Assistant runs the integration, onboarding offers the same migration i
 | Realtime | Providers | A row per provider with its status. **Configure** opens its API key, model, voice and endpoint, plus **Reasoning effort** for OpenAI and Gemini, xAI's **Web Search** and **X Search** switches and Gemini's **Google Search** and **Ignore talk not meant for it** switches, and **Save & Validate** stores them once the provider connects. **Clear** removes them. |
 | | Instructions, End after silence, Speech speed, Session duration, Talk over answers, Talk over sensitivity | How the conversation behaves, sounds, ends and carries over, for every provider. |
 | | Tools | What the model can control. See [Realtime conversations](#realtime-conversations). |
-| Wake Word | Wake word engine | vsWakeWord (default), microWakeWord or openWakeWord. All models ship with the app. The Echo Dot, Echo Show 5 and Echo Show 8 images also offer Amazon's engine. See [Wake Word](echo-dot.md#wake-word) in the Echo Dot docs. |
+| Ground Control Voice Match | Enable Voice Match, Answer, People, Voice not chosen, Leave other voices out, Speaker sensor, Show who is talking, Allow enrollment here | Who is talking, and only the user's voice reaching the assistant. Needs [Ground Control](ground-control.md). See [Voice Match](voice-match.md). |
+| Wake Word | Wake word engine | vsWakeWord (default), microWakeWord or openWakeWord. All models ship with the app. On the Echo Dot (2nd and 3rd gen), Echo Show 5 (1st and 2nd gen) and Echo Show 8 (1st and 2nd gen) images, Amazon's engine also shows up when its files are installed. See [Wake Word](echo-dot.md#wake-word) in the Echo Dot docs. |
 | | Wake word 1 and 2 | Home Assistant's selects. Wake word 2 is answered by Assistant 2. |
 | | Wake word sensitivity, Fine-tune sensitivity, Wake word noise gate | How easily the wake word triggers. **Fine-tune sensitivity** adjusts it in smaller steps on each kiosk, from -10 to +10, and 0 keeps the sensitivity as picked. Raise it if you often have to repeat the wake word and lower it if the kiosk wakes by mistake. The stop word has its own fine-tune below. While the kiosk plays music or another sound of its own with echo cancellation on, the wake word takes half a sensitivity step less, and the app log notes each change. The noise gate skips inference while the room is quiet to save CPU. |
 | | Stop word interruption | Say "stop" to cut off an answer, a timer alert or an announcement. It also closes a result panel. |
@@ -81,9 +82,9 @@ When Home Assistant runs the integration, onboarding offers the same migration i
 | | Theme, Background, Text size, Reactive activity bar | Light or dark, how much of the dashboard shows through, the text size and the bar that follows your voice and the answer. |
 | Conversation | Show what you said, Show the answer, Show tool use, Hide sentiment tags | What the overlay shows. |
 | | Keep the answer on screen, Keep results on screen, Announcement time | How long each stays. Results at 0 stay until dismissed. |
-| Timers | Show timer pills, Show the timer name, Timer pill scale | Running timers float over the screen. Drag them anywhere. |
-| | Show finished timer pills, Mute timer alerts, Show the name on the alert, Speak when a timer ends | What a finished timer does. Without its pill, the stop word still ends the alert. |
-| Chimes | Play chimes, per-event sounds and volumes | The wake, done, error, timer and announcement sounds, built in or from the sounds folder, each with its own volume under the assistant volume. |
+| Chimes | Play chimes, per-event sounds and volumes | The wake, done, error and announcement sounds, built in or from the sounds folder, each with its own volume under the assistant volume. The timer sound is under **Settings > Timers**. |
+
+The timer settings have their own page, **Settings > Timers**. See [Timer settings](timers.md#timer-settings).
 
 The **Wake Word Tester** and **Wake word diagnostics** are covered in [Microphone settings](microphone.md).
 
@@ -177,12 +178,17 @@ These come from Home Assistant through the kiosk's satellite entity, as they do 
 
 | Feature | How |
 | --- | --- |
-| Timers | Ask for one by voice. Pills show while it runs and an alert when it ends. Tap a pill to pause it, double tap to cancel. |
+| Timers | Ask for one by voice. The full screen Timers view opens when it starts, nears its end and finishes. See [Timers](timers.md). |
 | Announcements | `assist_satellite.announce` on the kiosk's satellite. |
 | Start a conversation | `assist_satellite.start_conversation`: the kiosk speaks, then listens for the reply. With a realtime provider on Assistant 1, the provider takes the conversation. See [Realtime conversations](#realtime-conversations). |
 | Ask a question | `assist_satellite.ask_question`: the kiosk speaks, listens and hands the reply to Home Assistant, as a Voice PE does. |
 
 Double tap the overlay to end a turn or close what lingers. With **Stop word interruption** on, "stop" does the same while an answer, alert, announcement or result panel is up.
+
+
+## Timers
+
+Timers have their own guide: [Timers](timers.md). It covers the full screen Timers view, setting timers by voice and by hand, shared timers and the timer settings.
 
 ## Home Assistant entities and actions
 
@@ -212,6 +218,8 @@ With **Expose kiosk entities** on under **Settings > ESPHome**, the kiosk adds i
 | VS Announcement linger | number | Announcement time |
 
 The kiosk also adds a **Voice Satellite** text sensor. It reads `idle`, `listening`, `processing` or `responding`, the same states as the Assist satellite entity, and it follows realtime conversations too. A realtime conversation runs no Home Assistant pipeline, so the Assist satellite entity stays idle through it. Check the sensor instead when an automation or script needs to know which kiosk is talking.
+
+With [Voice Match](voice-match.md) on, the kiosk also adds a **Speaker** text sensor with the name of the person talking.
 
 Two more sensors follow the kiosk's timers. **VS Timers** counts the timers that are running or paused. **VS Next timer** is a timestamp of when the soonest running timer ends, so a tile or entity card counts down to it on its own. It reads unknown while no timer runs.
 

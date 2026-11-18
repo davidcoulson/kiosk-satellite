@@ -613,19 +613,32 @@ class _ScreensaverPlayerLayout extends StatelessWidget {
   final Widget screensaver;
   final Widget Function(bool shared)? player;
 
-  Widget _pane(BuildContext context, Rect rect, String name, Widget child) =>
-      Positioned.fromRect(
-        key: ValueKey(name),
-        rect: rect,
-        child: RepaintBoundary(
-          child: ClipRect(
-            child: MediaQuery(
-              data: MediaQuery.of(context).copyWith(size: rect.size),
-              child: child,
-            ),
-          ),
+  /// [clip] is off for a pane that is the whole screen: the engine floors
+  /// the clip to whole logical pixels when it applies it to a WebView's
+  /// platform view, which on a fractional density (Galaxy Tab A9, Tab S8)
+  /// shaved the right and bottom edges and let the dashboard show there
+  /// (issue #1402). The window clips a full pane anyway. The ClipRect
+  /// stays in the tree either way, so the pane's child is never remounted
+  /// when the player comes and goes.
+  Widget _pane(
+    BuildContext context,
+    Rect rect,
+    String name,
+    Widget child, {
+    bool clip = true,
+  }) => Positioned.fromRect(
+    key: ValueKey(name),
+    rect: rect,
+    child: RepaintBoundary(
+      child: ClipRect(
+        clipBehavior: clip ? Clip.hardEdge : Clip.none,
+        child: MediaQuery(
+          data: MediaQuery.of(context).copyWith(size: rect.size),
+          child: child,
         ),
-      );
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -678,21 +691,24 @@ class _ScreensaverPlayerLayout extends StatelessWidget {
               'screensaver-pane',
               PhotoFillOverride(
                 fill: shared && photoFill != 'default' ? photoFill : null,
-                // Opaque when shared: a clear pane (the dashboard with
-                // Double tap to dismiss) still takes the touch that
-                // dismisses, as every shared pane does.
+                // Beside the player the pane reports every finger that
+                // lands on it, since the kiosk screen's report covers the
+                // player's buttons too. Translucent: the report is made
+                // over a clear pane as well (the dashboard with Double
+                // tap to dismiss) and the touch still reaches the card
+                // under it (issue #1446).
                 child: Listener(
                   behavior: shared
-                      ? HitTestBehavior.opaque
+                      ? HitTestBehavior.translucent
                       : HitTestBehavior.deferToChild,
                   onPointerDown: shared
-                      ? (_) => container.screensaver.notifyActivity(
-                          'screensaver_touch',
-                        )
+                      ? (_) =>
+                            container.screensaver.notifyActivity('pane_touch')
                       : null,
                   child: screensaver,
                 ),
               ),
+              clip: shared,
             ),
           if (player != null)
             _pane(context, playerRect, 'now-playing-pane', player!(shared)),
@@ -972,9 +988,21 @@ class _ClockScreensaverState extends State<ClockScreensaver>
     });
     _armBackgroundRefresh();
     widget.container.screensaver.alarmTakeover.addListener(_onTakeover);
+    _skipAt = widget.container.alarms.status.value.skip?.at;
+    widget.container.alarms.status.addListener(_onAlarmStatus);
   }
 
   void _onTakeover() {
+    if (mounted) setState(() {});
+  }
+
+  DateTime? _skipAt;
+
+  /// Skip comes and goes under the clock with the alarm's window.
+  void _onAlarmStatus() {
+    final at = widget.container.alarms.status.value.skip?.at;
+    if (at == _skipAt) return;
+    _skipAt = at;
     if (mounted) setState(() {});
   }
 
@@ -1072,6 +1100,7 @@ class _ClockScreensaverState extends State<ClockScreensaver>
   @override
   void dispose() {
     widget.container.screensaver.alarmTakeover.removeListener(_onTakeover);
+    widget.container.alarms.status.removeListener(_onAlarmStatus);
     _tick?.cancel();
     _shift?.cancel();
     _bgSub?.cancel();
@@ -1347,6 +1376,10 @@ class _ClockScreensaverState extends State<ClockScreensaver>
     // steps aside for them.
     final ringing =
         widget.container.screensaver.alarmTakeover.value == 'ringing';
+    // Before an alarm, Skip for its next ring sits under the clock.
+    final skipAt = ringing
+        ? null
+        : widget.container.alarms.status.value.skip?.at;
     // The At a Glance row sits under the clock and needs room for itself,
     // so the clock gives some back rather than pushing the row off a short
     // panel. Only when the row actually has something to show, and not
@@ -1466,7 +1499,30 @@ class _ClockScreensaverState extends State<ClockScreensaver>
             alignment: Alignment(0, glance ? _clockAnchorWithGlance : 0),
             child: Transform.translate(
               offset: _offset,
-              child: !ringing
+              child: skipAt != null
+                  ? Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: face,
+                            ),
+                          ),
+                          SizedBox(height: clockSize * .1),
+                          AlarmSkipButton(
+                            container: widget.container,
+                            at: skipAt,
+                            color: digitColor,
+                            glass: digitColor.withValues(alpha: .1),
+                            edge: digitColor.withValues(alpha: .22),
+                          ),
+                        ],
+                      ),
+                    )
+                  : !ringing
                   ? face
                   // The face gives way to the label and the buttons, which
                   // keep their full size: a flip or roller face fills the
@@ -3915,6 +3971,37 @@ setInterval(function () {
     // An empty URL falls through to the bundled page, whose website mode
     // shows the same black screen it always has.
     final topLevel = website.isNotEmpty;
+    return LayoutBuilder(
+      builder: (context, box) => OverflowBox(
+        alignment: Alignment.topLeft,
+        minWidth: _coveringExtent(context, box.maxWidth),
+        maxWidth: _coveringExtent(context, box.maxWidth),
+        minHeight: _coveringExtent(context, box.maxHeight),
+        maxHeight: _coveringExtent(context, box.maxHeight),
+        child: _webViewWidget(website, topLevel),
+      ),
+    );
+  }
+
+  /// The WebView's extent for a slot of [extent] logical pixels: the next
+  /// whole one up plus one physical pixel. A page is laid out in whole CSS
+  /// pixels, rounded down from the view's size, and the engine floors that
+  /// size to physical pixels on its way to the platform view. On a screen
+  /// whose logical size is a fraction (Galaxy Tab A9: 600.94 x 1006.57) a
+  /// view of exactly the slot's size left the page a pixel or two short on
+  /// the right and bottom, with the dashboard showing there (issue #1402).
+  /// The overhang, under one CSS pixel plus one physical pixel, is off the
+  /// screen. The dashboard's plane does the same in kiosk_screen.dart.
+  ///
+  /// The real pixel ratio, not MediaQuery's: this sits inside a
+  /// UiScaleExempt, where the slot is in true logical pixels while
+  /// MediaQuery still carries the Scale UI factor.
+  static double _coveringExtent(BuildContext context, double extent) {
+    if (!extent.isFinite) return extent;
+    return extent.ceilToDouble() + 1 / View.of(context).devicePixelRatio;
+  }
+
+  Widget _webViewWidget(String website, bool topLevel) {
     return InAppWebView(
       key: ValueKey(_epoch),
       initialUrlRequest: topLevel ? URLRequest(url: WebUri(website)) : null,
@@ -3958,6 +4045,8 @@ setInterval(function () {
         // navigate the app anywhere.
         mediaPlaybackRequiresUserGesture: false,
         allowsInlineMediaPlayback: true,
+        // Empty keeps the WebView's own user agent.
+        userAgent: widget.container.settings.get(defs.browserUserAgent),
       ),
       // Same policy as the kiosk WebView: the media screensaver talks to
       // the same self-signed Home Assistant.
@@ -4033,12 +4122,9 @@ setInterval(function () {
             // Listener reports the same taps, and under the double-tap
             // option (discussion #248) the manager must count each tap
             // once, so the bridge's reports carry their own name for it
-            // to drop while that gate holds.
-            widget.container.screensaver.notifyActivity(
-              widget.container.screensaver.nowPlayingShared
-                  ? 'screensaver_touch'
-                  : 'touch_page',
-            );
+            // to drop while that gate holds. Beside Now Playing the pane
+            // reports the tap and this echo is dropped.
+            widget.container.screensaver.notifyActivity('touch_page');
             return null;
           },
         );

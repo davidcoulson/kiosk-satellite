@@ -16,10 +16,12 @@ import '../browser/url_filter.dart';
 import '../calendar/calendar_model.dart';
 import '../home_assistant/custom_pages.dart';
 import '../kiosk/drawer_items.dart';
+import '../navigation/compass_layout.dart';
 import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 import '../update/update_http_client.dart';
 import '../voice/wake_catalog.dart';
+import '../voice_timers/shared_timers_manager.dart';
 import '../wake_word/engine.dart';
 import 'analytics_scrub.dart';
 import 'crash_journal.dart';
@@ -94,6 +96,7 @@ class AnalyticsManager extends Manager {
   /// the candidate window.
   static const _rememberedCrashes = 200;
   static const _background = MethodChannel('kiosk_satellite/background');
+  static const _brightness = MethodChannel('kiosk_satellite/brightness');
 
   final SettingsManager _settings;
   final String endpoint;
@@ -386,7 +389,30 @@ class AnalyticsManager extends Manager {
       // Home Assistant frontend meets on this device.
       'webview': d['webviewPackage'] ?? '',
       'webview_version': d['webviewVersion'] ?? '',
+      ...await _brightnessScale(),
     };
+  }
+
+  /// The screen brightness range: the one in use, the maximum Android's
+  /// constant reports, the one its own conversion takes for full
+  /// brightness and the highest value something other than this app wrote.
+  /// Some tablets report a maximum their Android does not use, and no
+  /// call says which ones, so the models where these disagree are found
+  /// here. Left out on a device that does not answer.
+  Future<Map<String, Object?>> _brightnessScale() async {
+    try {
+      final r = await _brightness.invokeMethod<Map<Object?, Object?>>('range');
+      if (r == null) return const {};
+      return {
+        'brightness_min': r['min'],
+        'brightness_max': r['max'],
+        'brightness_reported_max': r['reportedMax'],
+        'brightness_framework_max': r['frameworkMax'],
+        'brightness_seen_max': r['seenMax'],
+      }..removeWhere((_, v) => v == null);
+    } catch (_) {
+      return const {};
+    }
   }
 
   /// Usage: which features are on. Booleans, picks, counts and short
@@ -395,6 +421,7 @@ class AnalyticsManager extends Manager {
   Future<Map<String, Object?>> _usage() async {
     final s = _settings;
     final drawer = DrawerItems.decode(s.get(defs.uiDrawerItems));
+    final compassLayout = CompassLayout.decode(s.get(defs.navCompassLayout));
     String fleetRole() {
       if (s.get(defs.fleetLeader)) return 'leader';
       if (s.get(defs.fleetLeaderInfo).trim().isNotEmpty) return 'follower';
@@ -576,6 +603,45 @@ class AnalyticsManager extends Manager {
       if (arbitration)
         for (final k in ['vs_arbitration_won', 'vs_arbitration_lost'])
           k: counts[k] ?? 0,
+      if (nativeOn)
+        for (final k in ['timers_started', 'timers_by_hand']) k: counts[k] ?? 0,
+      if (s.get(defs.voiceTimersReceive))
+        'timers_shared_received': counts['timers_shared_received'] ?? 0,
+    };
+    // Timers: the switches of Settings > Timers, how many kiosks the timers
+    // are shared with and roughly how often timers start, are set by hand
+    // or arrive from another kiosk. Never the names of the timers or of the
+    // kiosks.
+    final timerPills = s.get(defs.voiceTimerPills);
+    final timerShare = nativeOn && s.get(defs.voiceTimersShare);
+    final timers = <String, Object?>{
+      'timers_menu': drawer.shows('timers'),
+      if (!timerPills) ...{
+        'timers_show_on_start': s.get(defs.timersShowOnStart),
+        'timers_show_before_end': s.get(defs.timersShowBeforeEnd).toInt(),
+        'timers_pause_screensaver': s.get(defs.timersPauseScreensaver),
+      },
+      // Seconds, 0 for Never.
+      'timers_silence_after': int.tryParse(s.get(defs.timersSilenceAfter)) ?? 0,
+      'timers_dismiss_after': int.tryParse(s.get(defs.timersDismissAfter)) ?? 0,
+      'timers_receive': s.get(defs.voiceTimersReceive),
+      if (s.get(defs.voiceTimersReceive))
+        'timers_shared_received': UsageCounters.bucket(
+          _reportedCounts['timers_shared_received'] ?? 0,
+        ),
+      if (nativeOn) ...{
+        'timers_share': timerShare,
+        if (timerShare)
+          'timers_share_kiosks': SharedTimerTarget.parse(
+            s.get(defs.voiceTimersShareWith),
+          ).length,
+        if (s.get(defs.voiceTimerSpeak))
+          'timers_tts': s.get(defs.timersTtsEngine).trim().isEmpty
+              ? 'first_available'
+              : 'picked',
+        for (final k in ['timers_started', 'timers_by_hand'])
+          k: UsageCounters.bucket(_reportedCounts[k] ?? 0),
+      },
     };
     String pick(String v) => v.trim().isEmpty ? 'default' : v;
     final nativeVoice = <String, Object?>{
@@ -707,6 +773,7 @@ class AnalyticsManager extends Manager {
       'wake_word_2': wakeWord2,
       'vs_skin': vs.skin,
       ...nativeVoice,
+      ...timers,
       // The kiosk's own echo canceller, for everything that listens: the
       // switch, and the engine it actually ran with and why, which can
       // differ from the method picked (Automatic's verdict, or GTCRN
@@ -738,6 +805,7 @@ class AnalyticsManager extends Manager {
       'alarms_snooze_minutes': s.get(defs.alarmsSnoozeMinutes),
       'alarms_silence_after_minutes': s.get(defs.alarmsSilenceAfterMinutes),
       'alarms_sunrise_minutes': s.get(defs.alarmsSunriseMinutes),
+      'alarms_skip_minutes': s.get(defs.alarmsSkipMinutes),
       // Calendar: counts and picks only, never the calendars, their names
       // or the people.
       'calendars': calendars.where((c) => c.on).length,
@@ -813,6 +881,16 @@ class AnalyticsManager extends Manager {
       'ha_kiosk_mode': s.get(defs.haKioskMode),
       'dashboard_carousel': s.get(defs.haDashboardCarousel),
       'dashboard_rotation': s.get(defs.haRotationEnabled),
+      // Navigation: the style, and with Compass the kinds of view the
+      // layout holds, joined by commas (a scalar every server takes).
+      // Never the dashboard paths or camera views behind them.
+      'navigation': s.get(defs.navStyle),
+      'compass_views': s.get(defs.navStyle) == 'compass'
+          ? ({
+              for (final slot in compassLayout.slots)
+                compassLayout.viewAt(slot)!.kind,
+            }.toList()..sort()).join(',')
+          : '',
       // Custom pages: how many, where they live and where the kiosk shows
       // them. Their names and addresses stay on the kiosk.
       'custom_pages': pages.length,

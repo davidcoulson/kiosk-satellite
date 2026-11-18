@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../app_container.dart';
 import '../l10n/messages.dart';
 import '../managers/launcher/app_launcher_manager.dart';
+import 'compass/compass_center.dart';
 import 'kit.dart';
 import 'resized_image.dart';
 import 'theme.dart';
@@ -211,12 +212,17 @@ class _LauncherScreenState extends State<_LauncherScreen> {
                     Positioned(
                       top: 8,
                       right: 8,
-                      child: IconButton(
-                        icon: const Icon(Icons.close),
-                        tooltip: l10n(context).commonClose,
-                        iconSize: 28,
-                        color: theme.colorScheme.onSurfaceVariant,
-                        onPressed: _close,
+                      child: CompassCenterHides(
+                        container: container,
+                        kind: 'app_launcher',
+                        child: IconButton(
+                          icon: const Icon(Icons.close),
+                          tooltip: l10n(context).commonClose,
+                          iconSize: 28,
+                          color: theme.colorScheme.onSurfaceVariant,
+                          onPressed: () =>
+                              compassClose(container, 'app_launcher', _close),
+                        ),
                       ),
                     ),
                   ],
@@ -407,6 +413,10 @@ Future<Color?> _dominantColor(String package, Uint8List bytes) async {
     final ByteData? data;
     if (cpu != null) {
       data = ByteData.sublistView(cpu);
+    } else if (GpuResize.risky) {
+      // Flutter's resize and read back both go through a framebuffer on
+      // the GPU (GpuResize). The icon keeps the default backdrop.
+      data = null;
     } else {
       final codec = await ui.instantiateImageCodec(
         bytes,

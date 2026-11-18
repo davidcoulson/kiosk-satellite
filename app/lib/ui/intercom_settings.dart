@@ -11,6 +11,7 @@ import '../core/events.dart';
 import '../managers/device/device_details.dart';
 import '../managers/intercom/intercom_manager.dart' show IntercomManager;
 import '../managers/settings/definitions.dart' as defs;
+import 'compass/compass_center.dart';
 import 'entity_picker.dart';
 import 'kit.dart';
 import 'settings_search.dart';
@@ -455,7 +456,11 @@ class _AnnouncementTtsEngineRowState extends State<AnnouncementTtsEngineRow> {
         dialogTitle: esphomeText(context, 'Text to speech engine'),
         spec: entitySpec(context, c.commands, domains: const ['tts']),
         value: c.settings.get(widget.def).trim(),
-        placeholder: esphomeText(context, 'First available'),
+        // What the empty engine means: First available, or for timers the
+        // voice of Assistant 1.
+        placeholder:
+            widget.def.localizedPlaceholder(context) ??
+            esphomeText(context, 'First available'),
         allowClear: true,
         onPick: _pick,
       ),
@@ -938,12 +943,17 @@ class _RosterScreenState extends State<_RosterScreen> {
                         Positioned(
                           top: 8,
                           right: 8,
-                          child: IconButton(
-                            icon: const Icon(Icons.close),
-                            tooltip: l10n(context).commonClose,
-                            iconSize: 28,
-                            color: scheme.onSurfaceVariant,
-                            onPressed: _close,
+                          child: CompassCenterHides(
+                            container: c,
+                            kind: 'intercom',
+                            child: IconButton(
+                              icon: const Icon(Icons.close),
+                              tooltip: l10n(context).commonClose,
+                              iconSize: 28,
+                              color: scheme.onSurfaceVariant,
+                              onPressed: () =>
+                                  compassClose(c, 'intercom', _close),
+                            ),
                           ),
                         ),
                       ],
@@ -2643,11 +2653,7 @@ class _AnnouncementOverlayState extends State<AnnouncementOverlay> {
   Widget build(BuildContext context) {
     final state = '${_status['state']}';
     final call = (_status['call'] as Map?)?.cast<String, Object?>();
-    if (call == null ||
-        call['automated'] != true ||
-        call['audioOnly'] == true ||
-        call['outgoing'] == true ||
-        (state != 'listening' && state != 'ended')) {
+    if (call == null || !IntercomStateChanged.announcementCard(_status)) {
       return const SizedBox.shrink();
     }
     final scheme = Theme.of(context).colorScheme;

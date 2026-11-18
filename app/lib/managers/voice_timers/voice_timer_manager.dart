@@ -6,6 +6,9 @@ import 'package:flutter/foundation.dart';
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
 import '../../core/manager.dart';
+import '../analytics/usage_counters.dart';
+import '../settings/definitions.dart' as defs;
+import '../settings/settings_manager.dart';
 
 /// A countdown handed over by Voice Satellite. Times are epoch milliseconds.
 class VoiceTimer {
@@ -16,6 +19,10 @@ class VoiceTimer {
     required this.startedAt,
     required this.active,
     this.finished = false,
+    this.duration = 0,
+    this.source = '',
+    this.sourceId = '',
+    this.origin = '',
   });
 
   final String id;
@@ -24,6 +31,32 @@ class VoiceTimer {
   final int startedAt;
   final bool active;
   final bool finished;
+
+  /// The timer's whole length in seconds, what the progress bar measures
+  /// against. Zero when the sender did not say, then [totalSeconds] stands
+  /// in.
+  final int duration;
+
+  /// Empty for this kiosk's own timers, else `shared:<kiosk id>` for one
+  /// another kiosk shares, with the id it has there in [sourceId] and that
+  /// kiosk's name in [origin].
+  final String source;
+  final String sourceId;
+  final String origin;
+
+  bool get shared => source.isNotEmpty;
+
+  /// The share of the timer still to run, 0 to 1.
+  double progress(DateTime now) {
+    final whole = duration > 0 ? duration : totalSeconds;
+    if (whole <= 0) return 0;
+    return (remaining(now) / whole).clamp(0.0, 1.0);
+  }
+
+  /// When it ends, for sorting: paused timers after the running ones.
+  int endsAt(DateTime now) => active
+      ? startedAt + totalSeconds * 1000
+      : now.millisecondsSinceEpoch + totalSeconds * 1000 + 86400000 * 365;
 
   int remaining(DateTime now) => max(
     0,
@@ -51,6 +84,9 @@ class VoiceTimer {
       totalSeconds: seconds.toInt(),
       startedAt: start.toInt(),
       active: raw['isActive'] != false,
+      duration: raw['duration'] is num && (raw['duration'] as num).isFinite
+          ? max(0, (raw['duration'] as num).toInt())
+          : 0,
     );
   }
 }
@@ -62,15 +98,83 @@ String voiceTimerTime(int seconds) {
   return h > 0 ? '$h:${m.toString().padLeft(2, '0')}:$s' : '$m:$s';
 }
 
+/// The full screen view's time: always hours, minutes and seconds.
+String voiceTimerClock(int seconds) {
+  String two(int v) => v.toString().padLeft(2, '0');
+  return '${two(seconds ~/ 3600)}:${two((seconds % 3600) ~/ 60)}:'
+      '${two(seconds % 60)}';
+}
+
+/// What one sharing kiosk last sent.
+class _SharedSource {
+  _SharedSource(this.name);
+  String name;
+  List<VoiceTimer> timers = const [];
+  List<VoiceTimer> alerts = const [];
+}
+
 /// Owns timer presentation and alert audio from integration state updates.
 class VoiceTimerManager extends Manager {
-  VoiceTimerManager(super.bus, super.commands, super.log);
+  VoiceTimerManager(
+    super.bus,
+    super.commands,
+    super.log, {
+    this.settings,
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now;
+
+  final SettingsManager? settings;
+  final DateTime Function() _clock;
 
   @override
   String get name => 'voice_timers';
 
+  /// This kiosk's timers, then the ones other kiosks share.
   final timers = ValueNotifier<List<VoiceTimer>>(const []);
   final alerts = ValueNotifier<List<VoiceTimer>>(const []);
+
+  /// The full screen timers view is up.
+  final visible = ValueNotifier<bool>(false);
+
+  /// True while Compass shows the view as the one in hand. Compass then
+  /// decides when it goes, so it does not close itself once the last timer
+  /// is gone.
+  final compassView = ValueNotifier<bool>(false);
+
+  /// How long this kiosk waits before the first chime of its own alert, so
+  /// the kiosks it shares timers with can start theirs on the same beat.
+  Duration ringLead = Duration.zero;
+
+  /// When this kiosk's own alert sounds its first chime, epoch
+  /// milliseconds, or null while none rings.
+  int? get localRingAt => _localRingAt;
+  int? _localRingAt;
+
+  /// The spoken phrase of this kiosk's own alert, for the kiosks it shares
+  /// with.
+  String? get localSpeech => _localSpeech;
+  String get localSpeechText => _localSpeechText;
+  String? _localSpeech;
+  String _localSpeechText = '';
+
+  /// Fires when this kiosk's own alert, its ring time or its phrase change.
+  final localAlertChanged = ValueNotifier<int>(0);
+
+  /// The time between two beats of the ring.
+  static const ringEvery = Duration(seconds: 3);
+
+  List<VoiceTimer> _localTimers = const [];
+  List<VoiceTimer> _localAlerts = const [];
+  final _shared = <String, _SharedSource>{};
+  String? _sharedSpeech;
+  String _sharedSpeechText = '';
+  Timer? _ringStart;
+  Timer? _closeTimer;
+  bool _autoOpened = false;
+  Set<String> _knownIds = const {};
+  StreamSubscription<SharedTimerDismissRequested>? _dismissSub;
+  StreamSubscription<ScreensaverStateChanged>? _saverSub;
+  StreamSubscription<SettingChanged>? _settingSub;
 
   /// The alert rings and is dismissed as usual but shows no pill (native
   /// Voice Satellite with Show finished timer pills off).
@@ -87,6 +191,21 @@ class VoiceTimerManager extends Manager {
   String? _speech;
   String _speechText = '';
   int _rings = 0;
+
+  /// Silence after: the ring went quiet, the alert still shows.
+  bool get quiet => _quiet;
+  bool _quiet = false;
+  Timer? _quietTimer;
+
+  /// When the last timer finished here, epoch milliseconds, for Silence
+  /// after, or null while none rings.
+  int? _alertAt;
+  Set<String> _alertIds = const {};
+
+  /// When the last of this kiosk's own timers finished, for Dismiss after.
+  int? _localAlertAt;
+  Set<String> _localAlertIds = const {};
+  Timer? _dismissTimer;
   final error = ValueNotifier<int>(0);
   String _entity = '';
   StreamSubscription<VoiceTimersCleared>? _clearSub;
@@ -94,10 +213,142 @@ class VoiceTimerManager extends Manager {
   @override
   Future<void> init() async {
     _clearSub = bus.on<VoiceTimersCleared>().listen((_) {
-      _clearAlert();
+      _clearLocalAlert();
       _entity = '';
-      timers.value = const [];
+      _localTimers = const [];
+      _merge();
     });
+    _dismissSub = bus.on<SharedTimerDismissRequested>().listen(
+      (_) => dismissShared(),
+    );
+    // Opened by hand and left with nothing to show, the view gives way to
+    // the screensaver, as the alarm list does. With a timer on it, it stays
+    // over the screensaver the way the pills do. A Compass view stays
+    // under it.
+    _saverSub = bus.on<ScreensaverStateChanged>().listen((e) {
+      if (e.active &&
+          !compassView.value &&
+          timers.value.isEmpty &&
+          alerts.value.isEmpty) {
+        visible.value = false;
+      }
+    });
+    // Closing the view lets the screensaver go.
+    visible.addListener(_syncHold);
+    // A new lead time, or the view taking over from the pills, counts for
+    // the timers already running.
+    _settingSub = bus.on<SettingChanged>().listen((e) {
+      if (e.key == defs.timersShowBeforeEnd.key ||
+          e.key == defs.voiceTimerPills.key) {
+        _scheduleNear();
+      } else if (e.key == defs.timersPauseScreensaver.key) {
+        _syncHold();
+      } else if (e.key == defs.timersSilenceAfter.key) {
+        _scheduleQuiet();
+      } else if (e.key == defs.timersDismissAfter.key) {
+        _scheduleDismiss();
+      }
+    });
+    commands
+      ..register(
+        Command(
+          name: 'openTimers',
+          description: 'Open the full screen timers view on the kiosk.',
+          handler: (_) async {
+            _autoOpened = false;
+            _closeTimer?.cancel();
+            await commands.execute('screenOn', const {});
+            await commands.execute('bringToFront', const {});
+            visible.value = true;
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'hideTimers',
+          description: 'Close the full screen timers view.',
+          handler: (_) async {
+            visible.value = false;
+            return const CommandResult.ok();
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'timersStatus',
+          description:
+              'The timers this kiosk shows, its own and the ones other '
+              'kiosks share, with the time each has left and whether a '
+              'timer can be started from here.',
+          quiet: true,
+          handler: (_) async => CommandResult.ok(status()),
+        ),
+      )
+      ..register(
+        Command(
+          name: 'timerStart',
+          description:
+              'Start a timer on this kiosk through Home Assistant, as the '
+              'timers view does.',
+          params: const {
+            'seconds': 'how long it runs, 1 to 86399',
+            'name': 'optional name',
+          },
+          handler: (p) async {
+            final seconds = (p['seconds'] as num?)?.toInt() ?? 0;
+            if (seconds <= 0) {
+              return const CommandResult.fail('the timer needs a duration');
+            }
+            final error = await start(
+              seconds: seconds,
+              name: '${p['name'] ?? ''}',
+            );
+            return error == null
+                ? const CommandResult.ok()
+                : CommandResult.fail(error);
+          },
+        ),
+      )
+      ..register(
+        Command(
+          name: 'timerControl',
+          description:
+              'Pause, resume, cancel or dismiss a timer this kiosk shows, or '
+              'set the time it has left. A timer another kiosk shares is '
+              'changed on the kiosk that owns it.',
+          params: const {
+            'id': 'the timer, from timersStatus',
+            'action': 'pause, resume, cancel, dismiss or set',
+            'seconds': 'for set: the time left, 1 to 86399',
+          },
+          handler: (p) async {
+            final id = '${p['id'] ?? ''}';
+            final action = '${p['action'] ?? ''}';
+            final known =
+                timers.value.any((t) => t.id == id) ||
+                alerts.value.any((t) => t.id == id);
+            if (!known) return const CommandResult.fail('no such timer');
+            if (action == 'set') {
+              final seconds = (p['seconds'] as num?)?.toInt() ?? 0;
+              if (seconds <= 0) {
+                return const CommandResult.fail('the timer needs a duration');
+              }
+              final timer = timers.value.where((t) => t.id == id).firstOrNull;
+              if (timer == null || !canEdit(timer)) {
+                return const CommandResult.fail('this timer cannot be changed');
+              }
+              setRemaining(id, seconds);
+              return const CommandResult.ok();
+            }
+            if (!{'pause', 'resume', 'cancel', 'dismiss'}.contains(action)) {
+              return const CommandResult.fail('unknown action');
+            }
+            control(id, action);
+            return const CommandResult.ok();
+          },
+        ),
+      );
     commands.register(
       Command(
         name: 'setVoiceTimers',
@@ -114,7 +365,8 @@ class VoiceTimerManager extends Manager {
             return const CommandResult.fail('Invalid timer snapshot');
           }
           _entity = entity;
-          timers.value = parsed.cast<VoiceTimer>();
+          _localTimers = parsed.cast<VoiceTimer>();
+          _merge();
           return const CommandResult.ok();
         },
       ),
@@ -136,10 +388,10 @@ class VoiceTimerManager extends Manager {
           }
           _entity = entity;
           if (raw.isEmpty) {
-            _clearAlert();
+            _clearLocalAlert();
           } else {
             alertHidden.value = p['hidden'] == true;
-            alerts.value = [
+            _localAlerts = [
               for (final timer in parsed.cast<VoiceTimer>())
                 VoiceTimer(
                   id: timer.id,
@@ -150,22 +402,15 @@ class VoiceTimerManager extends Manager {
                   finished: true,
                 ),
             ];
-            final wasMuted = _muted;
-            _muted = p['muted'] == true;
             final speech = p['speech'];
-            _speech = speech is String && speech.isNotEmpty ? speech : null;
-            _speechText = '${p['speechText'] ?? ''}';
-            if (_muted && !wasMuted) _stopSound();
-            if (_ring == null) {
-              _rings = 0;
-              _tick();
-              _ring = Timer.periodic(
-                const Duration(seconds: 3),
-                (_) => _tick(),
-              );
-            } else if (wasMuted && !_muted) {
-              _tick();
-            }
+            _localSpeech = speech is String && speech.isNotEmpty
+                ? speech
+                : null;
+            _localSpeechText = '${p['speechText'] ?? ''}';
+            _localRingAt ??=
+                _clock().millisecondsSinceEpoch + ringLead.inMilliseconds;
+            _ringWith(muted: p['muted'] == true, at: _localRingAt!);
+            localAlertChanged.value++;
           }
           return const CommandResult.ok();
         },
@@ -183,19 +428,538 @@ class VoiceTimerManager extends Manager {
     );
   }
 
+  /// Whether a timer can be started from this kiosk's screen or its remote
+  /// admin: native Voice Satellite starts it through Home Assistant. With
+  /// the integration in the dashboard, timers are started by voice only.
+  bool get canStart =>
+      settings != null &&
+      settings!.get(defs.voiceRuntime) == 'native' &&
+      settings!.get(defs.voiceEnabled);
+
+  /// Whether [timer]'s time can be changed from here: a shared one is
+  /// changed on the kiosk that owns it, this kiosk's own needs [canStart].
+  bool canEdit(VoiceTimer timer) =>
+      !timer.finished && (timer.shared || canStart);
+
+  /// The longest a timer set by hand runs: a day less a second, what the
+  /// wheels reach.
+  static const maxSeconds = 86399;
+
+  /// Starts a timer of [seconds] with an optional [name]. Answers the
+  /// error, or null once Home Assistant took it.
+  Future<String?> start({required int seconds, String name = ''}) async {
+    if (!canStart) return 'Voice Satellite is off';
+    final total = seconds.clamp(1, maxSeconds);
+    final r = await commands.execute('voiceStartTimer', {
+      'hours': total ~/ 3600,
+      'minutes': total % 3600 ~/ 60,
+      'seconds': total % 60,
+      if (name.trim().isNotEmpty) 'name': name.trim(),
+    });
+    if (!r.ok) return r.error ?? 'failed';
+    // Usage analytics: timers set from the view or the remote admin.
+    unawaited(UsageCounters.bump(settings!, 'timers_by_hand'));
+    return null;
+  }
+
+  /// Sets the time [id] has left to [seconds], by adding or taking away the
+  /// difference: Home Assistant has no way to set a timer's time outright.
+  void setRemaining(String id, int seconds) {
+    final timer = timers.value.where((t) => t.id == id).firstOrNull;
+    if (timer == null || !canEdit(timer)) return;
+    final delta = seconds.clamp(1, maxSeconds) - timer.remaining(_clock());
+    if (delta == 0) return;
+    bus.publish(
+      VoiceTimerAction(
+        entityId: timer.shared ? timer.source : _entity,
+        id: timer.shared ? timer.sourceId : id,
+        action: delta > 0 ? 'add' : 'remove',
+        seconds: delta.abs(),
+      ),
+    );
+  }
+
+  /// Adds ([action] `add`) or takes away (`remove`) [seconds] on one of
+  /// this kiosk's own timers, for a kiosk it shares with.
+  void adjustLocal(String id, String action, int seconds) {
+    if (seconds <= 0 || !{'add', 'remove'}.contains(action)) return;
+    if (!_localTimers.any((t) => t.id == id)) return;
+    bus.publish(
+      VoiceTimerAction(
+        entityId: _entity,
+        id: id,
+        action: action,
+        seconds: seconds,
+      ),
+    );
+  }
+
+  /// What the remote admin's Timers page draws: every timer this kiosk
+  /// shows, the ringing ones first, with the time left as of now.
+  Map<String, Object?> status() {
+    final now = _clock();
+    Map<String, Object?> row(VoiceTimer t) => {
+      'id': t.id,
+      'name': t.name,
+      'remaining': t.finished ? 0 : t.remaining(now),
+      'duration': t.duration > 0 ? t.duration : t.totalSeconds,
+      'active': t.active,
+      'finished': t.finished,
+      'origin': t.origin,
+      'canEdit': canEdit(t),
+    };
+    final ringing = {for (final t in alerts.value) t.id};
+    return {
+      'canStart': canStart,
+      'now': now.millisecondsSinceEpoch,
+      'timers': [
+        for (final t in alerts.value) row(t),
+        for (final t in timers.value)
+          if (!ringing.contains(t.id)) row(t),
+      ],
+    };
+  }
+
   void control(String id, String action) {
-    if (alerts.value.any((t) => t.id == id)) {
-      _clearAlert();
-      bus.publish(
-        VoiceTimerAction(entityId: _entity, id: id, action: 'dismiss'),
+    final alert = alerts.value.where((t) => t.id == id).firstOrNull;
+    if (alert != null) {
+      if (alert.shared) {
+        _dismissSource(alert.source);
+      } else {
+        _clearLocalAlert();
+        bus.publish(
+          VoiceTimerAction(entityId: _entity, id: id, action: 'dismiss'),
+        );
+      }
+      return;
+    }
+    final timer = timers.value.where((t) => t.id == id).firstOrNull;
+    if (timer == null || !{'pause', 'resume', 'cancel'}.contains(action)) {
+      return;
+    }
+    bus.publish(
+      timer.shared
+          ? VoiceTimerAction(
+              entityId: timer.source,
+              id: timer.sourceId,
+              action: action,
+            )
+          : VoiceTimerAction(entityId: _entity, id: id, action: action),
+    );
+  }
+
+  /// Puts what the kiosk [originId] shares on this one: its running and
+  /// paused timers and the ones ringing there. [ringAt] is when its ring
+  /// started, on this kiosk's clock, so this one chimes on the same beat.
+  /// Empty lists take the kiosk off again.
+  void setShared(
+    String originId, {
+    required String name,
+    required List<VoiceTimer> timers,
+    required List<VoiceTimer> alerts,
+    int? ringAt,
+    bool muted = false,
+    bool hidden = false,
+    String? speech,
+    String speechText = '',
+  }) {
+    final source = 'shared:$originId';
+    VoiceTimer own(VoiceTimer t, {bool finished = false}) => VoiceTimer(
+      id: '$source/${t.id}',
+      name: t.name,
+      totalSeconds: finished ? 0 : t.totalSeconds,
+      startedAt: finished ? 0 : t.startedAt,
+      active: !finished && t.active,
+      finished: finished,
+      duration: t.duration,
+      source: source,
+      sourceId: t.id,
+      origin: name,
+    );
+    final hadAlerts = _shared.values.any((s) => s.alerts.isNotEmpty);
+    if (timers.isEmpty && alerts.isEmpty) {
+      _shared.remove(originId);
+    } else {
+      _shared.putIfAbsent(originId, () => _SharedSource(name))
+        ..name = name
+        ..timers = [for (final t in timers) own(t)]
+        ..alerts = [for (final t in alerts) own(t, finished: true)];
+    }
+    final hasAlerts = _shared.values.any((s) => s.alerts.isNotEmpty);
+    if (alerts.isNotEmpty) {
+      if (_localAlerts.isEmpty) alertHidden.value = hidden;
+      _sharedSpeech = speech != null && speech.isNotEmpty ? speech : null;
+      _sharedSpeechText = speechText;
+      _ringWith(muted: muted, at: ringAt ?? _clock().millisecondsSinceEpoch);
+    } else {
+      if (!hasAlerts) _sharedSpeech = null;
+      _merge();
+    }
+    if (hadAlerts != hasAlerts) {
+      bus.publish(SharedTimerAlertChanged(hasAlerts));
+    }
+  }
+
+  /// Ends this kiosk's own ringing timers, as a tap on one does.
+  void dismissLocal() {
+    final first = _localAlerts.firstOrNull;
+    if (first != null) control(first.id, 'dismiss');
+  }
+
+  /// The kiosks sharing timers here, by id.
+  Set<String> get sharedOrigins => _shared.keys.toSet();
+
+  /// Ends every ringing timer another kiosk shares, here and there.
+  /// Answers whether any rang.
+  bool dismissShared() {
+    final ringing = [
+      for (final e in _shared.entries)
+        if (e.value.alerts.isNotEmpty) 'shared:${e.key}',
+    ];
+    for (final source in ringing) {
+      _dismissSource(source);
+    }
+    return ringing.isNotEmpty;
+  }
+
+  void _dismissSource(String source) {
+    final origin = _shared[source.substring('shared:'.length)];
+    if (origin == null || origin.alerts.isEmpty) return;
+    final first = origin.alerts.first;
+    origin.alerts = const [];
+    if (origin.timers.isEmpty) {
+      _shared.remove(source.substring('shared:'.length));
+    }
+    final still = _shared.values.any((s) => s.alerts.isNotEmpty);
+    if (!still) _sharedSpeech = null;
+    _merge();
+    if (!still) bus.publish(const SharedTimerAlertChanged(false));
+    bus.publish(
+      VoiceTimerAction(entityId: source, id: first.sourceId, action: 'dismiss'),
+    );
+  }
+
+  /// Rebuilds [timers] and [alerts] from this kiosk's own and the shared
+  /// ones, stops the ring once nothing rings, and opens or closes the full
+  /// screen view as timers start, finish and run out.
+  void _merge() {
+    final nextAlerts = [
+      ..._localAlerts,
+      for (final s in _shared.values) ...s.alerts,
+    ];
+    final ringing = _ring != null || _ringStart != null;
+    if (nextAlerts.isEmpty && ringing) {
+      _ringStart?.cancel();
+      _ringStart = null;
+      _ring?.cancel();
+      _ring = null;
+      _speech = null;
+      _stopSound();
+      // A normal playback speaker gets back what it played before the alert.
+      unawaited(commands.execute('voiceSpeakerDone', const {}));
+    } else if (nextAlerts.isNotEmpty) {
+      _speech = _localAlerts.isNotEmpty ? _localSpeech : _sharedSpeech;
+      _speechText = _localAlerts.isNotEmpty
+          ? _localSpeechText
+          : _sharedSpeechText;
+    }
+    if (nextAlerts.isEmpty) alertHidden.value = false;
+    _trackAlerts(nextAlerts);
+    alerts.value = nextAlerts;
+    timers.value = [
+      ..._localTimers,
+      for (final s in _shared.values) ...s.timers,
+    ];
+    _syncView();
+    bus.publish(TimersStateChanged(status()));
+  }
+
+  /// Notes when a timer finished, for Silence after and Dismiss after. A
+  /// timer that finishes while the ring is quiet rings again.
+  void _trackAlerts(List<VoiceTimer> next) {
+    final now = _clock().millisecondsSinceEpoch;
+    final ids = {for (final t in next) t.id};
+    final localIds = {for (final t in _localAlerts) t.id};
+    final fresh = ids.difference(_alertIds).isNotEmpty;
+    final freshLocal = localIds.difference(_localAlertIds).isNotEmpty;
+    _alertIds = ids;
+    _localAlertIds = localIds;
+    if (ids.isEmpty) {
+      _alertAt = null;
+      _quietTimer?.cancel();
+      _quietTimer = null;
+      _setQuiet(false);
+    } else if (fresh) {
+      _alertAt = now;
+      _scheduleQuiet();
+    }
+    if (localIds.isEmpty) {
+      _localAlertAt = null;
+      _dismissTimer?.cancel();
+      _dismissTimer = null;
+    } else if (freshLocal) {
+      _localAlertAt = now;
+      _scheduleDismiss();
+    }
+  }
+
+  int _limit(defs.SettingDef<String> def) =>
+      int.tryParse(settings?.get(def) ?? '') ?? 0;
+
+  /// Silence after: the ring stops that long after the last timer
+  /// finished. 0 rings until the alert is dismissed.
+  void _scheduleQuiet() {
+    _quietTimer?.cancel();
+    _quietTimer = null;
+    final at = _alertAt;
+    if (at == null) return;
+    final after = _limit(defs.timersSilenceAfter);
+    if (after <= 0) {
+      _setQuiet(false);
+      return;
+    }
+    final wait = at + after * 1000 - _clock().millisecondsSinceEpoch;
+    if (wait <= 0) {
+      _setQuiet(true);
+      return;
+    }
+    _setQuiet(false);
+    _quietTimer = Timer(Duration(milliseconds: wait), () {
+      _quietTimer = null;
+      _setQuiet(true);
+    });
+  }
+
+  void _setQuiet(bool quiet) {
+    if (quiet == _quiet) return;
+    _quiet = quiet;
+    if (quiet) {
+      this.log.info(name, 'timer ring silenced, the alert stays');
+      _stopSound();
+      // A normal playback speaker gets back what it played before the alert.
+      unawaited(commands.execute('voiceSpeakerDone', const {}));
+    } else if (_ring != null) {
+      _rings = 0;
+      _tick();
+    }
+    bus.publish(TimerRingQuiet(quiet));
+  }
+
+  /// Dismiss after: this kiosk's own finished timers are dismissed that
+  /// long after the last one finished, as a tap on Dismiss does. 0 leaves
+  /// them until someone does.
+  void _scheduleDismiss() {
+    _dismissTimer?.cancel();
+    _dismissTimer = null;
+    final at = _localAlertAt;
+    if (at == null) return;
+    final after = _limit(defs.timersDismissAfter);
+    if (after <= 0) return;
+    final wait = at + after * 1000 - _clock().millisecondsSinceEpoch;
+    _dismissTimer = Timer(Duration(milliseconds: wait < 0 ? 0 : wait), () {
+      _dismissTimer = null;
+      if (_localAlerts.isEmpty) return;
+      this.log.info(name, 'finished timers dismissed after ${after}s');
+      dismissLocal();
+    });
+  }
+
+  /// Starts the ring at [at], or keeps the one already going. A kiosk that
+  /// joins late waits for the next beat instead of chiming off it.
+  void _ringWith({required bool muted, required int at}) {
+    final wasMuted = _muted;
+    _muted = muted;
+    _merge();
+    if (_muted && !wasMuted) _stopSound();
+    if (_ring != null) {
+      if (wasMuted && !_muted) _tick();
+      return;
+    }
+    if (_ringStart != null) return;
+    _rings = 0;
+    void begin() {
+      _ringStart = null;
+      if (alerts.value.isEmpty) return;
+      _tick();
+      _ring = Timer.periodic(ringEvery, (_) => _tick());
+    }
+
+    final beat = ringEvery.inMilliseconds;
+    var wait = at - _clock().millisecondsSinceEpoch;
+    if (wait < -50) wait = (beat - (-wait % beat)) % beat;
+    if (wait <= 0) {
+      begin();
+    } else {
+      _ringStart = Timer(Duration(milliseconds: wait), begin);
+    }
+  }
+
+  void _clearLocalAlert() {
+    final had = _localAlerts.isNotEmpty;
+    _localAlerts = const [];
+    _localRingAt = null;
+    _localSpeech = null;
+    _localSpeechText = '';
+    _merge();
+    if (had) localAlertChanged.value++;
+  }
+
+  bool get _fullScreen =>
+      settings != null && !settings!.get(defs.voiceTimerPills);
+
+  /// The full screen view opens by itself when a timer starts or finishes
+  /// and closes again once the last one is gone, unless it was opened by
+  /// hand or Compass holds it.
+  void _syncView() {
+    final ids = {
+      for (final t in timers.value) t.id,
+      if (!alertHidden.value)
+        for (final t in alerts.value) 'alert:${t.id}',
+    };
+    final added = ids.difference(_knownIds);
+    // A finished timer always brings the view up. One that starts does
+    // with Show Timers view when a timer starts on.
+    final fresh =
+        added.any((id) => id.startsWith('alert:')) ||
+        (added.isNotEmpty && _showOnStart);
+    _knownIds = ids;
+    _scheduleNear();
+    if (!_fullScreen) {
+      _syncHold();
+      return;
+    }
+    if (fresh) {
+      _closeTimer?.cancel();
+      // The view is under the screensaver, so the screensaver goes: for a
+      // finished timer, whose Dismiss button needs a lit screen with
+      // nothing over it, and for a timer that starts and is to be shown.
+      // Only the finished one holds it away (see [_syncHold]). The started
+      // one leaves the screensaver to its idle timer.
+      unawaited(commands.execute('stopScreensaver', const {}));
+      if (!visible.value) {
+        _autoOpened = true;
+        visible.value = true;
+      }
+    } else if (ids.isEmpty &&
+        visible.value &&
+        _autoOpened &&
+        !compassView.value) {
+      _closeTimer?.cancel();
+      _closeTimer = Timer(const Duration(seconds: 2), () {
+        if (timers.value.isEmpty && alerts.value.isEmpty && _autoOpened) {
+          visible.value = false;
+        }
+      });
+    }
+    _syncHold();
+  }
+
+  bool _held = false;
+
+  bool get _showOnStart =>
+      settings == null || settings!.get(defs.timersShowOnStart);
+
+  /// The screensaver stays away while the view shows a timer that asks for
+  /// attention: one that finished, or one inside the near completion
+  /// window that brought the view up. Closing the view lets it go, and so
+  /// does the last such timer going. A timer that merely runs holds
+  /// nothing, and the screensaver covers the view on its idle timer, unless
+  /// Pause screensaver while a timer runs is on.
+  void _syncHold() {
+    final settings = this.settings;
+    var held = false;
+    if (settings != null && _fullScreen && visible.value) {
+      held =
+          (alerts.value.isNotEmpty && !alertHidden.value) ||
+          // Inside the window since the view came up for it. Time added
+          // since then takes it out again (see [_scheduleNear]).
+          timers.value.any((t) => t.active && _nearShown.containsKey(t.id)) ||
+          // Pause screensaver while a timer runs: any running timer,
+          // while the view is the one on screen. A paused one does not
+          // count.
+          (settings.get(defs.timersPauseScreensaver) &&
+              timers.value.any((t) => t.active && !t.finished));
+    }
+    if (held == _held) return;
+    _held = held;
+    unawaited(
+      commands.execute('holdScreensaver', {'holder': 'timers', 'held': held}),
+    );
+  }
+
+  /// The timers the view was already brought back for, so closing it again
+  /// keeps it closed for them.
+  /// With when each was to end then: one given more time since is out of
+  /// the window again and brings the view back once more.
+  final _nearShown = <String, int>{};
+  Timer? _nearTimer;
+
+  /// Off in widget tests that leave a timer running: the wait would outlive
+  /// the test.
+  @visibleForTesting
+  static bool nearEnabled = true;
+
+  /// Show Timers view when near completion: brings the full screen view
+  /// back once a running timer has that long left, for someone who closed
+  /// it or moved to another view after the timer started. Each timer does
+  /// it once. One that starts with less than that left opened the view by
+  /// starting.
+  void _scheduleNear([Set<String> reached = const {}]) {
+    _nearTimer?.cancel();
+    _nearTimer = null;
+    final settings = this.settings;
+    // The pills never leave the screen: nothing to bring back.
+    if (settings == null || !nearEnabled || !_fullScreen) return;
+    final lead = settings.get(defs.timersShowBeforeEnd).toInt() * 1000;
+    final now = _clock().millisecondsSinceEpoch;
+    _nearShown.removeWhere((id, end) {
+      final t = timers.value.where((t) => t.id == id).firstOrNull;
+      if (t == null) return true;
+      // Paused, it keeps its place. Given more time, it left the window.
+      return t.active && t.startedAt + t.totalSeconds * 1000 > end + 2000;
+    });
+    int? wait;
+    var next = <String>{};
+    var due = false;
+    for (final t in timers.value) {
+      if (!t.active || t.finished || _nearShown.containsKey(t.id)) continue;
+      final at = t.startedAt + t.totalSeconds * 1000 - lead;
+      // [reached]: the wait set for this timer ran out, whatever the clock
+      // reads to the millisecond.
+      if (at <= now || reached.contains(t.id)) {
+        _nearShown[t.id] = t.startedAt + t.totalSeconds * 1000;
+        // Started inside the window: its start opened the view, unless
+        // starting opens nothing.
+        if (reached.contains(t.id) ||
+            now - t.startedAt > 1500 ||
+            !_showOnStart) {
+          due = true;
+        }
+      } else if (wait == null || at - now < wait - 250) {
+        wait = at - now;
+        next = {t.id};
+      } else if (at - now <= wait + 250) {
+        next.add(t.id);
+      }
+    }
+    if (due && _fullScreen) {
+      // The view is under the screensaver, so the screensaver goes and
+      // stays away until the timer is dealt with (see [_syncHold]).
+      unawaited(commands.execute('stopScreensaver', const {}));
+      if (!visible.value) {
+        _closeTimer?.cancel();
+        _autoOpened = true;
+        visible.value = true;
+      }
+    }
+    _syncHold();
+    if (wait != null) {
+      final ids = next;
+      _nearTimer = Timer(
+        Duration(milliseconds: wait + 20),
+        () => _scheduleNear(ids),
       );
-      return;
     }
-    if (!{'pause', 'resume', 'cancel'}.contains(action) ||
-        !timers.value.any((t) => t.id == id)) {
-      return;
-    }
-    bus.publish(VoiceTimerAction(entityId: _entity, id: id, action: action));
   }
 
   /// One beat of the ring: a chime, or the phrase after every second chime.
@@ -221,7 +985,7 @@ class VoiceTimerManager extends Manager {
   }
 
   Future<void> _chime([Future<CommandResult> Function()? start]) async {
-    if (_muted || alerts.value.isEmpty || _playing) return;
+    if (_muted || _quiet || alerts.value.isEmpty || _playing) return;
     final generation = _soundGeneration;
     _playing = true;
     final done = Completer<void>();
@@ -240,7 +1004,10 @@ class VoiceTimerManager extends Manager {
       if (data is Map && data['id'] is String) {
         final id = data['id'] as String;
         playingId = id;
-        if (generation != _soundGeneration || _muted || alerts.value.isEmpty) {
+        if (generation != _soundGeneration ||
+            _muted ||
+            _quiet ||
+            alerts.value.isEmpty) {
           await commands.execute('voiceStopSpeech', {'id': id});
         } else {
           _soundId = id;
@@ -269,26 +1036,25 @@ class VoiceTimerManager extends Manager {
     if (id != null) unawaited(commands.execute('voiceStopSpeech', {'id': id}));
   }
 
-  void _clearAlert() {
-    final ringing = _ring != null;
-    _ring?.cancel();
-    _ring = null;
-    _speech = null;
-    _stopSound();
-    alerts.value = const [];
-    alertHidden.value = false;
-    // A normal playback speaker gets back what it played before the alert.
-    if (ringing) {
-      unawaited(commands.execute('voiceSpeakerDone', const {}));
-    }
-  }
-
   @override
   Future<void> dispose() async {
-    _clearAlert();
+    _ringStart?.cancel();
+    _closeTimer?.cancel();
+    _nearTimer?.cancel();
+    _quietTimer?.cancel();
+    _dismissTimer?.cancel();
+    _ring?.cancel();
+    _ring = null;
+    _stopSound();
     alerts.dispose();
     alertHidden.dispose();
+    visible.dispose();
+    compassView.dispose();
+    localAlertChanged.dispose();
     await _clearSub?.cancel();
+    await _dismissSub?.cancel();
+    await _saverSub?.cancel();
+    await _settingSub?.cancel();
     timers.dispose();
     error.dispose();
   }

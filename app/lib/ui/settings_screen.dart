@@ -38,6 +38,7 @@ import '../managers/settings/definitions.dart';
 import '../managers/person/person_sensor_manager.dart' show LogAccess;
 import '../managers/sendspin/session_player.dart' show SessionPlayer;
 import '../managers/sendspin/sendspin_manager.dart' show SendspinManager;
+import '../managers/plugins/plugin_players.dart' show PluginPlayers;
 import '../managers/service/service_manager.dart'
     show batteryAdbHint, overlayAdbHint;
 import '../managers/settings/export_filename.dart';
@@ -51,6 +52,7 @@ import '../managers/wake_word/system_permissions.dart';
 import 'start_page_card.dart';
 import 'color_picker.dart';
 import 'celestial_settings.dart';
+import 'volume_curve_editor.dart';
 import 'weather_mood_settings.dart';
 import 'date_picker.dart';
 import 'gesture_settings.dart';
@@ -65,6 +67,8 @@ import 'camera_views_picker.dart';
 import 'dashboard_view_picker.dart';
 import 'import_options_dialog.dart';
 import 'intercom_settings.dart';
+import 'shared_timers_settings.dart';
+import 'timers_overlay.dart';
 import '../managers/home_assistant/custom_pages.dart' show viewPathUrl;
 import 'custom_pages_settings.dart';
 import 'url_filter_settings.dart';
@@ -75,6 +79,7 @@ import 'media_picker.dart';
 import 'theme.dart';
 import 'toast.dart';
 import 'voice_settings.dart';
+import 'ground_control_settings.dart';
 import 'mic_level_meter.dart';
 import 'settings_search.dart';
 import 'subpage_icons.dart';
@@ -82,6 +87,7 @@ import 'shizuku_settings.dart';
 import '../managers/wake_word/permission_descriptions.dart';
 import 'wake_word_tester.dart';
 import 'wake_activations.dart';
+import 'compass/compass_settings.dart';
 import 'update_helper_settings.dart';
 import 'plugin_directory.dart';
 import 'plugin_settings.dart';
@@ -181,6 +187,8 @@ List<Widget> _sectionedCards(
                   def.category == 'Screen & Audio' ||
                   def.category == 'Screensaver' ||
                   def.category == 'Voice Satellite' ||
+                  def.category == 'Timers' ||
+                  def.category == 'Browser' ||
                   def.category == 'LED Control')
               ? Builder(
                   builder: (context) => SectionHeading(
@@ -220,6 +228,8 @@ const _voiceAlarmsDocsUrl =
     'https://kiosksatellite.com/docs/alarms/#setting-alarms-by-voice';
 const _voiceCalendarDocsUrl =
     'https://kiosksatellite.com/docs/calendar/#managing-the-calendar-by-voice';
+const _voiceTimersDocsUrl =
+    'https://kiosksatellite.com/docs/timers/#setting-timers-by-voice';
 const _voiceMusicDocsUrl =
     'https://kiosksatellite.com/docs/music-library/#playing-music-by-voice';
 
@@ -235,6 +245,16 @@ const _updateDocsUrl =
 // The icon is a Material [IconData], or the path of an SVG asset for a
 // category named after a product with a mark of its own.
 const _categories = <(String, String, Object, String)>[
+  // How the kiosk is moved around: the drawer menu or Compass.
+  ('Navigation', 'Navigation', Icons.explore_outlined, 'Classic or Compass'),
+  // Kiosk Satellite Ground Control: Voice Match on a capable machine. It
+  // wears the Kiosk Satellite mark, as the Ground Control app does.
+  (
+    'Ground Control',
+    'Ground Control',
+    'assets/svg/kiosk-satellite.svg',
+    'Voice Match on a capable machine',
+  ),
   (
     'Home Assistant',
     'Home Assistant',
@@ -302,6 +322,12 @@ const _categories = <(String, String, Object, String)>[
     'Family calendars from Home Assistant',
   ),
   (
+    'Timers',
+    'Timers',
+    Icons.timer_outlined,
+    'Full screen view, pills, shared timers',
+  ),
+  (
     'Kiosk',
     'Kiosk Mode',
     Icons.lock_outline,
@@ -353,6 +379,7 @@ const _categories = <(String, String, Object, String)>[
 /// then choose among a few pages, instead of reading the whole list. The
 /// icon colors keep cycling across groups, so neighbors never share one.
 const _railGroups = <String, String>{
+  'Navigation': 'Kiosk Satellite',
   'Home Assistant': 'Home Assistant',
   'Screen & Audio': 'Display',
   'Sendspin': 'Media & Cameras',
@@ -361,12 +388,14 @@ const _railGroups = <String, String>{
   'Device': 'System',
 };
 
-/// The Chimes page: each sound with its volume under it.
+/// The Chimes page: each sound with its volume under it. The timer sound
+/// is on the Timers page.
 final List<SettingDef<Object>> _chimeRows = [
-  for (final kind in voiceChimeSettings.keys) ...[
-    voiceChimeSettings[kind]!,
-    voiceChimeVolumes[kind]!,
-  ],
+  for (final kind in voiceChimeSettings.keys)
+    if (voiceChimeSettings[kind]!.subpage == 'Chimes') ...[
+      voiceChimeSettings[kind]!,
+      voiceChimeVolumes[kind]!,
+    ],
 ];
 
 /// Whether a category's page is listed. LED Control only exists on a
@@ -527,7 +556,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  int _selected = 0;
+  // Opens on Home Assistant, the page most visits are for, though
+  // Navigation sits above it in the rail.
+  int _selected = _categories.indexWhere((c) => c.$1 == 'Home Assistant');
 
   /// Search over every pane, One UI style: the field lives with the rail (or
   /// the hub on narrow screens), typing swaps the content for results, and a
@@ -576,6 +607,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         pluginTextFor: (text) => pluginText(context, text),
         intercomTextFor: (text) => intercomText(context, text),
         alarmsTextFor: (text) => settingsPageText(context, 'Alarms', text),
+        timersTextFor: (text) => settingsPageText(context, 'Timers', text),
         calendarTextFor: (text) => settingsPageText(context, 'Calendar', text),
         mediaTextFor: (text) => mediaText(context, text),
         cameraStreamsTextFor: (text) => cameraStreamsText(context, text),
@@ -2661,6 +2693,58 @@ class _CategoryContentState extends State<_CategoryContent> {
               ),
             ],
           ),
+        ] else if (widget.category == 'Timers') ...[
+          // The timers themselves (the full screen view, opened from
+          // here), then the definitions, then Voice timers. Mirrored on the
+          // remote's Timers page (timers.js).
+          // The untitled card first, as on the Alarms page.
+          ..._sectionedCards(
+            container,
+            [
+              for (final def in _inlineDefsFor('Timers'))
+                if (def.section == null) def,
+            ],
+            () => setState(() {}),
+            replace: _rowReplacements(container),
+            after: _rowExtras(container),
+          ),
+          SectionHeading(l10n(context).voiceTimersViewTitle),
+          SearchLandingTarget(
+            id: 'x:timers_manage',
+            child: TimersManageCard(container: container),
+          ),
+          ..._sectionedCards(
+            container,
+            [
+              for (final def in _inlineDefsFor('Timers'))
+                if (def.section != null) def,
+            ],
+            () => setState(() {}),
+            replace: _rowReplacements(container),
+            after: _rowExtras(container),
+          ),
+          // Timers by voice are Home Assistant's own, so this group only
+          // points at the guide.
+          SectionHeading(l10n(context).timersVoiceSection),
+          SettingsCard(
+            children: [
+              SearchLandingTarget(
+                id: 'x:timers_voice',
+                child: SettingsRow(
+                  leading: const Icon(Icons.record_voice_over_outlined),
+                  title: Text(l10n(context).timersVoiceManage),
+                  subtitle: Text(l10n(context).timersVoiceHint),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    container.commands.execute('showLinkPage', {
+                      'url': _voiceTimersDocsUrl,
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
         ] else if (widget.category == 'Alarms') ...[
           // The Drawer menu items link on its own untitled card, then the list
           // itself (the full screen overlay, opened from here), then the
@@ -2750,6 +2834,10 @@ class _CategoryContentState extends State<_CategoryContent> {
                   ),
             ],
           ),
+          // The room's noise as a volume source, a page of its own
+          // (issue #1450): a switch, the room's level, a switch per volume
+          // and the curve.
+          _subpageEntryCard(container, 'Screen & Audio', 'Adaptive volume'),
           // Device pickers are hand-built (their options are live hardware);
           // the remote UI mirrors both rows. The mic one only while detection
           // is on — with it off this app never opens the microphone, the
@@ -2780,6 +2868,8 @@ class _CategoryContentState extends State<_CategoryContent> {
           // it is there for devices whose audio stack misbehaves, and every
           // default is what the app has always done.
           _subpageEntryCard(container, 'Screen & Audio', 'Microphone settings'),
+          // The speaker equalizer, every row of it a declared setting.
+          _subpageEntryCard(container, 'Screen & Audio', 'Equalizer'),
         ] else ...[
           // What every source has in common, said once at the top: the
           // surfaces only show for a player with something to show.
@@ -2804,6 +2894,13 @@ class _CategoryContentState extends State<_CategoryContent> {
               widget.category == 'Camera' &&
                       container.deviceCamera.cameraKnownAbsent
                   ? const [cameraEnabled]
+                  // HTML5 Geolocation is placed by hand below, after the
+                  // URL Filter.
+                  : widget.category == 'Browser'
+                  ? [
+                      for (final def in _inlineDefsFor(widget.category))
+                        if (def.key != webGeolocation.key) def,
+                    ]
                   : _inlineDefsFor(widget.category),
               () => setState(() {}),
               replace: _rowReplacements(container),
@@ -2817,9 +2914,29 @@ class _CategoryContentState extends State<_CategoryContent> {
             ),
           ),
           // No setting draws the URL Filter, so its row is placed here,
-          // last on the page.
-          if (widget.category == 'Browser')
+          // after the page's own rows. HTML5 Geolocation closes the page
+          // (issue #1383): its switch, then the Location grant while it is
+          // on. Mirrored on the remote (settings.js,
+          // updateWebGeolocationRows).
+          if (widget.category == 'Browser') ...[
             _subpageEntryCard(container, 'Browser', 'URL Filter'),
+            ..._sectionedCards(container, const [
+              webGeolocation,
+            ], () => setState(() {})),
+            if (container.settings.get(webGeolocation)) ...[
+              SectionHeading(
+                esphomeText(context, 'Required system permissions'),
+              ),
+              SettingsCard(
+                children: [
+                  _LocationPermissionsTile(
+                    container: container,
+                    use: _LocationUse.pages,
+                  ),
+                ],
+              ),
+            ],
+          ],
         ],
         // Last and on their own card, like the Voice Satellite permissions:
         // the OS's to give, not ours to set. Always shown - Lockdown Mode
@@ -3220,6 +3337,20 @@ class _CategoryContentState extends State<_CategoryContent> {
       ),
     // Voice Satellite's TTS output: this kiosk or a Home Assistant media
     // player, from the live list, in the place of the text field.
+    // The kiosks to share timers with: names and a checkbox list, in the
+    // place of the text field. Mirrored on the remote (rows.js).
+    if (widget.category == 'Timers')
+      voiceTimersShareWith.key: SearchLandingTarget(
+        id: voiceTimersShareWith.key,
+        child: SharedTimersShareWithRow(container: container),
+      ),
+    // The people a kiosk on Chosen people answers: names and a checkbox
+    // list of everyone enrolled in Ground Control. Mirrored on the remote.
+    if (widget.category == 'Voice Satellite')
+      voiceMatchPeople.key: SearchLandingTarget(
+        id: voiceMatchPeople.key,
+        child: VoiceMatchPeopleRow(container: container),
+      ),
     if (widget.category == 'Voice Satellite')
       voiceTtsOutput.key: SearchLandingTarget(
         id: voiceTtsOutput.key,
@@ -3388,6 +3519,22 @@ class _CategoryContentState extends State<_CategoryContent> {
         id: calendarWeatherEntity.key,
         child: CalendarWeatherRow(container: container),
       ),
+    if (widget.category == 'Timers') ...{
+      timersTtsEngine.key: AnnouncementTtsEngineRow(
+        container: container,
+        def: timersTtsEngine,
+        languageDef: timersTtsLanguage,
+        voiceDef: timersTtsVoice,
+      ),
+      for (final def in [timersTtsLanguage, timersTtsVoice])
+        def.key: TtsVoiceRow(
+          container: container,
+          def: def,
+          engineDef: timersTtsEngine,
+          languageDef: timersTtsLanguage,
+          voiceDef: timersTtsVoice,
+        ),
+    },
     if (widget.category == 'Alarms') ...{
       alarmsTtsEngine.key: AnnouncementTtsEngineRow(
         container: container,
@@ -3464,6 +3611,9 @@ class _CategoryContentState extends State<_CategoryContent> {
   /// Extra widgets rendered directly under a setting: notices, validate
   /// rows, live telemetry. Keyed and forwarded the same way.
   Map<String, Widget> _rowExtras(AppContainer container) => {
+    // Ground Control: whether the service was found, who is enrolled and
+    // Open for its app.
+    groundControlEnabled.key: GroundControlStatusRow(container: container),
     if (widget.category == 'Sendspin')
       sendspinDuckPercent.key: AlbumArtCacheRow(container: container),
     // Under the key's copy box: paste one from another kiosk or make a
@@ -3526,6 +3676,11 @@ class _CategoryContentState extends State<_CategoryContent> {
       adaptiveBrightness.key: container.device.hasLightSensor
           ? _AmbientLightRow(container: container)
           : HintRow(screenAudioText(context, _noLightSensorNote)),
+    // The room's noise level as adaptive volume follows it, live, under
+    // the switch (issue #1450): the curve's noise levels are typed against
+    // it. Mirrored on the remote (notices.js, updateAdaptiveVolumeRows).
+    if (widget.category == 'Screen & Audio')
+      adaptiveVolume.key: _RoomNoiseRows(container: container),
     // Under the screensaver's brightness sliders while adaptive brightness
     // is on: the slider is the bright-room level the room's light dims
     // from, which is not what a slider called "brightness" says on its own.
@@ -3946,7 +4101,10 @@ class _CategoryContentState extends State<_CategoryContent> {
           id: 'x:celestial_location_permissions',
           child: SettingsCard(
             children: [
-              _LocationPermissionsTile(container: container, celestial: true),
+              _LocationPermissionsTile(
+                container: container,
+                use: _LocationUse.sky,
+              ),
             ],
           ),
         ),
@@ -4179,6 +4337,38 @@ class _CategoryContentState extends State<_CategoryContent> {
       );
     }
 
+    // The curve draws as one editor in its setting's place (issue #1450),
+    // with a way to hear it under it. Mirrored on the remote
+    // (volume_curve.js, settings.js updateVolumeTestRows).
+    if (widget.category == 'Screen & Audio' && subpage == 'Adaptive volume') {
+      return [
+        ...sectioned(
+          [
+            for (final def in _defsFor(widget.category))
+              if (def.subpage == subpage) def,
+          ],
+          replace: {
+            ..._rowReplacements(container),
+            adaptiveVolumeCurve.key: SearchLandingTarget(
+              id: adaptiveVolumeCurve.key,
+              child: VolumeCurveEditor(container: container),
+            ),
+          },
+        ),
+        if (container.settings.get(adaptiveVolume)) ...[
+          SectionHeading(screenAudioText(context, 'Test volume')),
+          SettingsCard(children: [_VolumeTestRows(container: container)]),
+        ],
+      ];
+    }
+
+    if (widget.category == 'Screen & Audio' && subpage == 'Equalizer') {
+      return sectioned([
+        for (final def in _defsFor(widget.category))
+          if (def.subpage == subpage) def,
+      ]);
+    }
+
     if (widget.category == 'Screen & Audio') {
       return [
         GroupNote(screenAudioText(context, _micGroupNote)),
@@ -4324,15 +4514,6 @@ class _CategoryContentState extends State<_CategoryContent> {
       return [...sectioned(_chimeRows)];
     }
 
-    // The dashboard runtime's Timers page holds only what the kiosk draws
-    // itself: the pills.
-    if (widget.category == 'Voice Satellite' && subpage == 'Timers') {
-      return sectioned([
-        for (final def in _defsFor(widget.category))
-          if (def.subpage == subpage) def,
-      ]);
-    }
-
     // Voice Satellite's two pages are almost entirely live rows from the
     // integration, so they render through the same section that draws them
     // on the page above rather than from the definitions.
@@ -4459,6 +4640,10 @@ class _CategoryContentState extends State<_CategoryContent> {
   /// view "the dashboard" means. Wording shared with the remote admin
   /// (which carries its own copy in the HTML).
   String _returnHomeTargetHint(AppContainer container) {
+    // Compass holds several dashboard views, each home to its own place.
+    if (container.settings.get(navStyle) == 'compass') {
+      return l10n(context).haReturnCompass;
+    }
     final path = container.homeAssistant.homeViewPath();
     return path == null
         ? haText(
@@ -4734,9 +4919,9 @@ extension on _CategoryContentState {
           'Wake Word',
           'Assistant',
           'Realtime',
+          'Ground Control Voice Match',
           'Appearance',
           'Conversation',
-          'Timers',
           'Chimes',
         ])
           _subpageEntryCard(container, 'Voice Satellite', page),
@@ -6920,6 +7105,194 @@ const _adaptiveOwnsNote = 'Adaptive brightness is on.';
 const _noLightSensorNote = 'No ambient light sensor on this device.';
 const _ambientLightNote = 'What the ambient light sensor reads right now.';
 
+const _roomNoiseNote = 'What the microphone reads while this device is silent.';
+const _roomNoiseHoldsNote =
+    'The reading holds while this device plays. Changes in the room during '
+    'playback are not used.';
+const _roomNoiseNoReadingNote =
+    'If there is no reading, turn on adaptive volume or wake word detection '
+    'and check that the microphone is not muted.';
+
+/// The room's noise level as adaptive volume follows it (issue #1450),
+/// live, with the rule that makes it trustworthy under it: the room is
+/// only measured while the kiosk is silent. With no reading a second note
+/// says what one needs: the microphone opens for it while adaptive volume
+/// or wake word detection is on, and not while the satellite is muted.
+class _RoomNoiseRows extends StatefulWidget {
+  const _RoomNoiseRows({required this.container});
+
+  final AppContainer container;
+
+  @override
+  State<_RoomNoiseRows> createState() => _RoomNoiseRowsState();
+}
+
+class _RoomNoiseRowsState extends State<_RoomNoiseRows> {
+  StreamSubscription<AdaptiveVolumeChanged>? _sub;
+  double? _noise;
+
+  @override
+  void initState() {
+    super.initState();
+    _noise = widget.container.adaptiveVolume.noise;
+    _sub = widget.container.bus.on<AdaptiveVolumeChanged>().listen((e) {
+      if (mounted && e.noise != _noise) setState(() => _noise = e.noise);
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final noise = _noise;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SettingsRow(
+          title: Text(screenAudioText(context, 'Room noise')),
+          subtitle: Text(screenAudioText(context, _roomNoiseNote)),
+          trailing: Text(
+            noise == null
+                ? screenAudioText(context, 'No reading yet')
+                : l10n(context).screenAudioDbfs('${noise.round()}'),
+          ),
+        ),
+        HintRow(screenAudioText(context, _roomNoiseHoldsNote)),
+        if (noise == null)
+          HintRow(screenAudioText(context, _roomNoiseNoReadingNote)),
+      ],
+    );
+  }
+}
+
+const _assistantTestHint =
+    'Plays a Voice Satellite announcement at the Assistant volume. Needs '
+    'Voice Satellite set up in Home Assistant.';
+const _mediaTestHint =
+    'Plays an ESPHome announcement at the Media volume. Needs Announcements '
+    'turned on under ESPHome.';
+const _volumeTestMessage = 'This is how loud an announcement plays right now.';
+
+/// Two buttons under the volume curve that play an announcement at the
+/// level the room picks now: one through Voice Satellite at the Assistant
+/// volume, one through the ESPHome announce action at the Media volume.
+/// Each waits for its feature to be set up. Settings stay on screen, so
+/// the curve can be changed and tried again. Mirrored on the remote
+/// (settings.js, updateVolumeTestRows).
+class _VolumeTestRows extends StatefulWidget {
+  const _VolumeTestRows({required this.container});
+
+  final AppContainer container;
+
+  @override
+  State<_VolumeTestRows> createState() => _VolumeTestRowsState();
+}
+
+class _VolumeTestRowsState extends State<_VolumeTestRows> {
+  static final _keys = {
+    voiceEnabled.key,
+    esphomeEnabled.key,
+    announcementsEnabled.key,
+  };
+
+  StreamSubscription<SettingChanged>? _sub;
+
+  /// The row playing now, 'assistant' or 'media'.
+  String? _playing;
+
+  /// The row whose last test failed, shown for a moment.
+  String? _failed;
+  Timer? _failedTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = widget.container.bus.on<SettingChanged>().listen((e) {
+      if (mounted && _keys.contains(e.key)) setState(() {});
+    });
+    widget.container.voice.homeAssistant.addListener(_changed);
+  }
+
+  void _changed() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    _failedTimer?.cancel();
+    widget.container.voice.homeAssistant.removeListener(_changed);
+    super.dispose();
+  }
+
+  bool get _mediaReady {
+    final settings = widget.container.settings;
+    return settings.get(esphomeEnabled) && settings.get(announcementsEnabled);
+  }
+
+  Future<void> _test(String which) async {
+    final message = screenAudioText(context, _volumeTestMessage);
+    setState(() {
+      _playing = which;
+      _failed = null;
+    });
+    final r = which == 'assistant'
+        ? await widget.container.commands.execute('voiceTestAnnouncement', {
+            'message': message,
+          })
+        : await widget.container.commands.execute('announce', {
+            'message': message,
+            'audio_only': true,
+          });
+    if (!mounted) return;
+    setState(() {
+      _playing = null;
+      if (!r.ok) _failed = which;
+    });
+    if (!r.ok) {
+      _failedTimer?.cancel();
+      _failedTimer = Timer(const Duration(seconds: 2), () {
+        if (mounted) setState(() => _failed = null);
+      });
+    }
+  }
+
+  Widget _button(String which, bool ready) {
+    final label = _failed == which
+        ? 'Failed'
+        : _playing == which
+        ? 'Playing'
+        : 'Test';
+    return FilledButton.tonal(
+      onPressed: ready && _playing == null ? () => _test(which) : null,
+      child: Text(screenAudioText(context, label)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SettingsRow(
+          title: Text(screenAudioText(context, 'Test Assistant volume')),
+          subtitle: Text(screenAudioText(context, _assistantTestHint)),
+          trailing: _button('assistant', widget.container.voice.canAnnounce),
+        ),
+        SettingsRow(
+          title: Text(screenAudioText(context, 'Test Media volume')),
+          subtitle: Text(screenAudioText(context, _mediaTestHint)),
+          trailing: _button('media', _mediaReady),
+        ),
+      ],
+    );
+  }
+}
+
 /// The ambient light sensor's reading, live off the sensor stream.
 class _AmbientLightRow extends StatefulWidget {
   const _AmbientLightRow({required this.container});
@@ -7902,17 +8275,36 @@ class _PlayerRow extends StatefulWidget {
 }
 
 class _PlayerRowState extends State<_PlayerRow> {
+  @override
+  void initState() {
+    super.initState();
+    PluginPlayers.published.addListener(_onPluginPlayers);
+  }
+
+  @override
+  void dispose() {
+    PluginPlayers.published.removeListener(_onPluginPlayers);
+    super.dispose();
+  }
+
+  /// A plugin started or stopped offering a player.
+  void _onPluginPlayers() {
+    if (mounted) setState(() {});
+  }
+
   static const _titles = {
     'ma': 'Music Assistant player',
     'ha': 'Home Assistant media player',
     'sonos': 'Sonos room',
   };
 
-  /// This device's own three players, or the picked source's.
+  /// This device's own three players and the ones running plugins
+  /// publish, or the picked source's.
   PickSpec _spec(BuildContext context, String source) => source.isEmpty
       ? fixedPlayerSpec(
           context,
-          key: 'players:local',
+          // A list per set of plugin players, so a new one shows.
+          key: 'players:local:${PluginPlayers.published.value.keys.join(',')}',
           items: [
             PickItem(
               id: '',
@@ -7930,6 +8322,12 @@ class _PlayerRowState extends State<_PlayerRow> {
               name: mediaText(context, SendspinManager.localSessionName),
               icon: 'mdi:cellphone-sound',
             ),
+            for (final player in PluginPlayers.published.value.values)
+              PickItem(
+                id: player.pick,
+                name: player.name,
+                icon: 'mdi:puzzle-outline',
+              ),
           ],
         )
       : playerSpec(context, widget.container.commands, source: source);
@@ -7947,7 +8345,7 @@ class _PlayerRowState extends State<_PlayerRow> {
           ? SendspinManager.localSessionName
           : id == SendspinManager.airplayPick
           ? SendspinManager.airplayName
-          : name,
+          : PluginPlayers.published.value[id]?.name ?? name,
     );
     // The manager maintains this flag from the same inputs, but over the
     // async bus — write it here too so the pane rebuild below already
@@ -9145,12 +9543,18 @@ class _RotationCardState extends State<_RotationCard> {
     }
   }
 
+  // The list as just changed, shown until its save lands, so a dropped
+  // row stays where it was dropped.
+  List<String>? _viewsNow;
+  List<String>? _urlsNow;
+
   Future<void> _save(List<String> selected) async {
+    setState(() => _viewsNow = selected);
     await c.settings.setFromJson(
       haRotationDashboards.key,
       jsonEncode(selected),
     );
-    if (mounted) setState(() {});
+    if (mounted) setState(() => _viewsNow = null);
   }
 
   Future<void> _addViews() async {
@@ -9178,8 +9582,9 @@ class _RotationCardState extends State<_RotationCard> {
   }
 
   Future<void> _saveUrls(List<String> urls) async {
+    setState(() => _urlsNow = urls);
     await c.settings.setFromJson(haRotationUrls.key, jsonEncode(urls));
-    if (mounted) setState(() {});
+    if (mounted) setState(() => _urlsNow = null);
   }
 
   Future<void> _addUrl() async {
@@ -9240,23 +9645,28 @@ class _RotationCardState extends State<_RotationCard> {
       ],
     );
     if (!enabled) return settings;
+    final views = _viewsNow ?? _selected();
+    final urls = _urlsNow ?? _urls();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         settings,
-        // The picked views in rotation order, each with a remove button,
-        // then the row that opens the picker to add more.
+        // The picked views in rotation order, each dragged by its handle
+        // or moved with the arrows, then the row that opens the picker to
+        // add more.
         SectionHeading(haRotationDashboards.localizedTitle(context)),
         SettingsCard(
           children: [
-            for (final path in _selected())
-              DashboardViewListRow(
-                value: path,
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: haText(context, 'Remove'),
-                  onPressed: () => _save(_selected()..remove(path)),
-                ),
+            if (views.isNotEmpty)
+              _OrderedRows(
+                items: views,
+                onChanged: _save,
+                rowBuilder: (context, path, handle, actions) =>
+                    DashboardViewListRow(
+                      value: path,
+                      leading: handle,
+                      trailing: actions,
+                    ),
               ),
             ListTile(
               leading: Icon(
@@ -9279,13 +9689,21 @@ class _RotationCardState extends State<_RotationCard> {
         SectionHeading(haText(context, 'External pages')),
         SettingsCard(
           children: [
-            for (final url in _urls())
-              ListTile(
-                title: Text(url, maxLines: 1, overflow: TextOverflow.ellipsis),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: haText(context, 'Remove'),
-                  onPressed: () => _saveUrls(_urls()..remove(url)),
+            if (urls.isNotEmpty)
+              _OrderedRows(
+                items: urls,
+                onChanged: _saveUrls,
+                rowBuilder: (context, url, handle, actions) => ListTile(
+                  // The view rows' insets, so the handles and the actions
+                  // of the two lists line up.
+                  contentPadding: const EdgeInsets.fromLTRB(Ks.inset, 0, 8, 0),
+                  leading: handle,
+                  title: Text(
+                    url,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: actions,
                 ),
               ),
             Padding(
@@ -9316,6 +9734,87 @@ class _RotationCardState extends State<_RotationCard> {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// The rotation's rows in order inside their card. With two or more, each
+/// row gets a drag handle and the move up, move down and remove actions.
+/// A tight pane keeps the handle and drops the arrows, which would leave
+/// no room for the row's own text. A lone row gets only its remove button.
+/// Every change hands the whole new list to [onChanged].
+class _OrderedRows extends StatelessWidget {
+  const _OrderedRows({
+    required this.items,
+    required this.onChanged,
+    required this.rowBuilder,
+  });
+
+  final List<String> items;
+  final ValueChanged<List<String>> onChanged;
+  final Widget Function(
+    BuildContext context,
+    String item,
+    Widget? handle,
+    Widget actions,
+  )
+  rowBuilder;
+
+  void _move(int from, int to) {
+    final next = [...items];
+    next.insert(to, next.removeAt(from));
+    onChanged(next);
+  }
+
+  void _remove(int index) => onChanged([...items]..removeAt(index));
+
+  @override
+  Widget build(BuildContext context) {
+    final orderable = items.length > 1;
+    final arrows = orderable && !tightPane(context);
+    return ReorderableListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      buildDefaultDragHandles: false,
+      itemCount: items.length,
+      // onReorderItem: newIndex is already adjusted for the removal.
+      onReorderItem: _move,
+      itemBuilder: (context, index) => Column(
+        // The index is part of the key: a list saved from elsewhere could
+        // name one view twice.
+        key: ValueKey('$index ${items[index]}'),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (index > 0)
+            const Divider(height: 1, indent: Ks.inset, endIndent: Ks.inset),
+          rowBuilder(
+            context,
+            items[index],
+            orderable
+                ? ReorderableDragStartListener(
+                    index: index,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Icon(Icons.drag_handle),
+                    ),
+                  )
+                : null,
+            arrows
+                ? OrderActions(
+                    first: index == 0,
+                    last: index == items.length - 1,
+                    onUp: () => _move(index, index - 1),
+                    onDown: () => _move(index, index + 1),
+                    onRemove: () => _remove(index),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    tooltip: l10n(context).commonRemove,
+                    onPressed: () => _remove(index),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -10325,6 +10824,7 @@ class _DevicePermissionsTileState extends State<_DevicePermissionsTile>
           needed:
               settings.get(btproxyEnabled) ||
               settings.get(locationEnabled) ||
+              settings.get(webGeolocation) ||
               (settings.get(screensaverMode) == 'celestial' &&
                   settings.get(screensaverCelestialLocation) == 'gps'),
           missingIcon: Icons.location_off_outlined,
@@ -10620,22 +11120,27 @@ class _RealMacStatusRowState extends State<_RealMacStatusRow> {
 /// the dialog, then the OS location settings screen when the switch is
 /// what is off, and nudges the location manager so a stream refused for
 /// the missing grant comes up at once. The Celestial screensaver's GPS
-/// source shows the same row with its own lines.
+/// source and Web Browsing's HTML5 Geolocation show the same row with their
+/// own lines.
 class _LocationPermissionsTile extends StatefulWidget {
   const _LocationPermissionsTile({
     required this.container,
-    this.celestial = false,
+    this.use = _LocationUse.sensors,
   });
 
   final AppContainer container;
 
-  /// Worded for the Celestial sky instead of the location sensors.
-  final bool celestial;
+  /// What reads the position, which the held and missing lines name.
+  final _LocationUse use;
 
   @override
   State<_LocationPermissionsTile> createState() =>
       _LocationPermissionsTileState();
 }
+
+/// Who a [_LocationPermissionsTile] answers for: the ESPHome location
+/// sensors, the Celestial sky or the pages of the web views.
+enum _LocationUse { sensors, sky, pages }
 
 class _LocationPermissionsTileState extends State<_LocationPermissionsTile>
     with WidgetsBindingObserver {
@@ -10703,29 +11208,44 @@ class _LocationPermissionsTileState extends State<_LocationPermissionsTile>
                 'needs precise location.',
               )
             : perms == null || !perms.location
-            ? widget.celestial
-                  ? screensaverText(
-                      context,
-                      'Without this the GPS receiver cannot be read and the '
-                      'sky has no location.',
-                    )
-                  : esphomeText(
-                      context,
-                      'Without this the GPS receiver cannot be read and the '
-                      'location sensors stay unknown.',
-                    )
+            ? switch (widget.use) {
+                _LocationUse.sky => screensaverText(
+                  context,
+                  'Without this the GPS receiver cannot be read and the '
+                  'sky has no location.',
+                ),
+                _LocationUse.pages => settingsPageText(
+                  context,
+                  'Browser',
+                  'Without this pages cannot read the device location.',
+                ),
+                _LocationUse.sensors => esphomeText(
+                  context,
+                  'Without this the GPS receiver cannot be read and the '
+                  'location sensors stay unknown.',
+                ),
+              }
             : !perms.locationServicesOn
             ? esphomeText(
                 context,
                 'Location is off in the device settings, so the receiver '
                 'delivers nothing.',
               )
-            : widget.celestial
-            ? screensaverText(context, 'The sky can follow the GPS receiver.')
-            : esphomeText(
-                context,
-                'The location sensors can read the GPS receiver.',
-              ),
+            : switch (widget.use) {
+                _LocationUse.sky => screensaverText(
+                  context,
+                  'The sky can follow the GPS receiver.',
+                ),
+                _LocationUse.pages => settingsPageText(
+                  context,
+                  'Browser',
+                  'Pages can read the device location.',
+                ),
+                _LocationUse.sensors => esphomeText(
+                  context,
+                  'The location sensors can read the GPS receiver.',
+                ),
+              },
       ),
       trailing: granted == true
           ? null
@@ -11521,6 +12041,14 @@ class SettingTile extends StatelessWidget {
         onTap: () => openSettingRow(context, c, target),
       );
     }
+    // Settings > Navigation: the style cards and the Compass layout map,
+    // mirrored on the remote (compass.js).
+    if (def.key == navStyle.key) {
+      return CompassStyleRow(container: c, onChanged: onChanged);
+    }
+    if (def.key == navCompassLayout.key) {
+      return CompassLayoutEditor(container: c, onChanged: onChanged);
+    }
     // The kiosk menu's rows (issue #1194): picked and arranged in the
     // shared picker, never typed as JSON.
     if (def.key == uiDrawerItems.key) {
@@ -11533,18 +12061,31 @@ class SettingTile extends StatelessWidget {
     }
     switch (def.type) {
       case SettingType.boolean:
+        // Switched off by another setting (pull to refresh under Compass):
+        // greyed out in place, with the reason under its description.
+        final offBy = def.offWhen == null
+            ? null
+            : c.settings.defByKey(def.offWhen!);
+        final off = offBy != null && def.offBy(c.settings.get(offBy));
         return SwitchListTile(
           title: Text(def.localizedTitle(context)),
-          subtitle: Text(def.localizedDescription(context)),
+          subtitle: off
+              ? Text(
+                  '${def.localizedDescription(context)}\n'
+                  '${def.localizedOffNote(context)}',
+                )
+              : Text(def.localizedDescription(context)),
           value: c.settings.get(def) as bool,
-          onChanged: (v) async {
-            if (def.key == remoteTls.key &&
-                !await confirmRemoteProtocol(context, c, v)) {
-              return;
-            }
-            await c.settings.setFromJson(def.key, v);
-            onChanged();
-          },
+          onChanged: off
+              ? null
+              : (v) async {
+                  if (def.key == remoteTls.key &&
+                      !await confirmRemoteProtocol(context, c, v)) {
+                    return;
+                  }
+                  await c.settings.setFromJson(def.key, v);
+                  onChanged();
+                },
         );
       case SettingType.select:
         final options = _optionsFor(def);
@@ -13036,7 +13577,7 @@ class _VsControlsSectionState extends State<VsControlsSection> {
 
   /// Entries for the Voice Satellite settings groups.
   List<Widget> _vsPageEntries() => [
-    for (final page in const ['Wake Word', 'Appearance', 'Timers', 'Chimes'])
+    for (final page in const ['Wake Word', 'Appearance', 'Chimes'])
       _subpageEntryCard(widget.container, 'Voice Satellite', page),
   ];
 }

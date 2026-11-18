@@ -202,6 +202,11 @@ class UiStringsDe extends UiStrings {
   }
 
   @override
+  String alarmsSkipAlarm(String time) {
+    return 'Wecker um $time überspringen';
+  }
+
+  @override
   String get alarmsNextWidget => 'Nächster Wecker';
 
   @override
@@ -2224,6 +2229,9 @@ class UiStringsDe extends UiStrings {
   String get gestureOpenAlarmList => 'Weckerliste öffnen';
 
   @override
+  String get gestureOpenTimers => 'Timer öffnen';
+
+  @override
   String get gestureOpenNextAlarm => 'Nächsten Wecker öffnen';
 
   @override
@@ -3240,6 +3248,9 @@ class UiStringsDe extends UiStrings {
   String get libraryTracks => 'Titel';
 
   @override
+  String get libraryGenres => 'Genres';
+
+  @override
   String get libraryPlaylists => 'Playlists';
 
   @override
@@ -3883,6 +3894,13 @@ class UiStringsDe extends UiStrings {
       'Diese Auswahl ist nicht mehr aufgeführt.';
 
   @override
+  String get pluginDashboardLink => 'Dashboard-Link';
+
+  @override
+  String get pluginDashboardLinkHint =>
+      'Verwende diesen Link als Tippaktion einer Dashboard-Schaltfläche.';
+
+  @override
   String get pluginPlugin => 'Plugin';
 
   @override
@@ -3995,6 +4013,9 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get pluginDragToReorder => 'Zum Neuordnen ziehen';
+
+  @override
+  String get pluginDuplicate => 'Duplizieren';
 
   @override
   String get pluginDone => 'Fertig';
@@ -4164,6 +4185,9 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get pluginNotListedChip => 'Nicht in Community-Plugins gelistet';
+
+  @override
+  String get pluginReleaseNotes => 'Versionshinweise';
 
   @override
   String get pluginCharts => 'Diagramme';
@@ -5297,6 +5321,13 @@ class UiStringsDe extends UiStrings {
       'Wie lange der Bildschirm vor einem Sonnenaufgangswecker heller wird.';
 
   @override
+  String get settingAlarmsSkipMinutesTitle => 'Überspringen-Taste';
+
+  @override
+  String get settingAlarmsSkipMinutesDescription =>
+      'Wie lange vor einem Wecker die Bildschirmschoner Uhr und Wetterstimmung eine Taste zum Überspringen zeigen.';
+
+  @override
   String get alarmsOption5Minutes => '5 Minuten';
 
   @override
@@ -5313,6 +5344,12 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get alarmsOption30Minutes => '30 Minuten';
+
+  @override
+  String get alarmsOption60Minutes => '60 Minuten';
+
+  @override
+  String get alarmsOptionOff => 'Deaktiviert';
 
   @override
   String get settingsMenuAlarms => 'Wecker';
@@ -5467,8 +5504,8 @@ class UiStringsDe extends UiStrings {
       'Bei Inaktivität schließen';
 
   @override
-  String get settingCalendarIdleCloseMinutesDescription =>
-      'Kehrt nach dieser Zeit ohne Berührung zum Dashboard zurück.';
+  String get settingIdleCloseCompassDescription =>
+      'Kehrt nach dieser Zeit ohne Berührung zum Dashboard zurück. Im Compass-Layout gilt stattdessen Zur Mitte zurückkehren.';
 
   @override
   String get settingKioskAllowCalendarTitle => 'Kalender';
@@ -6212,8 +6249,8 @@ class UiStringsDe extends UiStrings {
       'Automatisch schließen nach';
 
   @override
-  String get settingCameraAutoDismissSecondsDescription =>
-      'Schließt eine geöffnete Kameraansicht automatisch. Bei 0 bleibt sie dauerhaft geöffnet. Hat keinen Einfluss auf den Kamera-Bildschirmschoner.';
+  String get settingCameraAutoDismissCompassDescription =>
+      'Schließt eine geöffnete Kameraansicht nach dieser Zeit. Bei 0 bleibt sie geöffnet. Hat keinen Einfluss auf den Kamera-Bildschirmschoner. Im Compass-Layout gilt stattdessen Zur Mitte zurückkehren.';
 
   @override
   String get cameraStreamsPlayback => 'Wiedergabe';
@@ -6359,6 +6396,22 @@ class UiStringsDe extends UiStrings {
   @override
   String get cameraStreamsLoadFailed =>
       'Die Kameras konnten nicht geladen werden.';
+
+  @override
+  String get cameraStreamsDeleteUnused => 'Unbenutzte Kameras löschen';
+
+  @override
+  String get cameraStreamsDeleteUnusedConfirm => 'Unbenutzte Kameras löschen?';
+
+  @override
+  String cameraStreamsOneUnusedCamera(String count) {
+    return '$count Kamera ist in keiner Ansicht.';
+  }
+
+  @override
+  String cameraStreamsManyUnusedCameras(String count) {
+    return '$count Kameras sind in keiner Ansicht.';
+  }
 
   @override
   String get cameraStreamsViews => 'Ansichten';
@@ -8263,6 +8316,14 @@ class UiStringsDe extends UiStrings {
       'Einschalten, wenn der Proxy bei ausgeschaltetem Bildschirm nichts mehr weiterleitet. Erhöht die CPU-Auslastung.';
 
   @override
+  String get settingBtproxyDeviceMacTitle =>
+      'Geräte-MAC-Adresse für Bluetooth verwenden';
+
+  @override
+  String get settingBtproxyDeviceMacDescription =>
+      'Damit können Integrationen wie Bermuda diesen Proxy seinem Gerät zuordnen. Ändert die Adresse des Proxys in Home Assistant.';
+
+  @override
   String get settingBtproxyConnectionsTitle =>
       'Verbindungen zu Geräten zulassen';
 
@@ -8790,6 +8851,26 @@ class UiStringsDe extends UiStrings {
       'A mapped key runs its action whatever app is in front, and does nothing else.';
 
   @override
+  String get settingGroundControlEnabledTitle => 'Ground Control aktivieren';
+
+  @override
+  String get settingGroundControlEnabledDescription =>
+      'Mit Kiosk Satellite Ground Control verbinden, das Voice Match auf einem leistungsstarken Rechner ausführt.';
+
+  @override
+  String get settingGroundControlAddressTitle => 'Adresse';
+
+  @override
+  String get settingGroundControlAddressDescription =>
+      'Leer lassen, um Ground Control im Netzwerk zu finden. Für Ground Control in einem anderen Netzwerk eine Adresse eingeben.';
+
+  @override
+  String get groundControlLooking => 'Ground Control wird im Netzwerk gesucht.';
+
+  @override
+  String get groundControlApp => 'Ground Control App';
+
+  @override
   String get haCustomPages => 'Eigene Seiten';
 
   @override
@@ -9034,6 +9115,10 @@ class UiStringsDe extends UiStrings {
   String haReturnPath(String path) {
     return 'Kehrt nach Ablauf des Zeitlimits zu „$path“ zurück.';
   }
+
+  @override
+  String get haReturnCompass =>
+      'Bei der Compass-Navigation kehrt jede Dashboard-Ansicht des Layouts nach Ablauf des Zeitlimits zu der für sie gewählten Ansicht zurück.';
 
   @override
   String get settingHaRotationEnabledTitle =>
@@ -9409,8 +9494,15 @@ class UiStringsDe extends UiStrings {
   String get settingIntercomRingSoundTitle => 'Klingelton';
 
   @override
-  String get settingIntercomRingSoundDescription =>
-      'Wird mit der Benachrichtigungslautstärke wiedergegeben.';
+  String get settingIntercomRingSoundVolumeDescription =>
+      'Wird mit der Klingellautstärke wiedergegeben.';
+
+  @override
+  String get settingIntercomRingVolumeTitle => 'Klingellautstärke';
+
+  @override
+  String get settingIntercomRingVolumeDescription =>
+      'Wie laut ein Anruf klingelt, unabhängig von der Medienlautstärke.';
 
   @override
   String get settingIntercomAcceptAnnouncementsTitle => 'Durchsagen annehmen';
@@ -9673,8 +9765,8 @@ class UiStringsDe extends UiStrings {
       'Menü mit Schnellaktionen erlauben';
 
   @override
-  String get settingKioskAllowDrawerDescription =>
-      'Ein Wischen vom Bildschirmrand öffnet das Menü ohne Exit-Geste oder PIN, beschränkt auf die unten ausgewählten Aktionen.';
+  String get settingKioskAllowQuickControlsDescription =>
+      'Zeigt das Menü ohne Exit-Geste oder PIN, beschränkt auf die unten ausgewählten Aktionen. In der klassischen Navigation öffnet es ein Wischen vom Bildschirmrand. In Compass ist es die Ansicht Schnellsteuerung.';
 
   @override
   String get settingKioskAllowDashboardTitle => 'Dashboard';
@@ -10117,6 +10209,14 @@ class UiStringsDe extends UiStrings {
   @override
   String get settingLockdownEnabledDescription =>
       'Deaktiviert die Interaktion mit dem Bildschirm, bis der Sperrmodus über Home Assistant oder die Exit-Geste deaktiviert wird.';
+
+  @override
+  String get settingLockdownAutoUnlockMinutesTitle =>
+      'Automatisch entsperren nach';
+
+  @override
+  String get settingLockdownAutoUnlockMinutesDescription =>
+      'Schaltet den Sperrmodus nach dieser Zeit aus, wenn er über das Kiosk-Menü gestartet wurde. Mit 0 bleibt die Sperre bestehen.';
 
   @override
   String get settingLockdownBlackoutTitle => 'Bildschirm schwarz schalten';
@@ -11074,6 +11174,210 @@ class UiStringsDe extends UiStrings {
   String get settingsLedEffects => 'Effekte';
 
   @override
+  String get settingsGroupKioskSatellite => 'Kiosk Satellite';
+
+  @override
+  String get settingsMenuNavigation => 'Navigation';
+
+  @override
+  String get settingsMenuNavigationSummary => 'Klassisch oder Compass';
+
+  @override
+  String get navigationStyleSection => 'Navigationsstil';
+
+  @override
+  String get navigationLayoutSection => 'Compass-Layout';
+
+  @override
+  String get navigationOptionsSection => 'Compass-Optionen';
+
+  @override
+  String get settingNavStyleTitle => 'Navigationsstil';
+
+  @override
+  String get settingNavStyleDescription =>
+      'Klassisch behält das Seitenmenü, Zum Aktualisieren herunterziehen und das Dashboard-Karussell. Mit Compass wischen Sie zwischen Ansichten, die in einem Kreuz angeordnet sind.';
+
+  @override
+  String get settingNavCompassLayoutTitle => 'Compass-Layout';
+
+  @override
+  String get settingNavCompassLayoutViewsDescription =>
+      'Bis zu zwei Ansichten pro Seite. Fügen Sie mehrere Ansichten von Home Assistant-Dashboards hinzu und jede andere Art nur einmal.';
+
+  @override
+  String get settingNavCompassAnimationTitle => 'Wischanimation';
+
+  @override
+  String get settingNavCompassAnimationDescription =>
+      'Herauszoomen, um die umliegenden Ansichten zu zeigen, oder direkt hinüberschieben.';
+
+  @override
+  String get settingNavCompassPositionTitle => 'Position beim Wischen anzeigen';
+
+  @override
+  String get settingNavCompassPositionDescription =>
+      'Eine kleine Karte, die zeigt, wo Sie sind.';
+
+  @override
+  String get settingNavCompassReturnMinutesTitle => 'Zur Mitte zurückkehren';
+
+  @override
+  String get settingNavCompassReturnMinutesDescription =>
+      'Nach so langer Zeit ohne Berührung zur mittleren Ansicht zurückkehren. Mit 0 bleibt die Ansicht stehen.';
+
+  @override
+  String get settingNavCompassMenuItemsTitle => 'Menüeinträge';
+
+  @override
+  String get settingNavQuickControlsItemsDescription =>
+      'Was die Ansicht Schnellsteuerung zeigt. Wird mit dem Seitenmenü geteilt.';
+
+  @override
+  String get navigationClassic => 'Klassisch';
+
+  @override
+  String get navigationCompass => 'Compass';
+
+  @override
+  String get navigationZoom => 'Zoom';
+
+  @override
+  String get navigationSlide => 'Schieben';
+
+  @override
+  String get compassClassicViewHint => 'Home Assistant-Ansicht mit Seitenmenü.';
+
+  @override
+  String get compassCompassHint =>
+      'Zwischen Ansichten wischen, die in einem Kreuz angeordnet sind.';
+
+  @override
+  String get compassLayoutViewsHint =>
+      'Bis zu zwei Ansichten pro Seite. Fügen Sie mehrere Ansichten von Home Assistant-Dashboards hinzu und jede andere Art nur einmal. Tippen Sie auf eine Ansicht, um sie zu ändern, auch auf die mittlere.';
+
+  @override
+  String get compassOffNote =>
+      'Zum Aktualisieren herunterziehen, das Dashboard-Karussell und das Wischen vom Rand, das das Seitenmenü öffnet, sind aus, solange Compass aktiv ist.';
+
+  @override
+  String get settingOffUnderCompass =>
+      'Aus, solange die Compass-Navigation aktiv ist.';
+
+  @override
+  String get compassQuickControlsView => 'Schnellsteuerung';
+
+  @override
+  String get compassHomeDashboard => 'Home Assistant';
+
+  @override
+  String get compassAppLauncher => 'App-Launcher';
+
+  @override
+  String get compassCenter => 'Mitte';
+
+  @override
+  String get compassAddTile => 'Hinzufügen';
+
+  @override
+  String get compassAddView => 'Ansicht hinzufügen';
+
+  @override
+  String get compassMoveIn => 'Nach innen';
+
+  @override
+  String get compassMoveOut => 'Nach außen';
+
+  @override
+  String get compassReplace => 'Ersetzen';
+
+  @override
+  String get compassRemove => 'Entfernen';
+
+  @override
+  String get compassChange => 'Ändern';
+
+  @override
+  String get compassSideUp => 'Oben';
+
+  @override
+  String get compassSideRight => 'Rechts';
+
+  @override
+  String get compassSideDown => 'Unten';
+
+  @override
+  String get compassSideLeft => 'Links';
+
+  @override
+  String compassFirstView(String side) {
+    return '$side, erste Ansicht';
+  }
+
+  @override
+  String compassSecondView(String side) {
+    return '$side, zweite Ansicht';
+  }
+
+  @override
+  String get compassAddAbove => 'Ansicht oben hinzufügen';
+
+  @override
+  String get compassAddBelow => 'Ansicht unten hinzufügen';
+
+  @override
+  String get compassAddLeft => 'Ansicht links hinzufügen';
+
+  @override
+  String get compassAddRight => 'Ansicht rechts hinzufügen';
+
+  @override
+  String get compassChangeCenter => 'Mittlere Ansicht ändern';
+
+  @override
+  String compassReplaceTitle(String name) {
+    return '$name ersetzen';
+  }
+
+  @override
+  String get compassKindDashboard => 'Home Assistant-Dashboard';
+
+  @override
+  String get compassKindDashboardHint =>
+      'Jede Ansicht, eigene Seiten und App-Seiten';
+
+  @override
+  String get compassKindTaken => 'Bereits platziert';
+
+  @override
+  String get compassKindUnavailable => 'Auf diesem Kiosk nicht eingerichtet';
+
+  @override
+  String get compassKioskLocked => 'Kiosk gesperrt';
+
+  @override
+  String get compassQuickControls => 'Schnellsteuerung';
+
+  @override
+  String get compassOpen => 'Öffnen';
+
+  @override
+  String get compassStateOn => 'An';
+
+  @override
+  String get compassStateOff => 'Aus';
+
+  @override
+  String get compassHoldMode => 'Pausenmodus';
+
+  @override
+  String get settingsMenuGroundControl => 'Ground Control';
+
+  @override
+  String get settingsMenuGroundControlSummary =>
+      'Voice Match auf einem leistungsstarken Rechner';
+
+  @override
   String get settingAdaptiveBrightnessTitle => 'Adaptive Helligkeit';
 
   @override
@@ -11194,6 +11498,118 @@ class UiStringsDe extends UiStrings {
   }
 
   @override
+  String get settingAdaptiveVolumeTitle => 'Adaptive Lautstärke aktivieren';
+
+  @override
+  String get settingAdaptiveVolumeDescription =>
+      'Senkt die Lautstärke mithilfe des Mikrofons, wenn es im Raum leiser wird.';
+
+  @override
+  String get settingAdaptiveVolumeAssistantTitle => 'Assistent';
+
+  @override
+  String get settingAdaptiveVolumeAssistantDescription =>
+      'Sprachantworten und Signaltöne.';
+
+  @override
+  String get settingAdaptiveVolumeMediaTitle => 'Medien';
+
+  @override
+  String get settingAdaptiveVolumeMediaDescription =>
+      'Musik und Videos. Wird beim Start der Wiedergabe festgelegt.';
+
+  @override
+  String get settingAdaptiveVolumeIntercomTitle => 'Intercom';
+
+  @override
+  String get settingAdaptiveVolumeIntercomDescription =>
+      'Anrufe. Wird beim Start eines Anrufs festgelegt.';
+
+  @override
+  String get settingAdaptiveVolumeCurveTitle => 'Lautstärkekurve';
+
+  @override
+  String get settingAdaptiveVolumeCurveSliderDescription =>
+      'Die Lautstärke bei jedem Geräuschpegel im Raum, als Prozentwert des Reglers dieser Lautstärke unter Bildschirm und Audio.';
+
+  @override
+  String get screenAudioAdaptiveVolume => 'Adaptive Lautstärke';
+
+  @override
+  String get screenAudioAdaptiveVolumeHint =>
+      'Passt die Lautstärke mithilfe des Mikrofons an die Raumgeräusche an';
+
+  @override
+  String get screenAudioAdaptiveVolumes => 'Lautstärken';
+
+  @override
+  String get screenAudioRoomNoise => 'Raumgeräusch';
+
+  @override
+  String get screenAudioRoomNoiseNote =>
+      'Was das Mikrofon misst, während dieses Gerät still ist.';
+
+  @override
+  String get screenAudioRoomNoiseHolds =>
+      'Der Messwert bleibt stehen, solange dieses Gerät etwas wiedergibt. Änderungen im Raum während der Wiedergabe werden nicht verwendet.';
+
+  @override
+  String get screenAudioRoomNoiseNoReading =>
+      'Wenn es keinen Messwert gibt, aktiviere die adaptive Lautstärke oder die Aktivierungswort-Erkennung und prüfe, dass das Mikrofon nicht stummgeschaltet ist.';
+
+  @override
+  String screenAudioDbfs(String level) {
+    return '$level dBFS';
+  }
+
+  @override
+  String get screenAudioVolumeCurveSliderHint =>
+      'Ziehe einen Punkt oder tippe darauf, um genaue Werte einzugeben. Die Prozentwerte gelten für die Regler Assistentenlautstärke, Medienlautstärke und Intercom-Lautstärke unter Bildschirm und Audio: Bei 100 % gilt der Pegel des Reglers, bei 50 % klingt es wie mit dem Regler auf der Hälfte.';
+
+  @override
+  String get screenAudioVolumeCurveNoise => 'Raumgeräusch (dBFS)';
+
+  @override
+  String get screenAudioVolumeCurveAssistant => 'Assistent (%)';
+
+  @override
+  String get screenAudioVolumeCurveMedia => 'Medien (%)';
+
+  @override
+  String get screenAudioVolumeCurveIntercom => 'Intercom (%)';
+
+  @override
+  String screenAudioVolumeCurveNoiseRange(String low, String high) {
+    return 'Gib einen Geräuschpegel zwischen $low und $high dBFS ein';
+  }
+
+  @override
+  String screenAudioVolumeCurveLevelRange(String low, String high) {
+    return 'Gib eine Lautstärke von $low % bis $high % ein';
+  }
+
+  @override
+  String get screenAudioVolumeTest => 'Lautstärke testen';
+
+  @override
+  String get screenAudioVolumeTestAssistant => 'Assistentenlautstärke testen';
+
+  @override
+  String get screenAudioVolumeTestAssistantHint =>
+      'Spielt eine Voice Satellite-Durchsage mit der Assistentenlautstärke ab. Voice Satellite muss in Home Assistant eingerichtet sein.';
+
+  @override
+  String get screenAudioVolumeTestMedia => 'Medienlautstärke testen';
+
+  @override
+  String get screenAudioVolumeTestMediaHint =>
+      'Spielt eine ESPHome-Durchsage mit der Medienlautstärke ab. Durchsagen müssen unter ESPHome aktiviert sein.';
+
+  @override
+  String get screenAudioVolumeTestMessage =>
+      'So laut wird eine Durchsage gerade abgespielt.';
+
+  @override
   String get settingAudioMicDeviceTitle => 'Mikrofon';
 
   @override
@@ -11217,6 +11633,60 @@ class UiStringsDe extends UiStrings {
   String screenAudioDisconnected(String name) {
     return '$name (nicht verbunden)';
   }
+
+  @override
+  String get settingEqualizerEnabledTitle => 'Equalizer aktivieren';
+
+  @override
+  String get settingEqualizerEnabledDescription =>
+      'Formt den Klang von Musik, Assistent, Tönen und Intercom. Der Ton von Videos und Dashboards wird nicht angepasst.';
+
+  @override
+  String get settingEqualizerBand1Title => '100 Hz';
+
+  @override
+  String get settingEqualizerBand1Description =>
+      'Bässe. Kleine Lautsprecher verzerren hier schon bei geringer Anhebung.';
+
+  @override
+  String get settingEqualizerBand2Title => '300 Hz';
+
+  @override
+  String get settingEqualizerBand2Description =>
+      'Untere Mitten. Eine Absenkung nimmt dumpfen oder dröhnenden Klang heraus.';
+
+  @override
+  String get settingEqualizerBand3Title => '1 kHz';
+
+  @override
+  String get settingEqualizerBand3Description =>
+      'Mitten, in denen der größte Teil einer Stimme liegt.';
+
+  @override
+  String get settingEqualizerBand4Title => '3 kHz';
+
+  @override
+  String get settingEqualizerBand4Description =>
+      'Obere Mitten. Eine Anhebung macht Sprache deutlicher.';
+
+  @override
+  String get settingEqualizerBand5Title => '10 kHz';
+
+  @override
+  String get settingEqualizerBand5Description => 'Höhen.';
+
+  @override
+  String get settingEqualizerPreampTitle => 'Automatischer Vorverstärker';
+
+  @override
+  String get settingEqualizerPreampDescription =>
+      'Senkt den Pegel um die größte Anhebung, damit der Lautsprecher nicht verzerrt und die Echounterdrückung weiter funktioniert.';
+
+  @override
+  String get screenAudioEqualizer => 'Equalizer';
+
+  @override
+  String get screenAudioEqualizerHint => 'Bässe, Mitten, Höhen, Vorverstärker';
 
   @override
   String get settingMicCaptureModeTitle => 'Aufnahmemodus';
@@ -12381,6 +12851,13 @@ class UiStringsDe extends UiStrings {
       'Dauer der Inaktivität, bevor der Bildschirmschoner aktiviert wird.';
 
   @override
+  String get settingScreensaverFadeTitle => 'Ein- und ausblenden';
+
+  @override
+  String get settingScreensaverFadeDescription =>
+      'Der Bildschirmschoner wird über dem Dashboard eingeblendet und beim Beenden ausgeblendet. Gilt nicht für die Bildschirmschoner Home-Assistant-Medien, Website und Kamerastreams.';
+
+  @override
   String get settingScreensaverModeTitle => 'Bildschirmschoner-Modus';
 
   @override
@@ -12431,6 +12908,14 @@ class UiStringsDe extends UiStrings {
   @override
   String get settingScreensaverNotificationBrightnessDescription =>
       'Reduziert die Abdunklung des Bildschirmschoners, solange eine Benachrichtigung angezeigt wird.';
+
+  @override
+  String get settingScreensaverTouchBrightnessSecondsTitle =>
+      'Helligkeit bei Berührung erhöhen';
+
+  @override
+  String get settingScreensaverTouchBrightnessSecondsDescription =>
+      'Reduziert die Abdunklung des Bildschirmschoners für diese Dauer nach einer Berührung, die ihn nicht beendet. Bei 0 ist die Funktion aus.';
 
   @override
   String get settingScreensaverScreenOffMinutesTitle =>
@@ -14086,6 +14571,10 @@ class UiStringsDe extends UiStrings {
       'Jeden Messwert über seinem Wert benennen. Ohne Titel erscheinen die Werte so groß wie die Temperatur.';
 
   @override
+  String get screensaverWeatherBarHighLowDescription =>
+      'Den heutigen Höchst- und Tiefstwert anzeigen, wenn die Wetterentität eine Tagesvorhersage hat.';
+
+  @override
   String get screensaverWeatherBarHumidityDescription =>
       'Die Luftfeuchtigkeit anzeigen, wenn die Wetterentität sie meldet.';
 
@@ -14680,10 +15169,6 @@ class UiStringsDe extends UiStrings {
   String get voiceChimesPage => 'Töne';
 
   @override
-  String get voiceChimesHint =>
-      'Aktivierungs-, Abschluss-, Fehler-, Timer- und Ansagetöne';
-
-  @override
   String get voiceChimesPreview => 'Auf dem Kiosk abspielen';
 
   @override
@@ -14754,6 +15239,10 @@ class UiStringsDe extends UiStrings {
   @override
   String get voiceChimeVolumeDescription =>
       'Ein Anteil der Assistentenlautstärke.';
+
+  @override
+  String get voiceChimesSoundsHint =>
+      'Aktivierungs-, Abschluss-, Fehler- und Ansagetöne';
 
   @override
   String get settingVoiceShowCommandTitle => 'Zeigen, was du gesagt hast';
@@ -14934,9 +15423,6 @@ class UiStringsDe extends UiStrings {
       'Was der Assistent auf dem Bildschirm zeigt und wie lange';
 
   @override
-  String get voiceTimersHint => 'Anzeigen, Alarme, gesprochene Hinweise';
-
-  @override
   String get voiceSectionFollowUp => 'Folgefrage';
 
   @override
@@ -14956,6 +15442,9 @@ class UiStringsDe extends UiStrings {
 
   @override
   String get voiceSectionTimerEnds => 'Wenn ein Timer abläuft';
+
+  @override
+  String get voiceSectionSharedTimers => 'Geteilte Timer';
 
   @override
   String get voiceStatusEsphomeOff => 'Der ESPHome-Server ist aus.';
@@ -15566,11 +16055,11 @@ class UiStringsDe extends UiStrings {
   String get voiceTesterPlayRecent => 'Letzte 10 Sekunden abspielen';
 
   @override
-  String get settingVoiceTimerPillsTitle => 'Timer-Anzeigen einblenden';
+  String get settingVoiceTimerPillsViewTitle => 'Timer als Anzeigen einblenden';
 
   @override
-  String get settingVoiceTimerPillsDescription =>
-      'Laufende Timer schweben über dem Bildschirm. Zieh sie an eine beliebige Stelle.';
+  String get settingVoiceTimerPillsViewDescription =>
+      'Timer schweben über dem Bildschirm, statt die Vollbildansicht zu öffnen.';
 
   @override
   String get settingVoiceTimerNameInPillTitle => 'Timer-Namen anzeigen';
@@ -15628,6 +16117,205 @@ class UiStringsDe extends UiStrings {
   String settingVoiceTimerNamedPhraseDescription(String name) {
     return '$name wird durch den Namen des Timers ersetzt.';
   }
+
+  @override
+  String get settingVoiceTimersShareTitle => 'Timer teilen';
+
+  @override
+  String get settingVoiceTimersShareDescription =>
+      'Auf diesem Kiosk gestartete Timer laufen auch auf den Kiosks, die du auswählst.';
+
+  @override
+  String get settingVoiceTimersShareWithTitle => 'Teilen mit';
+
+  @override
+  String get settingVoiceTimersShareWithDescription =>
+      'Die Kiosks, die die Timer dieses Kiosks anzeigen und klingeln lassen.';
+
+  @override
+  String get settingVoiceTimersReceiveTitle => 'Geteilte Timer anzeigen';
+
+  @override
+  String get settingVoiceTimersReceiveDescription =>
+      'Von anderen Kiosks geteilte Timer werden hier angezeigt und klingeln hier.';
+
+  @override
+  String get settingKioskAllowTimersTitle => 'Timer';
+
+  @override
+  String get settingKioskAllowTimersDescription =>
+      'Die Timer-Ansicht über das Kiosk-Menü öffnen.';
+
+  @override
+  String get settingsMenuTimersSummary =>
+      'Vollbildansicht, Anzeigen, geteilte Timer';
+
+  @override
+  String get fleetTheKiosksPickedInShareWithTheTimerSound =>
+      'die unter Teilen mit ausgewählten Kiosks, der Timer-Ton';
+
+  @override
+  String get settingTimersTtsEngineDescription =>
+      'Die Text-zu-Sprache-Entität von Home Assistant, die die Timer vorliest.';
+
+  @override
+  String get settingTimersTtsLanguageDescription =>
+      'Die Sprache, in der die Timer gesprochen werden.';
+
+  @override
+  String get settingTimersTtsVoiceDescription =>
+      'Die Stimme, die die Timer vorliest.';
+
+  @override
+  String get settingTimersShowBeforeEndTitle =>
+      'Timer-Ansicht kurz vor Ablauf anzeigen';
+
+  @override
+  String get settingTimersShowBeforeEndDescription =>
+      'Wie lange vor dem Ablauf eines Timers die Timer-Ansicht geöffnet wird.';
+
+  @override
+  String get settingTimersShowOnStartTitle =>
+      'Timer-Ansicht beim Start eines Timers anzeigen';
+
+  @override
+  String get settingTimersShowOnStartDescription =>
+      'Öffnet die Timer-Ansicht bei jedem Start eines Timers.';
+
+  @override
+  String get settingTimersPauseScreensaverTitle =>
+      'Bildschirmschoner pausieren, solange ein Timer läuft';
+
+  @override
+  String get settingTimersPauseScreensaverDescription =>
+      'Verhindert den Start des Bildschirmschoners, solange die Timer-Ansicht einen laufenden Timer zeigt.';
+
+  @override
+  String get settingTimersSilenceAfterTitle => 'Stumm nach';
+
+  @override
+  String get settingTimersSilenceAfterDescription =>
+      'Der abgelaufene Timer bleibt auf dem Bildschirm, bis er geschlossen wird.';
+
+  @override
+  String get settingTimersDismissAfterTitle => 'Schließen nach';
+
+  @override
+  String get settingTimersDismissAfterDescription =>
+      'Schließt einen abgelaufenen Timer, als wäre Schließen getippt worden.';
+
+  @override
+  String get voiceMatchGroundControlPage => 'Ground Control Voice Match';
+
+  @override
+  String get settingVoiceMatchPolicyDescriptionChosen =>
+      'Mit Ausgewählte Personen werden der Fernseher, Gäste und alle anderen ignoriert.';
+
+  @override
+  String get voiceMatchOptionPeople => 'Ausgewählte Personen';
+
+  @override
+  String get settingVoiceMatchPeopleTitle => 'Personen';
+
+  @override
+  String get settingVoiceMatchPeopleDescription =>
+      'Wem dieser Kiosk antwortet. Ist niemand ausgewählt, antwortet er allen eingelernten Personen.';
+
+  @override
+  String get voiceMatchPeopleNone => 'Alle eingelernten Personen';
+
+  @override
+  String get voiceMatchPeopleSearch => 'Personen suchen';
+
+  @override
+  String get voiceMatchPeopleEmpty =>
+      'In Ground Control ist noch niemand eingelernt.';
+
+  @override
+  String get voiceMatchPeopleGone => 'Nicht mehr in Ground Control';
+
+  @override
+  String get settingVoiceMatchRejectedTitleChosen => 'Stimme nicht ausgewählt';
+
+  @override
+  String get voiceMatchHint => 'Wer spricht, andere Stimmen, Einlernen';
+
+  @override
+  String get settingVoiceMatchEnabledTitle => 'Voice Match aktivieren';
+
+  @override
+  String get settingVoiceMatchPolicyTitle => 'Antworten auf';
+
+  @override
+  String get settingVoiceMatchRejectedDescription =>
+      'Was passiert, wenn jemand anderes das Aktivierungswort sagt.';
+
+  @override
+  String get settingVoiceMatchSpeakerSensorTitle => 'Sprecher-Sensor';
+
+  @override
+  String get settingVoiceMatchSpeakerSensorDescription =>
+      'Fügt diesem Kiosk in Home Assistant einen Speaker-Sensor hinzu, für Automationen und Agentenanweisungen.';
+
+  @override
+  String get voiceMatchOptionAnyone => 'Alle';
+
+  @override
+  String get voiceMatchOptionQuiet => 'Still bleiben';
+
+  @override
+  String get voiceMatchOptionChime => 'Fehlerton abspielen';
+
+  @override
+  String get voiceMatchConnecting => 'Verbinde';
+
+  @override
+  String get voiceMatchSearching => 'Suche läuft';
+
+  @override
+  String get voiceMatchNotReachable => 'Nicht erreichbar';
+
+  @override
+  String get voiceMatchSignInRefused => 'Anmeldung abgelehnt';
+
+  @override
+  String get voiceMatchNobodyEnrolled => 'Noch niemand ist eingelernt.';
+
+  @override
+  String get voiceMatchTokenRefused =>
+      'Home Assistant hat das Token dieses Kiosks abgelehnt.';
+
+  @override
+  String get settingVoiceMatchShowSpeakerTitle => 'Zeigen, wer spricht';
+
+  @override
+  String get settingVoiceMatchShowSpeakerDescription =>
+      'Der Name der sprechenden Person vor dem Befehl im Sprach-Overlay, in ihrer Farbe. Auf einem Gerät mit Lichtring nimmt der Zuhör-Bogen diese Farbe an.';
+
+  @override
+  String get settingVoiceMatchAllowEnrollTitle => 'Einlernen hier erlauben';
+
+  @override
+  String get voiceMatchAppHint =>
+      'Personen, Einlernen, Sitzungen und Einstellungen.';
+
+  @override
+  String get voiceMatchOpen => 'Öffnen';
+
+  @override
+  String get settingVoiceMatchEnabledDescriptionGroundControl =>
+      'Erkennen, wer spricht, und das Zuhören beenden, wenn jemand anderes übernimmt. Benötigt Ground Control.';
+
+  @override
+  String get settingVoiceMatchAllowEnrollDescriptionGroundControl =>
+      'Erlaubt der Ground Control App, die Stimme einer Person mit dem Mikrofon dieses Kiosks aufzunehmen. Der Kiosk zeigt den Text zum Vorlesen oder der Lichtring zeigt den Fortschritt.';
+
+  @override
+  String get settingVoiceMatchLeaveOutTitle => 'Andere Stimmen weglassen';
+
+  @override
+  String get settingVoiceMatchLeaveOutDescription =>
+      'Home Assistant und der Echtzeit-Assistent hören nur die Person, die das Aktivierungswort gesagt hat, und der Befehl endet, wenn sie aufhört zu sprechen, auch wenn der Fernseher läuft.';
 
   @override
   String get voiceWakePage => 'Aktivierungswort';
@@ -15995,9 +16683,6 @@ class UiStringsDe extends UiStrings {
       'Die Sprache der Aktivierungswort-Modelle von Amazon. Die Auswahlfelder für Aktivierungswörter bieten die Aktivierungswörter dieser Sprache an.';
 
   @override
-  String get voiceOptionAppLanguage => 'Sprache von Kiosk Satellite';
-
-  @override
   String get settingDisableCacheTitle => 'Cache deaktivieren';
 
   @override
@@ -16017,6 +16702,31 @@ class UiStringsDe extends UiStrings {
   @override
   String get settingIgnoreSslErrorsDescription =>
       'Akzeptiert nicht vertrauenswürdige oder selbst signierte Zertifikate. Nur im eigenen Netzwerk verwenden, da dadurch die Zertifikatsprüfung deaktiviert wird.';
+
+  @override
+  String get settingBrowserUserAgentTitle => 'Benutzerdefinierter User Agent';
+
+  @override
+  String get settingBrowserUserAgentDescription =>
+      'Wird anstelle des Standard-User-Agents an Websites gesendet. Leer lassen, um den Standard zu verwenden.';
+
+  @override
+  String get webGeolocationSection => 'HTML5-Geolokalisierung';
+
+  @override
+  String get settingWebGeolocationTitle => 'Standortzugriff aktivieren';
+
+  @override
+  String get settingWebGeolocationDescription =>
+      'Erlaubt Seiten, den Standort des Geräts zu lesen, etwa für ein Wetterradar oder eine Karte. Nur über HTTPS geladene Seiten können ihn anfragen.';
+
+  @override
+  String get webGeolocationPermissionHeld =>
+      'Seiten können den Standort des Geräts lesen.';
+
+  @override
+  String get webGeolocationPermissionMissing =>
+      'Ohne diese Berechtigung können Seiten den Standort des Geräts nicht lesen.';
 
   @override
   String get settingAutoReloadOnErrorTitle =>
@@ -16684,6 +17394,117 @@ class UiStringsDe extends UiStrings {
       'Bitte eine MP3-, OGG-, WAV-, FLAC-, M4A- oder AAC-Datei auswählen.';
 
   @override
+  String voiceMatchEnrollTitle(String name) {
+    return '$name wird eingelernt';
+  }
+
+  @override
+  String get voiceMatchEnrollStarting => 'Wird vorbereitet…';
+
+  @override
+  String get voiceMatchEnrollReading => 'Lies das laut vor';
+
+  @override
+  String voiceMatchEnrollSeconds(String seconds, String target) {
+    return '$seconds von $target s';
+  }
+
+  @override
+  String get voiceMatchEnrollOtherVoice =>
+      'Eine andere Stimme spricht. Dieser Teil wird weggelassen.';
+
+  @override
+  String get voiceMatchEnrollSaving => 'Wird gespeichert…';
+
+  @override
+  String get voiceMatchEnrollStop => 'Stopp';
+
+  @override
+  String get voiceMatchEnrollTipWalk => 'Geh langsam durch den Raum';
+
+  @override
+  String get voiceMatchEnrollTipTurn => 'Dreh dich ab und zu vom Kiosk weg';
+
+  @override
+  String get voiceMatchEnrollTipTalk => 'Sprich so, wie du Befehle gibst';
+
+  @override
+  String voiceMatchEnrollDone(String name) {
+    return '$name ist eingelernt';
+  }
+
+  @override
+  String voiceMatchEnrollDoneDetail(String seconds) {
+    return '$seconds s Sprache hinzugefügt.';
+  }
+
+  @override
+  String get voiceMatchEnrollFailed => 'Nichts wurde gespeichert';
+
+  @override
+  String get voiceMatchEnrollTooShort =>
+      'Zu wenig Sprache zum Speichern. Lies mindestens 10 Sekunden lang.';
+
+  @override
+  String get voiceMatchEnrollLost =>
+      'Die Verbindung zu Voice Match wurde unterbrochen.';
+
+  @override
+  String get voiceMatchEnrollNoMic => 'Das Mikrofon ist nicht verfügbar.';
+
+  @override
+  String get voiceMatchEnrollStopped =>
+      'Beendet, bevor etwas aufgenommen wurde.';
+
+  @override
+  String get voiceMatchEnrollPassage1 => 'Schalte das Licht in der Küche ein.';
+
+  @override
+  String get voiceMatchEnrollPassage2 => 'Stell einen Timer auf zehn Minuten.';
+
+  @override
+  String get voiceMatchEnrollPassage3 => 'Wie wird das Wetter morgen?';
+
+  @override
+  String get voiceMatchEnrollPassage4 =>
+      'Setz Milch und Eier auf die Einkaufsliste.';
+
+  @override
+  String get voiceMatchEnrollPassage5 => 'Spiel ruhige Musik im Wohnzimmer.';
+
+  @override
+  String get voiceMatchEnrollPassage6 =>
+      'Der Morgen war kalt, also blieben wir drinnen und machten Pfannkuchen.';
+
+  @override
+  String get voiceMatchEnrollPassage7 =>
+      'Später gingen wir in den Park und sahen den Hunden zu, wie sie sich über die Wiese jagten.';
+
+  @override
+  String get voiceMatchEnrollPassage8 =>
+      'Am Abend kam Wind auf und wir machten ein Feuer im Kamin.';
+
+  @override
+  String get voiceMatchEnrollPassage9 => 'Schalte unten alle Lichter aus.';
+
+  @override
+  String get voiceMatchEnrollPassage10 => 'Wie spät ist es in Tokio?';
+
+  @override
+  String get voiceMatchEnrollPassage11 =>
+      'Erinnere mich daran, am Montag den Zahnarzt anzurufen.';
+
+  @override
+  String get voiceMatchEnrollPassage12 =>
+      'Wie lange dauert die Fahrt zum Flughafen?';
+
+  @override
+  String get voiceMatchEnrollPassage13 => 'Pausiere die Musik.';
+
+  @override
+  String get voiceMatchEnrollPassage14 => 'Gute Nacht.';
+
+  @override
   String get voiceNoticeError => 'Voice Satellite-Fehler';
 
   @override
@@ -16806,4 +17627,77 @@ class UiStringsDe extends UiStrings {
   @override
   String get voiceTimerDismissHint =>
       'Tippen, um den Timer-Alarm zu schließen.';
+
+  @override
+  String get voiceTimersViewTitle => 'Timer';
+
+  @override
+  String get voiceTimersEmpty => 'Keine Timer';
+
+  @override
+  String get voiceTimerPause => 'Pause';
+
+  @override
+  String get voiceTimerResume => 'Fortsetzen';
+
+  @override
+  String get voiceTimerDismiss => 'Schließen';
+
+  @override
+  String get voiceTimerTimesUp => 'Zeit abgelaufen';
+
+  @override
+  String get voiceTimerPaused => 'Pausiert';
+
+  @override
+  String get voiceTimersShareNone => 'Keine Kiosks ausgewählt';
+
+  @override
+  String get voiceTimersShareEmpty =>
+      'Keine anderen Kiosks gefunden. Aktiviere auf jedem Kiosk die Fernverwaltung und „Andere Kiosks finden“.';
+
+  @override
+  String get voiceTimersShareOffline => 'Offline';
+
+  @override
+  String get timersVoiceSection => 'Timer per Sprache';
+
+  @override
+  String get timersVoiceManage => 'Timer mit Voice Satellite verwalten';
+
+  @override
+  String get timersVoiceHint =>
+      'Funktioniert ohne Blueprint und ohne LLM-Konversationsagenten.';
+
+  @override
+  String get voiceTimersShareSearch => 'Kiosks suchen';
+
+  @override
+  String get voiceTimerSetATimer => 'Timer stellen';
+
+  @override
+  String get voiceTimerEditTimer => 'Timer bearbeiten';
+
+  @override
+  String get voiceTimerName => 'Name';
+
+  @override
+  String get voiceTimerHours => 'Stunden';
+
+  @override
+  String get voiceTimerMinutes => 'Minuten';
+
+  @override
+  String get voiceTimerSeconds => 'Sekunden';
+
+  @override
+  String get voiceTimerStartFailed =>
+      'Der Timer konnte nicht gestartet werden.';
+
+  @override
+  String get timersManage => 'Timer verwalten';
+
+  @override
+  String get voiceTimerStartUnavailable =>
+      'Aktiviere Voice Satellite auf diesem Kiosk, um hier Timer zu stellen.';
 }

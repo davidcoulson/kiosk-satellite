@@ -397,19 +397,32 @@ class _AssistOverlayState extends State<AssistOverlay>
             : _pluginSkin(_shown)
             ? _shown.docked
                   ? const SizedBox.shrink()
-                  : _pluginContent(context, _shown)
+                  : _overScreensaver(_pluginContent(context, _shown))
             // Docked, touches reach the screen under it: only the caption
             // and the close button take them.
             : _shown.docked
             ? _docked(context, _shown)
-            : GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onDoubleTap: c.voice.dismiss,
-                child: _content(context, _localizedPreview(context, _shown)),
+            : _overScreensaver(
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onDoubleTap: c.voice.dismiss,
+                  child: _content(context, _localizedPreview(context, _shown)),
+                ),
               ),
       ),
     );
   }
+
+  /// The overlay draws over the screensaver, and a touch that lands on it
+  /// is meant for it: it is marked on its way down, ahead of the kiosk
+  /// screen's own report of the same touch, so the screensaver stays up.
+  /// The docked bubble's surroundings are not marked: a touch there is on
+  /// the screensaver.
+  Widget _overScreensaver(Widget child) => Listener(
+    behavior: HitTestBehavior.deferToChild,
+    onPointerDown: (_) => c.screensaver.markControlTouch(),
+    child: child,
+  );
 
   /// Preview's sample turn in the kiosk's language. A real turn's words
   /// are never looked up: an answer that happens to read like one of the
@@ -744,30 +757,37 @@ class _AssistOverlayState extends State<AssistOverlay>
       // The bubble says it hears before anything is said.
       if (!said && !thinking && view.phase == AssistPhase.listening)
         _shadowSnapshot(
-          Text(
-            voiceText(context, 'Listening…'),
-            style: _text(
+          _commandLine(
+            skin,
+            _text(
               skin,
               palette.user,
               skin.userSize * lineScale,
               skin.userWeight,
               palette.userShadows,
             ),
+            '',
+            view.speaker,
+            view.speakerColor,
+            rest: voiceText(context, 'Listening…'),
           ),
         ),
       // A realtime transcript arrives as it is spoken, so it wraps: one line
       // would hide the words coming in.
       if (showCommand && view.command.isNotEmpty)
         _shadowSnapshot(
-          Text(
-            _commandText(skin, view.command),
-            style: _text(
+          _commandLine(
+            skin,
+            _text(
               skin,
               palette.user,
               skin.userSize * lineScale,
               skin.userWeight,
               palette.userShadows,
             ),
+            view.command,
+            view.speaker,
+            view.speakerColor,
           ),
         ),
       for (final tool in tools) _toolLine(skin, palette, lineScale, tool),
@@ -986,7 +1006,7 @@ class _AssistOverlayState extends State<AssistOverlay>
     // dashboard and a paused page would take it without redrawing.
     return ValueListenableBuilder<bool>(
       valueListenable: c.voice.underlayPaused,
-      child: placed,
+      child: _overScreensaver(placed),
       builder: (context, paused, child) => Stack(
         fit: StackFit.expand,
         children: [
@@ -1135,6 +1155,64 @@ class _AssistOverlayState extends State<AssistOverlay>
   /// result would take a whole line of the height the answer needs.
   String _commandText(AssistSkin skin, String command) =>
       '${skin.prefix}${command.trim().replaceAll(RegExp(r'\s+'), ' ')}';
+
+  /// Whether the command lines name who is talking (Show who is talking).
+  bool get _showSpeaker =>
+      c.settings.get(defs.groundControlEnabled) &&
+      c.settings.get(defs.voiceMatchEnabled) &&
+      c.settings.get(defs.voiceMatchShowSpeaker);
+
+  /// A command line: who said it in their color, when Voice Match knows,
+  /// then the command. [rest] stands in for the command while there is
+  /// none yet (Listening… on the docked bubble).
+  Text _commandLine(
+    AssistSkin skin,
+    TextStyle style,
+    String command,
+    String speaker,
+    String? color, {
+    String rest = '',
+    TextAlign? textAlign,
+    int? maxLines,
+  }) {
+    final overflow = maxLines == null ? null : TextOverflow.ellipsis;
+    if (speaker.isEmpty || !_showSpeaker) {
+      return Text(
+        command.isEmpty ? rest : _commandText(skin, command),
+        textAlign: textAlign,
+        maxLines: maxLines,
+        overflow: overflow,
+        style: style,
+      );
+    }
+    final after = command.isEmpty
+        ? rest
+        : command.trim().replaceAll(RegExp(r'\s+'), ' ');
+    return Text.rich(
+      TextSpan(
+        children: [
+          if (skin.prefix.isNotEmpty) TextSpan(text: skin.prefix),
+          TextSpan(
+            text: speaker,
+            style: TextStyle(
+              color: speakerTextColor(color, style.color ?? Colors.white),
+              fontWeight: FontWeight.w600,
+              fontVariations: fontVariationsFor(
+                skin.font,
+                style.fontSize ?? 14,
+                FontWeight.w600,
+              ),
+            ),
+          ),
+          if (after.isNotEmpty) TextSpan(text: '  $after'),
+        ],
+      ),
+      textAlign: textAlign,
+      maxLines: maxLines,
+      overflow: overflow,
+      style: style,
+    );
+  }
 
   /// A line of chat text, as the skin's .vs-chat-msg rule draws it:
   /// line-height normal, the skin's font, weight and shadows.
@@ -1313,9 +1391,15 @@ class _AssistOverlayState extends State<AssistOverlay>
 
     /// How tall the lines above a turn's answer stand: its command and
     /// tool lines, each with its padding and the gap after it.
+    final showSpeaker = _showSpeaker;
+    // The command's line: the command, or who is talking before it is in.
+    bool commandLine(AssistTurn turn) =>
+        showCommand &&
+        (turn.command.isNotEmpty || (showSpeaker && turn.speaker.isNotEmpty));
+
     double aboveAnswer(AssistTurn turn) {
       var height = 0.0;
-      if (showCommand && turn.command.isNotEmpty) {
+      if (commandLine(turn)) {
         final line = textScaler.scale(skin.userSize * lineScale);
         height += line * skin.lineHeight + 8 + skin.gap;
       }
@@ -1338,18 +1422,20 @@ class _AssistOverlayState extends State<AssistOverlay>
     }) {
       final tools = showTools ? turn.tools : const <String>[];
       return [
-        if (showCommand && turn.command.isNotEmpty)
+        if (commandLine(turn))
           _msg(
             skin,
             chatWidth,
             key: ValueKey('$n.user'),
             fullWidth: true,
-            Text(
-              _commandText(skin, turn.command),
+            _commandLine(
+              skin,
+              userStyle,
+              turn.command,
+              turn.speaker,
+              turn.speakerColor,
               textAlign: textAlign,
               maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: userStyle,
             ),
           ),
         // Frozen indicator lines dim once a later turn starts thinking.
@@ -1465,6 +1551,18 @@ class _AssistOverlayState extends State<AssistOverlay>
   }
 }
 
+/// A person's ring color (`#RRGGBB`) as a name on [text]'s background.
+/// The ring colors are mid tones: on a dark skin they are lifted toward
+/// white, so the name reads as well as the words after it.
+Color speakerTextColor(String? hex, Color text) {
+  final v = int.tryParse((hex ?? '').replaceFirst('#', ''), radix: 16);
+  if (v == null) return text;
+  final color = Color(0xFF000000 | v);
+  return text.computeLuminance() > 0.5
+      ? Color.lerp(color, Colors.white, 0.45)!
+      : color;
+}
+
 /// The docked caption's text against the skin's full-screen sizes.
 const dockedTextScale = 0.55;
 
@@ -1550,7 +1648,7 @@ Widget _shadowSnapshot(Text text) {
   }
   if (bleed == 0) return text;
   return TextSnapshot(
-    content: (text.data, text.style, text.textAlign),
+    content: (text.data ?? text.textSpan, text.style, text.textAlign),
     bleed: bleed.ceilToDouble(),
     child: text,
   );

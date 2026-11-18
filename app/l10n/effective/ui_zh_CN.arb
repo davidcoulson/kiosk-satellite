@@ -720,6 +720,23 @@
       }
     }
   },
+  "alarmsSkipAlarm": "跳过 {time} 的闹钟",
+  "@alarmsSkipAlarm": {
+    "context": "Clock and Weather Mood screensavers",
+    "description": "Button under the screensaver clock shortly before an alarm. Skips that one ring. {time} is a clock time.",
+    "x-locations": {
+      "device": [
+        "Clock screensaver before an alarm",
+        "Weather Mood screensaver before an alarm"
+      ]
+    },
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "description": "A clock time like 6:30 AM."
+      }
+    }
+  },
   "alarmsNextWidget": "下一个闹钟",
   "@alarmsNextWidget": {
     "context": "Screensaver widgets",
@@ -8478,6 +8495,19 @@
       ]
     }
   },
+  "gestureOpenTimers": "打开计时器",
+  "@gestureOpenTimers": {
+    "context": "Settings > Gestures > Add gesture > Choose an action",
+    "description": "Gesture action that opens the full screen timers view.",
+    "x-locations": {
+      "device": [
+        "Settings > Gestures > Add gesture > Choose an action"
+      ],
+      "remoteAdmin": [
+        "Gestures > Add gesture > Choose an action"
+      ]
+    }
+  },
   "gestureOpenNextAlarm": "打开下一个闹钟",
   "@gestureOpenNextAlarm": {
     "context": "Settings > Gestures > Add gesture > Choose an action",
@@ -12302,6 +12332,16 @@
       ]
     }
   },
+  "libraryGenres": "流派",
+  "@libraryGenres": {
+    "context": "Music Library",
+    "description": "Library list of a Music Assistant library's genres, under Tracks.",
+    "x-locations": {
+      "device": [
+        "Kiosk menu > Music Library"
+      ]
+    }
+  },
   "libraryPlaylists": "播放列表",
   "@libraryPlaylists": {
     "context": "Music Library",
@@ -14576,6 +14616,32 @@
       ]
     }
   },
+  "pluginDashboardLink": "仪表盘链接",
+  "@pluginDashboardLink": {
+    "context": "Settings > Plugin Manager > a plugin > Actions",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > a plugin > Actions"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager > a plugin > Actions"
+      ]
+    }
+  },
+  "pluginDashboardLinkHint": "将仪表盘按钮的点击动作指向此链接。",
+  "@pluginDashboardLinkHint": {
+    "context": "Settings > Plugin Manager > a plugin > Actions",
+    "description": "Visible label, help or status in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > a plugin > Actions"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager > a plugin > Actions"
+      ]
+    }
+  },
   "pluginPlugin": "插件",
   "@pluginPlugin": {
     "context": "Settings > Plugin Manager",
@@ -14997,6 +15063,19 @@
   "@pluginDragToReorder": {
     "context": "Settings > Plugin Manager",
     "description": "Label of the handle that drags a row of a plugin's list setting to a new position.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager"
+      ]
+    }
+  },
+  "pluginDuplicate": "创建副本",
+  "@pluginDuplicate": {
+    "context": "Settings > Plugin Manager",
+    "description": "Button in the row editor of a plugin list setting that turns the open row into a new row holding a copy of it. Save then adds the copy.",
     "x-locations": {
       "device": [
         "Settings > Plugin Manager"
@@ -15661,6 +15740,19 @@
       ],
       "remoteAdmin": [
         "Plugin Manager > Add plugin"
+      ]
+    }
+  },
+  "pluginReleaseNotes": "更新说明",
+  "@pluginReleaseNotes": {
+    "context": "Settings > Plugin Manager > a plugin's check for updates button",
+    "description": "Heading in the update review above the notes the plugin's author wrote for the new version. Shown in capitals.",
+    "x-locations": {
+      "device": [
+        "Settings > Plugin Manager > a plugin's check for updates button"
+      ],
+      "remoteAdmin": [
+        "Plugin Manager > a plugin's check for updates button"
       ]
     }
   },
@@ -19571,6 +19663,32 @@
       ]
     }
   },
+  "settingAlarmsSkipMinutesTitle": "“跳过”按钮",
+  "@settingAlarmsSkipMinutesTitle": {
+    "context": "Settings > Alarms",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Alarms > Skip button"
+      ],
+      "remoteAdmin": [
+        "Alarms > Skip button"
+      ]
+    }
+  },
+  "settingAlarmsSkipMinutesDescription": "闹钟响铃前多久，在时钟和天气氛围屏保上显示“跳过”按钮。",
+  "@settingAlarmsSkipMinutesDescription": {
+    "context": "Settings > Alarms",
+    "description": "Setting description.",
+    "x-locations": {
+      "device": [
+        "Settings > Alarms > Skip button"
+      ],
+      "remoteAdmin": [
+        "Alarms > Skip button"
+      ]
+    }
+  },
   "alarmsOption5Minutes": "5 分钟",
   "@alarmsOption5Minutes": {
     "context": "Settings > Alarms",
@@ -19646,6 +19764,32 @@
       ],
       "remoteAdmin": [
         "Alarms"
+      ]
+    }
+  },
+  "alarmsOption60Minutes": "60 分钟",
+  "@alarmsOption60Minutes": {
+    "context": "Settings > Alarms",
+    "description": "Setting option: a length in minutes.",
+    "x-locations": {
+      "device": [
+        "Settings > Alarms"
+      ],
+      "remoteAdmin": [
+        "Alarms"
+      ]
+    }
+  },
+  "alarmsOptionOff": "关闭",
+  "@alarmsOptionOff": {
+    "context": "Settings > Alarms",
+    "description": "Setting option: the Skip button never shows.",
+    "x-locations": {
+      "device": [
+        "Settings > Alarms > Skip button"
+      ],
+      "remoteAdmin": [
+        "Alarms > Skip button"
       ]
     }
   },
@@ -20179,8 +20323,8 @@
       ]
     }
   },
-  "settingCalendarIdleCloseMinutesDescription": "在这段时间内无触摸后返回仪表盘。",
-  "@settingCalendarIdleCloseMinutesDescription": {
+  "settingIdleCloseCompassDescription": "在这段时间内无触摸后返回仪表盘。在 Compass 布局中改用“返回中心”。",
+  "@settingIdleCloseCompassDescription": {
     "context": "Settings > Calendar > Kiosk",
     "description": "Setting description.",
     "x-locations": {
@@ -22970,8 +23114,8 @@
       ]
     }
   },
-  "settingCameraAutoDismissSecondsDescription": "在设定时间后自动关闭已打开的摄像头画面。设为 0 时一直显示，不影响摄像头屏保。",
-  "@settingCameraAutoDismissSecondsDescription": {
+  "settingCameraAutoDismissCompassDescription": "在设定时间后关闭已打开的摄像头画面。设为 0 时一直显示。不影响摄像头屏保。在 Compass 布局中改用“返回中心”。",
+  "@settingCameraAutoDismissCompassDescription": {
     "context": "Settings > Camera Streams > Playback",
     "description": "Help below this setting.",
     "x-locations": {
@@ -23563,6 +23707,70 @@
       "remoteAdmin": [
         "Camera Streams > Cameras"
       ]
+    }
+  },
+  "cameraStreamsDeleteUnused": "删除未使用的摄像头",
+  "@cameraStreamsDeleteUnused": {
+    "context": "Settings > Camera Streams > Cameras",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Camera Streams > Cameras"
+      ],
+      "remoteAdmin": [
+        "Camera Streams > Cameras"
+      ]
+    }
+  },
+  "cameraStreamsDeleteUnusedConfirm": "要删除未使用的摄像头吗？",
+  "@cameraStreamsDeleteUnusedConfirm": {
+    "context": "Settings > Camera Streams > Cameras",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Camera Streams > Cameras"
+      ],
+      "remoteAdmin": [
+        "Camera Streams > Cameras"
+      ]
+    }
+  },
+  "cameraStreamsOneUnusedCamera": "{count} 个摄像头不在任何画面中。",
+  "@cameraStreamsOneUnusedCamera": {
+    "context": "Settings > Camera Streams > Cameras",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Camera Streams > Cameras"
+      ],
+      "remoteAdmin": [
+        "Camera Streams > Cameras"
+      ]
+    },
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "description": "Value supplied by the app. Keep names, IDs and technical details unchanged."
+      }
+    }
+  },
+  "cameraStreamsManyUnusedCameras": "{count} 个摄像头不在任何画面中。",
+  "@cameraStreamsManyUnusedCameras": {
+    "context": "Settings > Camera Streams > Cameras",
+    "description": "Label or guidance in this section.",
+    "x-locations": {
+      "device": [
+        "Settings > Camera Streams > Cameras"
+      ],
+      "remoteAdmin": [
+        "Camera Streams > Cameras"
+      ]
+    },
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "description": "Value supplied by the app. Keep names, IDs and technical details unchanged."
+      }
     }
   },
   "cameraStreamsViews": "画面",
@@ -30543,6 +30751,32 @@
       ]
     }
   },
+  "settingBtproxyDeviceMacTitle": "蓝牙使用设备 MAC 地址",
+  "@settingBtproxyDeviceMacTitle": {
+    "context": "Settings > ESPHome > Bluetooth Proxy",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > ESPHome > Bluetooth Proxy"
+      ],
+      "remoteAdmin": [
+        "ESPHome > Bluetooth Proxy"
+      ]
+    }
+  },
+  "settingBtproxyDeviceMacDescription": "让 Bermuda 等集成能将此代理与其设备关联。会更改代理在 Home Assistant 中的地址。",
+  "@settingBtproxyDeviceMacDescription": {
+    "context": "Settings > ESPHome > Bluetooth Proxy",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > ESPHome > Bluetooth Proxy"
+      ],
+      "remoteAdmin": [
+        "ESPHome > Bluetooth Proxy"
+      ]
+    }
+  },
   "settingBtproxyConnectionsTitle": "允许连接设备",
   "@settingBtproxyConnectionsTitle": {
     "context": "Settings > ESPHome > Bluetooth Proxy",
@@ -32551,6 +32785,84 @@
       ]
     }
   },
+  "settingGroundControlEnabledTitle": "启用 Ground Control",
+  "@settingGroundControlEnabledTitle": {
+    "context": "Settings > Ground Control",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Ground Control > Enable Ground Control"
+      ],
+      "remoteAdmin": [
+        "Ground Control > Enable Ground Control"
+      ]
+    }
+  },
+  "settingGroundControlEnabledDescription": "连接到 Kiosk Satellite Ground Control，它在高性能设备上运行 Voice Match。",
+  "@settingGroundControlEnabledDescription": {
+    "context": "Settings > Ground Control",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Ground Control > Enable Ground Control"
+      ],
+      "remoteAdmin": [
+        "Ground Control > Enable Ground Control"
+      ]
+    }
+  },
+  "settingGroundControlAddressTitle": "地址",
+  "@settingGroundControlAddressTitle": {
+    "context": "Settings > Ground Control",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Ground Control > Address"
+      ],
+      "remoteAdmin": [
+        "Ground Control > Address"
+      ]
+    }
+  },
+  "settingGroundControlAddressDescription": "留空以在网络中查找 Ground Control。如果 Ground Control 在其他网络中，请输入地址。",
+  "@settingGroundControlAddressDescription": {
+    "context": "Settings > Ground Control",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Ground Control > Address"
+      ],
+      "remoteAdmin": [
+        "Ground Control > Address"
+      ]
+    }
+  },
+  "groundControlLooking": "正在网络中查找 Ground Control。",
+  "@groundControlLooking": {
+    "context": "Settings > Ground Control",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Ground Control > Ground Control status row"
+      ],
+      "remoteAdmin": [
+        "Ground Control > Ground Control status row"
+      ]
+    }
+  },
+  "groundControlApp": "Ground Control 应用",
+  "@groundControlApp": {
+    "context": "Settings > Ground Control",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Ground Control > Ground Control app row"
+      ],
+      "remoteAdmin": [
+        "Ground Control > Ground Control app row"
+      ]
+    }
+  },
   "haCustomPages": "自定义网页",
   "@haCustomPages": {
     "context": "Settings:Home Assistant:Custom Pages",
@@ -33457,6 +33769,19 @@
         "type": "String",
         "description": "Unchanged dashboard view path."
       }
+    }
+  },
+  "haReturnCompass": "使用 Compass 导航时，布局中的每个仪表盘视图在超时后返回为它选择的视图。",
+  "@haReturnCompass": {
+    "context": "Settings:Home Assistant Setup:Return to home dashboard view",
+    "description": "Return-to-home subpage destination while Compass navigation is on. Compass is the name of a navigation style and stays as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Home Assistant Setup > Return to home dashboard view"
+      ],
+      "remoteAdmin": [
+        "Home Assistant Setup > Return to home dashboard view"
+      ]
     }
   },
   "settingHaRotationEnabledTitle": "启用仪表盘页面轮播",
@@ -34818,8 +35143,34 @@
       ]
     }
   },
-  "settingIntercomRingSoundDescription": "以通知音量播放。",
-  "@settingIntercomRingSoundDescription": {
+  "settingIntercomRingSoundVolumeDescription": "以铃声音量播放。",
+  "@settingIntercomRingSoundVolumeDescription": {
+    "context": "Settings > Intercom > Answer",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Answer"
+      ],
+      "remoteAdmin": [
+        "Intercom > Answer"
+      ]
+    }
+  },
+  "settingIntercomRingVolumeTitle": "铃声音量",
+  "@settingIntercomRingVolumeTitle": {
+    "context": "Settings > Intercom > Answer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Intercom > Answer"
+      ],
+      "remoteAdmin": [
+        "Intercom > Answer"
+      ]
+    }
+  },
+  "settingIntercomRingVolumeDescription": "来电响铃的音量，独立于媒体音量。",
+  "@settingIntercomRingVolumeDescription": {
     "context": "Settings > Intercom > Answer",
     "description": "Help below this setting.",
     "x-locations": {
@@ -35840,8 +36191,8 @@
       ]
     }
   },
-  "settingKioskAllowDrawerDescription": "从边缘滑动即可打开菜单，无需退出手势或 PIN 码，仅提供下方选定的操作。",
-  "@settingKioskAllowDrawerDescription": {
+  "settingKioskAllowQuickControlsDescription": "无需退出手势或 PIN 码即可显示菜单，仅提供下方选定的操作。在经典导航中，从边缘滑动即可打开菜单；在 Compass 中，它就是“快捷控制”视图。",
+  "@settingKioskAllowQuickControlsDescription": {
     "context": "Settings > Kiosk Mode > Allowed Actions",
     "description": "Help below this setting.",
     "x-locations": {
@@ -37468,6 +37819,26 @@
     "x-locations": {
       "remoteAdmin": [
         "Lockdown Mode > Enable Lockdown Mode"
+      ]
+    }
+  },
+  "settingLockdownAutoUnlockMinutesTitle": "自动解锁时间",
+  "@settingLockdownAutoUnlockMinutesTitle": {
+    "context": "Lockdown Mode > Unlock automatically after",
+    "description": "Setting label.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Lockdown Mode > Unlock automatically after"
+      ]
+    }
+  },
+  "settingLockdownAutoUnlockMinutesDescription": "从 Kiosk 菜单启动锁定模式时，在此时长后关闭锁定模式。设为 0 则保持锁定。",
+  "@settingLockdownAutoUnlockMinutesDescription": {
+    "context": "Lockdown Mode > Unlock automatically after",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "remoteAdmin": [
+        "Lockdown Mode > Unlock automatically after"
       ]
     }
   },
@@ -40988,6 +41359,819 @@
       ]
     }
   },
+  "settingsGroupKioskSatellite": "Kiosk Satellite",
+  "@settingsGroupKioskSatellite": {
+    "context": "Settings:Menu",
+    "description": "Heading above a group of Settings menu entries. The product name, keep it as is.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuNavigation": "导航",
+  "@settingsMenuNavigation": {
+    "context": "Settings:Menu",
+    "description": "Settings menu entry for how the kiosk is moved around.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "settingsMenuNavigationSummary": "经典或 Compass",
+  "@settingsMenuNavigationSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary under the Navigation entry. Classic and Compass are the two navigation styles.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
+  "navigationStyleSection": "导航方式",
+  "@navigationStyleSection": {
+    "context": "Settings:Navigation",
+    "description": "Heading of the group that picks the navigation style.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "navigationLayoutSection": "Compass 布局",
+  "@navigationLayoutSection": {
+    "context": "Settings:Navigation",
+    "description": "Heading of the group that places views around the center. Compass is the name of the navigation style.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "navigationOptionsSection": "Compass 选项",
+  "@navigationOptionsSection": {
+    "context": "Settings:Navigation",
+    "description": "Heading of the Compass settings group.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavStyleTitle": "导航方式",
+  "@settingNavStyleTitle": {
+    "context": "Settings:Navigation",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavStyleDescription": "经典保留抽屉菜单、下拉刷新和仪表盘滑动切换。Compass 将视图排成十字形，滑动即可切换。",
+  "@settingNavStyleDescription": {
+    "context": "Settings:Navigation",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassLayoutTitle": "Compass 布局",
+  "@settingNavCompassLayoutTitle": {
+    "context": "Settings:Navigation",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassLayoutViewsDescription": "每侧最多两个视图。可以添加多个 Home Assistant 仪表盘视图，其他每种类型只能放一个。",
+  "@settingNavCompassLayoutViewsDescription": {
+    "context": "Settings:Navigation",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassAnimationTitle": "滑动动画",
+  "@settingNavCompassAnimationTitle": {
+    "context": "Settings:Navigation",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassAnimationDescription": "缩小以显示周围的视图，或直接平移。",
+  "@settingNavCompassAnimationDescription": {
+    "context": "Settings:Navigation",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassPositionTitle": "滑动时显示位置",
+  "@settingNavCompassPositionTitle": {
+    "context": "Settings:Navigation",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassPositionDescription": "一张显示当前位置的小地图。",
+  "@settingNavCompassPositionDescription": {
+    "context": "Settings:Navigation",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassReturnMinutesTitle": "返回中心",
+  "@settingNavCompassReturnMinutesTitle": {
+    "context": "Settings:Navigation",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassReturnMinutesDescription": "无触摸达到此时长后返回中心视图。设为 0 则停留在当前视图。",
+  "@settingNavCompassReturnMinutesDescription": {
+    "context": "Settings:Navigation",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavCompassMenuItemsTitle": "菜单项",
+  "@settingNavCompassMenuItemsTitle": {
+    "context": "Settings:Navigation",
+    "description": "Setting label. Opens the Drawer menu items picker.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingNavQuickControlsItemsDescription": "快捷控制视图显示的内容。与抽屉菜单共用。",
+  "@settingNavQuickControlsItemsDescription": {
+    "context": "Settings:Navigation",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "navigationClassic": "经典",
+  "@navigationClassic": {
+    "context": "Settings:Navigation",
+    "description": "Navigation style option: the drawer menu.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "navigationCompass": "Compass",
+  "@navigationCompass": {
+    "context": "Settings:Navigation",
+    "description": "Navigation style option and feature name: views laid out in a cross you swipe between.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "navigationZoom": "缩放",
+  "@navigationZoom": {
+    "context": "Settings:Navigation",
+    "description": "Swipe animation option.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "navigationSlide": "平移",
+  "@navigationSlide": {
+    "context": "Settings:Navigation",
+    "description": "Swipe animation option.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassClassicViewHint": "带抽屉菜单的 Home Assistant 页面。",
+  "@compassClassicViewHint": {
+    "context": "Settings:Navigation",
+    "description": "Description on the Classic choice card.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassCompassHint": "在排成十字形的视图之间滑动切换。",
+  "@compassCompassHint": {
+    "context": "Settings:Navigation",
+    "description": "Description on the Compass choice card.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassLayoutViewsHint": "每侧最多两个视图。可以添加多个 Home Assistant 仪表盘视图，其他每种类型只能放一个。点按视图即可更改，中心视图也可以。",
+  "@compassLayoutViewsHint": {
+    "context": "Settings:Navigation",
+    "description": "Hint above the layout map.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassOffNote": "启用 Compass 时，下拉刷新、仪表盘滑动切换以及从边缘滑动打开抽屉菜单的手势均会关闭。",
+  "@compassOffNote": {
+    "context": "Settings:Navigation",
+    "description": "Note under the Compass options.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "settingOffUnderCompass": "启用 Compass 导航时关闭。",
+  "@settingOffUnderCompass": {
+    "context": "Settings",
+    "description": "Line under a setting that Compass navigation switches off, such as pull to refresh or the dashboard carousel.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > Enable pull to refresh",
+        "Settings > Home Assistant > User Interface > Enable dashboard carousel"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > Enable pull to refresh",
+        "Home Assistant > User Interface > Enable dashboard carousel"
+      ]
+    }
+  },
+  "compassQuickControlsView": "快捷控制",
+  "@compassQuickControlsView": {
+    "context": "Device:Compass",
+    "description": "Name of the view that replaces the drawer menu, at the far end of the left side.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation",
+        "Compass navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassHomeDashboard": "Home Assistant",
+  "@compassHomeDashboard": {
+    "context": "Settings:Navigation",
+    "description": "The dashboard the kiosk starts on, as a view in the layout. The product name, keep it as is.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation",
+        "Compass navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassAppLauncher": "应用启动器",
+  "@compassAppLauncher": {
+    "context": "Settings:Navigation",
+    "description": "View name.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation",
+        "Compass navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassCenter": "中心",
+  "@compassCenter": {
+    "context": "Settings:Navigation",
+    "description": "Label on the view in the middle of the layout.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassAddTile": "添加",
+  "@compassAddTile": {
+    "context": "Settings:Navigation",
+    "description": "Empty place on the layout map that adds a view.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassAddView": "添加视图",
+  "@compassAddView": {
+    "context": "Settings:Navigation",
+    "description": "Row that adds a view to a side.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassMoveIn": "移近",
+  "@compassMoveIn": {
+    "context": "Settings:Navigation",
+    "description": "Button that moves a view closer to the center.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassMoveOut": "移远",
+  "@compassMoveOut": {
+    "context": "Settings:Navigation",
+    "description": "Button that moves a view away from the center.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassReplace": "替换",
+  "@compassReplace": {
+    "context": "Settings:Navigation",
+    "description": "Button that swaps a view for another.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassRemove": "移除",
+  "@compassRemove": {
+    "context": "Settings:Navigation",
+    "description": "Button that takes a view out of the layout.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassChange": "更改",
+  "@compassChange": {
+    "context": "Settings:Navigation",
+    "description": "Button that picks another center view.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassSideUp": "上",
+  "@compassSideUp": {
+    "context": "Settings:Navigation",
+    "description": "Side of the layout, above the center.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassSideRight": "右",
+  "@compassSideRight": {
+    "context": "Settings:Navigation",
+    "description": "Side of the layout, right of the center.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassSideDown": "下",
+  "@compassSideDown": {
+    "context": "Settings:Navigation",
+    "description": "Side of the layout, below the center.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassSideLeft": "左",
+  "@compassSideLeft": {
+    "context": "Settings:Navigation",
+    "description": "Side of the layout, left of the center.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassFirstView": "{side}，第一个视图",
+  "@compassFirstView": {
+    "context": "Settings:Navigation",
+    "description": "Where the selected view sits.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    },
+    "placeholders": {
+      "side": {
+        "type": "String",
+        "example": "Right"
+      }
+    }
+  },
+  "compassSecondView": "{side}，第二个视图",
+  "@compassSecondView": {
+    "context": "Settings:Navigation",
+    "description": "Where the selected view sits.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    },
+    "placeholders": {
+      "side": {
+        "type": "String",
+        "example": "Right"
+      }
+    }
+  },
+  "compassAddAbove": "在上方添加视图",
+  "@compassAddAbove": {
+    "context": "Settings:Navigation",
+    "description": "Dialog title.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassAddBelow": "在下方添加视图",
+  "@compassAddBelow": {
+    "context": "Settings:Navigation",
+    "description": "Dialog title.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassAddLeft": "在左侧添加视图",
+  "@compassAddLeft": {
+    "context": "Settings:Navigation",
+    "description": "Dialog title.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassAddRight": "在右侧添加视图",
+  "@compassAddRight": {
+    "context": "Settings:Navigation",
+    "description": "Dialog title.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassChangeCenter": "更改中心视图",
+  "@compassChangeCenter": {
+    "context": "Settings:Navigation",
+    "description": "Dialog title.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassReplaceTitle": "替换{name}",
+  "@compassReplaceTitle": {
+    "context": "Settings:Navigation",
+    "description": "Dialog title.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    },
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Calendar"
+      }
+    }
+  },
+  "compassKindDashboard": "Home Assistant 仪表盘",
+  "@compassKindDashboard": {
+    "context": "Settings:Navigation",
+    "description": "View kind in the add dialog.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassKindDashboardHint": "任意视图、自定义网页和应用页面",
+  "@compassKindDashboardHint": {
+    "context": "Settings:Navigation",
+    "description": "Hint under the dashboard choice.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassKindTaken": "已放置",
+  "@compassKindTaken": {
+    "context": "Settings:Navigation",
+    "description": "Hint under a view kind the layout already holds.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassKindUnavailable": "此 Kiosk 上未设置",
+  "@compassKindUnavailable": {
+    "context": "Settings:Navigation",
+    "description": "Hint under a view kind with nothing to show yet.",
+    "x-locations": {
+      "device": [
+        "Settings > Navigation"
+      ],
+      "remoteAdmin": [
+        "Navigation"
+      ]
+    }
+  },
+  "compassKioskLocked": "Kiosk 已锁定",
+  "@compassKioskLocked": {
+    "context": "Device:Compass",
+    "description": "Badge in the Quick Controls view header while kiosk mode is on.",
+    "x-locations": {
+      "device": [
+        "Compass navigation"
+      ]
+    }
+  },
+  "compassQuickControls": "快捷控制",
+  "@compassQuickControls": {
+    "context": "Device:Compass",
+    "description": "Heading over the switches and one-tap actions in the Quick Controls view.",
+    "x-locations": {
+      "device": [
+        "Compass navigation > Menu"
+      ]
+    }
+  },
+  "compassOpen": "打开",
+  "@compassOpen": {
+    "context": "Device:Compass",
+    "description": "Heading over the pages the Quick Controls view opens, such as Calendar or Camera View.",
+    "x-locations": {
+      "device": [
+        "Compass navigation > Menu"
+      ]
+    }
+  },
+  "compassStateOn": "开",
+  "@compassStateOn": {
+    "context": "Device:Compass",
+    "description": "State under a switch in the Quick Controls view that is on.",
+    "x-locations": {
+      "device": [
+        "Compass navigation > Menu"
+      ]
+    }
+  },
+  "compassStateOff": "关",
+  "@compassStateOff": {
+    "context": "Device:Compass",
+    "description": "State under a switch in the Quick Controls view that is off.",
+    "x-locations": {
+      "device": [
+        "Compass navigation > Menu"
+      ]
+    }
+  },
+  "compassHoldMode": "页面保持模式",
+  "@compassHoldMode": {
+    "context": "Device:Compass",
+    "description": "Name of the Hold Mode switch in the Quick Controls view. Use the same term as the drawer menu's Turn On Hold Mode.",
+    "x-locations": {
+      "device": [
+        "Compass navigation > Menu"
+      ]
+    }
+  },
+  "settingsMenuGroundControl": "Ground Control",
+  "@settingsMenuGroundControl": {
+    "context": "Settings:Menu",
+    "description": "Kiosk Satellite Ground Control, the companion app that runs Voice Match on a capable machine. A product name: keep Ground Control unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > menu",
+        "Settings > Ground Control"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu",
+        "Ground Control"
+      ]
+    }
+  },
+  "settingsMenuGroundControlSummary": "在高性能设备上运行 Voice Match",
+  "@settingsMenuGroundControlSummary": {
+    "context": "Settings:Menu",
+    "description": "Summary under the Ground Control entry. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > menu"
+      ],
+      "remoteAdmin": [
+        "Sidebar menu"
+      ]
+    }
+  },
   "settingAdaptiveBrightnessTitle": "自适应亮度",
   "@settingAdaptiveBrightnessTitle": {
     "context": "Settings:Screen & Audio:Adaptive brightness",
@@ -41442,6 +42626,435 @@
       }
     }
   },
+  "settingAdaptiveVolumeTitle": "启用自适应音量",
+  "@settingAdaptiveVolumeTitle": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeDescription": "房间变安静时，通过麦克风自动降低音量。",
+  "@settingAdaptiveVolumeDescription": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeAssistantTitle": "助手",
+  "@settingAdaptiveVolumeAssistantTitle": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Setting label. The switch that makes the Assistant volume follow the room noise. Also the label of its line on the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeAssistantDescription": "语音回复和提示音。",
+  "@settingAdaptiveVolumeAssistantDescription": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeMediaTitle": "媒体",
+  "@settingAdaptiveVolumeMediaTitle": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Setting label. The switch that makes the Media volume follow the room noise. Also the label of its line on the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeMediaDescription": "音乐和视频。在开始播放时设定。",
+  "@settingAdaptiveVolumeMediaDescription": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeIntercomTitle": "对讲",
+  "@settingAdaptiveVolumeIntercomTitle": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Setting label. The switch that makes the Intercom volume follow the room noise. Also the label of its line on the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeIntercomDescription": "通话。在通话开始时设定。",
+  "@settingAdaptiveVolumeIntercomDescription": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeCurveTitle": "音量曲线",
+  "@settingAdaptiveVolumeCurveTitle": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Setting label and the heading above the curve editor.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "settingAdaptiveVolumeCurveSliderDescription": "各房间噪声水平对应的音量，以“屏幕与音频”中该音量滑块的百分比表示。",
+  "@settingAdaptiveVolumeCurveSliderDescription": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioAdaptiveVolume": "自适应音量",
+  "@screenAudioAdaptiveVolume": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Name of the settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioAdaptiveVolumeHint": "通过麦克风根据房间噪声自动调整音量",
+  "@screenAudioAdaptiveVolumeHint": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Hint under the row that opens the Adaptive volume page.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioAdaptiveVolumes": "音量",
+  "@screenAudioAdaptiveVolumes": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Heading above the switches that pick which volumes follow the room noise.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioRoomNoise": "房间噪声",
+  "@screenAudioRoomNoise": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Label of the live room noise reading.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioRoomNoiseNote": "本设备未播放声音时麦克风测得的读数。",
+  "@screenAudioRoomNoiseNote": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the live room noise reading.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioRoomNoiseHolds": "本设备播放声音时读数保持不变。播放期间房间的变化不会被采用。",
+  "@screenAudioRoomNoiseHolds": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Note under the live room noise reading.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioRoomNoiseNoReading": "如果没有读数，请开启自适应音量或唤醒词检测，并确认麦克风未静音。",
+  "@screenAudioRoomNoiseNoReading": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Note under the room noise reading while there is none: what a reading needs.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioDbfs": "{level} dBFS",
+  "@screenAudioDbfs": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "A room noise level. dBFS is a unit and stays as it is.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    },
+    "placeholders": {
+      "level": {
+        "type": "String",
+        "description": "Noise level in decibels relative to full scale, a negative number."
+      }
+    }
+  },
+  "screenAudioVolumeCurveSliderHint": "拖动曲线上的点可调整，也可点击点输入数值。百分比作用于“屏幕与音频”中的助手音量、媒体音量和对讲音量滑块：100% 表示按滑块的音量播放，50% 相当于滑块调到一半。",
+  "@screenAudioVolumeCurveSliderHint": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Hint under the volume curve editor.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeCurveNoise": "房间噪声（dBFS）",
+  "@screenAudioVolumeCurveNoise": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Field label in the dialog that edits one point of the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeCurveAssistant": "助手（%）",
+  "@screenAudioVolumeCurveAssistant": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Field label in the dialog that edits one point of the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeCurveMedia": "媒体（%）",
+  "@screenAudioVolumeCurveMedia": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Field label in the dialog that edits one point of the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeCurveIntercom": "对讲（%）",
+  "@screenAudioVolumeCurveIntercom": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Field label in the dialog that edits one point of the volume curve.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeCurveNoiseRange": "请输入 {low} 至 {high} dBFS 之间的噪声水平",
+  "@screenAudioVolumeCurveNoiseRange": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Error under the room noise field when the value is out of range.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    },
+    "placeholders": {
+      "low": {
+        "type": "String",
+        "description": "Lowest noise level allowed, in dBFS."
+      },
+      "high": {
+        "type": "String",
+        "description": "Highest noise level allowed, in dBFS."
+      }
+    }
+  },
+  "screenAudioVolumeCurveLevelRange": "请输入 {low}% 至 {high}% 之间的音量",
+  "@screenAudioVolumeCurveLevelRange": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Error under a volume field when the value is out of range.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    },
+    "placeholders": {
+      "low": {
+        "type": "String",
+        "description": "Lowest volume allowed, in percent."
+      },
+      "high": {
+        "type": "String",
+        "description": "Highest volume allowed, in percent."
+      }
+    }
+  },
+  "screenAudioVolumeTest": "测试音量",
+  "@screenAudioVolumeTest": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Heading above the rows that play a test announcement at the volume the room noise picks.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeTestAssistant": "测试助手音量",
+  "@screenAudioVolumeTestAssistant": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Label of the row whose button plays a test announcement at the Assistant volume.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeTestAssistantHint": "以助手音量播放一条 Voice Satellite 播报。需要先在 Home Assistant 中设置 Voice Satellite。",
+  "@screenAudioVolumeTestAssistantHint": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the Test Assistant volume row.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeTestMedia": "测试媒体音量",
+  "@screenAudioVolumeTestMedia": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Label of the row whose button plays a test announcement at the Media volume.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeTestMediaHint": "以媒体音量播放一条 ESPHome 播报。需要先在 ESPHome 下开启播报。",
+  "@screenAudioVolumeTestMediaHint": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "Help below the Test Media volume row. Announcements is the name of a settings page under ESPHome.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
+  "screenAudioVolumeTestMessage": "这是现在播报的音量。",
+  "@screenAudioVolumeTestMessage": {
+    "context": "Settings:Screen & Audio:Adaptive volume",
+    "description": "The sentence Home Assistant speaks aloud when a volume test button is pressed.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Adaptive volume"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Adaptive volume"
+      ]
+    }
+  },
   "settingAudioMicDeviceTitle": "麦克风",
   "@settingAudioMicDeviceTitle": {
     "context": "Settings:Screen & Audio:Audio Devices",
@@ -41537,6 +43150,214 @@
         "type": "String",
         "description": "Device name supplied by the hardware. Keep unchanged."
       }
+    }
+  },
+  "settingEqualizerEnabledTitle": "启用均衡器",
+  "@settingEqualizerEnabledTitle": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerEnabledDescription": "调整音乐、助手、提示音和对讲的音色。视频和仪表盘的声音不经过均衡器。",
+  "@settingEqualizerEnabledDescription": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand1Title": "100 Hz",
+  "@settingEqualizerBand1Title": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand1Description": "低音。小型扬声器在此提升时容易失真。",
+  "@settingEqualizerBand1Description": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand2Title": "300 Hz",
+  "@settingEqualizerBand2Title": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand2Description": "中低音。衰减可消除发闷或轰鸣的声音。",
+  "@settingEqualizerBand2Description": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand3Title": "1 kHz",
+  "@settingEqualizerBand3Title": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand3Description": "中音，人声的主要部分所在。",
+  "@settingEqualizerBand3Description": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand4Title": "3 kHz",
+  "@settingEqualizerBand4Title": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand4Description": "中高音。提升可让语音更清晰。",
+  "@settingEqualizerBand4Description": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand5Title": "10 kHz",
+  "@settingEqualizerBand5Title": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerBand5Description": "高音。",
+  "@settingEqualizerBand5Description": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerPreampTitle": "自动前置增益",
+  "@settingEqualizerPreampTitle": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "settingEqualizerPreampDescription": "按最大提升量降低整体电平，避免扬声器失真，并保证回声消除正常工作。",
+  "@settingEqualizerPreampDescription": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "screenAudioEqualizer": "均衡器",
+  "@screenAudioEqualizer": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
+    }
+  },
+  "screenAudioEqualizerHint": "低音、中音、高音、前置增益",
+  "@screenAudioEqualizerHint": {
+    "context": "Settings:Screen & Audio:Equalizer",
+    "description": "Heading, choice, status or guidance shown in this group.",
+    "x-locations": {
+      "device": [
+        "Settings > Screen & Audio > Equalizer"
+      ],
+      "remoteAdmin": [
+        "Screen & Audio > Equalizer"
+      ]
     }
   },
   "settingMicCaptureModeTitle": "采集模式",
@@ -45584,6 +47405,32 @@
       ]
     }
   },
+  "settingScreensaverFadeTitle": "淡入淡出",
+  "@settingScreensaverFadeTitle": {
+    "context": "Settings:Screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "settingScreensaverFadeDescription": "屏保在仪表盘上淡入，关闭时淡出。不适用于 Home Assistant 媒体、网站和摄像头视频流屏保。",
+  "@settingScreensaverFadeDescription": {
+    "context": "Settings:Screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
   "settingScreensaverModeTitle": "屏保模式",
   "@settingScreensaverModeTitle": {
     "context": "Settings:Screensaver",
@@ -45755,6 +47602,32 @@
   },
   "settingScreensaverNotificationBrightnessDescription": "屏幕上显示通知时，暂时取消屏保调暗。",
   "@settingScreensaverNotificationBrightnessDescription": {
+    "context": "Settings:Screensaver",
+    "description": "Help below the setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "settingScreensaverTouchBrightnessSecondsTitle": "触摸时提高亮度",
+  "@settingScreensaverTouchBrightnessSecondsTitle": {
+    "context": "Settings:Screensaver",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver"
+      ]
+    }
+  },
+  "settingScreensaverTouchBrightnessSecondsDescription": "触摸屏幕但未退出屏保时，在此时长内暂时取消屏保调暗。设为 0 时关闭。",
+  "@settingScreensaverTouchBrightnessSecondsDescription": {
     "context": "Settings:Screensaver",
     "description": "Help below the setting.",
     "x-locations": {
@@ -52032,6 +53905,19 @@
       ]
     }
   },
+  "screensaverWeatherBarHighLowDescription": "天气实体提供每日预报时显示今天的最高和最低气温。",
+  "@screensaverWeatherBarHighLowDescription": {
+    "context": "Settings:Screensaver:Weather Mood screensaver",
+    "description": "Weather Mood clock or weather information bar control.",
+    "x-locations": {
+      "device": [
+        "Settings > Screensaver > Weather Mood screensaver"
+      ],
+      "remoteAdmin": [
+        "Screensaver > Weather Mood screensaver"
+      ]
+    }
+  },
   "screensaverWeatherBarHumidityDescription": "天气实体提供湿度时显示。",
   "@screensaverWeatherBarHumidityDescription": {
     "context": "Settings:Screensaver:Weather Mood screensaver",
@@ -53910,19 +55796,6 @@
       ]
     }
   },
-  "voiceChimesHint": "唤醒、完成、错误、计时器和播报声音",
-  "@voiceChimesHint": {
-    "context": "Settings > Voice Satellite > Chimes",
-    "description": "Chime selection, playback or help shown on the device and in Remote Admin.",
-    "x-locations": {
-      "device": [
-        "Settings > Voice Satellite > Chimes"
-      ],
-      "remoteAdmin": [
-        "Voice Satellite > Chimes"
-      ]
-    }
-  },
   "voiceChimesPreview": "在 Kiosk 上预览",
   "@voiceChimesPreview": {
     "context": "Settings > Voice Satellite > Chimes",
@@ -54177,6 +56050,19 @@
       ],
       "remoteAdmin": [
         "Voice Satellite > Chimes"
+      ]
+    }
+  },
+  "voiceChimesSoundsHint": "唤醒、完成、错误和播报声音",
+  "@voiceChimesSoundsHint": {
+    "context": "Settings > Voice Satellite",
+    "description": "Summary under Chimes: the sounds the page holds.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite"
       ]
     }
   },
@@ -54691,11 +56577,6 @@
     "context": "Settings > Voice Satellite",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
-  "voiceTimersHint": "浮条、提醒和语音播报",
-  "@voiceTimersHint": {
-    "context": "Settings > Voice Satellite",
-    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
-  },
   "voiceSectionFollowUp": "追问",
   "@voiceSectionFollowUp": {
     "context": "Settings > Voice Satellite",
@@ -54728,6 +56609,11 @@
   },
   "voiceSectionTimerEnds": "计时器结束时",
   "@voiceSectionTimerEnds": {
+    "context": "Settings > Voice Satellite",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "voiceSectionSharedTimers": "共享的计时器",
+  "@voiceSectionSharedTimers": {
     "context": "Settings > Voice Satellite",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
@@ -55925,13 +57811,13 @@
       "remoteAdmin": []
     }
   },
-  "settingVoiceTimerPillsTitle": "显示计时器浮条",
-  "@settingVoiceTimerPillsTitle": {
+  "settingVoiceTimerPillsViewTitle": "以浮条显示计时器",
+  "@settingVoiceTimerPillsViewTitle": {
     "context": "Settings > Voice Satellite > Timers",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
-  "settingVoiceTimerPillsDescription": "运行中的计时器悬浮在屏幕上，可拖动至任意位置。",
-  "@settingVoiceTimerPillsDescription": {
+  "settingVoiceTimerPillsViewDescription": "计时器悬浮在屏幕上，而不是打开全屏视图。",
+  "@settingVoiceTimerPillsViewDescription": {
     "context": "Settings > Voice Satellite > Timers",
     "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
   },
@@ -56018,6 +57904,683 @@
       "name": {
         "type": "String"
       }
+    }
+  },
+  "settingVoiceTimersShareTitle": "共享计时器",
+  "@settingVoiceTimersShareTitle": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersShareDescription": "在此 Kiosk 上启动的计时器也会在你选择的 Kiosk 设备上运行。",
+  "@settingVoiceTimersShareDescription": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersShareWithTitle": "共享给",
+  "@settingVoiceTimersShareWithTitle": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersShareWithDescription": "显示此设备的计时器并一同响铃的 Kiosk 设备。",
+  "@settingVoiceTimersShareWithDescription": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersReceiveTitle": "显示共享的计时器",
+  "@settingVoiceTimersReceiveTitle": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingVoiceTimersReceiveDescription": "其他 Kiosk 设备共享的计时器会在此显示并响铃。",
+  "@settingVoiceTimersReceiveDescription": {
+    "context": "Settings > Voice Satellite > Timers",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingKioskAllowTimersTitle": "计时器",
+  "@settingKioskAllowTimersTitle": {
+    "context": "Settings > Kiosk Mode > Allowed Actions",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingKioskAllowTimersDescription": "从 Kiosk 菜单打开计时器视图。",
+  "@settingKioskAllowTimersDescription": {
+    "context": "Settings > Kiosk Mode > Allowed Actions",
+    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged."
+  },
+  "settingsMenuTimersSummary": "全屏视图、浮条、共享的计时器",
+  "@settingsMenuTimersSummary": {
+    "context": "Settings",
+    "description": "Summary under Timers in the settings menu: what the page holds.",
+    "x-locations": {
+      "device": [
+        "Settings"
+      ],
+      "remoteAdmin": [
+        "Sidebar"
+      ]
+    }
+  },
+  "fleetTheKiosksPickedInShareWithTheTimerSound": "在“共享给”中选择的 Kiosk 设备、计时器提示音",
+  "@fleetTheKiosksPickedInShareWithTheTimerSound": {
+    "context": "Fleet Management > Sync",
+    "description": "What stays per kiosk when the Timers category syncs. Share with and Timer sound are setting names.",
+    "x-locations": {
+      "device": [
+        "Settings > Fleet Management"
+      ],
+      "remoteAdmin": [
+        "Fleet Management"
+      ]
+    }
+  },
+  "settingTimersTtsEngineDescription": "用于播报计时器的 Home Assistant 文本转语音实体。",
+  "@settingTimersTtsEngineDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of Text to speech engine on the Timers page. Keep Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersTtsLanguageDescription": "计时器播报使用的语言。",
+  "@settingTimersTtsLanguageDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of Language on the Timers page.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersTtsVoiceDescription": "用于播报计时器的声音。",
+  "@settingTimersTtsVoiceDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of Voice on the Timers page.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersShowBeforeEndTitle": "计时器即将结束时显示计时器视图",
+  "@settingTimersShowBeforeEndTitle": {
+    "context": "Settings > Timers",
+    "description": "Slider from 30 seconds to 5 minutes: how long before a timer ends the full screen timers view opens again.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersShowBeforeEndDescription": "计时器结束前多久打开计时器视图。",
+  "@settingTimersShowBeforeEndDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that slider.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersShowOnStartTitle": "计时器开始时显示计时器视图",
+  "@settingTimersShowOnStartTitle": {
+    "context": "Settings > Timers",
+    "description": "Switch: whether starting a timer opens the full screen timers view.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersShowOnStartDescription": "每次启动计时器时打开计时器视图。",
+  "@settingTimersShowOnStartDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that switch.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersPauseScreensaverTitle": "计时器运行时暂停屏保",
+  "@settingTimersPauseScreensaverTitle": {
+    "context": "Settings > Timers",
+    "description": "Switch: the screensaver does not start while the timers view is open with a running timer. The screensaver is held back, not stopped for good.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersPauseScreensaverDescription": "计时器视图显示运行中的计时器时，不启动屏保。",
+  "@settingTimersPauseScreensaverDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that switch.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "settingTimersSilenceAfterTitle": "自动静音时间",
+  "@settingTimersSilenceAfterTitle": {
+    "context": "Settings > Timers",
+    "description": "Setting label: how long a finished timer rings before its sound stops. Its options are lengths of time or Never.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > When a timer ends"
+      ],
+      "remoteAdmin": [
+        "Timers > When a timer ends"
+      ]
+    }
+  },
+  "settingTimersSilenceAfterDescription": "已结束的计时器会一直显示，直到被关闭。",
+  "@settingTimersSilenceAfterDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that setting: only the sound stops, the alert stays.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > When a timer ends"
+      ],
+      "remoteAdmin": [
+        "Timers > When a timer ends"
+      ]
+    }
+  },
+  "settingTimersDismissAfterTitle": "自动关闭时间",
+  "@settingTimersDismissAfterTitle": {
+    "context": "Settings > Timers",
+    "description": "Setting label: how long a finished timer stays before it is dismissed by itself. Its options are lengths of time or Never.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > When a timer ends"
+      ],
+      "remoteAdmin": [
+        "Timers > When a timer ends"
+      ]
+    }
+  },
+  "settingTimersDismissAfterDescription": "像点击“关闭”一样清除已结束的计时器。",
+  "@settingTimersDismissAfterDescription": {
+    "context": "Settings > Timers",
+    "description": "Description of that setting. Dismiss is the button on a ringing timer: use the same word as that button.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > When a timer ends"
+      ],
+      "remoteAdmin": [
+        "Timers > When a timer ends"
+      ]
+    }
+  },
+  "voiceMatchGroundControlPage": "Ground Control Voice Match",
+  "@voiceMatchGroundControlPage": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match"
+      ]
+    }
+  },
+  "settingVoiceMatchPolicyDescriptionChosen": "选择“指定人员”时，会忽略电视、访客和其他所有人。",
+  "@settingVoiceMatchPolicyDescriptionChosen": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > Answer"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > Answer"
+      ]
+    }
+  },
+  "voiceMatchOptionPeople": "指定人员",
+  "@voiceMatchOptionPeople": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > Answer"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > Answer"
+      ]
+    }
+  },
+  "settingVoiceMatchPeopleTitle": "人员",
+  "@settingVoiceMatchPeopleTitle": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > People"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > People"
+      ]
+    }
+  },
+  "settingVoiceMatchPeopleDescription": "此信息亭回应的人。如果未选择任何人，则回应所有已录入的人。",
+  "@settingVoiceMatchPeopleDescription": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > People"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > People"
+      ]
+    }
+  },
+  "voiceMatchPeopleNone": "所有已录入的人",
+  "@voiceMatchPeopleNone": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > People"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > People"
+      ]
+    }
+  },
+  "voiceMatchPeopleSearch": "搜索人员",
+  "@voiceMatchPeopleSearch": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > People"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > People"
+      ]
+    }
+  },
+  "voiceMatchPeopleEmpty": "Ground Control 中还没有录入任何人。",
+  "@voiceMatchPeopleEmpty": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > People"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > People"
+      ]
+    }
+  },
+  "voiceMatchPeopleGone": "已不在 Ground Control 中",
+  "@voiceMatchPeopleGone": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > People"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > People"
+      ]
+    }
+  },
+  "settingVoiceMatchRejectedTitleChosen": "未选择的声音",
+  "@settingVoiceMatchRejectedTitleChosen": {
+    "context": "Settings > Voice Satellite > Ground Control Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Ground Control Voice Match > Voice not chosen"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Ground Control Voice Match > Voice not chosen"
+      ]
+    }
+  },
+  "voiceMatchHint": "谁在说话、其他声音、声纹录入",
+  "@voiceMatchHint": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match"
+      ]
+    }
+  },
+  "settingVoiceMatchEnabledTitle": "启用 Voice Match",
+  "@settingVoiceMatchEnabledTitle": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Enable Voice Match"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Enable Voice Match"
+      ]
+    }
+  },
+  "settingVoiceMatchPolicyTitle": "回应",
+  "@settingVoiceMatchPolicyTitle": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Answer"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Answer"
+      ]
+    }
+  },
+  "settingVoiceMatchRejectedDescription": "其他人说出唤醒词时的处理方式。",
+  "@settingVoiceMatchRejectedDescription": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice not enrolled"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice not enrolled"
+      ]
+    }
+  },
+  "settingVoiceMatchSpeakerSensorTitle": "说话人传感器",
+  "@settingVoiceMatchSpeakerSensorTitle": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Speaker sensor"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Speaker sensor"
+      ]
+    }
+  },
+  "settingVoiceMatchSpeakerSensorDescription": "在 Home Assistant 中为此 Kiosk 添加 Speaker 传感器，用于自动化和代理指令。",
+  "@settingVoiceMatchSpeakerSensorDescription": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Speaker sensor"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Speaker sensor"
+      ]
+    }
+  },
+  "voiceMatchOptionAnyone": "任何人",
+  "@voiceMatchOptionAnyone": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Answer"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Answer"
+      ]
+    }
+  },
+  "voiceMatchOptionQuiet": "保持安静",
+  "@voiceMatchOptionQuiet": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice not enrolled"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice not enrolled"
+      ]
+    }
+  },
+  "voiceMatchOptionChime": "播放错误提示音",
+  "@voiceMatchOptionChime": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice not enrolled"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice not enrolled"
+      ]
+    }
+  },
+  "voiceMatchConnecting": "正在连接",
+  "@voiceMatchConnecting": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match status row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match status row"
+      ]
+    }
+  },
+  "voiceMatchSearching": "正在搜索",
+  "@voiceMatchSearching": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match status row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match status row"
+      ]
+    }
+  },
+  "voiceMatchNotReachable": "无法访问",
+  "@voiceMatchNotReachable": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match status row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match status row"
+      ]
+    }
+  },
+  "voiceMatchSignInRefused": "登录被拒绝",
+  "@voiceMatchSignInRefused": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match status row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match status row"
+      ]
+    }
+  },
+  "voiceMatchNobodyEnrolled": "尚未录入任何人。",
+  "@voiceMatchNobodyEnrolled": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match status row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match status row"
+      ]
+    }
+  },
+  "voiceMatchTokenRefused": "Home Assistant 拒绝了此 Kiosk 的令牌。",
+  "@voiceMatchTokenRefused": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match status row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match status row"
+      ]
+    }
+  },
+  "settingVoiceMatchShowSpeakerTitle": "显示谁在说话",
+  "@settingVoiceMatchShowSpeakerTitle": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Show who is talking"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Show who is talking"
+      ]
+    }
+  },
+  "settingVoiceMatchShowSpeakerDescription": "在语音浮层的命令前以对应颜色显示说话人的名字。在带灯环的设备上，聆听弧会变成该颜色。",
+  "@settingVoiceMatchShowSpeakerDescription": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Show who is talking"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Show who is talking"
+      ]
+    }
+  },
+  "settingVoiceMatchAllowEnrollTitle": "允许在此录入",
+  "@settingVoiceMatchAllowEnrollTitle": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Allow enrollment here"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Allow enrollment here"
+      ]
+    }
+  },
+  "voiceMatchAppHint": "人员、声纹录入、会话和设置。",
+  "@voiceMatchAppHint": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match app row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match app row"
+      ]
+    }
+  },
+  "voiceMatchOpen": "打开",
+  "@voiceMatchOpen": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Voice Match app row"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Voice Match app row"
+      ]
+    }
+  },
+  "settingVoiceMatchEnabledDescriptionGroundControl": "识别谁在说话，并在其他人接话时停止聆听。需要 Ground Control。",
+  "@settingVoiceMatchEnabledDescriptionGroundControl": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Enable Voice Match"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Enable Voice Match"
+      ]
+    }
+  },
+  "settingVoiceMatchAllowEnrollDescriptionGroundControl": "允许 Ground Control 应用使用此信息亭的麦克风录制某人的声音。信息亭会显示要朗读的文字，或由灯环显示进度。",
+  "@settingVoiceMatchAllowEnrollDescriptionGroundControl": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Ground Control, Voice Match, Voice Satellite, Kiosk Satellite and Home Assistant unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Allow enrollment here"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Allow enrollment here"
+      ]
+    }
+  },
+  "settingVoiceMatchLeaveOutTitle": "排除其他声音",
+  "@settingVoiceMatchLeaveOutTitle": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Leave other voices out"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Leave other voices out"
+      ]
+    }
+  },
+  "settingVoiceMatchLeaveOutDescription": "Home Assistant 和实时助手只会听到说出唤醒词的人，并在此人停止说话时结束命令，即使电视开着也是如此。",
+  "@settingVoiceMatchLeaveOutDescription": {
+    "context": "Settings > Voice Satellite > Voice Match",
+    "description": "Translate the visible label or help. Keep Voice Match, Voice Satellite, Kiosk Satellite, Home Assistant and ESPHome unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Voice Match > Leave other voices out"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Voice Match > Leave other voices out"
+      ]
     }
   },
   "voiceWakePage": "唤醒词",
@@ -56948,19 +59511,6 @@
       ]
     }
   },
-  "voiceOptionAppLanguage": "Kiosk Satellite 的语言",
-  "@voiceOptionAppLanguage": {
-    "context": "Settings > Voice Satellite > Wake Word",
-    "description": "Translate the visible label or help. Keep Voice Satellite, Kiosk Satellite, Home Assistant, ESPHome, HACS and model names unchanged.",
-    "x-locations": {
-      "device": [
-        "Settings > Voice Satellite > Wake Word"
-      ],
-      "remoteAdmin": [
-        "Voice Satellite > Wake Word"
-      ]
-    }
-  },
   "settingDisableCacheTitle": "禁用缓存",
   "@settingDisableCacheTitle": {
     "context": "Settings > Web Browsing > Disable cache",
@@ -57036,6 +59586,97 @@
       ],
       "remoteAdmin": [
         "Web Browsing > Ignore SSL errors"
+      ]
+    }
+  },
+  "settingBrowserUserAgentTitle": "自定义浏览器标识（User-Agent）",
+  "@settingBrowserUserAgentTitle": {
+    "context": "Settings > Web Browsing > Custom user agent",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > Custom user agent"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > Custom user agent"
+      ]
+    }
+  },
+  "settingBrowserUserAgentDescription": "代替默认浏览器标识发送给网站。留空则使用默认值。",
+  "@settingBrowserUserAgentDescription": {
+    "context": "Settings > Web Browsing > Custom user agent",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > Custom user agent"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > Custom user agent"
+      ]
+    }
+  },
+  "webGeolocationSection": "HTML5 地理位置",
+  "@webGeolocationSection": {
+    "context": "Settings > Web Browsing > HTML5 Geolocation",
+    "description": "Heading of the group with the switch that lets web pages read the device location through the browser's Geolocation API. HTML5 Geolocation is the name of that browser feature.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing"
+      ],
+      "remoteAdmin": [
+        "Web Browsing"
+      ]
+    }
+  },
+  "settingWebGeolocationTitle": "启用地理位置访问",
+  "@settingWebGeolocationTitle": {
+    "context": "Settings > Web Browsing > HTML5 Geolocation > Enable geolocation access",
+    "description": "Setting label.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > HTML5 Geolocation > Enable geolocation access"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > HTML5 Geolocation > Enable geolocation access"
+      ]
+    }
+  },
+  "settingWebGeolocationDescription": "允许页面读取设备位置，例如天气雷达或地图。只有通过 HTTPS 加载的页面才能请求位置。",
+  "@settingWebGeolocationDescription": {
+    "context": "Settings > Web Browsing > HTML5 Geolocation > Enable geolocation access",
+    "description": "Help below this setting.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > HTML5 Geolocation > Enable geolocation access"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > HTML5 Geolocation > Enable geolocation access"
+      ]
+    }
+  },
+  "webGeolocationPermissionHeld": "页面可以读取设备位置。",
+  "@webGeolocationPermissionHeld": {
+    "context": "Settings > Web Browsing > Required system permissions",
+    "description": "Line under the Location permission row while the permission is granted and Enable geolocation access is on. Pages are the web pages the kiosk shows.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > Required system permissions"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > Required system permissions"
+      ]
+    }
+  },
+  "webGeolocationPermissionMissing": "没有此权限，页面无法读取设备位置。",
+  "@webGeolocationPermissionMissing": {
+    "context": "Settings > Web Browsing > Required system permissions",
+    "description": "Line under the Location permission row while the permission is missing and Enable geolocation access is on. Pages are the web pages the kiosk shows.",
+    "x-locations": {
+      "device": [
+        "Settings > Web Browsing > Required system permissions"
+      ],
+      "remoteAdmin": [
+        "Web Browsing > Required system permissions"
       ]
     }
   },
@@ -58985,6 +61626,343 @@
       ]
     }
   },
+  "voiceMatchEnrollTitle": "正在录入 {name}",
+  "@voiceMatchEnrollTitle": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    },
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "voiceMatchEnrollStarting": "正在准备…",
+  "@voiceMatchEnrollStarting": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollReading": "请大声朗读",
+  "@voiceMatchEnrollReading": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollSeconds": "{seconds} / {target} 秒",
+  "@voiceMatchEnrollSeconds": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged. Seconds of speech recorded out of the seconds needed.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    },
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "voiceMatchEnrollOtherVoice": "有其他声音在说话。这部分已被排除。",
+  "@voiceMatchEnrollOtherVoice": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollSaving": "正在保存…",
+  "@voiceMatchEnrollSaving": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollStop": "停止",
+  "@voiceMatchEnrollStop": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollTipWalk": "在房间里慢慢走动",
+  "@voiceMatchEnrollTipWalk": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollTipTurn": "不时背对信息亭",
+  "@voiceMatchEnrollTipTurn": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollTipTalk": "用平时下指令的语气说话",
+  "@voiceMatchEnrollTipTalk": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollDone": "{name} 已录入",
+  "@voiceMatchEnrollDone": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    },
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "voiceMatchEnrollDoneDetail": "已添加 {seconds} 秒语音。",
+  "@voiceMatchEnrollDoneDetail": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    },
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    },
+    "x-notes": "Keep placeholders unchanged. Supplied names, IDs and values are inserted by the app."
+  },
+  "voiceMatchEnrollFailed": "未保存任何内容",
+  "@voiceMatchEnrollFailed": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollTooShort": "语音太少，无法保存。请至少朗读 10 秒。",
+  "@voiceMatchEnrollTooShort": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollLost": "与 Voice Match 的连接已断开。",
+  "@voiceMatchEnrollLost": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollNoMic": "麦克风不可用。",
+  "@voiceMatchEnrollNoMic": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollStopped": "在录制任何内容之前已停止。",
+  "@voiceMatchEnrollStopped": {
+    "context": "Voice Match enrollment screen",
+    "description": "Shown full screen on the kiosk while a person reads aloud to enroll their voice in Voice Match. Keep Voice Match unchanged.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage1": "打开厨房的灯。",
+  "@voiceMatchEnrollPassage1": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage2": "设一个十分钟的计时器。",
+  "@voiceMatchEnrollPassage2": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage3": "明天天气怎么样？",
+  "@voiceMatchEnrollPassage3": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage4": "把牛奶和鸡蛋加到购物清单里。",
+  "@voiceMatchEnrollPassage4": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage5": "在客厅放点轻音乐。",
+  "@voiceMatchEnrollPassage5": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage6": "早上很冷，所以我们待在家里做了煎饼。",
+  "@voiceMatchEnrollPassage6": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage7": "后来我们走到公园，看着狗狗们在草地上互相追逐。",
+  "@voiceMatchEnrollPassage7": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage8": "傍晚起风了，我们生起了火。",
+  "@voiceMatchEnrollPassage8": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage9": "关掉楼下所有的灯。",
+  "@voiceMatchEnrollPassage9": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage10": "东京现在几点？",
+  "@voiceMatchEnrollPassage10": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage11": "提醒我星期一给牙医打电话。",
+  "@voiceMatchEnrollPassage11": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage12": "开车去机场要多长时间？",
+  "@voiceMatchEnrollPassage12": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage13": "暂停音乐。",
+  "@voiceMatchEnrollPassage13": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
+  "voiceMatchEnrollPassage14": "晚安。",
+  "@voiceMatchEnrollPassage14": {
+    "context": "Voice Match enrollment screen",
+    "description": "One sentence of the passage a person reads aloud to enroll their voice. Translate it as a natural sentence a person would say at home. It does not need to match the English word for word.",
+    "x-locations": {
+      "device": [
+        "Voice Match enrollment"
+      ]
+    }
+  },
   "voiceNoticeError": "Voice Satellite 错误",
   "@voiceNoticeError": {
     "context": "Voice Satellite notices on the kiosk screen",
@@ -59217,6 +62195,284 @@
     "x-locations": {
       "device": [
         "Floating timer overlay"
+      ]
+    }
+  },
+  "voiceTimersViewTitle": "计时器",
+  "@voiceTimersViewTitle": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Name of the full screen timers view: its heading, its kiosk menu entry and its Compass view.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimersEmpty": "没有计时器",
+  "@voiceTimersEmpty": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Shown in the timers view when no timer runs.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimerPause": "暂停",
+  "@voiceTimerPause": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Button that pauses a running timer.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimerResume": "继续",
+  "@voiceTimerResume": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Button that resumes a paused timer.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimerDismiss": "关闭",
+  "@voiceTimerDismiss": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Button that stops a ringing timer.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimerTimesUp": "时间到",
+  "@voiceTimerTimesUp": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Label beside the name of a timer that finished and rings.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimerPaused": "已暂停",
+  "@voiceTimerPaused": {
+    "context": "Full screen timers view, over the dashboard and the screensaver",
+    "description": "Label beside the name of a paused timer.",
+    "x-locations": {
+      "device": [
+        "Full screen timers view"
+      ]
+    }
+  },
+  "voiceTimersShareNone": "未选择 Kiosk 设备",
+  "@voiceTimersShareNone": {
+    "context": "Settings > Voice Satellite > Timers > Share with",
+    "description": "Value of the Share with row when no kiosk is picked.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Timers > Share with"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Timers > Share with"
+      ]
+    }
+  },
+  "voiceTimersShareEmpty": "未找到其他 Kiosk 设备。请在每台设备上开启“远程管理”和“查找其他 Kiosk 设备”。",
+  "@voiceTimersShareEmpty": {
+    "context": "Settings > Voice Satellite > Timers > Share with",
+    "description": "Shown in the Share with picker when no other kiosk is on the network list.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Timers > Share with"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Timers > Share with"
+      ]
+    }
+  },
+  "voiceTimersShareOffline": "离线",
+  "@voiceTimersShareOffline": {
+    "context": "Settings > Voice Satellite > Timers > Share with",
+    "description": "Beside a picked kiosk that is not on the network right now.",
+    "x-locations": {
+      "device": [
+        "Settings > Voice Satellite > Timers > Share with"
+      ],
+      "remoteAdmin": [
+        "Voice Satellite > Timers > Share with"
+      ]
+    }
+  },
+  "timersVoiceSection": "语音计时器",
+  "@timersVoiceSection": {
+    "context": "Settings > Timers",
+    "description": "Heading of the group about setting timers by voice.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "timersVoiceManage": "通过 Voice Satellite 管理计时器",
+  "@timersVoiceManage": {
+    "context": "Settings > Timers",
+    "description": "Row that opens the guide about timers by voice. Keep Voice Satellite unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "timersVoiceHint": "无需蓝图（脚本模板）或大语言模型（LLM）对话代理。",
+  "@timersVoiceHint": {
+    "context": "Settings > Timers",
+    "description": "Description under that row. A blueprint is a Home Assistant template for a script.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimersShareSearch": "搜索 Kiosk 设备",
+  "@voiceTimersShareSearch": {
+    "context": "Settings > Timers > Share with",
+    "description": "Hint in the search box of the kiosk picker.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers > Share with"
+      ],
+      "remoteAdmin": [
+        "Timers > Share with"
+      ]
+    }
+  },
+  "voiceTimerSetATimer": "设置计时器",
+  "@voiceTimerSetATimer": {
+    "context": "Timers view",
+    "description": "Button that opens the wheels for a new timer, and the title over them.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerEditTimer": "编辑计时器",
+  "@voiceTimerEditTimer": {
+    "context": "Timers view",
+    "description": "Title over the wheels that change the time a running timer has left.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerName": "名称",
+  "@voiceTimerName": {
+    "context": "Timers view",
+    "description": "Label of the optional name of a new timer.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerHours": "小时",
+  "@voiceTimerHours": {
+    "context": "Timers view",
+    "description": "Caption over the hours wheel of a timer's length.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerMinutes": "分钟",
+  "@voiceTimerMinutes": {
+    "context": "Timers view",
+    "description": "Caption over the minutes wheel of a timer's length.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerSeconds": "秒",
+  "@voiceTimerSeconds": {
+    "context": "Timers view",
+    "description": "Caption over the seconds wheel of a timer's length.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerStartFailed": "无法启动计时器。",
+  "@voiceTimerStartFailed": {
+    "context": "Timers view",
+    "description": "Shown when Home Assistant did not take a timer set by hand.",
+    "x-locations": {
+      "device": [
+        "Timers view"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "timersManage": "管理计时器",
+  "@timersManage": {
+    "context": "Settings > Timers",
+    "description": "Row that opens the timers view from the settings page.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
+      ]
+    }
+  },
+  "voiceTimerStartUnavailable": "在此 Kiosk 设备上启用 Voice Satellite 后即可在这里设置计时器。",
+  "@voiceTimerStartUnavailable": {
+    "context": "Timers",
+    "description": "Shown in place of the Set a timer button while the kiosk cannot start timers. Keep Voice Satellite unchanged.",
+    "x-locations": {
+      "device": [
+        "Settings > Timers"
+      ],
+      "remoteAdmin": [
+        "Timers"
       ]
     }
   }

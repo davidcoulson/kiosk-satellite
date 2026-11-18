@@ -9,6 +9,7 @@ import { fleetShown } from './fleetsync.js';
 import { intercomShown } from './intercom.js';
 import { alarmsShown } from './alarms.js';
 import { calendarShown } from './calendar.js';
+import { timersShown } from './timers.js';
 import { loadGestures } from './gestures.js';
 import { loadInstalledApps } from './apps.js';
 import { subpageIcon } from './icons.js';
@@ -26,8 +27,8 @@ import { clearSearchReturnTab, searchReturnTab } from './search.js';
 // tab lives in the URL, so a reload keeps you where you were, Back goes back,
 // and #settings can be bookmarked or handed to someone. Everything is served
 // from one root, so without this a reload always dumped you on the dashboard.
-export const TABS = ['dashboard', 'homeassistant', 'esphome', 'voicesatellite', 'browser', 'kiosk', 'lockdown', 'home', 'launcher', 'screenaudio', 'screensaver',
-  'camera', 'sendspin', 'cameras', 'dlna', 'intercom', 'alarms', 'calendar', 'files', 'gestures', 'leds', 'device', 'fleet', 'plugins', 'about', 'logs'];
+export const TABS = ['dashboard', 'navigation', 'groundcontrol', 'homeassistant', 'esphome', 'voicesatellite', 'browser', 'kiosk', 'lockdown', 'home', 'launcher', 'screenaudio', 'screensaver',
+  'camera', 'sendspin', 'cameras', 'dlna', 'intercom', 'alarms', 'calendar', 'timers', 'files', 'gestures', 'leds', 'device', 'fleet', 'plugins', 'about', 'logs'];
 // A page's title, by what is left on it on a device without a screen.
 export function tabTitle(tab) {
   return isHeadless() && tab === 'screenaudio' ? 'Audio' : TAB_TITLES[tab];
@@ -36,14 +37,14 @@ export function tabTitle(tab) {
 // somewhere sensible.
 export const LEGACY_TABS = { screen: 'screenaudio', audio: 'screenaudio', remote: 'device', console: 'logs', btproxy: 'esphome', mqtt: 'esphome' };
 export const TAB_TITLES = {
-  dashboard: 'Overview', browser: 'Web Browsing',
+  dashboard: 'Overview', navigation: 'Navigation', groundcontrol: 'Ground Control', browser: 'Web Browsing',
   kiosk: 'Kiosk Mode', lockdown: 'Lockdown Mode', launcher: 'App Launcher', home: 'Home Launcher', screenaudio: 'Screen & Audio', screensaver: 'Screensaver',
   camera: 'Camera',
   homeassistant: 'Home Assistant',
   voicesatellite: 'Voice Satellite',
   cameras: 'Camera Streams',
   sendspin: 'Media Player',
-  dlna: 'DLNA Renderer', intercom: 'Intercom', alarms: 'Alarms', calendar: 'Calendar', esphome: 'ESPHome',
+  dlna: 'DLNA Renderer', intercom: 'Intercom', alarms: 'Alarms', calendar: 'Calendar', timers: 'Timers', esphome: 'ESPHome',
   files: 'File Manager', gestures: 'Gestures', leds: 'LED Control',
   device: 'Device', fleet: 'Fleet Management', plugins: 'Plugin Manager', about: 'About', logs: 'Logs',
 };
@@ -217,6 +218,7 @@ export function showTab(name, { push = true, refresh = true } = {}) {
   // The alarms move on the kiosk too (a ring, a snooze): re-read on a visit.
   if (tab === 'alarms') alarmsShown();
   if (tab === 'calendar') calendarShown();
+  if (tab === 'timers') timersShown();
   if (tab === 'plugins' && refresh && !sameTab) loadPlugins();
 
   if (tab === 'about') loadAboutInfo();

@@ -4,6 +4,7 @@ import 'package:kiosk_satellite/core/event_bus.dart';
 import 'package:kiosk_satellite/core/logging.dart';
 import 'package:kiosk_satellite/managers/settings/settings_manager.dart';
 import 'package:kiosk_satellite/managers/settings/definitions.dart' as defs;
+import 'package:kiosk_satellite/managers/wake_word/pryon/pryon_catalog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -25,6 +26,9 @@ void main() {
     // Web Content has no settings page anymore: everything defaults on.
     expect(settings.get(defs.webMicrophone), isTrue);
     expect(settings.get(defs.webCamera), isTrue);
+    // Geolocation is the exception: it has a row and starts off (#1383).
+    expect(settings.get(defs.webGeolocation), isFalse);
+    expect(settings.visible(defs.webGeolocation), isTrue);
     expect(settings.get(defs.screensaverTimeoutSeconds), 300);
   });
 
@@ -46,6 +50,9 @@ void main() {
     await build({});
     await settings.set(defs.webCamera, true);
     expect(settings.get(defs.webCamera), isTrue);
+    // Geolocation is the exception: it has a row and starts off (#1383).
+    expect(settings.get(defs.webGeolocation), isFalse);
+    expect(settings.visible(defs.webGeolocation), isTrue);
     // Simulate a fresh app run against the same store.
     final bus = EventBus();
     final log = Logger();
@@ -95,6 +102,59 @@ void main() {
     test('an already-clean value is left untouched', () async {
       await build({'ks.ha.url': 'https://ha.example'});
       expect(settings.get(defs.haUrl), 'https://ha.example');
+    });
+  });
+
+  group('Custom user agent', () {
+    const agent =
+        'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 '
+        '(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+
+    test('empty by default, which keeps the WebView user agent', () async {
+      await build({});
+      expect(settings.get(defs.browserUserAgent), '');
+    });
+
+    test('sits right after Ignore SSL errors on Web Browsing', () {
+      final keys = [for (final def in defs.allSettings) def.key];
+      expect(
+        keys.indexOf(defs.browserUserAgent.key),
+        keys.indexOf(defs.ignoreSslErrors.key) + 1,
+      );
+      expect(defs.browserUserAgent.category, defs.ignoreSslErrors.category);
+      expect(defs.browserUserAgent.section, defs.ignoreSslErrors.section);
+      expect(defs.browserUserAgent.hidden, isFalse);
+    });
+
+    test('a pasted value is stored as one clean line', () async {
+      await build({});
+      expect(
+        await settings.setFromJson(
+          'browser.user_agent',
+          '  Mozilla/5.0 (Linux; Android 10; K)\r\n\tAppleWebKit/537.36 '
+              '(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36\n',
+        ),
+        isTrue,
+      );
+      expect(settings.get(defs.browserUserAgent), agent);
+    });
+
+    test('line breaks typed in the editor become spaces', () async {
+      await build({});
+      await settings.set(
+        defs.browserUserAgent,
+        'Mozilla/5.0 (Linux; Android 10; K)\nAppleWebKit/537.36 \n\n'
+        '(KHTML, like Gecko)\r\nChrome/130.0.0.0 Safari/537.36',
+      );
+      expect(settings.get(defs.browserUserAgent), agent);
+      expect(defs.browserUserAgent.multiline, isTrue);
+    });
+
+    test('clearing the field goes back to the default', () async {
+      await build({'ks.browser.user_agent': agent});
+      expect(settings.get(defs.browserUserAgent), agent);
+      expect(await settings.setFromJson('browser.user_agent', '  '), isTrue);
+      expect(settings.get(defs.browserUserAgent), '');
     });
   });
 
@@ -189,6 +249,93 @@ void main() {
       await bus.dispose();
     });
   }
+
+  test('geolocation access stored before it had a row is dropped once '
+      '(#1383)', () async {
+    await build({'ks.web.geolocation': true});
+    expect(settings.get(defs.webGeolocation), isFalse);
+
+    // Turned on from its row, it stays on.
+    await settings.set(defs.webGeolocation, true);
+    final bus = EventBus();
+    final reopened = SettingsManager(bus, CommandRegistry(log), log);
+    await reopened.init();
+    expect(reopened.get(defs.webGeolocation), isTrue);
+    await reopened.dispose();
+    await bus.dispose();
+  });
+
+  test("Amazon's wake word engine moves to vsWakeWord Alexa once while it "
+      'is off', () async {
+    PryonCatalog.enabled = false;
+    addTearDown(() => PryonCatalog.enabled = true);
+    await build({
+      'ks.voice.wake_word_engine': 'pryon',
+      'ks.voice.wake_words': '["computer","echo"]',
+    });
+    expect(settings.get(defs.voiceWakeWordEngine), 'vswakeword');
+    expect(settings.get(defs.voiceWakeWords), '["alexa"]');
+
+    // Written once: Amazon's engine set again later (an old backup, a
+    // fleet profile) is left alone, and the voice manager listens with
+    // vsWakeWord for it.
+    await settings.set(defs.voiceWakeWordEngine, 'pryon');
+    await settings.set(defs.voiceWakeWords, '["ok_nabu"]');
+    final bus = EventBus();
+    final reopened = SettingsManager(bus, CommandRegistry(log), log);
+    await reopened.init();
+    expect(reopened.get(defs.voiceWakeWordEngine), 'pryon');
+    expect(reopened.get(defs.voiceWakeWords), '["ok_nabu"]');
+    await reopened.dispose();
+    await bus.dispose();
+  });
+
+  test("Amazon's wake word engine stays while it is on", () async {
+    await build({
+      'ks.voice.wake_word_engine': 'pryon',
+      'ks.voice.wake_words': '["computer","echo"]',
+    });
+    expect(settings.get(defs.voiceWakeWordEngine), 'pryon');
+    expect(settings.get(defs.voiceWakeWords), '["computer","echo"]');
+  });
+
+  test("Amazon's wake word language is an installed locale", () async {
+    PryonCatalog.debugWords = const [
+      PryonWord(
+        id: 'echo',
+        model: 'echo-nl-NL',
+        keyword: 'ECHO',
+        locales: ['nl-NL'],
+      ),
+      PryonWord(
+        id: 'alexa',
+        model: 'alexa-en-US',
+        keyword: 'ALEXA',
+        locales: ['en-US'],
+      ),
+    ];
+    addTearDown(() => PryonCatalog.debugWords = const []);
+    await build({});
+    // The first locale until one is picked, and no app language option.
+    expect(settings.optionsFor(defs.voiceAmazonLocale), ['nl-NL', 'en-US']);
+    expect(settings.get(defs.voiceAmazonLocale), 'nl-NL');
+    await settings.set(defs.voiceAmazonLocale, 'en-US');
+    expect(settings.get(defs.voiceAmazonLocale), 'en-US');
+    // A pick whose files were removed.
+    await settings.set(defs.voiceAmazonLocale, 'de-DE');
+    expect(settings.get(defs.voiceAmazonLocale), 'nl-NL');
+  });
+
+  test('another wake word engine is not migrated', () async {
+    PryonCatalog.enabled = false;
+    addTearDown(() => PryonCatalog.enabled = true);
+    await build({
+      'ks.voice.wake_word_engine': 'microwakeword',
+      'ks.voice.wake_words': '["hey_jarvis"]',
+    });
+    expect(settings.get(defs.voiceWakeWordEngine), 'microwakeword');
+    expect(settings.get(defs.voiceWakeWords), '["hey_jarvis"]');
+  });
 
   test('the audio faders default to full, matching old behavior', () async {
     await build({});

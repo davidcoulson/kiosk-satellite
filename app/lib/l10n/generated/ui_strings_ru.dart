@@ -200,6 +200,11 @@ class UiStringsRu extends UiStrings {
   }
 
   @override
+  String alarmsSkipAlarm(String time) {
+    return 'Пропустить будильник на $time';
+  }
+
+  @override
   String get alarmsNextWidget => 'Следующий будильник';
 
   @override
@@ -2205,6 +2210,9 @@ class UiStringsRu extends UiStrings {
   String get gestureOpenAlarmList => 'Открыть список будильников';
 
   @override
+  String get gestureOpenTimers => 'Открыть таймеры';
+
+  @override
   String get gestureOpenNextAlarm => 'Открыть следующий будильник';
 
   @override
@@ -3210,6 +3218,9 @@ class UiStringsRu extends UiStrings {
   String get libraryTracks => 'Треки';
 
   @override
+  String get libraryGenres => 'Жанры';
+
+  @override
   String get libraryPlaylists => 'Плейлисты';
 
   @override
@@ -3845,6 +3856,13 @@ class UiStringsRu extends UiStrings {
       'Этого варианта больше нет в списке.';
 
   @override
+  String get pluginDashboardLink => 'Ссылка на панели';
+
+  @override
+  String get pluginDashboardLinkHint =>
+      'Укажите эту ссылку в действии нажатия кнопки на панели.';
+
+  @override
   String get pluginPlugin => 'Плагин';
 
   @override
@@ -3956,6 +3974,9 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get pluginDragToReorder => 'Перетащите для изменения порядка';
+
+  @override
+  String get pluginDuplicate => 'Дублировать';
 
   @override
   String get pluginDone => 'Готово';
@@ -4125,6 +4146,9 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get pluginNotListedChip => 'Нет в Плагинах сообщества';
+
+  @override
+  String get pluginReleaseNotes => 'Примечания к выпуску';
 
   @override
   String get pluginCharts => 'Графики';
@@ -5226,6 +5250,13 @@ class UiStringsRu extends UiStrings {
       'За сколько времени экран светлеет перед будильником-рассветом.';
 
   @override
+  String get settingAlarmsSkipMinutesTitle => 'Кнопка «Пропустить»';
+
+  @override
+  String get settingAlarmsSkipMinutesDescription =>
+      'За сколько до будильника заставки «Часы» и «Погода» показывают кнопку, чтобы его пропустить.';
+
+  @override
   String get alarmsOption5Minutes => '5 минут';
 
   @override
@@ -5242,6 +5273,12 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get alarmsOption30Minutes => '30 минут';
+
+  @override
+  String get alarmsOption60Minutes => '60 минут';
+
+  @override
+  String get alarmsOptionOff => 'Выкл';
 
   @override
   String get settingsMenuAlarms => 'Будильники';
@@ -5395,8 +5432,8 @@ class UiStringsRu extends UiStrings {
       'Закрывать при бездействии';
 
   @override
-  String get settingCalendarIdleCloseMinutesDescription =>
-      'Возвращаться к панели после этого времени без касаний.';
+  String get settingIdleCloseCompassDescription =>
+      'Возвращаться к панели после этого времени без касаний. В раскладке Compass вместо этого действует «Возвращаться в центр».';
 
   @override
   String get settingKioskAllowCalendarTitle => 'Календарь';
@@ -6116,8 +6153,8 @@ class UiStringsRu extends UiStrings {
   String get settingCameraAutoDismissSecondsTitle => 'Автозакрытие через';
 
   @override
-  String get settingCameraAutoDismissSecondsDescription =>
-      'Автоматически закрывать открытый вид камер; 0 оставляет его открытым. Заставка с камерами не затрагивается.';
+  String get settingCameraAutoDismissCompassDescription =>
+      'Закрывает открытый вид камер через это время. 0 оставляет его открытым. Заставка с камерами не затрагивается. В раскладке Compass вместо этого действует «Возвращаться в центр».';
 
   @override
   String get cameraStreamsPlayback => 'Воспроизведение';
@@ -6260,6 +6297,23 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get cameraStreamsLoadFailed => 'Не удалось загрузить камеры.';
+
+  @override
+  String get cameraStreamsDeleteUnused => 'Удалить неиспользуемые камеры';
+
+  @override
+  String get cameraStreamsDeleteUnusedConfirm =>
+      'Удалить неиспользуемые камеры?';
+
+  @override
+  String cameraStreamsOneUnusedCamera(String count) {
+    return '$count камера не входит ни в один вид.';
+  }
+
+  @override
+  String cameraStreamsManyUnusedCameras(String count) {
+    return 'Камер, которых нет ни в одном виде: $count.';
+  }
 
   @override
   String get cameraStreamsViews => 'Виды';
@@ -8138,6 +8192,14 @@ class UiStringsRu extends UiStrings {
       'Включите, если прокси перестаёт передавать при выключенном экране. Больше нагрузки на ЦП.';
 
   @override
+  String get settingBtproxyDeviceMacTitle =>
+      'Использовать MAC-адрес устройства для Bluetooth';
+
+  @override
+  String get settingBtproxyDeviceMacDescription =>
+      'Позволяет интеграциям вроде Bermuda связать этот прокси с его устройством. Меняет адрес прокси в Home Assistant.';
+
+  @override
   String get settingBtproxyConnectionsTitle =>
       'Разрешить подключения устройств';
 
@@ -8661,6 +8723,26 @@ class UiStringsRu extends UiStrings {
       'A mapped key runs its action whatever app is in front, and does nothing else.';
 
   @override
+  String get settingGroundControlEnabledTitle => 'Включить Ground Control';
+
+  @override
+  String get settingGroundControlEnabledDescription =>
+      'Подключиться к Kiosk Satellite Ground Control, который запускает Voice Match на мощном компьютере.';
+
+  @override
+  String get settingGroundControlAddressTitle => 'Адрес';
+
+  @override
+  String get settingGroundControlAddressDescription =>
+      'Оставьте пустым, чтобы найти Ground Control в сети. Укажите адрес для Ground Control в другой сети.';
+
+  @override
+  String get groundControlLooking => 'Поиск Ground Control в сети.';
+
+  @override
+  String get groundControlApp => 'Приложение Ground Control';
+
+  @override
   String get haCustomPages => 'Свои страницы';
 
   @override
@@ -8900,6 +8982,10 @@ class UiStringsRu extends UiStrings {
   String haReturnPath(String path) {
     return 'Возвращается к «$path» по тайм-ауту.';
   }
+
+  @override
+  String get haReturnCompass =>
+      'При навигации Compass каждый вид панели в раскладке по тайм-ауту возвращается к выбранному для него виду.';
 
   @override
   String get settingHaRotationEnabledTitle => 'Включить ротацию видов панели';
@@ -9267,8 +9353,15 @@ class UiStringsRu extends UiStrings {
   String get settingIntercomRingSoundTitle => 'Звук звонка';
 
   @override
-  String get settingIntercomRingSoundDescription =>
-      'Проигрывается на громкости уведомлений.';
+  String get settingIntercomRingSoundVolumeDescription =>
+      'Проигрывается на громкости звонка.';
+
+  @override
+  String get settingIntercomRingVolumeTitle => 'Громкость звонка';
+
+  @override
+  String get settingIntercomRingVolumeDescription =>
+      'Насколько громко звонит вызов, отдельно от громкости медиа.';
 
   @override
   String get settingIntercomAcceptAnnouncementsTitle => 'Принимать объявления';
@@ -9530,8 +9623,8 @@ class UiStringsRu extends UiStrings {
   String get settingKioskAllowDrawerTitle => 'Разрешить меню быстрых действий';
 
   @override
-  String get settingKioskAllowDrawerDescription =>
-      'Свайп от края открывает меню без жеста выхода или PIN, ограниченное действиями, выбранными ниже.';
+  String get settingKioskAllowQuickControlsDescription =>
+      'Показывает меню без жеста выхода или PIN, ограниченное действиями, выбранными ниже. В классической навигации его открывает свайп от края. В Compass это вид «Быстрые действия».';
 
   @override
   String get settingKioskAllowDashboardTitle => 'Панель';
@@ -9976,6 +10069,14 @@ class UiStringsRu extends UiStrings {
   @override
   String get settingLockdownEnabledDescription =>
       'Отключает взаимодействие с экраном до выключения из Home Assistant или жестом выхода.';
+
+  @override
+  String get settingLockdownAutoUnlockMinutesTitle =>
+      'Автоматически разблокировать через';
+
+  @override
+  String get settingLockdownAutoUnlockMinutesDescription =>
+      'Выключает режим блокировки через это время, если он включён из меню киоска. Установите 0, чтобы блокировка сохранялась.';
 
   @override
   String get settingLockdownBlackoutTitle => 'Гасить экран';
@@ -10923,6 +11024,211 @@ class UiStringsRu extends UiStrings {
   String get settingsLedEffects => 'Эффекты';
 
   @override
+  String get settingsGroupKioskSatellite => 'Kiosk Satellite';
+
+  @override
+  String get settingsMenuNavigation => 'Навигация';
+
+  @override
+  String get settingsMenuNavigationSummary => 'Классическая или Compass';
+
+  @override
+  String get navigationStyleSection => 'Стиль навигации';
+
+  @override
+  String get navigationLayoutSection => 'Раскладка Compass';
+
+  @override
+  String get navigationOptionsSection => 'Параметры Compass';
+
+  @override
+  String get settingNavStyleTitle => 'Стиль навигации';
+
+  @override
+  String get settingNavStyleDescription =>
+      'Классическая сохраняет боковое меню, «Потяните для обновления» и карусель панели. Compass переключает виды, расположенные крестом, свайпом.';
+
+  @override
+  String get settingNavCompassLayoutTitle => 'Раскладка Compass';
+
+  @override
+  String get settingNavCompassLayoutViewsDescription =>
+      'До двух видов с каждой стороны. Добавьте несколько видов панелей Home Assistant и по одному каждого другого типа.';
+
+  @override
+  String get settingNavCompassAnimationTitle => 'Анимация свайпа';
+
+  @override
+  String get settingNavCompassAnimationDescription =>
+      'Отдалить, чтобы показать соседние виды, или просто пролистнуть.';
+
+  @override
+  String get settingNavCompassPositionTitle =>
+      'Показывать положение при свайпе';
+
+  @override
+  String get settingNavCompassPositionDescription =>
+      'Небольшая карта того, где вы сейчас.';
+
+  @override
+  String get settingNavCompassReturnMinutesTitle => 'Возвращаться в центр';
+
+  @override
+  String get settingNavCompassReturnMinutesDescription =>
+      'Возвращаться к центральному виду, если столько времени никто не касается экрана. Установите 0, чтобы оставаться на виде.';
+
+  @override
+  String get settingNavCompassMenuItemsTitle => 'Пункты меню';
+
+  @override
+  String get settingNavQuickControlsItemsDescription =>
+      'Что показывает вид «Быстрые действия». Общее с боковым меню.';
+
+  @override
+  String get navigationClassic => 'Классическая';
+
+  @override
+  String get navigationCompass => 'Compass';
+
+  @override
+  String get navigationZoom => 'Масштаб';
+
+  @override
+  String get navigationSlide => 'Сдвиг';
+
+  @override
+  String get compassClassicViewHint => 'Вид Home Assistant с боковым меню.';
+
+  @override
+  String get compassCompassHint =>
+      'Свайп между видами, расположенными крестом.';
+
+  @override
+  String get compassLayoutViewsHint =>
+      'До двух видов с каждой стороны. Добавьте несколько видов панелей Home Assistant и по одному каждого другого типа. Коснитесь вида, чтобы изменить его, в том числе центральный.';
+
+  @override
+  String get compassOffNote =>
+      '«Потяните для обновления», карусель панели и свайп от края, открывающий боковое меню, отключены, пока включён Compass.';
+
+  @override
+  String get settingOffUnderCompass =>
+      'Отключено, пока включена навигация Compass.';
+
+  @override
+  String get compassQuickControlsView => 'Быстрые действия';
+
+  @override
+  String get compassHomeDashboard => 'Home Assistant';
+
+  @override
+  String get compassAppLauncher => 'Лаунчер приложений';
+
+  @override
+  String get compassCenter => 'Центр';
+
+  @override
+  String get compassAddTile => 'Добавить';
+
+  @override
+  String get compassAddView => 'Добавить вид';
+
+  @override
+  String get compassMoveIn => 'Ближе';
+
+  @override
+  String get compassMoveOut => 'Дальше';
+
+  @override
+  String get compassReplace => 'Заменить';
+
+  @override
+  String get compassRemove => 'Убрать';
+
+  @override
+  String get compassChange => 'Изменить';
+
+  @override
+  String get compassSideUp => 'Сверху';
+
+  @override
+  String get compassSideRight => 'Справа';
+
+  @override
+  String get compassSideDown => 'Снизу';
+
+  @override
+  String get compassSideLeft => 'Слева';
+
+  @override
+  String compassFirstView(String side) {
+    return '$side, первый вид';
+  }
+
+  @override
+  String compassSecondView(String side) {
+    return '$side, второй вид';
+  }
+
+  @override
+  String get compassAddAbove => 'Добавить вид сверху';
+
+  @override
+  String get compassAddBelow => 'Добавить вид снизу';
+
+  @override
+  String get compassAddLeft => 'Добавить вид слева';
+
+  @override
+  String get compassAddRight => 'Добавить вид справа';
+
+  @override
+  String get compassChangeCenter => 'Изменить центральный вид';
+
+  @override
+  String compassReplaceTitle(String name) {
+    return 'Заменить: $name';
+  }
+
+  @override
+  String get compassKindDashboard => 'Панель Home Assistant';
+
+  @override
+  String get compassKindDashboardHint =>
+      'Любой вид, свои страницы и страницы приложений';
+
+  @override
+  String get compassKindTaken => 'Уже размещено';
+
+  @override
+  String get compassKindUnavailable => 'Не настроено на этом киоске';
+
+  @override
+  String get compassKioskLocked => 'Киоск заблокирован';
+
+  @override
+  String get compassQuickControls => 'Быстрые действия';
+
+  @override
+  String get compassOpen => 'Открыть';
+
+  @override
+  String get compassStateOn => 'Вкл.';
+
+  @override
+  String get compassStateOff => 'Выкл.';
+
+  @override
+  String get compassHoldMode => 'Режим удержания';
+
+  @override
+  String get settingsMenuGroundControl => 'Ground Control';
+
+  @override
+  String get settingsMenuGroundControlSummary =>
+      'Voice Match на мощном компьютере';
+
+  @override
   String get settingAdaptiveBrightnessTitle => 'Адаптивная яркость';
 
   @override
@@ -11042,6 +11348,118 @@ class UiStringsRu extends UiStrings {
   }
 
   @override
+  String get settingAdaptiveVolumeTitle => 'Включить адаптивную громкость';
+
+  @override
+  String get settingAdaptiveVolumeDescription =>
+      'Уменьшать громкость по мере того, как в комнате становится тише, используя микрофон.';
+
+  @override
+  String get settingAdaptiveVolumeAssistantTitle => 'Ассистент';
+
+  @override
+  String get settingAdaptiveVolumeAssistantDescription =>
+      'Голосовые ответы и сигналы.';
+
+  @override
+  String get settingAdaptiveVolumeMediaTitle => 'Медиа';
+
+  @override
+  String get settingAdaptiveVolumeMediaDescription =>
+      'Музыка и видео. Задаётся в начале воспроизведения.';
+
+  @override
+  String get settingAdaptiveVolumeIntercomTitle => 'Интерком';
+
+  @override
+  String get settingAdaptiveVolumeIntercomDescription =>
+      'Звонки. Задаётся в начале звонка.';
+
+  @override
+  String get settingAdaptiveVolumeCurveTitle => 'Кривая громкости';
+
+  @override
+  String get settingAdaptiveVolumeCurveSliderDescription =>
+      'Громкость для каждого уровня шума в комнате, в процентах от ползунка этой громкости в разделе «Экран и звук».';
+
+  @override
+  String get screenAudioAdaptiveVolume => 'Адаптивная громкость';
+
+  @override
+  String get screenAudioAdaptiveVolumeHint =>
+      'Следовать шуму комнаты через микрофон';
+
+  @override
+  String get screenAudioAdaptiveVolumes => 'Громкости';
+
+  @override
+  String get screenAudioRoomNoise => 'Шум в комнате';
+
+  @override
+  String get screenAudioRoomNoiseNote =>
+      'Что измеряет микрофон, пока это устройство молчит.';
+
+  @override
+  String get screenAudioRoomNoiseHolds =>
+      'Показание удерживается, пока это устройство что-то воспроизводит. Изменения в комнате во время воспроизведения не учитываются.';
+
+  @override
+  String get screenAudioRoomNoiseNoReading =>
+      'Если показаний нет, включите адаптивную громкость или определение слова пробуждения и проверьте, что микрофон не заглушён.';
+
+  @override
+  String screenAudioDbfs(String level) {
+    return '$level dBFS';
+  }
+
+  @override
+  String get screenAudioVolumeCurveSliderHint =>
+      'Потяните точку или нажмите её, чтобы ввести точные значения. Проценты применяются к ползункам громкости ассистента, медиа и интеркома в разделе «Экран и звук»: при 100% звук играет на уровне ползунка, а при 50% так, как если бы ползунок стоял на половине.';
+
+  @override
+  String get screenAudioVolumeCurveNoise => 'Шум в комнате (dBFS)';
+
+  @override
+  String get screenAudioVolumeCurveAssistant => 'Ассистент (%)';
+
+  @override
+  String get screenAudioVolumeCurveMedia => 'Медиа (%)';
+
+  @override
+  String get screenAudioVolumeCurveIntercom => 'Интерком (%)';
+
+  @override
+  String screenAudioVolumeCurveNoiseRange(String low, String high) {
+    return 'Введите уровень шума от $low до $high dBFS';
+  }
+
+  @override
+  String screenAudioVolumeCurveLevelRange(String low, String high) {
+    return 'Введите громкость от $low% до $high%';
+  }
+
+  @override
+  String get screenAudioVolumeTest => 'Проверка громкости';
+
+  @override
+  String get screenAudioVolumeTestAssistant => 'Проверить громкость ассистента';
+
+  @override
+  String get screenAudioVolumeTestAssistantHint =>
+      'Воспроизводит объявление Voice Satellite с громкостью ассистента. Нужно настроить Voice Satellite в Home Assistant.';
+
+  @override
+  String get screenAudioVolumeTestMedia => 'Проверить громкость медиа';
+
+  @override
+  String get screenAudioVolumeTestMediaHint =>
+      'Воспроизводит объявление ESPHome с громкостью медиа. Нужно включить Объявления в ESPHome.';
+
+  @override
+  String get screenAudioVolumeTestMessage =>
+      'Так громко сейчас звучит объявление.';
+
+  @override
   String get settingAudioMicDeviceTitle => 'Микрофон';
 
   @override
@@ -11065,6 +11483,61 @@ class UiStringsRu extends UiStrings {
   String screenAudioDisconnected(String name) {
     return '$name (не подключено)';
   }
+
+  @override
+  String get settingEqualizerEnabledTitle => 'Включить эквалайзер';
+
+  @override
+  String get settingEqualizerEnabledDescription =>
+      'Настраивает звучание музыки, ассистента, сигналов и интеркома. Звук видео и панелей не обрабатывается.';
+
+  @override
+  String get settingEqualizerBand1Title => '100 Гц';
+
+  @override
+  String get settingEqualizerBand1Description =>
+      'Низкие частоты. Маленькие динамики быстро начинают искажать звук при их усилении.';
+
+  @override
+  String get settingEqualizerBand2Title => '300 Гц';
+
+  @override
+  String get settingEqualizerBand2Description =>
+      'Нижняя середина. Ослабление убирает гулкое или бубнящее звучание.';
+
+  @override
+  String get settingEqualizerBand3Title => '1 кГц';
+
+  @override
+  String get settingEqualizerBand3Description =>
+      'Середина, где находится большая часть голоса.';
+
+  @override
+  String get settingEqualizerBand4Title => '3 кГц';
+
+  @override
+  String get settingEqualizerBand4Description =>
+      'Верхняя середина. Усиление делает речь разборчивее.';
+
+  @override
+  String get settingEqualizerBand5Title => '10 кГц';
+
+  @override
+  String get settingEqualizerBand5Description => 'Высокие частоты.';
+
+  @override
+  String get settingEqualizerPreampTitle => 'Автоматический предусилитель';
+
+  @override
+  String get settingEqualizerPreampDescription =>
+      'Снижает уровень на величину наибольшего усиления, чтобы динамик не искажал звук и подавление эха продолжало работать.';
+
+  @override
+  String get screenAudioEqualizer => 'Эквалайзер';
+
+  @override
+  String get screenAudioEqualizerHint =>
+      'Низкие, средние, высокие частоты, предусилитель';
 
   @override
   String get settingMicCaptureModeTitle => 'Режим захвата';
@@ -12218,6 +12691,13 @@ class UiStringsRu extends UiStrings {
       'Период бездействия до старта заставки.';
 
   @override
+  String get settingScreensaverFadeTitle => 'Плавное появление и исчезновение';
+
+  @override
+  String get settingScreensaverFadeDescription =>
+      'Заставка плавно появляется поверх панели и плавно исчезает при закрытии. Не действует для заставок «Медиа Home Assistant», «Веб-сайт» и «Потоки камер».';
+
+  @override
   String get settingScreensaverModeTitle => 'Режим заставки';
 
   @override
@@ -12267,6 +12747,14 @@ class UiStringsRu extends UiStrings {
   @override
   String get settingScreensaverNotificationBrightnessDescription =>
       'Снимать затемнение заставки, пока на экране уведомление.';
+
+  @override
+  String get settingScreensaverTouchBrightnessSecondsTitle =>
+      'Ярче при касании';
+
+  @override
+  String get settingScreensaverTouchBrightnessSecondsDescription =>
+      'Снимать затемнение заставки на это время после касания, которое её не закрывает. 0: выключено.';
 
   @override
   String get settingScreensaverScreenOffMinutesTitle => 'Выключать экран через';
@@ -13891,6 +14379,10 @@ class UiStringsRu extends UiStrings {
       'Называть каждое показание над его значением. Выключено: значения размером с температуру.';
 
   @override
+  String get screensaverWeatherBarHighLowDescription =>
+      'Показывать сегодняшний максимум и минимум, когда у сущности погоды есть ежедневный прогноз.';
+
+  @override
   String get screensaverWeatherBarHumidityDescription =>
       'Показывать влажность, когда сущность погоды её сообщает.';
 
@@ -14468,10 +14960,6 @@ class UiStringsRu extends UiStrings {
   String get voiceChimesPage => 'Сигналы';
 
   @override
-  String get voiceChimesHint =>
-      'Звуки пробуждения, готовности, ошибки, таймера и объявлений';
-
-  @override
   String get voiceChimesPreview => 'Предпросмотр на киоске';
 
   @override
@@ -14540,6 +15028,10 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get voiceChimeVolumeDescription => 'Доля громкости ассистента.';
+
+  @override
+  String get voiceChimesSoundsHint =>
+      'Звуки пробуждения, готовности, ошибки и объявлений';
 
   @override
   String get settingVoiceShowCommandTitle => 'Показывать сказанное';
@@ -14713,9 +15205,6 @@ class UiStringsRu extends UiStrings {
   String get voiceConversationHint => 'Что показывает наложение и как долго';
 
   @override
-  String get voiceTimersHint => 'Плашки, оповещения, голосовые напоминания';
-
-  @override
   String get voiceSectionFollowUp => 'Уточнение';
 
   @override
@@ -14735,6 +15224,9 @@ class UiStringsRu extends UiStrings {
 
   @override
   String get voiceSectionTimerEnds => 'Когда таймер завершается';
+
+  @override
+  String get voiceSectionSharedTimers => 'Общие таймеры';
 
   @override
   String get voiceStatusEsphomeOff => 'Сервер ESPHome выключен.';
@@ -15337,11 +15829,11 @@ class UiStringsRu extends UiStrings {
   String get voiceTesterPlayRecent => 'Проиграть последние 10 с';
 
   @override
-  String get settingVoiceTimerPillsTitle => 'Показывать плашки таймеров';
+  String get settingVoiceTimerPillsViewTitle => 'Показывать таймеры плашками';
 
   @override
-  String get settingVoiceTimerPillsDescription =>
-      'Работающие таймеры плавают по экрану. Перетащите их куда угодно.';
+  String get settingVoiceTimerPillsViewDescription =>
+      'Таймеры плавают по экрану вместо открытия полноэкранного вида.';
 
   @override
   String get settingVoiceTimerNameInPillTitle => 'Показывать название таймера';
@@ -15402,6 +15894,205 @@ class UiStringsRu extends UiStrings {
   String settingVoiceTimerNamedPhraseDescription(String name) {
     return '$name заменяется названием таймера.';
   }
+
+  @override
+  String get settingVoiceTimersShareTitle => 'Общие таймеры';
+
+  @override
+  String get settingVoiceTimersShareDescription =>
+      'Таймеры, запущенные на этом киоске, также работают на выбранных вами киосках.';
+
+  @override
+  String get settingVoiceTimersShareWithTitle => 'Делиться с';
+
+  @override
+  String get settingVoiceTimersShareWithDescription =>
+      'Киоски, которые показывают таймеры этого киоска и звонят вместе с ним.';
+
+  @override
+  String get settingVoiceTimersReceiveTitle => 'Показывать общие таймеры';
+
+  @override
+  String get settingVoiceTimersReceiveDescription =>
+      'Таймеры, которыми делятся другие киоски, показываются и звонят здесь.';
+
+  @override
+  String get settingKioskAllowTimersTitle => 'Таймеры';
+
+  @override
+  String get settingKioskAllowTimersDescription =>
+      'Открывать вид таймеров из меню киоска.';
+
+  @override
+  String get settingsMenuTimersSummary =>
+      'Полноэкранный вид, плашки, общие таймеры';
+
+  @override
+  String get fleetTheKiosksPickedInShareWithTheTimerSound =>
+      'киоски, выбранные в «Делиться с», звук таймера';
+
+  @override
+  String get settingTimersTtsEngineDescription =>
+      'Сущность синтеза речи Home Assistant, которая произносит таймеры.';
+
+  @override
+  String get settingTimersTtsLanguageDescription =>
+      'Язык, на котором произносятся таймеры.';
+
+  @override
+  String get settingTimersTtsVoiceDescription =>
+      'Голос, которым произносятся таймеры.';
+
+  @override
+  String get settingTimersShowBeforeEndTitle =>
+      'Показывать вид таймеров перед завершением';
+
+  @override
+  String get settingTimersShowBeforeEndDescription =>
+      'За сколько до завершения таймера открывается вид таймеров.';
+
+  @override
+  String get settingTimersShowOnStartTitle =>
+      'Показывать вид таймеров при запуске таймера';
+
+  @override
+  String get settingTimersShowOnStartDescription =>
+      'Открывает вид таймеров при каждом запуске таймера.';
+
+  @override
+  String get settingTimersPauseScreensaverTitle =>
+      'Приостанавливать заставку, пока идёт таймер';
+
+  @override
+  String get settingTimersPauseScreensaverDescription =>
+      'Заставка не запускается, пока вид таймеров показывает идущий таймер.';
+
+  @override
+  String get settingTimersSilenceAfterTitle => 'Замолкание через';
+
+  @override
+  String get settingTimersSilenceAfterDescription =>
+      'Завершённый таймер остаётся на экране, пока его не скроют.';
+
+  @override
+  String get settingTimersDismissAfterTitle => 'Скрыть через';
+
+  @override
+  String get settingTimersDismissAfterDescription =>
+      'Скрывает завершённый таймер, как будто нажали «Скрыть».';
+
+  @override
+  String get voiceMatchGroundControlPage => 'Ground Control Voice Match';
+
+  @override
+  String get settingVoiceMatchPolicyDescriptionChosen =>
+      'С выбранными людьми киоск игнорирует телевизор, гостей и всех остальных.';
+
+  @override
+  String get voiceMatchOptionPeople => 'Выбранные люди';
+
+  @override
+  String get settingVoiceMatchPeopleTitle => 'Люди';
+
+  @override
+  String get settingVoiceMatchPeopleDescription =>
+      'Кому отвечает этот киоск. Если никто не выбран, он отвечает любому, чей голос записан.';
+
+  @override
+  String get voiceMatchPeopleNone => 'Любой, чей голос записан';
+
+  @override
+  String get voiceMatchPeopleSearch => 'Поиск людей';
+
+  @override
+  String get voiceMatchPeopleEmpty =>
+      'В Ground Control пока ничьих голосов не записано.';
+
+  @override
+  String get voiceMatchPeopleGone => 'Больше нет в Ground Control';
+
+  @override
+  String get settingVoiceMatchRejectedTitleChosen => 'Голос не выбран';
+
+  @override
+  String get voiceMatchHint => 'Кто говорит, другие голоса, запись голоса';
+
+  @override
+  String get settingVoiceMatchEnabledTitle => 'Включить Voice Match';
+
+  @override
+  String get settingVoiceMatchPolicyTitle => 'Отвечать';
+
+  @override
+  String get settingVoiceMatchRejectedDescription =>
+      'Что происходит, когда слово пробуждения говорит кто-то другой.';
+
+  @override
+  String get settingVoiceMatchSpeakerSensorTitle => 'Датчик говорящего';
+
+  @override
+  String get settingVoiceMatchSpeakerSensorDescription =>
+      'Добавляет этому киоску датчик Speaker в Home Assistant для автоматизаций и инструкций агента.';
+
+  @override
+  String get voiceMatchOptionAnyone => 'Всем';
+
+  @override
+  String get voiceMatchOptionQuiet => 'Молчать';
+
+  @override
+  String get voiceMatchOptionChime => 'Воспроизвести звук ошибки';
+
+  @override
+  String get voiceMatchConnecting => 'Подключение';
+
+  @override
+  String get voiceMatchSearching => 'Поиск';
+
+  @override
+  String get voiceMatchNotReachable => 'Недоступно';
+
+  @override
+  String get voiceMatchSignInRefused => 'Вход отклонён';
+
+  @override
+  String get voiceMatchNobodyEnrolled => 'Пока никто не записан.';
+
+  @override
+  String get voiceMatchTokenRefused =>
+      'Home Assistant отклонил токен этого киоска.';
+
+  @override
+  String get settingVoiceMatchShowSpeakerTitle => 'Показывать, кто говорит';
+
+  @override
+  String get settingVoiceMatchShowSpeakerDescription =>
+      'Имя говорящего перед командой на голосовом оверлее, его цветом. На устройстве со световым кольцом дуга прослушивания принимает этот цвет.';
+
+  @override
+  String get settingVoiceMatchAllowEnrollTitle =>
+      'Разрешить запись голоса здесь';
+
+  @override
+  String get voiceMatchAppHint => 'Люди, запись голоса, сеансы и настройки.';
+
+  @override
+  String get voiceMatchOpen => 'Открыть';
+
+  @override
+  String get settingVoiceMatchEnabledDescriptionGroundControl =>
+      'Распознавать, кто говорит, и прекращать слушать, когда вступает кто-то другой. Нужен Ground Control.';
+
+  @override
+  String get settingVoiceMatchAllowEnrollDescriptionGroundControl =>
+      'Разрешает приложению Ground Control записывать голос человека микрофоном этого киоска. Киоск показывает текст для чтения, или световое кольцо показывает прогресс.';
+
+  @override
+  String get settingVoiceMatchLeaveOutTitle => 'Не учитывать другие голоса';
+
+  @override
+  String get settingVoiceMatchLeaveOutDescription =>
+      'Home Assistant и ассистент в реальном времени слышат только того, кто сказал слово активации, и команда заканчивается, когда он замолкает, даже при включённом телевизоре.';
 
   @override
   String get voiceWakePage => 'Слово пробуждения';
@@ -15766,9 +16457,6 @@ class UiStringsRu extends UiStrings {
       'Язык моделей слов пробуждения Amazon. В списках слов пробуждения доступны слова пробуждения этого языка.';
 
   @override
-  String get voiceOptionAppLanguage => 'Язык Kiosk Satellite';
-
-  @override
   String get settingDisableCacheTitle => 'Отключить кэш';
 
   @override
@@ -15788,6 +16476,31 @@ class UiStringsRu extends UiStrings {
   @override
   String get settingIgnoreSslErrorsDescription =>
       'Принимать недоверенные или самоподписанные сертификаты. Используйте только в собственной сети: это отключает проверку сертификатов.';
+
+  @override
+  String get settingBrowserUserAgentTitle => 'Пользовательский User agent';
+
+  @override
+  String get settingBrowserUserAgentDescription =>
+      'Отправляется сайтам вместо стандартного User agent. Оставьте пустым, чтобы использовать стандартный.';
+
+  @override
+  String get webGeolocationSection => 'Геолокация HTML5';
+
+  @override
+  String get settingWebGeolocationTitle => 'Включить доступ к геолокации';
+
+  @override
+  String get settingWebGeolocationDescription =>
+      'Позволяет страницам читать местоположение устройства, например для погодного радара или карты. Запрашивать его могут только страницы, загруженные по HTTPS.';
+
+  @override
+  String get webGeolocationPermissionHeld =>
+      'Страницы могут читать местоположение устройства.';
+
+  @override
+  String get webGeolocationPermissionMissing =>
+      'Без этого разрешения страницы не могут читать местоположение устройства.';
 
   @override
   String get settingAutoReloadOnErrorTitle => 'Автоперезагрузка при ошибке';
@@ -16439,6 +17152,116 @@ class UiStringsRu extends UiStrings {
       'Выберите файл MP3, OGG, WAV, FLAC, M4A или AAC.';
 
   @override
+  String voiceMatchEnrollTitle(String name) {
+    return 'Запись голоса: $name';
+  }
+
+  @override
+  String get voiceMatchEnrollStarting => 'Подготовка…';
+
+  @override
+  String get voiceMatchEnrollReading => 'Прочитайте это вслух';
+
+  @override
+  String voiceMatchEnrollSeconds(String seconds, String target) {
+    return '$seconds из $target с';
+  }
+
+  @override
+  String get voiceMatchEnrollOtherVoice =>
+      'Говорит другой голос. Эта часть пропущена.';
+
+  @override
+  String get voiceMatchEnrollSaving => 'Сохранение…';
+
+  @override
+  String get voiceMatchEnrollStop => 'Остановить';
+
+  @override
+  String get voiceMatchEnrollTipWalk => 'Медленно ходите по комнате';
+
+  @override
+  String get voiceMatchEnrollTipTurn =>
+      'Время от времени отворачивайтесь от киоска';
+
+  @override
+  String get voiceMatchEnrollTipTalk => 'Говорите так, как отдаёте команды';
+
+  @override
+  String voiceMatchEnrollDone(String name) {
+    return 'Голос $name записан';
+  }
+
+  @override
+  String voiceMatchEnrollDoneDetail(String seconds) {
+    return 'Добавлено $seconds с речи.';
+  }
+
+  @override
+  String get voiceMatchEnrollFailed => 'Ничего не сохранено';
+
+  @override
+  String get voiceMatchEnrollTooShort =>
+      'Слишком мало речи для сохранения. Читайте не меньше 10 секунд.';
+
+  @override
+  String get voiceMatchEnrollLost => 'Связь с Voice Match потеряна.';
+
+  @override
+  String get voiceMatchEnrollNoMic => 'Микрофон недоступен.';
+
+  @override
+  String get voiceMatchEnrollStopped => 'Остановлено до начала записи.';
+
+  @override
+  String get voiceMatchEnrollPassage1 => 'Включи свет на кухне.';
+
+  @override
+  String get voiceMatchEnrollPassage2 => 'Поставь таймер на десять минут.';
+
+  @override
+  String get voiceMatchEnrollPassage3 => 'Какая погода будет завтра?';
+
+  @override
+  String get voiceMatchEnrollPassage4 =>
+      'Добавь молоко и яйца в список покупок.';
+
+  @override
+  String get voiceMatchEnrollPassage5 => 'Включи тихую музыку в гостиной.';
+
+  @override
+  String get voiceMatchEnrollPassage6 =>
+      'Утро было холодным, поэтому мы остались дома и напекли блинов.';
+
+  @override
+  String get voiceMatchEnrollPassage7 =>
+      'Позже мы дошли до парка и смотрели, как собаки гоняются друг за другом по траве.';
+
+  @override
+  String get voiceMatchEnrollPassage8 =>
+      'Вечером поднялся ветер, и мы разожгли камин.';
+
+  @override
+  String get voiceMatchEnrollPassage9 => 'Выключи весь свет внизу.';
+
+  @override
+  String get voiceMatchEnrollPassage10 => 'Который час в Токио?';
+
+  @override
+  String get voiceMatchEnrollPassage11 =>
+      'Напомни мне позвонить стоматологу в понедельник.';
+
+  @override
+  String get voiceMatchEnrollPassage12 =>
+      'Сколько ехать на машине до аэропорта?';
+
+  @override
+  String get voiceMatchEnrollPassage13 => 'Поставь музыку на паузу.';
+
+  @override
+  String get voiceMatchEnrollPassage14 => 'Спокойной ночи.';
+
+  @override
   String get voiceNoticeError => 'Ошибка Voice Satellite';
 
   @override
@@ -16560,4 +17383,76 @@ class UiStringsRu extends UiStrings {
   @override
   String get voiceTimerDismissHint =>
       'Коснитесь, чтобы скрыть оповещение таймера.';
+
+  @override
+  String get voiceTimersViewTitle => 'Таймеры';
+
+  @override
+  String get voiceTimersEmpty => 'Нет таймеров';
+
+  @override
+  String get voiceTimerPause => 'Пауза';
+
+  @override
+  String get voiceTimerResume => 'Продолжить';
+
+  @override
+  String get voiceTimerDismiss => 'Скрыть';
+
+  @override
+  String get voiceTimerTimesUp => 'Время вышло';
+
+  @override
+  String get voiceTimerPaused => 'Приостановлено';
+
+  @override
+  String get voiceTimersShareNone => 'Киоски не выбраны';
+
+  @override
+  String get voiceTimersShareEmpty =>
+      'Другие киоски не найдены. Включите на каждом «Удалённое управление» и «Поиск других киосков».';
+
+  @override
+  String get voiceTimersShareOffline => 'Не в сети';
+
+  @override
+  String get timersVoiceSection => 'Голосовые таймеры';
+
+  @override
+  String get timersVoiceManage => 'Управление таймерами через Voice Satellite';
+
+  @override
+  String get timersVoiceHint =>
+      'Работает без Blueprint и диалогового LLM-агента.';
+
+  @override
+  String get voiceTimersShareSearch => 'Поиск киосков';
+
+  @override
+  String get voiceTimerSetATimer => 'Установить таймер';
+
+  @override
+  String get voiceTimerEditTimer => 'Изменить таймер';
+
+  @override
+  String get voiceTimerName => 'Название';
+
+  @override
+  String get voiceTimerHours => 'Часы';
+
+  @override
+  String get voiceTimerMinutes => 'Минуты';
+
+  @override
+  String get voiceTimerSeconds => 'Секунды';
+
+  @override
+  String get voiceTimerStartFailed => 'Не удалось запустить таймер.';
+
+  @override
+  String get timersManage => 'Управление таймерами';
+
+  @override
+  String get voiceTimerStartUnavailable =>
+      'Включите Voice Satellite на этом киоске, чтобы устанавливать таймеры здесь.';
 }

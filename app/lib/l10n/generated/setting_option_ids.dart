@@ -399,6 +399,14 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "25": "alarmsOption25Minutes",
     "30": "alarmsOption30Minutes"
   },
+  "alarms.skip_minutes": {
+    "0": "alarmsOptionOff",
+    "5": "alarmsOption5Minutes",
+    "10": "alarmsOption10Minutes",
+    "15": "alarmsOption15Minutes",
+    "30": "alarmsOption30Minutes",
+    "60": "alarmsOption60Minutes"
+  },
   "voice.realtime_openai_reasoning": {
     "": "voiceRealtimeReasoningDefault",
     "minimal": "voiceRealtimeReasoningMinimal",
@@ -498,6 +506,26 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "5": "alarmsOption5Minutes",
     "10": "alarmsOption10Minutes"
   },
+  "timers.silence_after": {
+    "0": "calendarIdleNever",
+    "30": "intercomOptionAnswer30",
+    "60": "calendarIdle1Minute",
+    "120": "calendarIdle2Minutes",
+    "300": "alarmsOption5Minutes",
+    "600": "alarmsOption10Minutes",
+    "900": "alarmsOption15Minutes",
+    "1800": "alarmsOption30Minutes"
+  },
+  "timers.dismiss_after": {
+    "0": "calendarIdleNever",
+    "30": "intercomOptionAnswer30",
+    "60": "calendarIdle1Minute",
+    "120": "calendarIdle2Minutes",
+    "300": "alarmsOption5Minutes",
+    "600": "alarmsOption10Minutes",
+    "900": "alarmsOption15Minutes",
+    "1800": "alarmsOption30Minutes"
+  },
   "screensaver.celestial_terrain": {
     "hills": "screensaverCelestialTerrainHills",
     "mountains": "screensaverCelestialTerrainMountains",
@@ -509,9 +537,6 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "ha_home": "screensaverCelestialLocationHaHome",
     "ha_entity": "screensaverCelestialLocationHaEntity",
     "manual": "screensaverCelestialLocationManual"
-  },
-  "voice.amazon_locale": {
-    "": "voiceOptionAppLanguage"
   },
   "camera.onvif.events_source": {
     "camera": "cameraOnvifEventsSourceCamera",
@@ -537,6 +562,22 @@ const settingOptionMessageIds = <String, Map<String, String>>{
     "low": "intercomOptionVideoLow",
     "medium": "intercomOptionVideoMedium",
     "high": "intercomOptionVideoHigh"
+  },
+  "nav.style": {
+    "classic": "navigationClassic",
+    "compass": "navigationCompass"
+  },
+  "nav.compass_animation": {
+    "zoom": "navigationZoom",
+    "slide": "navigationSlide"
+  },
+  "voice_match.policy": {
+    "anyone": "voiceMatchOptionAnyone",
+    "people": "voiceMatchOptionPeople"
+  },
+  "voice_match.rejected": {
+    "quiet": "voiceMatchOptionQuiet",
+    "chime": "voiceMatchOptionChime"
   }
 };
 const settingPlaceholderMessageIds = <String, String>{
@@ -558,5 +599,8 @@ const settingPlaceholderMessageIds = <String, String>{
   "alarms.tts_voice": "esphomeTtsDefault",
   "voice.realtime_openai_endpoint": "voiceRealtimeProviderDefault",
   "voice.realtime_xai_endpoint": "voiceRealtimeProviderDefault",
-  "voice.realtime_gemini_endpoint": "voiceRealtimeProviderDefault"
+  "voice.realtime_gemini_endpoint": "voiceRealtimeProviderDefault",
+  "timers.tts_engine": "esphomeTtsFirst",
+  "timers.tts_language": "esphomeTtsDefault",
+  "timers.tts_voice": "esphomeTtsDefault"
 };

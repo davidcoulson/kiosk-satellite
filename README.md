@@ -77,6 +77,8 @@
   <a href="assets/screenshots/calendar_schedule.png"><img src="assets/screenshots/calendar_schedule.png" alt="Calendar Schedule" width="320" /></a>
 </p>
 
+&bull; **Timers:** Set [timers](https://kiosksatellite.com/docs/timers/) by voice or by hand and follow them on a full screen view, with the next one to finish shown large. [Shared timers](https://kiosksatellite.com/docs/timers/#shared-timers) also show and ring on the other kiosks you pick, with the countdown and the alert in sync.
+
 &bull; **Kiosk conveniences:** Use [hand gestures](https://kiosksatellite.com/docs/gestures/#show-fingers) to run Home Assistant actions or open a camera view by holding up fingers to the device camera. Set Kiosk Satellite as the [home launcher](https://kiosksatellite.com/docs/home-launcher/) on supported devices so the Home button returns to your dashboard. Arrange up to twelve live feeds in [camera views](https://kiosksatellite.com/docs/cameras/), with camera imports from Home Assistant or Go2RTC.
 
 Also built in: [PIN-protected kiosk mode](https://kiosksatellite.com/docs/kiosk/), [touch and clap gestures](https://kiosksatellite.com/docs/gestures/), [DLNA media playback](https://kiosksatellite.com/docs/dlna/), [RTSP streaming](https://kiosksatellite.com/docs/camera/#rtsp-streaming), [Shizuku support](https://kiosksatellite.com/docs/shizuku/) and more!
@@ -114,7 +116,7 @@ For voice control, leave Voice Satellite on in the setup wizard, then add the ki
 
 &bull; **Automation and management:** [ESPHome](https://kiosksatellite.com/docs/esphome/), [fleet management](https://kiosksatellite.com/docs/fleet/), [Remote API](https://kiosksatellite.com/docs/remote-api/), [TLS encryption](https://kiosksatellite.com/docs/tls/) and [JavaScript API](https://kiosksatellite.com/docs/js-api/).
 
-&bull; **Device guides:** [Amazon Fire tablets](https://kiosksatellite.com/docs/fire/), [Echo Dot](https://kiosksatellite.com/docs/echo-dot/), [Echo Show 5](https://kiosksatellite.com/docs/echo-show-5/), [Echo Show 8](https://kiosksatellite.com/docs/echo-show-8/), [Meta Portal](https://kiosksatellite.com/docs/portal/) and [Raspberry Pi 4](https://kiosksatellite.com/docs/raspberry-pi/).
+&bull; **Device guides:** [Amazon Fire tablets](https://kiosksatellite.com/docs/fire/), [Echo Dot (2nd gen)](https://kiosksatellite.com/docs/echo-dot/), [Echo Dot (3rd gen)](https://kiosksatellite.com/docs/echo-dot-3rd-gen/), [Echo Show 5 (1st gen)](https://kiosksatellite.com/docs/echo-show-5-1st-gen/), [Echo Show 5 (2nd gen)](https://kiosksatellite.com/docs/echo-show-5/), [Echo Show 8 (1st gen)](https://kiosksatellite.com/docs/echo-show-8/), [Echo Show 8 (2nd gen)](https://kiosksatellite.com/docs/echo-show-8-2nd-gen/), [Meta Portal](https://kiosksatellite.com/docs/portal/) and [Raspberry Pi 4](https://kiosksatellite.com/docs/raspberry-pi/).
 
 &bull; **Plugin Manager:** Install and create [community plugins](https://kiosksatellite.com/docs/plugins/) for Kiosk Satellite.
 

@@ -12,11 +12,12 @@ import { REALTIME_PROVIDERS, providerKeys } from './vs_native.js';
 // pages themselves, and a short list of hand-built rows the definitions do
 // not cover. Keep SEARCH_EXTRAS in step with handBuiltSearchEntries there.
 export const SEARCH_CATEGORY_TABS = {
+  'Navigation': 'navigation', 'Ground Control': 'groundcontrol',
   'Browser': 'browser', 'Kiosk': 'kiosk', 'Lockdown': 'lockdown',
   'Launcher': 'launcher', 'Home': 'home', 'Screen & Audio': 'screenaudio',
   'Screensaver': 'screensaver', 'Camera': 'camera',
   'Home Assistant': 'homeassistant', 'Voice Satellite': 'voicesatellite',
-  'Sendspin': 'sendspin', 'DLNA': 'dlna', 'Intercom': 'intercom', 'Alarms': 'alarms', 'Calendar': 'calendar',
+  'Sendspin': 'sendspin', 'DLNA': 'dlna', 'Intercom': 'intercom', 'Alarms': 'alarms', 'Calendar': 'calendar', 'Timers': 'timers',
   'ESPHome': 'esphome',
   'Device': 'device', 'Cameras': 'cameras', 'Gestures': 'gestures',
   'Fleet': 'fleet', 'Plugins': 'plugins', 'LED Control': 'leds',
@@ -57,6 +58,9 @@ export const SEARCH_EXTRAS = [
     desc: 'Add the Home Assistant calendars to show in Settings > Calendar.', anchor: 'x:calendar_add' },
   { tab: 'calendar', title: 'Manage the calendar using Voice Satellite',
     desc: 'Needs the Kiosk Satellite calendar blueprint and an LLM conversation agent in Home Assistant.', anchor: 'x:calendar_voice' },
+  { tab: 'timers', title: 'Manage timers', desc: 'Set a timer', anchor: 'x:timers_manage' },
+  { tab: 'timers', title: 'Manage timers using Voice Satellite',
+    desc: 'Works without a blueprint or an LLM conversation agent.', anchor: 'x:timers_voice' },
   { tab: 'alarms', title: 'Manage alarms using Voice Satellite',
     desc: 'Needs the Kiosk Satellite alarms blueprint and an LLM conversation agent in Home Assistant.', anchor: 'x:alarms_voice' },
   { tab: 'sendspin', title: 'Manage music using Voice Satellite', sub: 'Music Library',

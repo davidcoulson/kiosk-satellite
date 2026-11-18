@@ -68,5 +68,14 @@
   "Effects": "settingsLedEffects",
   "Calendar": "settingsMenuCalendar",
   "Family calendars from Home Assistant": "settingsMenuCalendarSummary",
-  "Household": "settingsGroupHousehold"
+  "Household": "settingsGroupHousehold",
+  "Kiosk Satellite": "settingsGroupKioskSatellite",
+  "Navigation": "settingsMenuNavigation",
+  "Classic or Compass": "settingsMenuNavigationSummary",
+  "Navigation style": "navigationStyleSection",
+  "Compass layout": "navigationLayoutSection",
+  "Compass options": "navigationOptionsSection",
+  "Full screen view, pills, shared timers": "settingsMenuTimersSummary",
+  "Ground Control": "settingsMenuGroundControl",
+  "Voice Match on a capable machine": "settingsMenuGroundControlSummary"
 }

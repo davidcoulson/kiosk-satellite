@@ -30,16 +30,19 @@ A `ks://` link runs the same action a [gesture](gestures.md) can, with the same 
 | `ks://camera/close` | Closes whatever camera view is showing. |
 | `ks://intercom` | Opens the [intercom's](intercom.md) Call a kiosk sheet. |
 | `ks://intercom/<kiosk id>` | Calls that kiosk straight away. The id is the one under Intercom, Kiosks. |
+| `ks://intercom/<kiosk id>/video` | Calls that kiosk with this kiosk's camera on, like the video button on the roster. It runs only when someone taps the link on this kiosk's screen, never from a page script or Home Assistant. If either kiosk cannot take video, the call is voice only. |
 | `ks://screensaver` | Starts the screensaver. |
 | `ks://screensaver/stop` | Stops it. |
 | `ks://alarms` | Opens the full screen [alarm](alarms.md) list. |
 | `ks://alarms/next` | Opens the alarm that rings next, snoozed alarms included, on its details page. Opens the list when no alarm is set. |
+| `ks://timers` | Opens the full screen [timers](timers.md) view. |
 | `ks://calendar` | Opens the [calendar](calendar.md) on its default view. |
 | `ks://calendar/<view>` | Opens the calendar on `day`, `week`, `month` or `schedule`. |
 | `ks://music-library` | Opens the [Music Library](music-library.md). It does nothing until a source is set up. |
 | `ks://voice` | Starts a voice command, as if the wake word fired. Requires [Voice Satellite](voice-satellite.md) to be on. |
 | `ks://voice/stop` | Dismisses a ringing timer, or ends the voice command in progress. |
 | `ks://voice/mute` | Mutes the wake word, or unmutes it when it is muted. The same mute as the Voice Satellite **Mute** switch in Home Assistant. |
+| `ks://plugin/<plugin id>/<action id>` | Runs that [plugin](plugins.md) action, the same as its entry in the kiosk menu. Open the action on the plugin's page to copy the link from **Dashboard link**. Anything after the action ID goes to the plugin, such as a camera name in `ks://plugin/<plugin id>/<action id>/front-door`. The plugin's documentation says what it accepts. |
 | `ks://hold` | Toggles hold mode, which pins the current view. |
 | `ks://theater` | Toggles [theater mode](theater.md). |
 | `ks://theater/on`, `ks://theater/off` | Turns it on or off. |

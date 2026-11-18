@@ -115,6 +115,8 @@ export function settingsPageText(category, english) {
     : ['Kiosk', 'kiosk', 'Home', 'home', 'Lockdown', 'lockdown'].includes(category) ? kioskText(english)
     : category === 'Intercom' || category === 'intercom' ? (english === 'Answer' ? t('intercomAnswerSection') : english === 'Talk' ? t('intercomTalkSection') : intercomText(english))
     : category === 'Alarms' || category === 'alarms' ? alarmsPageText(english)
+    // Its groups came from Voice Satellite and kept its catalog.
+    : category === 'Timers' || category === 'timers' ? timersPageText(english)
     // Its groups reuse the sidebar's group names.
     : category === 'Calendar' || category === 'calendar' ? calendarPageText(english)
     : category === 'Browser' || category === 'browser' ? browserPageText(english)
@@ -133,6 +135,10 @@ const BROWSER_PAGE_TEXT = {
   'Show blocked page notice': 'settingBrowserUrlFilterNoticeTitle',
   "Show a short notice with the rule's name when a page is blocked.": 'settingBrowserUrlFilterNoticeDescription',
   "Links or pages that match a Block rule don't load. Add an Allow only rule to load only the pages it matches.": 'urlFilterIntroSub',
+  // HTML5 Geolocation: the group's name and the lines of its Location grant.
+  'HTML5 Geolocation': 'webGeolocationSection',
+  'Pages can read the device location.': 'webGeolocationPermissionHeld',
+  'Without this pages cannot read the device location.': 'webGeolocationPermissionMissing',
 };
 
 function browserPageText(english) {
@@ -167,6 +173,20 @@ const ALARMS_PAGE_TEXT = {
   'Manage alarms using Voice Satellite': 'alarmsVoiceManage',
   'Needs the Kiosk Satellite alarms blueprint and an LLM conversation agent in Home Assistant.': 'alarmsVoiceHint',
 };
+
+const TIMERS_PAGE_TEXT = {
+  'Voice timers': 'timersVoiceSection',
+  'Text to Speech': 'alarmsTtsSection',
+  'Manage timers': 'timersManage',
+  'Set a timer': 'voiceTimerSetATimer',
+  'Manage timers using Voice Satellite': 'timersVoiceManage',
+  'Works without a blueprint or an LLM conversation agent.': 'timersVoiceHint',
+};
+
+function timersPageText(english) {
+  const id = TIMERS_PAGE_TEXT[english];
+  return id ? t(id, {}, english) : voiceText(english);
+}
 
 function alarmsPageText(english) {
   const id = ALARMS_PAGE_TEXT[english];

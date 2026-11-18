@@ -9,6 +9,8 @@ import 'alarm_ring_overlay.dart';
 import '../app_container.dart';
 import '../core/locale_dates.dart';
 import '../l10n/messages.dart';
+import '../managers/calendar/calendar_manager.dart' show DayForecast;
+import '../managers/calendar/calendar_model.dart' show dateOnly;
 import '../managers/settings/definitions.dart' as defs;
 import 'clock_faces.dart';
 import 'digital_clock_face.dart';
@@ -114,6 +116,20 @@ Color _color(String value) {
 class WeatherMoodReadings {
   String condition = '';
   final attributes = <String, Object?>{};
+
+  /// The entity's daily forecast by local date, for today's high and low.
+  /// Empty when the integration has no daily forecast.
+  Map<DateTime, DayForecast> daily = const {};
+
+  /// Today's high and low as the weather widget shows them, or null
+  /// unless the forecast has both.
+  String? highLow([DateTime? now]) {
+    final today = daily[dateOnly(now ?? DateTime.now())];
+    final high = today?.high, low = today?.low;
+    if (high == null || low == null) return null;
+    return '${high.round()}° / ${low.round()}°';
+  }
+
   bool get available =>
       condition.isNotEmpty &&
       condition != 'unknown' &&
@@ -175,14 +191,30 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
     super.initState();
     _schedule();
     widget.container.screensaver.alarmTakeover.addListener(_onTakeover);
+    _skipAt = widget.container.alarms.status.value.skip?.at;
+    widget.container.alarms.status.addListener(_onAlarmStatus);
   }
 
   void _onTakeover() {
     if (mounted) setState(() {});
   }
 
+  DateTime? _skipAt;
+
+  /// Skip comes and goes under the clock with the alarm's window.
+  void _onAlarmStatus() {
+    final at = widget.container.alarms.status.value.skip?.at;
+    if (at == _skipAt) return;
+    _skipAt = at;
+    if (mounted) setState(() {});
+  }
+
   bool get _ringing =>
       widget.container.screensaver.alarmTakeover.value == 'ringing';
+
+  /// The ring Skip is shown for, before an alarm (issue #1479).
+  DateTime? get _skip =>
+      _ringing ? null : widget.container.alarms.status.value.skip?.at;
 
   @override
   void didUpdateWidget(WeatherMoodInformation oldWidget) {
@@ -231,6 +263,7 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
   @override
   void dispose() {
     widget.container.screensaver.alarmTakeover.removeListener(_onTakeover);
+    widget.container.alarms.status.removeListener(_onAlarmStatus);
     _timer?.cancel();
     super.dispose();
   }
@@ -252,17 +285,38 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
       labelWeight: FontWeight.w500,
       fontFamily: fontFamily,
       shadows: shadow ? _chipShadows(1) : const [],
+      palette: glass,
+    );
+  }
+
+  /// Skip in the weather chips' glass and text shadow.
+  Widget _skipButton(DateTime at, Color color) {
+    final glass = weatherMoodGlass(widget.container);
+    final shadow = widget.container.settings.get(
+      defs.screensaverWeatherBarShadow,
+    );
+    return AlarmSkipButton(
+      container: widget.container,
+      at: at,
+      color: color,
+      glass: glass.fill,
+      edge: Colors.white.withValues(alpha: math.max(.18, glass.edge.a)),
+      shadows: shadow ? _chipShadows(1) : const [],
+      palette: glass,
     );
   }
 
   Widget _clock(Size size, bool glance) {
     final s = widget.container.settings;
+    final skip = _skip;
     if (!s.get(defs.screensaverWeatherClock)) {
+      final color = _color(s.get(defs.screensaverWeatherClockColor));
+      if (skip != null) return Center(child: _skipButton(skip, color));
       if (!_ringing) return const SizedBox.expand();
       return Center(
         child: _alarmControls(
           math.min(size.width * .05, size.height * .07),
-          _color(s.get(defs.screensaverWeatherClockColor)),
+          color,
           null,
         ),
       );
@@ -326,7 +380,18 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
       child: Center(
         child: Transform.translate(
           offset: _offset,
-          child: ringing
+          child: skip != null
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: FittedBox(fit: BoxFit.scaleDown, child: face),
+                    ),
+                    SizedBox(height: clockSize * .08),
+                    _skipButton(skip, color),
+                  ],
+                )
+              : ringing
               // The face gives way to the label and the buttons, which keep
               // their full size. Fitted together, a small screen shrank the
               // buttons along with the clock.
@@ -377,8 +442,9 @@ class _WeatherMoodInformationState extends State<WeatherMoodInformation> {
     final size = MediaQuery.sizeOf(context);
     final ringing = _ringing;
     return IgnorePointer(
-      // A ringing alarm's Snooze and Stop are the one thing here to touch.
-      ignoring: !ringing,
+      // A ringing alarm's Snooze and Stop, or Skip before it, are the one
+      // thing here to touch.
+      ignoring: !ringing && _skip == null,
       child: RepaintBoundary(
         child: ValueListenableBuilder<bool?>(
           valueListenable: c.screensaver.scheduleGlance,
@@ -551,7 +617,10 @@ class WeatherMoodBar extends StatelessWidget {
       const EdgeInsets.fromLTRB(6, 6, 18, 6),
       (screensaverText(context, title), value, icon, titles),
     );
+    final highLow = readings.highLow();
     final metrics = <Widget>[
+      if (s.get(defs.screensaverWeatherBarHighLow) && highLow != null)
+        metric('High and low', highLow, Icons.thermostat),
       if (s.get(defs.screensaverWeatherBarHumidity) &&
           readings.number('humidity') != null)
         metric(

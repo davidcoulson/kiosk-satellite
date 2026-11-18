@@ -2,7 +2,7 @@ name: kiosk_satellite
 description: "Modern kiosk browser for Home Assistant — companion app for Voice Satellite."
 publish_to: 'none'
 
-version: 2026.11.11+354
+version: 2026.11.23+366
 
 environment:
   sdk: ^3.12.2
@@ -67,6 +67,9 @@ dependency_overrides:
   # Includes the failed-launch callback fix described in the package README.
   image_picker_android:
     path: packages/image_picker_android
+  # Keeps WebView pickers on the live Activity, see the package README.
+  flutter_inappwebview_android:
+    path: packages/flutter_inappwebview_android
 
 dev_dependencies:
   flutter_test:

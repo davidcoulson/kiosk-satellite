@@ -6,7 +6,7 @@ The drawer menu slides in from the left edge of the screen. It holds the shortcu
 
 Navigate to **Settings**, then **Device**. Tap **Drawer menu items** in the **User Interface** group. The same row is available in the remote admin. It opens a picker with every entry the menu can show:
 
-- Dashboard, Settings, HA Kiosk Mode, Camera View, Intercom, Alarms, Calendar, Music Library, Music Assistant, Floating Player, Now Playing, Start Screensaver, Lockdown Mode, Hold Mode, Apps, Clear web cache, Restart Device and Exit Application.
+- Dashboard, Settings, HA Kiosk Mode, Camera View, Intercom, Alarms, Timers, Calendar, Music Library, Music Assistant, Floating Player, Now Playing, Start Screensaver, Lockdown Mode, Hold Mode, Apps, Clear web cache, Restart Device and Exit Application.
 - Plugin actions set to **Show in kiosk drawer** on the [Plugins](plugins.md) page.
 - The theme switcher.
 
@@ -34,5 +34,7 @@ A checked entry only shows when it has something to do on the device:
 In the restricted quick actions menu of a locked kiosk, an entry also needs its switch under **Kiosk Mode > Allowed Actions**. Settings, Clear web cache, Restart Device and Exit Application never show there.
 
 The pages of these features each have a **Show in the kiosk menu** row that opens this setting, as does the App Launcher page. Before this setting existed, those rows were switches. After the update, the menu keeps the entries those switches had on.
+
+With [Compass navigation](navigation.md) there is no drawer. The Quick Controls view shows the same list, as quick controls and cards.
 
 [Fleet Management](fleet.md) syncs the list under the Device category.

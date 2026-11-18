@@ -73,6 +73,7 @@ class AudioRoutingManager extends Manager {
     NativeMic.deviceSelector = _settings.get(defs.audioMicDevice);
     _pushCaptureTuning();
     await _pushOutput(_settings.get(defs.audioSpeakerDevice));
+    await _pushEqualizer();
     _micDeviceId = await _resolveMicId();
 
     _channel.setMethodCallHandler((call) async {
@@ -125,6 +126,8 @@ class AudioRoutingManager extends Manager {
         await MicHub.instance.bounce();
       } else if (e.key == defs.audioSpeakerDevice.key) {
         _pushOutput(_settings.get(defs.audioSpeakerDevice));
+      } else if (e.key.startsWith('audio.equalizer_')) {
+        _pushEqualizer();
       }
     });
 
@@ -252,6 +255,25 @@ class AudioRoutingManager extends Manager {
     }
   }
 
+  /// Hand the Equalizer settings to the players (Equalizer.kt). They take
+  /// hold on what is playing, with no player restarted and no capture
+  /// reopened: each player equalizes ahead of its echo reference tap, so
+  /// the canceller sees the change in its reference as the speaker plays it.
+  Future<void> _pushEqualizer() async {
+    try {
+      await _channel.invokeMethod('setEqualizer', {
+        'enabled': _settings.get(defs.equalizerEnabled),
+        'gains': [
+          for (final band in defs.equalizerBands)
+            _settings.get(band).clamp(band.min!, band.max!).toDouble(),
+        ],
+        'preamp': _settings.get(defs.equalizerPreamp),
+      });
+    } on PlatformException catch (e) {
+      log.warn(name, 'equalizer failed to apply: $e');
+    }
+  }
+
   /// Hand the Microphone settings to the capture side. Nothing is applied
   /// until the next capture opens, which is the point: the platform fixes
   /// the source, the gain and the effect chain when the session is created.
@@ -263,8 +285,8 @@ class AudioRoutingManager extends Manager {
     NativeMic.echoMethod = _settings.get(defs.micEchoCancellationMethod);
     NativeMic.noiseSuppression = _settings.get(defs.micNoiseSuppression);
     // On top of the Echo images' base gain for the raw microphone.
-    NativeMic.gainDb =
-        _settings.get(defs.micGainDb) + EchoImageSettings.micGainBaseDb;
+    NativeMic.gainDb = _settings.get(defs.micGainDb);
+    NativeMic.baseGainDb = EchoImageSettings.micGainBaseDb;
     NativeMic.channel = _settings.get(defs.micChannel);
     NativeMic.captureFormat = _settings.get(defs.micCaptureFormat);
   }

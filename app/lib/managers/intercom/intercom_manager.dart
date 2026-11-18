@@ -286,7 +286,10 @@ class _Link {
 /// [IntercomStateChanged] when to redraw. The call itself holds the
 /// screensaver, the rotation and the home timer the way a voice turn does
 /// ([VoiceInteractionChanged] with reason `intercom`), ducks the music
-/// through the same event and pauses wake word detection.
+/// through the same event and pauses wake word detection. An announcement
+/// from Home Assistant holds with
+/// [VoiceInteractionChanged.announcementReason] instead, which does all of
+/// that except for the screensaver: it stays up, with the card over it.
 ///
 /// States: idle, calling (waiting for the other kiosk to pick up), ringing
 /// (a call coming in), in_call, broadcasting (this kiosk talks to
@@ -447,6 +450,11 @@ class IntercomManager extends Manager {
   /// app launcher's [visible] works.
   final rosterVisible = ValueNotifier<bool>(false);
 
+  /// True while Compass shows the roster as the view in hand. Compass then
+  /// decides when it goes (Return to center), so its own idle close stands
+  /// down, and the screensaver starts over it as over a dashboard.
+  final compassView = ValueNotifier<bool>(false);
+
   /// The states the full screen call card shows in, its last words
   /// included.
   static const callScreenStates = {
@@ -560,7 +568,9 @@ class IntercomManager extends Manager {
   DateTime _lastLevel = DateTime.fromMillisecondsSinceEpoch(0);
   double _farLevel = 0;
   double _nearLevel = 0;
-  bool _interactionHeld = false;
+
+  /// The reason of the interaction hold now open, null when none is.
+  String? _heldReason;
   int _nextId = 0;
 
   String get state => _state;
@@ -621,6 +631,12 @@ class IntercomManager extends Manager {
     rosterVisible.addListener(_syncScreenShown);
     _subs.add(bus.on<FleetChanged>().listen((_) => _readFleet()));
     _subs.add(
+      bus.on<AdaptiveVolumeChanged>().listen((e) {
+        _roomShare = e.intercom;
+        _mediaRoomShare = e.media;
+      }),
+    );
+    _subs.add(
       bus.on<SoundEnded>().listen((e) {
         if (e.id == _ringSoundId) _ringSoundPlaying = false;
       }),
@@ -635,7 +651,8 @@ class IntercomManager extends Manager {
     // does.
     _subs.add(
       bus.on<ScreensaverStateChanged>().listen((e) {
-        if (e.active) rosterVisible.value = false;
+        // A Compass view stays under the screensaver, as a dashboard does.
+        if (e.active && !compassView.value) rosterVisible.value = false;
       }),
     );
     _subs.add(
@@ -734,6 +751,7 @@ class IntercomManager extends Manager {
     _missedTimer?.cancel();
     _limitTimer?.cancel();
     rosterVisible.dispose();
+    compassView.dispose();
   }
 
   Future<void> _onEnabledChanged() async {
@@ -1828,14 +1846,15 @@ class IntercomManager extends Manager {
   /// A Home Assistant announcement playing here alone: a new one takes
   /// its place and announce_stop ends it. An intercom call or Announce to
   /// all is never cut short by either.
-  bool get _announcing {
-    final c = _call;
-    return _busy &&
-        c != null &&
-        c.automated &&
-        !c.outgoing &&
-        c.peer['id'] == 'home-assistant';
-  }
+  bool get _announcing => _busy && _fromHomeAssistant(_call);
+
+  /// Whether [c] is an announcement Home Assistant asked for with the
+  /// announce action, which plays on this kiosk alone.
+  static bool _fromHomeAssistant(IntercomCall? c) =>
+      c != null &&
+      c.automated &&
+      !c.outgoing &&
+      c.peer['id'] == 'home-assistant';
 
   /// The `announce_stop` action: ends the announcement playing here, and
   /// one still fetching its audio never starts. Nothing playing is fine.
@@ -1940,17 +1959,19 @@ class IntercomManager extends Manager {
     _call = c;
     if (!c.audioOnly) await _comeForward();
     _setState('listening');
-    // The media fader, unless the action names a volume of its own: a
-    // share of the master, 0..1, on the same squared taper the faders
-    // use. 0 or less (the action cannot leave a number out) means the
-    // fader.
+    // The media fader under adaptive volume's media share, unless the
+    // action names a volume of its own: a share of the master, 0..1, on
+    // the same squared taper the faders use, which the room leaves alone.
+    // 0 or less (the action cannot leave a number out) means the fader.
     final askedVolumeRaw = p['volume'];
     final askedVolume = askedVolumeRaw is num
         ? askedVolumeRaw.toDouble()
         : double.tryParse('$askedVolumeRaw') ?? 0;
     final share = askedVolume > 0
         ? askedVolume.clamp(0.0, 1.0)
-        : _settings.get(defs.mediaVolume).toDouble().clamp(0, 100) / 100;
+        : _settings.get(defs.mediaVolume).toDouble().clamp(0, 100) /
+              100 *
+              _mediaRoomShare;
     await _startPlayback(volume: share * share, rate: rate);
     c.since = DateTime.now();
     final ms = pcm.length * 1000 ~/ (rate * 2);
@@ -2613,12 +2634,15 @@ class IntercomManager extends Manager {
 
   /// A call or an announcement coming in wakes a dark screen and brings
   /// the kiosk in front of whatever app covers it, the way a wake word
-  /// does: bringToFront wakes the display first, then switches tasks,
-  /// which needs the Display over other apps grant and is logged without
-  /// it. screenOn is the fallback where the command is missing (tests).
+  /// does. screenOn wakes the panel first, as the app's own wake: a
+  /// screensaver gone dark keeps its session for that and shows an
+  /// announcement's card over it, where the wake bringToFront does by
+  /// itself reads as someone at the device and dismisses it (issue
+  /// #1441). bringToFront then switches tasks, which needs the Display
+  /// over other apps grant and is logged without it.
   Future<void> _comeForward() async {
-    final r = await commands.execute('bringToFront', const {});
-    if (!r.ok) await commands.execute('screenOn', const {});
+    await commands.execute('screenOn', const {});
+    await commands.execute('bringToFront', const {});
   }
 
   Future<CommandResult> _answer({bool video = false}) async {
@@ -2939,10 +2963,21 @@ class IntercomManager extends Manager {
     if (!ok) log.warn(name, 'playback could not open');
   }
 
-  /// The intercom fader on the app's squared taper.
+  /// The share of the intercom fader adaptive volume leaves (issue #1450),
+  /// 1 while the intercom does not follow the room. Read when playback
+  /// opens: the room is not measured during a call, so it holds for it.
+  double _roomShare = 1;
+
+  /// The share of the media fader adaptive volume leaves, for an
+  /// announcement from Home Assistant without a volume of its own. 1 while
+  /// media does not follow the room.
+  double _mediaRoomShare = 1;
+
+  /// The intercom fader on the app's squared taper, under the room's share
+  /// of it.
   double _playbackGain() {
     final pct = _settings.get(defs.intercomVolume).toDouble().clamp(0, 100);
-    final f = pct / 100;
+    final f = pct / 100 * _roomShare;
     return f * f;
   }
 
@@ -2954,10 +2989,7 @@ class IntercomManager extends Manager {
   /// again.
   Future<void> _ring({bool short = false}) async {
     final generation = _ringGeneration;
-    final volume = _settings
-        .get(defs.notificationsVolume)
-        .toDouble()
-        .clamp(0.0, 1.0);
+    final volume = _ringVolume();
     final sound = _settings.get(defs.intercomRingSound).trim();
     final path = sound.isEmpty ? null : await NotificationSounds.resolve(sound);
     if (generation != _ringGeneration) return;
@@ -2985,6 +3017,9 @@ class IntercomManager extends Manager {
       log.debug(name, 'ring${short ? ' (short)' : ''} at $volume');
     }
   }
+
+  double _ringVolume() =>
+      _settings.get(defs.intercomRingVolume).toDouble().clamp(0.0, 1.0);
 
   /// Silences the ring, whichever player has it.
   Future<void> _stopRing() async {
@@ -3135,15 +3170,28 @@ class IntercomManager extends Manager {
     // The card's last words hold nothing: the screensaver and the wake
     // word come back the moment the voice stops.
     final holds = next != 'idle' && next != 'missed' && next != 'ended';
-    if (holds != _interactionHeld) {
-      _interactionHeld = holds;
-      bus.publish(
-        VoiceInteractionChanged(
-          active: holds,
-          reason: 'intercom',
-          source: InteractionSource.command,
-        ),
-      );
+    // An announcement from Home Assistant holds under a reason of its
+    // own: the screensaver stays up under it (issue #1441).
+    final reason = !holds
+        ? null
+        : _fromHomeAssistant(_call)
+        ? VoiceInteractionChanged.announcementReason
+        : 'intercom';
+    final held = _heldReason;
+    if (reason != held) {
+      _heldReason = reason;
+      // The old hold goes before a new one opens: the wake word keeps
+      // one flag for both reasons.
+      for (final (r, active) in [(held, false), (reason, true)]) {
+        if (r == null) continue;
+        bus.publish(
+          VoiceInteractionChanged(
+            active: active,
+            reason: r,
+            source: InteractionSource.command,
+          ),
+        );
+      }
     }
     _syncScreenShown();
     if (notify) _changed();

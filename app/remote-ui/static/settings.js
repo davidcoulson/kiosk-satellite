@@ -10,8 +10,8 @@ import {
   toggleRow,
   updateMicChannelRow,
 } from './audio.js';
-import { MIC_GROUP_NOTE, cameraAction, exportFileName } from './cameras.js';
-import { $, api, cacheSettings, cmd, depSatisfied, state } from './core.js';
+import { MIC_GROUP_NOTE, cameraAction, cameraIcon, exportFileName } from './cameras.js';
+import { $, api, cacheSettings, cmd, depSatisfied, state, syncOffRows } from './core.js';
 import { readOnlyRow, renderAnalyticsIntro, renderUpdateHelper, renderUpdateSourceDocs } from './device.js';
 import { initNavGroups } from './navgroups.js';
 import { adbHint, permissionSpecs } from './permissions.js';
@@ -19,8 +19,10 @@ import { renderServicePage } from './service.js';
 import { renderShizukuPage } from './shizuku.js';
 import { renderStartPage } from './startpage.js';
 import { CATEGORY_TABS } from './gestures.js';
+import { renderGroundControl } from './ground_control.js';
 import {
   updateAdaptiveBrightnessRows,
+  updateAdaptiveVolumeRows,
   updateCameraFacingsRow,
   updateCameraGrantNotice,
   updateCameraSnapshotPanel,
@@ -48,6 +50,7 @@ import { applyManagedBanners, renderFleetPage } from './fleetsync.js';
 import { decorateAnnouncementsPage, renderIntercomPage } from './intercom.js';
 import { renderAlarmsPage } from './alarms.js';
 import { renderCalendarPage } from './calendar.js';
+import { renderTimersPage } from './timers.js';
 import { renderCustomPagesPage } from './custom_pages.js';
 import { renderUrlFilterPage } from './url_filter.js';
 import { renderPluginScreensaverEntry } from './plugins.js';
@@ -239,7 +242,7 @@ const runtimeStateSettings = new Set([
 // The Announcements and Alarms text to speech rows and Voice Satellite's
 // Play sounds on, each a picker that repaints itself (intercom.js,
 // vs_native.js).
-const ttsPickerSettings = new Set(['announcements', 'alarms']
+const ttsPickerSettings = new Set(['announcements', 'alarms', 'timers']
   .flatMap(prefix => ['engine', 'language', 'voice'].map(k => `${prefix}.tts_${k}`))
   .concat('voice.tts_output'));
 let liveSettingsTimer = null;
@@ -289,7 +292,9 @@ async function flushSettingsUpdates() {
     // Background listening, wake word arbitration and the stop word each
     // gate one row in their own card. Their live update can use the same
     // dependency placement as a local save.
-    if (!shapeChanged && ['wake_word.background', 'voice.wake_arbitration', 'voice.stop_word'].includes(setting.key) && rows.length
+    if (!shapeChanged && ['wake_word.background', 'voice.wake_arbitration', 'voice.stop_word',
+      // The Timers page's switches, each gating rows of its own card.
+      'voice.timers_share', 'voice.timer_pills', 'voice.timer_alert_pill', 'voice.timer_speak'].includes(setting.key) && rows.length
         && rows.every(row => row.updateSetting?.() && syncGatedRows(setting.key, row))) {
       continue;
     }
@@ -414,6 +419,7 @@ async function flushSettingsUpdates() {
   // Pages that paint from the settings cache (the Overview's tiles)
   // repaint off this instead of re-reading the device.
   document.dispatchEvent(new CustomEvent('ks-settings', { detail: changed.map(s => s.key) }));
+  syncOffRows();
   if (!rebuild) return;
   liveSettingsRendering = true;
   const restoreDraft = preserveDraft();
@@ -746,6 +752,7 @@ async function renderSettings({ cached = false } = {}) {
     }
     if (helperPage) renderUpdateHelper(panels.get('Optional update helper'), helperStatus);
     if (tabId === 'tab-browser') renderUrlFilterPage(panels.get('URL Filter'));
+    if (tabId === 'tab-groundcontrol') renderGroundControl(document.getElementById(tabId));
     if (tabId === 'tab-screensaver') renderPluginScreensaverEntry(document.getElementById(tabId), byKey['screensaver.mode']?.value);
   }
 
@@ -1217,6 +1224,7 @@ async function renderSettings({ cached = false } = {}) {
   updatePersonSensorRows();
   updateClockNightAdminRows();
   updateCelestialPermissionRows();
+  updateWebGeolocationRows();
   updateRtspRows();
   updateOnvifEventsRows();
   updateCelestialLocationRow();
@@ -1671,6 +1679,7 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
   updateProximityRows();
   updateDimModeNotice();
   updateAdaptiveBrightnessRows();
+  updateAdaptiveVolumeRows();
   updateClockNightRows();
   updateScreenOffAdminNotice();
   updateAutoReloadOverlayNotice();
@@ -1692,6 +1701,9 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
   // The Calendar tab: Open on the kiosk and the Calendars card over the
   // Display and Kiosk rows.
   renderCalendarPage();
+  // The Timers tab: the timers themselves over the definition rows and
+  // the Voice timers group under them.
+  await renderTimersPage();
 
   const tlsPanel = document.querySelector('#tab-device .subpage[data-subpage="TLS"]');
   if (tlsPanel) renderTlsSettings(tlsPanel);
@@ -1865,13 +1877,15 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
     const root = document.getElementById('tab-voicesatellite');
     root.innerHTML = '';
     // The chime rows' sound pickers, uploads and previews, on either
-    // runtime's Chimes page.
+    // runtime's Chimes page and, for the timer sound, on the Timers page.
+    // A row is mounted once: the Timers page is drawn whatever this page
+    // shows, so its row is mounted first and skipped after.
+    const soundSelectors = [];
     const mountChimeRows = () => {
-      const soundSelectors = [];
       for (const kind of ['wake', 'done', 'error', 'alert', 'announce']) {
         const key = `voice_chimes.${kind}`;
         const row = document.querySelector(`[data-key="${key}"]`);
-        if (!row || !byKey[key]) continue;
+        if (!row || !byKey[key] || row.classList.contains('chime-row')) continue;
         row.classList.add('chime-row');
         const sound = attachSoundSelect(row, byKey[key]);
         soundSelectors.push(sound);
@@ -1909,6 +1923,7 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
         }, {inline: true});
       }
     };
+    mountChimeRows();
     let status = {};
     try {
       status = (await (await api('/api/commands/haStatus', { method: 'POST', body: '{}' })).json()).data || {};
@@ -1969,12 +1984,10 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
       // renderVsControls then puts into both panels.
       render(root, ['Voice Satellite'].filter((c) => (byCat[c] || []).length),
         { extra: ['Appearance'] });
-      // Match the kiosk's page order: Wake Word, Appearance, Timers, Chimes.
+      // Match the kiosk's page order: Wake Word, Appearance, Chimes.
       const appearanceEntry = root.querySelector('[data-subpage-entry="Appearance"]')?.closest('.card');
-      const timersEntry = root.querySelector('[data-subpage-entry="Timers"]')?.closest('.card');
       const chimesEntry = root.querySelector('[data-subpage-entry="Chimes"]')?.closest('.card');
       if (appearanceEntry && chimesEntry) appearanceEntry.after(chimesEntry);
-      if (appearanceEntry && timersEntry) appearanceEntry.after(timersEntry);
       // Wake word diagnostics stays where render() puts it, right under Wake
       // Word: its setting follows the Wake Word ones in the schema. (The
       // kiosk opens it from the tester's group, which is kiosk-only.)
@@ -2338,9 +2351,133 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
             renderFadeSettings();
             rcard.appendChild(fadeSettings);
           }
-          // The picked views in rotation order, each with a remove button,
-          // then the row that opens the picker to add more. Saved in place:
-          // no full re-render, the page stays put.
+          // Both lists are in rotation order. With two or more rows, a row
+          // reorders by a drag or by its arrows. A lone row gets only its
+          // remove button. A mouse drags a row by any part of it. A finger
+          // drags it by the handle, so a touch anywhere else on the row
+          // still scrolls the page: the browser's own drag and drop never
+          // starts from a touch. The other rows slide out of the way and
+          // the drop saves the new order.
+          const moved = (list, from, to) => {
+            const next = list.slice();
+            next.splice(to, 0, next.splice(from, 1)[0]);
+            return next;
+          };
+          const scrollParent = (el) => {
+            for (let p = el.parentElement; p; p = p.parentElement) {
+              const flow = getComputedStyle(p).overflowY;
+              if ((flow === 'auto' || flow === 'scroll') && p.scrollHeight > p.clientHeight) return p;
+            }
+            return document.scrollingElement;
+          };
+          const orderable = (row, handle, index, move) => {
+            row.classList.add('order-row');
+            let drag = null;
+            // The dragged row follows the pointer. It takes the place of
+            // every row whose middle it has passed, and the rows between
+            // shift by its height.
+            const place = () => {
+              const dy = drag.y - drag.startY + drag.scroller.scrollTop - drag.startScroll;
+              row.style.transform = `translateY(${dy}px)`;
+              const center = drag.tops[index] + drag.heights[index] / 2 + dy;
+              let to = index;
+              drag.rows.forEach((_, i) => {
+                const middle = drag.tops[i] + drag.heights[i] / 2;
+                if (i < index && center < middle) to = Math.min(to, i);
+                if (i > index && center > middle) to = Math.max(to, i);
+              });
+              drag.to = to;
+              drag.rows.forEach((other, i) => {
+                if (i === index) return;
+                const shift = i >= to && i < index ? drag.heights[index]
+                  : i > index && i <= to ? -drag.heights[index] : 0;
+                other.style.transform = shift ? `translateY(${shift}px)` : '';
+              });
+            };
+            // A row held near the top or bottom edge scrolls a long list.
+            const edge = () => {
+              if (!drag) return;
+              const s = drag.scroller;
+              const box = s === document.scrollingElement
+                ? { top: 0, bottom: window.innerHeight } : s.getBoundingClientRect();
+              const step = drag.y < box.top + 56 ? -8 : drag.y > box.bottom - 56 ? 8 : 0;
+              if (step) { s.scrollTop += step; place(); }
+              drag.frame = requestAnimationFrame(edge);
+            };
+            const begin = () => {
+              drag.active = true;
+              row.classList.add('dragging');
+              drag.rows.forEach((other) => { if (other !== row) other.classList.add('order-shift'); });
+              window.getSelection()?.removeAllRanges();
+              drag.frame = requestAnimationFrame(edge);
+            };
+            const finish = (drop) => {
+              if (!drag) return;
+              const d = drag;
+              drag = null;
+              cancelAnimationFrame(d.frame);
+              row.classList.remove('dragging');
+              d.rows.forEach((other) => {
+                other.classList.remove('order-shift');
+                other.style.transform = '';
+              });
+              if (row.hasPointerCapture(d.id)) row.releasePointerCapture(d.id);
+              if (drop && d.active && d.to !== index) move(index, d.to);
+            };
+            row.addEventListener('pointerdown', (e) => {
+              if (drag || e.button !== 0) return;
+              const finger = e.pointerType !== 'mouse';
+              if (finger ? !handle.contains(e.target) : e.target.closest('button, input, a')) return;
+              const rows = [...row.parentElement.children]
+                .filter((el) => el.classList.contains('order-row'));
+              const boxes = rows.map((el) => el.getBoundingClientRect());
+              const scroller = scrollParent(row);
+              drag = { id: e.pointerId, rows, tops: boxes.map((b) => b.top),
+                heights: boxes.map((b) => b.height), startY: e.clientY, y: e.clientY,
+                scroller, startScroll: scroller.scrollTop, to: index, active: false };
+              row.setPointerCapture(e.pointerId);
+              // A finger on the handle means a drag. A mouse press becomes
+              // one once it moves, so a plain click stays a click.
+              if (finger) begin();
+            });
+            row.addEventListener('pointermove', (e) => {
+              if (!drag || e.pointerId !== drag.id) return;
+              drag.y = e.clientY;
+              if (!drag.active) {
+                if (Math.abs(drag.y - drag.startY) < 4) return;
+                begin();
+              }
+              place();
+            });
+            row.addEventListener('pointerup', (e) => { if (drag && e.pointerId === drag.id) finish(true); });
+            row.addEventListener('pointercancel', (e) => { if (drag && e.pointerId === drag.id) finish(false); });
+            row.addEventListener('selectstart', (e) => { if (drag) e.preventDefault(); });
+          };
+          const orderHandle = () => {
+            const handle = document.createElement('span');
+            handle.className = 'camera-row-icon order-handle';
+            handle.innerHTML = cameraIcon('drag');
+            return handle;
+          };
+          const orderActions = (index, count, move, remove) => {
+            const actions = document.createElement('div');
+            actions.className = 'camera-row-actions';
+            if (count > 1) {
+              const up = cameraAction(t('commonMoveUp'), () => move(index, index - 1), false, 'up',
+                index === 0);
+              const down = cameraAction(t('commonMoveDown'), () => move(index, index + 1), false,
+                'down', index === count - 1);
+              // A phone hides the arrows and keeps the handle (app.css).
+              up.classList.add('order-arrow');
+              down.classList.add('order-arrow');
+              actions.append(up, down);
+            }
+            actions.appendChild(cameraAction(haText('Remove'), remove, false, 'delete'));
+            return actions;
+          };
+
+          // The picked views, then the row that opens the picker to add
+          // more. Saved in place: no full re-render, the page stays put.
           let sel = [];
           try { sel = JSON.parse(byKey['ha.rotation_dashboards']?.value || '[]'); } catch (_) {}
           if (!Array.isArray(sel)) sel = [];
@@ -2351,12 +2488,22 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
           const vlist = section(rotDef?.title || haText('Views to rotate'));
           const renderSel = () => {
             vlist.replaceChildren();
-            sel.forEach((path) => {
-              const rm = cameraAction(haText('Remove'), async () => {
-                await saveSel(sel.filter((x) => x !== path));
+            // Drawn before the save lands, so a dropped row stays put.
+            const move = async (from, to) => {
+              const saving = saveSel(moved(sel, from, to));
+              renderSel();
+              await saving;
+            };
+            sel.forEach((path, index) => {
+              const several = sel.length > 1;
+              const actions = orderActions(index, sel.length, move, async () => {
+                await saveSel(sel.filter((_, i) => i !== index));
                 renderSel();
-              }, false, 'delete');
-              vlist.appendChild(dashboardViewListRow(path, rm));
+              });
+              const handle = several ? orderHandle() : null;
+              const row = dashboardViewListRow(path, actions, handle);
+              if (several) orderable(row, handle, index, move);
+              vlist.appendChild(row);
             });
             const add = document.createElement('button');
             add.className = 'dp-add-row';
@@ -2391,14 +2538,24 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
           ucard.appendChild(ulist);
           const renderUrls = () => {
             ulist.innerHTML = '';
-            urls.forEach((u) => {
+            const move = async (from, to) => {
+              const saving = saveUrls(moved(urls, from, to));
+              renderUrls();
+              await saving;
+            };
+            urls.forEach((u, index) => {
               const row = readOnlyRow(u, '', '', false);
+              row.classList.add('rotation-url-row');
               row.querySelector('span').remove();
-              const rm = cameraAction(haText('Remove'), async () => {
-                await saveUrls(urls.filter((x) => x !== u));
+              if (urls.length > 1) {
+                const handle = orderHandle();
+                row.prepend(handle);
+                orderable(row, handle, index, move);
+              }
+              row.appendChild(orderActions(index, urls.length, move, async () => {
+                await saveUrls(urls.filter((_, i) => i !== index));
                 renderUrls();
-              }, false, 'delete');
-              row.appendChild(rm);
+              }));
               ulist.appendChild(row);
             });
           };
@@ -2475,7 +2632,7 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
           // on the switch), and on this tab that re-fetches every
           // dashboard — a full-page flash for one checkbox.
           const returnKeys = ['ha.return_home_enabled', 'ha.return_home_seconds',
-            'ha.rotation_enabled'];
+            'ha.rotation_enabled', 'nav.style'];
           const returnShown = () => JSON.stringify(returnKeys.map((k) => byKey[k]?.value));
           let shownReturn = '';
           const onReturnSettings = (e) => {
@@ -2517,9 +2674,13 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
             const note = document.createElement('div');
             note.className = 'row';
             note.style.cssText = 'font-size:12.5px; color:var(--muted);';
-            note.textContent = homePath
-              ? t('haReturnPath', {path: homePath})
-              : haText('The configured dashboard has no view path to return to.');
+            // Compass holds several dashboard views, each home to its own
+            // place.
+            note.textContent = byKey['nav.style']?.value === 'compass'
+              ? t('haReturnCompass', {}, 'With Compass navigation, each dashboard view in the layout returns to the view picked for it after the timeout.')
+              : homePath
+                ? t('haReturnPath', {path: homePath})
+                : haText('The configured dashboard has no view path to return to.');
             hcard.appendChild(note);
             if (rhEnabled.value === true && rhSeconds) {
               hcard.appendChild(settingRow(rhSeconds));
@@ -2765,6 +2926,7 @@ kioskText('Lockdown Mode makes the dashboard non-interactive, arms every ' +
   // Satellite and Home Assistant sections above clear their tab roots after
   // renderFleetPage() has already put it there.
   applyManagedBanners();
+  syncOffRows();
 
   // Counterpart to the capture at the top: put the view back where the
   // person was. One extra frame so late async renders have laid out.
@@ -2882,26 +3044,17 @@ export function updateCelestialLocationRow() {
     });
 }
 
-/* The Celestial screensaver's Required system permissions group while the
-   GPS is the location source, mirroring the device's: the Location grant
-   with the system location switch, right after the group holding the
-   Location select. Grant on device runs the dialog on the tablet, and the
-   Current location row asks again once it is granted. */
-export function updateCelestialPermissionRows() {
-  const panel = document.getElementById('tab-screensaver')
-    ?.querySelector('.subpage[data-subpage="Celestial screensaver"]');
-  if (!panel) return;
-  for (const stale of panel.querySelectorAll('.celestial-permission')) stale.remove();
-  const byKey = Object.fromEntries((state.settings || []).map((s) => [s.key, s]));
-  const source = byKey['screensaver.celestial_location'];
-  if (!source || source.value !== 'gps' || !depSatisfied(source, byKey)) return;
-  const card = panel.querySelector('[data-key="screensaver.celestial_location"]')?.closest('.card');
-  if (!card) return;
+/* A Required system permissions group holding the Location grant with
+   the system location switch, mirroring the device's
+   _LocationPermissionsTile: placed after `card`, tagged `cls` so the
+   caller can clear it, with the lines of whatever reads the position.
+   Grant on device runs the dialog on the tablet. */
+function locationPermissionGroup(card, cls, { held, missing, onGranted }) {
   const h = document.createElement('h2');
-  h.className = 'card-title celestial-permission';
+  h.className = `card-title ${cls}`;
   h.textContent = screensaverText('Required system permissions');
   const permCard = document.createElement('div');
-  permCard.className = 'card celestial-permission';
+  permCard.className = `card ${cls}`;
   const permRow = document.createElement('div');
   permRow.className = 'row';
   const info = document.createElement('div');
@@ -2923,11 +3076,11 @@ export function updateCelestialPermissionRows() {
       : p.location === true && p.locationServicesOn === true;
     info.querySelector('.desc').textContent = ok === null
       ? screensaverText('Status unavailable.')
-      : ok ? screensaverText('The sky can follow the GPS receiver.')
+      : ok ? held
       : p.location !== true && p.locationApproximate === true
         ? esphomeText('Only approximate location is allowed, and the GPS receiver needs precise location.')
       : p.location !== true
-        ? screensaverText('Without this the GPS receiver cannot be read and the sky has no location.')
+        ? missing
         : esphomeText('Location is off in the device settings, so the receiver delivers nothing.');
     stateEl.textContent = ok === null ? '' : ok ? screensaverText('Granted') : screensaverText('Missing');
     stateEl.style.color = ok ? 'var(--ok)' : 'var(--error)';
@@ -2950,7 +3103,7 @@ export function updateCelestialPermissionRows() {
         const now = await readPerm();
         if (now && now.location === true && now.locationServicesOn === true) {
           paint(now);
-          updateCelestialLocationRow();
+          onGranted?.();
           return;
         }
       }
@@ -2959,6 +3112,49 @@ export function updateCelestialPermissionRows() {
     permRow.appendChild(btn);
   };
   readPerm().then((p) => { if (permCard.isConnected) paint(p); });
+}
+
+/* The Celestial screensaver's Required system permissions group while the
+   GPS is the location source, mirroring the device's: the Location grant
+   right after the group holding the Location select. The Current location
+   row asks again once it is granted. */
+export function updateCelestialPermissionRows() {
+  const panel = document.getElementById('tab-screensaver')
+    ?.querySelector('.subpage[data-subpage="Celestial screensaver"]');
+  if (!panel) return;
+  for (const stale of panel.querySelectorAll('.celestial-permission')) stale.remove();
+  const byKey = Object.fromEntries((state.settings || []).map((s) => [s.key, s]));
+  const source = byKey['screensaver.celestial_location'];
+  if (!source || source.value !== 'gps' || !depSatisfied(source, byKey)) return;
+  const card = panel.querySelector('[data-key="screensaver.celestial_location"]')?.closest('.card');
+  if (!card) return;
+  locationPermissionGroup(card, 'celestial-permission', {
+    held: screensaverText('The sky can follow the GPS receiver.'),
+    missing: screensaverText('Without this the GPS receiver cannot be read and the sky has no location.'),
+    onGranted: updateCelestialLocationRow,
+  });
+}
+
+/* Web Browsing's HTML5 Geolocation group (issue #1383), mirroring the
+   device's page: the group closes the page, after the URL Filter, which
+   the tab render appends last, and its Location grant follows while
+   Enable geolocation access is on. */
+export function updateWebGeolocationRows() {
+  const tab = document.getElementById('tab-browser');
+  if (!tab) return;
+  for (const stale of tab.querySelectorAll('.web-geolocation-permission')) stale.remove();
+  const row = tab.querySelector(':scope > .card [data-key="web.geolocation"]');
+  const card = row?.closest('.card');
+  if (!card) return;
+  const heading = card.previousElementSibling;
+  const filter = tab.querySelector(':scope > .card [data-subpage-entry="URL Filter"]')?.closest('.card');
+  if (filter && heading?.matches('h2.card-title')) heading.before(filter);
+  const byKey = Object.fromEntries((state.settings || []).map((s) => [s.key, s]));
+  if (byKey['web.geolocation']?.value !== true) return;
+  locationPermissionGroup(card, 'web-geolocation-permission', {
+    held: settingsPageText('Browser', 'Pages can read the device location.'),
+    missing: settingsPageText('Browser', 'Without this pages cannot read the device location.'),
+  });
 }
 
 /* The Clock screensaver's Required system permissions group while Turn
@@ -3034,6 +3230,7 @@ document.addEventListener('ks-settings', (e) => {
       || key === 'screensaver.mode')) {
     updateCelestialPermissionRows();
   }
+  if ((e.detail || []).includes('web.geolocation')) updateWebGeolocationRows();
 });
 
 export function updatePersonSensorRows() {

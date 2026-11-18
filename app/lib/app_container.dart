@@ -16,6 +16,7 @@ import 'managers/plugins/plugin_host_api.dart';
 import 'managers/shizuku/shizuku_manager.dart';
 import 'managers/assist_pipeline/assist_pipeline_manager.dart';
 import 'managers/audio/audio_routing_manager.dart';
+import 'managers/audio/adaptive_volume_manager.dart';
 import 'managers/audio/noise_level_manager.dart';
 import 'managers/browser/browser_manager.dart';
 import 'managers/browser/navigation.dart';
@@ -67,6 +68,7 @@ import 'managers/screen/adaptive_light_manager.dart';
 import 'managers/screen/screen_manager.dart';
 import 'managers/screensaver/immich_manager.dart';
 import 'managers/screensaver/screensaver_manager.dart';
+import 'managers/browser/dashboard_page.dart';
 import 'managers/sendspin/sendspin_manager.dart';
 import 'managers/service/service_manager.dart';
 import 'managers/sound/sound_manager.dart';
@@ -82,6 +84,8 @@ import 'managers/update/system_update_manager.dart';
 import 'managers/update/update_manager.dart';
 import 'managers/voice/voice_manager.dart';
 import 'managers/voice/voice_requests_manager.dart';
+import 'managers/ground_control/ground_control_manager.dart';
+import 'managers/voice_timers/shared_timers_manager.dart';
 import 'managers/voice_timers/voice_timer_manager.dart';
 import 'managers/wake_word/wake_word_manager.dart';
 
@@ -172,7 +176,8 @@ class AppContainer {
     // restart re-opens capture.
     audio = AudioRoutingManager(bus, commands, log, settings);
     wakeWord = WakeWordManager(bus, commands, log, settings);
-    noiseLevel = NoiseLevelManager(bus, commands, log);
+    noiseLevel = NoiseLevelManager(bus, commands, log, settings: settings);
+    adaptiveVolume = AdaptiveVolumeManager(bus, commands, log, settings);
     // After wakeWord: the native pipeline transport consumes the engine's
     // in-process audio stream through it (issue-free: one consumer per
     // turn, negotiated by Voice Satellite).
@@ -203,7 +208,7 @@ class AppContainer {
     dlna.pending.addListener(syncDlnaCover);
     files = FilesManager(bus, commands, log);
     sound = SoundManager(bus, commands, log, settings: settings);
-    voiceTimers = VoiceTimerManager(bus, commands, log);
+    voiceTimers = VoiceTimerManager(bus, commands, log, settings: settings);
     voice = VoiceManager(bus, commands, log, settings, btProxy, wakeWord);
     notifications = NotificationManager(bus, commands, log, settings);
     update = UpdateManager(
@@ -253,6 +258,10 @@ class AppContainer {
     deviceCamera.scannerActive = () => motion.scannerHeld;
     settings.pluginScreensavers = () => plugins.screensaverOptions;
     screensaver.pluginTouch = plugins.screensaverTouch;
+    screensaver.compassCenterIsNowPlaying = () =>
+        compassCenter.value == 'now_playing';
+    screensaver.dashboardPageInUse = () => browser.pageNeeded.value;
+    homeAssistant.pageInUse = () => browser.pageNeeded.value;
     settings.pluginVoiceSkins = () => plugins.voiceSkinOptions;
     remote = RemoteManager(bus, commands, log, settings);
     fleet = FleetManager(bus, commands, log, settings);
@@ -272,6 +281,13 @@ class AppContainer {
       }
     };
     intercom = IntercomManager(bus, commands, log, settings);
+    sharedTimers = SharedTimersManager(
+      bus,
+      commands,
+      log,
+      settings,
+      voiceTimers,
+    );
     alarms = AlarmManager(bus, commands, log, settings)
       ..screensaverModeOverride = () => screensaver.modeOverride.value;
     calendar = CalendarManager(bus, commands, log, settings);
@@ -307,6 +323,8 @@ class AppContainer {
       ),
     );
     voiceRequests = VoiceRequestsManager(bus, commands, log, settings);
+    groundControl = GroundControlManager(bus, commands, log, settings);
+    voiceRequests.speaking = () => groundControl.speaking;
     // It follows what the managers above are doing, through the bus and
     // the media players' own states.
     leds = LedManager(
@@ -341,6 +359,20 @@ class AppContainer {
   // re-scopes it under its own name.
   late final commands = CommandRegistry(log).as('ui');
 
+  /// The kind of the view Compass rests on (compass_layout.dart), while
+  /// that view is the one on screen. Empty in Classic and on every other
+  /// view. Closing that view lands on the center, which is the view
+  /// itself, so it leaves its close button out (CompassCenterHides).
+  final compassCenter = ValueNotifier<String>('');
+
+  /// Set by Compass while it runs: a view's close button on a side of the
+  /// layout hands its close to it (compassClose in compass_center.dart).
+  bool Function(String kind)? compassCloseToCenter;
+
+  /// Set by Compass while it runs: Close overlays from Home Assistant
+  /// goes through it (CompassController.closeOverlays).
+  Future<bool> Function()? compassCloseOverlays;
+
   late final SettingsManager settings;
   late final DeviceManager device;
   late final AdaptiveLightManager adaptiveLight;
@@ -372,6 +404,7 @@ class AppContainer {
   late final EventBroadcastManager broadcasts;
   late final WakeWordManager wakeWord;
   late final NoiseLevelManager noiseLevel;
+  late final AdaptiveVolumeManager adaptiveVolume;
   late final AssistPipelineManager pipeline;
   late final SendspinManager sendspin;
   late final DlnaManager dlna;
@@ -392,10 +425,12 @@ class AppContainer {
   late final FleetManager fleet;
   late final FleetSyncManager fleetSync;
   late final IntercomManager intercom;
+  late final SharedTimersManager sharedTimers;
   late final AlarmManager alarms;
   late final CalendarManager calendar;
   late final MusicLibraryManager musicLibrary;
   late final VoiceRequestsManager voiceRequests;
+  late final GroundControlManager groundControl;
   late final LedManager leds;
   late final PageStateManager pageState;
 
@@ -520,6 +555,8 @@ class AppContainer {
     // After wakeWord: it seeds from the engine's state. Before btProxy,
     // whose first refresh reads the level.
     noiseLevel,
+    // After noiseLevel, whose windows it counts.
+    adaptiveVolume,
     pipeline,
     sendspin,
     dlna,
@@ -558,6 +595,9 @@ class AppContainer {
     // After fleet too: the roster is the switcher's list. After sound: it
     // chimes through it.
     intercom,
+    // After fleet, whose list names the kiosks to share with, and after
+    // voice, whose timers it shares.
+    sharedTimers,
     // Its first check can ring at once, and a ring reaches for the
     // screen, the screensaver, the kiosk and the wake word's stop word.
     alarms,
@@ -568,6 +608,7 @@ class AppContainer {
     musicLibrary,
     // After intercom and alarms: it runs their commands.
     voiceRequests,
+    groundControl,
     // Last: it reads the state every manager above keeps.
     pageState,
   ];
@@ -726,6 +767,19 @@ class AppContainer {
         applyAppDateLanguage(settings.get(uiLanguage));
       }
     });
+    // The dashboard page exists only while something uses it.
+    followDashboardPage(settings, bus, browser.pageNeeded);
+    commands.register(
+      Command(
+        name: 'compassCloseOverlays',
+        description:
+            'Under Compass navigation: close the page floating over the '
+            'views and go to the center view. Fails in Classic.',
+        handler: (_) async => (await compassCloseOverlays?.call() ?? false)
+            ? const CommandResult.ok()
+            : const CommandResult.fail('Compass is off'),
+      ),
+    );
     // An Echo image's first start: before the provisioning below, which
     // may override it, and before any manager reads its settings.
     await EchoDefaults(settings, log).apply();

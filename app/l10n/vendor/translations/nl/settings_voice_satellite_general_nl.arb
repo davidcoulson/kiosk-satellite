@@ -37,7 +37,6 @@
   "voiceTimers": "Timers",
   "voiceAssistantHint": "Pijplijnen en vervolgvragen",
   "voiceConversationHint": "Wat de overlay laat zien en voor hoe lang",
-  "voiceTimersHint": "Labels, waarschuwingen en gesproken herinneringen",
   "voiceSectionFollowUp": "Vervolgvraag",
   "voiceSectionLinger": "Weergaveduur",
   "voiceSectionOnScreen": "Op het scherm",
@@ -71,5 +70,6 @@
   "settingVoiceEnabledTitle": "Voice Satellite inschakelen",
   "settingVoiceEnabledDescription": "Maakt van deze kiosk via de ESPHome-server een spraakassistent voor Home Assistant.",
   "settingVoiceMuteTitle": "Microfoon dempen",
-  "settingVoiceMuteDescription": "Stop met luisteren naar het wekwoord."
+  "settingVoiceMuteDescription": "Stop met luisteren naar het wekwoord.",
+  "voiceSectionSharedTimers": "Gedeelde timers"
 }

@@ -445,6 +445,42 @@ class NoiseLevelChanged extends AppEvent {
   final bool held;
 }
 
+/// One clean window of room noise closed (issue #1450): the mean power of
+/// five seconds the kiosk did not play into, in dBFS, before the sensor's
+/// rounding and its 2 dB steps. Internal: adaptive volume counts windows,
+/// which [NoiseLevelChanged] leaves out when the level barely moved.
+class NoiseWindowMeasured extends AppEvent {
+  const NoiseWindowMeasured(this.dbfs);
+  final double dbfs;
+}
+
+/// A media player the echo canceller has no tap on started or stopped
+/// (DLNA). Internal: the room's noise level holds while one plays, the way
+/// it does for the players that are tapped.
+class UntappedPlaybackChanged extends AppEvent {
+  const UntappedPlaybackChanged({required this.source, required this.playing});
+  final String source;
+  final bool playing;
+}
+
+/// Adaptive volume's state moved (issue #1450): the room estimate it
+/// follows, in dBFS, and the share of its own slider each volume plays at,
+/// 0 to 1. A volume that does not follow the room is at 1. [noise] is null
+/// with no reading, and every share is then 1. Internal: the device and
+/// intercom managers apply the shares, both settings UIs draw the marker.
+class AdaptiveVolumeChanged extends AppEvent {
+  const AdaptiveVolumeChanged({
+    required this.noise,
+    required this.assistant,
+    required this.media,
+    required this.intercom,
+  });
+  final double? noise;
+  final double assistant;
+  final double media;
+  final double intercom;
+}
+
 /// A playback level sample from a native sound (mean |amplitude|, 0..1, at
 /// most ~20/s). Wire event: the page's reactive bar animates to audio it
 /// never touches.
@@ -531,9 +567,16 @@ class VoiceInteractionChanged extends AppEvent {
   final bool active;
   final InteractionSource source;
 
+  /// The reason an announcement from Home Assistant (the ESPHome announce
+  /// action) holds with. It ducks the music and pauses wake word detection
+  /// like a call, but the screensaver stays up under it (issue #1441).
+  static const announcementReason = 'intercom_announcement';
+
   /// What kind of interaction, as reported by the page: 'voice',
   /// 'announcement', 'ask_question', 'start_conversation', 'timer', 'media',
   /// or '' when the page did not say (the legacy pauseScreensaver fallback).
+  /// The intercom holds with 'intercom' for a call and with
+  /// [announcementReason] for an announcement from Home Assistant.
   /// Consumers may specialize on it; absence must always behave like the
   /// plain event.
   final String reason;
@@ -542,6 +585,66 @@ class VoiceInteractionChanged extends AppEvent {
 /// Native Voice Satellite moved between Home Assistant's assist_satellite
 /// states: idle, listening, processing or responding. Covers Assist turns
 /// and realtime conversations alike.
+/// Kiosk Satellite Ground Control became reachable, moved or went away.
+/// [baseUrl] is its http(s) address (no trailing slash), null when there
+/// is none to use: Voice Match off, not found, or the kiosk's token refused.
+class GroundControlServiceChanged extends AppEvent {
+  const GroundControlServiceChanged(this.baseUrl);
+  final String? baseUrl;
+}
+
+/// Who is talking on this kiosk, for the Speaker sensor and the lights.
+/// Empty when nobody is identified (a new turn, an unknown voice).
+class VoiceSpeakerChanged extends AppEvent {
+  const VoiceSpeakerChanged(
+    this.name, {
+    this.color,
+    this.id,
+    this.by,
+    this.score,
+  });
+
+  /// Empty when a turn starts and for a voice nobody enrolled. That one
+  /// has a [score], a new turn has none.
+  final String name;
+
+  /// How close the voice was to the person's, 0 to 1. Null when a turn
+  /// starts and when the only person enrolled was taken without a check.
+  final double? score;
+
+  /// Ground Control's person id, null for a voice nobody enrolled.
+  final String? id;
+
+  /// How the voice was placed: `voice`, `wake_word` or `only_person`.
+  final String? by;
+
+  /// The person's ring color in Voice Match, `#RRGGBB`.
+  final String? color;
+}
+
+/// Voice Match asks this kiosk to record a person's voice (the Voice Match
+/// app started an enrollment here).
+class VoiceMatchEnrollRequested extends AppEvent {
+  const VoiceMatchEnrollRequested({
+    required this.personId,
+    required this.name,
+    this.color,
+    this.targetS = 45,
+  });
+  final String personId;
+  final String name;
+  final String? color;
+  final double targetS;
+}
+
+/// An enrollment on this kiosk changed, as VoiceMatchEnrollment.toJson
+/// gives it (`phase`, `speechS`, `targetS`, `color` ...). Null when the
+/// result card is gone. A `refused` phase never started.
+class VoiceMatchEnrollmentChanged extends AppEvent {
+  const VoiceMatchEnrollmentChanged(this.state);
+  final Map<String, Object?>? state;
+}
+
 class VoiceSatelliteStateChanged extends AppEvent {
   const VoiceSatelliteStateChanged(this.state, {this.announcement = false});
   final String state;
@@ -564,6 +667,20 @@ class VoiceTimersChanged extends AppEvent {
 
   @override
   Map<String, Object?> toJson() => {'timers': timers};
+}
+
+/// The timers this kiosk shows changed, its own or the ones another kiosk
+/// shares: one started, changed, finished or went. Carries the whole
+/// `timersStatus` shape so the remote admin redraws from the event alone.
+class TimersStateChanged extends AppEvent {
+  const TimersStateChanged(this.status);
+  final Map<String, Object?> status;
+
+  @override
+  String get wireName => 'timers';
+
+  @override
+  Map<String, Object?> toJson() => status;
 }
 
 // ── Alarms ─────────────────────────────────────────────────────────────
@@ -604,6 +721,19 @@ class IntercomCameraDemand extends AppEvent {
 class IntercomStateChanged extends AppEvent {
   const IntercomStateChanged(this.status);
   final Map<String, Object?> status;
+
+  /// Whether [status] has the card of an announcement from Home Assistant
+  /// on screen: while it plays and through its last words, never for one
+  /// that is audio only.
+  static bool announcementCard(Map<String, Object?> status) {
+    final call = status['call'];
+    final state = status['state'];
+    return call is Map &&
+        call['automated'] == true &&
+        call['audioOnly'] != true &&
+        call['outgoing'] != true &&
+        (state == 'listening' || state == 'ended');
+  }
 
   @override
   String get wireName => 'intercom';
@@ -1011,6 +1141,36 @@ class CalendarViewChanged extends AppEvent {
   final String? view;
 }
 
+/// The page or view on screen changed: the dashboard, an overlay page, a
+/// KS page such as the calendar, a camera view, Now Playing or the menu.
+/// [mode] is the navigation style, classic or compass. [id] is the camera
+/// view's ID, null for every other view. Internal: plugins hear it as
+/// navigation.view.
+class NavigationViewChanged extends AppEvent {
+  const NavigationViewChanged({
+    required this.mode,
+    required this.view,
+    this.id,
+  });
+
+  final String mode;
+  final String view;
+  final String? id;
+
+  @override
+  Map<String, Object?> toJson() => {'mode': mode, 'view': view, 'id': id};
+
+  @override
+  bool operator ==(Object other) =>
+      other is NavigationViewChanged &&
+      other.mode == mode &&
+      other.view == view &&
+      other.id == id;
+
+  @override
+  int get hashCode => Object.hash(mode, view, id);
+}
+
 class CameraViewStateChanged extends AppEvent {
   const CameraViewStateChanged({
     required this.viewId,
@@ -1175,6 +1335,20 @@ class AirPlaySessionChanged extends AppEvent {
   final Map<String, Object?>? session;
 }
 
+/// A plugin player sent a new state while it is the pick, or null once it
+/// stopped being one (SDK `player`).
+class PluginPlayerStateChanged extends AppEvent {
+  const PluginPlayerStateChanged(this.pick, this.state);
+  final String pick;
+  final Map<String, Object?>? state;
+}
+
+/// A plugin player's queue changed, so a queue on screen reads it again.
+class PluginPlayerQueueChanged extends AppEvent {
+  const PluginPlayerQueueChanged(this.pick);
+  final String pick;
+}
+
 /// The followed player's state, title, artist or source moved (issue
 /// #741): what the ESPHome media sensors show. Published only on a real
 /// change, never for a position tick.
@@ -1297,10 +1471,14 @@ class VoiceTimerAction extends AppEvent {
     required this.entityId,
     required this.id,
     required this.action,
+    this.seconds = 0,
   });
   final String entityId;
   final String id;
   final String action;
+
+  /// The time an `add` or `remove` adds or takes away.
+  final int seconds;
 
   @override
   String get wireName => 'timer-action';
@@ -1310,7 +1488,31 @@ class VoiceTimerAction extends AppEvent {
     'entityId': entityId,
     'id': id,
     'action': action,
+    if (seconds > 0) 'seconds': seconds,
   };
+}
+
+/// Timers shared by other kiosks started or stopped ringing here. Native
+/// Voice Satellite arms the stop word and holds the screen for them as for
+/// its own.
+class SharedTimerAlertChanged extends AppEvent {
+  const SharedTimerAlertChanged(this.ringing);
+  final bool ringing;
+}
+
+/// The timer ring on this kiosk went quiet under Silence after, or rings
+/// again for a timer that finished since. The finished timers stay on
+/// screen while it is quiet, so native Voice Satellite keeps the stop word
+/// but lets the music back.
+class TimerRingQuiet extends AppEvent {
+  const TimerRingQuiet(this.quiet);
+  final bool quiet;
+}
+
+/// The stop word, the action button or a cancel asked to end the ringing
+/// timers other kiosks shared.
+class SharedTimerDismissRequested extends AppEvent {
+  const SharedTimerDismissRequested();
 }
 
 /// The device certificate was replaced or renewed.

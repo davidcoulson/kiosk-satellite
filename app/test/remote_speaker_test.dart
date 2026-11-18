@@ -102,12 +102,14 @@ void main() {
     List<String> ended, {
     Future<double?> Function(String, Duration)? measure,
     List<Duration>? progress,
+    FakeAsync? time,
   }) => RemoteSpeaker(
     ha: ha,
     onEnded: (id, {error}) => ended.add(id),
     onProgress: (id, position, length) => progress?.add(length),
     measure: measure,
     log: (_) {},
+    now: time == null ? null : () => DateTime(2026).add(time.elapsed),
   );
 
   test('a Cast player: our speech buffers, plays and stops', () {
@@ -245,6 +247,171 @@ void main() {
           'media-source://tts/tts.piper?message=hi',
         );
         expect(ha.askedUrl, isFalse);
+      });
+    });
+  });
+
+  group('a Music Assistant announcement', () {
+    // Idle on the last track it played, as a Music Assistant player sits
+    // after its queue ends.
+    const lastTrack = {
+      's': 'idle',
+      'a': {
+        'mass_player_type': 'player',
+        'media_content_id': 'spotify://track/6xiX',
+      },
+    };
+    const onLastTrack = {'media_content_id': 'spotify://track/6xiX'};
+
+    test('is not ended by the last track\'s id while it plays', () {
+      fakeAsync((async) {
+        final ha = _Ha(lastTrack)..holdPlay = Completer<void>();
+        final ended = <String>[];
+        final speaker = speakerFor(ha, ended, time: async);
+        speaker.play(_Ha.entity, url, normal: false);
+        async.flushMicrotasks();
+        ha.change('playing', onLastTrack);
+        // An update in the middle of the announcement.
+        ha.change('playing', onLastTrack);
+        expect(ended, isEmpty);
+        ha.change('idle', onLastTrack);
+        expect(ended, hasLength(1));
+      });
+    });
+
+    test('ends when Music Assistant answers, after its own chime', () {
+      fakeAsync((async) {
+        final ha = _Ha(lastTrack)..holdPlay = Completer<void>();
+        final ended = <String>[];
+        final speaker = speakerFor(
+          ha,
+          ended,
+          measure: (url, timeout) async => 4.0,
+          time: async,
+        );
+        speaker.play(_Ha.entity, url, normal: false);
+        async.flushMicrotasks();
+        // Its length and the 2 s margin go by: Music Assistant still plays.
+        async.elapse(const Duration(seconds: 8));
+        expect(ended, isEmpty);
+        ha.holdPlay!.complete();
+        async.flushMicrotasks();
+        expect(ended, hasLength(1));
+      });
+    });
+
+    test('an announcement on Music Assistant ends when it answers too', () {
+      fakeAsync((async) {
+        final ha = _Ha(lastTrack)..holdPlay = Completer<void>();
+        final ended = <String>[];
+        final speaker = speakerFor(
+          ha,
+          ended,
+          measure: (url, timeout) async => 3.0,
+          time: async,
+        );
+        speaker.play(
+          _Ha.entity,
+          url,
+          normal: false,
+          kind: RemoteSound.notification,
+        );
+        async.flushMicrotasks();
+        ha.change('playing', onLastTrack);
+        ha.change('playing', onLastTrack);
+        async.elapse(const Duration(seconds: 7));
+        expect(ended, isEmpty);
+        ha.holdPlay!.complete();
+        async.flushMicrotasks();
+        expect(ended, hasLength(1));
+      });
+    });
+
+    test('a measured answer ends when the player goes idle after its '
+        'length', () {
+      fakeAsync((async) {
+        final ha = _Ha(lastTrack)..holdPlay = Completer<void>();
+        final ended = <String>[];
+        final speaker = speakerFor(
+          ha,
+          ended,
+          measure: (url, timeout) async => 4.0,
+          time: async,
+        );
+        speaker.play(_Ha.entity, url, normal: false);
+        async.flushMicrotasks();
+        ha.change('playing', onLastTrack);
+        // Idle before the length went by: a blip, not the end.
+        async.elapse(const Duration(seconds: 2));
+        ha.change('idle', onLastTrack);
+        expect(ended, isEmpty);
+        ha.change('playing', onLastTrack);
+        async.elapse(const Duration(seconds: 5));
+        ha.change('idle', onLastTrack);
+        expect(ended, hasLength(1));
+      });
+    });
+
+    test('an answer before the length has gone by is not the end', () {
+      fakeAsync((async) {
+        final ha = _Ha(lastTrack)..holdPlay = Completer<void>();
+        final ended = <String>[];
+        final speaker = speakerFor(
+          ha,
+          ended,
+          measure: (url, timeout) async => 4.0,
+          time: async,
+        );
+        speaker.play(_Ha.entity, url, normal: false);
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        ha.holdPlay!.complete();
+        async.flushMicrotasks();
+        expect(ended, isEmpty);
+        // Back to the length and the 2 s margin.
+        async.elapse(const Duration(milliseconds: 4900));
+        expect(ended, isEmpty);
+        async.elapse(const Duration(milliseconds: 100));
+        expect(ended, hasLength(1));
+      });
+    });
+
+    test('is let go 12 s after its length when Music Assistant never '
+        'answers', () {
+      fakeAsync((async) {
+        final ha = _Ha(lastTrack)..holdPlay = Completer<void>();
+        final ended = <String>[];
+        final speaker = speakerFor(
+          ha,
+          ended,
+          measure: (url, timeout) async => 4.0,
+          time: async,
+        );
+        speaker.play(_Ha.entity, url, normal: false);
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 15900));
+        expect(ended, isEmpty);
+        async.elapse(const Duration(milliseconds: 100));
+        expect(ended, hasLength(1));
+      });
+    });
+
+    test('normal playback still ends by its length', () {
+      fakeAsync((async) {
+        final ha = _Ha(lastTrack);
+        final ended = <String>[];
+        final speaker = speakerFor(
+          ha,
+          ended,
+          measure: (url, timeout) async => 4.0,
+          time: async,
+        );
+        speaker.play(_Ha.entity, url, normal: true);
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 5900));
+        expect(ended, isEmpty);
+        async.elapse(const Duration(milliseconds: 100));
+        expect(ended, hasLength(1));
       });
     });
   });
@@ -454,6 +621,125 @@ void main() {
       ha.change('playing', ours);
       ha.change('idle');
       expect(ended, hasLength(2));
+    });
+  });
+
+  group('a length measured late', () {
+    // A Sonos announcing over paused music stays paused on the music the
+    // whole time: the length is its only end.
+    const paused = {
+      's': 'paused',
+      'a': {'media_content_id': 'x-sonos-spotify:track:1'},
+    };
+
+    test('ends the answer its length after it was sent, not after the '
+        'measurement', () {
+      fakeAsync((async) {
+        final ha = _Ha(paused);
+        final ended = <String>[];
+        final measured = Completer<double?>();
+        final progress = <Duration>[];
+        final positions = <Duration>[];
+        final speaker = RemoteSpeaker(
+          ha: ha,
+          onEnded: (id, {error}) => ended.add(id),
+          onProgress: (id, position, length) {
+            positions.add(position);
+            progress.add(length);
+          },
+          measure: (url, timeout) => measured.future,
+          log: (_) {},
+          now: () => DateTime(2026).add(async.elapsed),
+        );
+        speaker.play(_Ha.entity, url, normal: false);
+        async.flushMicrotasks();
+        // A long streamed answer, measured 5.2 s in.
+        async.elapse(const Duration(milliseconds: 5200));
+        measured.complete(15.7);
+        async.flushMicrotasks();
+        expect(positions, [const Duration(milliseconds: 5200)]);
+        expect(progress, [const Duration(milliseconds: 15700)]);
+        // Its 15.7 s plus the 2 s pad: 17.7 s after it was sent.
+        async.elapse(const Duration(milliseconds: 12400));
+        expect(ended, isEmpty);
+        async.elapse(const Duration(milliseconds: 100));
+        expect(ended, hasLength(1));
+      });
+    });
+
+    test('ends at once when the answer is already over', () {
+      fakeAsync((async) {
+        final ha = _Ha(paused);
+        final ended = <String>[];
+        final measured = Completer<double?>();
+        final speaker = speakerFor(
+          ha,
+          ended,
+          measure: (url, timeout) => measured.future,
+          time: async,
+        );
+        speaker.play(_Ha.entity, url, normal: false, text: 'Sure.');
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 5));
+        measured.complete(2.0);
+        async.flushMicrotasks();
+        async.elapse(Duration.zero);
+        expect(ended, hasLength(1));
+      });
+    });
+
+    test('ends an announcement its length after it was sent', () {
+      fakeAsync((async) {
+        final ha = _Ha(paused);
+        final ended = <String>[];
+        final measured = Completer<double?>();
+        final speaker = speakerFor(
+          ha,
+          ended,
+          measure: (url, timeout) => measured.future,
+          time: async,
+        );
+        speaker.play(
+          _Ha.entity,
+          url,
+          normal: false,
+          kind: RemoteSound.notification,
+        );
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        measured.complete(3.0);
+        async.flushMicrotasks();
+        // 3 s plus the 2 s pad, from when it was sent.
+        async.elapse(const Duration(milliseconds: 3900));
+        expect(ended, isEmpty);
+        async.elapse(const Duration(milliseconds: 100));
+        expect(ended, hasLength(1));
+      });
+    });
+
+    test('a player that shows our sound and stops still ends it early', () {
+      fakeAsync((async) {
+        final ha = _Ha({'s': 'idle', 'a': <String, Object?>{}});
+        final ended = <String>[];
+        final measured = Completer<double?>();
+        final speaker = speakerFor(
+          ha,
+          ended,
+          measure: (url, timeout) => measured.future,
+          time: async,
+        );
+        speaker.play(_Ha.entity, url, normal: false);
+        async.flushMicrotasks();
+        ha.change('playing', ours);
+        async.elapse(const Duration(seconds: 1));
+        measured.complete(4.0);
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 3));
+        ha.change('idle');
+        expect(ended, hasLength(1));
+        async.elapse(const Duration(seconds: 10));
+        expect(ended, hasLength(1));
+      });
     });
   });
 

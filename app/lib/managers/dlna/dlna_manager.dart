@@ -13,6 +13,7 @@ import '../../core/headless.dart';
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
 import '../../core/manager.dart';
+import '../device/ip_addresses.dart';
 import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 import 'upnp_xml.dart';
@@ -103,6 +104,7 @@ class DlnaManager extends Manager {
   DlnaManager(super.bus, super.commands, super.log, this._settings) {
     transportState.addListener(_syncScreensaverHold);
     media.addListener(_syncScreensaverHold);
+    transportState.addListener(_announcePlayback);
   }
 
   final SettingsManager _settings;
@@ -288,6 +290,7 @@ class DlnaManager extends Manager {
     await _stop();
     transportState.removeListener(_syncScreensaverHold);
     media.removeListener(_syncScreensaverHold);
+    transportState.removeListener(_announcePlayback);
   }
 
   Future<void> _restart() async {
@@ -388,18 +391,8 @@ class DlnaManager extends Manager {
         '${(8 + r.nextInt(4)).toRadixString(16)}${hex(3)}-${hex(12)}';
   }
 
-  Future<String> _localIp() async {
-    final interfaces = await NetworkInterface.list(
-      type: InternetAddressType.IPv4,
-      includeLinkLocal: false,
-    );
-    for (final i in interfaces) {
-      for (final a in i.addresses) {
-        if (!a.isLoopback) return a.address;
-      }
-    }
-    throw StateError('no network address');
-  }
+  Future<String> _localIp() async =>
+      await lanIpv4() ?? (throw StateError('no network address'));
 
   // ── SSDP ────────────────────────────────────────────────────────────
 
@@ -1050,6 +1043,18 @@ class DlnaManager extends Manager {
     if (!audioInBackground) {
       bus.publish(const ActivityDetected(source: 'dlna'));
     }
+  }
+
+  bool _playbackAnnounced = false;
+
+  /// Says on the bus when the renderer plays and stops. Its player is not
+  /// one the echo canceller taps, so the room's noise level would measure
+  /// the music as the room (issue #1450).
+  void _announcePlayback() {
+    final playing = transportState.value == 'PLAYING';
+    if (playing == _playbackAnnounced) return;
+    _playbackAnnounced = playing;
+    bus.publish(UntappedPlaybackChanged(source: 'dlna', playing: playing));
   }
 
   bool _screensaverHeld = false;

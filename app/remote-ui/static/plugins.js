@@ -10,7 +10,7 @@ import { currentPath, showTab, subpageEntry } from './tabs.js';
 import { dashboardField } from './dashboard_picker.js';
 import { actionField, cameraViewSpec, fieldVisible, iconField, listSetting, numberControl } from './plugin_lists.js';
 import { choiceControl, refreshPluginSetup, setupButtonRow } from './plugin_setup.js';
-import { hintRow, introRow, messageBox, modalShell, showToast, swatch } from './widgets.js';
+import { copyBox, hintRow, introRow, messageBox, modalShell, showToast, swatch } from './widgets.js';
 import { SUBPAGE_ICONS, subpageIcon } from './icons.js';
 import { marked } from './vendor-marked.js';
 import DOMPurify from './vendor-purify.js';
@@ -161,7 +161,8 @@ function reviewNotice(icon, text, tone) {
 
 // The review before an install or update: who made the plugin and what it is
 // on a header band, the README under it and the trust notice on a footer
-// band above the buttons. Mirrors the device (plugin_settings.dart,
+// band above the buttons. An update shows the release notes of the new
+// version above the README. Mirrors the device (plugin_settings.dart,
 // showPluginPreview).
 function confirmPreview(preview) {
   return new Promise((resolve) => {
@@ -198,6 +199,13 @@ function confirmPreview(preview) {
     modal.card.insertBefore(header, modal.body);
 
     modal.body.classList.add('plugin-review-body');
+    // What changed, as the author wrote it on the release. Only an update
+    // shows it: a first install has the README to go by.
+    if (preview.installedVersion && preview.releaseNotes) {
+      const notes = pluginReadme({ readme: preview.releaseNotes, readmeBaseUrl: preview.readmeBaseUrl });
+      notes.classList.add('plugin-release-notes');
+      modal.body.append(element('div', pluginText('Release notes'), 'plugin-review-eyebrow plugin-review-eyebrow-caps'), notes);
+    }
     modal.body.append(element('div', 'README', 'plugin-review-eyebrow'), pluginReadme(preview));
 
     const footer = element('div', undefined, 'plugin-review-foot');
@@ -553,7 +561,7 @@ function info(title, description = '') {
   return node;
 }
 
-function actionOptionsDialog(action, options) {
+function actionOptionsDialog(plugin, action, options) {
   return new Promise((resolve) => {
     const shell = modalShell({ title: action.title, onDismiss: () => { shell.close(); resolve(null); } });
     shell.body.append(hintRow(pluginText('To assign a gesture, open Gestures and choose Run a plugin action.')));
@@ -567,6 +575,12 @@ function actionOptionsDialog(action, options) {
       input.onchange = () => { selected[key] = input.checked; };
       const toggle = element('label', undefined, 'switch'); toggle.append(input, element('span', undefined, 'slider')); row.append(toggle); shell.body.append(row);
     }
+    // The ks:// link that runs this action (issue #1385).
+    const linkRow = element('div', undefined, 'row');
+    const linkInfo = info(pluginText('Dashboard link'), pluginText("Point a dashboard button's tap action at this link."));
+    const link = copyBox(`ks://plugin/${plugin.id}/${action.id}`);
+    link.el.style.cssText = 'width:100%; max-width:none; margin-top:8px;';
+    linkInfo.append(link.el); linkRow.append(linkInfo); shell.body.append(linkRow);
     const cancel = element('button', pluginText('Cancel'), 'btn-text'); cancel.onclick = () => { shell.close(); resolve(null); };
     const save = element('button', pluginText('Save'), 'btn-primary'); save.onclick = () => { shell.close(); resolve(selected); };
     shell.foot.append(cancel, save);
@@ -1084,7 +1098,7 @@ function render(root, state) {
         row.replaceChildren(info(action.title, [pluginText('Gestures'), options.drawer && pluginText('Kiosk drawer'), options.homeAssistant && pluginText('Home Assistant')].filter(Boolean).join(' · ')));
         const button = iconButton(t("pluginConfigureName", {name: action.title}), 'm9 5 7 7-7 7');
         button.onclick = () => run(async () => {
-          const selected = await actionOptionsDialog(action, options);
+          const selected = await actionOptionsDialog(plugin, action, options);
           if (selected) { await command('configurePluginAction', { id: plugin.id, command: action.id, ...selected }); await refresh(); }
         }, button);
         row.append(button); actions.append(row);

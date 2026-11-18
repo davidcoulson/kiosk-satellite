@@ -34,12 +34,14 @@ const Map<String, Object> subpageIcons = {
   'Appearance': Icons.brush_outlined,
   'Assistant': Icons.forum_outlined,
   'Realtime': Icons.graphic_eq_rounded,
+  'Ground Control Voice Match': Icons.record_voice_over_outlined,
   'Conversation': Icons.chat_bubble_outline,
-  'Timers': Icons.timer_outlined,
   'Wake word diagnostics': Icons.troubleshoot_outlined,
   // Screen & Audio.
   'Microphone settings': Icons.mic_none_outlined,
+  'Equalizer': Icons.equalizer_outlined,
   'Adaptive brightness': Icons.brightness_auto_outlined,
+  'Adaptive volume': Icons.volume_up_outlined,
   // Screensaver.
   'Weather Mood screensaver': Icons.cloud_outlined,
   'Celestial screensaver': Icons.auto_awesome_outlined,

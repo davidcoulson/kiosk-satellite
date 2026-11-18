@@ -56,7 +56,7 @@ class PluginManifest(val json: JSONObject) {
         require(json.getInt("schemaVersion") == 1) { "Unsupported manifest schema" }
         require(apiVersion == 1) { "This plugin needs a different SDK version" }
         require(minAndroidSdk >= 24) { "Minimum Android SDK must be at least 24" }
-        require(capabilities.all { it in setOf("overlay", "native", "entities", "host.read", "host.control", "shizuku", "screensaver", "noise", "ha", "voice.skin", "voice.text", "camera", "barcode", "ma", "screensaver.mode") }) { "Unsupported plugin capability" }
+        require(capabilities.all { it in setOf("overlay", "native", "entities", "host.read", "host.control", "shizuku", "screensaver", "noise", "ha", "voice.skin", "voice.text", "camera", "barcode", "ma", "screensaver.mode", "player") }) { "Unsupported plugin capability" }
         // The room's noise level and the conversation's words are host reads, opted into on their own.
         require("noise" !in capabilities || "host.read" in capabilities) { "Unsupported plugin capability" }
         require("voice.text" !in capabilities || "host.read" in capabilities) { "Unsupported plugin capability" }
@@ -91,7 +91,7 @@ class PluginManifest(val json: JSONObject) {
             // "*" claims what no other group names, and "sensor.*" every reading of one type, for keys only
             // known at runtime.
             for ((kind, used, pattern, maximum) in listOf(
-                GroupReferences("readings", readingKeys, "\\*|(sensor|text_sensor|binary_sensor|select|switch)\\.([a-z][a-z0-9_]{0,39}|\\*)", 32),
+                GroupReferences("readings", readingKeys, "\\*|(sensor|text_sensor|binary_sensor|select|switch|number)\\.([a-z][a-z0-9_]{0,39}|\\*)", 32),
                 GroupReferences("charts", chartKeys, "\\*|[a-z][a-z0-9_]{0,39}", 4)
             )) {
                 if (!group.has(kind)) continue
@@ -353,6 +353,7 @@ class PluginManifest(val json: JSONObject) {
         if (field.has("maxItems")) require(field.get("maxItems").let { it is Int && it in 1..MAX_LIST_ITEMS }) { "Invalid list setting" }
         if (field.has("minItems")) require(field.get("minItems").let { it is Int && it in 0..maxItems(field) }) { "Invalid list setting" }
         if (field.has("addTitle")) text(field, "addTitle", 40)
+        if (field.has("duplicate")) require(field.get("duplicate") is Boolean) { "Invalid list setting" }
         val row = field.opt("row") ?: return
         require(row is JSONObject && row.keys().asSequence().all { it in setOf("title", "subtitle", "icon") }) { "Invalid list setting" }
         fun shown(key: Any?) = key is String && byKey[key]?.getString("type").let { it != null && it != "list" }

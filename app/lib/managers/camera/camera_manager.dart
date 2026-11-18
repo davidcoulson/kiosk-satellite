@@ -51,6 +51,11 @@ class CameraManager extends Manager {
   CameraConfiguration get config => _config;
 
   final activeViewId = ValueNotifier<String?>(null);
+
+  /// True while Compass shows the camera view as the view in hand. Compass
+  /// then decides when it goes (Return to center), so Auto-dismiss stands
+  /// down. Live cameras still hold the screensaver off.
+  final compassView = ValueNotifier<bool>(false);
   final focusedCameraId = ValueNotifier<String?>(null);
 
   bool _saving = false;
@@ -101,6 +106,8 @@ class CameraManager extends Manager {
     _autoDismiss?.cancel();
     _autoDismiss = null;
     if (activeViewId.value == null) return;
+    // As a Compass view, Return to center decides when it goes.
+    if (compassView.value) return;
     final seconds = _settings.get(defs.cameraAutoDismissSeconds).toInt();
     if (seconds <= 0) return;
     _autoDismiss = Timer(Duration(seconds: seconds), () {
@@ -115,6 +122,7 @@ class CameraManager extends Manager {
     _load();
     activeViewId.addListener(_armAutoDismiss);
     focusedCameraId.addListener(_armAutoDismiss);
+    compassView.addListener(_armAutoDismiss);
     _settingsSub = bus.on<SettingChanged>().listen((event) {
       if (event.key == defs.cameraAutoDismissSeconds.key) {
         // A changed duration re-times an already-open view from now.
@@ -218,6 +226,15 @@ class CameraManager extends Manager {
       )
       ..register(
         Command(
+          name: 'cameraDeleteUnused',
+          description:
+              'Delete every camera that is in no camera view (issue #1467). '
+              'Returns how many were deleted.',
+          handler: (_) => _deleteUnusedSources(),
+        ),
+      )
+      ..register(
+        Command(
           name: 'cameraPutView',
           description:
               'Create or update a camera view containing 1 to 12 cameras.',
@@ -309,6 +326,8 @@ class CameraManager extends Manager {
     closeRelaySessions();
     await _relayServer?.close(force: true);
     _relayServer = null;
+    compassView.removeListener(_armAutoDismiss);
+    compassView.dispose();
     activeViewId.dispose();
     focusedCameraId.dispose();
   }
@@ -644,6 +663,23 @@ class CameraManager extends Manager {
     return const CommandResult.ok();
   }
 
+  /// One save for the lot, so fifty imported cameras do not mean fifty
+  /// writes and fifty refreshes. Views keep what they hold.
+  Future<CommandResult> _deleteUnusedSources() async {
+    final unused = {for (final camera in _config.unusedCameras) camera.id};
+    if (unused.isNotEmpty) {
+      await _save(
+        _config.copyWith(
+          cameras: [
+            for (final camera in _config.cameras)
+              if (!unused.contains(camera.id)) camera,
+          ],
+        ),
+      );
+    }
+    return CommandResult.ok({'deleted': unused.length});
+  }
+
   Future<CommandResult> _putViewCommand(Map<String, Object?> params) async {
     final requestedId = '${params['id'] ?? ''}'.trim();
     final existing = _config.views
@@ -734,7 +770,17 @@ class CameraManager extends Manager {
     return const CommandResult.ok();
   }
 
-  Future<CommandResult> showView(String viewId, {bool toggle = false}) async {
+  /// The next open or close of the view skips the slide: Compass moves
+  /// between views with its own swipe, and the view sliding in or out
+  /// after it lands would play the move twice. Read and cleared by the
+  /// overlay when the change reaches it.
+  bool instantNextChange = false;
+
+  Future<CommandResult> showView(
+    String viewId, {
+    bool toggle = false,
+    bool instant = false,
+  }) async {
     final view = _config.findView(viewId);
     if (view == null) return const CommandResult.fail('view not found');
     if (view.cameraIds.isEmpty) {
@@ -753,6 +799,7 @@ class CameraManager extends Manager {
     _clearInterruptedView();
     await _prepareToShowView();
     focusedCameraId.value = null;
+    if (instant) instantNextChange = true;
     activeViewId.value = view.id;
     _publishState();
     return CommandResult.ok(_stateJson());
@@ -768,7 +815,8 @@ class CameraManager extends Manager {
   /// Closes the view. One that opened over another app hands the screen
   /// back to it, unless [returnToPreviousApp] is false: the Home key is the
   /// user leaving on their own.
-  void hideView({bool returnToPreviousApp = true}) {
+  void hideView({bool returnToPreviousApp = true, bool instant = false}) {
+    if (instant && activeViewId.value != null) instantNextChange = true;
     _clearInterruptedView();
     final wasOpen = activeViewId.value != null;
     _hideActiveView();

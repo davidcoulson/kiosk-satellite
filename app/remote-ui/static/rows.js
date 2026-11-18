@@ -1,5 +1,6 @@
 import { confirmRemoteProtocol } from './tls.js';
 import { brightnessCurveRow } from './brightness_curve.js';
+import { volumeCurveRow } from './volume_curve.js';
 import { esphomeText, kioskText, launcherText, messageLanguage, voiceText } from './localization.js';
 import { intercomError, mediaText, cameraText, cameraError, deviceText, haText, screensaverText, screensaverError, t } from './localization.js';
 import { watchUpdates } from './live.js';
@@ -24,6 +25,8 @@ import {
   externalMotionReading,
   probeExternalMotion,
   updateAdaptiveBrightnessRows,
+  updateAdaptiveVolumeRows,
+  updateVolumeTestRows,
   updateFaceRows,
   updateMotionCameraRows,
   syncScreenOffAdminNotice,
@@ -41,9 +44,12 @@ import {
   toastsShownText,
   wakeSourcesText,
 } from './pickers.js';
-import { loadSettings, refreshRealMacNote, syncSubpages, updateCelestialLocationRow, updateCelestialPermissionRows, updateClockNightAdminRows, updateOnvifEventsRows, updatePersonSensorRows, updateRtspRows } from './settings.js';
+import { loadSettings, refreshRealMacNote, syncSubpages, updateCelestialLocationRow, updateCelestialPermissionRows, updateWebGeolocationRows, updateClockNightAdminRows, updateOnvifEventsRows, updatePersonSensorRows, updateRtspRows } from './settings.js';
 import { dashboardField } from './dashboard_picker.js';
 import { drawerItemsText, openDrawerItemsPicker } from './drawer_items.js';
+import { compassLayoutRow, compassStyleRow } from './compass.js';
+import { KIOSK_ICON, openShareWithPicker, shareKiosksSpec, shareWithPicked, shareWithText } from './timers.js';
+import { PERSON_ICON, openPeoplePicker, peopleChosen, peopleText, voiceMatchPeopleSpec } from './ground_control.js';
 import { SEARCH_CATEGORY_TABS, jumpToResult } from './search.js';
 import { updatePlayerRow } from './panels.js';
 import {
@@ -360,6 +366,17 @@ export function settingRow(s) {
     // adaptive brightness switch (issue #343). After the gated sync, so
     // the curve rows the switch reveals are in place first.
     if (s.key === 'screen.adaptive_brightness') updateAdaptiveBrightnessRows();
+    // The room's level under the adaptive volume switch (issue #1450), and
+    // the curve's lines, which come and go with the volumes that follow
+    // the room.
+    if (s.key === 'audio.adaptive_volume') updateAdaptiveVolumeRows();
+    // The Test volume buttons wait for Voice Satellite and announcements.
+    if (['voice.enabled', 'esphome.enabled', 'announcements.enabled'].includes(s.key)) {
+      updateVolumeTestRows();
+    }
+    if (s.key.startsWith('audio.adaptive_volume_') || s.key === 'intercom.enabled') {
+      document.dispatchEvent(new CustomEvent('ks-adaptivevolume'));
+    }
     // The Celestial location status follows its source and entity, and
     // the GPS source brings its Location grant.
     if (s.key === 'screensaver.celestial_location' || s.key === 'screensaver.celestial_entity') {
@@ -368,6 +385,7 @@ export function settingRow(s) {
     if (s.key === 'screensaver.celestial_location' || s.key === 'screensaver.mode') {
       updateCelestialPermissionRows();
     }
+    if (s.key === 'web.geolocation') updateWebGeolocationRows();
     // The Ambient light row follows the reading's source (issue #911).
     if (s.key === 'screen.adaptive_use_entity' || s.key === 'screen.adaptive_light_entity') {
       updateAdaptiveBrightnessRows({ reprobe: true });
@@ -381,6 +399,14 @@ export function settingRow(s) {
     }
   };
 
+  // The adaptive volume curve (issue #1450): one editor in its setting's
+  // row, as on the device.
+  if (s.key === 'audio.adaptive_volume_curve') {
+    return volumeCurveRow(row, {
+      showError: (message) => showRowError(row, message),
+      clearError: () => clearRowError(row),
+    });
+  }
   // The adaptive brightness curve (issue #742): one editor for its
   // settings, in Minimum brightness's row, as on the device. The other
   // three ends draw no row of their own; the editor's chips carry their
@@ -615,6 +641,49 @@ export function settingRow(s) {
     return row;
   }
 
+  // People under Answer on the Ground Control Voice Match page, mirroring
+  // the device's row: the chosen people by name in a dropdown-style box that
+  // opens a checkbox dialog over everyone enrolled. A JSON list of {id, name}.
+  if (s.key === 'voice_match.people') {
+    const paint = () => { field.setText(peopleText()); field.setIcon(peopleChosen()); };
+    const field = choiceBox(peopleText(), async () => {
+      const value = await openPeoplePicker(s.title);
+      if (value == null) return;
+      await save(value);
+      paint();
+    }, { iconPath: PERSON_ICON });
+    const spec = voiceMatchPeopleSpec();
+    onListLoaded(spec.key, field.el, paint);
+    loadList(spec);
+    bindUpdate(field.el, paint);
+    paint();
+    row.classList.add('dp-field-row');
+    row.appendChild(field.el);
+    return row;
+  }
+
+  // Share with on the Timers page, mirroring the device's row: the picked
+  // kiosks by name in a dropdown-style box that opens a checkbox dialog
+  // over the kiosks on the network. Stored as a JSON list of {id, name}.
+  if (s.key === 'voice.timers_share_with') {
+    const paint = () => { field.setText(shareWithText()); field.setIcon(shareWithPicked()); };
+    const field = choiceBox(shareWithText(), async () => {
+      const value = await openShareWithPicker(s.title);
+      if (value == null) return;
+      await save(value);
+      paint();
+    }, { iconPath: KIOSK_ICON });
+    // The names the kiosks have now, once the network answers.
+    const spec = shareKiosksSpec();
+    onListLoaded(spec.key, field.el, paint);
+    loadList(spec);
+    bindUpdate(field.el, paint);
+    paint();
+    row.classList.add('dp-field-row');
+    row.appendChild(field.el);
+    return row;
+  }
+
   // The speakers the Now Playing pill offers, mirroring the device's row:
   // the picks at rest in a dropdown-style box that opens one picker over
   // Music Assistant's players and the Sonos rooms, a chip per source.
@@ -667,6 +736,11 @@ export function settingRow(s) {
     });
     return row;
   }
+
+  // Settings > Navigation: the style cards and the Compass layout map,
+  // mirroring the device (compass_settings.dart).
+  if (s.key === 'nav.style') return compassStyleRow(row, s, save);
+  if (s.key === 'nav.compass_layout') return compassLayoutRow(row, s, save);
 
   // The kiosk menu's rows (issue #1194), picked and arranged in the shared
   // picker like the device's. The summary names the rows on.

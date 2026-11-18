@@ -11,7 +11,10 @@ import '../l10n/generated/ui_strings.dart';
 import '../l10n/messages.dart';
 import '../managers/music_library/ha_library_source.dart';
 import '../managers/music_library/library_model.dart';
+import '../managers/music_library/plugin_library_source.dart';
+import '../managers/plugins/plugin_players.dart';
 import '../managers/settings/definitions.dart' as defs;
+import 'compass/compass_center.dart';
 import 'kit.dart';
 import 'music_library_queue.dart';
 import 'music_library_speakers.dart';
@@ -221,13 +224,16 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
 
   void _armIdle() {
     _idle?.cancel();
+    // As a Compass view, Return to center decides when it goes.
+    if (c.musicLibrary.compassView.value) return;
     final minutes =
         int.tryParse(c.settings.get(defs.libraryIdleCloseMinutes)) ?? 0;
     if (minutes <= 0) return;
-    _idle = Timer(
-      Duration(minutes: minutes),
-      () => c.musicLibrary.visible.value = false,
-    );
+    _idle = Timer(Duration(minutes: minutes), () {
+      if (!c.musicLibrary.compassView.value) {
+        c.musicLibrary.visible.value = false;
+      }
+    });
   }
 
   void _sourceChanged() {
@@ -244,7 +250,7 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
       _roots = source is HaLibrarySource ? _loadRoots(source) : null;
       _place = source == null || source.hasDiscover
           ? _Place('discover')
-          : source is HaLibrarySource
+          : source is HaLibrarySource || source is PluginLibrarySource
           ? _Place('browse')
           : _Place('library', category: source.categories.firstOrNull);
     });
@@ -267,6 +273,10 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
     unawaited(
       source.follow(c.musicLibrary.pick.value).then((_) {
         if (!mounted) return;
+        // Another speaker's tree: what the last one showed is not this.
+        c.musicLibrary.shownPages.removeWhere(
+          (page, _) => page.startsWith('${source.key}:'),
+        );
         setState(() {
           _stack.clear();
           _futures.clear();
@@ -589,13 +599,16 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
   String _sourceName(UiStrings s, String key) => switch (key) {
     'ha' => s.librarySourceHa,
     'sonos' => s.librarySourceSonos,
-    _ => s.librarySourceMa,
+    'ma' => s.librarySourceMa,
+    // A plugin player's, by the name the Player pick shows.
+    _ => PluginPlayers.published.value[key]?.name ?? key,
   };
 
   String _categoryName(UiStrings s, String key) => switch (key) {
     'artists' => s.libraryArtists,
     'albums' => s.libraryAlbums,
     'tracks' => s.libraryTracks,
+    'genres' => s.libraryGenres,
     'playlists' => s.libraryPlaylists,
     'radios' || 'radio' => s.libraryRadio,
     'podcasts' => s.libraryPodcasts,
@@ -604,7 +617,6 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
     'sonos_playlists' => s.librarySonosPlaylists,
     'recent' => s.libraryRecentlyPlayed,
     'added' => s.libraryRecentlyAdded,
-    'genres' => s.libraryBrowseByGenre,
     'more' => s.libraryMoreResults,
     _ => key,
   };
@@ -613,6 +625,7 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
     'artists' => Icons.person_outline_rounded,
     'albums' => Icons.album_outlined,
     'tracks' => Icons.music_note_outlined,
+    'genres' => Icons.sell_outlined,
     'playlists' || 'sonos_playlists' => Icons.queue_music_rounded,
     'radios' => Icons.radio_outlined,
     'podcasts' => Icons.podcasts_rounded,
@@ -657,11 +670,12 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   title: Text(_sourceName(s, key)),
-                  subtitle: Text(switch (key) {
-                    'ha' => s.librarySourceHaHint,
-                    'sonos' => s.librarySourceSonosHint,
-                    _ => s.librarySourceMaHint,
-                  }),
+                  subtitle: switch (key) {
+                    'ha' => Text(s.librarySourceHaHint),
+                    'sonos' => Text(s.librarySourceSonosHint),
+                    'ma' => Text(s.librarySourceMaHint),
+                    _ => null,
+                  },
                   trailing: key == current
                       ? Icon(
                           Icons.check_rounded,
@@ -773,12 +787,16 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
 
   double _chromeScale([double rate = 0.7]) => libraryChromeScale(c, rate);
 
-  Widget _closeButton({double size = 26}) => IconButton(
-    icon: const Icon(Icons.close),
-    iconSize: size,
-    tooltip: l10n(context).commonClose,
-    color: Theme.of(context).colorScheme.onSurfaceVariant,
-    onPressed: _close,
+  Widget _closeButton({double size = 26}) => CompassCenterHides(
+    container: c,
+    kind: 'music_library',
+    child: IconButton(
+      icon: const Icon(Icons.close),
+      iconSize: size,
+      tooltip: l10n(context).commonClose,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+      onPressed: () => compassClose(c, 'music_library', _close),
+    ),
   );
 
   Widget _backButton() => IconButton(
@@ -1699,8 +1717,13 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
     if (mounted) setState(() {});
   }
 
-  String _shelfTitle(UiStrings s, LibraryShelf shelf) =>
-      shelf.key == null ? shelf.title : _categoryName(s, shelf.key!);
+  /// A shelf's title. The genres shelf shares its key with the Genres
+  /// list and keeps Discover's own name.
+  String _shelfTitle(UiStrings s, LibraryShelf shelf) => switch (shelf.key) {
+    null => shelf.title,
+    'genres' => s.libraryBrowseByGenre,
+    final key => _categoryName(s, key),
+  };
 
   // ── Content ───────────────────────────────────────────────────────
 
@@ -1787,10 +1810,20 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
     Widget Function(Object data) build,
   ) {
     final s = l10n(context);
-    final future = _remember('${_source?.key}:$key', load);
+    final page = '${_source?.key}:$key';
+    final shown = c.musicLibrary.shownPages;
+    final future = _remember(
+      page,
+      () => load().then((data) {
+        shown[page] = data;
+        return data;
+      }),
+    );
     return FutureBuilder<Object>(
       key: ValueKey(key),
       future: future,
+      // What this page showed last time, until the fresh copy lands.
+      initialData: shown[page],
       builder: (context, snap) {
         if (snap.hasError) return _failure(key, snap.error);
         if (!snap.hasData) {
@@ -4072,7 +4105,13 @@ class _SourceMark extends StatelessWidget {
       _ => null,
     };
     if (asset == null) {
-      return Icon(Icons.speaker_outlined, size: size, color: color);
+      return Icon(
+        PluginPlayers.isPick(source)
+            ? Icons.extension_outlined
+            : Icons.speaker_outlined,
+        size: size,
+        color: color,
+      );
     }
     return SizedBox.square(
       dimension: size,

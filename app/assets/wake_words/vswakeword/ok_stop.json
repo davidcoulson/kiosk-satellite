@@ -148,13 +148,6 @@
         40,
         5,
         3
-      ],
-      [
-        38,
-        40,
-        5,
-        3,
-        34
       ]
     ],
     "wake_word_target_phonemes": [
@@ -193,29 +186,7 @@
         "t",
         "\u0251",
         "\u02d0"
-      ],
-      [
-        "s",
-        "t",
-        "\u0251",
-        "\u02d0",
-        "p"
       ]
-    ],
-    "max_edit_distance": 1,
-    "wake_word_trail_tolerance": 1,
-    "min_matched_confidence": 3.2,
-    "target_max_edit_distance": [
-      1,
-      1,
-      0,
-      0
-    ],
-    "target_min_matched_confidence": [
-      3.2,
-      5.5,
-      5.5,
-      12.0
     ],
     "wake_word_target_anchors": [
       [
@@ -227,17 +198,28 @@
       ],
       [
         6
-      ],
-      [
-        0
       ]
-    ]
+    ],
+    "max_edit_distance": 1,
+    "wake_word_trail_tolerance": 1,
+    "min_matched_confidence": 2.816,
+    "target_max_edit_distance": [
+      1,
+      1,
+      0
+    ],
+    "target_min_matched_confidence": [
+      2.816,
+      8.84,
+      4.84
+    ],
+    "gate_change_2026_11_09_v3": "v3: k-slice target (t1) 4.84 -> 8.84, priced jointly on the measured Echo banks (-2.8 of 720 device takes) vs the open-mic battery (music 25 -> 14, speech 68 -> 46 clips) and the timer-alarm far end (2 -> 0 of 400); t0/t2 unchanged"
   },
   "runtime": {
     "required_hits": 1,
     "cooldown_ms": 2000,
     "hit_mode": "consecutive",
-    "high_confidence_bypass": 6.8,
+    "high_confidence_bypass": 5.984,
     "high_confidence_bypass_min_hits": 1,
     "stream_match": true,
     "stream_buffer_ms": 2500,

@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import me.jxl.kiosk.plugins.KioskPlugin
 import me.jxl.kiosk.plugins.OverlayFactory
 import me.jxl.kiosk.plugins.OverlaySpec
+import me.jxl.kiosk.plugins.PlayerListener
 import me.jxl.kiosk.plugins.PluginHost
 import me.jxl.kiosk_satellite.Headless
 import org.json.JSONObject
@@ -40,6 +41,12 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
 
         /** The largest voice skin picture a plugin may name, in bytes. */
         internal const val MAX_THUMBNAIL_BYTES = 256 * 1024L
+
+        /**
+         * How long a Shizuku command sent from stop() may keep running once stop() returns:
+         * the longest command timeout plus the client's watchdog margin.
+         */
+        internal const val SHIZUKU_DRAIN_MS = 40_000L
 
         /**
          * Restart app and Exit end the process on purpose, so a startup still
@@ -149,6 +156,57 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
             if (screensaverPending.compareAndSet(false, true)) main.postDelayed(screensaverUpdate, 250)
         }
         fun closeScreensavers() { screensavers.close(); main.removeCallbacks(screensaverUpdate) }
+        val players = PluginPlayers()
+        private val playersPending = AtomicBoolean(false)
+        private val playersUpdate = Runnable {
+            playersPending.set(false)
+            if (alive.get()) emit("players", mapOf("id" to id, "session" to token, "players" to players.snapshot()), alive)
+        }
+        fun notifyPlayers() {
+            if (playersPending.compareAndSet(false, true)) main.postDelayed(playersUpdate, 100)
+        }
+        /** Keys whose state changed since the last send: the latest state of each goes out together. */
+        private val playerStates = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+        private val playerStatePending = AtomicBoolean(false)
+        private val playerStateUpdate = Runnable {
+            playerStatePending.set(false)
+            if (!alive.get()) return@Runnable
+            val keys = playerStates.toList()
+            playerStates.removeAll(keys.toSet())
+            for (key in keys) {
+                val handle = players.get(key)?.handle
+                emit("playerState", mapOf("id" to id, "session" to token, "key" to key,
+                    "state" to handle?.let { it.state + ("artworkId" to (if (it.artwork != null) it.artworkId else 0)) }), alive)
+            }
+        }
+        fun notifyPlayerState(key: String) {
+            playerStates.add(key)
+            if (playerStatePending.compareAndSet(false, true)) main.postDelayed(playerStateUpdate, 50)
+        }
+        fun notifyPlayerQueue(key: String) = emit("playerQueue", mapOf("id" to id, "session" to token, "key" to key), alive)
+        /** Take the pick's handle back from the plugin: the output closes now and onDeactivate follows on the worker. */
+        fun deactivatePlayer(entry: PluginPlayers.Entry, tell: Boolean = true) {
+            val handle = entry.handle ?: return
+            entry.handle = null
+            handle.deactivate()
+            notifyPlayerState(entry.key)
+            if (tell) worker.execute {
+                if (!alive.get()) return@execute
+                try { call { entry.listener.onDeactivate() } }
+                catch (error: Throwable) { fail(id, error); emit("changed", snapshot()) }
+            }
+        }
+        fun closePlayers() {
+            main.removeCallbacks(playersUpdate)
+            main.removeCallbacks(playerStateUpdate)
+            for (entry in players.close()) {
+                val handle = entry.handle ?: continue
+                entry.handle = null
+                handle.deactivate()
+                // The session is ending: stop() follows, but the player hears its pick end first.
+                try { call { entry.listener.onDeactivate() } } catch (_: Throwable) { /* Stop still runs. */ }
+            }
+        }
         val charts = PluginCharts()
         private val chartPending = AtomicBoolean(false)
         private val chartUpdate = Runnable {
@@ -274,22 +332,33 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
                 .also { cameraThread = it }
         @Synchronized fun closeCameraThread() { cameraThread?.shutdownNow(); cameraThread = null }
         private var shizukuClient: PluginShizuku.Client? = null
-        @Synchronized fun closeShizuku() { shizukuClient?.close(); shizukuClient = null }
+        /** After stop(): a command the plugin sent while stopping still finishes, then the helper closes. */
+        @Synchronized fun drainShizuku() { shizukuClient?.drain(SHIZUKU_DRAIN_MS); shizukuClient = null }
         @Synchronized fun shizukuClient(): PluginShizuku.Client {
-            check(alive.get() && "shizuku" in manifest.capabilities) { "SDK 1 shizuku access is required" }
+            check(shizukuOpen()) { "SDK 1 shizuku access is required" }
             return shizukuClient ?: shizuku.client().also { shizukuClient = it }
         }
+        /** Shizuku stays open while stop() runs, so a plugin can undo root changes such as iptables rules. */
+        private fun shizukuOpen() = (alive.get() || stopping) && "shizuku" in manifest.capabilities
         val alive = AtomicBoolean(true)
+        /** True while plugin.stop() runs. Every other host call is already revoked. */
+        @Volatile var stopping = false
         @Volatile var loader: ClassLoader? = null
         val executor = Executors.newSingleThreadExecutor { task -> Thread(task, "plugin-$id").apply { isDaemon = true } }
         var plugin: KioskPlugin? = null
         val host = object : PluginHost {
             override fun shizukuState(): Map<String, Any> {
-                check(alive.get() && "shizuku" in manifest.capabilities) { "SDK 1 shizuku access is required" }
+                check(shizukuOpen()) { "SDK 1 shizuku access is required" }
                 return shizuku.state()
             }
             override fun executeShizuku(command: Array<String>, timeoutMs: Int, callback: PluginHost.CommandCallback) {
                 shizukuClient().execute(command, timeoutMs) { ok, data, error ->
+                    if (stopping) {
+                        // stop() holds the plugin's executor and the worker waits for it, so a result
+                        // stop() is waiting for goes straight to the plugin.
+                        try { callback.onResult(ok, data, error) } catch (_: Throwable) { /* The session is ending. */ }
+                        return@execute
+                    }
                     worker.execute {
                         if (alive.get() && sessions[id] === this@Session) {
                             try { call { callback.onResult(ok, data, error) } }
@@ -474,6 +543,17 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
                 screensavers.publishView(key, title, factory, touch)
                 notifyScreensavers()
             }
+            override fun publishPlayer(key: String, title: String, listener: PlayerListener) {
+                check(alive.get() && "player" in manifest.capabilities) { "SDK 1 player access is required" }
+                val replaced = players.publish(key, title, listener)
+                if (replaced != null) deactivatePlayer(replaced)
+                notifyPlayers()
+            }
+            override fun removePlayer(key: String) {
+                check(alive.get() && "player" in manifest.capabilities) { "SDK 1 player access is required" }
+                players.remove(key)?.let { deactivatePlayer(it) }
+                notifyPlayers()
+            }
             override fun publishSeries(key: String, chart: Map<String, Any>) {
                 charts.publish(key, chart)
                 notifyCharts()
@@ -526,7 +606,7 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
                 overlays.show(key, PluginOverlays.Placement(
                     spec.anchor() ?: "", spec.width(), spec.height(),
                     listOf(spec.insetLeft(), spec.insetTop(), spec.insetRight(), spec.insetBottom()),
-                    spec.offsetX(), spec.offsetY(), spec.closeOnBack(), spec.onTop(), spec.touchable(),
+                    spec.offsetX(), spec.offsetY(), spec.closeOnBack(), spec.layer() ?: "", spec.touchable(),
                     spec.closeOnOutsideTouch(), spec.passOutsideTouch(), spec.enter() ?: "", spec.exit() ?: "", spec.transitionDuration(),
                 ), factory)
                 notifyOverlays()
@@ -636,6 +716,8 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
             override fun removeSwitch(key: String) = removeEntity("switch", key)
             override fun publishSelect(key: String, name: String, options: Array<String>, state: String?) = publishEntity("select", key, name, mapOf("options" to options.toList()), state)
             override fun removeSelect(key: String) = removeEntity("select", key)
+            override fun publishNumber(key: String, name: String, metadata: Map<String, Any>, state: Double?) = publishEntity("number", key, name, metadata, state)
+            override fun removeNumber(key: String) = removeEntity("number", key)
             override fun publishLight(key: String, name: String, effects: Array<String>, state: Map<String, Any>?) {
                 require("entities" in manifest.capabilities)
                 require(key.matches(Regex("[a-z][a-z0-9_]{0,39}")) && name.length in 1..80)
@@ -811,6 +893,10 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
                 try {
                     @Suppress("UNCHECKED_CAST")
                     val args = call.arguments as? Map<String, Any?> ?: emptyMap()
+                    if (call.method == "playerRequest") {
+                        playerRequest(args, result)
+                        return@execute
+                    }
                     val value: Any? = when (call.method) {
                         "initialize" -> { initialize(); snapshot() }
                         "list" -> snapshot()
@@ -871,11 +957,25 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
                                 }
                                 "switch" -> session.entities.switchCommand(key, args["value"])
                                 "select" -> session.entities.select(key, args["value"])
+                                "number" -> session.entities.number(key, args["value"])
                                 else -> throw IllegalArgumentException("Plugin entity is read-only")
                             }
                             try { session.call { session.plugin!!.onEvent("$type.$key", value) } }
                             catch (error: Throwable) { fail(session.id, error); throw error }
                             snapshot()
+                        }
+                        "playerActivate" -> playerActivate(args)
+                        "playerDeactivate" -> {
+                            playerSession(args)?.let { (session, entry) -> session.deactivatePlayer(entry) }
+                            null
+                        }
+                        "playerCommand" -> playerCommand(args)
+                        "playerQueueEdit" -> playerQueueEdit(args)
+                        "playerArtwork" -> playerSession(args)?.second?.handle
+                            ?.artworkFor((args["artworkId"] as? Number)?.toInt() ?: 0)
+                        "playerDuck" -> {
+                            PluginAudio.setDuck((args["factor"] as? Number)?.toFloat() ?: 1f)
+                            null
                         }
                         "hostEvent" -> {
                             val session = sessions[args["id"]]
@@ -919,6 +1019,124 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
                     main.post { result.error("plugin_error", message, null) }
                 }
             }
+        }
+    }
+
+    /** The live session and player an app request names by plugin id, session token and key. */
+    private fun playerSession(args: Map<String, Any?>): Pair<Session, PluginPlayers.Entry>? {
+        val session = sessions[args["id"]] ?: return null
+        if (!session.alive.get() || session.token != args["session"]) return null
+        val entry = session.players.get(args["key"] as? String ?: return null) ?: return null
+        return session to entry
+    }
+
+    /** Hand the pick to a published player. False while it is not published, so the app tries again when it is. */
+    private fun playerActivate(args: Map<String, Any?>): Boolean {
+        val (session, entry) = playerSession(args) ?: return false
+        if (entry.handle != null) return true
+        val handle = PlayerHandle(entry,
+            changed = { if (entry.handle === it) session.notifyPlayerState(entry.key) },
+            queueChanged = { if (entry.handle === it) session.notifyPlayerQueue(entry.key) })
+        entry.handle = handle
+        try { session.call { entry.listener.onActivate(handle) } }
+        catch (error: Throwable) {
+            entry.handle = null
+            handle.deactivate()
+            fail(session.id, error)
+            emit("changed", snapshot())
+            throw error
+        }
+        return true
+    }
+
+    /** A transport command for the active player, sent only when its state lists it. */
+    private fun playerCommand(args: Map<String, Any?>): Boolean {
+        val (session, entry) = playerSession(args) ?: return false
+        val handle = entry.handle ?: return false
+        val command = args["command"] as? String ?: return false
+        if (!handle.allows(command)) return false
+        @Suppress("UNCHECKED_CAST")
+        val arguments = HashMap((args["arguments"] as? Map<String, Any>) ?: emptyMap())
+        try { session.call { entry.listener.onCommand(command, arguments) } }
+        catch (error: Throwable) { fail(session.id, error); emit("changed", snapshot()); throw error }
+        return true
+    }
+
+    /** Play, move or remove a queue item, or clear the queue, of the active player. */
+    private fun playerQueueEdit(args: Map<String, Any?>): Boolean {
+        val (session, entry) = playerSession(args) ?: return false
+        val queue = entry.queue ?: return false
+        if (entry.handle == null) return false
+        val item = args["item"] as? String ?: ""
+        val op = args["op"] as? String
+        require(op in setOf("play", "move", "remove", "clear")) { "Unknown queue edit" }
+        try {
+            session.call {
+                when (op) {
+                    "play" -> queue.playItem(item)
+                    "move" -> queue.moveItem(item, (args["to"] as? Number)?.toInt()?.coerceAtLeast(0) ?: 0)
+                    "remove" -> queue.removeItem(item)
+                    else -> queue.clear()
+                }
+            }
+        } catch (error: Throwable) { fail(session.id, error); emit("changed", snapshot()); throw error }
+        return true
+    }
+
+    /**
+     * A Music Library or queue read, answered when the plugin calls back: discover, browse, search, open, play or
+     * queue. 20 seconds, then it fails.
+     */
+    private fun playerRequest(args: Map<String, Any?>, result: MethodChannel.Result) {
+        val pair = playerSession(args)
+        if (pair == null) { main.post { result.error("player_unavailable", "The player is not available", null) }; return }
+        val (session, entry) = pair
+        val op = args["op"] as? String ?: ""
+        @Suppress("UNCHECKED_CAST")
+        val request = (args["args"] as? Map<String, Any?>) ?: emptyMap()
+        val done = AtomicBoolean(false)
+        lateinit var timeout: Runnable
+        fun finish(ok: Boolean, data: Any?, error: String?) {
+            if (!done.compareAndSet(false, true)) return
+            main.removeCallbacks(timeout)
+            val value = if (ok) try { PluginPlayers.answer(op, data) } catch (failure: Throwable) {
+                main.post { result.error("player_error", failure.message ?: "Invalid answer", null) }
+                return
+            } else null
+            main.post {
+                if (ok) result.success(value)
+                else result.error("player_error", (error ?: "The player did not answer").take(300), null)
+            }
+        }
+        timeout = Runnable { finish(false, null, "The player did not answer in time") }
+        main.postDelayed(timeout, 20_000)
+        val callback = PluginHost.CommandCallback { ok, data, error -> finish(ok, data, error) }
+        val library = entry.library
+        try {
+            session.call {
+                when (op) {
+                    "queue" -> entry.queue?.queue(callback) ?: finish(false, null, "The player has no queue")
+                    "discover", "browse", "search", "open", "play" -> {
+                        if (library == null) { finish(false, null, "The player has no library"); return@call }
+                        val item = request["item"] as? String
+                        when (op) {
+                            "discover" -> library.discover(callback)
+                            "browse" -> library.browse(item, (request["offset"] as? Number)?.toInt()?.coerceAtLeast(0) ?: 0, callback)
+                            "search" -> library.search((request["query"] as? String ?: "").take(200), callback)
+                            "open" -> library.open(item ?: "", callback)
+                            else -> {
+                                val mode = request["mode"] as? String ?: "replace"
+                                require(PluginPlayers.validMode(mode)) { "Unknown play mode" }
+                                library.play(item ?: "", mode, request["within"] as? String, callback)
+                            }
+                        }
+                    }
+                    else -> finish(false, null, "Unknown player request")
+                }
+            }
+        } catch (error: Throwable) {
+            finish(false, null, error.message ?: error.javaClass.simpleName)
+            if (error !is IllegalArgumentException) { fail(session.id, error); emit("changed", snapshot()) }
         }
     }
 
@@ -1054,9 +1272,10 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
         } else {
             startupGeneration++
             // Revoke every host before waiting for stop callbacks from individual plugins.
+            // Shizuku stays for stopSession, which opens it to each plugin's stop() and then drains it.
             sessions.forEach { (id, session) ->
                 session.alive.set(false)
-                session.closeShizuku(); session.closeCharts(); session.closeStatusTiles(); session.triggers.close(); session.actionBudget.close(); session.closeEntities(); session.closeScreensavers(); session.overlays.close(); session.closeSetup()
+                session.closeCharts(); session.closeStatusTiles(); session.triggers.close(); session.actionBudget.close(); session.closeEntities(); session.closeScreensavers(); session.closePlayers(); session.overlays.close(); session.closeSetup()
                 emit("hideWindow", mapOf("id" to id))
             }
             for (id in sessions.keys.toList()) {
@@ -1210,6 +1429,11 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
             // The choices kept from the last session show until the plugin lists new ones.
             if (current.setup.hasChoices()) current.notifySetup()
             loadedIds.add(id)
+            // Android compiles a loaded plugin.jar in the background into an oat folder next to
+            // it, against the app's classes of that day. Android 10 keeps running that code
+            // after an app update moves those classes, which crashes the process (#1410). The
+            // folder goes before the first load of each run. A loader may still map it after that.
+            if (record.getString("hash") !in loadedHashes) dropCompiledCode(dir)
             loadedHashes.add(record.getString("hash"))
             if ("shizuku" in manifest.capabilities) shizuku.state()
             current.call {
@@ -1229,6 +1453,13 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
         }
     }
 
+    private fun dropCompiledCode(dir: File) {
+        val oat = File(dir, "oat")
+        if (!oat.exists()) return
+        oat.deleteRecursively()
+        check(!oat.exists()) { "Cannot remove the plugin's compiled code. Reinstall it." }
+    }
+
     /**
      * On a device without a screen, a plugin that only shows overlays or
      * screensavers would run for nothing, so it neither installs nor starts.
@@ -1245,7 +1476,8 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
     private fun stopSession(id: String) {
         val session = sessions.remove(id) ?: return
         session.alive.set(false)
-        session.closeShizuku(); session.closeCharts(); session.closeStatusTiles(); session.triggers.close(); session.actionBudget.close(); session.closeEntities(); session.closeScreensavers(); session.overlays.close(); session.closeSetup()
+        session.stopping = true
+        session.closeCharts(); session.closeStatusTiles(); session.triggers.close(); session.actionBudget.close(); session.closeEntities(); session.closeScreensavers(); session.closePlayers(); session.overlays.close(); session.closeSetup()
         session.subscriptions.clear()
         endCamera(session, null, "closed", notifyApp = true)
         session.scan?.let { scan ->
@@ -1260,6 +1492,8 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
             throw error
         }
         finally {
+            session.stopping = false
+            session.drainShizuku()
             session.executor.shutdownNow()
             session.closeCameraThread()
         }
@@ -1397,7 +1631,16 @@ class PluginBridge(private val context: Context, messenger: BinaryMessenger) {
         val session = sessions[id] ?: throw IllegalStateException("Enable the plugin first")
         val command = args["command"] as? String ?: throw IllegalArgumentException("Missing command")
         require(session.manifest.hasCommand(command)) { "Unknown plugin command" }
-        try { session.call { session.plugin!!.execute(command, emptyMap()) } }
+        // The parts of a ks://plugin link after the action (issue #1385).
+        // Gestures, the drawer and Home Assistant send none, and the
+        // plugin then hears an empty map as before.
+        val extra = args["args"]?.let { raw ->
+            val list = raw as? List<*> ?: throw IllegalArgumentException("Invalid plugin command arguments")
+            require(list.size in 1..8 && list.all { it is String && it.length in 1..256 }) { "Invalid plugin command arguments" }
+            list.map { it as String }
+        }
+        val arguments: Map<String, Any> = if (extra == null) emptyMap() else mapOf("args" to extra)
+        try { session.call { session.plugin!!.execute(command, arguments) } }
         catch (error: Throwable) { fail(id, error); throw error }
     }
 

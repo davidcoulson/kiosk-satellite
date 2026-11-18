@@ -247,7 +247,9 @@ export function fixedPlayerSpec(key, items) {
 // sound waves, not the screen of the video one.
 const AIRPLAY_ICON = 'M14.5 12C14.5 10.62 13.38 9.5 12 9.5C10.62 9.5 9.5 10.62 9.5 12C9.5 13 10.09 13.84 10.93 14.25L9.82 15.35C8.73 14.64 8 13.41 8 12C8 9.79 9.79 8 12 8C14.21 8 16 9.79 16 12C16 13.41 15.27 14.64 14.18 15.35L13.08 14.25C13.92 13.84 14.5 13 14.5 12M12 2C6.5 2 2 6.5 2 12C2 15.06 3.38 17.8 5.54 19.63L6.61 18.57C4.71 17 3.5 14.64 3.5 12C3.5 7.31 7.31 3.5 12 3.5C16.69 3.5 20.5 7.31 20.5 12C20.5 14.64 19.29 17 17.39 18.57L18.46 19.63C20.62 17.79 22 15.06 22 12C22 6.5 17.5 2 12 2M19 12C19 8.13 15.87 5 12 5C8.13 5 5 8.13 5 12C5 14.23 6.05 16.22 7.68 17.5L8.75 16.43C7.39 15.42 6.5 13.82 6.5 12C6.5 8.97 8.97 6.5 12 6.5C15.03 6.5 17.5 8.97 17.5 12C17.5 13.82 16.61 15.42 15.25 16.43L16.33 17.5C17.95 16.22 19 14.23 19 12M6 22H18L12 16L6 22Z';
 export const ENTITY_ICONS = { generic: ICONS.generic, warn: ICONS.warn };
-export const PLAYER_ICONS = { speaker: ICONS.speaker, session: ICONS.session, airplay: AIRPLAY_ICON };
+// A puzzle piece (mdi puzzle-outline): a player a plugin publishes.
+const PLUGIN_ICON = 'M22,13.5C22,15.26 20.7,16.72 19,16.96V20A2,2 0 0,1 17,22H13.2V21.7A2.7,2.7 0 0,0 10.5,19C9,19 7.8,20.21 7.8,21.7V22H4A2,2 0 0,1 2,20V16.2H2.3C3.79,16.2 5,15 5,13.5C5,12 3.79,10.8 2.3,10.8H2V7A2,2 0 0,1 4,5H7.04C7.28,3.3 8.74,2 10.5,2C12.26,2 13.72,3.3 13.96,5H17A2,2 0 0,1 19,7V10.04C20.7,10.28 22,11.74 22,13.5M17,15H18.5A1.5,1.5 0 0,0 20,13.5A1.5,1.5 0 0,0 18.5,12H17V7H12V5.5A1.5,1.5 0 0,0 10.5,4A1.5,1.5 0 0,0 9,5.5V7H4V9.12C5.76,9.8 7,11.5 7,13.5C7,15.5 5.75,17.2 4,17.88V20H6.12C6.8,18.25 8.5,17 10.5,17C12.5,17 14.2,18.25 14.88,20H17V15Z';
+export const PLAYER_ICONS = { speaker: ICONS.speaker, session: ICONS.session, airplay: AIRPLAY_ICON, plugin: PLUGIN_ICON };
 
 // rooms lists every Sonos room on its own, as the speaker selection pill
 // does.
@@ -516,6 +518,15 @@ function buildPicker({ title, spec, selected = [], multiple = false, max = null,
     st.picked.forEach((id, i) => {
       const item = findIn(st.list, id);
       const row = el('div', 'ep-showing-row');
+      // Picks whose order means nothing (spec.ordered false, the kiosks to
+      // share timers with) are listed without the grip and the arrows.
+      if (spec.ordered === false) {
+        row.style.cursor = 'default';
+        row.appendChild(disc(item, 'ep-disc small'));
+        row.appendChild(el('span', 'ep-showing-name', item?.name || id));
+        showing.appendChild(row);
+        return;
+      }
       row.draggable = true;
       row.dataset.index = String(i);
       const grip = el('span', 'ep-grip');
@@ -549,7 +560,7 @@ function buildPicker({ title, spec, selected = [], multiple = false, max = null,
       });
       showing.appendChild(row);
     });
-    if (st.picked.length > 1) {
+    if (spec.ordered !== false && st.picked.length > 1) {
       showing.appendChild(el('div', 'ep-hint', haText('Drag or use the arrows to change the order.')));
     }
   }
@@ -906,14 +917,26 @@ export function pickListRow({ specKey = 'entities', value, name = null, detail =
 }
 
 // A plain choice in the control box: the Displayed value.
-export function choiceBox(text, onClick) {
+// With [iconPath] an icon leads it, as a pick field's does: muted while
+// nothing is picked, the primary color once setIcon(true) says something is.
+export function choiceBox(text, onClick, { iconPath = null } = {}) {
   const box = el('button', 'dp-field ep-field');
   box.type = 'button';
   const label = el('span', 'dp-field-text', text);
   const chev = el('span', 'dp-field-chev');
   chev.appendChild(svgPath(ICONS.chevron, 20));
+  let lead = null;
+  if (iconPath) {
+    lead = el('span', 'dp-field-icon');
+    lead.appendChild(svgPath(iconPath, 20));
+    box.appendChild(lead);
+  }
   box.append(label, chev);
   box.disabled = !onClick;
   if (onClick) box.addEventListener('click', onClick);
-  return { el: box, setText: (v) => { label.textContent = v; } };
+  return {
+    el: box,
+    setText: (v) => { label.textContent = v; },
+    setIcon: (picked) => { lead?.classList.toggle('primary', !!picked); },
+  };
 }

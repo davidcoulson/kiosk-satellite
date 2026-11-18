@@ -7,11 +7,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
+import '../../core/app_locales.dart';
 import '../../core/command_registry.dart';
 import '../../core/events.dart';
+import '../../core/headless.dart';
 import '../../core/manager.dart';
+import '../../l10n/generated/ui_strings.dart';
 import '../btproxy/bt_proxy_manager.dart';
 import '../analytics/usage_counters.dart';
+import '../home_assistant/ha_tts.dart';
 import '../settings/definitions.dart' as defs;
 import '../settings/settings_manager.dart';
 import '../wake_word/engine.dart';
@@ -30,6 +34,8 @@ import 'realtime/realtime_player.dart';
 import 'realtime/realtime_session.dart';
 import 'realtime/realtime_tools.dart';
 import 'remote_speaker.dart';
+import 'voice_match_client.dart';
+import 'voice_match_enroll.dart';
 import 'voice_notice.dart';
 import 'voice_session.dart';
 import 'wake_catalog.dart';
@@ -89,6 +95,11 @@ class VoiceManager extends Manager {
 
   /// What the assist overlay draws.
   final view = ValueNotifier<AssistView>(AssistView.hidden);
+
+  /// A Voice Match enrollment on this kiosk: the reading screen while it
+  /// records, then its result card for a few seconds. Null otherwise.
+  final enrollment = ValueNotifier<VoiceMatchEnrollment?>(null);
+  late final VoiceMatchEnroller _enroller;
 
   /// Whether the overlay hides everything under it: a full screen turn
   /// with an opaque backdrop, or a see-through one once its blurred
@@ -329,7 +340,13 @@ class VoiceManager extends Manager {
         .toInt(),
     stopWord: _settings.get(defs.voiceStopWord) && _wakeWord.stopWordAvailable,
     remoteSpeech: _settings.get(defs.voiceTtsOutput).trim().isNotEmpty,
+    matchEndOnOtherVoice: _settings.get(defs.voiceMatchEndOnOtherVoice),
+    matchRejectChime: _settings.get(defs.voiceMatchRejected) == 'chime',
   );
+
+  /// Kiosk Satellite Ground Control's address while it is connected, from
+  /// GroundControlManager.
+  String? _groundControlUrl;
 
   @override
   Future<void> init() async {
@@ -355,6 +372,13 @@ class VoiceManager extends Manager {
       onIntentEnd: (conversation) => unawaited(_readChatLog(conversation)),
       onTrace: _trace,
       onIdle: _resumeWake,
+      voiceMatch: _VoiceMatch(this),
+      onSpeaker: _publishSpeaker,
+    );
+    _subs.add(
+      bus.on<GroundControlServiceChanged>().listen(
+        (e) => _groundControlUrl = e.baseUrl,
+      ),
     );
     _realtime = RealtimeSession(
       backend: _realtimeBackend,
@@ -380,6 +404,37 @@ class VoiceManager extends Manager {
       },
       onIdle: _resumeWake,
       location: realtimeLocation,
+      voiceMatch: _VoiceMatch(this),
+      onSpeaker: _publishSpeaker,
+    );
+    _enroller = VoiceMatchEnroller(
+      mic: _WakeMic(_wakeWord),
+      openSocket: _openEnrollSocket,
+      chime: (kind) async {
+        final played = await _Player(commands).chime(kind);
+        if (played == null) return;
+        await Future<void>.delayed(
+          Duration(milliseconds: (played.$2 * 1000).round()),
+        );
+      },
+      onChanged: _onEnrollment,
+      pauseWake: () => _wakeWord.setActive(false),
+      resumeWake: _resumeWake,
+      log: (line) => log.info(name, 'voice match: $line'),
+    );
+    _subs.add(bus.on<VoiceMatchEnrollRequested>().listen(_onEnrollRequest));
+    commands.register(
+      Command(
+        name: 'voiceMatchEnrollStop',
+        description:
+            'Stop the Voice Match enrollment recording on this kiosk. What '
+            'was recorded is kept when it is at least 10 seconds of speech',
+        handler: (_) async {
+          if (!_enroller.active) return CommandResult.fail('not enrolling');
+          await _enroller.stop();
+          return CommandResult.ok();
+        },
+      ),
     );
     _esphome.onVoice = _onVoice;
     _esphome.onVoiceConfiguration = _configuration;
@@ -455,6 +510,18 @@ class VoiceManager extends Manager {
       )
       ..add(bus.on<VoiceTimerAction>().listen(_onTimerAction))
       ..add(
+        bus.on<SharedTimerAlertChanged>().listen((e) {
+          _sharedRinging = e.ringing;
+          _syncTimerHold();
+        }),
+      )
+      ..add(
+        bus.on<TimerRingQuiet>().listen((e) {
+          _ringQuiet = e.quiet;
+          _syncTimerHold();
+        }),
+      )
+      ..add(
         bus.on<SettingChanged>().listen((e) {
           if (e.key == defs.voiceRuntime.key ||
               e.key == defs.voiceEnabled.key ||
@@ -470,16 +537,9 @@ class VoiceManager extends Manager {
             unawaited(_sync());
           }
           // Another engine offers other wake words, and Amazon's engine
-          // other ones in another language. The app's language only counts
-          // while it picks that language.
+          // other ones in another language.
           if (e.key == defs.voiceWakeWordEngine.key ||
               e.key == defs.voiceAmazonLocale.key) {
-            _refreshSelects();
-          }
-          if (e.key == defs.uiLanguage.key &&
-              _engine == WakeWordEngineType.pryon &&
-              _settings.get(defs.voiceAmazonLocale).isEmpty) {
-            unawaited(_sync());
             _refreshSelects();
           }
           if (e.key == defs.voiceRuntime.key ||
@@ -496,6 +556,8 @@ class VoiceManager extends Manager {
             if (_settings.importing) unawaited(_applySelect(entry.key, value));
           }
           if ((e.key == defs.voiceMuteTimers.key ||
+                  e.key == defs.voiceTimerPills.key ||
+                  e.key == defs.voiceTimerNameOnAlert.key ||
                   e.key == defs.voiceTimerAlertPill.key) &&
               _ringing.isNotEmpty) {
             _pushAlert();
@@ -513,6 +575,18 @@ class VoiceManager extends Manager {
               'turn on screen',
           quiet: true,
           handler: (_) async => CommandResult.ok(describe()),
+        ),
+      )
+      ..register(
+        Command(
+          name: 'voiceTestAnnouncement',
+          description:
+              'Have Home Assistant announce a message on this kiosk through '
+              'its satellite (assist_satellite.announce), so it plays the '
+              'way announcements do, at the Assistant volume. Answers once '
+              'it has played.',
+          params: const {'message': 'what Home Assistant says'},
+          handler: (p) => testAnnouncement('${p['message'] ?? ''}'),
         ),
       )
       ..register(
@@ -1961,6 +2035,44 @@ class VoiceManager extends Manager {
     }
   }
 
+  /// Whether Home Assistant can announce on this kiosk: the satellite runs
+  /// and Home Assistant has its entity. The Test Assistant volume row
+  /// under Adaptive volume waits for it.
+  bool get canAnnounce =>
+      enabled && homeAssistant.value.satelliteEntity.isNotEmpty;
+
+  /// An announcement through Home Assistant on this kiosk's own satellite,
+  /// the Test Assistant volume row's sound. It plays like any other
+  /// announcement, the preannounce chime first. Home Assistant answers once
+  /// the kiosk has played it, so the wait runs well past a long message.
+  Future<CommandResult> testAnnouncement(String message) async {
+    final text = message.trim();
+    if (text.isEmpty) return const CommandResult.fail('message required');
+    if (!enabled) return const CommandResult.fail('Voice Satellite is off');
+    if (homeAssistant.value.satelliteEntity.isEmpty) {
+      await refreshHomeAssistant();
+    }
+    final satellite = homeAssistant.value.satelliteEntity;
+    if (satellite.isEmpty) {
+      return const CommandResult.fail(
+        'Home Assistant has no satellite for this kiosk',
+      );
+    }
+    try {
+      await _ha.request({
+        'type': 'call_service',
+        'domain': 'assist_satellite',
+        'service': 'announce',
+        'service_data': {'message': text},
+        'target': {'entity_id': satellite},
+      }, timeout: const Duration(seconds: 60));
+      log.info(name, 'test announcement played on $satellite');
+      return const CommandResult.ok();
+    } catch (e) {
+      return CommandResult.fail('the announcement failed: $e');
+    }
+  }
+
   /// A turn or an announcement is running. False before [init] made the
   /// session: a settings page can draw first.
   bool get busy => _sessionMade && (_session.busy || _realtime.busy);
@@ -2013,11 +2125,8 @@ class VoiceManager extends Manager {
   }
 
   /// The locale Amazon's engine listens with: the Wake word language
-  /// setting, else the app's language (PryonCatalog.resolveLocale).
-  String get _pryonLocale => PryonCatalog.resolveLocale(
-    _settings.get(defs.voiceAmazonLocale),
-    _settings.get(defs.uiLanguage),
-  );
+  /// setting, which reads as an installed locale.
+  String get _pryonLocale => _settings.get(defs.voiceAmazonLocale);
 
   WakeWordEngineType get _engine {
     final engine = voiceEngines[_settings.get(defs.voiceWakeWordEngine)];
@@ -2224,6 +2333,8 @@ class VoiceManager extends Manager {
     ),
     language: _settings.get(defs.uiLanguage),
     historyHours: _settings.get(defs.voiceRealtimeHistoryHours).toDouble(),
+    follow: _settings.get(defs.voiceMatchEndOnOtherVoice),
+    rejectChime: _settings.get(defs.voiceMatchRejected) == 'chime',
   );
 
   String _location = '';
@@ -2763,9 +2874,15 @@ class VoiceManager extends Manager {
   }
 
   void _onStopWord() {
+    if (_sharedRinging && _ringing.isEmpty) {
+      // A shared timer rings on a kiosk whether or not it runs Voice
+      // Satellite itself.
+      _dismissRinging();
+      return;
+    }
     if (!enabled) return;
     if (_ringing.isNotEmpty) {
-      _dismissAlert();
+      _dismissRinging();
       return;
     }
     if (_realtime.busy) {
@@ -2791,10 +2908,8 @@ class VoiceManager extends Manager {
           )
         : next;
     if (next.visible) shown = shown.copyWith(assistant: _assistant);
-    if (_settings.get(defs.voiceHideSentimentTags) && next.answer.isNotEmpty) {
-      shown = shown.copyWith(
-        answer: stripSentimentTags(next.answer, streaming: next.streaming),
-      );
+    if (_settings.get(defs.voiceHideSentimentTags)) {
+      shown = withoutSentimentTags(shown);
     }
     // Visible either way: the screensaver holds its screen off timer
     // under both, and what is under it pauses (see [underlayPaused]).
@@ -2851,8 +2966,8 @@ class VoiceManager extends Manager {
   /// Double tap on the overlay, or the voiceCancel command: a ringing timer
   /// first, then the turn or the lingering answer.
   void dismiss() {
-    if (_ringing.isNotEmpty) {
-      _dismissAlert();
+    if (_ringing.isNotEmpty || _sharedRinging) {
+      _dismissRinging();
       return;
     }
     if (_realtime.busy) {
@@ -2862,7 +2977,91 @@ class VoiceManager extends Manager {
     _session.dismiss();
   }
 
+  /// Who is talking, for the Speaker sensor and the lights.
+  void _publishSpeaker(Map<String, Object?>? e) => bus.publish(
+    VoiceSpeakerChanged(
+      '${e?['name'] ?? ''}',
+      color: e?['color'] is String ? e!['color'] as String : null,
+      id: e?['id'] is String ? e!['id'] as String : null,
+      by: e?['by'] is String ? e!['by'] as String : null,
+      score: e?['score'] is num ? (e!['score'] as num).toDouble() : null,
+    ),
+  );
+
+  // ── Voice Match enrollment ─────────────────────────────────────────────
+
+  void _onEnrollRequest(VoiceMatchEnrollRequested e) {
+    final request = EnrollRequest(
+      personId: e.personId,
+      name: e.name,
+      color: e.color,
+      targetS: e.targetS,
+    );
+    // The kiosk records with the wake word engine's microphone, the one
+    // the voice turns use.
+    final refuse = !enabled || _groundControlUrl == null
+        ? 'no_mic'
+        : _settings.get(defs.voiceMute)
+        ? 'muted'
+        : busy || _ringing.isNotEmpty || _sharedRinging
+        ? 'busy'
+        : null;
+    unawaited(_enroller.start(request, refuse: refuse));
+  }
+
+  EnrollSocketPort _openEnrollSocket(
+    EnrollRequest request,
+    void Function(Map<String, Object?> event) onEvent,
+  ) {
+    final s = _settings;
+    final deviceName = s.get(defs.deviceName).trim();
+    return EnrollSocket.open(
+      baseUrl: _groundControlUrl ?? '',
+      token: s.get(defs.haToken),
+      request: request,
+      deviceId: defs.effectiveHostname(s.get(defs.deviceHostname), deviceName),
+      deviceName: deviceName,
+      model: '',
+      passage: enrollPassage(
+        lookupUiStrings(appLocaleForLanguage(s.get(defs.uiLanguage))),
+      ),
+      onEvent: onEvent,
+      log: (line) => log.info(name, line),
+    );
+  }
+
+  bool _enrollHeld = false;
+
+  void _onEnrollment(VoiceMatchEnrollment? state) {
+    bus.publish(VoiceMatchEnrollmentChanged(state?.toJson()));
+    if (state?.phase == EnrollPhase.refused) return;
+    final was = enrollment.value;
+    enrollment.value = state;
+    // While recording it is a voice interaction: music ducks and the
+    // screensaver waits, as for a voice turn.
+    final hold = state?.active ?? false;
+    if (hold != _enrollHeld) {
+      _enrollHeld = hold;
+      bus.publish(
+        VoiceInteractionChanged(
+          active: hold,
+          reason: 'voice_match_enroll',
+          source: InteractionSource.native,
+        ),
+      );
+    }
+    if (was == null && state != null && !Headless.active) {
+      unawaited(commands.execute('screenOn', const {}));
+      unawaited(
+        commands.execute('bringToFront', const {'voiceInteraction': true}),
+      );
+    }
+  }
+
   void _onBusy(bool busy, String reason) {
+    // A voice turn, an announcement or a ringing timer needs the kiosk:
+    // an enrollment stops and keeps what it has.
+    if (busy && _enroller.active) unawaited(_enroller.interrupt());
     // The remote admin's status rows say Busy for the whole turn: the wake
     // word's microphone stays open through it, so nothing else moves them.
     _announceStatus();
@@ -3231,6 +3430,10 @@ class VoiceManager extends Manager {
         _ringingTotals[id] ??
         (fields['totalSeconds'] as num?)?.toInt() ??
         0;
+    // Usage analytics: how often timers start, never their names.
+    if (type == 0) {
+      unawaited(UsageCounters.bump(_settings, 'timers_started'));
+    }
     switch (type) {
       case 0: // started
       case 1: // updated
@@ -3238,6 +3441,11 @@ class VoiceManager extends Manager {
           id: id,
           name: timerName,
           createdSeconds: created,
+          totalSeconds: [
+            (fields['totalSeconds'] as num?)?.toInt() ?? 0,
+            created,
+            secondsLeft,
+          ].reduce((a, b) => a > b ? a : b),
           secondsLeft: secondsLeft,
           active: active,
           at: now,
@@ -3320,8 +3528,8 @@ class VoiceManager extends Manager {
         .trim();
   }
 
-  /// Makes the alert's phrase with Home Assistant's text to speech, through
-  /// the pipeline that answers wake word 1, and adds it to the ring.
+  /// Makes the alert's phrase with Home Assistant's text to speech and adds
+  /// it to the ring.
   Future<void> _speakAlert() async {
     if (!_settings.get(defs.voiceTimerSpeak) ||
         _settings.get(defs.voiceMuteTimers) ||
@@ -3333,45 +3541,29 @@ class VoiceManager extends Manager {
       for (final id in _ringing) _ringingNames[id] ?? '',
     ]);
     if (text.isEmpty) return;
-    try {
-      final done = Completer<String>();
-      final unsubscribe = await _ha.subscribe(
-        {
-          'type': 'assist_pipeline/run',
-          'start_stage': 'tts',
-          'end_stage': 'tts',
-          'input': {'text': text},
-          if (await _pipelineId() case final String id) 'pipeline': id,
-        },
-        (event) {
-          final data = event['data'];
-          final fields = data is Map ? data : const {};
-          switch (event['type']) {
-            case 'tts-end':
-              final output = fields['tts_output'];
-              final url = output is Map ? '${output['url'] ?? ''}' : '';
-              if (!done.isCompleted) done.complete(url);
-            case 'error':
-              if (!done.isCompleted) {
-                done.completeError(
-                  StateError('${fields['message'] ?? 'error'}'),
-                );
-              }
-            case 'run-end':
-              if (!done.isCompleted) done.complete('');
-          }
-        },
-      );
-      final url = await done.future
-          .timeout(const Duration(seconds: 15))
-          .whenComplete(unsubscribe);
-      if (gen != _speechGen || _ringing.isEmpty || url.isEmpty) return;
-      _alertSpeech = _absolute(url);
-      _alertSpeechText = text;
-      _pushAlert();
-    } catch (e) {
-      log.warn(name, 'timer phrase not made: $e');
+    // The engine picked under Settings > Timers speaks it, with its
+    // language and voice, or the first one Home Assistant has: the Alarms
+    // rule.
+    final engine = _settings.get(defs.timersTtsEngine).trim();
+    final url = await haSpeakUrl(
+      base: _settings.get(defs.haUrl),
+      token: _settings.get(defs.haToken),
+      engine: engine,
+      // A language or voice only goes with an engine picked by name.
+      language: engine.isEmpty
+          ? ''
+          : _settings.get(defs.timersTtsLanguage).trim(),
+      voice: engine.isEmpty ? '' : _settings.get(defs.timersTtsVoice).trim(),
+      message: text,
+    );
+    if (gen != _speechGen || _ringing.isEmpty) return;
+    if (url == null) {
+      log.warn(name, 'Home Assistant did not speak the timer phrase');
+      return;
     }
+    _alertSpeech = _absolute(url);
+    _alertSpeechText = text;
+    _pushAlert();
   }
 
   /// Runs a vs_show prompt through Home Assistant from the intent stage,
@@ -3501,6 +3693,7 @@ class VoiceManager extends Manager {
             'timer_id': t.id,
             'name': t.name,
             'total_seconds': t.createdSeconds,
+            'duration_seconds': t.totalSeconds,
             'seconds_left': left,
             'is_active': t.active,
             'ends_at': t.active
@@ -3527,16 +3720,11 @@ class VoiceManager extends Manager {
   void _publishTimers() => bus.publish(VoiceTimersChanged(timerList()));
 
   void _pushTimers() {
-    if (!_settings.get(defs.voiceTimerPills)) {
-      unawaited(
-        commands.execute('setVoiceTimers', {
-          'entityId': timerEntity,
-          'timers': const <Object>[],
-        }),
-      );
-      return;
-    }
-    final showNames = _settings.get(defs.voiceTimerNameInPill);
+    // The full screen view always names its timers. The name setting is
+    // the pills' own.
+    final showNames =
+        !_settings.get(defs.voiceTimerPills) ||
+        _settings.get(defs.voiceTimerNameInPill);
     unawaited(
       commands.execute('setVoiceTimers', {
         'entityId': timerEntity,
@@ -3548,6 +3736,7 @@ class VoiceManager extends Manager {
               'totalSeconds': t.secondsLeft,
               'startedAt': t.at,
               'isActive': t.active,
+              'duration': t.totalSeconds,
             },
         ],
       }),
@@ -3555,14 +3744,17 @@ class VoiceManager extends Manager {
   }
 
   void _pushAlert() {
-    final showNames = _settings.get(defs.voiceTimerNameOnAlert);
+    // The finished pill and its name are the pills' own settings: the
+    // full screen view always shows a finished timer and names it.
+    final pills = _settings.get(defs.voiceTimerPills);
+    final showNames = !pills || _settings.get(defs.voiceTimerNameOnAlert);
     unawaited(
       commands.execute('setVoiceTimerAlert', {
         'entityId': timerEntity,
         'muted': _settings.get(defs.voiceMuteTimers),
         // Without its pill the alert still rings and the stop word still
         // takes it down.
-        'hidden': !_settings.get(defs.voiceTimerAlertPill),
+        'hidden': pills && !_settings.get(defs.voiceTimerAlertPill),
         'speech': ?(_ringing.isEmpty ? null : _alertSpeech),
         'speechText': _alertSpeechText,
         'timers': [
@@ -3576,11 +3768,27 @@ class VoiceManager extends Manager {
         ],
       }),
     );
-    if (_ringing.isNotEmpty) {
+    _syncTimerHold();
+  }
+
+  /// Timers other kiosks share are ringing here.
+  bool _sharedRinging = false;
+
+  /// The ring went quiet under Silence after while the alert still shows.
+  bool _ringQuiet = false;
+
+  /// While a timer rings, this kiosk's own or a shared one, the stop word
+  /// listens and the screen is held as for a voice turn. The ring holds the
+  /// stop word under its own name: an announcement or a turn that ends
+  /// while it rings lets go of the voice holder only (issue #1478). Once
+  /// the ring goes quiet, the stop word still dismisses the alert but the
+  /// music comes back.
+  void _syncTimerHold() {
+    final ringing = _ringing.isNotEmpty || _sharedRinging;
+    unawaited(_wakeWord.setStopWordArmed(ringing, holder: 'timer'));
+    if (ringing && !_ringQuiet) {
       _onBusy(true, 'timer');
-      unawaited(_wakeWord.setStopWordArmed(true));
     } else {
-      unawaited(_wakeWord.setStopWordArmed(false));
       if (_busyReasons.remove('timer')) {
         bus.publish(
           const VoiceInteractionChanged(
@@ -3591,6 +3799,12 @@ class VoiceManager extends Manager {
         );
       }
     }
+  }
+
+  /// Ends every ringing timer, this kiosk's own and the shared ones.
+  void _dismissRinging() {
+    if (_ringing.isNotEmpty) _dismissAlert();
+    if (_sharedRinging) bus.publish(const SharedTimerDismissRequested());
   }
 
   void _dismissAlert() {
@@ -3620,7 +3834,13 @@ class VoiceManager extends Manager {
       return;
     }
     if (_timers[action.id] == null) return;
-    final error = await controlTimer(action.id, action.action);
+    final error = await controlTimer(
+      action.id,
+      action.action,
+      hours: action.seconds ~/ 3600,
+      minutes: action.seconds % 3600 ~/ 60,
+      seconds: action.seconds % 60,
+    );
     if (error != null) {
       log.warn(name, 'timer ${action.action} failed: $error');
       await commands.execute('voiceTimerActionFailed', {
@@ -3875,6 +4095,7 @@ class VoiceManager extends Manager {
 
   @override
   Future<void> dispose() async {
+    _enroller.dispose();
     _intents.setMethodCallHandler(null);
     homeAssistant.removeListener(_announceStatus);
     homeAssistant.removeListener(_watchSelects);
@@ -3906,6 +4127,7 @@ class _HaTimer {
     required this.id,
     required this.name,
     required this.createdSeconds,
+    required this.totalSeconds,
     required this.secondsLeft,
     required this.active,
     required this.at,
@@ -3916,6 +4138,10 @@ class _HaTimer {
 
   /// The duration it was started with, what the intents name it by.
   final int createdSeconds;
+
+  /// Its whole length as Home Assistant counts it now, added time
+  /// included: what a progress bar measures against.
+  final int totalSeconds;
   final int secondsLeft;
   final bool active;
 
@@ -3948,6 +4174,9 @@ class _EspLink implements VoiceLinkPort {
     onAudio(ok);
     return ok;
   }
+
+  @override
+  Future<bool> audioEnd() => _esphome.voiceAudio(Uint8List(0), end: true);
 
   @override
   Future<bool> finished() => _esphome.voiceAnnounceFinished();
@@ -4020,4 +4249,97 @@ String realtimeLocationLine({required String name, required String area}) {
     "The device is in the $area area. When the user doesn't name an area, "
         'use this one.',
   ].join(' ');
+}
+
+/// Voice Match sessions for the Assist turns, in live mode: the kiosk's own
+/// audio keeps going to Home Assistant and a copy goes to the service.
+class _VoiceMatch implements VoiceMatchPort {
+  _VoiceMatch(this._voice);
+  final VoiceManager _voice;
+
+  /// The wake word that started the conversation: later turns (a follow
+  /// up) have none of their own, and the same person answers.
+  Uint8List? _anchor;
+
+  /// Who Ground Control recognized in this conversation. A follow-up starts
+  /// with them, so a one-word answer like "yes" needs no identifying.
+  String? _speaker;
+
+  /// The conversation's session in Ground Control: a follow-up joins it, so
+  /// the Sessions page shows the conversation as one.
+  String? _conversation;
+
+  @override
+  VoiceMatchTurnPort? begin(
+    void Function(Map<String, Object?> event) onEvent, {
+    bool follow = false,
+    bool followup = false,
+    void Function(Uint8List pcm)? onAudio,
+    void Function()? onLost,
+  }) {
+    final url = _voice._groundControlUrl;
+    final s = _voice._settings;
+    // The address is only known while Ground Control is connected.
+    if (url == null || !s.get(defs.voiceMatchEnabled)) return null;
+    final name = s.get(defs.deviceName).trim();
+    final clip = followup ? null : _voice._wakeWord.wakeClip();
+    if (!followup) {
+      _anchor = clip;
+      _speaker = null;
+      _conversation = null;
+      _voice.log.info(
+        _voice.name,
+        clip == null
+            ? 'voice match: no wake word, following who talks'
+            : 'voice match: following the wake word '
+                  '(${clip.length ~/ 32} ms)',
+      );
+    }
+    // Chosen people with nobody chosen answers anyone enrolled.
+    final people = [
+      for (final p in defs.decodeVoiceMatchPeople(s.get(defs.voiceMatchPeople)))
+        p.id,
+    ];
+    final chosen = s.get(defs.voiceMatchPolicy) == 'people';
+    final policy = !chosen
+        ? 'anyone'
+        : (people.isEmpty ? 'enrolled' : 'people');
+    final turn = VoiceMatchTurn.open(
+      baseUrl: url,
+      token: s.get(defs.haToken),
+      deviceId: defs.effectiveHostname(s.get(defs.deviceHostname), name),
+      deviceName: name,
+      policy: policy,
+      people: people,
+      onEvent: (e) {
+        if (e['type'] == 'speaker' && e['id'] is String) {
+          _speaker = e['id'] as String;
+        }
+        onEvent(e);
+      },
+      log: (line) => _voice.log.info(_voice.name, line),
+      follow: follow,
+      anchor: _anchor,
+      speaker: followup ? _speaker : null,
+      continues: followup ? _conversation : null,
+      onReady: (session) => _conversation = session,
+      onAudio: onAudio,
+      onLost: onLost,
+    );
+    return _Turn(turn);
+  }
+}
+
+class _Turn implements VoiceMatchTurnPort {
+  _Turn(this._turn);
+  final VoiceMatchTurn _turn;
+
+  @override
+  void feed(Uint8List pcm) => _turn.feed(pcm);
+
+  @override
+  void end() => _turn.end();
+
+  @override
+  bool get ready => _turn.ready;
 }

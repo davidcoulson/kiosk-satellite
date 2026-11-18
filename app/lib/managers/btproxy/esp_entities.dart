@@ -195,6 +195,13 @@ class EspEntitySurface {
   /// start moment genuinely moved (a 5-second tolerance:
   /// second-to-second jitter in "now minus uptime" is not a restart).
   final Map<String, DateTime?> _lastAnchor = {};
+  String _speaker = '';
+
+  bool get _speakerSensor =>
+      _voiceNative &&
+      _settings.get(defs.groundControlEnabled) &&
+      _settings.get(defs.voiceMatchEnabled) &&
+      _settings.get(defs.voiceMatchSpeakerSensor);
 
   /// The Last interaction sensor's stamp (issue #241). Persisted like the
   /// last lux reading: with no broker to retain it, the store is what keeps
@@ -276,6 +283,12 @@ class EspEntitySurface {
           'Screensaver widgets',
           'mdi:widgets-outline',
           defs.screensaverWidgetsEnabled,
+        ),
+        // Listed with the Now Playing switch, which needs the view on.
+        'now_playing_alongside_screensaver': (
+          'Now Playing alongside screensaver',
+          'mdi:view-split-vertical',
+          defs.sendspinFullscreenSplit,
         ),
         'hold_mode': ('Hold mode', 'mdi:pause-circle-outline', defs.haHoldMode),
         // Rotation alone, unlike Hold mode: the screensaver and screen off
@@ -713,6 +726,9 @@ class EspEntitySurface {
     // An agent never starts the intercom, whatever the setting says.
     final intercomOn = _settings.get(defs.intercomEnabled) && !agent;
     _listedStartPage = _hasCustomStartPage;
+    final nowPlayingListed =
+        _settings.get(defs.sendspinPlayerActive) &&
+        _settings.get(defs.sendspinFullscreen);
     final catalog = <Map<String, Object?>>[
       // ── Controls ─────────────────────────────────────────────────────
       // Agent mode (AgentToolsManager, RemoteKeys.kt): the remote
@@ -802,8 +818,7 @@ class EspEntitySurface {
       // turn-on brings it up the way the kiosk menu entry does (a paused
       // track opens paused). Only with the view enabled, like the menu
       // entry: a switch that can only fail is worse than no switch.
-      if (_settings.get(defs.sendspinPlayerActive) &&
-          _settings.get(defs.sendspinFullscreen))
+      if (nowPlayingListed)
         {
           'type': 'switch',
           'objectId': 'now_playing',
@@ -840,6 +855,15 @@ class EspEntitySurface {
           'name': 'Voice Satellite',
           'icon': 'mdi:account-voice',
         },
+        // Who is talking, from Kiosk Satellite Ground Control: empty when
+        // nobody is identified. LLM agents read it with GetLiveContext.
+        if (_speakerSensor)
+          {
+            'type': 'text_sensor',
+            'objectId': 'speaker',
+            'name': 'Speaker',
+            'icon': 'mdi:account-voice',
+          },
         // The timers on the kiosk, running or paused, and when the next
         // running one ends. ESPHome has no attributes, so the list itself
         // is the vs_list_timers action's answer.
@@ -883,6 +907,7 @@ class EspEntitySurface {
       button('theater_peek', 'Theater peek', 'mdi:gesture-tap'),
       button('reload', 'Reload page', 'mdi:refresh'),
       button('load_start_url', 'Go to dashboard', 'mdi:view-dashboard'),
+      button('close_overlays', 'Close overlays', 'mdi:layers-off-outline'),
       button('clear_cache', 'Clear cache', 'mdi:broom'),
       button('restart', 'Restart app', '', deviceClass: 'restart'),
       if (_rebootListed)
@@ -1212,6 +1237,8 @@ class EspEntitySurface {
             (proximityPresent || e.key != 'screensaver_proximity') &&
             // An agent never starts the intercom: its switch would do nothing.
             (!agent || e.key != 'intercom_enabled') &&
+            (e.key != 'now_playing_alongside_screensaver' ||
+                nowPlayingListed) &&
             (!e.key.startsWith('vs_') || _voiceNative))
           {
             'type': 'switch',
@@ -1691,12 +1718,14 @@ class EspEntitySurface {
     'screen',
     'screensaver_active',
     'now_playing',
+    'now_playing_alongside_screensaver',
     'postpone_screensaver',
     'screensaver_next_slide',
     'screensaver_previous_slide',
     'notifications_dismiss_all',
     'reload',
     'load_start_url',
+    'close_overlays',
     'clear_cache',
     'bring_to_front',
     'open_launcher',
@@ -2557,6 +2586,13 @@ class EspEntitySurface {
     _subs.add(bus.on<VolumeChanged>().listen((_) => _sendVolume()));
     _subs.add(
       bus.on<UrlChanged>().listen((e) {
+        // The page closed (no dashboard view in a Compass layout): no page
+        // and no view, rather than the last ones it showed.
+        if (e.url.isEmpty) {
+          _send('url', null);
+          _send('dashboard_view', null);
+          return;
+        }
         _send('url', e.url);
         final match = matchDashboardView(e.url, _dashboardViews);
         if (match != null) _send('dashboard_view', match);
@@ -2669,6 +2705,12 @@ class EspEntitySurface {
       }),
     );
     _subs.add(
+      bus.on<VoiceSpeakerChanged>().listen((e) {
+        _speaker = e.name;
+        if (_speakerSensor) _send('speaker', e.name);
+      }),
+    );
+    _subs.add(
       bus.on<VoiceTimersChanged>().listen((e) {
         if (_voiceNative) unawaited(_sendTimers(e.timers));
       }),
@@ -2722,6 +2764,8 @@ class EspEntitySurface {
     _poll?.cancel();
     _poll = null;
     _motionOff?.cancel();
+    _cameraOffTimer?.cancel();
+    _cameraOffTimer = null;
     _motionOff = null;
     _btNudge?.cancel();
     _btNudge = null;
@@ -2733,6 +2777,34 @@ class EspEntitySurface {
     _countdown.dispose();
     _lux.reset();
     _noise.reset();
+  }
+
+  /// Close overlays: everything drawn over the dashboard that closes
+  /// without side effects, leaving the page as it is. A ringing alarm, a
+  /// call, the voice overlay, notifications and Settings stay. The
+  /// screensaver is stopped only when it is up, since stopping it lights
+  /// the screen.
+  Future<void> _closeOverlays() async {
+    // Under Compass the views of the layout stay: the kiosk goes to the
+    // center instead (CompassController.closeOverlays).
+    final compass = await commands.execute('compassCloseOverlays', const {});
+    for (final name
+        in compass.ok
+            ? const <String>[]
+            : const [
+                'hideCameraView',
+                'hideCalendar',
+                'hideMusicLibrary',
+                'hideAlarms',
+                'hideAppLauncher',
+                'hideOverlayPage',
+              ]) {
+      await commands.execute(name, const {});
+    }
+    final screensaver = await commands.execute('isScreensaverActive', const {});
+    if (screensaver.data == true) {
+      await commands.execute('stopScreensaver', const {});
+    }
   }
 
   /// A command from Home Assistant landed (via the native hub). State
@@ -2896,6 +2968,8 @@ class EspEntitySurface {
         await commands.execute('alarmSnooze', const {'source': 'esphome'});
       case 'load_start_url':
         await commands.execute('loadStartUrl', const {});
+      case 'close_overlays':
+        await _closeOverlays();
       case 'clear_cache':
         await commands.execute('clearWebCache', const {});
       case 'restart':
@@ -3001,7 +3075,7 @@ class EspEntitySurface {
         // the image. Off, the "Camera off" frame answers instead, and the
         // frame owed when Home Assistant connects is black.
         if (!_settings.get(defs.cameraEnabled)) {
-          await _sendCameraOff();
+          _answerCameraOff();
         } else if (value == 'subscribed') {
           await _sendImage('device_camera', _blackFrame);
         } else {
@@ -3027,20 +3101,36 @@ class EspEntitySurface {
   /// button last captured", and a camera fetch,
   /// which Home Assistant issues on its own whenever a preview refreshes,
   /// must not move it.
+  ///
+  /// A camera fetch that arrives while another one waits for its capture
+  /// does nothing: the frame on its way answers both. Home Assistant's
+  /// frame request names no camera, so a live view of the Device camera
+  /// asks for a screenshot with every frame it fetches.
   Future<void> _takeScreenshot({required bool stamp}) async {
-    final size = PlatformDispatcher.instance.implicitView?.physicalSize;
-    final portrait = size != null && size.height > size.width;
-    final result = await commands.execute('screenshot', {
-      'width': portrait ? 1080 : 1920,
-    });
-    final jpeg = result.data;
-    if (result.ok && jpeg is String) {
-      _sendImage('screenshot', base64Decode(jpeg));
-      if (stamp) await _stamp('last_screenshot');
-    } else {
-      log.warn('esphome', 'screenshot failed: ${result.error}');
+    if (!stamp) {
+      if (_screenshotFetching) return;
+      _screenshotFetching = true;
+    }
+    try {
+      final size = PlatformDispatcher.instance.implicitView?.physicalSize;
+      final portrait = size != null && size.height > size.width;
+      final result = await commands.execute('screenshot', {
+        'width': portrait ? 1080 : 1920,
+      });
+      final jpeg = result.data;
+      if (result.ok && jpeg is String) {
+        _sendImage('screenshot', base64Decode(jpeg));
+        if (stamp) await _stamp('last_screenshot');
+      } else {
+        log.warn('esphome', 'screenshot failed: ${result.error}');
+      }
+    } finally {
+      if (!stamp) _screenshotFetching = false;
     }
   }
+
+  /// A camera fetch from Home Assistant is waiting for its screenshot.
+  bool _screenshotFetching = false;
 
   /// The Motion sensor reads a value only while both the camera and the
   /// setting are on; otherwise it is listed but unknown.
@@ -3053,6 +3143,34 @@ class EspEntitySurface {
     _motionOff?.cancel();
     await _send('motion', _motionActive ? false : null);
   }
+
+  /// Answers a frame request with the "Camera off" frame, once a second
+  /// at most. A live view in Home Assistant asks for the next frame the
+  /// moment one arrives, and this one is ready at once: unpaced, the view
+  /// fetched the same picture about 180 times a second for as long as it
+  /// stayed open.
+  void _answerCameraOff() {
+    if (_cameraOffTimer != null) return;
+    final sent = _cameraOffSentAt;
+    final wait = sent == null
+        ? Duration.zero
+        : const Duration(seconds: 1) - DateTime.now().difference(sent);
+    if (wait <= Duration.zero) {
+      _cameraOffSentAt = DateTime.now();
+      unawaited(_sendCameraOff());
+      return;
+    }
+    _cameraOffTimer = Timer(wait, () {
+      _cameraOffTimer = null;
+      _cameraOffSentAt = DateTime.now();
+      // The camera may have come on while the answer waited: the request
+      // is still owed a frame, and the next one gets a real picture.
+      unawaited(_sendCameraOff());
+    });
+  }
+
+  DateTime? _cameraOffSentAt;
+  Timer? _cameraOffTimer;
 
   Future<void> _sendCameraOff() async {
     try {
@@ -3272,6 +3390,7 @@ class EspEntitySurface {
           ? (voice.data as Map)['state']
           : null;
       await _send('voice_satellite_state', '${state ?? 'idle'}');
+      if (_speakerSensor) await _send('speaker', _speaker);
       final timers = await commands.execute('voiceTimers', const {});
       await _sendTimers([
         if (timers.ok && timers.data is Map)
@@ -3323,7 +3442,16 @@ class EspEntitySurface {
       final kept = _settings.internal('esphome_$stamp');
       if (kept.isNotEmpty) await _send(stamp, kept);
     }
-    final href = await commands.execute('evalJs', {'code': 'location.href'});
+    // No dashboard page (a Compass layout without a dashboard view): no
+    // page to ask for its address.
+    final state = await commands.execute('getDashboardState', const {});
+    final loaded =
+        state.ok &&
+        state.data is Map &&
+        (state.data as Map)['currentUrl'] != null;
+    final href = loaded
+        ? await commands.execute('evalJs', {'code': 'location.href'})
+        : const CommandResult.fail('no dashboard page');
     // WebView eval results come back JSON-encoded; a string wears quotes.
     var url = href.ok ? '${href.data ?? ''}' : '';
     if (url.length >= 2 && url.startsWith('"') && url.endsWith('"')) {

@@ -22,6 +22,210 @@ void main() {
     await settings.init();
   }
 
+  test(
+    'the Voice Match settings are on the Ground Control Voice Match page, right after Realtime',
+    () {
+      final vm = [
+        for (final d in defs.allSettings)
+          if (d.key.startsWith('voice_match.')) d,
+      ];
+      expect(vm.map((d) => d.key), [
+        'voice_match.enabled',
+        'voice_match.policy',
+        'voice_match.people',
+        'voice_match.rejected',
+        'voice_match.end_on_other_voice',
+        'voice_match.speaker_sensor',
+        'voice_match.show_speaker',
+        'voice_match.allow_enroll',
+      ]);
+      for (final d in vm) {
+        expect(d.category, 'Voice Satellite', reason: d.key);
+        expect(d.subpage, 'Ground Control Voice Match', reason: d.key);
+      }
+      // The switch follows Voice Satellite and Ground Control, the rest
+      // follow the switch (or the policy, for the chosen people and what
+      // happens to a voice that is not chosen).
+      expect(defs.voiceMatchEnabled.dependsOn, 'voice.enabled');
+      expect(defs.voiceMatchEnabled.alsoDependsOn, 'ground_control.enabled');
+      expect(defs.voiceMatchRejected.dependsOn, 'voice_match.policy');
+      expect(defs.voiceMatchRejected.dependsOnValue, 'people');
+      expect(defs.voiceMatchPeople.dependsOn, 'voice_match.policy');
+      expect(defs.voiceMatchPeople.dependsOnValue, 'people');
+      expect(defs.voiceMatchPolicy.options, ['anyone', 'people']);
+      expect(defs.voiceMatchPolicy.defaultValue, 'anyone');
+      final byPolicy = {defs.voiceMatchRejected, defs.voiceMatchPeople};
+      for (final d in vm.where(
+        (d) => d != defs.voiceMatchEnabled && !byPolicy.contains(d),
+      )) {
+        expect(d.dependsOn, 'voice_match.enabled', reason: d.key);
+      }
+      // Entry rows follow allSettings: Voice Match comes after Realtime.
+      final pages = <String>[];
+      for (final d in defs.allSettings) {
+        if (d.category == 'Voice Satellite' &&
+            d.subpage != null &&
+            !pages.contains(d.subpage)) {
+          pages.add(d.subpage!);
+        }
+      }
+      expect(
+        pages.indexOf('Ground Control Voice Match'),
+        pages.indexOf('Realtime') + 1,
+      );
+      expect(defs.subpageHints['Ground Control Voice Match'], isNotEmpty);
+    },
+  );
+
+  test('the chosen people are stored by id and name, each once', () {
+    expect(defs.decodeVoiceMatchPeople('[]'), isEmpty);
+    expect(defs.decodeVoiceMatchPeople('not json'), isEmpty);
+    expect(defs.decodeVoiceMatchPeople('{"id": "a"}'), isEmpty);
+    final picks = defs.decodeVoiceMatchPeople(
+      '[{"id": "a", "name": "Ana"}, {"id": "a", "name": "Ana"}, {"id": "b"}, {"name": "x"}, 3]',
+    );
+    expect(picks, [(id: 'a', name: 'Ana'), (id: 'b', name: '')]);
+    expect(
+      defs.normalizeVoiceMatchPeople('[{"id": "a", "name": "Ana"}, 3]'),
+      '[{"id":"a","name":"Ana"}]',
+    );
+  });
+
+  test('Ground Control has its own page, with the connection on it', () {
+    final gc = [
+      for (final d in defs.allSettings)
+        if (d.key.startsWith('ground_control.')) d,
+    ];
+    expect(gc.map((d) => d.key), [
+      'ground_control.enabled',
+      'ground_control.address',
+    ]);
+    for (final d in gc) {
+      expect(d.category, 'Ground Control', reason: d.key);
+      expect(d.subpage, isNull, reason: d.key);
+    }
+    expect(defs.groundControlAddress.dependsOn, 'ground_control.enabled');
+    // Nothing on the Voice Match page still connects to the service.
+    expect(
+      defs.allSettings.where((d) => d.key == 'voice_match.address'),
+      isEmpty,
+    );
+  });
+
+  test('the timer settings are on the Timers page, the sound included', () {
+    final timers = [
+      for (final d in defs.allSettings)
+        if (!d.hidden && d.category == 'Timers') d.key,
+    ];
+    expect(timers, contains(defs.voiceTimerPills.key));
+    expect(timers, contains(defs.voiceTimersShareWith.key));
+    expect(timers, contains(defs.voiceChimeTimer.key));
+    expect(timers, contains(defs.voiceChimeTimerVolume.key));
+    expect(
+      defs.allSettings.where(
+        (d) => d.category == 'Voice Satellite' && d.subpage == 'Timers',
+      ),
+      isEmpty,
+    );
+    // The page has no pages of its own.
+    expect(
+      defs.allSettings.where(
+        (d) => d.category == 'Timers' && d.subpage != null,
+      ),
+      isEmpty,
+    );
+    // The pills switch shows for both voice runtimes.
+    expect(defs.voiceTimerPills.dependsOn, isNull);
+    // Timers is a fleet category of its own. Share with and the sound
+    // stay on each kiosk.
+    expect(defs.fleetCategoryOf(defs.voiceTimerPills), 'Timers');
+    expect(defs.fleetSyncCategories.map((c) => c.$1), contains('Timers'));
+    expect(defs.voiceTimersShareWith.perDevice, isTrue);
+    expect(defs.voiceChimeTimer.perDevice, isTrue);
+  });
+
+  test('the Timers groups run Shared timers, When a timer ends, Text to '
+      'Speech, Pills', () {
+    final sections = <String>[];
+    // The untitled card on top: the near completion slider, then the link
+    // to Drawer menu items.
+    expect(
+      [
+        for (final d in defs.allSettings)
+          if (d.category == 'Timers' && d.section == null && !d.hidden) d.key,
+      ],
+      [
+        defs.timersShowOnStart.key,
+        defs.timersShowBeforeEnd.key,
+        defs.timersPauseScreensaver.key,
+        defs.timersMenu.key,
+      ],
+    );
+    expect(defs.timersShowOnStart.defaultValue, isTrue);
+    expect(defs.timersPauseScreensaver.defaultValue, isFalse);
+    expect(defs.timersShowBeforeEnd.min, 30);
+    expect(defs.timersShowBeforeEnd.max, 300);
+    expect(defs.timersShowBeforeEnd.step, 30);
+    expect(defs.timersMenu.linksTo, defs.uiDrawerItems.key);
+    for (final d in defs.allSettings) {
+      if (d.hidden || d.category != 'Timers' || d.section == null) continue;
+      if (sections.isEmpty || sections.last != d.section) {
+        sections.add(d.section!);
+      }
+    }
+    expect(sections, [
+      'Shared timers',
+      'When a timer ends',
+      'Text to Speech',
+      'Pills',
+    ]);
+    // The engine shows with Speak when a timer ends, its language and
+    // voice once an engine is picked. Empty is First available, as on Alarms.
+    expect(defs.timersTtsEngine.dependsOn, defs.voiceTimerSpeak.key);
+    expect(defs.timersTtsEngine.defaultValue, '');
+    expect(defs.timersTtsLanguage.dependsOn, defs.timersTtsEngine.key);
+    expect(defs.timersTtsVoice.dependsOn, defs.timersTtsEngine.key);
+    expect(defs.voiceTimerAlertPill.section, 'Pills');
+  });
+
+  test('the pill rows show only with Show timers as pills on', () async {
+    SharedPreferences.setMockInitialValues({'ks.voice.enabled': true});
+    final bus = EventBus();
+    final log = Logger();
+    final s = SettingsManager(bus, CommandRegistry(log), log);
+    await s.init();
+    final rows = [
+      defs.voiceTimerNameInPill,
+      defs.voiceTimerPillScale,
+      defs.voiceTimerAlertPill,
+      defs.voiceTimerNameOnAlert,
+    ];
+    for (final d in rows) {
+      expect(s.visible(d), isFalse, reason: d.key);
+    }
+    await s.set(defs.voiceTimerPills, true);
+    for (final d in rows) {
+      expect(s.visible(d), isTrue, reason: d.key);
+    }
+  });
+
+  test(
+    'an install with pills stored moves to the full screen view once',
+    () async {
+      SharedPreferences.setMockInitialValues({'ks.voice.timer_pills': true});
+      final bus = EventBus();
+      final log = Logger();
+      var s = SettingsManager(bus, CommandRegistry(log), log);
+      await s.init();
+      expect(s.get(defs.voiceTimerPills), isFalse);
+      // Turned back on by hand, it stays on.
+      await s.set(defs.voiceTimerPills, true);
+      s = SettingsManager(bus, CommandRegistry(log), log);
+      await s.init();
+      expect(s.get(defs.voiceTimerPills), isTrue);
+    },
+  );
+
   test('the Home Assistant User Interface page holds both groups', () {
     final moved = [
       for (final d in defs.allSettings)
@@ -199,6 +403,39 @@ void main() {
     expect(defs.audioMicDevice.subpage, isNull);
   });
 
+  test('the equalizer is a page of its own under Microphone settings', () {
+    final keys = [for (final d in defs.allSettings) d.key];
+    final page = [
+      for (final d in defs.allSettings)
+        if (d.subpage == 'Equalizer') d.key,
+    ];
+    expect(page, [
+      defs.equalizerEnabled.key,
+      for (final band in defs.equalizerBands) band.key,
+      defs.equalizerPreamp.key,
+    ]);
+    expect(defs.subpageHints, contains('Equalizer'));
+    // The remote puts a page's entry row where its first setting sits.
+    expect(
+      keys.indexOf(defs.equalizerEnabled.key),
+      greaterThan(keys.indexOf(defs.micChannel.key)),
+    );
+    for (final d in defs.allSettings.where((d) => d.subpage == 'Equalizer')) {
+      // A speaker correction belongs to its device.
+      expect(d.perDevice, isTrue, reason: d.key);
+      expect(d.category, 'Screen & Audio');
+      if (d != defs.equalizerEnabled) {
+        expect(d.dependsOn, defs.equalizerEnabled.key, reason: d.key);
+      }
+    }
+    // Off and flat until someone sets it, with the preamp ready.
+    expect(defs.equalizerEnabled.defaultValue, isFalse);
+    expect(defs.equalizerPreamp.defaultValue, isTrue);
+    for (final band in defs.equalizerBands) {
+      expect(band.defaultValue, 0);
+    }
+  });
+
   test('the ESPHome Notifications page holds appearance and sound', () {
     final moved = [
       for (final d in defs.allSettings)
@@ -368,6 +605,7 @@ void main() {
       defs.btproxyMinAdvertiseRssi.key,
       defs.btproxyFilter.key,
       defs.btproxyFilterIrks.key,
+      defs.btproxyDeviceMac.key,
       defs.btproxyConnections.key,
       defs.btproxyMinConnectRssi.key,
       defs.btproxyMacLookup.key,
@@ -390,7 +628,7 @@ void main() {
     // The menu's own switch leads, then the action it gates, one per row,
     // then the apps a locked launcher offers.
     expect(moved.first, defs.kioskAllowDrawer.key);
-    expect(moved, hasLength(16));
+    expect(moved, hasLength(17));
     expect(moved.last, defs.kioskAllowedApps.key);
     // The protections stay on the page above: they are what kiosk mode is.
     expect(defs.kioskExitGesture.subpage, isNull);

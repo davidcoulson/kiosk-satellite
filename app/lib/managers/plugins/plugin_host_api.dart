@@ -138,6 +138,13 @@ class PluginHostApi {
   double _voiceLevelSent = 0;
   String? _screensaverAppearanceSent;
 
+  /// The page or view on screen, for getNavigationView. The kiosk screen
+  /// publishes the first one as it starts.
+  NavigationViewChanged _navigationView = const NavigationViewChanged(
+    mode: 'classic',
+    view: 'dashboard',
+  );
+
   static const commandNames = [
     'getHostApi',
     'isScreensaverActive',
@@ -156,6 +163,7 @@ class PluginHostApi {
     'getFaceEnabled',
     'getProximityEnabled',
     'getCameraViewState',
+    'getNavigationView',
     'getWakeWordState',
     'getVoiceState',
     'getVoiceAppearance',
@@ -393,6 +401,7 @@ class PluginHostApi {
     'wakeword.detected',
     'stopword.detected',
     'camera.view',
+    'navigation.view',
     'browser.state',
     'sendspin.player',
   ];
@@ -665,6 +674,9 @@ class PluginHostApi {
           if (session.canRead && session.canVoiceText) ...voiceTextEventNames,
         ],
       }).toJson();
+    }
+    if (name == 'getNavigationView') {
+      return CommandResult.ok(_navigationView.toJson()).toJson();
     }
     if (name == 'getScreensaverAppearance') {
       final appearance = _screensaverAppearance();
@@ -1177,6 +1189,7 @@ class PluginHostApi {
       {'model': e.model, 'phrase': e.phrase},
     ),
     StopWordDetected _ => ('stopword.detected', {}),
+    NavigationViewChanged e => ('navigation.view', e.toJson()),
     CameraViewStateChanged e => (
       'camera.view',
       {
@@ -1393,6 +1406,7 @@ class PluginHostApi {
   }
 
   void _onEvent(AppEvent event) {
+    if (event is NavigationViewChanged) _navigationView = event;
     // The player's layout changes with no new view, but the screensaver
     // reapplies its view when it does. Goes on to screensaver.view below.
     if (event is ScreensaverViewChanged) _onScreensaverAppearance();

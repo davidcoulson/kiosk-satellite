@@ -77,9 +77,10 @@ Settings that scale the UI, control screen brightness, or manage volume often de
 | `motion.use_entity` Use Home Assistant entity, `motion.entity` Motion sensor entity | Screensaver, Motion Detection |
 | `screensaver.brightness_level`, `screensaver.dim_level` | Screensaver |
 | `audio.media_volume` Media volume, `audio.assistant_volume` Assistant volume | Screen & Audio |
+| `audio.adaptive_volume_assistant` Assistant, `audio.adaptive_volume_media` Media, `audio.adaptive_volume_intercom` Intercom, `audio.adaptive_volume_curve` Volume curve | Adaptive volume |
 | `notifications.volume` Notification volume | Notifications |
 | `ha.tap_sound_volume` Tap sound volume | Home Assistant, User Interface |
-| `voice_chimes.wake_volume`, `voice_chimes.done_volume`, `voice_chimes.error_volume`, `voice_chimes.alert_volume`, `voice_chimes.announce_volume` Chime volumes | Voice Satellite, Chimes |
+| `voice_chimes.wake_volume`, `voice_chimes.done_volume`, `voice_chimes.error_volume`, `voice_chimes.alert_volume`, `voice_chimes.announce_volume` Chime volumes | Voice Satellite, Chimes and Timers |
 | `screensaver.gallery_items` Photo Gallery selection | Photo Gallery screensaver |
 | `screensaver.local_folder` Local media folder | Local Media screensaver |
 | `screensaver.clock_background` Clock background photo | Clock screensaver |
@@ -91,6 +92,7 @@ Settings that scale the UI, control screen brightness, or manage volume often de
 | `browser.cutout_mode` Display cutout | Screen & Audio |
 | `screen.orientation` Screen orientation | Screen & Audio |
 | `intercom.volume` Intercom volume | Screen & Audio |
+| `intercom.ring_volume` Ring volume | Intercom |
 | `intercom.answer_mode` Answer mode, which carries Do not disturb | Intercom |
 | `voice.mute` Mute, `voice.tts_output` Play sounds on | Voice Satellite |
 
@@ -147,8 +149,9 @@ Certain settings remain unique to each kiosk regardless of the profile configura
 | Accessibility self-repair (needs a per-device adb grant) | `device.keep_accessibility` |
 | Agent mode (each box's remote, player and home app) | `gestures.remote_keys.report`, `device.now_playing`, `device.home_app`, `device.home_app_at_boot`, `device.home_app_idle_minutes`, `device.reboot_time`, `device.hot_threshold`, `device.power_dialog_package`, `device.power_dialog_choice` |
 | Alarms | `alarms.list`, `alarms.runtime` |
+| Shared timers | `voice.timers_share_with` |
 | Calendar | `calendar.hidden` |
-| Hardware picks | `camera.device`, `camera.scan_screen_light`, `camera.rtsp.tls`, `camera.rtsp.resolution`, `camera.rtsp.analysis`, `motion.camera`, `audio.mic_device`, `audio.speaker_device`, `audio.mic_channel`, `audio.mic_capture_mode`, `audio.software_echo_cancellation`, `audio.echo_cancellation_method`, `audio.mic_noise_suppression`, `audio.mic_gain_db`, `audio.mic_capture_format`, `render.disable_impeller`, `render.legacy_webview`, `render.hybrid_plugin_overlays`, `ui.scale`, `screen.ambient_display`, `device.agent_mode`, `device.no_battery` |
+| Hardware picks | `camera.device`, `camera.scan_screen_light`, `camera.rtsp.tls`, `camera.rtsp.resolution`, `camera.rtsp.analysis`, `motion.camera`, `audio.mic_device`, `audio.speaker_device`, `audio.mic_channel`, `audio.mic_capture_mode`, `audio.software_echo_cancellation`, `audio.echo_cancellation_method`, `audio.mic_noise_suppression`, `audio.mic_gain_db`, `audio.mic_capture_format`, `audio.equalizer_enabled`, `audio.equalizer_bass`, `audio.equalizer_low_mid`, `audio.equalizer_mid`, `audio.equalizer_high_mid`, `audio.equalizer_treble`, `audio.equalizer_preamp`, `render.disable_impeller`, `render.legacy_webview`, `render.hybrid_plugin_overlays`, `ui.scale`, `screen.ambient_display`, `device.agent_mode`, `device.no_battery` |
 | Followed player | `sendspin.player`, `sendspin.player_source`, `sendspin.player_name`, `sendspin.handoff`, `sendspin.speaker_pill_players`, `sendspin.kept_for` |
 | Weather preview | `screensaver.weather_preview`, `screensaver.weather_preview_condition`, `screensaver.weather_preview_period` |
 | Celestial view and last GPS position | `screensaver.celestial_view`, `screensaver.celestial_last_gps` |
@@ -170,6 +173,10 @@ The Voice Satellite selects Home Assistant keeps for each kiosk travel with the 
 The Alarms category carries the alarm defaults (the volume, the tone, snooze, Silence after and sunrise lengths). The [alarms](alarms.md) themselves, and a ring or snooze in progress, stay on each kiosk.
 
 The Calendar category carries the [calendars](calendar.md) with their names, colors and people, and the Display and Kiosk settings. The calendars hidden with their chips stay on each kiosk.
+
+The Timers category carries the [timer settings](timers.md#timer-settings): the pills, what a finished timer does, Share timers and Show shared timers. The kiosks picked in Share with and the timer sound stay on each kiosk. These settings used to sync with Voice Satellite, so add Timers to a profile that should keep pushing them.
+
+The Navigation category carries the navigation style, the [Compass](navigation.md) layout and its options. A camera view in the layout only shows on a follower that has it, so sync Camera Streams too if the layout holds one.
 
 Custom wake word models are the exception: a leader passes its models to every follower whose profile syncs Voice Satellite, and those followers mirror the leader's set. See [Custom Wake Word Models](custom-wake-words.md).
 

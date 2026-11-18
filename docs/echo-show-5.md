@@ -1,13 +1,14 @@
-# Echo Show 5
+# Echo Show 5 (2nd gen)
 
 This setup has been verified on a 2nd generation Echo Show 5 (`cronos`) running the [Kiosk Satellite Edition of LineageOS for the Echo Show 5](https://github.com/jxlarrea/lineageos-echo-kiosk-satellite/blob/main/docs/echo-show-5.md), a LineageOS 18.1 (Android 11) image tuned for Kiosk Satellite. It is the recommended way to run Kiosk Satellite on the Show. The image builds on [R0rt1z2](https://github.com/R0rt1z2)'s LineageOS 18.1 port, which brings the screen, camera and Bluetooth, and adds what a kiosk needs on top.
+
+The [Echo Show 5 (1st gen)](echo-show-5-1st-gen.md) from 2019 has its own image and guide.
 
 ## Why This Image
 
 Kiosk Satellite also runs on the upstream port, but the image fixes what gets in its way there:
 
 - **The wake word works over music.** The image's echo cancellation and microphone tuning remove the speaker's sound from the Show's microphones, so the wake word works with music playing at high volume. See [Volume](#volume).
-- **Stock wake word engine.** The image runs the Echo Show stock engine with its models. See [Wake Word](#wake-word).
 - **Kiosk Satellite installs itself.** Once the Show is on Wi-Fi, the latest Kiosk Satellite release is downloaded, installed, given every permission it needs and made the device owner. There are no adb commands to run and Kiosk Satellite's updates install without a confirmation.
 - **System updates.** Kiosk Satellite shows new releases of the image and installs them, also from Home Assistant. See [System Updates](#system-updates).
 - **More free memory.** The image leaves out the apps and services a kiosk does not use. With Kiosk Satellite on screen for an hour, about 405 MB of the Show's 1 GB stays available.
@@ -30,9 +31,11 @@ Go through the setup wizard on the screen or at `http://<show ip>:2324` in a bro
 
 ## Wake Word
 
-Pick the engine with **Wake word engine** under **Voice Satellite > Wake Word**, with the **VS Wake word engine** select in Home Assistant or in the setup wizard. The Show offers vsWakeWord, microWakeWord, openWakeWord and **Amazon**.
+Pick the engine with **Wake word engine** under **Voice Satellite > Wake Word**, with the **VS Wake word engine** select in Home Assistant or in the setup wizard. The Show offers vsWakeWord, microWakeWord and openWakeWord.
 
-Amazon is the engine Echo devices shipped with, running stock wake word models. It needs Kiosk Satellite 2026.10.41 or newer. With **Amazon** picked, a **Wake word language** select shows up under the engine.
+**Amazon**, the engine Echo devices shipped with, shows up only when you install Pryon's files in `/data/pryon` on image 2026.11.4 or newer. See [Amazon's wake word engine](https://github.com/jxlarrea/lineageos-echo-kiosk-satellite/blob/main/docs/echo-show-5.md#amazons-wake-word-engine) in the image guide. Kiosk Satellite reads the models the image has when it starts, so restart the Show after you install or change the files. With **Amazon** picked, a **Wake word language** select shows up under the engine. It lists the locales of the models you installed and starts on the first one in `locales.txt`.
+
+Each model also has its own stop word, so **Stop word interruption** works as it does with the other engines. Saying "stop" ends a ringing timer or a reply.
 
 ## Volume
 

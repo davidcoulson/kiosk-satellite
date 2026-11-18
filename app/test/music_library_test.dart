@@ -5,6 +5,7 @@ import 'package:kiosk_satellite/app_container.dart';
 import 'package:kiosk_satellite/managers/music_library/ha_library_source.dart';
 import 'package:kiosk_satellite/managers/music_library/library_model.dart';
 import 'package:kiosk_satellite/managers/music_library/ma_library_source.dart';
+import 'package:kiosk_satellite/managers/music_library/music_library_manager.dart';
 import 'package:kiosk_satellite/managers/music_library/music_requests.dart';
 import 'package:kiosk_satellite/managers/music_library/sonos_library_source.dart';
 import 'package:kiosk_satellite/managers/sendspin/music_assistant_api.dart';
@@ -282,6 +283,142 @@ void main() {
       expect(tracks.tracks.single.title, 'Four');
     });
 
+    Map<String, Object?> album(
+      String provider,
+      String id,
+      String name, {
+      List<Map<String, Object?>> mappings = const [],
+    }) => {
+      'media_type': 'album',
+      'item_id': id,
+      'provider': provider,
+      'uri': '$provider://album/$id',
+      'name': name,
+      'version': '',
+      'provider_mappings': mappings,
+    };
+
+    test(
+      'an artist in the library lists its saved albums, then the rest of its providers',
+      () async {
+        final ma = _FakeMa()
+          ..answers['music/artists/artist_tracks'] = <Object>[]
+          ..answers['music/artists/artist_albums'] = (args) => switch (args) {
+            {'provider_instance_id_or_domain': 'library'} => [
+              album(
+                'library',
+                '3',
+                'Glass Harbor',
+                mappings: [
+                  {'provider_instance': 'spotify--x', 'item_id': 'sp3'},
+                ],
+              ),
+            ],
+            {'provider_instance_id_or_domain': 'spotify--x'} => [
+              album('spotify--x', 'sp3', 'Glass Harbor (Deluxe)'),
+              album('spotify--x', 'sp4', 'Tidelines'),
+              album('spotify--x', 'sp5', 'glass harbor'),
+            ],
+            _ => throw StateError('unexpected $args'),
+          };
+        final item = LibraryItem(
+          id: 'library://artist/1',
+          kind: LibraryKind.artist,
+          title: 'Juniper Lane',
+          raw: {
+            'media_type': 'artist',
+            'item_id': '1',
+            'provider': 'library',
+            'provider_mappings': [
+              {'provider_instance': 'spotify--x', 'item_id': 'spa'},
+              {
+                'provider_instance': 'tidal--y',
+                'item_id': 'ta',
+                'available': false,
+              },
+            ],
+          },
+        );
+        final detail = await source(ma).open(item);
+        // The Spotify copy of the saved album and the same name again are
+        // left out.
+        expect(detail.shelves.single.items.map((a) => a.title), [
+          'Glass Harbor',
+          'Tidelines',
+        ]);
+        final asked = [
+          for (final (command, args) in ma.calls)
+            if (command == 'music/artists/artist_albums') args,
+        ];
+        expect(asked.last, {
+          'item_id': 'spa',
+          'provider_instance_id_or_domain': 'spotify--x',
+        });
+        expect(asked, hasLength(2));
+      },
+    );
+
+    test(
+      'an artist in the library keeps its saved albums when a provider fails',
+      () async {
+        final ma = _FakeMa()
+          ..answers['music/artists/artist_tracks'] = <Object>[]
+          ..answers['music/artists/get'] = {
+            'provider_mappings': [
+              {'provider_instance': 'spotify--x', 'item_id': 'spa'},
+            ],
+          }
+          ..answers['music/artists/artist_albums'] = (args) => switch (args) {
+            {'provider_instance_id_or_domain': 'library'} => [
+              album('library', '3', 'Glass Harbor'),
+            ],
+            _ => throw StateError('provider down'),
+          };
+        // A shelf's artist carries no mappings, so they are read first.
+        final item = LibraryItem(
+          id: 'library://artist/1',
+          kind: LibraryKind.artist,
+          title: 'Juniper Lane',
+          raw: {'media_type': 'artist', 'item_id': '1', 'provider': 'library'},
+        );
+        final detail = await source(ma).open(item);
+        expect(detail.shelves.single.items.map((a) => a.title), [
+          'Glass Harbor',
+        ]);
+        expect(ma.calls.map((c) => c.$1), contains('music/artists/get'));
+      },
+    );
+
+    test(
+      'an artist from a provider lists only that provider\'s albums',
+      () async {
+        final ma = _FakeMa()
+          ..answers['music/artists/artist_tracks'] = <Object>[]
+          ..answers['music/artists/artist_albums'] = [
+            album('spotify--x', 'sp4', 'Tidelines'),
+          ];
+        final item = LibraryItem(
+          id: 'spotify--x://artist/spa',
+          kind: LibraryKind.artist,
+          title: 'Juniper Lane',
+          raw: {
+            'media_type': 'artist',
+            'item_id': 'spa',
+            'provider': 'spotify--x',
+            'provider_mappings': [
+              {'provider_instance': 'spotify--x', 'item_id': 'spa'},
+            ],
+          },
+        );
+        final detail = await source(ma).open(item);
+        expect(detail.shelves.single.items.single.title, 'Tidelines');
+        expect(
+          ma.calls.where((c) => c.$1 == 'music/artists/artist_albums'),
+          hasLength(1),
+        );
+      },
+    );
+
     test('the Browse root shows each provider with its logo', () async {
       final ma = _FakeMa()
         ..answers['music/browse'] = [
@@ -356,6 +493,73 @@ void main() {
         [for (final (_, args) in ma.calls) args['album_artists_only']],
         [null, null, null, true, null],
       );
+    });
+
+    test('Genres lists under Tracks, the genres with music', () async {
+      final ma = _FakeMa()
+        ..answers['music/genres/library_items'] = [genre('15', 'Dance')]
+        ..answers['music/tracks/library_items'] = <Object>[];
+      final s = source(ma);
+      expect(
+        [for (final c in await s.availableCategories()) c.key],
+        [
+          'artists',
+          'albums',
+          'tracks',
+          'genres',
+          'playlists',
+          'radios',
+          'podcasts',
+          'audiobooks',
+        ],
+      );
+      final page = await s.list(
+        const LibraryCategory('genres', LibraryKind.genre),
+        offset: 60,
+        sort: LibrarySort.nameDesc,
+      );
+      expect(page.items.single.title, 'Dance');
+      expect(page.items.single.kind, LibraryKind.genre);
+      expect(ma.calls.last.$2, {
+        'limit': 60,
+        'offset': 60,
+        'order_by': 'sort_name_desc',
+        'hide_empty': true,
+      });
+      await s.list(const LibraryCategory('tracks', LibraryKind.track));
+      expect(ma.calls.last.$2.containsKey('hide_empty'), isFalse);
+      // The picker keeps to the lists it can open.
+      expect(
+        MusicLibraryManager.pickerCategories(
+          s.categories,
+        ).any((c) => c.kind == LibraryKind.genre),
+        isFalse,
+      );
+    });
+
+    test('Genres stays out of a library that has none', () async {
+      final ma = _FakeMa()..answers['music/genres/library_items'] = <Object>[];
+      final keys = [
+        for (final c in await source(ma).availableCategories()) c.key,
+      ];
+      expect(keys, isNot(contains('genres')));
+      expect(keys, containsAll(['tracks', 'playlists']));
+    });
+
+    test('Genres stays out until the server answers for it', () async {
+      // A server from before genres, or one that is not connected yet.
+      final ma = _FakeMa();
+      final s = source(ma);
+      expect([
+        for (final c in await s.availableCategories()) c.key,
+      ], isNot(contains('genres')));
+      ma.answers['music/genres/library_items'] = [genre('15', 'Dance')];
+      expect([
+        for (final c in await s.availableCategories()) c.key,
+      ], contains('genres'));
+      // Asked once more, then remembered.
+      await s.availableCategories();
+      expect(ma.calls, hasLength(2));
     });
 
     test('a track tapped in a playlist plays the playlist from it', () async {
@@ -914,6 +1118,60 @@ void main() {
 
     for (final (name, size) in [
       ('a tablet', const Size(1280, 800)),
+      ('an Echo Show 5', const Size(960, 480)),
+      ('a phone', const Size(390, 844)),
+    ]) {
+      testWidgets('Genres lists the genres and opens one on $name', (
+        tester,
+      ) async {
+        final source = _GenreSource(album);
+        final c = await container(source: source);
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+        c.musicLibrary.visible.value = true;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Stack(children: [MusicLibraryOverlay(container: c)]),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        if (size.width >= 1000 && size.height >= 600) {
+          // Discover's own grid keeps its name beside the list's.
+          expect(find.text('Browse by genre'), findsOneWidget);
+        } else {
+          // The lists are chips under the Library tab.
+          await tester.tap(find.text('Library'));
+          await tester.pumpAndSettle();
+        }
+        await tester.ensureVisible(find.text('Genres').first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Genres').first);
+        await tester.pumpAndSettle();
+        expect(source.listed.last, ('genres', LibrarySort.name, false));
+        expect(find.text('Browse by genre'), findsNothing);
+        expect(find.byTooltip('Sort'), findsOneWidget);
+        expect(find.byIcon(Icons.nightlife_rounded), findsOneWidget);
+        // A hold offers to play the genre or queue it.
+        await tester.longPress(find.text('Jazz'));
+        await tester.pumpAndSettle();
+        expect(find.text('Play now'), findsOneWidget);
+        expect(find.text('Add to queue'), findsOneWidget);
+        await tester.tapAt(const Offset(4, 4));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Jazz'));
+        await tester.pumpAndSettle();
+        expect(source.opened.single.kind, LibraryKind.genre);
+        expect(tester.takeException(), isNull, reason: 'Genres on $name');
+        c.musicLibrary.visible.value = false;
+        await tester.pump();
+      });
+    }
+
+    for (final (name, size) in [
+      ('a tablet', const Size(1280, 800)),
       ('a tablet in portrait', const Size(753, 1205)),
       ('an Echo Show 5', const Size(960, 480)),
       ('a phone', const Size(390, 844)),
@@ -1320,6 +1578,53 @@ class _QueueApi extends MusicAssistantApi {
       _ => null,
     };
     return MusicAssistantResult.success(result, const {});
+  }
+}
+
+/// A library with a Genres list.
+class _GenreSource extends _FakeSource {
+  _GenreSource(super.album);
+
+  @override
+  List<LibraryCategory> get categories => const [
+    LibraryCategory('tracks', LibraryKind.track),
+    LibraryCategory('genres', LibraryKind.genre),
+  ];
+
+  final opened = <LibraryItem>[];
+
+  @override
+  Future<LibraryPage> list(
+    LibraryCategory category, {
+    int offset = 0,
+    bool favorites = false,
+    LibrarySort? sort,
+    bool albumArtists = false,
+  }) async {
+    listed.add((category.key, sort, albumArtists));
+    if (category.key != 'genres') return LibraryPage(items: [album]);
+    return const LibraryPage(
+      items: [
+        LibraryItem(
+          id: 'library://genre/jazz',
+          kind: LibraryKind.genre,
+          title: 'Jazz',
+          expandable: true,
+        ),
+        LibraryItem(
+          id: 'library://genre/rock',
+          kind: LibraryKind.genre,
+          title: 'Rock',
+          expandable: true,
+        ),
+      ],
+    );
+  }
+
+  @override
+  Future<LibraryDetail> open(LibraryItem item) {
+    opened.add(item);
+    return super.open(item);
   }
 }
 

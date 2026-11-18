@@ -102,9 +102,7 @@ PluginReading? _dataSize(num state, String unit) {
     value /= 1024;
     step++;
   }
-  final text = step == 0
-      ? value.round().toString()
-      : value.toStringAsFixed(1);
+  final text = step == 0 ? value.round().toString() : value.toStringAsFixed(1);
   return (value: negative ? '-$text' : text, unit: '${steps[step]}$per');
 }
 
@@ -165,7 +163,9 @@ class _ReadingRow extends StatelessWidget {
         : rawValue;
     // The unit comes from the formatter, not the reading: a rescaled figure
     // carries the unit it was rescaled into, and the two must not drift.
-    final unit = reading['type'] == 'sensor' && reading['state'] != null
+    final unit =
+        const ['sensor', 'number'].contains(reading['type']) &&
+            reading['state'] != null
         ? formatted.unit
         : '';
     final multiline = value.contains('\n');

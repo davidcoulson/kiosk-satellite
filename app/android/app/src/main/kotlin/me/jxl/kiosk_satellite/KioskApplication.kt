@@ -50,6 +50,13 @@ class KioskApplication : Application(), CameraXConfig.Provider {
     override fun getCameraXConfig(): CameraXConfig =
         CameraXConfig.Builder.fromConfig(Camera2Config.defaultConfig())
             .setAvailableCamerasLimiter(readableCamerasSelector())
+            .apply {
+                // A HAL1 camera leaks two threads on every failed open, so
+                // CameraX's own reopen retries are kept short there.
+                if (LegacyCameraShim.marked(this@KioskApplication)) {
+                    setCameraOpenRetryMaxTimeoutInMillisWhileResuming(LegacyCameraShim.RETRY_CAP_MS)
+                }
+            }
             .build()
 
     private lateinit var micRecorder: MicRecorder
@@ -170,6 +177,7 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         bluetoothProxy = BluetoothProxyBridge(applicationContext, messenger)
         TlsBridge(applicationContext, messenger)
         fleet = FleetBridge(applicationContext, messenger)
+        GroundControlBridge(applicationContext, messenger)
         intercomAudio = IntercomAudio(applicationContext, messenger)
         intercomVideo = IntercomVideo(messenger, engine.renderer)
         realtimeAudio = RealtimeAudio(applicationContext, messenger)
@@ -195,6 +203,9 @@ class KioskApplication : Application(), CameraXConfig.Provider {
         AccessibilityKeeper.install(applicationContext)
         // Other apps' playback (now playing); idle without notification access.
         MediaSessions.attach(applicationContext, messenger)
+        // A process Android started with no Activity, on a kiosk that was
+        // on screen when its last process ended, gets its screen back.
+        if (!headless) CrashSelfHeal.watchStart(this)
         // Headless, no Activity ever arms the keep-alive service, so the
         // process does it as it starts, however it was started.
         if (headless) KioskSatelliteService.ensureRunning(this)

@@ -1,6 +1,8 @@
-# Echo Dot
+# Echo Dot (2nd gen)
 
 This setup has been verified on a 2nd generation Echo Dot (`biscuit`) running the [Kiosk Satellite Edition of LineageOS for the Echo Dot](https://github.com/jxlarrea/lineageos-echo-kiosk-satellite/blob/main/docs/echo-dot.md), a LineageOS 18.1 (Android 11) image tuned for Kiosk Satellite. The Dot has no screen, so Kiosk Satellite runs headless on it: a voice satellite, intercom, alarm clock, timer and speaker for Home Assistant, set up and managed entirely from the remote admin.
+
+The [Echo Dot (3rd gen)](echo-dot-3rd-gen.md) from 2018 has its own image and guide.
 
 ## Headless Mode
 
@@ -37,26 +39,32 @@ On the CM14.1 image the Action button goes through an accessibility service inst
 
 ## Wake Word
 
-Pick the engine with **Wake word engine** under **Voice Satellite > Wake Word**, with the **VS Wake word engine** select in Home Assistant or in the setup wizard. The Dot offers four:
+Pick the engine with **Wake word engine** under **Voice Satellite > Wake Word**, with the **VS Wake word engine** select in Home Assistant or in the setup wizard. The Dot offers these:
 
 | Engine | What it is |
 |---|---|
 | vsWakeWord | The default. Its models ship with the app. |
 | microWakeWord | The engine of Home Assistant's voice hardware. Its models ship with the app, and it also offers the custom models Home Assistant has. |
 | openWakeWord | Its models ship with the app. |
-| Amazon | The engine the Dot shipped with, running the stock wake word models. On the CM14.1 image it needs 2026.10.3 or newer. The [Echo Show 5](echo-show-5.md#wake-word) and [Echo Show 8](echo-show-8.md#wake-word) images offer it too. Other devices do not. |
+| Amazon | The engine the Dot shipped with. It shows up only when you install Pryon's files in `/data/pryon` on image 2026.11.3 or newer. See [Amazon's wake word engine](https://github.com/jxlarrea/lineageos-echo-kiosk-satellite/blob/main/docs/echo-dot.md#amazons-wake-word-engine) in the image guide. The [Echo Dot (3rd gen)](echo-dot-3rd-gen.md#wake-word), [Echo Show 5 (1st gen)](echo-show-5-1st-gen.md#wake-word), [Echo Show 5 (2nd gen)](echo-show-5.md#wake-word), [Echo Show 8 (1st gen)](echo-show-8.md#wake-word) and [Echo Show 8 (2nd gen)](echo-show-8-2nd-gen.md#wake-word) images offer it too. |
 
-The first three also take your own models. See [Custom wake word models](custom-wake-words.md).
+vsWakeWord, microWakeWord and openWakeWord also take your own models. See [Custom wake word models](custom-wake-words.md).
 
 ### Amazon
 
-The image runs the Dot's engine on the Dot itself. With **Amazon** picked, a **Wake word language** select shows up under the engine. It follows Kiosk Satellite's language by default and falls back to English (United States) if the image has no models for it.
+Kiosk Satellite reads the models the image has when it starts, so restart the Dot after you install or change the files in `/data/pryon`. If the engine does not show up, the app log lists the files the image could not read and the models it skipped.
 
-Each model also has its own stop word, so **Stop word interruption** works as it does with the other engines. Saying "stop" ends a ringing timer or a reply. **Wake word sensitivity** applies too.
+With **Amazon** picked, a **Wake word language** select shows up under the engine. It lists the locales of the models you installed and starts on the first one in `locales.txt`. If you remove the files of the picked locale, the first one is used. **Wake word sensitivity** applies too.
+
+Each model also has its own stop word, so **Stop word interruption** works as it does with the other engines. Saying "stop" ends a ringing timer or a reply.
 
 ## Volume
 
-The image removes the speaker's sound from the Dot's microphones while music plays, so the wake word works at any media volume, up to 100%. Keep the **Master volume** on the **Audio** page at 100%, which leaves the assistant, alarms and intercom at full strength, and set the media volume as you like.
+Keep the **Master volume** on the **Audio** page at 100%, the assistant and intercom volumes at 100% and the media volume at 85%. A fresh install starts at these levels and a Dot that updates moves to them once, together with the equalizer preset below. The image removes the speaker's sound from the Dot's microphones while music plays, so the wake word works at any media volume, up to 100%.
+
+## Equalizer
+
+The Dot's small speaker is weak from 300 to 500 Hz and loud around 3 kHz, which sounds thin. Kiosk Satellite turns the [Equalizer](equalizer.md) on for the Dot with a preset that corrects it: 100 Hz at +1 dB, 300 Hz at +2 dB, 1 kHz at -3 dB, 3 kHz at -7 dB and 10 kHz at -1 dB, with **Automatic preamp** off so the Dot keeps its volume. The preset and the volumes above are set once, on a fresh install or on the first start of a version that has them. Change the bands, the volumes or turn the equalizer off under **Audio > Equalizer** in the remote admin and your setting stays.
 
 ## The Buttons
 

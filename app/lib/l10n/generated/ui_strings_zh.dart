@@ -196,6 +196,11 @@ class UiStringsZh extends UiStrings {
   }
 
   @override
+  String alarmsSkipAlarm(String time) {
+    return '跳过 $time 的闹钟';
+  }
+
+  @override
   String get alarmsNextWidget => '下一个闹钟';
 
   @override
@@ -2140,6 +2145,9 @@ class UiStringsZh extends UiStrings {
   String get gestureOpenAlarmList => '打开闹钟列表';
 
   @override
+  String get gestureOpenTimers => '打开计时器';
+
+  @override
   String get gestureOpenNextAlarm => '打开下一个闹钟';
 
   @override
@@ -3126,6 +3134,9 @@ class UiStringsZh extends UiStrings {
   String get libraryTracks => '曲目';
 
   @override
+  String get libraryGenres => '流派';
+
+  @override
   String get libraryPlaylists => '播放列表';
 
   @override
@@ -3743,6 +3754,12 @@ class UiStringsZh extends UiStrings {
   String get pluginThisChoiceIsNoLongerListed => '此选项已不在列表中。';
 
   @override
+  String get pluginDashboardLink => '仪表盘链接';
+
+  @override
+  String get pluginDashboardLinkHint => '将仪表盘按钮的点击动作指向此链接。';
+
+  @override
   String get pluginPlugin => '插件';
 
   @override
@@ -3850,6 +3867,9 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get pluginDragToReorder => '拖动排序';
+
+  @override
+  String get pluginDuplicate => '创建副本';
 
   @override
   String get pluginDone => '完成';
@@ -4007,6 +4027,9 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get pluginNotListedChip => '未收录于社区插件';
+
+  @override
+  String get pluginReleaseNotes => '更新说明';
 
   @override
   String get pluginCharts => '图表';
@@ -5033,6 +5056,13 @@ class UiStringsZh extends UiStrings {
   String get settingAlarmsSunriseMinutesDescription => '模拟日出闹钟响铃前，屏幕逐渐变亮所需的时长。';
 
   @override
+  String get settingAlarmsSkipMinutesTitle => '“跳过”按钮';
+
+  @override
+  String get settingAlarmsSkipMinutesDescription =>
+      '闹钟响铃前多久，在时钟和天气氛围屏保上显示“跳过”按钮。';
+
+  @override
   String get alarmsOption5Minutes => '5 分钟';
 
   @override
@@ -5049,6 +5079,12 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get alarmsOption30Minutes => '30 分钟';
+
+  @override
+  String get alarmsOption60Minutes => '60 分钟';
+
+  @override
+  String get alarmsOptionOff => '关闭';
 
   @override
   String get settingsMenuAlarms => '闹钟';
@@ -5182,7 +5218,8 @@ class UiStringsZh extends UiStrings {
   String get settingCalendarIdleCloseMinutesTitle => '闲置时关闭';
 
   @override
-  String get settingCalendarIdleCloseMinutesDescription => '在这段时间内无触摸后返回仪表盘。';
+  String get settingIdleCloseCompassDescription =>
+      '在这段时间内无触摸后返回仪表盘。在 Compass 布局中改用“返回中心”。';
 
   @override
   String get settingKioskAllowCalendarTitle => '日历';
@@ -5869,8 +5906,8 @@ class UiStringsZh extends UiStrings {
   String get settingCameraAutoDismissSecondsTitle => '摄像头画面自动关闭时间';
 
   @override
-  String get settingCameraAutoDismissSecondsDescription =>
-      '在设定时间后自动关闭已打开的摄像头画面。设为 0 时一直显示，不影响摄像头屏保。';
+  String get settingCameraAutoDismissCompassDescription =>
+      '在设定时间后关闭已打开的摄像头画面。设为 0 时一直显示。不影响摄像头屏保。在 Compass 布局中改用“返回中心”。';
 
   @override
   String get cameraStreamsPlayback => '播放';
@@ -6008,6 +6045,22 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get cameraStreamsLoadFailed => '无法加载摄像头。';
+
+  @override
+  String get cameraStreamsDeleteUnused => '删除未使用的摄像头';
+
+  @override
+  String get cameraStreamsDeleteUnusedConfirm => '要删除未使用的摄像头吗？';
+
+  @override
+  String cameraStreamsOneUnusedCamera(String count) {
+    return '$count 个摄像头不在任何画面中。';
+  }
+
+  @override
+  String cameraStreamsManyUnusedCameras(String count) {
+    return '$count 个摄像头不在任何画面中。';
+  }
 
   @override
   String get cameraStreamsViews => '画面';
@@ -7765,6 +7818,13 @@ class UiStringsZh extends UiStrings {
       '若屏幕关闭后代理停止转发，请开启此项。会增加 CPU 使用率。';
 
   @override
+  String get settingBtproxyDeviceMacTitle => '蓝牙使用设备 MAC 地址';
+
+  @override
+  String get settingBtproxyDeviceMacDescription =>
+      '让 Bermuda 等集成能将此代理与其设备关联。会更改代理在 Home Assistant 中的地址。';
+
+  @override
   String get settingBtproxyConnectionsTitle => '允许连接设备';
 
   @override
@@ -8258,6 +8318,26 @@ class UiStringsZh extends UiStrings {
       'A mapped key runs its action whatever app is in front, and does nothing else.';
 
   @override
+  String get settingGroundControlEnabledTitle => '启用 Ground Control';
+
+  @override
+  String get settingGroundControlEnabledDescription =>
+      '连接到 Kiosk Satellite Ground Control，它在高性能设备上运行 Voice Match。';
+
+  @override
+  String get settingGroundControlAddressTitle => '地址';
+
+  @override
+  String get settingGroundControlAddressDescription =>
+      '留空以在网络中查找 Ground Control。如果 Ground Control 在其他网络中，请输入地址。';
+
+  @override
+  String get groundControlLooking => '正在网络中查找 Ground Control。';
+
+  @override
+  String get groundControlApp => 'Ground Control 应用';
+
+  @override
   String get haCustomPages => '自定义网页';
 
   @override
@@ -8478,6 +8558,9 @@ class UiStringsZh extends UiStrings {
   String haReturnPath(String path) {
     return '超时后返回“$path”。';
   }
+
+  @override
+  String get haReturnCompass => '使用 Compass 导航时，布局中的每个仪表盘视图在超时后返回为它选择的视图。';
 
   @override
   String get settingHaRotationEnabledTitle => '启用仪表盘页面轮播';
@@ -8823,7 +8906,13 @@ class UiStringsZh extends UiStrings {
   String get settingIntercomRingSoundTitle => '来电铃声';
 
   @override
-  String get settingIntercomRingSoundDescription => '以通知音量播放。';
+  String get settingIntercomRingSoundVolumeDescription => '以铃声音量播放。';
+
+  @override
+  String get settingIntercomRingVolumeTitle => '铃声音量';
+
+  @override
+  String get settingIntercomRingVolumeDescription => '来电响铃的音量，独立于媒体音量。';
 
   @override
   String get settingIntercomAcceptAnnouncementsTitle => '接收广播';
@@ -9071,8 +9160,8 @@ class UiStringsZh extends UiStrings {
   String get settingKioskAllowDrawerTitle => '允许带快捷操作的菜单';
 
   @override
-  String get settingKioskAllowDrawerDescription =>
-      '从边缘滑动即可打开菜单，无需退出手势或 PIN 码，仅提供下方选定的操作。';
+  String get settingKioskAllowQuickControlsDescription =>
+      '无需退出手势或 PIN 码即可显示菜单，仅提供下方选定的操作。在经典导航中，从边缘滑动即可打开菜单；在 Compass 中，它就是“快捷控制”视图。';
 
   @override
   String get settingKioskAllowDashboardTitle => '仪表盘';
@@ -9467,6 +9556,13 @@ class UiStringsZh extends UiStrings {
   @override
   String get settingLockdownEnabledDescription =>
       '禁用屏幕交互，直到通过 Home Assistant 或退出手势关闭。';
+
+  @override
+  String get settingLockdownAutoUnlockMinutesTitle => '自动解锁时间';
+
+  @override
+  String get settingLockdownAutoUnlockMinutesDescription =>
+      '从 Kiosk 菜单启动锁定模式时，在此时长后关闭锁定模式。设为 0 则保持锁定。';
 
   @override
   String get settingLockdownBlackoutTitle => '黑屏';
@@ -10358,6 +10454,202 @@ class UiStringsZh extends UiStrings {
   String get settingsLedEffects => '效果';
 
   @override
+  String get settingsGroupKioskSatellite => 'Kiosk Satellite';
+
+  @override
+  String get settingsMenuNavigation => '导航';
+
+  @override
+  String get settingsMenuNavigationSummary => '经典或 Compass';
+
+  @override
+  String get navigationStyleSection => '导航方式';
+
+  @override
+  String get navigationLayoutSection => 'Compass 布局';
+
+  @override
+  String get navigationOptionsSection => 'Compass 选项';
+
+  @override
+  String get settingNavStyleTitle => '导航方式';
+
+  @override
+  String get settingNavStyleDescription =>
+      '经典保留抽屉菜单、下拉刷新和仪表盘滑动切换。Compass 将视图排成十字形，滑动即可切换。';
+
+  @override
+  String get settingNavCompassLayoutTitle => 'Compass 布局';
+
+  @override
+  String get settingNavCompassLayoutViewsDescription =>
+      '每侧最多两个视图。可以添加多个 Home Assistant 仪表盘视图，其他每种类型只能放一个。';
+
+  @override
+  String get settingNavCompassAnimationTitle => '滑动动画';
+
+  @override
+  String get settingNavCompassAnimationDescription => '缩小以显示周围的视图，或直接平移。';
+
+  @override
+  String get settingNavCompassPositionTitle => '滑动时显示位置';
+
+  @override
+  String get settingNavCompassPositionDescription => '一张显示当前位置的小地图。';
+
+  @override
+  String get settingNavCompassReturnMinutesTitle => '返回中心';
+
+  @override
+  String get settingNavCompassReturnMinutesDescription =>
+      '无触摸达到此时长后返回中心视图。设为 0 则停留在当前视图。';
+
+  @override
+  String get settingNavCompassMenuItemsTitle => '菜单项';
+
+  @override
+  String get settingNavQuickControlsItemsDescription => '快捷控制视图显示的内容。与抽屉菜单共用。';
+
+  @override
+  String get navigationClassic => '经典';
+
+  @override
+  String get navigationCompass => 'Compass';
+
+  @override
+  String get navigationZoom => '缩放';
+
+  @override
+  String get navigationSlide => '平移';
+
+  @override
+  String get compassClassicViewHint => '带抽屉菜单的 Home Assistant 页面。';
+
+  @override
+  String get compassCompassHint => '在排成十字形的视图之间滑动切换。';
+
+  @override
+  String get compassLayoutViewsHint =>
+      '每侧最多两个视图。可以添加多个 Home Assistant 仪表盘视图，其他每种类型只能放一个。点按视图即可更改，中心视图也可以。';
+
+  @override
+  String get compassOffNote => '启用 Compass 时，下拉刷新、仪表盘滑动切换以及从边缘滑动打开抽屉菜单的手势均会关闭。';
+
+  @override
+  String get settingOffUnderCompass => '启用 Compass 导航时关闭。';
+
+  @override
+  String get compassQuickControlsView => '快捷控制';
+
+  @override
+  String get compassHomeDashboard => 'Home Assistant';
+
+  @override
+  String get compassAppLauncher => '应用启动器';
+
+  @override
+  String get compassCenter => '中心';
+
+  @override
+  String get compassAddTile => '添加';
+
+  @override
+  String get compassAddView => '添加视图';
+
+  @override
+  String get compassMoveIn => '移近';
+
+  @override
+  String get compassMoveOut => '移远';
+
+  @override
+  String get compassReplace => '替换';
+
+  @override
+  String get compassRemove => '移除';
+
+  @override
+  String get compassChange => '更改';
+
+  @override
+  String get compassSideUp => '上';
+
+  @override
+  String get compassSideRight => '右';
+
+  @override
+  String get compassSideDown => '下';
+
+  @override
+  String get compassSideLeft => '左';
+
+  @override
+  String compassFirstView(String side) {
+    return '$side，第一个视图';
+  }
+
+  @override
+  String compassSecondView(String side) {
+    return '$side，第二个视图';
+  }
+
+  @override
+  String get compassAddAbove => '在上方添加视图';
+
+  @override
+  String get compassAddBelow => '在下方添加视图';
+
+  @override
+  String get compassAddLeft => '在左侧添加视图';
+
+  @override
+  String get compassAddRight => '在右侧添加视图';
+
+  @override
+  String get compassChangeCenter => '更改中心视图';
+
+  @override
+  String compassReplaceTitle(String name) {
+    return '替换$name';
+  }
+
+  @override
+  String get compassKindDashboard => 'Home Assistant 仪表盘';
+
+  @override
+  String get compassKindDashboardHint => '任意视图、自定义网页和应用页面';
+
+  @override
+  String get compassKindTaken => '已放置';
+
+  @override
+  String get compassKindUnavailable => '此 Kiosk 上未设置';
+
+  @override
+  String get compassKioskLocked => 'Kiosk 已锁定';
+
+  @override
+  String get compassQuickControls => '快捷控制';
+
+  @override
+  String get compassOpen => '打开';
+
+  @override
+  String get compassStateOn => '开';
+
+  @override
+  String get compassStateOff => '关';
+
+  @override
+  String get compassHoldMode => '页面保持模式';
+
+  @override
+  String get settingsMenuGroundControl => 'Ground Control';
+
+  @override
+  String get settingsMenuGroundControlSummary => '在高性能设备上运行 Voice Match';
+
+  @override
   String get settingAdaptiveBrightnessTitle => '自适应亮度';
 
   @override
@@ -10467,6 +10759,110 @@ class UiStringsZh extends UiStrings {
   }
 
   @override
+  String get settingAdaptiveVolumeTitle => '启用自适应音量';
+
+  @override
+  String get settingAdaptiveVolumeDescription => '房间变安静时，通过麦克风自动降低音量。';
+
+  @override
+  String get settingAdaptiveVolumeAssistantTitle => '助手';
+
+  @override
+  String get settingAdaptiveVolumeAssistantDescription => '语音回复和提示音。';
+
+  @override
+  String get settingAdaptiveVolumeMediaTitle => '媒体';
+
+  @override
+  String get settingAdaptiveVolumeMediaDescription => '音乐和视频。在开始播放时设定。';
+
+  @override
+  String get settingAdaptiveVolumeIntercomTitle => '对讲';
+
+  @override
+  String get settingAdaptiveVolumeIntercomDescription => '通话。在通话开始时设定。';
+
+  @override
+  String get settingAdaptiveVolumeCurveTitle => '音量曲线';
+
+  @override
+  String get settingAdaptiveVolumeCurveSliderDescription =>
+      '各房间噪声水平对应的音量，以“屏幕与音频”中该音量滑块的百分比表示。';
+
+  @override
+  String get screenAudioAdaptiveVolume => '自适应音量';
+
+  @override
+  String get screenAudioAdaptiveVolumeHint => '通过麦克风根据房间噪声自动调整音量';
+
+  @override
+  String get screenAudioAdaptiveVolumes => '音量';
+
+  @override
+  String get screenAudioRoomNoise => '房间噪声';
+
+  @override
+  String get screenAudioRoomNoiseNote => '本设备未播放声音时麦克风测得的读数。';
+
+  @override
+  String get screenAudioRoomNoiseHolds => '本设备播放声音时读数保持不变。播放期间房间的变化不会被采用。';
+
+  @override
+  String get screenAudioRoomNoiseNoReading =>
+      '如果没有读数，请开启自适应音量或唤醒词检测，并确认麦克风未静音。';
+
+  @override
+  String screenAudioDbfs(String level) {
+    return '$level dBFS';
+  }
+
+  @override
+  String get screenAudioVolumeCurveSliderHint =>
+      '拖动曲线上的点可调整，也可点击点输入数值。百分比作用于“屏幕与音频”中的助手音量、媒体音量和对讲音量滑块：100% 表示按滑块的音量播放，50% 相当于滑块调到一半。';
+
+  @override
+  String get screenAudioVolumeCurveNoise => '房间噪声（dBFS）';
+
+  @override
+  String get screenAudioVolumeCurveAssistant => '助手（%）';
+
+  @override
+  String get screenAudioVolumeCurveMedia => '媒体（%）';
+
+  @override
+  String get screenAudioVolumeCurveIntercom => '对讲（%）';
+
+  @override
+  String screenAudioVolumeCurveNoiseRange(String low, String high) {
+    return '请输入 $low 至 $high dBFS 之间的噪声水平';
+  }
+
+  @override
+  String screenAudioVolumeCurveLevelRange(String low, String high) {
+    return '请输入 $low% 至 $high% 之间的音量';
+  }
+
+  @override
+  String get screenAudioVolumeTest => '测试音量';
+
+  @override
+  String get screenAudioVolumeTestAssistant => '测试助手音量';
+
+  @override
+  String get screenAudioVolumeTestAssistantHint =>
+      '以助手音量播放一条 Voice Satellite 播报。需要先在 Home Assistant 中设置 Voice Satellite。';
+
+  @override
+  String get screenAudioVolumeTestMedia => '测试媒体音量';
+
+  @override
+  String get screenAudioVolumeTestMediaHint =>
+      '以媒体音量播放一条 ESPHome 播报。需要先在 ESPHome 下开启播报。';
+
+  @override
+  String get screenAudioVolumeTestMessage => '这是现在播报的音量。';
+
+  @override
   String get settingAudioMicDeviceTitle => '麦克风';
 
   @override
@@ -10489,6 +10885,56 @@ class UiStringsZh extends UiStrings {
   String screenAudioDisconnected(String name) {
     return '$name（未连接）';
   }
+
+  @override
+  String get settingEqualizerEnabledTitle => '启用均衡器';
+
+  @override
+  String get settingEqualizerEnabledDescription =>
+      '调整音乐、助手、提示音和对讲的音色。视频和仪表盘的声音不经过均衡器。';
+
+  @override
+  String get settingEqualizerBand1Title => '100 Hz';
+
+  @override
+  String get settingEqualizerBand1Description => '低音。小型扬声器在此提升时容易失真。';
+
+  @override
+  String get settingEqualizerBand2Title => '300 Hz';
+
+  @override
+  String get settingEqualizerBand2Description => '中低音。衰减可消除发闷或轰鸣的声音。';
+
+  @override
+  String get settingEqualizerBand3Title => '1 kHz';
+
+  @override
+  String get settingEqualizerBand3Description => '中音，人声的主要部分所在。';
+
+  @override
+  String get settingEqualizerBand4Title => '3 kHz';
+
+  @override
+  String get settingEqualizerBand4Description => '中高音。提升可让语音更清晰。';
+
+  @override
+  String get settingEqualizerBand5Title => '10 kHz';
+
+  @override
+  String get settingEqualizerBand5Description => '高音。';
+
+  @override
+  String get settingEqualizerPreampTitle => '自动前置增益';
+
+  @override
+  String get settingEqualizerPreampDescription =>
+      '按最大提升量降低整体电平，避免扬声器失真，并保证回声消除正常工作。';
+
+  @override
+  String get screenAudioEqualizer => '均衡器';
+
+  @override
+  String get screenAudioEqualizerHint => '低音、中音、高音、前置增益';
 
   @override
   String get settingMicCaptureModeTitle => '采集模式';
@@ -11569,6 +12015,13 @@ class UiStringsZh extends UiStrings {
   String get settingScreensaverTimeoutSecondsDescription => '无操作多久后启动屏保。';
 
   @override
+  String get settingScreensaverFadeTitle => '淡入淡出';
+
+  @override
+  String get settingScreensaverFadeDescription =>
+      '屏保在仪表盘上淡入，关闭时淡出。不适用于 Home Assistant 媒体、网站和摄像头视频流屏保。';
+
+  @override
   String get settingScreensaverModeTitle => '屏保模式';
 
   @override
@@ -11613,6 +12066,13 @@ class UiStringsZh extends UiStrings {
   @override
   String get settingScreensaverNotificationBrightnessDescription =>
       '屏幕上显示通知时，暂时取消屏保调暗。';
+
+  @override
+  String get settingScreensaverTouchBrightnessSecondsTitle => '触摸时提高亮度';
+
+  @override
+  String get settingScreensaverTouchBrightnessSecondsDescription =>
+      '触摸屏幕但未退出屏保时，在此时长内暂时取消屏保调暗。设为 0 时关闭。';
 
   @override
   String get settingScreensaverScreenOffMinutesTitle => '屏保启动后关屏时间';
@@ -13129,6 +13589,10 @@ class UiStringsZh extends UiStrings {
       '在各读数上方显示名称。关闭后，数值大小与温度相同。';
 
   @override
+  String get screensaverWeatherBarHighLowDescription =>
+      '天气实体提供每日预报时显示今天的最高和最低气温。';
+
+  @override
   String get screensaverWeatherBarHumidityDescription => '天气实体提供湿度时显示。';
 
   @override
@@ -13656,9 +14120,6 @@ class UiStringsZh extends UiStrings {
   String get voiceChimesPage => '提示音';
 
   @override
-  String get voiceChimesHint => '唤醒、完成、错误、计时器和播报声音';
-
-  @override
   String get voiceChimesPreview => '在 Kiosk 上预览';
 
   @override
@@ -13722,6 +14183,9 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get voiceChimeVolumeDescription => '占助手音量的百分比。';
+
+  @override
+  String get voiceChimesSoundsHint => '唤醒、完成、错误和播报声音';
 
   @override
   String get settingVoiceShowCommandTitle => '显示你说的内容';
@@ -13883,9 +14347,6 @@ class UiStringsZh extends UiStrings {
   String get voiceConversationHint => '浮层显示的内容及保留时长';
 
   @override
-  String get voiceTimersHint => '浮条、提醒和语音播报';
-
-  @override
   String get voiceSectionFollowUp => '追问';
 
   @override
@@ -13905,6 +14366,9 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get voiceSectionTimerEnds => '计时器结束时';
+
+  @override
+  String get voiceSectionSharedTimers => '共享的计时器';
 
   @override
   String get voiceStatusEsphomeOff => 'ESPHome 服务器已关闭。';
@@ -14476,10 +14940,10 @@ class UiStringsZh extends UiStrings {
   String get voiceTesterPlayRecent => '播放最近 10 秒';
 
   @override
-  String get settingVoiceTimerPillsTitle => '显示计时器浮条';
+  String get settingVoiceTimerPillsViewTitle => '以浮条显示计时器';
 
   @override
-  String get settingVoiceTimerPillsDescription => '运行中的计时器悬浮在屏幕上，可拖动至任意位置。';
+  String get settingVoiceTimerPillsViewDescription => '计时器悬浮在屏幕上，而不是打开全屏视图。';
 
   @override
   String get settingVoiceTimerNameInPillTitle => '显示计时器名称';
@@ -14530,6 +14994,190 @@ class UiStringsZh extends UiStrings {
   String settingVoiceTimerNamedPhraseDescription(String name) {
     return '$name 会替换为计时器名称。';
   }
+
+  @override
+  String get settingVoiceTimersShareTitle => '共享计时器';
+
+  @override
+  String get settingVoiceTimersShareDescription =>
+      '在此 Kiosk 上启动的计时器也会在你选择的 Kiosk 设备上运行。';
+
+  @override
+  String get settingVoiceTimersShareWithTitle => '共享给';
+
+  @override
+  String get settingVoiceTimersShareWithDescription =>
+      '显示此设备的计时器并一同响铃的 Kiosk 设备。';
+
+  @override
+  String get settingVoiceTimersReceiveTitle => '显示共享的计时器';
+
+  @override
+  String get settingVoiceTimersReceiveDescription =>
+      '其他 Kiosk 设备共享的计时器会在此显示并响铃。';
+
+  @override
+  String get settingKioskAllowTimersTitle => '计时器';
+
+  @override
+  String get settingKioskAllowTimersDescription => '从 Kiosk 菜单打开计时器视图。';
+
+  @override
+  String get settingsMenuTimersSummary => '全屏视图、浮条、共享的计时器';
+
+  @override
+  String get fleetTheKiosksPickedInShareWithTheTimerSound =>
+      '在“共享给”中选择的 Kiosk 设备、计时器提示音';
+
+  @override
+  String get settingTimersTtsEngineDescription =>
+      '用于播报计时器的 Home Assistant 文本转语音实体。';
+
+  @override
+  String get settingTimersTtsLanguageDescription => '计时器播报使用的语言。';
+
+  @override
+  String get settingTimersTtsVoiceDescription => '用于播报计时器的声音。';
+
+  @override
+  String get settingTimersShowBeforeEndTitle => '计时器即将结束时显示计时器视图';
+
+  @override
+  String get settingTimersShowBeforeEndDescription => '计时器结束前多久打开计时器视图。';
+
+  @override
+  String get settingTimersShowOnStartTitle => '计时器开始时显示计时器视图';
+
+  @override
+  String get settingTimersShowOnStartDescription => '每次启动计时器时打开计时器视图。';
+
+  @override
+  String get settingTimersPauseScreensaverTitle => '计时器运行时暂停屏保';
+
+  @override
+  String get settingTimersPauseScreensaverDescription =>
+      '计时器视图显示运行中的计时器时，不启动屏保。';
+
+  @override
+  String get settingTimersSilenceAfterTitle => '自动静音时间';
+
+  @override
+  String get settingTimersSilenceAfterDescription => '已结束的计时器会一直显示，直到被关闭。';
+
+  @override
+  String get settingTimersDismissAfterTitle => '自动关闭时间';
+
+  @override
+  String get settingTimersDismissAfterDescription => '像点击“关闭”一样清除已结束的计时器。';
+
+  @override
+  String get voiceMatchGroundControlPage => 'Ground Control Voice Match';
+
+  @override
+  String get settingVoiceMatchPolicyDescriptionChosen =>
+      '选择“指定人员”时，会忽略电视、访客和其他所有人。';
+
+  @override
+  String get voiceMatchOptionPeople => '指定人员';
+
+  @override
+  String get settingVoiceMatchPeopleTitle => '人员';
+
+  @override
+  String get settingVoiceMatchPeopleDescription =>
+      '此信息亭回应的人。如果未选择任何人，则回应所有已录入的人。';
+
+  @override
+  String get voiceMatchPeopleNone => '所有已录入的人';
+
+  @override
+  String get voiceMatchPeopleSearch => '搜索人员';
+
+  @override
+  String get voiceMatchPeopleEmpty => 'Ground Control 中还没有录入任何人。';
+
+  @override
+  String get voiceMatchPeopleGone => '已不在 Ground Control 中';
+
+  @override
+  String get settingVoiceMatchRejectedTitleChosen => '未选择的声音';
+
+  @override
+  String get voiceMatchHint => '谁在说话、其他声音、声纹录入';
+
+  @override
+  String get settingVoiceMatchEnabledTitle => '启用 Voice Match';
+
+  @override
+  String get settingVoiceMatchPolicyTitle => '回应';
+
+  @override
+  String get settingVoiceMatchRejectedDescription => '其他人说出唤醒词时的处理方式。';
+
+  @override
+  String get settingVoiceMatchSpeakerSensorTitle => '说话人传感器';
+
+  @override
+  String get settingVoiceMatchSpeakerSensorDescription =>
+      '在 Home Assistant 中为此 Kiosk 添加 Speaker 传感器，用于自动化和代理指令。';
+
+  @override
+  String get voiceMatchOptionAnyone => '任何人';
+
+  @override
+  String get voiceMatchOptionQuiet => '保持安静';
+
+  @override
+  String get voiceMatchOptionChime => '播放错误提示音';
+
+  @override
+  String get voiceMatchConnecting => '正在连接';
+
+  @override
+  String get voiceMatchSearching => '正在搜索';
+
+  @override
+  String get voiceMatchNotReachable => '无法访问';
+
+  @override
+  String get voiceMatchSignInRefused => '登录被拒绝';
+
+  @override
+  String get voiceMatchNobodyEnrolled => '尚未录入任何人。';
+
+  @override
+  String get voiceMatchTokenRefused => 'Home Assistant 拒绝了此 Kiosk 的令牌。';
+
+  @override
+  String get settingVoiceMatchShowSpeakerTitle => '显示谁在说话';
+
+  @override
+  String get settingVoiceMatchShowSpeakerDescription =>
+      '在语音浮层的命令前以对应颜色显示说话人的名字。在带灯环的设备上，聆听弧会变成该颜色。';
+
+  @override
+  String get settingVoiceMatchAllowEnrollTitle => '允许在此录入';
+
+  @override
+  String get voiceMatchAppHint => '人员、声纹录入、会话和设置。';
+
+  @override
+  String get voiceMatchOpen => '打开';
+
+  @override
+  String get settingVoiceMatchEnabledDescriptionGroundControl =>
+      '识别谁在说话，并在其他人接话时停止聆听。需要 Ground Control。';
+
+  @override
+  String get settingVoiceMatchAllowEnrollDescriptionGroundControl =>
+      '允许 Ground Control 应用使用此信息亭的麦克风录制某人的声音。信息亭会显示要朗读的文字，或由灯环显示进度。';
+
+  @override
+  String get settingVoiceMatchLeaveOutTitle => '排除其他声音';
+
+  @override
+  String get settingVoiceMatchLeaveOutDescription =>
+      'Home Assistant 和实时助手只会听到说出唤醒词的人，并在此人停止说话时结束命令，即使电视开着也是如此。';
 
   @override
   String get voiceWakePage => '唤醒词';
@@ -14867,9 +15515,6 @@ class UiStringsZh extends UiStrings {
       'Amazon 唤醒词模型的语言。唤醒词选择框会提供该语言的唤醒词。';
 
   @override
-  String get voiceOptionAppLanguage => 'Kiosk Satellite 的语言';
-
-  @override
   String get settingDisableCacheTitle => '禁用缓存';
 
   @override
@@ -14889,6 +15534,28 @@ class UiStringsZh extends UiStrings {
   @override
   String get settingIgnoreSslErrorsDescription =>
       '接受不受信任或自签名证书。此项会禁用证书验证，请仅在自己的网络中使用。';
+
+  @override
+  String get settingBrowserUserAgentTitle => '自定义浏览器标识（User-Agent）';
+
+  @override
+  String get settingBrowserUserAgentDescription => '代替默认浏览器标识发送给网站。留空则使用默认值。';
+
+  @override
+  String get webGeolocationSection => 'HTML5 地理位置';
+
+  @override
+  String get settingWebGeolocationTitle => '启用地理位置访问';
+
+  @override
+  String get settingWebGeolocationDescription =>
+      '允许页面读取设备位置，例如天气雷达或地图。只有通过 HTTPS 加载的页面才能请求位置。';
+
+  @override
+  String get webGeolocationPermissionHeld => '页面可以读取设备位置。';
+
+  @override
+  String get webGeolocationPermissionMissing => '没有此权限，页面无法读取设备位置。';
 
   @override
   String get settingAutoReloadOnErrorTitle => '出错时自动重新加载';
@@ -15500,6 +16167,107 @@ class UiStringsZh extends UiStrings {
   String get intercomSoundFormats => '请选择 MP3、OGG、WAV、FLAC、M4A 或 AAC 文件。';
 
   @override
+  String voiceMatchEnrollTitle(String name) {
+    return '正在录入 $name';
+  }
+
+  @override
+  String get voiceMatchEnrollStarting => '正在准备…';
+
+  @override
+  String get voiceMatchEnrollReading => '请大声朗读';
+
+  @override
+  String voiceMatchEnrollSeconds(String seconds, String target) {
+    return '$seconds / $target 秒';
+  }
+
+  @override
+  String get voiceMatchEnrollOtherVoice => '有其他声音在说话。这部分已被排除。';
+
+  @override
+  String get voiceMatchEnrollSaving => '正在保存…';
+
+  @override
+  String get voiceMatchEnrollStop => '停止';
+
+  @override
+  String get voiceMatchEnrollTipWalk => '在房间里慢慢走动';
+
+  @override
+  String get voiceMatchEnrollTipTurn => '不时背对信息亭';
+
+  @override
+  String get voiceMatchEnrollTipTalk => '用平时下指令的语气说话';
+
+  @override
+  String voiceMatchEnrollDone(String name) {
+    return '$name 已录入';
+  }
+
+  @override
+  String voiceMatchEnrollDoneDetail(String seconds) {
+    return '已添加 $seconds 秒语音。';
+  }
+
+  @override
+  String get voiceMatchEnrollFailed => '未保存任何内容';
+
+  @override
+  String get voiceMatchEnrollTooShort => '语音太少，无法保存。请至少朗读 10 秒。';
+
+  @override
+  String get voiceMatchEnrollLost => '与 Voice Match 的连接已断开。';
+
+  @override
+  String get voiceMatchEnrollNoMic => '麦克风不可用。';
+
+  @override
+  String get voiceMatchEnrollStopped => '在录制任何内容之前已停止。';
+
+  @override
+  String get voiceMatchEnrollPassage1 => '打开厨房的灯。';
+
+  @override
+  String get voiceMatchEnrollPassage2 => '设一个十分钟的计时器。';
+
+  @override
+  String get voiceMatchEnrollPassage3 => '明天天气怎么样？';
+
+  @override
+  String get voiceMatchEnrollPassage4 => '把牛奶和鸡蛋加到购物清单里。';
+
+  @override
+  String get voiceMatchEnrollPassage5 => '在客厅放点轻音乐。';
+
+  @override
+  String get voiceMatchEnrollPassage6 => '早上很冷，所以我们待在家里做了煎饼。';
+
+  @override
+  String get voiceMatchEnrollPassage7 => '后来我们走到公园，看着狗狗们在草地上互相追逐。';
+
+  @override
+  String get voiceMatchEnrollPassage8 => '傍晚起风了，我们生起了火。';
+
+  @override
+  String get voiceMatchEnrollPassage9 => '关掉楼下所有的灯。';
+
+  @override
+  String get voiceMatchEnrollPassage10 => '东京现在几点？';
+
+  @override
+  String get voiceMatchEnrollPassage11 => '提醒我星期一给牙医打电话。';
+
+  @override
+  String get voiceMatchEnrollPassage12 => '开车去机场要多长时间？';
+
+  @override
+  String get voiceMatchEnrollPassage13 => '暂停音乐。';
+
+  @override
+  String get voiceMatchEnrollPassage14 => '晚安。';
+
+  @override
   String get voiceNoticeError => 'Voice Satellite 错误';
 
   @override
@@ -15609,6 +16377,77 @@ class UiStringsZh extends UiStrings {
 
   @override
   String get voiceTimerDismissHint => '点击关闭计时器提醒。';
+
+  @override
+  String get voiceTimersViewTitle => '计时器';
+
+  @override
+  String get voiceTimersEmpty => '没有计时器';
+
+  @override
+  String get voiceTimerPause => '暂停';
+
+  @override
+  String get voiceTimerResume => '继续';
+
+  @override
+  String get voiceTimerDismiss => '关闭';
+
+  @override
+  String get voiceTimerTimesUp => '时间到';
+
+  @override
+  String get voiceTimerPaused => '已暂停';
+
+  @override
+  String get voiceTimersShareNone => '未选择 Kiosk 设备';
+
+  @override
+  String get voiceTimersShareEmpty =>
+      '未找到其他 Kiosk 设备。请在每台设备上开启“远程管理”和“查找其他 Kiosk 设备”。';
+
+  @override
+  String get voiceTimersShareOffline => '离线';
+
+  @override
+  String get timersVoiceSection => '语音计时器';
+
+  @override
+  String get timersVoiceManage => '通过 Voice Satellite 管理计时器';
+
+  @override
+  String get timersVoiceHint => '无需蓝图（脚本模板）或大语言模型（LLM）对话代理。';
+
+  @override
+  String get voiceTimersShareSearch => '搜索 Kiosk 设备';
+
+  @override
+  String get voiceTimerSetATimer => '设置计时器';
+
+  @override
+  String get voiceTimerEditTimer => '编辑计时器';
+
+  @override
+  String get voiceTimerName => '名称';
+
+  @override
+  String get voiceTimerHours => '小时';
+
+  @override
+  String get voiceTimerMinutes => '分钟';
+
+  @override
+  String get voiceTimerSeconds => '秒';
+
+  @override
+  String get voiceTimerStartFailed => '无法启动计时器。';
+
+  @override
+  String get timersManage => '管理计时器';
+
+  @override
+  String get voiceTimerStartUnavailable =>
+      '在此 Kiosk 设备上启用 Voice Satellite 后即可在这里设置计时器。';
 }
 
 /// The translations for Chinese, as used in China (`zh_CN`).
@@ -15803,6 +16642,11 @@ class UiStringsZhCn extends UiStringsZh {
   }
 
   @override
+  String alarmsSkipAlarm(String time) {
+    return '跳过 $time 的闹钟';
+  }
+
+  @override
   String get alarmsNextWidget => '下一个闹钟';
 
   @override
@@ -17747,6 +18591,9 @@ class UiStringsZhCn extends UiStringsZh {
   String get gestureOpenAlarmList => '打开闹钟列表';
 
   @override
+  String get gestureOpenTimers => '打开计时器';
+
+  @override
   String get gestureOpenNextAlarm => '打开下一个闹钟';
 
   @override
@@ -18733,6 +19580,9 @@ class UiStringsZhCn extends UiStringsZh {
   String get libraryTracks => '曲目';
 
   @override
+  String get libraryGenres => '流派';
+
+  @override
   String get libraryPlaylists => '播放列表';
 
   @override
@@ -19350,6 +20200,12 @@ class UiStringsZhCn extends UiStringsZh {
   String get pluginThisChoiceIsNoLongerListed => '此选项已不在列表中。';
 
   @override
+  String get pluginDashboardLink => '仪表盘链接';
+
+  @override
+  String get pluginDashboardLinkHint => '将仪表盘按钮的点击动作指向此链接。';
+
+  @override
   String get pluginPlugin => '插件';
 
   @override
@@ -19457,6 +20313,9 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get pluginDragToReorder => '拖动排序';
+
+  @override
+  String get pluginDuplicate => '创建副本';
 
   @override
   String get pluginDone => '完成';
@@ -19614,6 +20473,9 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get pluginNotListedChip => '未收录于社区插件';
+
+  @override
+  String get pluginReleaseNotes => '更新说明';
 
   @override
   String get pluginCharts => '图表';
@@ -20640,6 +21502,13 @@ class UiStringsZhCn extends UiStringsZh {
   String get settingAlarmsSunriseMinutesDescription => '模拟日出闹钟响铃前，屏幕逐渐变亮所需的时长。';
 
   @override
+  String get settingAlarmsSkipMinutesTitle => '“跳过”按钮';
+
+  @override
+  String get settingAlarmsSkipMinutesDescription =>
+      '闹钟响铃前多久，在时钟和天气氛围屏保上显示“跳过”按钮。';
+
+  @override
   String get alarmsOption5Minutes => '5 分钟';
 
   @override
@@ -20656,6 +21525,12 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get alarmsOption30Minutes => '30 分钟';
+
+  @override
+  String get alarmsOption60Minutes => '60 分钟';
+
+  @override
+  String get alarmsOptionOff => '关闭';
 
   @override
   String get settingsMenuAlarms => '闹钟';
@@ -20789,7 +21664,8 @@ class UiStringsZhCn extends UiStringsZh {
   String get settingCalendarIdleCloseMinutesTitle => '闲置时关闭';
 
   @override
-  String get settingCalendarIdleCloseMinutesDescription => '在这段时间内无触摸后返回仪表盘。';
+  String get settingIdleCloseCompassDescription =>
+      '在这段时间内无触摸后返回仪表盘。在 Compass 布局中改用“返回中心”。';
 
   @override
   String get settingKioskAllowCalendarTitle => '日历';
@@ -21476,8 +22352,8 @@ class UiStringsZhCn extends UiStringsZh {
   String get settingCameraAutoDismissSecondsTitle => '摄像头画面自动关闭时间';
 
   @override
-  String get settingCameraAutoDismissSecondsDescription =>
-      '在设定时间后自动关闭已打开的摄像头画面。设为 0 时一直显示，不影响摄像头屏保。';
+  String get settingCameraAutoDismissCompassDescription =>
+      '在设定时间后关闭已打开的摄像头画面。设为 0 时一直显示。不影响摄像头屏保。在 Compass 布局中改用“返回中心”。';
 
   @override
   String get cameraStreamsPlayback => '播放';
@@ -21615,6 +22491,22 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get cameraStreamsLoadFailed => '无法加载摄像头。';
+
+  @override
+  String get cameraStreamsDeleteUnused => '删除未使用的摄像头';
+
+  @override
+  String get cameraStreamsDeleteUnusedConfirm => '要删除未使用的摄像头吗？';
+
+  @override
+  String cameraStreamsOneUnusedCamera(String count) {
+    return '$count 个摄像头不在任何画面中。';
+  }
+
+  @override
+  String cameraStreamsManyUnusedCameras(String count) {
+    return '$count 个摄像头不在任何画面中。';
+  }
 
   @override
   String get cameraStreamsViews => '画面';
@@ -23372,6 +24264,13 @@ class UiStringsZhCn extends UiStringsZh {
       '若屏幕关闭后代理停止转发，请开启此项。会增加 CPU 使用率。';
 
   @override
+  String get settingBtproxyDeviceMacTitle => '蓝牙使用设备 MAC 地址';
+
+  @override
+  String get settingBtproxyDeviceMacDescription =>
+      '让 Bermuda 等集成能将此代理与其设备关联。会更改代理在 Home Assistant 中的地址。';
+
+  @override
   String get settingBtproxyConnectionsTitle => '允许连接设备';
 
   @override
@@ -23865,6 +24764,26 @@ class UiStringsZhCn extends UiStringsZh {
       'A mapped key runs its action whatever app is in front, and does nothing else.';
 
   @override
+  String get settingGroundControlEnabledTitle => '启用 Ground Control';
+
+  @override
+  String get settingGroundControlEnabledDescription =>
+      '连接到 Kiosk Satellite Ground Control，它在高性能设备上运行 Voice Match。';
+
+  @override
+  String get settingGroundControlAddressTitle => '地址';
+
+  @override
+  String get settingGroundControlAddressDescription =>
+      '留空以在网络中查找 Ground Control。如果 Ground Control 在其他网络中，请输入地址。';
+
+  @override
+  String get groundControlLooking => '正在网络中查找 Ground Control。';
+
+  @override
+  String get groundControlApp => 'Ground Control 应用';
+
+  @override
   String get haCustomPages => '自定义网页';
 
   @override
@@ -24085,6 +25004,9 @@ class UiStringsZhCn extends UiStringsZh {
   String haReturnPath(String path) {
     return '超时后返回“$path”。';
   }
+
+  @override
+  String get haReturnCompass => '使用 Compass 导航时，布局中的每个仪表盘视图在超时后返回为它选择的视图。';
 
   @override
   String get settingHaRotationEnabledTitle => '启用仪表盘页面轮播';
@@ -24430,7 +25352,13 @@ class UiStringsZhCn extends UiStringsZh {
   String get settingIntercomRingSoundTitle => '来电铃声';
 
   @override
-  String get settingIntercomRingSoundDescription => '以通知音量播放。';
+  String get settingIntercomRingSoundVolumeDescription => '以铃声音量播放。';
+
+  @override
+  String get settingIntercomRingVolumeTitle => '铃声音量';
+
+  @override
+  String get settingIntercomRingVolumeDescription => '来电响铃的音量，独立于媒体音量。';
 
   @override
   String get settingIntercomAcceptAnnouncementsTitle => '接收广播';
@@ -24678,8 +25606,8 @@ class UiStringsZhCn extends UiStringsZh {
   String get settingKioskAllowDrawerTitle => '允许带快捷操作的菜单';
 
   @override
-  String get settingKioskAllowDrawerDescription =>
-      '从边缘滑动即可打开菜单，无需退出手势或 PIN 码，仅提供下方选定的操作。';
+  String get settingKioskAllowQuickControlsDescription =>
+      '无需退出手势或 PIN 码即可显示菜单，仅提供下方选定的操作。在经典导航中，从边缘滑动即可打开菜单；在 Compass 中，它就是“快捷控制”视图。';
 
   @override
   String get settingKioskAllowDashboardTitle => '仪表盘';
@@ -25074,6 +26002,13 @@ class UiStringsZhCn extends UiStringsZh {
   @override
   String get settingLockdownEnabledDescription =>
       '禁用屏幕交互，直到通过 Home Assistant 或退出手势关闭。';
+
+  @override
+  String get settingLockdownAutoUnlockMinutesTitle => '自动解锁时间';
+
+  @override
+  String get settingLockdownAutoUnlockMinutesDescription =>
+      '从 Kiosk 菜单启动锁定模式时，在此时长后关闭锁定模式。设为 0 则保持锁定。';
 
   @override
   String get settingLockdownBlackoutTitle => '黑屏';
@@ -25965,6 +26900,202 @@ class UiStringsZhCn extends UiStringsZh {
   String get settingsLedEffects => '效果';
 
   @override
+  String get settingsGroupKioskSatellite => 'Kiosk Satellite';
+
+  @override
+  String get settingsMenuNavigation => '导航';
+
+  @override
+  String get settingsMenuNavigationSummary => '经典或 Compass';
+
+  @override
+  String get navigationStyleSection => '导航方式';
+
+  @override
+  String get navigationLayoutSection => 'Compass 布局';
+
+  @override
+  String get navigationOptionsSection => 'Compass 选项';
+
+  @override
+  String get settingNavStyleTitle => '导航方式';
+
+  @override
+  String get settingNavStyleDescription =>
+      '经典保留抽屉菜单、下拉刷新和仪表盘滑动切换。Compass 将视图排成十字形，滑动即可切换。';
+
+  @override
+  String get settingNavCompassLayoutTitle => 'Compass 布局';
+
+  @override
+  String get settingNavCompassLayoutViewsDescription =>
+      '每侧最多两个视图。可以添加多个 Home Assistant 仪表盘视图，其他每种类型只能放一个。';
+
+  @override
+  String get settingNavCompassAnimationTitle => '滑动动画';
+
+  @override
+  String get settingNavCompassAnimationDescription => '缩小以显示周围的视图，或直接平移。';
+
+  @override
+  String get settingNavCompassPositionTitle => '滑动时显示位置';
+
+  @override
+  String get settingNavCompassPositionDescription => '一张显示当前位置的小地图。';
+
+  @override
+  String get settingNavCompassReturnMinutesTitle => '返回中心';
+
+  @override
+  String get settingNavCompassReturnMinutesDescription =>
+      '无触摸达到此时长后返回中心视图。设为 0 则停留在当前视图。';
+
+  @override
+  String get settingNavCompassMenuItemsTitle => '菜单项';
+
+  @override
+  String get settingNavQuickControlsItemsDescription => '快捷控制视图显示的内容。与抽屉菜单共用。';
+
+  @override
+  String get navigationClassic => '经典';
+
+  @override
+  String get navigationCompass => 'Compass';
+
+  @override
+  String get navigationZoom => '缩放';
+
+  @override
+  String get navigationSlide => '平移';
+
+  @override
+  String get compassClassicViewHint => '带抽屉菜单的 Home Assistant 页面。';
+
+  @override
+  String get compassCompassHint => '在排成十字形的视图之间滑动切换。';
+
+  @override
+  String get compassLayoutViewsHint =>
+      '每侧最多两个视图。可以添加多个 Home Assistant 仪表盘视图，其他每种类型只能放一个。点按视图即可更改，中心视图也可以。';
+
+  @override
+  String get compassOffNote => '启用 Compass 时，下拉刷新、仪表盘滑动切换以及从边缘滑动打开抽屉菜单的手势均会关闭。';
+
+  @override
+  String get settingOffUnderCompass => '启用 Compass 导航时关闭。';
+
+  @override
+  String get compassQuickControlsView => '快捷控制';
+
+  @override
+  String get compassHomeDashboard => 'Home Assistant';
+
+  @override
+  String get compassAppLauncher => '应用启动器';
+
+  @override
+  String get compassCenter => '中心';
+
+  @override
+  String get compassAddTile => '添加';
+
+  @override
+  String get compassAddView => '添加视图';
+
+  @override
+  String get compassMoveIn => '移近';
+
+  @override
+  String get compassMoveOut => '移远';
+
+  @override
+  String get compassReplace => '替换';
+
+  @override
+  String get compassRemove => '移除';
+
+  @override
+  String get compassChange => '更改';
+
+  @override
+  String get compassSideUp => '上';
+
+  @override
+  String get compassSideRight => '右';
+
+  @override
+  String get compassSideDown => '下';
+
+  @override
+  String get compassSideLeft => '左';
+
+  @override
+  String compassFirstView(String side) {
+    return '$side，第一个视图';
+  }
+
+  @override
+  String compassSecondView(String side) {
+    return '$side，第二个视图';
+  }
+
+  @override
+  String get compassAddAbove => '在上方添加视图';
+
+  @override
+  String get compassAddBelow => '在下方添加视图';
+
+  @override
+  String get compassAddLeft => '在左侧添加视图';
+
+  @override
+  String get compassAddRight => '在右侧添加视图';
+
+  @override
+  String get compassChangeCenter => '更改中心视图';
+
+  @override
+  String compassReplaceTitle(String name) {
+    return '替换$name';
+  }
+
+  @override
+  String get compassKindDashboard => 'Home Assistant 仪表盘';
+
+  @override
+  String get compassKindDashboardHint => '任意视图、自定义网页和应用页面';
+
+  @override
+  String get compassKindTaken => '已放置';
+
+  @override
+  String get compassKindUnavailable => '此 Kiosk 上未设置';
+
+  @override
+  String get compassKioskLocked => 'Kiosk 已锁定';
+
+  @override
+  String get compassQuickControls => '快捷控制';
+
+  @override
+  String get compassOpen => '打开';
+
+  @override
+  String get compassStateOn => '开';
+
+  @override
+  String get compassStateOff => '关';
+
+  @override
+  String get compassHoldMode => '页面保持模式';
+
+  @override
+  String get settingsMenuGroundControl => 'Ground Control';
+
+  @override
+  String get settingsMenuGroundControlSummary => '在高性能设备上运行 Voice Match';
+
+  @override
   String get settingAdaptiveBrightnessTitle => '自适应亮度';
 
   @override
@@ -26074,6 +27205,110 @@ class UiStringsZhCn extends UiStringsZh {
   }
 
   @override
+  String get settingAdaptiveVolumeTitle => '启用自适应音量';
+
+  @override
+  String get settingAdaptiveVolumeDescription => '房间变安静时，通过麦克风自动降低音量。';
+
+  @override
+  String get settingAdaptiveVolumeAssistantTitle => '助手';
+
+  @override
+  String get settingAdaptiveVolumeAssistantDescription => '语音回复和提示音。';
+
+  @override
+  String get settingAdaptiveVolumeMediaTitle => '媒体';
+
+  @override
+  String get settingAdaptiveVolumeMediaDescription => '音乐和视频。在开始播放时设定。';
+
+  @override
+  String get settingAdaptiveVolumeIntercomTitle => '对讲';
+
+  @override
+  String get settingAdaptiveVolumeIntercomDescription => '通话。在通话开始时设定。';
+
+  @override
+  String get settingAdaptiveVolumeCurveTitle => '音量曲线';
+
+  @override
+  String get settingAdaptiveVolumeCurveSliderDescription =>
+      '各房间噪声水平对应的音量，以“屏幕与音频”中该音量滑块的百分比表示。';
+
+  @override
+  String get screenAudioAdaptiveVolume => '自适应音量';
+
+  @override
+  String get screenAudioAdaptiveVolumeHint => '通过麦克风根据房间噪声自动调整音量';
+
+  @override
+  String get screenAudioAdaptiveVolumes => '音量';
+
+  @override
+  String get screenAudioRoomNoise => '房间噪声';
+
+  @override
+  String get screenAudioRoomNoiseNote => '本设备未播放声音时麦克风测得的读数。';
+
+  @override
+  String get screenAudioRoomNoiseHolds => '本设备播放声音时读数保持不变。播放期间房间的变化不会被采用。';
+
+  @override
+  String get screenAudioRoomNoiseNoReading =>
+      '如果没有读数，请开启自适应音量或唤醒词检测，并确认麦克风未静音。';
+
+  @override
+  String screenAudioDbfs(String level) {
+    return '$level dBFS';
+  }
+
+  @override
+  String get screenAudioVolumeCurveSliderHint =>
+      '拖动曲线上的点可调整，也可点击点输入数值。百分比作用于“屏幕与音频”中的助手音量、媒体音量和对讲音量滑块：100% 表示按滑块的音量播放，50% 相当于滑块调到一半。';
+
+  @override
+  String get screenAudioVolumeCurveNoise => '房间噪声（dBFS）';
+
+  @override
+  String get screenAudioVolumeCurveAssistant => '助手（%）';
+
+  @override
+  String get screenAudioVolumeCurveMedia => '媒体（%）';
+
+  @override
+  String get screenAudioVolumeCurveIntercom => '对讲（%）';
+
+  @override
+  String screenAudioVolumeCurveNoiseRange(String low, String high) {
+    return '请输入 $low 至 $high dBFS 之间的噪声水平';
+  }
+
+  @override
+  String screenAudioVolumeCurveLevelRange(String low, String high) {
+    return '请输入 $low% 至 $high% 之间的音量';
+  }
+
+  @override
+  String get screenAudioVolumeTest => '测试音量';
+
+  @override
+  String get screenAudioVolumeTestAssistant => '测试助手音量';
+
+  @override
+  String get screenAudioVolumeTestAssistantHint =>
+      '以助手音量播放一条 Voice Satellite 播报。需要先在 Home Assistant 中设置 Voice Satellite。';
+
+  @override
+  String get screenAudioVolumeTestMedia => '测试媒体音量';
+
+  @override
+  String get screenAudioVolumeTestMediaHint =>
+      '以媒体音量播放一条 ESPHome 播报。需要先在 ESPHome 下开启播报。';
+
+  @override
+  String get screenAudioVolumeTestMessage => '这是现在播报的音量。';
+
+  @override
   String get settingAudioMicDeviceTitle => '麦克风';
 
   @override
@@ -26096,6 +27331,56 @@ class UiStringsZhCn extends UiStringsZh {
   String screenAudioDisconnected(String name) {
     return '$name（未连接）';
   }
+
+  @override
+  String get settingEqualizerEnabledTitle => '启用均衡器';
+
+  @override
+  String get settingEqualizerEnabledDescription =>
+      '调整音乐、助手、提示音和对讲的音色。视频和仪表盘的声音不经过均衡器。';
+
+  @override
+  String get settingEqualizerBand1Title => '100 Hz';
+
+  @override
+  String get settingEqualizerBand1Description => '低音。小型扬声器在此提升时容易失真。';
+
+  @override
+  String get settingEqualizerBand2Title => '300 Hz';
+
+  @override
+  String get settingEqualizerBand2Description => '中低音。衰减可消除发闷或轰鸣的声音。';
+
+  @override
+  String get settingEqualizerBand3Title => '1 kHz';
+
+  @override
+  String get settingEqualizerBand3Description => '中音，人声的主要部分所在。';
+
+  @override
+  String get settingEqualizerBand4Title => '3 kHz';
+
+  @override
+  String get settingEqualizerBand4Description => '中高音。提升可让语音更清晰。';
+
+  @override
+  String get settingEqualizerBand5Title => '10 kHz';
+
+  @override
+  String get settingEqualizerBand5Description => '高音。';
+
+  @override
+  String get settingEqualizerPreampTitle => '自动前置增益';
+
+  @override
+  String get settingEqualizerPreampDescription =>
+      '按最大提升量降低整体电平，避免扬声器失真，并保证回声消除正常工作。';
+
+  @override
+  String get screenAudioEqualizer => '均衡器';
+
+  @override
+  String get screenAudioEqualizerHint => '低音、中音、高音、前置增益';
 
   @override
   String get settingMicCaptureModeTitle => '采集模式';
@@ -27176,6 +28461,13 @@ class UiStringsZhCn extends UiStringsZh {
   String get settingScreensaverTimeoutSecondsDescription => '无操作多久后启动屏保。';
 
   @override
+  String get settingScreensaverFadeTitle => '淡入淡出';
+
+  @override
+  String get settingScreensaverFadeDescription =>
+      '屏保在仪表盘上淡入，关闭时淡出。不适用于 Home Assistant 媒体、网站和摄像头视频流屏保。';
+
+  @override
   String get settingScreensaverModeTitle => '屏保模式';
 
   @override
@@ -27220,6 +28512,13 @@ class UiStringsZhCn extends UiStringsZh {
   @override
   String get settingScreensaverNotificationBrightnessDescription =>
       '屏幕上显示通知时，暂时取消屏保调暗。';
+
+  @override
+  String get settingScreensaverTouchBrightnessSecondsTitle => '触摸时提高亮度';
+
+  @override
+  String get settingScreensaverTouchBrightnessSecondsDescription =>
+      '触摸屏幕但未退出屏保时，在此时长内暂时取消屏保调暗。设为 0 时关闭。';
 
   @override
   String get settingScreensaverScreenOffMinutesTitle => '屏保启动后关屏时间';
@@ -28736,6 +30035,10 @@ class UiStringsZhCn extends UiStringsZh {
       '在各读数上方显示名称。关闭后，数值大小与温度相同。';
 
   @override
+  String get screensaverWeatherBarHighLowDescription =>
+      '天气实体提供每日预报时显示今天的最高和最低气温。';
+
+  @override
   String get screensaverWeatherBarHumidityDescription => '天气实体提供湿度时显示。';
 
   @override
@@ -29263,9 +30566,6 @@ class UiStringsZhCn extends UiStringsZh {
   String get voiceChimesPage => '提示音';
 
   @override
-  String get voiceChimesHint => '唤醒、完成、错误、计时器和播报声音';
-
-  @override
   String get voiceChimesPreview => '在 Kiosk 上预览';
 
   @override
@@ -29329,6 +30629,9 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get voiceChimeVolumeDescription => '占助手音量的百分比。';
+
+  @override
+  String get voiceChimesSoundsHint => '唤醒、完成、错误和播报声音';
 
   @override
   String get settingVoiceShowCommandTitle => '显示你说的内容';
@@ -29490,9 +30793,6 @@ class UiStringsZhCn extends UiStringsZh {
   String get voiceConversationHint => '浮层显示的内容及保留时长';
 
   @override
-  String get voiceTimersHint => '浮条、提醒和语音播报';
-
-  @override
   String get voiceSectionFollowUp => '追问';
 
   @override
@@ -29512,6 +30812,9 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get voiceSectionTimerEnds => '计时器结束时';
+
+  @override
+  String get voiceSectionSharedTimers => '共享的计时器';
 
   @override
   String get voiceStatusEsphomeOff => 'ESPHome 服务器已关闭。';
@@ -30083,10 +31386,10 @@ class UiStringsZhCn extends UiStringsZh {
   String get voiceTesterPlayRecent => '播放最近 10 秒';
 
   @override
-  String get settingVoiceTimerPillsTitle => '显示计时器浮条';
+  String get settingVoiceTimerPillsViewTitle => '以浮条显示计时器';
 
   @override
-  String get settingVoiceTimerPillsDescription => '运行中的计时器悬浮在屏幕上，可拖动至任意位置。';
+  String get settingVoiceTimerPillsViewDescription => '计时器悬浮在屏幕上，而不是打开全屏视图。';
 
   @override
   String get settingVoiceTimerNameInPillTitle => '显示计时器名称';
@@ -30137,6 +31440,190 @@ class UiStringsZhCn extends UiStringsZh {
   String settingVoiceTimerNamedPhraseDescription(String name) {
     return '$name 会替换为计时器名称。';
   }
+
+  @override
+  String get settingVoiceTimersShareTitle => '共享计时器';
+
+  @override
+  String get settingVoiceTimersShareDescription =>
+      '在此 Kiosk 上启动的计时器也会在你选择的 Kiosk 设备上运行。';
+
+  @override
+  String get settingVoiceTimersShareWithTitle => '共享给';
+
+  @override
+  String get settingVoiceTimersShareWithDescription =>
+      '显示此设备的计时器并一同响铃的 Kiosk 设备。';
+
+  @override
+  String get settingVoiceTimersReceiveTitle => '显示共享的计时器';
+
+  @override
+  String get settingVoiceTimersReceiveDescription =>
+      '其他 Kiosk 设备共享的计时器会在此显示并响铃。';
+
+  @override
+  String get settingKioskAllowTimersTitle => '计时器';
+
+  @override
+  String get settingKioskAllowTimersDescription => '从 Kiosk 菜单打开计时器视图。';
+
+  @override
+  String get settingsMenuTimersSummary => '全屏视图、浮条、共享的计时器';
+
+  @override
+  String get fleetTheKiosksPickedInShareWithTheTimerSound =>
+      '在“共享给”中选择的 Kiosk 设备、计时器提示音';
+
+  @override
+  String get settingTimersTtsEngineDescription =>
+      '用于播报计时器的 Home Assistant 文本转语音实体。';
+
+  @override
+  String get settingTimersTtsLanguageDescription => '计时器播报使用的语言。';
+
+  @override
+  String get settingTimersTtsVoiceDescription => '用于播报计时器的声音。';
+
+  @override
+  String get settingTimersShowBeforeEndTitle => '计时器即将结束时显示计时器视图';
+
+  @override
+  String get settingTimersShowBeforeEndDescription => '计时器结束前多久打开计时器视图。';
+
+  @override
+  String get settingTimersShowOnStartTitle => '计时器开始时显示计时器视图';
+
+  @override
+  String get settingTimersShowOnStartDescription => '每次启动计时器时打开计时器视图。';
+
+  @override
+  String get settingTimersPauseScreensaverTitle => '计时器运行时暂停屏保';
+
+  @override
+  String get settingTimersPauseScreensaverDescription =>
+      '计时器视图显示运行中的计时器时，不启动屏保。';
+
+  @override
+  String get settingTimersSilenceAfterTitle => '自动静音时间';
+
+  @override
+  String get settingTimersSilenceAfterDescription => '已结束的计时器会一直显示，直到被关闭。';
+
+  @override
+  String get settingTimersDismissAfterTitle => '自动关闭时间';
+
+  @override
+  String get settingTimersDismissAfterDescription => '像点击“关闭”一样清除已结束的计时器。';
+
+  @override
+  String get voiceMatchGroundControlPage => 'Ground Control Voice Match';
+
+  @override
+  String get settingVoiceMatchPolicyDescriptionChosen =>
+      '选择“指定人员”时，会忽略电视、访客和其他所有人。';
+
+  @override
+  String get voiceMatchOptionPeople => '指定人员';
+
+  @override
+  String get settingVoiceMatchPeopleTitle => '人员';
+
+  @override
+  String get settingVoiceMatchPeopleDescription =>
+      '此信息亭回应的人。如果未选择任何人，则回应所有已录入的人。';
+
+  @override
+  String get voiceMatchPeopleNone => '所有已录入的人';
+
+  @override
+  String get voiceMatchPeopleSearch => '搜索人员';
+
+  @override
+  String get voiceMatchPeopleEmpty => 'Ground Control 中还没有录入任何人。';
+
+  @override
+  String get voiceMatchPeopleGone => '已不在 Ground Control 中';
+
+  @override
+  String get settingVoiceMatchRejectedTitleChosen => '未选择的声音';
+
+  @override
+  String get voiceMatchHint => '谁在说话、其他声音、声纹录入';
+
+  @override
+  String get settingVoiceMatchEnabledTitle => '启用 Voice Match';
+
+  @override
+  String get settingVoiceMatchPolicyTitle => '回应';
+
+  @override
+  String get settingVoiceMatchRejectedDescription => '其他人说出唤醒词时的处理方式。';
+
+  @override
+  String get settingVoiceMatchSpeakerSensorTitle => '说话人传感器';
+
+  @override
+  String get settingVoiceMatchSpeakerSensorDescription =>
+      '在 Home Assistant 中为此 Kiosk 添加 Speaker 传感器，用于自动化和代理指令。';
+
+  @override
+  String get voiceMatchOptionAnyone => '任何人';
+
+  @override
+  String get voiceMatchOptionQuiet => '保持安静';
+
+  @override
+  String get voiceMatchOptionChime => '播放错误提示音';
+
+  @override
+  String get voiceMatchConnecting => '正在连接';
+
+  @override
+  String get voiceMatchSearching => '正在搜索';
+
+  @override
+  String get voiceMatchNotReachable => '无法访问';
+
+  @override
+  String get voiceMatchSignInRefused => '登录被拒绝';
+
+  @override
+  String get voiceMatchNobodyEnrolled => '尚未录入任何人。';
+
+  @override
+  String get voiceMatchTokenRefused => 'Home Assistant 拒绝了此 Kiosk 的令牌。';
+
+  @override
+  String get settingVoiceMatchShowSpeakerTitle => '显示谁在说话';
+
+  @override
+  String get settingVoiceMatchShowSpeakerDescription =>
+      '在语音浮层的命令前以对应颜色显示说话人的名字。在带灯环的设备上，聆听弧会变成该颜色。';
+
+  @override
+  String get settingVoiceMatchAllowEnrollTitle => '允许在此录入';
+
+  @override
+  String get voiceMatchAppHint => '人员、声纹录入、会话和设置。';
+
+  @override
+  String get voiceMatchOpen => '打开';
+
+  @override
+  String get settingVoiceMatchEnabledDescriptionGroundControl =>
+      '识别谁在说话，并在其他人接话时停止聆听。需要 Ground Control。';
+
+  @override
+  String get settingVoiceMatchAllowEnrollDescriptionGroundControl =>
+      '允许 Ground Control 应用使用此信息亭的麦克风录制某人的声音。信息亭会显示要朗读的文字，或由灯环显示进度。';
+
+  @override
+  String get settingVoiceMatchLeaveOutTitle => '排除其他声音';
+
+  @override
+  String get settingVoiceMatchLeaveOutDescription =>
+      'Home Assistant 和实时助手只会听到说出唤醒词的人，并在此人停止说话时结束命令，即使电视开着也是如此。';
 
   @override
   String get voiceWakePage => '唤醒词';
@@ -30474,9 +31961,6 @@ class UiStringsZhCn extends UiStringsZh {
       'Amazon 唤醒词模型的语言。唤醒词选择框会提供该语言的唤醒词。';
 
   @override
-  String get voiceOptionAppLanguage => 'Kiosk Satellite 的语言';
-
-  @override
   String get settingDisableCacheTitle => '禁用缓存';
 
   @override
@@ -30496,6 +31980,28 @@ class UiStringsZhCn extends UiStringsZh {
   @override
   String get settingIgnoreSslErrorsDescription =>
       '接受不受信任或自签名证书。此项会禁用证书验证，请仅在自己的网络中使用。';
+
+  @override
+  String get settingBrowserUserAgentTitle => '自定义浏览器标识（User-Agent）';
+
+  @override
+  String get settingBrowserUserAgentDescription => '代替默认浏览器标识发送给网站。留空则使用默认值。';
+
+  @override
+  String get webGeolocationSection => 'HTML5 地理位置';
+
+  @override
+  String get settingWebGeolocationTitle => '启用地理位置访问';
+
+  @override
+  String get settingWebGeolocationDescription =>
+      '允许页面读取设备位置，例如天气雷达或地图。只有通过 HTTPS 加载的页面才能请求位置。';
+
+  @override
+  String get webGeolocationPermissionHeld => '页面可以读取设备位置。';
+
+  @override
+  String get webGeolocationPermissionMissing => '没有此权限，页面无法读取设备位置。';
 
   @override
   String get settingAutoReloadOnErrorTitle => '出错时自动重新加载';
@@ -31107,6 +32613,107 @@ class UiStringsZhCn extends UiStringsZh {
   String get intercomSoundFormats => '请选择 MP3、OGG、WAV、FLAC、M4A 或 AAC 文件。';
 
   @override
+  String voiceMatchEnrollTitle(String name) {
+    return '正在录入 $name';
+  }
+
+  @override
+  String get voiceMatchEnrollStarting => '正在准备…';
+
+  @override
+  String get voiceMatchEnrollReading => '请大声朗读';
+
+  @override
+  String voiceMatchEnrollSeconds(String seconds, String target) {
+    return '$seconds / $target 秒';
+  }
+
+  @override
+  String get voiceMatchEnrollOtherVoice => '有其他声音在说话。这部分已被排除。';
+
+  @override
+  String get voiceMatchEnrollSaving => '正在保存…';
+
+  @override
+  String get voiceMatchEnrollStop => '停止';
+
+  @override
+  String get voiceMatchEnrollTipWalk => '在房间里慢慢走动';
+
+  @override
+  String get voiceMatchEnrollTipTurn => '不时背对信息亭';
+
+  @override
+  String get voiceMatchEnrollTipTalk => '用平时下指令的语气说话';
+
+  @override
+  String voiceMatchEnrollDone(String name) {
+    return '$name 已录入';
+  }
+
+  @override
+  String voiceMatchEnrollDoneDetail(String seconds) {
+    return '已添加 $seconds 秒语音。';
+  }
+
+  @override
+  String get voiceMatchEnrollFailed => '未保存任何内容';
+
+  @override
+  String get voiceMatchEnrollTooShort => '语音太少，无法保存。请至少朗读 10 秒。';
+
+  @override
+  String get voiceMatchEnrollLost => '与 Voice Match 的连接已断开。';
+
+  @override
+  String get voiceMatchEnrollNoMic => '麦克风不可用。';
+
+  @override
+  String get voiceMatchEnrollStopped => '在录制任何内容之前已停止。';
+
+  @override
+  String get voiceMatchEnrollPassage1 => '打开厨房的灯。';
+
+  @override
+  String get voiceMatchEnrollPassage2 => '设一个十分钟的计时器。';
+
+  @override
+  String get voiceMatchEnrollPassage3 => '明天天气怎么样？';
+
+  @override
+  String get voiceMatchEnrollPassage4 => '把牛奶和鸡蛋加到购物清单里。';
+
+  @override
+  String get voiceMatchEnrollPassage5 => '在客厅放点轻音乐。';
+
+  @override
+  String get voiceMatchEnrollPassage6 => '早上很冷，所以我们待在家里做了煎饼。';
+
+  @override
+  String get voiceMatchEnrollPassage7 => '后来我们走到公园，看着狗狗们在草地上互相追逐。';
+
+  @override
+  String get voiceMatchEnrollPassage8 => '傍晚起风了，我们生起了火。';
+
+  @override
+  String get voiceMatchEnrollPassage9 => '关掉楼下所有的灯。';
+
+  @override
+  String get voiceMatchEnrollPassage10 => '东京现在几点？';
+
+  @override
+  String get voiceMatchEnrollPassage11 => '提醒我星期一给牙医打电话。';
+
+  @override
+  String get voiceMatchEnrollPassage12 => '开车去机场要多长时间？';
+
+  @override
+  String get voiceMatchEnrollPassage13 => '暂停音乐。';
+
+  @override
+  String get voiceMatchEnrollPassage14 => '晚安。';
+
+  @override
   String get voiceNoticeError => 'Voice Satellite 错误';
 
   @override
@@ -31216,4 +32823,75 @@ class UiStringsZhCn extends UiStringsZh {
 
   @override
   String get voiceTimerDismissHint => '点击关闭计时器提醒。';
+
+  @override
+  String get voiceTimersViewTitle => '计时器';
+
+  @override
+  String get voiceTimersEmpty => '没有计时器';
+
+  @override
+  String get voiceTimerPause => '暂停';
+
+  @override
+  String get voiceTimerResume => '继续';
+
+  @override
+  String get voiceTimerDismiss => '关闭';
+
+  @override
+  String get voiceTimerTimesUp => '时间到';
+
+  @override
+  String get voiceTimerPaused => '已暂停';
+
+  @override
+  String get voiceTimersShareNone => '未选择 Kiosk 设备';
+
+  @override
+  String get voiceTimersShareEmpty =>
+      '未找到其他 Kiosk 设备。请在每台设备上开启“远程管理”和“查找其他 Kiosk 设备”。';
+
+  @override
+  String get voiceTimersShareOffline => '离线';
+
+  @override
+  String get timersVoiceSection => '语音计时器';
+
+  @override
+  String get timersVoiceManage => '通过 Voice Satellite 管理计时器';
+
+  @override
+  String get timersVoiceHint => '无需蓝图（脚本模板）或大语言模型（LLM）对话代理。';
+
+  @override
+  String get voiceTimersShareSearch => '搜索 Kiosk 设备';
+
+  @override
+  String get voiceTimerSetATimer => '设置计时器';
+
+  @override
+  String get voiceTimerEditTimer => '编辑计时器';
+
+  @override
+  String get voiceTimerName => '名称';
+
+  @override
+  String get voiceTimerHours => '小时';
+
+  @override
+  String get voiceTimerMinutes => '分钟';
+
+  @override
+  String get voiceTimerSeconds => '秒';
+
+  @override
+  String get voiceTimerStartFailed => '无法启动计时器。';
+
+  @override
+  String get timersManage => '管理计时器';
+
+  @override
+  String get voiceTimerStartUnavailable =>
+      '在此 Kiosk 设备上启用 Voice Satellite 后即可在这里设置计时器。';
 }

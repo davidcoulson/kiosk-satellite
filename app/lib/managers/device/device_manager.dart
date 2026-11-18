@@ -19,6 +19,7 @@ import '../settings/settings_manager.dart';
 import '../settings/definitions.dart' as defs;
 import '../wake_word/background_listening.dart';
 import 'device_details.dart';
+import 'ip_addresses.dart';
 import 'stats_history.dart';
 import 'logcat.dart';
 
@@ -52,7 +53,9 @@ class DeviceManager extends Manager {
   late final String osVersion;
   late final String appVersion;
   late final String packageName;
-  late final String buildNumber;
+
+  /// Empty until [init] reads it.
+  String buildNumber = '';
 
   /// Android API level, or null off Android. Worth reporting: most of what
   /// bites a kiosk on this platform is versioned by it, not by the marketing
@@ -87,6 +90,12 @@ class DeviceManager extends Manager {
   /// reads the same key for its own last-known fallback.
   static const _lastLuxKey = 'esphome_last_lux';
 
+  /// The reading is only what the next session starts from, and every
+  /// save rewrites the settings file on flash, so a room whose light
+  /// keeps changing saves it this often at most.
+  static const luxSaveGap = Duration(minutes: 10);
+  DateTime? _luxSavedAt;
+
   /// Whether the device has a default network right now.
   ///
   /// The bus event is a transition ("an outage just ended"); this is the
@@ -102,6 +111,7 @@ class DeviceManager extends Manager {
   final mediaGain = ValueNotifier<double>(1.0);
   StreamSubscription<VolumeChanged>? _volumeSub;
   StreamSubscription<SettingChanged>? _mixSub;
+  StreamSubscription<AdaptiveVolumeChanged>? _adaptiveVolumeSub;
 
   String get os => Platform.isAndroid ? 'android' : 'ios';
 
@@ -403,6 +413,13 @@ class DeviceManager extends Manager {
       await _pushVolumeMix();
       await _refreshMediaGain();
     }());
+    // Adaptive volume's shares of the two faders (issue #1450), applied
+    // on the platform side under them. They only move while the kiosk is
+    // silent, so no sink hears a step.
+    _adaptiveVolumeSub = bus.on<AdaptiveVolumeChanged>().listen((e) async {
+      await _pushVolumeTrim(media: e.media, assistant: e.assistant);
+      await _refreshMediaGain();
+    });
     commands.register(
       Command(
         name: 'getVolume',
@@ -717,8 +734,10 @@ class DeviceManager extends Manager {
     }
   }
 
-  /// Every non-loopback address of [type], keyed by interface name in
-  /// interface order. Link-local IPv6 included: Dart drops every fe80::
+  /// Every non-loopback address of [type], keyed by interface name. The
+  /// default network's interface leads and VPNs and point-to-point links
+  /// trail, so the first address is the one the LAN reaches the device on
+  /// (issue #1371). Link-local IPv6 included: Dart drops every fe80::
   /// address by default — the device reports them, we just would not have.
   /// They are worth listing: a device with a global address and a stale
   /// link-local one that no longer routes looks identical from here unless
@@ -727,25 +746,14 @@ class DeviceManager extends Manager {
     InternetAddressType type,
   ) async {
     try {
-      final interfaces = await NetworkInterface.list(
-        type: type,
-        includeLoopback: false,
-        includeLinkLocal: true,
-      );
-      return {
-        for (final interface in interfaces)
-          if (interface.addresses.isNotEmpty)
-            interface.name: [
-              for (final address in interface.addresses) address.address,
-            ],
-      };
+      return await listAddresses(type);
     } catch (e) {
       log.warn(name, 'addressesByInterface failed: $e');
       return const {};
     }
   }
 
-  /// Every non-loopback IPv6 address, in interface order. See
+  /// Every non-loopback IPv6 address, default network first. See
   /// [addressesByInterface] for why link-local addresses are included.
   Future<List<String>> ipv6Addresses() async => [
     for (final addresses in (await addressesByInterface(
@@ -754,20 +762,15 @@ class DeviceManager extends Manager {
       ...addresses,
   ];
 
-  /// First non-loopback IPv4 address, or null (e.g. no network). Link-local
-  /// 169.254 addresses are skipped: this is the address the admin URL and
-  /// the setup screen print for people to visit, and a DHCP-failure address
-  /// routes nowhere.
+  /// The IPv4 address the admin URL and the setup screen print for people
+  /// to visit, or null (e.g. no network). See [lanIpv4].
   Future<String?> ipAddress() async {
-    for (final addresses in (await addressesByInterface(
-      InternetAddressType.IPv4,
-    )).values) {
-      for (final address in addresses) {
-        if (address.startsWith('169.254.')) continue;
-        return address;
-      }
+    try {
+      return await lanIpv4();
+    } catch (e) {
+      log.warn(name, 'ipAddress failed: $e');
+      return null;
     }
-    return null;
   }
 
   /// Hook up the ambient light stream when the hardware exists. The native
@@ -802,7 +805,12 @@ class DeviceManager extends Manager {
           lightLux = lux;
           lightLive = true;
           // Persisted so the next session starts from it (see lightLux).
-          unawaited(_settings.setInternal(_lastLuxKey, '${lux.round()}'));
+          final now = DateTime.now();
+          final savedAt = _luxSavedAt;
+          if (savedAt == null || now.difference(savedAt) >= luxSaveGap) {
+            _luxSavedAt = now;
+            unawaited(_settings.setInternal(_lastLuxKey, '${lux.round()}'));
+          }
           bus.publish(LightLevelChanged(lux: lux));
         },
         onError: (Object e) {
@@ -839,6 +847,21 @@ class DeviceManager extends Manager {
     } catch (_) {}
   }
 
+  /// The shares as linear gains on the faders' squared taper, so half a
+  /// share sounds like the slider at half.
+  Future<void> _pushVolumeTrim({
+    required double media,
+    required double assistant,
+  }) async {
+    try {
+      const background = MethodChannel('kiosk_satellite/background');
+      await background.invokeMethod<void>('setVolumeTrim', {
+        'media': media * media,
+        'assistant': assistant * assistant,
+      });
+    } catch (_) {}
+  }
+
   Future<void> _pushVolumeMix() async {
     try {
       const background = MethodChannel('kiosk_satellite/background');
@@ -857,6 +880,7 @@ class DeviceManager extends Manager {
     _lightMethods.setMethodCallHandler(null);
     await _volumeSub?.cancel();
     await _mixSub?.cancel();
+    await _adaptiveVolumeSub?.cancel();
   }
 
   /// Seven independent reads -- two of them full network-interface

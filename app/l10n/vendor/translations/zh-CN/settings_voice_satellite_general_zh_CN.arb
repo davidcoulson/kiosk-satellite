@@ -37,7 +37,6 @@
   "voiceTimers": "计时器",
   "voiceAssistantHint": "管线和追问",
   "voiceConversationHint": "浮层显示的内容及保留时长",
-  "voiceTimersHint": "浮条、提醒和语音播报",
   "voiceSectionFollowUp": "追问",
   "voiceSectionLinger": "保留时长",
   "voiceSectionOnScreen": "屏幕显示",
@@ -71,5 +70,6 @@
   "settingVoiceEnabledTitle": "启用 Voice Satellite",
   "settingVoiceEnabledDescription": "通过 ESPHome 服务器，将此 Kiosk 设为 Home Assistant 的语音助手。",
   "settingVoiceMuteTitle": "麦克风静音",
-  "settingVoiceMuteDescription": "停止监听唤醒词。"
+  "settingVoiceMuteDescription": "停止监听唤醒词。",
+  "voiceSectionSharedTimers": "共享的计时器"
 }
